@@ -17,6 +17,8 @@
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
 
+.export char_out=krn_chrout
+
 appstart $1000
 
 .code
