@@ -279,11 +279,11 @@ unknown:
 history_frwd:
         lda p_history
         ;cmp #<(history+$0100)
-        cmp p_history_end
+        cmp p_history
         bne @inc_hist_ptr
         lda p_history+1
         ;cmp #>(history+$0100)
-        cmp p_history_end+1
+        cmp p_history+1
         bne @inc_hist_ptr
         rts
 @inc_hist_ptr:
@@ -351,9 +351,6 @@ history_push:
         lda #$0a
         ;jsr char_out
         
-        inc hist_e
-        lda hist_e
-        cmp #
         lda p_history   ; new end
         clc
         adc #BUF_SIZE
@@ -630,9 +627,9 @@ PATH:     .asciiz "./:/bin/:/sbin/:/usr/bin/"
 APPEXT:   .asciiz ".PRG"
 screensaver_prg:  .asciiz "/usr/bin/unrclock.prg"
 screensaver_rtc:  .res 1
-hist_s  .res 1, 0
-hist_e  .res 1, 0
-hist_r  .res 1, 0
+hist_s:  .res 1, 0
+hist_e:  .res 1, 0
+hist_r:  .res 1, 0
 tmpbuf:
 buf = tmpbuf + 64
 msgbuf = buf + BUF_SIZE
