@@ -14,17 +14,20 @@
 	.export krn_chrout=asmunit_chrout
 	
 .macro assertUserInput user_input, dir_entry, expect
+	test .concat("[", user_input, "] [", dir_entry, "]");
+  
 	.local @input
 	.local @entry
 	bra :+
 @entry: .byte dir_entry,0
 @input: .byte user_input,0
 :
-	test .concat("[", user_input, "] [", dir_entry, "]");
-	SetVector fat_dirname_mask, krn_ptr2    ; ouput
+  ; build mask
 	SetVector @input, filenameptr
+	SetVector fat_dirname_mask, krn_ptr2    ; ouput
 	jsr string_fat_mask
-	
+	;assertString "", krn_ptr2
+  
 	SetVector @entry, dirptr
 	jsr dirname_mask_matcher
 	assertCarry expect
@@ -86,6 +89,9 @@
 ;	assertUserInput "FI*ONA*I.P*G", "FIBONACIPRG", 1 ; TODO FIXME
 	assertUserInput "FI?ONA?I.P?G", "FIBONACIPRG", 1
 	
+  assertUserInput "BEYOND*.D00", "BEYOND~1D00", 1
+  assertUserInput "BEYOND~1.D00", "BEYOND~1D00", 1
+  
 	brk
 
 .segment "ASMUNIT"

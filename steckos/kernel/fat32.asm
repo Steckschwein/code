@@ -998,11 +998,12 @@ __fat_open_path:
 		sta krn_ptr1
 		stx krn_ptr1+1			    ; save path arg given in a/x
 
-		ldx #FD_INDEX_TEMP_DIR		; we use the temp dir fd to not clobber the current dir (Y parameter!), maybe we will run into an error
+		ldx #FD_INDEX_TEMP_DIR	; we use the temp dir fd to not clobber the current dir (Y parameter!), maybe we will run into an error
 		jsr __fat_clone_fd			; Y is given as param
 
-		ldy #0						; trim wildcard at the beginning
-@l1:	lda (krn_ptr1), y
+		ldy #0						      ; trim wildcard at the beginning
+@l1:
+    lda (krn_ptr1), y
 		cmp #' '
 		bne @l2
 		iny
