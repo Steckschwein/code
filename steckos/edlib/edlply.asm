@@ -21,6 +21,7 @@ appstart $1000
 	
 .code
 main:
+    
 		jsr opl2_detect
 		clc
 		bcc @load
@@ -60,9 +61,10 @@ main:
 		freq=70
 		t2cycles=275
 		;jsr opl2_delay_register
-		ldx #opl2_reg_t2	; t2 timer value
 		lda #($ff-(1000000 / freq / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
-		jsr opl2_reg_write
+		sta t2_value
+    jsr set_timer_t2
+    
 		jsr reset_irq
 		jsr restart_timer
 		
@@ -70,7 +72,7 @@ main:
 		
 @keyin: keyin
 		cmp #'p'
-		bne @key_esc
+		bne @key_min
 		lda #01
 		eor player_state
 		sta player_state
@@ -80,6 +82,18 @@ main:
 		bra @keyin
 :		jsr krn_primm
 		.byte "Play...",$0a,0
+		bra @keyin
+@key_min:
+		cmp #'-'
+    bne @key_pls
+    dec t2_value
+    bra @set_timer_t2
+@key_pls:
+		cmp #'+'
+    bne @key_esc
+    inc t2_value
+@set_timer_t2:
+    jsr set_timer_t2
 		bra @keyin
 @key_esc:
 		cmp #KEY_ESCAPE		
@@ -119,6 +133,14 @@ restart_timer:
 		lda #$42	; t2
 		jmp opl2_reg_write
 
+set_timer_t2:
+    sei
+		ldx #opl2_reg_t2	; t2 timer value
+    lda t2_value
+    jsr opl2_reg_write
+    cli
+    rts
+    
 printMetaData:
 		jsr krn_primm
 		.asciiz "Name: "
@@ -164,6 +186,19 @@ d00header:
 		.byte "JCH",$26,$2,$66
 
 loadfile:
+		.importzp ptr1
+    lda paramptr
+    sta ptr1
+		lda paramptr +1
+    sta ptr1+1
+    ldy #0
+:   lda (paramptr),y
+    beq :+
+    jsr char_out
+    iny 
+    bne :-
+:    
+
 		lda paramptr
 		ldx paramptr +1
 		ldy #O_RDONLY
@@ -200,6 +235,7 @@ player_isr:
 		
 safe_isr:   .res 2
 player_state: .res 1,0
+t2_value: .res 1,0
 fd:     .res 1
 
 .data
