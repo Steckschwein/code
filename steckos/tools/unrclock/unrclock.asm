@@ -84,17 +84,11 @@ clock_position:
         
 clock_init:
         jsr vdp_mc_blank
-        jsr vdp_mc_on
-        rts
+        jmp vdp_mc_on
 
 clock_update:
         jsr clock_reset
         jsr clock_calc
-        jsr clock_draw
-                
-        rts
-      
-clock_draw:
         jsr clock_draw_sec
         
         SetVector color_mask_l, ptr1
@@ -396,11 +390,11 @@ clock_reset_row_lower:
         rts
         
 clock_isr:
-		lda SYS_IRR
-		bpl @l_exit
-		
+        lda SYS_IRR
+        bpl @l_exit
+        
         lda #Dark_Green<<4 | Cyan
-		;jsr vdp_bgcolor
+        jsr vdp_bgcolor
 
         inc clock_update_trigger
 
@@ -416,7 +410,6 @@ clock_isr:
             ldx #2
             jsr vdp_fill
             copypointer vaddr_new, vaddr
-            
 @l_update:
         SetVector clock_data, ptr1
         lda vaddr
@@ -430,14 +423,14 @@ clock_isr:
         jsr copy_vram
         
         lda #Dark_Green<<4| Transparent
-        jsr vdp_bgcolor               
+        jsr vdp_bgcolor
 @l_exit:
         rts
         
 copy_vram:
         ldy #0
 :
-        vdp_wait_l 12
+        vdp_wait_l 10
         lda (ptr1),y
         sta a_vram
         iny
@@ -457,6 +450,12 @@ noEor:
         sta seed
         rts
         
+vaddr:       .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
+vaddr_new:   .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
+
+safe_isr:  .res 2
+seed: .res 1, 123
+
 .data
 clock_data: 
 clock_data_row1:
@@ -519,11 +518,5 @@ last_rtc:
         .res 2 ; min 
         .res 2 ; hour
 last_rtc_end:
-
-vaddr:       .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
-vaddr_new:   .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
-
-safe_isr:  .res 2
-seed: .res 1, 123
 
 .segment "STARTUP"
