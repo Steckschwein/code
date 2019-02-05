@@ -393,8 +393,8 @@ clock_isr:
         lda SYS_IRR
         bpl @l_exit
         
-        lda #Dark_Green<<4 | Cyan
-        jsr vdp_bgcolor
+;        lda #Dark_Green<<4 | Cyan
+ ;       jsr vdp_bgcolor
 
         inc clock_update_trigger
 
