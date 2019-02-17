@@ -31,6 +31,8 @@ rtc_systime_t = $0300
 
 .CHAR_BLANK=210
 .CHAR_LAST_FG=198		; last character of foreground (cacti), range 128-198
+.CHAR_ASSET=211         ; 211-227
+
 
 .A_GX_SCR=$1800
 .A_GX_COL=$1c80
@@ -39,7 +41,7 @@ rtc_systime_t = $0300
 .A_SP_PAT=$1000
 .A_SP_ATR=$1c00
 .GAME_CHAR_OFFS=$0400
-.Y_OFS_GAME_OVER=11
+.Y_OFS_GAME_OVER=10
 .screen=$2000
 .dinosaur_color=Dark_Green
 .dinosaur_color_xmas=Dark_Red
@@ -99,12 +101,6 @@ main:
 	sta	.game_state
 
 	jsr	.update_vram
-
-ROM_OFF = 1<<0
-; 	system attribute has to be set on file system
-memctl = $0230
-    lda #ROM_OFF
-    sta memctl
 
 ;    +copypointer $fffe, .save_isr
 	+SetVector	.game_isr, $fffe
@@ -331,15 +327,24 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 	sta .game_state
 
 +++	+SetVector .text_game_over, addr
-	lda	#<(.A_GX_SCR + (.Y_OFS_GAME_OVER*32))
+	lda	#<(.A_GX_SCR + (.Y_OFS_GAME_OVER*32))+11
 	ldy	#.WRITE_ADDRESS + >(.A_GX_SCR+(.Y_OFS_GAME_OVER*32))
 	jsr .vdp_print
+    +SetVector .text_game_reload_1, addr
+	lda	#<(.A_GX_SCR + ((.Y_OFS_GAME_OVER+2)*32))+14
+	ldy	#.WRITE_ADDRESS + >(.A_GX_SCR+((.Y_OFS_GAME_OVER+2)*32))
+	jsr .vdp_print
+    +SetVector .text_game_reload_2, addr
+	lda	#<(.A_GX_SCR + ((.Y_OFS_GAME_OVER+3)*32))+14
+	ldy	#.WRITE_ADDRESS + >(.A_GX_SCR+((.Y_OFS_GAME_OVER+3)*32))
+	jsr .vdp_print
+    
     
 	rts
 
 .vdp_print
 	+vdp_sreg
-	ldy	#$00
+	ldy	#0
 -	lda	(addr), y
 	beq	+
 	+vnops
@@ -605,7 +610,7 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 	sta adrl
 	lda	#<(.A_GX_SCR + (.Y_OFS_GAME_OVER*32))
 	ldy	#.WRITE_ADDRESS + >(.A_GX_SCR+(.Y_OFS_GAME_OVER*32))
-	ldx #32
+	ldx #32*4
 	jsr vdp_fills
 
 	stz	.dinosaur_state	; run initialy
@@ -769,7 +774,7 @@ isXmas: ; only 24.12-26.12. load xmas gfx
     +SetVector .game_chars_xmas, addr		; first game charset
 +   lda #<(.A_GX_PAT_1+.GAME_CHAR_OFFS)
     ldy #.WRITE_ADDRESS + >(.A_GX_PAT_1+.GAME_CHAR_OFFS)
-    ldx	#$03
+    ldx	#$04
     jsr	vdp_memcpy
 
 	+SetVector .game_chars_4px, addr	; 2nd game charset with 4px offset
@@ -778,18 +783,15 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 	+SetVector .game_chars_4px_xmas, addr	; 2nd game charset with 4px offset
 +   lda #<(.A_GX_PAT_2+.GAME_CHAR_OFFS)
 	ldy #.WRITE_ADDRESS + >(.A_GX_PAT_2+.GAME_CHAR_OFFS)
-	ldx	#$03
+	ldx	#$04
 	jsr	vdp_memcpy
 
-    
 	+SetVector .sprites, addr
 	lda	#<.A_SP_PAT
 	ldy	#.WRITE_ADDRESS + >.A_SP_PAT
 	ldx	#$04			; sprite patterns
 	jsr	vdp_memcpy
     
-    jsr isXmas
-
 	+SetVector .text_game_label, addr
 	lda	#<(.A_GX_SCR + (22*32))
 	ldy	#.WRITE_ADDRESS + >(.A_GX_SCR+(22*32))
@@ -915,8 +917,11 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 
 .save_isr   !word $ffff
 
-.text_game_label	!text " Verbindung zum Internet konnte  nicht hergestellt werden.",$0
-.text_game_over		!text "           GAME OVER!",$0
+.text_game_label	!text " Verbindung zum Internet konnte  nicht hergestellt werden.",0
+.text_game_over		!text "GAME OVER",0
+.text_game_reload_1 !byte 211,213,215,0
+.text_game_reload_2 !byte 212,214,216,0
+
 .text_score_board	!text "HI ",$0
 .score_value		!byte 0,0,0
 ;.score_value_high 	!byte 0,0,0
@@ -988,6 +993,7 @@ PI = 3.14159265358979323846
 !src "dinosaur.chars.4.res"
 !src "dinosaur.chars.5.res"
 !src "dinosaur.chars.6.res"
+!src "dinosaur.chars.reload.res"
 .game_chars_4px
 !src "dinosaur.chars.1.4px.res"
 !src "dinosaur.chars.2.4px.res"
@@ -995,6 +1001,7 @@ PI = 3.14159265358979323846
 !src "dinosaur.chars.4.4px.res"
 !src "dinosaur.chars.5.4px.res"
 !src "dinosaur.chars.6.4px.res"
+!src "dinosaur.chars.reload.res"
 
 .game_chars_xmas
 !src "dinosaur.chars.1.xmas.res"
@@ -1003,6 +1010,7 @@ PI = 3.14159265358979323846
 !src "dinosaur.chars.4.xmas.res"
 !src "dinosaur.chars.5.res"
 !src "dinosaur.chars.6.res"
+!src "dinosaur.chars.reload.res"
 .game_chars_4px_xmas
 !src "dinosaur.chars.1.4px.xmas.res"
 !src "dinosaur.chars.2.4px.xmas.res"
@@ -1010,6 +1018,7 @@ PI = 3.14159265358979323846
 !src "dinosaur.chars.4.4px.xmas.res"
 !src "dinosaur.chars.5.4px.res"
 !src "dinosaur.chars.6.4px.res"
+!src "dinosaur.chars.reload.res"
 
 
 .frame_cnt	!byte 0
