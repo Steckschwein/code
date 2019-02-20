@@ -5,12 +5,12 @@ We are developing a retro style 8bit computer based on the 65c02 CPU.
 
 ## Features ##
 65c02 CPU @ 8MHz
-TMS9929 and/or V9958 Video Display Controller
+V9958 Video Display Controller
 Yamaha YM3812 (OPL2) Sound
 RS232 serial interface using UART 16550
 SD-Card Interface
 SPI as system bus
-2 PS/2 interface
+PS/2 keyboard interface
 2 Joystick Ports
 
 [Steckschwein Web Site](http://steckschwein.de/)
