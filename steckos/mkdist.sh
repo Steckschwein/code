@@ -28,6 +28,7 @@ mkdir -p ${TARGET}
 mkdir -p dist/STECKOS
 cp kernel/loader.bin dist/LOADER.BIN
 cp shell/shell.prg dist/STECKOS/SHELL.PRG
+cp tools/unrclock/unrclock.prg dist/STECKOS/UNRCLOCK.PRG
 
 #for n in `ls tools/*.prg` ; do
 #	filename=`basename ${n}`

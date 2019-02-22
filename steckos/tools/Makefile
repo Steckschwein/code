@@ -11,6 +11,7 @@ date.prg
 
 
 all: toollib $(TOOLS)
+	(cd unrclock; make )
 	(cd xmodem; make )
 	(cd ppmview; make )
 
