@@ -10,14 +10,14 @@ all: test asmunit.a
 test: test.asmunit
 
 clean:
-	rm -f *.o *.a *.log
+	rm -f *.o *.a *.log *.map
 
 %.o: %.asm asmunit.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
 asmunit.a: $(OBJS) test.asmunit
 	ar65 a asmunit.a $(OBJS)
-	
+
 %.bin: %.o asmunit.o
 	ld65 -Ln labels.map $(LDFLAGS) $< asmunit.o -o $@
 
