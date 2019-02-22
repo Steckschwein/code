@@ -73,7 +73,7 @@ init:
 		.byte $0a, "steckOS Shell "
 		.include "version.inc"
 		.byte $0a,0
-        
+
 		bra mainloop
 
 exit_from_prg:
@@ -105,10 +105,10 @@ mainloop:
         ; output prompt character
         lda #prompt
         jsr char_out
-        
+
         lda crs_x
         sta crs_x_prompt
-        
+
         ; reset input buffer
         lda #0
         tay
@@ -119,7 +119,7 @@ inputloop:
         jsr screensaver_settimeout  ;reset timeout
 @l_input:
         jsr screensaver_loop
-        
+
         jsr krn_getkey
         bcc @l_input
 
@@ -131,17 +131,17 @@ inputloop:
 
         cmp #KEY_ESCAPE
         beq escape
-        
+
         cmp #KEY_CRSR_UP
         beq key_crs_up
-        
+
         cmp #KEY_CRSR_DOWN
         beq key_crs_down
 
         ; prevent overflow of input buffer
         cpy #BUF_SIZE
         beq inputloop
-        
+
         sta (bufptr),y
         iny
 line_end:
@@ -153,22 +153,22 @@ line_end:
 backspace:
         cpy #$00
         beq inputloop
-        dey        
+        dey
         bra line_end
 
 escape:
         jsr krn_getkey
         jsr printbuf
         bra inputloop
-        
+
 key_crs_up:
         jsr history_back
         bra inputloop
-        
+
 key_crs_down:
         jsr history_frwd
         bra inputloop
-    
+
 terminate:
         lda #0
         sta (bufptr),y
@@ -176,7 +176,7 @@ terminate:
 
 parse:
         copypointer bufptr, cmdptr
-        
+
         jsr history_push
 
         ; find begin of command word
@@ -194,7 +194,7 @@ parse:
 
 		; find begin of parameter (everything behind the command word, separated by space)
 		; first, fast forward until space or abort if null (no parameters then)
-@l4:	
+@l4:
       lda (paramptr)
       beq @l7
       cmp #$20
@@ -203,7 +203,7 @@ parse:
       bra @l4
 @l5:
 		; space found.. fast forward until non space or null
-@l6:	
+@l6:
       lda (paramptr)
       beq @l7
       cmp #$20
@@ -292,7 +292,7 @@ history_frwd:
         adc #BUF_SIZE
         sta p_history
         bra history_peek
-        
+
 history_back:
         lda p_history+1
         cmp #>history
@@ -305,12 +305,12 @@ history_back:
         sec ;dec hist ptr
         sbc #BUF_SIZE
         sta p_history
-        
+
 history_peek:
         lda crs_x_prompt
         sta crs_x
         jsr krn_textui_update_crs_ptr
-        
+
         ldy #0
         ldx #BUF_SIZE
 :       lda (p_history), y
@@ -318,26 +318,26 @@ history_peek:
         beq :+
         jsr char_out
         iny
-        dex 
+        dex
         bpl :-
-        
+
 :       phy       ;safe y pos in buffer
         ldy crs_x ;safe crs_x position after restored cmd to y
-        
+
         lda #' '  ;erase the rest of the line
 :
         jsr char_out
         dex
         bpl :-
-        sty crs_x 
+        sty crs_x
         jsr krn_textui_update_crs_ptr
         ply       ;restore y buffer index
         rts
-        
+
 history_push:
         lda #$0a
         ;jsr char_out
-        
+
         tya
         tax
         ldy #0
@@ -347,10 +347,10 @@ history_push:
         iny
         dex
         bpl :-
-        
+
         lda #$0a
         ;jsr char_out
-        
+
         lda p_history   ; new end
         clc
         adc #BUF_SIZE
@@ -623,9 +623,9 @@ l_exit:
         rts
 crs_x_prompt: .res 1
 
-PATH:     .asciiz "./:/bin/:/sbin/:/usr/bin/"
+PATH:     .asciiz "./:/steckos/"
 APPEXT:   .asciiz ".PRG"
-screensaver_prg:  .asciiz "/usr/bin/unrclock.prg"
+screensaver_prg:  .asciiz "/steckos/unrclock.prg"
 screensaver_rtc:  .res 1
 hist_s:  .res 1, 0
 hist_e:  .res 1, 0

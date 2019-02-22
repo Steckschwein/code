@@ -74,7 +74,7 @@ kern_init:
 	jsr init_via1
 	jsr init_rtc                ;init
     jsr __rtc_systime_update    ;... and update rtc immediately before any program is loaded
-    
+
 	jsr init_uart
 
 	SetVector user_isr_default, user_isr
@@ -162,13 +162,13 @@ do_irq:
 		bit via1ifr		; Interrupt from VIA?
 		bpl @user_isr
 		lda #IRQ_VIA
-		
+
 @store_isr:
 		sta SYS_IRR
-		
+
 @user_isr:
 		jsr call_user_isr			; user isr first, maybe there timing critical things
-		
+
 		bit SYS_IRR					; was vdp irq?
 		bpl @exit
 		jsr	textui_update_screen    ; update text ui
@@ -310,7 +310,7 @@ upload_ok:
 	jsr uart_tx
 	rts
 
-filename:	.asciiz "shell.prg"
+filename:	.asciiz "steckos/shell.prg"
 
 ; trampolin code to enter ML monitor on NMI
 ; this code gets copied to $1000 and executed there
