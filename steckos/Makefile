@@ -12,7 +12,6 @@ clean:
 	(cd libsrc; make clean)
 	(cd kernel; make clean)
 	(cd ehbasic; make clean)
-	(cd imfplayer; make clean)
 	(cd edlib; make clean)
 	rm -rf dist/*
 
@@ -27,7 +26,6 @@ build: lib
 	(cd shell; make )
 	(cd tools; make )
 	(cd ehbasic; make )
-	(cd imfplayer; make )
 	(cd edlib; make )
 	(cd test; make )
 
