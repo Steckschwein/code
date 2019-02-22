@@ -10,7 +10,7 @@ ADDRESS=0x1000
 
 
 all: ppmview.prg
-		
+
 clean:
 	rm -f *.prg *.o
 
@@ -19,15 +19,15 @@ clean:
 
 test.%.bin: test.%.o $(TEST_LIBS) $(<:test.%=%)
 	ld65 $(TEST_LDFLAGS) $< $(<:test.%=%) $(TEST_LIBS) -o $@
-	
+
 test.%: test.%.bin
 	../../../asmunit/asmunit_wrapper.sh $@.bin $(ADDRESS)
-    
-%.prg: %.main.o %.o test.ppmview.main $(LIBS)
+
+%.prg: %.main.o %.o $(LIBS)
 	ld65 $(LDFLAGS) ppmview.o ppmview.main.o $(LIBS) -o $@
-    
+
 %.dis: %.prg
-	dcc6502 -o 0x0ffe -d -n -c $< > $@ 
-	
+	dcc6502 -o 0x0ffe -d -n -c $< > $@
+
 %: %.prg
 	../../../transfer.py $< -s $(ADDRESS)

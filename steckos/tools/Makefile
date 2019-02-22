@@ -9,7 +9,10 @@ date.prg
 
 .PHONY: all clean
 
-all: $(TOOLS)
+
+all: toollib $(TOOLS)
+	(cd xmodem; make )
+	(cd ppmview; make )
 
 clean:
 	rm -f *.prg *.s *.o toollib.a
