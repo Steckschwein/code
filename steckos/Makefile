@@ -11,7 +11,6 @@ clean:
 	(cd shell; make clean)
 	(cd libsrc; make clean)
 	(cd kernel; make clean)
-	(cd edlib; make clean)
 	rm -rf dist/*
 
 lib/steckschwein-kernel.lib:
@@ -24,7 +23,6 @@ build: lib
 	(cd tools/lib; make )
 	(cd shell; make )
 	(cd tools; make )
-	(cd edlib; make )
 	(cd test; make )
 
 test:

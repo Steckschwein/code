@@ -1,7 +1,7 @@
 TARGET=edlply.prg
-CAFLAGS=--include-dir ../kernel --include-dir ../asminc
-LDFLAGS=--config ../steckos-c-app.cfg
-LIBS=../lib/steckschwein-kernel.lib ../tools/lib/toollib.a
+CAFLAGS=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
+LDFLAGS=--config ../steckos/steckos-c-app.cfg
+LIBS=../steckos/lib/steckschwein-kernel.lib ../steckos/tools/lib/toollib.a
 
 C64LIBS=$(CC65_HOME)/lib/c64.lib
 C64LDFLAGS=--config c64-asm.cfg
@@ -17,7 +17,7 @@ clean:
 
 edlply64.prg: edlply64.o edlib.o $(C64LIBS)
 	ld65 $< edlib.o $(C64LDFLAGS) $(C64LIBS) -o $@
-    
+
 edlply.prg: edlply.o edlib.o $(LIBS)
 	ld65 $< edlib.o $(LDFLAGS) $(LIBS) -o $@
 
@@ -28,4 +28,4 @@ edlply.prg: edlply.o edlib.o $(LIBS)
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 %: %.prg
-	../../transfer.py $< -s 0x1000
+	../transfer.py $< -s 0x1000
