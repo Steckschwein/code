@@ -5,6 +5,8 @@ LIBS=../steckos/tools/lib/toollib.a
 
 all: $(TARGET)
 
+fortune.prg: fortunes.inc
+
 %.prg: $(OBJS) $(LIBS)
 	cl65 --target none --config ../steckos/kernel/steckosapp.cfg -o $@ $(OBJS) $(LIBS)
 
@@ -14,7 +16,7 @@ all: $(TARGET)
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
-fortunes:
+fortunes.inc:
 	./gen_fortunes.sh > fortunes.inc
 
 clean:
