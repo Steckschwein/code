@@ -69,105 +69,518 @@ noEor:  sta seed
         rts
 
 fortunes_hi:
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
-        .byte >fortune0, >fortune1, >fortune2, > fortune3, >fortune4, >fortune5, >fortune6, >fortune7
+        .byte >fortune0
+        .byte >fortune1
+        .byte >fortune2
+        .byte >fortune3
+        .byte >fortune4
+        .byte >fortune5
+        .byte >fortune6
+        .byte >fortune7
+        .byte >fortune8
+        .byte >fortune9
+        .byte >fortune10
+        .byte >fortune11
+        .byte >fortune12
+        .byte >fortune13
+        .byte >fortune14
+        .byte >fortune15
+        .byte >fortune16
+        .byte >fortune17
+        .byte >fortune18
+        .byte >fortune19
+        .byte >fortune20
+        .byte >fortune21
+        .byte >fortune22
+        .byte >fortune23
+        .byte >fortune24
+        .byte >fortune25
+        .byte >fortune26
+        .byte >fortune27
+        .byte >fortune28
+        .byte >fortune29
+        .byte >fortune30
+        .byte >fortune31
+        .byte >fortune32
+        .byte >fortune33
+        .byte >fortune34
+        .byte >fortune35
+        .byte >fortune36
+        .byte >fortune37
+        .byte >fortune38
+        .byte >fortune39
+        .byte >fortune40
+        .byte >fortune41
+        .byte >fortune42
+        .byte >fortune43
+        .byte >fortune44
+        .byte >fortune45
+        .byte >fortune46
+        .byte >fortune47
+        .byte >fortune48
+        .byte >fortune49
+        .byte >fortune50
+        .byte >fortune51
+        .byte >fortune52
+        .byte >fortune53
+        .byte >fortune54
+        .byte >fortune55
+        .byte >fortune56
+        .byte >fortune57
+        .byte >fortune58
+        .byte >fortune59
+        .byte >fortune60
+        .byte >fortune61
+        .byte >fortune62
+        .byte >fortune63
+        .byte >fortune64
+        .byte >fortune65
+        .byte >fortune66
+        .byte >fortune67
+        .byte >fortune68
+        .byte >fortune69
+        .byte >fortune70
+        .byte >fortune71
+        .byte >fortune72
+        .byte >fortune73
+        .byte >fortune74
+        .byte >fortune75
+        .byte >fortune76
+        .byte >fortune77
+        .byte >fortune78
+        .byte >fortune79
+        .byte >fortune80
+        .byte >fortune81
+        .byte >fortune82
+        .byte >fortune83
+        .byte >fortune84
+        .byte >fortune85
+        .byte >fortune86
+        .byte >fortune87
+        .byte >fortune88
+        .byte >fortune89
+        .byte >fortune90
+        .byte >fortune91
+        .byte >fortune92
+        .byte >fortune93
+        .byte >fortune94
+        .byte >fortune95
+        .byte >fortune96
+        .byte >fortune97
+        .byte >fortune98
+        .byte >fortune99
+        .byte >fortune100
+        .byte >fortune101
+        .byte >fortune102
+        .byte >fortune103
+        .byte >fortune104
+        .byte >fortune105
+        .byte >fortune106
+        .byte >fortune107
+        .byte >fortune108
+        .byte >fortune109
+        .byte >fortune110
+        .byte >fortune111
+        .byte >fortune112
+        .byte >fortune113
+        .byte >fortune114
+        .byte >fortune115
+        .byte >fortune116
+        .byte >fortune117
+        .byte >fortune118
+        .byte >fortune119
+        .byte >fortune120
+        .byte >fortune121
+        .byte >fortune122
+        .byte >fortune123
+        .byte >fortune124
+        .byte >fortune125
+        .byte >fortune126
+        .byte >fortune127
+        .byte >fortune128
+        .byte >fortune129
+        .byte >fortune130
+        .byte >fortune131
+        .byte >fortune132
+        .byte >fortune133
+        .byte >fortune134
+        .byte >fortune135
+        .byte >fortune136
+        .byte >fortune137
+        .byte >fortune138
+        .byte >fortune139
+        .byte >fortune140
+        .byte >fortune141
+        .byte >fortune142
+        .byte >fortune143
+        .byte >fortune144
+        .byte >fortune145
+        .byte >fortune146
+        .byte >fortune147
+        .byte >fortune148
+        .byte >fortune149
+        .byte >fortune150
+        .byte >fortune151
+        .byte >fortune152
+        .byte >fortune153
+        .byte >fortune154
+        .byte >fortune155
+        .byte >fortune156
+        .byte >fortune157
+        .byte >fortune158
+        .byte >fortune159
+        .byte >fortune160
+        .byte >fortune161
+        .byte >fortune162
+        .byte >fortune163
+        .byte >fortune164
+        .byte >fortune165
+        .byte >fortune166
+        .byte >fortune167
+        .byte >fortune168
+        .byte >fortune169
+        .byte >fortune170
+        .byte >fortune171
+        .byte >fortune172
+        .byte >fortune173
+        .byte >fortune174
+        .byte >fortune175
+        .byte >fortune176
+        .byte >fortune177
+        .byte >fortune178
+        .byte >fortune179
+        .byte >fortune180
+        .byte >fortune181
+        .byte >fortune182
+        .byte >fortune183
+        .byte >fortune184
+        .byte >fortune185
+        .byte >fortune186
+        .byte >fortune187
+        .byte >fortune188
+        .byte >fortune189
+        .byte >fortune190
+        .byte >fortune191
+        .byte >fortune192
+        .byte >fortune193
+        .byte >fortune194
+        .byte >fortune195
+        .byte >fortune196
+        .byte >fortune197
+        .byte >fortune198
+        .byte >fortune199
+        .byte >fortune200
+        .byte >fortune201
+        .byte >fortune202
+        .byte >fortune203
+        .byte >fortune204
+        .byte >fortune205
+        .byte >fortune206
+        .byte >fortune207
+        .byte >fortune208
+        .byte >fortune209
+        .byte >fortune210
+        .byte >fortune211
+        .byte >fortune212
+        .byte >fortune213
+        .byte >fortune214
+        .byte >fortune215
+        .byte >fortune216
+        .byte >fortune217
+        .byte >fortune218
+        .byte >fortune219
+        .byte >fortune220
+        .byte >fortune221
+        .byte >fortune222
+        .byte >fortune223
+        .byte >fortune224
+        .byte >fortune225
+        .byte >fortune226
+        .byte >fortune227
+        .byte >fortune228
+        .byte >fortune229
+        .byte >fortune230
+        .byte >fortune231
+        .byte >fortune232
+        .byte >fortune233
+        .byte >fortune234
+        .byte >fortune235
+        .byte >fortune236
+        .byte >fortune237
+        .byte >fortune238
+        .byte >fortune239
+        .byte >fortune240
+        .byte >fortune241
+        .byte >fortune242
+        .byte >fortune243
+        .byte >fortune244
+        .byte >fortune245
+        .byte >fortune246
+        .byte >fortune247
+        .byte >fortune248
+        .byte >fortune249
+        .byte >fortune250
+        .byte >fortune251
+        .byte >fortune252
+        .byte >fortune253
+        .byte >fortune254
+        .byte >fortune255
 fortunes_lo:
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-        .byte <fortune0, <fortune1, <fortune2, < fortune3, <fortune4, <fortune5, <fortune6, <fortune7
-fortune0:
-        .byte "Mathematiker:",$0a,"Meine Lieblingszahl ist ",$e3,".",$0a
-        .byte "Physiker:",$0a,"Meine Lieblingszahl ist e.", $0a
-        .byte "Ingenieur:",$0a,"Witzig! Meine Lieblingszahl ist auch 3.", $0a,$0a
-        .byte 0
-fortune1:
-        .byte "A conservative is a man who is too cowardly to fight and too fat to run.",$0a
-        .byte "    -- Elbert Hubbard",$0a
-        .byte $0a,0
-fortune2:
-        .byte "psychologist, n.:",$0a
-        .byte "   Someone who watches everyone else when an attractive woman walks",$0a
-        .byte "   into a room.",$0a
-        .byte $0a,0
-fortune3:
-        .byte "If it ain't broke, don't fix it.",$0a
-		.byte "    -- Bert Lantz",$0a
-        .byte $0a,0
-fortune4:
-        .byte "If you steal from one author it's plagiarism; if you steal from", $0a
-        .byte "many it's research.", $0a
-        .byte "    -- Wilson Mizner", $0a
-        .byte $0a,0
-fortune5:
-        .byte "Auch wenn das Brett vor dem Kopf aus Teakholz ist, wird sein Träger", $0a
-        .byte "dadurch nicht edeler.", $0a
-		.byte "    -- Edmund Kreuzner", $0a
-        .byte $0a,0
-fortune6:
-        .byte "Wer nicht immer weiser wird, der ist nicht einmal weise.", $0a
-        .byte "    -- Jean Paul", $0a
-        .byte $0a,0
-fortune7:
-        .byte "Fleiß kann man vortäuschen - faul muß man wirklich sein.",$0a
-        .byte $0a,0
-
+        .byte <fortune0
+        .byte <fortune1
+        .byte <fortune2
+        .byte <fortune3
+        .byte <fortune4
+        .byte <fortune5
+        .byte <fortune6
+        .byte <fortune7
+        .byte <fortune8
+        .byte <fortune9
+        .byte <fortune10
+        .byte <fortune11
+        .byte <fortune12
+        .byte <fortune13
+        .byte <fortune14
+        .byte <fortune15
+        .byte <fortune16
+        .byte <fortune17
+        .byte <fortune18
+        .byte <fortune19
+        .byte <fortune20
+        .byte <fortune21
+        .byte <fortune22
+        .byte <fortune23
+        .byte <fortune24
+        .byte <fortune25
+        .byte <fortune26
+        .byte <fortune27
+        .byte <fortune28
+        .byte <fortune29
+        .byte <fortune30
+        .byte <fortune31
+        .byte <fortune32
+        .byte <fortune33
+        .byte <fortune34
+        .byte <fortune35
+        .byte <fortune36
+        .byte <fortune37
+        .byte <fortune38
+        .byte <fortune39
+        .byte <fortune40
+        .byte <fortune41
+        .byte <fortune42
+        .byte <fortune43
+        .byte <fortune44
+        .byte <fortune45
+        .byte <fortune46
+        .byte <fortune47
+        .byte <fortune48
+        .byte <fortune49
+        .byte <fortune50
+        .byte <fortune51
+        .byte <fortune52
+        .byte <fortune53
+        .byte <fortune54
+        .byte <fortune55
+        .byte <fortune56
+        .byte <fortune57
+        .byte <fortune58
+        .byte <fortune59
+        .byte <fortune60
+        .byte <fortune61
+        .byte <fortune62
+        .byte <fortune63
+        .byte <fortune64
+        .byte <fortune65
+        .byte <fortune66
+        .byte <fortune67
+        .byte <fortune68
+        .byte <fortune69
+        .byte <fortune70
+        .byte <fortune71
+        .byte <fortune72
+        .byte <fortune73
+        .byte <fortune74
+        .byte <fortune75
+        .byte <fortune76
+        .byte <fortune77
+        .byte <fortune78
+        .byte <fortune79
+        .byte <fortune80
+        .byte <fortune81
+        .byte <fortune82
+        .byte <fortune83
+        .byte <fortune84
+        .byte <fortune85
+        .byte <fortune86
+        .byte <fortune87
+        .byte <fortune88
+        .byte <fortune89
+        .byte <fortune90
+        .byte <fortune91
+        .byte <fortune92
+        .byte <fortune93
+        .byte <fortune94
+        .byte <fortune95
+        .byte <fortune96
+        .byte <fortune97
+        .byte <fortune98
+        .byte <fortune99
+        .byte <fortune100
+        .byte <fortune101
+        .byte <fortune102
+        .byte <fortune103
+        .byte <fortune104
+        .byte <fortune105
+        .byte <fortune106
+        .byte <fortune107
+        .byte <fortune108
+        .byte <fortune109
+        .byte <fortune110
+        .byte <fortune111
+        .byte <fortune112
+        .byte <fortune113
+        .byte <fortune114
+        .byte <fortune115
+        .byte <fortune116
+        .byte <fortune117
+        .byte <fortune118
+        .byte <fortune119
+        .byte <fortune120
+        .byte <fortune121
+        .byte <fortune122
+        .byte <fortune123
+        .byte <fortune124
+        .byte <fortune125
+        .byte <fortune126
+        .byte <fortune127
+        .byte <fortune128
+        .byte <fortune129
+        .byte <fortune130
+        .byte <fortune131
+        .byte <fortune132
+        .byte <fortune133
+        .byte <fortune134
+        .byte <fortune135
+        .byte <fortune136
+        .byte <fortune137
+        .byte <fortune138
+        .byte <fortune139
+        .byte <fortune140
+        .byte <fortune141
+        .byte <fortune142
+        .byte <fortune143
+        .byte <fortune144
+        .byte <fortune145
+        .byte <fortune146
+        .byte <fortune147
+        .byte <fortune148
+        .byte <fortune149
+        .byte <fortune150
+        .byte <fortune151
+        .byte <fortune152
+        .byte <fortune153
+        .byte <fortune154
+        .byte <fortune155
+        .byte <fortune156
+        .byte <fortune157
+        .byte <fortune158
+        .byte <fortune159
+        .byte <fortune160
+        .byte <fortune161
+        .byte <fortune162
+        .byte <fortune163
+        .byte <fortune164
+        .byte <fortune165
+        .byte <fortune166
+        .byte <fortune167
+        .byte <fortune168
+        .byte <fortune169
+        .byte <fortune170
+        .byte <fortune171
+        .byte <fortune172
+        .byte <fortune173
+        .byte <fortune174
+        .byte <fortune175
+        .byte <fortune176
+        .byte <fortune177
+        .byte <fortune178
+        .byte <fortune179
+        .byte <fortune180
+        .byte <fortune181
+        .byte <fortune182
+        .byte <fortune183
+        .byte <fortune184
+        .byte <fortune185
+        .byte <fortune186
+        .byte <fortune187
+        .byte <fortune188
+        .byte <fortune189
+        .byte <fortune190
+        .byte <fortune191
+        .byte <fortune192
+        .byte <fortune193
+        .byte <fortune194
+        .byte <fortune195
+        .byte <fortune196
+        .byte <fortune197
+        .byte <fortune198
+        .byte <fortune199
+        .byte <fortune200
+        .byte <fortune201
+        .byte <fortune202
+        .byte <fortune203
+        .byte <fortune204
+        .byte <fortune205
+        .byte <fortune206
+        .byte <fortune207
+        .byte <fortune208
+        .byte <fortune209
+        .byte <fortune210
+        .byte <fortune211
+        .byte <fortune212
+        .byte <fortune213
+        .byte <fortune214
+        .byte <fortune215
+        .byte <fortune216
+        .byte <fortune217
+        .byte <fortune218
+        .byte <fortune219
+        .byte <fortune220
+        .byte <fortune221
+        .byte <fortune222
+        .byte <fortune223
+        .byte <fortune224
+        .byte <fortune225
+        .byte <fortune226
+        .byte <fortune227
+        .byte <fortune228
+        .byte <fortune229
+        .byte <fortune230
+        .byte <fortune231
+        .byte <fortune232
+        .byte <fortune233
+        .byte <fortune234
+        .byte <fortune235
+        .byte <fortune236
+        .byte <fortune237
+        .byte <fortune238
+        .byte <fortune239
+        .byte <fortune240
+        .byte <fortune241
+        .byte <fortune242
+        .byte <fortune243
+        .byte <fortune244
+        .byte <fortune245
+        .byte <fortune246
+        .byte <fortune247
+        .byte <fortune248
+        .byte <fortune249
+        .byte <fortune250
+        .byte <fortune251
+        .byte <fortune252
+        .byte <fortune253
+        .byte <fortune254
+        .byte <fortune255
 seed:    .BYTE 42
+.include "fortunes.inc"

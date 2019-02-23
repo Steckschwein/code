@@ -14,6 +14,9 @@ all: $(TARGET)
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
+fortunes:
+	./gen_fortunes.sh > fortunes.inc
+
 clean:
 	rm -f $(TARGET) $(OBJS)
 
