@@ -150,8 +150,10 @@ __tfn_mask_fill_l2:
 __tfm_exit:
 	rts
 __tfn_mask_char:
-	cmp #$60 ; Is lowercase?
+	cmp #'a' ; Is lowercase?
 	bcc __tfn_mask_char_l1
+  cmp #'z'+1
+  bcs __tfn_mask_char_l1
 	and #$DF
 __tfn_mask_char_l1:
 	ldy krn_tmp2
@@ -195,8 +197,8 @@ l_exit:
 	rts
 
 	; recursive inverse a path string where each path segment is separated by a '/'
-	; in: 
-	;	krn_ptr2 - pointer to the result string 
+	; in:
+	;	krn_ptr2 - pointer to the result string
 	;	krn_ptr3	- pointer to originary path we have to inverse
 	; out:
 	;	Y - length of the result string (krn_ptr2)
@@ -261,7 +263,7 @@ __sfn_exit:
 	; out:
 	;	Z=1 on success, Z=0 otherwise which input char is invalid
 string_illegalchar:
-	ldx #(__illegalchars_end - __illegalchars) -1					; x to length(lacklist)-1
+	ldx #(__illegalchars_end - __illegalchars) -1					; x to length(blacklist)-1
 __illegalchar_l1:
 	cmp __illegalchars, x
 	beq __illegalchar_ex

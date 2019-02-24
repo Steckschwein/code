@@ -35,8 +35,6 @@
 appstart $1000
 main:
 
-		; lda #$04
-		; sta cnt
 l1:
 		crlf
 		SetVector pattern, filenameptr
@@ -49,8 +47,10 @@ l1:
 		ldx #FD_INDEX_CURRENT_DIR
 		jsr krn_find_first
 		bcs @l2_1
-
-		printstring "i/o error"
+@io_error:
+        .import hexout
+        jsr hexout
+		printstring " i/o error"
 		jmp (retvec)
 
 @l2_1:	bcs @l4
@@ -59,7 +59,8 @@ l1:
 @l3:
 		ldx #FD_INDEX_CURRENT_DIR
 		jsr krn_find_next
-		bcc @l5
+		bne @io_error
+        bcc @l5
 @l4:
 		lda (dirptr)
 		cmp #$e5
@@ -70,7 +71,6 @@ l1:
 
 		bit dir_attrib_mask ; Hidden attribute set, skip
 		bne @l3
-
 
 		jsr dir_show_entry
 
@@ -97,17 +97,6 @@ l1:
 		bra @l3
 @l5:
 
-		lda files
-		beq @dirs
-		jsr b2ad2
-		jsr krn_primm
-		.byte " file(s)",$0a,$00
-@dirs:
-		lda dirs
-		beq @end
-		jsr b2ad2
-		jsr krn_primm
-		.byte " dir(s)",$0a,$00
 
 @end:
 

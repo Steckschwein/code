@@ -27,6 +27,8 @@
 .setcpu "65c02"
 .include "common.inc"
 .include "vdp.inc"
+.include "joystick.inc"
+.include "via.inc"
 .include "fat32.inc"
 .include "fcntl.inc"
 .include "zeropage.inc"
@@ -37,7 +39,6 @@
 .import vdp_gfx7_on
 .import vdp_gfx7_blank
 .import vdp_display_off
-.import vdp_mode_sprites_off
 .import vdp_bgcolor
 
 .import krn_open, krn_fread, krn_close
@@ -53,6 +54,9 @@
 .import ppm_width
 .import ppm_height
 
+.import read_joystick
+
+
 .export ppmview_main
 
 ; for TEST purpose
@@ -66,7 +70,7 @@
 
 .code
 ppmview_main:
-		stz fd
+        stz fd
 		
 		lda paramptr
 		ldx paramptr+1
@@ -93,7 +97,7 @@ ppmview_main:
 		jsr load_image
 		bne @gfx_io_error
 
-		keyin
+		jsr wait_key
 		
 		jsr gfxui_off
 		
@@ -210,26 +214,21 @@ byte_to_grb:
 		rts
 		
 wait_key:
-		stz tmp
-@l_l1:
-		sei
-		lda tmp
-		ldy #v_reg23
-		vdp_sreg
-		cli
-		
-		dec tmp
-		
 		keyin
 		cmp #'q'
-		bne @l_l1
-		rts
+		beq :+
+;        cmp #'s'
+ ;       bne wait_key
+  ;      lda scroll_on
+   ;     eor #$ff
+    ;    sta scroll_on
+        bra wait_key
+:		rts
 		
 set_screen_addr:
 		sei	;critical section, avoid vdp irq here
+        vdp_wait_s
 		lda cols
-;		vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
-;		vdp_sreg <.LOWORD(ADDRESS_GFX7_SCREEN), WRITE_ADDRESS + >.LOWORD(ADDRESS_GFX7_SCREEN)
 		sta a_vreg                 ; A7-A0 vram address low byte
 		lda rows
 		and #$3f                   ; A13-A8 vram address highbyte
@@ -357,7 +356,11 @@ blend_isr:
 		jsr vdp_bgcolor
 		
 		; irq Payload here
-		
+        
+        bit scroll_on
+        bpl :+
+        jsr scroll
+:
 		lda #Black
 		jsr vdp_bgcolor
 		
@@ -365,6 +368,43 @@ blend_isr:
 @0:
 		rti
 
+scroll:
+        lda scroll_x
+		and #7
+        ldy #v_reg27
+		vdp_sreg
+        lda scroll_x
+        bit #7
+        bne :+
+        sec
+        sbc #8
+        tay
+        sbc #8
+        sta scroll_x
+        dey
+        tya
+        
+:       lsr
+        lsr
+        lsr
+        
+        ldy #v_reg26
+        vdp_sreg
+
+        
+        lda #JOY_PORT2
+        jsr read_joystick
+        bit #JOY_LEFT
+        bne :+
+        dec scroll_x
+        bra @l_exit
+:       bit #JOY_RIGHT
+        bne @l_exit
+        inc scroll_x
+        
+@l_exit:       
+        rts
+        
 gfxui_on:	
 		jsr krn_textui_disable			;disable textui
 
@@ -377,6 +417,13 @@ gfxui_on:
 		lda #%00000000
 		jsr vdp_gfx7_blank
 
+        vdp_sreg v_reg25_wait | v_reg25_msk, v_reg25
+
+        lda #$ff
+		sta scroll_on
+        stz scroll_x
+        jsr scroll
+        
 		copypointer  $fffe, irqsafe
 		SetVector  blend_isr, $fffe
 
@@ -388,6 +435,8 @@ gfxui_off:
 		
 		vdp_sreg 0, v_reg9
 		
+        vdp_sreg v_reg25_wait, v_reg25
+        
 		copypointer  irqsafe, $fffe
 		cli
 		
@@ -427,4 +476,6 @@ rows: .res 1, 0
 fd: .res 1, 0
 tmp: .res 1, 0
 tmp2: .res 1, 0
+scroll_on: .res 1, 0
+scroll_x: .res 1, 0
 irqsafe: .res 2, 0

@@ -24,12 +24,12 @@
 .include "common.inc"
 .include "kernel.inc"
 .include "vdp.inc"
+.include "via.inc"
+.include "ym3812.inc"
 
 shell_addr	 = $d800
 
-text_mode_40 = 1
-
-;kbd_frame_div  = $01
+;text_mode_40 = 1
 
 .segment "KERNEL"
 
@@ -37,10 +37,12 @@ text_mode_40 = 1
 .import init_rtc
 .import spi_r_byte, spi_rw_byte, spi_deselect, spi_select_rtc
 .import init_uart, uart_tx, uart_rx, uart_rx_nowait
-.import textui_init0, textui_update_screen, textui_chrout, textui_put
+.import textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
 .import getkey
-.import textui_enable, textui_disable, vdp_display_off,  textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up
+.import textui_enable, textui_disable, vdp_display_off,  textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff
+
 .import init_sdcard
+
 .import fat_mount, fat_open, fat_close, fat_close_all, fat_read, fat_find_first, fat_find_next
 .import fat_mkdir, fat_chdir, fat_rmdir
 .import fat_unlink
@@ -53,6 +55,9 @@ text_mode_40 = 1
 
 .import execv
 .import strout, primm
+.import ansi_chrout
+
+.import __rtc_systime_update
 
 kern_init:
 	sei
@@ -67,7 +72,9 @@ kern_init:
 	bne @copy
 
 	jsr init_via1
-	jsr init_rtc
+	jsr init_rtc                ;init
+    jsr __rtc_systime_update    ;... and update rtc immediately before any program is loaded
+
 	jsr init_uart
 
 	SetVector user_isr_default, user_isr
@@ -83,6 +90,7 @@ kern_init:
 	.byte $20,$b3,$0a
 	.byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
 	.byte $00
+
 
 	SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
 
@@ -138,23 +146,50 @@ do_irq:
 ; system interrupt handler
 ; handle keyboard input and text screen refresh
 @irq:
-	save
-	cld	;clear decimal flag, maybe an app has modified it during execution
+		save
+		cld	;clear decimal flag, maybe an app has modified it during execution
 
-	bit	a_vreg
-	bpl @exit	   ; VDP IRQ flag set?
-	jsr	textui_update_screen
+		bit a_vreg					; VDP IRQ flag set?
+		bpl @is_irq_snd
+		lda #IRQ_VDP
+		bra @store_isr
+@is_irq_snd:
+		bit opl_stat
+		bpl @is_irq_via
+		lda #IRQ_SND
+		bra @store_isr
+@is_irq_via:
+		bit via1ifr		; Interrupt from VIA?
+		bpl @user_isr
+		lda #IRQ_VIA
+
+@store_isr:
+		sta SYS_IRR
+
+@user_isr:
+		jsr call_user_isr			; user isr first, maybe there timing critical things
+
+		bit SYS_IRR					; was vdp irq?
+		bpl @exit
+		jsr	textui_update_screen    ; update text ui
+		dec frame
+		lda frame
+		and #%00000111              ; every 8 frames we try to update rtc, gives 160ms clock resolution
+		bne @exit
+		jsr __rtc_systime_update    ; update system time, read date time store to rtc_systime_t (see rtc.inc)
 
 @exit:
-	jsr call_user_isr
-
-	restore
-	rti
+		stz SYS_IRR
+		restore
+		rti
 
 call_user_isr:
 	jmp (user_isr)
 user_isr_default:
 	rts
+
+frame:
+    .res 1
 
 ;----------------------------------------------------------------------------------------------
 ; IO_NMI Routine. Handle NMI
@@ -275,7 +310,7 @@ upload_ok:
 	jsr uart_tx
 	rts
 
-filename:	.asciiz "shell.prg"
+filename:	.asciiz "steckos/shell.prg"
 
 ; trampolin code to enter ML monitor on NMI
 ; this code gets copied to $1000 and executed there
@@ -329,7 +364,7 @@ krn_find_first:				jmp fat_find_first
 .export krn_find_next
 krn_find_next:					jmp fat_find_next
 .export krn_textui_init
-krn_textui_init:				jmp	textui_init0
+krn_textui_init:				jmp	textui_init
 .export krn_textui_enable
 krn_textui_enable:			jmp	textui_enable
 .export krn_textui_disable
@@ -342,7 +377,7 @@ krn_display_off:				jmp vdp_display_off
 krn_getkey:						jmp getkey
 
 .export krn_chrout
-krn_chrout:						jmp textui_chrout
+krn_chrout:						jmp ansi_chrout
 .export krn_putchar
 krn_putchar:					jmp textui_put
 
@@ -361,8 +396,8 @@ krn_textui_clrscr_ptr:      jmp textui_blank
 .export krn_fseek
 krn_fseek:						jmp fat_fseek
 
-dummy:	jmp dummy
-
+.export krn_textui_crs_onoff
+krn_textui_crs_onoff:   jmp textui_cursor_onoff
 
 .export krn_init_sdcard
 krn_init_sdcard:		jmp init_sdcard

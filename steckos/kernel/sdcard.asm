@@ -49,7 +49,7 @@
 ; Destructive: A, X, Y
 ;---------------------------------------------------------------------
 init_sdcard:
-			; 80 Taktzyklen
+			; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
 
 			; set ALL CS lines and DO to HIGH
@@ -196,8 +196,6 @@ init_sdcard:
 			lda #$00
 @exit:
 			jmp sd_deselect_card
-;			rts
-
 
 ;---------------------------------------------------------------------
 ; Send SD Card Command
@@ -296,7 +294,7 @@ fullblock:
 			; wait for sd card data token
 			lda #sd_data_token
 			jsr sd_wait
-			bne @exit
+            bne @exit
 
 			ldy #$00
 			jsr halfblock
@@ -497,9 +495,9 @@ sd_wait:
 			dey
 			bne @l1
 
-			lda #$01
+			lda #sd_card_error_timeout
 			rts
-@l2:		lda #$00
+@l2:		lda #0
 			rts
 
 
@@ -509,6 +507,8 @@ sd_wait:
 sd_select_card:
 			lda #sd_card_sel
 			sta via1portb
+			;TODO FIXME race condition here!
+			
 ; fall through to sd_busy_wait
 
 ;---------------------------------------------------------------------
@@ -531,7 +531,7 @@ sd_busy_wait:
 	       	rts
 
 @err:
-			lda #$01
+			lda #sd_card_error_timeout_busy
 			rts
 
 ;---------------------------------------------------------------------

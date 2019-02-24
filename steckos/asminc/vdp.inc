@@ -29,6 +29,9 @@ a_vreg		= a_vdp+1
 a_vregpal	= a_vdp+2
 a_vregi		= a_vdp+3
 
+s_reg0_F    = 1<<7	; Frame Flag, interrupt flag
+s_reg0_5S   = 1<<6
+s_reg0_C    = 1<<5
 
 v_reg0_m3			= 1<<1
 v_reg0_m4			= 1<<2
@@ -47,15 +50,17 @@ v_reg1_spr_mag		= 1<<0
 v_reg8_VR			= 1<<3	; 0/1 16k/64k video ram
 v_reg8_SPD			= 1<<1	; 0/1 sprites enabled/disabled
 
-v_reg9_ln 			= 1<<7  ; lines - 212 lines if 1, 192 lines if 0
+v_reg9_ln 			= 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
 v_reg9_il			= 1<<3	; interlace
-
 v_reg9_nt			= 1<<1	; ntsc/pal
 
 v_reg17_aii			= 1<<7	; auto increment
 
+v_reg25_sp2 		= 1<<0
+v_reg25_msk 		= 1<<1
 v_reg25_wait 		= 1<<2
 v_reg25_cmd 		= 1<<6
+
 
 v_reg45_mxc = 1<<6
 v_reg45_mxd = 1<<5
@@ -83,7 +88,10 @@ v_reg17	= $80 + 17
 v_reg18	= $80 + 18	; display adjust
 v_reg23	= $80 + 23	; vertical offset
 
+; V9958 specific
 v_reg25 = $80 + 25
+v_reg26 = $80 + 26  ; horizonatl scroll register, bit 5-0, scroll 8 dot units (character)
+v_reg27 = $80 + 27  ; horizonatl scroll register bit 2-0, scroll dot units
 
 v_reg36 = $80 + 36
 v_reg37 = $80 + 37
@@ -133,10 +141,10 @@ v_log_tor	= %00001010 ; if SC=0 then DC=DC else DC=SC OR DC
 v_log_teor	= %00001011 ; if SC=0 then DC=DC else DC=/SC AND DC OR SC AND /DC
 v_log_tnot	= %00001100 ; if SC=0 then DC=DC else DC=/SC
 
-SP_Y=0
-SP_X=1
-SP_N=2
-SP_C=3
+SPRITE_Y=0
+SPRITE_X=1
+SPRITE_N=2
+SPRITE_C=3
 
 SPRITE_INVISIBLE=$bf
 SPRITE_OFF=$d0
@@ -167,7 +175,7 @@ ADDRESS_GFX1_COLOR		=$1b80
 ADDRESS_GFX1_SPRITE		=ADDRESS_GFX_SPRITE
 ADDRESS_GFX1_SPRITE_PATTERN=$1000;
 
-ADDRESS_GFX2_SCREEN		=$1800			; name table
+ADDRESS_GFX2_SCREEN		    =$1800			; name table
 ADDRESS_GFX2_PATTERN		=$0000
 ADDRESS_GFX2_COLOR			=$2000
 ADDRESS_GFX2_SPRITE			=ADDRESS_GFX_SPRITE
@@ -177,12 +185,12 @@ ADDRESS_GFX6_SCREEN			=ADDRESS_GFX1_SCREEN			; screen
 
 ADDRESS_GFX7_SCREEN			=$10000							; 2nd 64 RAM
 ADDRESS_GFX7_SPRITE			=ADDRESS_GFX_SPRITE
-ADDRESS_GFX7_SPRITE_PATTERN=ADDRESS_GFX1_SPRITE_PATTERN
+ADDRESS_GFX7_SPRITE_PATTERN =ADDRESS_GFX1_SPRITE_PATTERN
 
 ADDRESS_GFX_MC_SCREEN			=ADDRESS_GFX2_SCREEN	; name table
 ADDRESS_GFX_MC_PATTERN			=ADDRESS_GFX2_PATTERN	; pattern table
 ADDRESS_GFX_MC_SPRITE			=ADDRESS_GFX2_SPRITE	; sprite attributes
-ADDRESS_GFX_MC_SPRITE_PATTERN	=ADDRESS_GFX2_PATTERN	; sprite pattern
+ADDRESS_GFX_MC_SPRITE_PATTERN	=ADDRESS_GFX1_SPRITE_PATTERN	; sprite pattern
 
 .define CLOCK_SPEED_MHZ 8
 
@@ -246,10 +254,10 @@ vdp_nopslide_2m:
 			sty a_vreg
 		.else							; otherwise use the new api call, with fewer nops for register writes
 			vdp_wait_s 2
-			lda # _1st
+			lda #_1st
 			sta a_vreg
 			vdp_wait_s 2
-			lda # _2nd
+			lda #_2nd
 			sta a_vreg
 			.endif
 .endmacro

@@ -2,14 +2,20 @@ MAKEFILE=Makefile
 all: build
 
 clean:
-	(cd rom; make clean)
+	(cd asmunit; make clean)
 	(cd steckos; make clean)
+	(cd imfplayer; make clean)
+	(cd edlib; make clean)
+	(cd ehbasic; make clean)
 	(cd firmware; make clean)
-	
-build:
-	(cd rom; make)
-	(cd steckos; make)
-	(cd firmware; make)
+	(cd rom; make clean)
 
-transfer:
-#	gcc transfer.c  -o transfer
+build:
+	(cd asmunit; make)
+	(cd steckos; make)
+	(cd imfplayer; make )
+	(cd edlib; make )
+	(cd ehbasic; make )
+	(cd firmware; make)
+	(cd rom; make)
+

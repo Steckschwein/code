@@ -1,5 +1,5 @@
 CPU=65c02
-OBJS=fat32.o sdcard.o textui.o t99xx.lib.o rtc.o spi.o uart.o via.o out.o key.o exec.o util.o matcher.o kernel.o debug.o
+OBJS=fat32.o sdcard.o textui.o t99xx.lib.o rtc.o spi.o uart.o via.o out.o key.o exec.o util.o matcher.o kernel.o debug.o ansi.o
 ASM_INCLUDE=../asminc
 LDFLAGS=--config steckos.cfg
 
@@ -15,14 +15,12 @@ DEFINES+=-DV9958
 # debug util
 #DEBUG += -DDEBUG_UTIL
 # debug fat32
-# DEBUG += -DDEBUG_FAT32
+#DEBUG += -DDEBUG_FAT32
 # dump fat blocks on write
 #DEBUG += -DFAT_DUMP_FAT_WRITE
 # do not write anything (metadata)
 # DEBUG += -DFAT_NOWRITE
 #DEBUG += -DV9958
-
-#
 #DEBUG += -DDEBUG_EXECV
 
 

@@ -10,4 +10,3 @@
 _cgetc: 
 	jsr krn_getkey
 	bcc _cgetc
-	

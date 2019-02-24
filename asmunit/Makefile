@@ -1,7 +1,6 @@
 DEFINES=-Dasmunit_char_out=0x200
 CA65FLAGS=$(DEFINES)
-LIBS=asmunit.a
-LDFLAGS=--config asmunit.cfg $(LIBS) $(DEFINES)
+LDFLAGS=--config asmunit.cfg $(DEFINES)
 OBJS=asmunit.o
 
 .PHONY: all clean test
@@ -11,14 +10,14 @@ all: test asmunit.a
 test: test.asmunit
 
 clean:
-	rm -f *.o toollib.a
+	rm -f *.o *.a *.log *.map
 
 %.o: %.asm asmunit.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
 asmunit.a: $(OBJS) test.asmunit
 	ar65 a asmunit.a $(OBJS)
-	
+
 %.bin: %.o asmunit.o
 	ld65 -Ln labels.map $(LDFLAGS) $< asmunit.o -o $@
 
@@ -27,3 +26,4 @@ asmunit.a: $(OBJS) test.asmunit
 
 test.%: test.%.bin
 	./asmunit_wrapper.sh $@.bin 1000 false # false - do not fail on error here
+	diff $@.bin.log $@.bin.expect

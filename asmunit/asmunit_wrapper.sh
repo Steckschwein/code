@@ -2,18 +2,21 @@
 
 dir=`dirname $0`
 logfile=$1.log
-failonerror=true
-
-if [ "${3}" = "false" ]; then
-	failonerror=false
-fi
 
 _ts=$(date +%s%N)
 $dir/asmunit_runner.sh $1 $2 > $logfile
 _tt=$((($(date +%s%N) - $_ts)/1000000))
-test_ok=`grep "PASS" $logfile | wc -l`
 test_fail=`grep "FAIL" $logfile | wc -l`
-tests=`expr $test_ok + $test_fail`
+tests=$(grep "\[.*\]" $logfile | wc -l)
+
+if [ "${3}" = false ]; then
+    exit 0
+fi
+
+if [ "${tests}" -eq 0 ]; then
+    echo "No Unit tests found. Make sure at least one test exists within ${1} and is labeled via test_name <name of test>!" >&2
+    exit 1
+fi
 
 TARGET_DIR=target/test-reports
 
@@ -40,8 +43,6 @@ echo "</testsuite>" >> ${TARGET_DIR}/${1}.xml
 echo "Tests run: "${tests}", Failures: ${test_fail}"
 if [ -n "`grep FAIL $logfile`" ] ; then
 	cat $logfile
-	if [ $failonerror = true ]; then
-		exit 1
-	fi
 fi
+
 exit 0

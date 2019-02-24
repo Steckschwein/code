@@ -24,7 +24,10 @@ tmp0    = $a0
 tmp1    = $a1
 tmp5    = $a2
 
+prompt  = $af
+
 .include "common.inc"
+.include "rtc.inc"
 .include "../kernel/kernel.inc"
 .include "../kernel/kernel_jumptable.inc"
 
@@ -33,7 +36,6 @@ appstart $d800
 
 ; set attrib mask. hide volume label and hidden files
 dir_attrib_mask		= $0a
-steckos_start 		= appstart
 
 KEY_RETURN 		= $0d
 KEY_BACKSPACE 		= $08
@@ -42,145 +44,176 @@ KEY_CRSR_DOWN 	 	= $1F
 KEY_CRSR_RIGHT 	 	= $10
 KEY_CRSR_LEFT 	 	= $11
 
-BUF_SIZE		= 32
+BUF_SIZE		= 32 ;TODO FIXME too hard
 bufptr			= $d0
 pathptr			= $d2
+p_history   = $d4
 ; Address pointers for serial upload
 startaddr		= $d9
+
+SCREENSAVER_TIMEOUT_MINUTES=2
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
 ;  - print welcome message
 ;---------------------------------------------------------------------------------------------------------
 
+.import hexout
+.export char_out=krn_chrout
+
+.code
 init:
 		SetVector exit_from_prg, retvec
 		SetVector buf, bufptr
-		SetVector msgbuf, msgptr
+		SetVector buf, paramptr ; set param to empty buffer
+    SetVector msgbuf, msgptr
+		SetVector PATH, pathptr
 
 		jsr krn_primm
 		.byte $0a, "steckOS Shell "
 		.include "version.inc"
-		.byte $00
-		crlf
+		.byte $0a,0
 
 		bra mainloop
 
 exit_from_prg:
-		cmp #0
-		beq mainloop
-		pha
-		jsr krn_primm
-		.byte $0a,"Exit: ",0
-		pla
-		jsr krn_chrout
+		; cmp #0
+		; beq mainloop
+		; pha
+		; jsr krn_primm
+		; .byte $0a,"Exit: ",0
+		; pla
+		; jsr char_out
 
 mainloop:
-		cld
-		crlf
-		; output current path
-		lda	#<msgbuf
-		ldx #>msgbuf
-		ldy	#$ff
-		jsr krn_getcwd
-		bne @nocwd
+      crlf
+      lda #'['
+      jsr char_out
+      ; output current path
+      lda	#<msgbuf
+      ldx #>msgbuf
+      ldy	#$ff
+      jsr krn_getcwd
+      bne @nocwd
 
-		lda #<msgbuf
-		ldx #>msgbuf
-		jsr krn_strout
+      lda #<msgbuf
+      ldx #>msgbuf
+      jsr krn_strout
+      lda #']'
+      jsr char_out
 @nocwd:
-		; output prompt character
-		lda #'>'
-		jsr krn_chrout
+        ; output prompt character
+        lda #prompt
+        jsr char_out
 
-		; reset input buffer
-		lda #$00
-		tay
-		sta (bufptr)
+        lda crs_x
+        sta crs_x_prompt
+
+        ; reset input buffer
+        lda #0
+        tay
+        sta (bufptr)
 
 		; put input into buffer until return is pressed
 inputloop:
-		keyin
+        jsr screensaver_settimeout  ;reset timeout
+@l_input:
+        jsr screensaver_loop
 
-		cmp #KEY_RETURN ; return?
-		beq parse
+        jsr krn_getkey
+        bcc @l_input
 
-		cmp #KEY_BACKSPACE
-		beq backspace
+        cmp #KEY_RETURN ; return?
+        beq parse
 
-		cmp #KEY_ESCAPE
-		beq escape
+        cmp #KEY_BACKSPACE
+        beq backspace
 
-		sta (bufptr),y
-		iny
+        cmp #KEY_ESCAPE
+        beq escape
 
+        cmp #KEY_CRSR_UP
+        beq key_crs_up
+
+        cmp #KEY_CRSR_DOWN
+        beq key_crs_down
+
+        ; prevent overflow of input buffer
+        cpy #BUF_SIZE
+        beq inputloop
+
+        sta (bufptr),y
+        iny
 line_end:
-		jsr terminate
-		jsr krn_chrout
+        jsr char_out
+        jsr terminate
 
-		; prevent overflow of input buffer
-		cpy #BUF_SIZE
-		beq mainloop
-
-		bra inputloop
+        bra inputloop
 
 backspace:
-		cpy #$00
-		beq inputloop
-
-		dey
-
-		bra line_end
+        cpy #$00
+        beq inputloop
+        dey
+        bra line_end
 
 escape:
-		jsr krn_getkey
-		jsr printbuf
-		bra inputloop
+        jsr krn_getkey
+        jsr printbuf
+        bra inputloop
+
+key_crs_up:
+        jsr history_back
+        bra inputloop
+
+key_crs_down:
+        jsr history_frwd
+        bra inputloop
 
 terminate:
-		pha
-		lda #$00
-		sta (bufptr),y
-		pla
-		rts
+        lda #0
+        sta (bufptr),y
+        rts
 
 parse:
-		copypointer bufptr, cmdptr
+        copypointer bufptr, cmdptr
 
-		; find begin of command word
-@l1:	lda (cmdptr)	; skip non alphanumeric stuff
-		bne @l2
-		jmp mainloop
+        jsr history_push
+
+        ; find begin of command word
+@l1:
+        lda (cmdptr)	; skip non alphanumeric stuff
+        bne @l2
+        jmp mainloop
 @l2:
-		cmp #$20
-		bne @l3
-		inc cmdptr
-		bra @l1
+        cmp #$20
+        bne @l3
+        inc cmdptr
+        bra @l1
 @l3:
-		copypointer cmdptr, paramptr
+        copypointer cmdptr, paramptr
 
 		; find begin of parameter (everything behind the command word, separated by space)
 		; first, fast forward until space or abort if null (no parameters then)
-@l4:	lda (paramptr)
-		beq @l7
-		cmp #$20
-		beq @l5
-		inc paramptr
-		bra @l4
+@l4:
+      lda (paramptr)
+      beq @l7
+      cmp #$20
+      beq @l5
+      inc paramptr
+      bra @l4
 @l5:
 		; space found.. fast forward until non space or null
-@l6:	lda (paramptr)
-		beq @l7
-		cmp #$20
-		bne @l7
-		inc paramptr
-		bra @l6
+@l6:
+      lda (paramptr)
+      beq @l7
+      cmp #$20
+      bne @l7
+      inc paramptr
+      bra @l6
 @l7:
+      SetVector buf, bufptr
 
-		SetVector buf, bufptr
-
-		jsr terminate
-
+      jsr terminate
 
 compare:
 		; compare
@@ -241,7 +274,88 @@ unknown:
 		crlf
 		jmp run
 
-@l1:		jmp mainloop
+@l1:	jmp mainloop
+
+history_frwd:
+        lda p_history
+        ;cmp #<(history+$0100)
+        cmp p_history
+        bne @inc_hist_ptr
+        lda p_history+1
+        ;cmp #>(history+$0100)
+        cmp p_history+1
+        bne @inc_hist_ptr
+        rts
+@inc_hist_ptr:
+        lda p_history
+        clc
+        adc #BUF_SIZE
+        sta p_history
+        bra history_peek
+
+history_back:
+        lda p_history+1
+        cmp #>history
+        bne @dec_hist_ptr
+        lda p_history
+        cmp #<history
+        bne @dec_hist_ptr
+        rts
+@dec_hist_ptr:
+        sec ;dec hist ptr
+        sbc #BUF_SIZE
+        sta p_history
+
+history_peek:
+        lda crs_x_prompt
+        sta crs_x
+        jsr krn_textui_update_crs_ptr
+
+        ldy #0
+        ldx #BUF_SIZE
+:       lda (p_history), y
+        sta (bufptr), y
+        beq :+
+        jsr char_out
+        iny
+        dex
+        bpl :-
+
+:       phy       ;safe y pos in buffer
+        ldy crs_x ;safe crs_x position after restored cmd to y
+
+        lda #' '  ;erase the rest of the line
+:
+        jsr char_out
+        dex
+        bpl :-
+        sty crs_x
+        jsr krn_textui_update_crs_ptr
+        ply       ;restore y buffer index
+        rts
+
+history_push:
+        lda #$0a
+        ;jsr char_out
+
+        tya
+        tax
+        ldy #0
+:       lda (bufptr), y
+        sta (p_history), y
+        ;jsr char_out
+        iny
+        dex
+        bpl :-
+
+        lda #$0a
+        ;jsr char_out
+
+        lda p_history   ; new end
+        clc
+        adc #BUF_SIZE
+        sta p_history
+        rts
 
 printbuf:
 		ldy #$01
@@ -252,27 +366,24 @@ printbuf:
 @l1:	lda (bufptr),y
 		beq @l2
 		sta buf,y
-		jsr krn_chrout
+		jsr char_out
 		iny
 		bra @l1
-@l2:		rts
+@l2:	rts
 
 
 cmdlist:
 
-		.byte "cd"
-		.byte $00
+		.byte "cd",0
 		.word cd
 
 		.byte "up",0
 		.word krn_upload
 
 .ifdef DEBUG
-		.byte "dump"
-		.byte $00
+		.byte "dump",0
 		.word dump
 .endif
-
 		; End of list
 		.byte $ff
 
@@ -332,7 +443,6 @@ run:
 		jmp mainloop
 
 @l1:
-		SetVector PATH, pathptr
 		stz tmp0
 @try_path:
 		ldx #0
@@ -437,32 +547,32 @@ dump:
 
 		crlf
 		lda dumpvec_start+1
-		jsr krn_hexout
+		jsr hexout
 		lda dumpvec_start
-		jsr krn_hexout
+		jsr hexout
 		lda #':'
-		jsr krn_chrout
+		jsr char_out
 		lda #' '
-		jsr krn_chrout
+		jsr char_out
 
 		ldy #$00
 @l4:	lda (dumpvec_start),y
-		jsr krn_hexout
+		jsr hexout
 		lda #' '
-		jsr krn_chrout
+		jsr char_out
 		iny
 		cpy #$08
 		bne @l4
 
 		lda #' '
-		jsr krn_chrout
+		jsr char_out
 
 		ldy #$00
 @l5:	lda (dumpvec_start),y
 		cmp #$19
 		bcs @l6
 		lda #'.'
-@l6:	jsr krn_chrout
+@l6:	jsr char_out
 		iny
 		cpy #$08
 		bne @l5
@@ -492,16 +602,36 @@ dump:
 @l8:	jmp mainloop
 .endif
 
-upload:
-		sei
-		jsr upload
-		cli
-		; jump to new code
-		jmp (startaddr)
+screensaver_loop:
+        lda rtc_systime_t+time_t::tm_min
+        cmp screensaver_rtc
+        bne l_exit
+        lda #<screensaver_prg
+		ldx #>screensaver_prg
+        phy
+		jsr krn_execv   ;ignore any errors
+        ply
+screensaver_settimeout:
+        lda rtc_systime_t+time_t::tm_min
+        clc
+        adc #SCREENSAVER_TIMEOUT_MINUTES
+        cmp #60
+        bcc :+
+        sbc #60
+:       sta screensaver_rtc
+l_exit:
+        rts
+crs_x_prompt: .res 1
 
-
-PATH:		.asciiz "/bin/:/sbin/:/usr/bin/"
-APPEXT:		.asciiz ".PRG"
+PATH:     .asciiz "./:/steckos/:/progs/"
+APPEXT:   .asciiz ".PRG"
+screensaver_prg:  .asciiz "/steckos/unrclock.prg"
+screensaver_rtc:  .res 1
+hist_s:  .res 1, 0
+hist_e:  .res 1, 0
+hist_r:  .res 1, 0
 tmpbuf:
 buf = tmpbuf + 64
-msgbuf = tmpbuf + buf
+msgbuf = buf + BUF_SIZE
+
+history=msgbuf+$100

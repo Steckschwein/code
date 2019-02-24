@@ -39,7 +39,7 @@ cmd58	= $40 + 58	; READ_OCR
 acmd41	= $40 + 41	; APP_SEND_OP_COND
 acmd23	= $40 + 23	; SET_WR_BLOCK_ERASE_COUNT - Define number of blocks to pre-erase with next multi-block write command.
 
-sd_card_sel         = %01111100
+sd_card_sel         = %01111100		;spi device number 1100
 
 sd_data_token = $fe
 ;sd_card_status 		= $0298
@@ -48,9 +48,7 @@ sd_cmd_param 		= $02a0
 sd_cmd_chksum		= sd_cmd_param+4
 
 sd_cmd_response_retries = $08
-sd_data_token_retries = $08 ; increase, card specific and must be larger for "huge" cards
-;TODO FIXME does not work yet
-;sd_busy_retries = $ff
+sd_data_token_retries = $0f ; increase, card specific and must be larger for "huge" cards
 
 ; sd card R1 response status bits
 sd_card_status_idle             = %00000001
@@ -60,3 +58,7 @@ sd_card_status_crc_error        = %00001000
 sd_card_status_erase_seq_error  = %00010000
 sd_card_status_address_error    = %00100000
 sd_card_status_parameter_error  = %01000000
+
+sd_card_error_timeout_busy = $c0
+sd_card_error_timeout = $c1
+

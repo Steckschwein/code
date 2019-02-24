@@ -22,28 +22,33 @@
 
 .include "kernel.inc"
 .include "via.inc"
-.import spi_r_byte, spi_deselect
+.import spi_r_byte, spi_deselect, spi_select_device
 .export getkey
 .segment "KERNEL"
 
+spi_device_keyboard=%01111010
+
 ; Select Keyboard controller on SPI, get byte from buffer
+;	in:	-
+;	out:
+;		C=1 key was pressed and A= <key code>, C=0 otherwise
 getkey:
-	phx
+		lda #spi_device_keyboard
+		jsr spi_select_device
+		bne @l1
 
-	lda #%01111010
-	sta via1portb
+		phx
 
-	jsr spi_r_byte
+		jsr spi_r_byte
 
-	ldx #%11111110
-	stx via1portb
+		jsr spi_deselect
 
-	plx
+		plx
 
-        cmp #$00
-        beq @l1
-        sec
-        rts
+		cmp #$00
+		beq @l1
+		sec
+		rts
 @l1:
-        clc
-        rts
+		clc
+		rts

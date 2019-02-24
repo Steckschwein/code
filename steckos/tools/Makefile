@@ -3,11 +3,17 @@ CA65FLAGS=--include-dir ../asminc --include-dir ../kernel
 LDFLAGS=--config ../steckos-c-app.cfg ../lib/steckschwein-kernel.lib
 ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 TOOLLIB=lib/toollib.a
-TOOLS=ls.prg ll.prg stat.prg fsinfo.prg attrib.prg rename.prg help.prg nvram.prg uname.prg clear.prg view.prg echo.prg od.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg du.prg keycode.prg hello.prg fig.prg vramtest.prg wozmon.prg
+TOOLS=ls.prg ll.prg stat.prg fsinfo.prg attrib.prg rename.prg help.prg nvram.prg uname.prg clear.prg view.prg echo.prg od.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg du.prg keycode.prg hello.prg fig.prg vramtest.prg wozmon.prg \
+setdate.prg \
+date.prg
 
 .PHONY: all clean
 
-all: $(TOOLS)
+
+all: toollib $(TOOLS)
+	(cd unrclock; make )
+	(cd xmodem; make )
+	(cd ppmview; make )
 
 clean:
 	rm -f *.prg *.s *.o toollib.a
@@ -16,8 +22,8 @@ clean:
 	(cd ppmview; make clean)
 
 %.o: %.c
-	cc65 -I ../../cc65 -t none --cpu $(CPU) -O $<
-	ca65 -I ../../cc65 --cpu $(CPU) $(CA65FLAGS) $(@:.o=.s)
+	cc65 -t none --cpu $(CPU) -O $<
+	ca65 --cpu $(CPU) $(CA65FLAGS) $(@:.o=.s)
 
 %.o: %.asm
 	ca65 --cpu $(CPU) $(CA65FLAGS) $(ASM_INCLUDE) $(@:.o=.asm)

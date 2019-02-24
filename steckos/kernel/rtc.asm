@@ -20,36 +20,36 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-; enable debug for this module
-.ifdef DEBUG_RTC
+.ifdef DEBUG_RTC; enable debug for this module
 	debug_enabled=1
 .endif
 
 .include "kernel.inc"
 .include "rtc.inc"
 .include "via.inc"
-.import spi_rw_byte, spi_r_byte, spi_deselect
+.import spi_rw_byte, spi_r_byte, spi_deselect, spi_select_device
 
-.export init_rtc, spi_select_rtc
+.export init_rtc
 ;kernel api
-.export	rtc_systime
+.export	rtc_systime, spi_select_rtc
 ;kernel internal
 .export __rtc_systime_update
 
 .segment "KERNEL"
 
-spi_device_rtc=$76;#%01110110
+spi_device_rtc=%01110110
 
+        ; out:
+        ;   Z=1 spi for rtc could be selected (not busy), Z=0 otherwise
 spi_select_rtc:
 		lda #spi_device_rtc
-		sta via1portb
-		rts
+		jmp spi_select_device
 
 init_rtc:
 		; disable RTC interrupts
 		; Select SPI SS for RTC
-		jsr spi_select_rtc
-
+		lda #spi_device_rtc
+		sta via1portb
 		lda #$8f
 		jsr spi_rw_byte
 		lda #$00
@@ -72,16 +72,17 @@ rtc_systime:
 		sta (krn_ptr1), y
 		dey
 		bne @cp
-		rts		;exit Z=0 here
-
-
+		rts		;exit Z=0 here        
+        
 		;in:
 		;	-
 		;out:
-		;	-
+		;
 __rtc_systime_update:
-		jsr	spi_select_rtc
-
+		jsr spi_select_rtc
+		beq :+
+		rts		
+:		debug "update systime"
 		lda #0				;0 means rtc read, start from first address (seconds)
 		jsr spi_rw_byte
 
