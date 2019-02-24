@@ -1,6 +1,6 @@
 .include	"common.inc"
-.include	"../kernel/zeropage.inc"
-.include	"../kernel/kernel_jumptable.inc"
+.include	"zeropage.inc"
+.include	"kernel_jumptable.inc"
 .include 	"appstart.inc"
 appstart $1000
 

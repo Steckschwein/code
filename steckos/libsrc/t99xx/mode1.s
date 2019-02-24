@@ -29,6 +29,9 @@
 .export vdp_gfx1_blank
 .export vdp_gfx1_on
 
+.importzp ptr1
+vdp_ptr=ptr1
+
 .code
 
 vdp_gfx1_blank:		; 3 x 256 bytes

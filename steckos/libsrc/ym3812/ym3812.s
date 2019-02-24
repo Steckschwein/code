@@ -24,11 +24,8 @@
 
 .include "ym3812.inc"
 
-.import popa
-
 .export opl2_init, opl2_delay_data, opl2_delay_register, opl2_reg_write
 .export _opl2_init=opl2_init
-.export _opl2_write=opl2_write
 
 ;----------------------------------------------------------------------------------------------
 ; "init" opl2 by writing zeros into most registers
@@ -54,12 +51,16 @@ opl2_init:
 		
 		plp
 		rts
-;
+    
+; TODO FIXME move to clib
+;.export _opl2_write=opl2_write
 ; void __fastcall__ opl2_write(unsigned char val, unsigned char reg);
 ;
-opl2_write:
-		tax
-		jsr popa
+;opl2_write:
+;.import popa
+;	tax
+;jsr popa
+
 ;
 ;   in:
 ;       X - opl2 register select

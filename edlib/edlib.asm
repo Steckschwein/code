@@ -12,7 +12,7 @@
 ;/*========================================================= SFX Sound Expander =================================================
 ;  Variables
 ;*/
-.include "ym3812.inc"
+;.include "ym3812.inc"
 fm_file_base_address = ptr1 ;$0002		; word
 fm_file_arrdata = ptr4      ;$0008		; word
 
@@ -66,10 +66,11 @@ fm_file_arrdata = ptr4      ;$0008		; word
 ;;// ----------------------------------------------------------------------------------------------------------
 ;;// JCH_FM_INIT subroutine, this routine needs to be called to initialize the FM music
 ;;// ----------------------------------------------------------------------------------------------------------
-.globalzp ptr5
-.importzp ptr1,ptr2,ptr3,ptr4
 .zeropage
-	ptr5:	.res 2
+.globalzp ptr5
+  ptr5:	.res 2
+  
+.importzp ptr1,ptr2,ptr3,ptr4
 
 .code
 .import opl2_reg_write
@@ -77,6 +78,7 @@ fm_file_arrdata = ptr4      ;$0008		; word
 .import d00file
 
 .export jch_fm_init, jch_fm_play
+.export jch_fm_set_volume
 
 ;.pc = $1000 "INIT"
 jch_fm_init:
@@ -90,12 +92,12 @@ fm_data_st_offset: .word d00file					;// location of FM file (D00), any caller m
 ;// ----------------------------------------------------------------------------------------------------------
 jch_fm_play_:				
 		lda #$00			
-		sta var_bx 									;// set the current voice counter to 0
-		sta var_si									;// set the word counter of the voice (double), but in the end this will not pass 255, so a single byte is ok
+		sta var_bx ;// set the current voice counter to 0
+		sta var_si;// set the word counter of the voice (double), but in the end this will not pass 255, so a single byte is ok
 loc_10180: 
-		ldx var_bx									;// has first been reset to 0 when first running this routine, this is the current_voice counter
+		ldx var_bx;// has first been reset to 0 when first running this routine, this is the current_voice counter
 		lda fm_voice_has_data, x					;// this is the voice_has_arrangement_pointer boolean. 
-		cmp #$01									;// so is this 1? then do the stuff to play the voice in the current routine
+		cmp #$01;// so is this 1? then do the stuff to play the voice in the current routine
 		beq loc_1018A								;// edit the voice parameters
 		jmp loc_1056C								;// not 1? then get move down to skip to the next voice in the row, this channel/voice does not  have arrangement data
 ;//----- update the current voice parameters
@@ -112,15 +114,15 @@ loc_10198:
 		dec fm_cur_seq_command_tick_counter, x		;// this is the current channel pattern/sequence time/tick counter --> if it hits 0 it needs to be reset, and a new pattern/sequence started
 		bpl loc_101A8								;// still plus, move on		
 		dec fm_cur_seq_command_tick_counter+1, x	;// decrease also high byte		
- 	   												;// now we need a 16-bit compare , need to know where to branch to (jge), if the last dec led to sign change (going neg) then we jmp, else go ato 101a8
-													;// remember that we are dealing with singed word! jge/jnl only leads to signed flag = overflow = 0 in the positive area, for a byte: 00-7f
+ 	   			;// now we need a 16-bit compare , need to know where to branch to (jge), if the last dec led to sign change (going neg) then we jmp, else go ato 101a8
+				;// remember that we are dealing with singed word! jge/jnl only leads to signed flag = overflow = 0 in the positive area, for a byte: 00-7f
 		bpl loc_101A8								;// if no sign change, then s=0 = o = 0 
 		jmp loc_10330								;// the counter hit zero so we need to change to the next sequence command
 loc_101A8:		
 		jmp loc_10449								;// Determine frequence changes of current note and play that					
 loc_101AB:				
 		lda fm_current_channel_speed_counter, x		;// x still is var_b, load the current channel speed counter
-		cmp #$01									;// is it one?
+		cmp #$01;// is it one?
 		bne loc_101A8								;// no? get outta here
 		ldy var_si						
 		lda fm_cur_seq_command_tick_counter, y		;// word pointer, has this counter hit zero : current channel sequence time/tick counter				
@@ -128,12 +130,12 @@ loc_101AB:
 		lda fm_cur_seq_command_tick_counter+1,y		;// 16-bit compare for equality x=low byte, a = high byte
 		bne loc_101A8		
 ;// ======================= TRACK COMMANDS ==========================================================
-loc_101B9:											
-		lda #$00									;// okay, fm_cur_seq_command_tick_counter hit zero, now reset fm_local_voice_slide				
+loc_101B9:		
+		lda #$00;// okay, fm_cur_seq_command_tick_counter hit zero, now reset fm_local_voice_slide				
 		sta fm_local_voice_slide					;// SLIDE effect E/D are also storing the slide speed here?				
 		sta fm_local_voice_slide+1					;// WORD
-		ldy var_si									;// getting funky with BP (base pointer) now... 				
-		clc											;// opt
+		ldy var_si;// getting funky with BP (base pointer) now... 				
+		clc		;// opt
 		lda fm_pt_voice_arrdata, y					;// this was done per voice , var_si is used as voice counter : get entry at arrangement pointer (base address)
 		adc fm_position_in_voice_seqlist, y
 		sta ptr5
@@ -147,7 +149,7 @@ loc_101B9:
 		iny
 		lda (ptr5), y								;// get the next sequence - high byte
 		sta var_di+1
-		cpx #$fe									;// check for FFFE = end of arrangement = STOP. 
+		cpx #$fe;// check for FFFE = end of arrangement = STOP. 
 		bne loc_101ed		
 		cmp #$ff		
 		bne loc_101ed								;// no FFFE? go on		
@@ -162,11 +164,11 @@ loc_101B9:
 		sta fm_current_frequency+1, x
 		jmp loc_104fc								;// get outta here
 loc_101ed:  
-		cpx #$ff									;// check for FFFF = loop arrangement . 
+		cpx #$ff;// check for FFFF = loop arrangement . 
 		bne loc_101FE								;// no FFFF? go on
 		cmp #$ff		
-		bne loc_101FE								;// no FFFF? go on																		
-		ldy #$02									;// increase pointer by two, since we had a loop counter, which will be followed by the position (word) to loop to
+		bne loc_101FE								;// no FFFF? go on
+		ldy #$02;// increase pointer by two, since we had a loop counter, which will be followed by the position (word) to loop to
 		ldx var_si
 		lda (ptr5), y	
 		clc
@@ -189,7 +191,7 @@ loc_101FE: ;// **** No FFFE and no FFFF so we continue
 		bne loc_10224								;// no zero? ok, get outta here							
 		clc
 		ldy var_si
-		lda var_di									;// get di in dx and AND with 00FF
+		lda var_di;// get di in dx and AND with 00FF
 		and #$ff
 		asl	
 		sta fm_transpose_value, y	
@@ -200,18 +202,18 @@ loc_101FE: ;// **** No FFFE and no FFFF so we continue
 		and #$0f
 		bne neg
 		jmp loc_1024f						
-neg:												;// y should still be var_si+1
-		sec											;// set carry for borrow purpose, do the NEG instruction (is same as dest = 0- destination )
+neg:			;// y should still be var_si+1
+		sec		;// set carry for borrow purpose, do the NEG instruction (is same as dest = 0- destination )
 		lda #$00
 		sbc fm_transpose_value,y		 			;// perform subtraction on the LSBs
 		sta fm_transpose_value,y
-		lda #$00									;// do the same for the MSBs, with carry
+		lda #$00;// do the same for the MSBs, with carry
 		sbc fm_transpose_value+1,y					;// set according to the previous result
 		sta fm_transpose_value+1,y			
 		jmp loc_1024f		
 loc_10224: ;// **** set memory locations of current sequence data needing to be checked		
-													;// SET VAR_DI TO BASE OF SEQUENCE DATA --> TO OPTIMIZE : DO THIS IN INITIALIZATION, create a table of offsets to sequences (DONE!)
-		asl var_di									;// di = sequence number, we are treating this as BYTE now (max 64 sequences)
+				;// SET VAR_DI TO BASE OF SEQUENCE DATA --> TO OPTIMIZE : DO THIS IN INITIALIZATION, create a table of offsets to sequences (DONE!)
+		asl var_di;// di = sequence number, we are treating this as BYTE now (max 64 sequences)
 		ldx var_di
 		ldy var_si
 		lda fm_opt_seq_pointers, x
@@ -223,7 +225,7 @@ loc_10224: ;// **** set memory locations of current sequence data needing to be 
 		sta ptr3+1		
 loc_1023b: ;// **** DO NEXT VAR_BP (next step in sequence)		
 		clc
-		ldx var_si									;// this is a word!!!
+		ldx var_si;// this is a word!!!
 		lda fm_position_in_current_seq, x			;// add two to the word variable
 		adc #$02
 		sta fm_position_in_current_seq, x			;// fixed
@@ -237,17 +239,17 @@ loc_1023b_a:
 		iny		
 		lda (ptr3), y		
 		sta var_ax+1		
-		cpx #$ff									;// check for FFFF = END OF SEQUENCE DATA . 
+		cpx #$ff;// check for FFFF = END OF SEQUENCE DATA . 
 		bne loc_10257								;// no FFFF? go on
 		cmp #$ff		
-		bne loc_10257								;// no FFFF? go on									
-		ldy var_si									;// FFFF? End of sequence reached, reset the sequence pointer for this voice to 0
+		bne loc_10257								;// no FFFF? go on
+		ldy var_si;// FFFF? End of sequence reached, reset the sequence pointer for this voice to 0
 		lda #$00						
 		sta fm_position_in_current_seq, y						
 		sta fm_position_in_current_seq+1, y						
 loc_1024f: ;// **** set current voice sequence pointer to next sequence and move up 		
 		ldx var_si
-		clc											
+		clc		
 		lda fm_position_in_voice_seqlist, x			;// add two to the word variable for the position of the sequence in the sequence data. (set pointer to the next sequence)
 		adc #$02
 		sta fm_position_in_voice_seqlist, x 		
@@ -256,16 +258,16 @@ loc_1024f: ;// **** set current voice sequence pointer to next sequence and move
 loc_1024f_a:
 		jmp	loc_101B9								;// and get out of here, back to top (TRACK COMMANDS)
 loc_10257: ;// **** SEQUENCE COMMANDS - CHECK FOR C000 (set instrument)
-		lda var_ax									;// backup ax in di and AND ax with 0F00 to check 
+		lda var_ax;// backup ax in di and AND ax with 0F00 to check 
 		sta var_di
 		lda var_ax+1
 		sta var_di+1								
 		and #$f0
 		sta var_ax+1
-		cmp #$c0									;// compare with #$c0
+		cmp #$c0;// compare with #$c0
 		bne loc_1026b
-		ldy var_si		
-		lda var_di									;// AND di with 0x0fff and also store at 6d5 for this voice - so remove the C, from CXXX and leave only the value 0XXX (instrument number)
+		ldy var_si
+		lda var_di;// AND di with 0x0fff and also store at 6d5 for this voice - so remove the C, from CXXX and leave only the value 0XXX (instrument number)
 		and #$ff		
 		sta fm_voice_instrument, y					;// store instrument number for this voice and move on to loc_102af
 		lda var_di+1		
@@ -277,16 +279,16 @@ loc_1026b: ;// **** SEQUENCE COMMANDS - CHECK FOR EFFECT 90XX (SET VOLUME)
 		cmp #$90
 		bne loc_1027a
 		lda var_di		
-		and #$3f									;// by anding with 3f
-		ldy var_bx									;// bx = current voice
+		and #$3f;// by anding with 3f
+		ldy var_bx;// bx = current voice
 		sta fm_voice_volume, y 						;// store volume at var_807  :volume table per voice
 		jmp loc_102af			
 loc_1027a: ;// **** SEQUENCE COMMANDS: CHECK FOR EFFECT 7XXXX = SET VIBRATO = 0x = speed, xx = depth
 		lda var_ax+1
 		cmp #$70
 		bne loc_10289
-		ldy var_si									;// var_si = current voice counter (word)
-		lda var_di									;// AND di with 0x0fff and also store at 7d1 for this voice - so remove the 7, from CXXX and leave only the value 0XXX (X = speed, XX = depth)
+		ldy var_si;// var_si = current voice counter (word)
+		lda var_di;// AND di with 0x0fff and also store at 7d1 for this voice - so remove the 7, from CXXX and leave only the value 0XXX (X = speed, XX = depth)
 		and #$ff		
 		sta fm_voice_vibrato, y						;// store vibrato parameters for this voice and move on to loc_102af
 		lda var_di+1		
@@ -297,8 +299,8 @@ loc_10289: ;// **** SEQUENCE COMMANDS: CHECK FOR EFFECT DXXXX = SLIDE UP = 0xxx 
 		lda var_ax+1
 		cmp #$d0
 		bne loc_1029c
-		ldy var_si									;// var_si = current voice counter (word) SO FIX THIS YOU IDIOT!!!!!!!!!!!!!!!!!!!!!! <<< NO NEED, SINCE VAR_SI will NOT be greater than FF, BITCH
-		lda var_di									;// AND di with 0x0fff and also store at 7d1 for this voice - so remove the D, from DCXXX and leave only the value 0XXX (X = speed, XX = depth)
+		ldy var_si;// var_si = current voice counter (word) SO FIX THIS YOU IDIOT!!!!!!!!!!!!!!!!!!!!!! <<< NO NEED, SINCE VAR_SI will NOT be greater than FF, BITCH
+		lda var_di;// AND di with 0x0fff and also store at 7d1 for this voice - so remove the D, from DCXXX and leave only the value 0XXX (X = speed, XX = depth)
 		and #$ff		
 		sta fm_voice_slide, y						;// store SLIDE UP parameters for this voice and move on to loc_102af
 		sta fm_local_voice_slide					;// store also here		
@@ -311,27 +313,27 @@ loc_1029c: ;// **** SEQUENCE COMMANDS: CHECK FOR EFFECT EXXXX = SLIDE DOWN = 0xx
 		lda var_ax+1
 		cmp #$e0
 		bne loc_102b3
-		lda var_di									;// AND di with 0x0fff and also store at 7d1 for this voice - so remove the D, from DCXXX and leave only the value 0XXX (X = speed, XX = depth)
+		lda var_di;// AND di with 0x0fff and also store at 7d1 for this voice - so remove the D, from DCXXX and leave only the value 0XXX (X = speed, XX = depth)
 		and #$ff		
 		sta var_di		
 		lda var_di+1		
 		and #$0f		
 		sta var_di+1		
-		ldy var_si									;// var_si = current voice counter (word)
-		sec											;// set carry for borrow purpose, do the NEG instruction (is same as dest = 0- destination )
+		ldy var_si;// var_si = current voice counter (word)
+		sec		;// set carry for borrow purpose, do the NEG instruction (is same as dest = 0- destination )
 		lda #$00
 		sbc var_di		 							;// perform subtraction on the LSBs
 		sta fm_voice_slide, y						;// store SLIDE DOWN parameters for this voice and move on to loc_102af
 		sta fm_local_voice_slide					;// store also at here
-		lda #$00									;// do the same for the MSBs, with carry
+		lda #$00;// do the same for the MSBs, with carry
 		sbc var_di+1								;// set according to the previous result
 		sta fm_voice_slide+1, y		
 		sta fm_local_voice_slide+1		
 loc_102af: ;// **** NEXT var_bp (next step in sequence)
 		clc
 		lda ptr3
-		adc #$02									;// word pointer
-		sta ptr3									
+		adc #$02;// word pointer
+		sta ptr3
 		bcc loc_102af_a	
 		inc ptr3+1
 loc_102af_a:			
@@ -350,26 +352,26 @@ loc_102b3: ;// **** SEQUENCE COMMANDS: CHECK FOR EFFECT 6000 = CUT VOICE
 		sta fm_previous_registry_value, y				
 		jmp loc_10449				
 loc_102c4:					
-		lda var_di									;// backup var_di in dx
+		lda var_di;// backup var_di in dx
 		sta var_dx			
 		lda var_di+1			
 		sta var_dx+1			
-		ldy var_si									;// IT IS NOT GOING TO PASS FF...........
+		ldy var_si;// IT IS NOT GOING TO PASS FF...........
 		lda var_di+1					
-		and #$1f									;// get state of lowest 5 bits of and store at di and fm_voice_value
+		and #$1f;// get state of lowest 5 bits of and store at di and fm_voice_value
 		sta fm_voice_value, y						;// store at 6f9 for cut current voice table   			
 		eor var_di+1								;// clear var_di+1				
-		sta fm_voice_value+1, y												
-		ldx #$00									;// this is a 16-bit AND in the original code, but will isolate the bits 1-6 of the low byte, with 0 of the high byte		
+		sta fm_voice_value+1, y			
+		ldx #$00;// this is a 16-bit AND in the original code, but will isolate the bits 1-6 of the low byte, with 0 of the high byte		
 		lda var_dx								
-		and #$7f									
+		and #$7f
 		sta var_di			
 		stx var_di+1								;// ***OPT*** this may be optimized
-		cmp #$7e									;// check if it was 7e					
+		cmp #$7e;// check if it was 7e					
 		beq loc_102e5								;// yes, then go to loc_102e5					
-		cmp #$00									;// was it 0? (REST)
+		cmp #$00;// was it 0? (REST)
 		bne loc_102ed								;// no, then go to loc_102ed					
-		ldy var_bx									;// yes, so let's set fm_previous_registry_value to 0 for this voice (bx)
+		ldy var_bx;// yes, so let's set fm_previous_registry_value to 0 for this voice (bx)
 		lda #$00				
 		sta fm_previous_registry_value, y				
 loc_102e5:
@@ -378,13 +380,13 @@ loc_102e5:
 		sta fm_sequence_var_type, y					;// set fm_sequence_var_type to 1 for this voice (bx), 7e detected (hold) or 0 (rest)					
 		jmp loc_10449						
 loc_102ed: ;// **** is it a standard note?
-		asl var_di									;// times two (16 bit) of var_di
+		asl var_di;// times two (16 bit) of var_di
 		rol var_di+1 
 		lda var_dx+1								;// is bit 4 of high byte of dx set? 
 		and #$20
 		beq loc_102fb								;// no,  so it's a standard note, so move on to loc_102fb and reset the parameters
-		ldy var_bx									;// yes, bit 4 is set, so it's 20h - Tie note on or other parameters
-		lda #$02									
+		ldy var_bx;// yes, bit 4 is set, so it's 20h - Tie note on or other parameters
+		lda #$02
 		sta fm_sequence_var_type, y					;// set fm_sequence_var_type to 2 for this voice (bx)					
 		jmp loc_10305								;// then jump over the rest
 loc_102fb: ;// **** reset parameters to 0 for this voice		
@@ -395,10 +397,10 @@ loc_102fb: ;// **** reset parameters to 0 for this voice
 loc_10305:		
 		lda #$20
 		sta fm_previous_registry_value_preset, y	;// set this to value 20h for this voice		
-		lda var_dx									;// check low byte of sequence data
-		and #$80									;// has it bit 7 set?
+		lda var_dx;// check low byte of sequence data
+		and #$80;// has it bit 7 set?
 		bne loc_10313								;// yes, so move to 10313
-		ldy var_si									;// no 
+		ldy var_si;// no 
 		clc
 		lda fm_transpose_value, y					;// add value in fm_transpose_value for this voice to var_di (753)
 		adc var_di
@@ -407,7 +409,7 @@ loc_10305:
 		adc var_di+1
 		sta var_di+1
 loc_10313: 	;// **** GET NOTE FREQUENCY	
-		lda var_di									;// get just the low byte of sequence byte
+		lda var_di;// get just the low byte of sequence byte
 		ldy var_bx
 		sta var_777, y								;// store low byte of sequence data at 777 for this voice
 		clc
@@ -417,7 +419,7 @@ loc_10313: 	;// **** GET NOTE FREQUENCY
 		lda #>fm_frequency_table
 		adc var_di+1
 		sta ptr5+1
-		ldx var_si									
+		ldx var_si
 		ldy #$00
 		lda (ptr5), y			
 		sta fm_voice_freq, x						;// store the frequency at 7f5
@@ -433,20 +435,20 @@ loc_10313: 	;// **** GET NOTE FREQUENCY
 		sta fm_voice_vibrato_depth, y 				;// reset fm_voice_vibrato_depth
 loc_1032d:				
 		jmp	loc_10449								;// jump to 10449
-loc_10330: ;// **** do next sequence command													
-		ldy var_si									;// load current word pointer for voice
+loc_10330: ;// **** do next sequence command				
+		ldy var_si;// load current word pointer for voice
 		lda fm_voice_value, y						;// get low byte voice_value for this vocie (6f9) 
-		and #$ff									;// AND this with FF
+		and #$ff;// AND this with FF
 		sta fm_cur_seq_command_tick_counter, y		;// current sequence time/tick? store there
 		lda fm_voice_value+1, y						;// get high byte voice_value for this vocie (6f9) 
-		and #$0f									;// AND this with FF
+		and #$0f;// AND this with FF
 		sta fm_cur_seq_command_tick_counter+1, y	;// current sequence time/tick? store there
-		lda #$00									;// set var_bp to 0
+		lda #$00;// set var_bp to 0
 		sta var_bp		
 		sta var_bp+1		
 		lda fm_voice_value+1, y						;// the original instruction is cmp	word ptr [si+6F9h], 6000h, followed by jnb	short loc_10398. So checking for a higher value in 6f9 than 6000
-		sec											;// so we need only check if the 60 is lower or equal to the high byte of the fm_voice_value
-    	sbc #$60 									;// if carry is set then A > #$60 so let's move, it means we are dealing with further effects
+		sec		;// so we need only check if the 60 is lower or equal to the high byte of the fm_voice_value
+    	sbc #$60 ;// if carry is set then A > #$60 so let's move, it means we are dealing with further effects
 		bcc loc_10330_1								
 		jmp loc_10398
 loc_10330_1:
@@ -455,15 +457,15 @@ loc_10330_1:
 		bne loc_10330_a
 		cpx #$10 
 		beq loc_10362
-loc_10330_a:										;// no, fm_voice_vibrato is not 1000h, so store the current values of al and ah at locations
+loc_10330_a:	;// no, fm_voice_vibrato is not 1000h, so store the current values of al and ah at locations
 		ldy var_bx		
 		sta fm_voice_vibrato_depth, y				;// vibrato depth
 		txa
 		sta fm_voice_vibrato_speed, y				;// vibrato speed 
-		lsr 										;// divide ah by two 
+		lsr 	;// divide ah by two 
 		sta fm_cur_vibrato_speed_counter, y			;// this is half of ah
 		ldy var_si
-		lda #$00									;// store 1000h at the vibrato parameter
+		lda #$00;// store 1000h at the vibrato parameter
 		sta fm_voice_vibrato, y		
 		lda #$10		
 		sta fm_voice_vibrato+1, y		
@@ -471,14 +473,14 @@ loc_10362: ;// **** volume and slide
 		ldy var_bx				
 		lda fm_voice_volume, y 						;// load current voice volume value	(807)			
 		sta fm_cur_voice_volume, y 					;// store voice volume at fm_cur_voice_volume		
-		ldy var_si									;// store ax (ah + al, and al = voice value, while 
+		ldy var_si;// store ax (ah + al, and al = voice value, while 
 		lda fm_voice_slide, y						;// fixed (var_7e3)
 		sta fm_voice_temp_slide, y 							
 		lda fm_voice_slide+1, y
 		sta fm_voice_temp_slide+1, y							
 		ldy var_bx							
 		lda fm_sequence_var_type, y					;// check what value 8f4 is for voice						
-		cmp #$01									;// is it 1?
+		cmp #$01;// is it 1?
 		bne loc_10362_a
 		jmp loc_1032d								;// move to next
 loc_10362_a:		
@@ -487,21 +489,21 @@ loc_10362_a:
 		sta fm_current_frequency, y 				;// store at current voice frequency (word). Note: ax not done, since it is not used
 		lda fm_voice_freq+1, y 
 		sta fm_current_frequency+1, y 
-		ldy var_bx									
+		ldy var_bx
 		lda fm_sequence_var_type, y 				;// now check if this is 2							
-		cmp #$02									
+		cmp #$02
 		bne loc_10362_b
-		jmp loc_1032d											
-loc_10362_b: ;// **** set instrument location and voice level													
+		jmp loc_1032d		
+loc_10362_b: ;// **** set instrument location and voice level				
 		lda fm_previous_registry_value_preset, y 	;// voice level 2. This is always set at $20 for each voice.  						
 		sta fm_previous_registry_value, y  			;// store at cur regupdate/voice level?						
 		ldy var_si				
 		lda fm_voice_instrument, y 					;// get the voice instrument in var_bp	OPTIMIZATION STEP: WE ALLOW 32 INSTRUMENT, but MAX 255. No need for a 16-bit variable.
 		sta var_bp				
-loc_10398:	;// **** PLAY INSTRUMENT										
-		;// $02$03 should be location of fm file	, if jumping from 60xx then varbp will be 0 (instrument 0)											
-		lda var_bp									;// get instrument number
-		asl											;// times two to get to the right fm_ins position
+loc_10398:	;// **** PLAY INSTRUMENT	
+		;// $02$03 should be location of fm file	, if jumping from 60xx then varbp will be 0 (instrument 0)		
+		lda var_bp;// get instrument number
+		asl		;// times two to get to the right fm_ins position
 		tax
 		lda fm_opt_ins_pointers, x
 		sta ptr3
@@ -509,104 +511,104 @@ loc_10398:	;// **** PLAY INSTRUMENT
 		lda fm_opt_ins_pointers+1, x
 		sta ptr3+1
 		sta var_bp+1
- 		ldy #$07									;// get byte 7 from the base address of this instrument data block : modulator level 												
-		lda (ptr3), y													
+ 		ldy #$07;// get byte 7 from the base address of this instrument data block : modulator level 			
+		lda (ptr3), y				
 		ldx var_bx
-		sta fm_ins_modulator_level, x				;// 898, modulator level													
-		ldy #$0b									;// get byte 0b: note fine tune 											
-		lda (ptr3), y																	
-		sta fm_ins_fine_tune, x						;// 7b6													
-		beq loc_103d1								;// if 0 get out															
-		ldy #$0c									;// get byte 0c: hard restart value 							
-		lda (ptr3), y															
-		sta fm_ins_hardrestart, x					;// 7c8															
+		sta fm_ins_modulator_level, x				;// 898, modulator level				
+		ldy #$0b;// get byte 0b: note fine tune 		
+		lda (ptr3), y								
+		sta fm_ins_fine_tune, x						;// 7b6				
+		beq loc_103d1								;// if 0 get out						
+		ldy #$0c;// get byte 0c: hard restart value 							
+		lda (ptr3), y						
+		sta fm_ins_hardrestart, x					;// 7c8						
 		lda #$00
 		sta var_7ad, x
 		sta fm_temp_ins_hardrestart, x
 		ldx var_si
-		clc											
-		lda var_bp									;// add 8 to get to the multipurpose value									
-		adc #$08											
+		clc		
+		lda var_bp;// add 8 to get to the multipurpose value
+		adc #$08		
 		sta fm_ins_multipurpose, x					;// 798
-		lda var_bp+1											
-		adc #$00											
-		sta fm_ins_multipurpose+1, x											
-loc_103d1: ;// **** output register values for voice - NOT THE FREQUENCY, THAT IS LATER													
-		ldx var_bx													
-		lda jch_voice_reg_table, x													
-		clc													
-		adc #$60													
-		tax											;// x is attack /decay register for voice			
+		lda var_bp+1		
+		adc #$00		
+		sta fm_ins_multipurpose+1, x		
+loc_103d1: ;// **** output register values for voice - NOT THE FREQUENCY, THAT IS LATER				
+		ldx var_bx				
+		lda jch_voice_reg_table, x				
+		clc				
+		adc #$60				
+		tax		;// x is attack /decay register for voice			
 		ldy #$00
-		lda (ptr3), y								;// get value for Attack/Decay										
-		jsr jch_set_register											
-		ldx var_bx													
-		lda jch_voice_reg_table, x													
-		clc													
-		adc #$80													
-		tax											;// x is attack /decay register for voice			
+		lda (ptr3), y								;// get value for Attack/Decay	
+		jsr jch_set_register		
+		ldx var_bx				
+		lda jch_voice_reg_table, x				
+		clc				
+		adc #$80				
+		tax		;// x is attack /decay register for voice			
 		iny
-		lda (ptr3), y								;// get value for Sustain/Release										
-		jsr jch_set_register																								
-		iny 																		
+		lda (ptr3), y								;// get value for Sustain/Release	
+		jsr jch_set_register						
+		iny 
 		lda (ptr3), y								;// get main volume level /KSL						
-		ldx var_bx												
+		ldx var_bx			
 		sta fm_ins_mainvolume_ksl,x					;// set var_878 : fm_ins_mainvolume_ksl
-		lda jch_voice_reg_table, x													
-		clc												
-		adc #$20 												
-		tax												
-		iny											;// get AMP/VIB/MOD freq (multipurpose value for carrier)									
-		lda (ptr3), y												
+		lda jch_voice_reg_table, x				
+		clc			
+		adc #$20 			
+		tax			
+		iny		;// get AMP/VIB/MOD freq (multipurpose value for carrier)
+		lda (ptr3), y			
 		jsr jch_set_register			
-	    ldx var_bx													
-		lda jch_voice_reg_table, x													
-		clc													
-		adc #$e0													
-		tax											;// x is waveform select			
+	    ldx var_bx				
+		lda jch_voice_reg_table, x				
+		clc				
+		adc #$e0				
+		tax		;// x is waveform select			
 		iny
-		lda (ptr3), y								;// get value for voice waveform										
+		lda (ptr3), y								;// get value for voice waveform	
 		jsr jch_set_register							
-	    ldx var_bx													
-		lda jch_voice_reg_table+9, x				;// set to modulator										
-		clc													
-		adc #$60													
-		tax											;// attack decay for modulator	
-		iny											;// should be 5 now
-		lda (ptr3), y								;// get value 										
+	    ldx var_bx				
+		lda jch_voice_reg_table+9, x				;// set to modulator	
+		clc				
+		adc #$60				
+		tax		;// attack decay for modulator	
+		iny		;// should be 5 now
+		lda (ptr3), y								;// get value 	
 		jsr jch_set_register							
-	    ldx var_bx													
-		lda jch_voice_reg_table+9, x				;// set to modulator										
-		clc													
-		adc #$80													
-		tax											;// sustain release for modulator	
-		iny											;// should be 6 now
-		lda (ptr3), y								;// get value 										
+	    ldx var_bx				
+		lda jch_voice_reg_table+9, x				;// set to modulator	
+		clc				
+		adc #$80				
+		tax		;// sustain release for modulator	
+		iny		;// should be 6 now
+		lda (ptr3), y								;// get value 	
 		jsr jch_set_register			
-	    ldx var_bx													
-		lda jch_voice_reg_table+9, x				;// set to modulator										
-		clc													
-		adc #$20													
-		tax											;// AMP/VIB/MOD freq (multipurpose value for carrier)	
+	    ldx var_bx				
+		lda jch_voice_reg_table+9, x				;// set to modulator	
+		clc				
+		adc #$20				
+		tax		;// AMP/VIB/MOD freq (multipurpose value for carrier)	
 		iny
-		iny											;// should be 8 now
-		lda (ptr3), y								;// get value 										
+		iny		;// should be 8 now
+		lda (ptr3), y								;// get value 	
 		jsr jch_set_register					
-	    ldx var_bx													
-		lda jch_voice_reg_table+9, x				;// set to modulator										
-		clc													
-		adc #$e0													
-		tax											;// wave form for modulator	
-		iny											;// should be 9 now
-		lda (ptr3), y								;// get value 										
+	    ldx var_bx				
+		lda jch_voice_reg_table+9, x				;// set to modulator	
+		clc				
+		adc #$e0				
+		tax		;// wave form for modulator	
+		iny		;// should be 9 now
+		lda (ptr3), y								;// get value 	
 		jsr jch_set_register					
-		iny											;// should be a(10) now
-		ldx var_bx									
+		iny		;// should be a(10) now
+		ldx var_bx
 		lda (ptr3), y
 		sta fm_ins_feedback_level,x					;// hardware register Bytes C0-C8 - Feedback / Algorithm value
-loc_10449: ;// **** PROCESS VOICE FREQUENCY													
-		ldx var_si									;// get current voice word value for var_765 (fm_voice_slide)
-		clc											;// 2 cycles
+loc_10449: ;// **** PROCESS VOICE FREQUENCY				
+		ldx var_si;// get current voice word value for var_765 (fm_voice_slide)
+		clc		;// 2 cycles
 		lda fm_voice_temp_slide, x					;// 4 cycles
 		beq loc_10449_x								;// 2 cycles		;// optimization to have 9 cycles less in most cases without slides, versus an extra 2, max 4 in case of slide
 		adc fm_current_frequency, x					;// 4 cycles
@@ -635,13 +637,13 @@ loc_10449_0:
 		beq loc_10449_a								;// two branch instruction to get jg instruction - CHECK FOR FUNCTION
 		bpl loc_10486
 loc_10449_a:		
-		sec											;// set carry for borrow purpose, do the NEG instruction (is same as dest = 0- destination )
+		sec		;// set carry for borrow purpose, do the NEG instruction (is same as dest = 0- destination )
 		lda #$00
 		sbc fm_voice_vibrato_speed, x		 		;// perform subtraction on a
 		sta fm_cur_vibrato_speed_counter, x			;// ***OPT***
 		jmp loc_10486
 loc_10474: ;// **** vibrato down
-		ldx var_si									
+		ldx var_si
 		ldy var_bx
 		sec
 		lda fm_current_frequency, x					;// x is byte voice, get current frequency
@@ -650,7 +652,7 @@ loc_10474: ;// **** vibrato down
 		bcs loc_10474_a								;// no carry, no high byte change
 		dec fm_current_frequency+1, x
 loc_10474_a:
-		ldx var_bx									
+		ldx var_bx
 		inc fm_cur_vibrato_speed_counter, x			;// increase speed counter
 		bne loc_10486
 		lda fm_voice_vibrato_speed, x				;// no a register needed (var_ax)
@@ -660,10 +662,10 @@ loc_10486:	;// **** adjust voice level/volume
 		clc 
 		adc fm_cur_voice_volume, x					;// add the voice volume to this variable
 		adc fm_master_volume						;// add master volume
-		cmp #$3f									;// is it 3F? (all 6 bits set) == silence (volume)
+		cmp #$3f;// is it 3F? (all 6 bits set) == silence (volume)
 		bmi loc_10498								;// is it less or equal ?
 		beq loc_10498
-		lda #$3f									;// set var-ax to silence
+		lda #$3f;// set var-ax to silence
 loc_10498: ;// **** FINE TUNE		
 		sta fm_minimum_voice_volume, x				;// store the level / volume 		
 		lda fm_ins_fine_tune, x						;// ***OPT***
@@ -696,7 +698,7 @@ loc_10498_2:
 loc_10498_a:		
 		ldy var_si
 		clc		
-		asl var_bp									;// shift left two times, so do times 4
+		asl var_bp;// shift left two times, so do times 4
 		rol var_bp+1		
 		clc		
 		asl var_bp		
@@ -710,13 +712,13 @@ loc_10498_a:
 		lda fm_start_of_arrangement_data+1		
 		adc var_bp+1
 		sta var_bp+1							
-		sta ptr3+1										;// ***OPT*** do we really need var_bp?
+		sta ptr3+1	;// ***OPT*** do we really need var_bp?
 		sta fm_ins_multipurpose+1, y 				;// fixed
 		ldy #$02
 		lda (ptr3), y								;// get the second byte starting from this value
 		clc
-		adc #$01									;// these two are 4 cycles
-		sta var_7ad									;// store at 7ad
+		adc #$01;// these two are 4 cycles
+		sta var_7ad;// store at 7ad
 		ldy #$00
 		lda (ptr3), y								;// was the base address FF? 
 		cmp #$ff
@@ -728,19 +730,19 @@ loc_104ea:
 		lda (ptr3), y								;// $06/$07 = var_bp at this point, so get the by pointed at by bp+1
 		clc
 		adc fm_ins_modulator_level, x		
-		and #$3f									;// select only the values of the first 6 bits	(volume)
+		and #$3f;// select only the values of the first 6 bits	(volume)
 		sta fm_ins_modulator_level, x				;// set the value to this		
-loc_104fc: ;// placeholder												
+loc_104fc: ;// placeholder			
 		lda jch_voice_reg_table, x					;// get the voice register select value
 		clc		
-		adc #$40									;// KSL scaling/ level / volume of the operator
+		adc #$40;// KSL scaling/ level / volume of the operator
 		sta var_ax		
 		lda fm_ins_mainvolume_ksl, x				;// 878
 		sta var_ax+1
-		and #$c0									;// and with C0 , select only the upper 2 bits (bit 6 and 7)	
+		and #$c0;// and with C0 , select only the upper 2 bits (bit 6 and 7)	
 		sta var_dx 
 		lda var_ax+1
-		and #$3f									;// select only first 6 bits
+		and #$3f;// select only first 6 bits
 		sta var_ax+1
 		cmp fm_minimum_voice_volume, x 				;// compare with temp voice volume
 		beq loc_104fc_a								;// is it greater ?  (jg instruction)
@@ -752,12 +754,12 @@ loc_10518:
 		lda var_ax
 		tax
 		lda var_ax+1			
-		ora var_dx									;// or with 									
+		ora var_dx;// or with 
 		jsr jch_set_register						;// okay set volume level for operator
 		ldx var_bx
 		lda jch_voice_reg_table+9, x				;// get the voice register select value operator 2
 		clc		
-		adc #$40									;// KSL scaling/ level / volume of the operator 2
+		adc #$40;// KSL scaling/ level / volume of the operator 2
 		sta var_ax		
 		lda fm_ins_modulator_level, x				;// 898
 		sta var_ax+1
@@ -766,10 +768,10 @@ loc_10518:
 		beq loc_10542								;// no so move out
 		ldx var_bx
 		lda var_ax+1
-		and #$c0									;// and with C0 , select only the upper 2 bits (bit 6 and 7)	
+		and #$c0;// and with C0 , select only the upper 2 bits (bit 6 and 7)	
 		sta var_dx 
 		lda var_ax+1
-		and #$3f									;// select only first 6 bits
+		and #$3f;// select only first 6 bits
 		sta var_ax+1
 		cmp fm_minimum_voice_volume, x 				;// compare with temp voice volume
 		beq loc_10518_a								;// is it greater ?  (jg instruction)
@@ -781,45 +783,45 @@ loc_10540: 		;// place holder
 		lda var_ax
 		tax
 		lda var_ax+1			
-		ora var_dx									;// or with 			
+		ora var_dx;// or with 			
 loc_10542:				
-		ldx var_ax									;// ***OPT***
+		ldx var_ax;// ***OPT***
 		lda var_ax+1
 		jsr jch_set_register						;// set the register (a value, x reg)
-		lda var_bx									;// voicecounter
+		lda var_bx;// voicecounter
 		tay
 		clc
-		adc #$c0									;//Feedback/Algorithm register
+		adc #$c0;//Feedback/Algorithm register
 		tax
 		lda fm_ins_feedback_level, y				;// get value for this register at table, indexed by BX (not bl !( in original
 		jsr jch_set_register						;// set the register (a value, x reg)
-		ldy var_si									;// si in the original code
+		ldy var_si;// si in the original code
 		lda fm_current_frequency, y					;// fixed : the code is loading a word, and then moving al to ah
 		sta var_ax+1								;// fixed : hence storing it in var_ax+1
 		lda var_bx
 		clc
-		adc #$a0									;// F-Num LSB
-		tax											;// x needs to be the register
+		adc #$a0;// F-Num LSB
+		tax		;// x needs to be the register
 		lda var_ax+1								;// a is the value
 		jsr jch_set_register
-		ldx var_bx									;// set to byte voice counter
+		ldx var_bx;// set to byte voice counter
 		txa
 		clc
-		adc #$b0									;// Oct/F-Num/Key-On
-		sta var_ax									;// x is again register, needs to be stored at var_ax first
+		adc #$b0;// Oct/F-Num/Key-On
+		sta var_ax;// x is again register, needs to be stored at var_ax first
 		lda fm_current_frequency+1, y				;// load the high byte of frequency
 		clc
 		adc fm_previous_registry_value, x			;// add the value at 822	
-		ldx var_ax									;// read the register value
+		ldx var_ax;// read the register value
 		jsr jch_set_register	
 loc_1056C: ;//	**** NEXT VOICE
-		inc var_si									;// this is 16 bit increase, but byte range of var_si is used. ***OPT*** word voice counter
+		inc var_si;// this is 16 bit increase, but byte range of var_si is used. ***OPT*** word voice counter
 loc_1056c_a:		
-		inc var_si									;// this is 16 bit increase, but byte range of var_si is used. ***OPT***
+		inc var_si;// this is 16 bit increase, but byte range of var_si is used. ***OPT***
 loc_1056c_b:		
-		inc var_bx									;// voice counter 
+		inc var_bx;// voice counter 
 		lda var_bx		
-		cmp #$9										;// all nine voices done?
+		cmp #$9	;// all nine voices done?
 		beq loc_10577		
 		jmp loc_10180		
 loc_10577:	;// **** all voices done, so return to IRQ
@@ -836,101 +838,101 @@ jch_clear_voice:
 		ldx jch_voice_reg_table, y			;// get voice reg value for operator 1 	/ 4 cycles
 		lda jch_voice_reg_table+9, y		;// get voice reg value for operator 2 	/ 4 cycles
 		tay 								;// store operator 2 reg value in y 		/ 2 cycles
-		txa									;// store operator 1 reg valye in a		/ 2 cycles 		
-		clc									;// clear carry							/ 2 cycles
+		txa;// store operator 1 reg valye in a		/ 2 cycles 		
+		clc;// clear carry							/ 2 cycles
 		adc #$20							;// add #$20 to get to amp/vib/egtyp/ks../ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$00							;// set a to 0 to clear the register		/ 2 cycles
 		jsr jch_quick_update_register		;// update the register
-		tya									;// store operator 2 reg value in a		/ 2 cycles
-		clc									;// clear carry							/ 2 cycles		
+		tya;// store operator 2 reg value in a		/ 2 cycles
+		clc;// clear carry							/ 2 cycles		
 		adc #$20							;// add #$20 to get to amp/vib/egtyp/ks../ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$00							;// set a to 0 to clear the register		/ 2 cycles
 		jsr jch_quick_update_register		;// update the register
 		ldy var_di							;// get counter1 (voice index value) 	/ 4 cycles
 		ldx jch_voice_reg_table, y			;// get voice reg value for operator 1 	/ 4 cycles
 		lda jch_voice_reg_table+9, y		;// get voice reg value for operator 2 	/ 4 cycles
 		tay 								;// store operator 2 reg value in y 		/ 2 cycles
-		txa									;// store operator 1 reg valye in a		/ 2 cycles 		
-		clc									;// clear carry							/ 2 cycles
+		txa;// store operator 1 reg valye in a		/ 2 cycles 		
+		clc;// clear carry							/ 2 cycles
 		adc #$e0							;// add #$e0 to get to waveform select	/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$00							;// set a to 0 to clear the register		/ 2 cycles
 		jsr jch_quick_update_register		;// update the register
-		tya									;// store operator 2 reg value in a		/ 2 cycles
-		clc									;// clear carry							/ 2 cycles		
+		tya;// store operator 2 reg value in a		/ 2 cycles
+		clc;// clear carry							/ 2 cycles		
 		adc #$e0							;// add #$e0 to get to waveform select	/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$00							;// set a to 0 to clear the register		/ 2 cycles
 		jsr jch_quick_update_register		;// update the register
 		lda var_di  						;// get voice index in a					/ 4 cycles
-		clc									;// clear carry							/ 2 cycles
+		clc;// clear carry							/ 2 cycles
 		adc #$a0							;// adc #$a0 to get to F-Num LSB			/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$00							;// set a to 0 to clear the register		/ 2 cycles
 		jsr jch_quick_update_register		;// update the register	
 		lda var_di  						;// get voice index in a					/ 4 cycles
-		clc									;// clear carry							/ 2 cycles
+		clc;// clear carry							/ 2 cycles
 		adc #$b0							;// adc #$b0 to get to Oct/F-Num/Key-On	/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$00							;// set a to 0 to clear the register		/ 2 cycles
 		jsr jch_quick_update_register		;// update the register	
 		lda var_di  						;// get voice index in a					/ 4 cycles
-		clc									;// clear carry							/ 2 cycles
+		clc;// clear carry							/ 2 cycles
 		adc #$c0							;// adc #$c0 to get to Feedback/Algrtm	/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$00							;// set a to 0 to clear the register		/ 2 cycles
 		jsr jch_quick_update_register		;// update the register	
 		ldy var_di							;// get counter1 (voice index value) 	/ 4 cycles
 		ldx jch_voice_reg_table, y			;// get voice reg value for operator 1 	/ 4 cycles
 		lda jch_voice_reg_table+9, y		;// get voice reg value for operator 2 	/ 4 cycles
 		tay 								;// store operator 2 reg value in y 		/ 2 cycles
-		txa									;// store operator 1 reg valye in a		/ 2 cycles 	
-		clc									;// clear carry							/ 2 cycles
+		txa;// store operator 1 reg valye in a		/ 2 cycles 	
+		clc;// clear carry							/ 2 cycles
 		adc #$40							;// adc #$40 to get to Operator outputlvl/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$3f							;// set overall op. output level softest	/ 2 cycles	
 		jsr jch_quick_update_register		;// update the register		
-		tya									;// store operator 2 reg value in a		/ 2 cycles
-		clc									;// clear carry							/ 2 cycles
+		tya;// store operator 2 reg value in a		/ 2 cycles
+		clc;// clear carry							/ 2 cycles
 		adc #$40							;// adc #$40 to get to Operator outputlvl/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$3f							;// set overall op. output level softest	/ 2 cycles
 		jsr jch_quick_update_register		;// update the register						
 		ldy var_di							;// get counter1 (voice index value) 	/ 4 cycles
 		ldx jch_voice_reg_table, y			;// get voice reg value for operator 1 	/ 4 cycles
 		lda jch_voice_reg_table+9, y		;// get voice reg value for operator 2 	/ 4 cycles
 		tay 								;// store operator 2 reg value in y 		/ 2 cycles
-		txa									;// store operator 1 reg valye in a		/ 2 cycles 	
-		clc									;// clear carry							/ 2 cycles
+		txa;// store operator 1 reg valye in a		/ 2 cycles 	
+		clc;// clear carry							/ 2 cycles
 		adc #$60							;// adc #$60 to get to attack/decay		/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$ff							;// set op. attack/decay to fastest		/ 2 cycles	
 		jsr jch_quick_update_register		;// update the register		
-		tya									;// store operator 2 reg value in a		/ 2 cycles
-		clc									;// clear carry							/ 2 cycles
+		tya;// store operator 2 reg value in a		/ 2 cycles
+		clc;// clear carry							/ 2 cycles
 		adc #$60							;// adc #$60 to get to attack/decay		/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$ff							;// set op. attack/decay to fastest		/ 2 cycles
 		jsr jch_quick_update_register		;// update the register						
 		ldy var_di							;// get counter1 (voice index value) 	/ 4 cycles
 		ldx jch_voice_reg_table, y			;// get voice reg value for operator 1 	/ 4 cycles
 		lda jch_voice_reg_table+9, y		;// get voice reg value for operator 2 	/ 4 cycles
 		tay 								;// store operator 2 reg value in y 		/ 2 cycles
-		txa									;// store operator 1 reg valye in a		/ 2 cycles 	
-		clc									;// clear carry							/ 2 cycles
+		txa;// store operator 1 reg valye in a		/ 2 cycles 	
+		clc;// clear carry							/ 2 cycles
 		adc #$80							;// adc #$80 to get to sustain/release	/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$ff							;// set op. sustain/release to fastest	/ 2 cycles	
 		jsr jch_quick_update_register		;// update the register		
-		tya									;// store operator 2 reg value in a		/ 2 cycles
-		clc									;// clear carry							/ 2 cycles
+		tya;// store operator 2 reg value in a		/ 2 cycles
+		clc;// clear carry							/ 2 cycles
 		adc #$80							;// adc #$80 to get to sustain/release	/ 2 cycles
-		tax									;// set x to this reg value for voice	/ 2 cycles
+		tax;// set x to this reg value for voice	/ 2 cycles
 		lda #$ff							;// set op. sustain/release to fastest	/ 2 cycles
 		jsr jch_quick_update_register		;// update the register	
-		rts														
+		rts					
 
 sub_105E8:
 jch_quick_update_register:
@@ -952,7 +954,7 @@ sub_105F0:
 jch_set_register:
 		cmp fm_previous_registry_value, x	;// compare with current value for register
 		bne loc_105FB						;// not equal? ok go on then, change the register
-		rts									;// equal, so not update needed, return please, x does not change
+		rts;// equal, so not update needed, return please, x does not change
 loc_105FB: ;//				
 		sta fm_previous_registry_value, x	;// allright, store this new value in the table at pos x
 loc_10600:;//				
@@ -963,18 +965,17 @@ loc_10600:;//
 ;// ----------------------------------------------------------------------------------------------------------
 jch_fm_music_init:
         jsr jch_initialize_fm_music
-		jmp jch_load_fmfile_pointers
-
-loc_10668:				
-		txa									;// in the orignal bl is expected, assuming x for now
-		and #$3f							;// AND this value with 3F
-		sta fm_master_volume							;// unknown var, store this there
-		rts
+        jmp jch_load_fmfile_pointers
+jch_fm_set_volume:
+        ;txa;// in the orignal bl is expected, assuming x for now
+        and #$3f							;// AND this value with 3F
+        sta fm_master_volume							;// unknown var, store this there
+        rts
 
 ;// ---------------------------------------------------------------------------
 ;// JCH LOAD FMFILE POINTERS 
 ;// ---------------------------------------------------------------------------
-jch_load_fmfile_pointers: 				
+jch_load_fmfile_pointers:
 		;// basically, whatever is in bx at this point in the function will be multiplied by 32, 		
 		;// im guessing this will be 0 for each time when one tune is played, so muisc offset 1800 is used		
 		clc
@@ -1135,9 +1136,9 @@ loc_end1:
 ;// ----------------------------------------------------------------------------------------------------------
 loc_10726:
 jch_initialize_fm_music:
-		ldy #$00									
-		sty fm_cl_voice_bool									
-											;// fm_data_st_offset = is variable after 1003 jmp location, so 1006, 1007. set location of fm music file to variable - low byte, high byte
+		ldy #$00
+		sty fm_cl_voice_bool
+                                  ;// fm_data_st_offset = is variable after 1003 jmp location, so 1006, 1007. set location of fm music file to variable - low byte, high byte
 		ldx fm_data_st_offset
 		stx fm_file_base_address			;//fm_data_st_offset
 		ldy fm_data_st_offset+1
@@ -1147,10 +1148,10 @@ jch_initialize_fm_music:
 		lda (fm_file_base_address),y							;// get the low-byte of this relative address
 		clc
 		adc fm_data_st_offset				;// add low byte of start offset to this one
-		sta fm_start_of_arrangement_data	;// store this in the pointer variable
-		sta ptr2								;// set zero page addr
-		iny									;// increase y to get to the hi byte
-		lda (fm_file_base_address),y		;// get the hi-byte of this relative address
+		sta fm_start_of_arrangement_data  ;// store this in the pointer variable
+		sta ptr2                          ;// set zero page addr
+		iny                               ;// increase y to get to the hi byte
+		lda (fm_file_base_address),y      ;// get the hi-byte of this relative address
 		adc fm_data_st_offset+1				;// add hi-byte to hi-byte of start offset to this one (c will also be added if needed)
 		sta fm_start_of_arrangement_data+1	;// store this in the pointer address for the hi-byte
 		sta ptr2+1								;// set zero page addr
@@ -1186,7 +1187,7 @@ lop2:
 goon1:		
 	 	inc jch_243_tb_cnt					;// increase the counter
 		bne lop2	
-		dex									;// dey
+		dex;// dey
 		bne lop2							;// no? continue
 		ldx #$43
 lop3:
@@ -1195,15 +1196,15 @@ lop3:
 		bne goon2							;// no zero? (due to inc leading to 0)
 		inc ptr3+1
 goon2:		
-	 	dex									;// decrease the counter
+	 	dex;// decrease the counter
 		bne lop3			
 ;//OPTIMIZATION  ---------------> VERSION 4 : INSTRUMENTS ARE AT THE BACK OF THE FILE WITH END in FFFF
 		lda fm_file_base_address
 		clc
 		adc #$07								;// point to version number of player
 		sta ptr3
-		lda fm_file_base_address+1												
-		adc #$00								;// will add the extra carry if need be											
+		lda fm_file_base_address+1			
+		adc #$00								;// will add the extra carry if need be		
 		sta ptr3+1		
 		ldy #$00
 		lda (ptr3), y				
@@ -1217,12 +1218,12 @@ set_73:
 		lda #$73
 		sta end_add+1
 end_check:
-		lda fm_file_base_address												
-		clc												
+		lda fm_file_base_address			
+		clc			
 		adc #$6f								;// point to fm file base address + 6f (= pointer to instrument tables)					
-		sta ptr3												
-		lda fm_file_base_address+1												
-		adc #$00								;// will add the extra carry if need be											
+		sta ptr3			
+		lda fm_file_base_address+1			
+		adc #$00								;// will add the extra carry if need be		
 		sta ptr3+1		
 		ldy #$00
 		lda (ptr3), y
@@ -1232,13 +1233,13 @@ end_check:
 		sta ptr3+1
 		lda var_bp
 		sta ptr3
-		lda fm_file_base_address												
-		clc												
+		lda fm_file_base_address			
+		clc			
 end_add:
 		adc #$73								;// point to fm file base address + 73 (= pointer to special fx data, version 2)	or +71 (song descr, version 4)				
-		sta ptr4												
-		lda fm_file_base_address+1												
-		adc #$00								;// will add the extra carry if need be											
+		sta ptr4			
+		lda fm_file_base_address+1			
+		adc #$00								;// will add the extra carry if need be		
 		sta ptr4+1				
 	    ldy #$00
 		lda (ptr4), y
@@ -1248,14 +1249,14 @@ end_add:
 		sta ptr4+1
 		lda var_bp
 		sta ptr4
-		sec										;// calculate size of instrument data
+		sec	;// calculate size of instrument data
 		lda ptr4
 		sbc ptr3
 		sta ptr4
 		lda ptr4+1
 		sbc ptr3+1
 		sta ptr4+1
-		clc										;// shift right 4 times (divide by 16) to get the number of instruments
+		clc	;// shift right 4 times (divide by 16) to get the number of instruments
 		lsr ptr4+1
 		ror ptr4
 		lsr ptr4+1
@@ -1265,12 +1266,12 @@ end_add:
 		lsr ptr4+1
 		ror ptr4
 skip_calculation:
-		lda fm_file_base_address												
-		clc												
+		lda fm_file_base_address			
+		clc			
 		adc ptr3								;// point to fm file base address + 6f (= pointer to instrument tables)					
-		sta ptr3												
-		lda fm_file_base_address+1												
-		adc ptr3+1								;// will add the extra carry if need be											
+		sta ptr3			
+		lda fm_file_base_address+1			
+		adc ptr3+1								;// will add the extra carry if need be		
 		sta ptr3+1		
 		
 		ldy #$00
@@ -1288,14 +1289,14 @@ loc_pointon:
 		rol	var_bp+1								
 		asl var_bp						
 		rol	var_bp+1								
-		lda ptr3														
-		clc													
-		adc var_bp													
-		sta fm_opt_ins_pointers, x													
-		lda ptr3+1												
-		adc var_bp+1													
+		lda ptr3					
+		clc				
+		adc var_bp				
+		sta fm_opt_ins_pointers, x				
+		lda ptr3+1			
+		adc var_bp+1				
 		sta fm_opt_ins_pointers+1, x				
-		clc													
+		clc				
 		inx				
 		inx				
 		iny 
@@ -1376,10 +1377,9 @@ loc_end_get_next_seq2:
 ;//----------------------------------------------------------------------------------------------------------------
 ;// FM D00 PLAYER VARIABLE MEMORY BLOCK
 ;//----------------------------------------------------------------------------------------------------------------
-fm_voice_has_data: .res 9,0				;// 0 = no data, no playing; 1 = data, process playing. per voice
+fm_voice_has_data: .res 9,0				  ;// 0 = no data, no playing; 1 = data, process playing. per voice
 fm_local_voice_slide: .word	0				;// note slide counter (word)
-.export fm_master_volume
-fm_master_volume: .byte 0					;// master volume (3f = silence)
+fm_master_volume: .byte 0					  ;// master volume (3f = silence)
 fm_start_of_arrangement_data: .word 0		;// pointer to start of the sequence arrangement (tracks, so you will) 
 fm_voice_instrument: .res 18,0				;// 6D5 = current channel/voice instrument (effect cxxxx)
 fm_cur_seq_command_tick_counter: .res 18,0	;// current sequence command time/tick counter (per channel/voice)	

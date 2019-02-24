@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschein.de
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -20,10 +20,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.macro appstart __S
-__LOADADDR__ = __S
-.export __LOADADDR__
-.segment "LOADADDR"
-.word __LOADADDR__
-.code
+.macro appstart __S__
+  .if .paramcount >0  ;legacy support, start address defined within source code
+    .export __LOADADDR__;: absolute = 1
+    __LOADADDR__=__S__
+  .else
+    .import __LOADADDR__ ; either default, or by a define argument during linker phase
+  .endif   
+  
+  .segment "LOADADDR"
+  .word __LOADADDR__
+  
+  .code
 .endmacro

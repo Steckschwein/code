@@ -31,6 +31,10 @@
 .export vdp_mc_set_pixel
 .export vdp_mc_init_screen
 
+.importzp tmp1, ptr1
+vdp_ptr=ptr1
+vdp_tmp=tmp1
+
 .code
 ;
 ;	gfx multi color mode - 4x4px blocks where each can have one of the 15 colors

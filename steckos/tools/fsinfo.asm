@@ -23,12 +23,10 @@
 .include "kernel.inc"
 .include "kernel_jumptable.inc"
 .include "common.inc"
-
-.include "../kernel/fat32.inc"
-.include "../kernel/sdcard.inc"
+.include "fat32.inc"
+.include "sdcard.inc"
 
 .include "appstart.inc"
-data = $2000
 part0 = data + BootSector::Partitions + PartTable::Partition_0
 
 appstart $1000
@@ -334,5 +332,5 @@ hexdigit:
 
 BCD: .res 6
 tmp0: .res 2
-;.align 255,0
-;data:
+data:
+.data

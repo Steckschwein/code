@@ -19,17 +19,11 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
-
 .include "common.inc"
 .include "kernel.inc"
 .include "vdp.inc"
 .include "via.inc"
 .include "ym3812.inc"
-
-shell_addr	 = $d800
-
-;text_mode_40 = 1
 
 .segment "KERNEL"
 
@@ -39,7 +33,7 @@ shell_addr	 = $d800
 .import init_uart, uart_tx, uart_rx, uart_rx_nowait
 .import textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
 .import getkey
-.import textui_enable, textui_disable, vdp_display_off,  textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff
+.import textui_enable, textui_disable, vdp_display_off,  textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
 
 .import init_sdcard
 
@@ -71,17 +65,17 @@ kern_init:
 	cpx #(trampolin_code_end - trampolin_code)
 	bne @copy
 
-	jsr init_via1
-	jsr init_rtc                ;init
+    jsr init_via1
+    jsr init_rtc                ;init
     jsr __rtc_systime_update    ;... and update rtc immediately before any program is loaded
 
-	jsr init_uart
+    jsr init_uart
 
-	SetVector user_isr_default, user_isr
+    SetVector user_isr_default, user_isr
 
-	jsr textui_init0
+    jsr textui_init0
 
-	cli
+    cli
 
 	jsr primm
 	.byte $d5,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$b8,$0a
@@ -152,12 +146,15 @@ do_irq:
 		bit a_vreg					; VDP IRQ flag set?
 		bpl @is_irq_snd
 		lda #IRQ_VDP
-		bra @store_isr
+		;bra @store_isr
+    sta SYS_IRR
 @is_irq_snd:
 		bit opl_stat
 		bpl @is_irq_via
 		lda #IRQ_SND
-		bra @store_isr
+		ora SYS_IRR
+    sta SYS_IRR
+    ;bra @store_isr
 @is_irq_via:
 		bit via1ifr		; Interrupt from VIA?
 		bpl @user_isr
@@ -208,7 +205,6 @@ do_nmi:
 	sta STATUS
 	tsx
 	stx SPNT
-
 
 	jmp trampolin
 
@@ -294,10 +290,8 @@ upload:
 
 	jsr upload_ok
 
-	lda #'O'
-	jsr textui_chrout
-	lda #'K'
-	jsr textui_chrout
+	jsr krn_primm
+  .asciiz "OK"
 
 	crlf
 	restore
@@ -310,10 +304,10 @@ upload_ok:
 	jsr uart_tx
 	rts
 
-filename:	.asciiz "steckos/shell.prg"
+filename: .asciiz "steckos/shell.prg"
 
 ; trampolin code to enter ML monitor on NMI
-; this code gets copied to $1000 and executed there
+; this code gets copied to $10 and executed there
 trampolin_code:
 	sei
 	; switch to ROM bank 1
@@ -377,7 +371,7 @@ krn_display_off:				jmp vdp_display_off
 krn_getkey:						jmp getkey
 
 .export krn_chrout
-krn_chrout:						jmp ansi_chrout
+krn_chrout:						jmp textui_chrout;ansi_chrout
 .export krn_putchar
 krn_putchar:					jmp textui_put
 
@@ -393,8 +387,10 @@ krn_textui_update_crs_ptr:  jmp textui_update_crs_ptr
 .export krn_textui_clrscr_ptr
 krn_textui_clrscr_ptr:      jmp textui_blank
 
-.export krn_fseek
-krn_fseek:						jmp fat_fseek
+;.export krn_fseek
+;krn_fseek:						jmp fat_fseek
+.export krn_textui_setmode
+krn_textui_setmode:     jmp textui_setmode
 
 .export krn_textui_crs_onoff
 krn_textui_crs_onoff:   jmp textui_cursor_onoff

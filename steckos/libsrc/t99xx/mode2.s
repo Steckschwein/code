@@ -29,6 +29,10 @@
 .export vdp_gfx2_blank
 .export vdp_gfx2_set_pixel
 
+.importzp tmp1, ptr1
+vdp_ptr=ptr1
+vdp_tmp=tmp1
+
 .code
 ;
 ;	gfx 2 - each pixel can be addressed - e.g. for image

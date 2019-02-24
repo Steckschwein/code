@@ -8,22 +8,28 @@
 .include "via.inc"
 .include "vdp.inc"
 .include "appstart.inc"
-appstart $1000
+
+appstart
+
+.segment "STARTUP"
+
+.code
+.importzp ptr1
 
 .import vdp_bgcolor
 .import hexout
 .import jch_fm_init, jch_fm_play
+.import jch_fm_set_volume
 .import opl2_detect, opl2_init, opl2_reg_write
-.import opl2_delay_register
+;.import opl2_delay_register
 
 .export d00file
 .export char_out=krn_chrout
-	
-.code
 main:
-    
-		jsr opl2_detect
-		clc
+	;	jsr opl2_detect
+    nop
+    nop
+		clc ; TODO FIXME
 		bcc @load
 		jsr krn_primm
 		.byte "YM3526/YM3812 not available!",$0a,0
@@ -33,29 +39,29 @@ main:
 		beq :+
 		pha
 		jsr krn_primm
-		.byte "i/o error occured: ",$0a,0
+		.byte "i/o error occured: ",0
 		pla
 		jsr hexout
 		lda #$0a
 		jsr char_out
-		jmp  exit
+		jmp exit
 
-:       jsr isD00File
+:   jsr isD00File
 		beq :+
 		jsr krn_primm
 		.byte "not a D00 file",$0a,0
 		jmp exit
 
 :       
-		jsr krn_primm
-		.byte "edlib player v0.2 (somewhat optimized) by mr.mouse/xentax july 2017@",$0a,0
-		jsr printMetaData
+;		jsr krn_primm
+	;	.byte "edlib player v0.2 (somewhat optimized) by mr.mouse/xentax july 2017@",$0a,0
+		;jsr printMetaData
 
 		jsr krn_textui_crs_onoff
 		jsr jch_fm_init
-
+    
 		sei
-		copypointer user_isr, safe_isr
+    copypointer user_isr, safe_isr
 		SetVector player_isr, user_isr
 
 		freq=70
@@ -65,12 +71,13 @@ main:
 		sta t2_value
     jsr set_timer_t2
     
-		jsr reset_irq
+;		jsr reset_irq
 		jsr restart_timer
 		
 		cli
 		
-@keyin: keyin
+@keyin: 
+    keyin
 		cmp #'p'
 		bne @key_min
 		lda #01
@@ -108,12 +115,12 @@ main:
 		bne :-
 		dey 
 		bne :-
-		.import fm_master_volume
 		inc fm_master_volume
-		lda fm_master_volume
+    lda fm_master_volume
+		jsr jch_fm_set_volume
 		cmp #$3f
 		bne @fadeout
-		
+    
 		sei
 		copypointer safe_isr, user_isr
 		cli
@@ -123,22 +130,22 @@ exit:
 		jsr krn_textui_init
 		jmp (retvec)
 		
+restart_timer:
 reset_irq:
 		ldx #opl2_reg_ctrl
 		lda #$80
-		jmp opl2_reg_write
-
-restart_timer:
+		jsr opl2_reg_write
 		ldx #opl2_reg_ctrl
 		lda #$42	; t2
 		jmp opl2_reg_write
 
 set_timer_t2:
+    php
     sei
 		ldx #opl2_reg_t2	; t2 timer value
     lda t2_value
     jsr opl2_reg_write
-    cli
+    plp
     rts
     
 printMetaData:
@@ -164,8 +171,8 @@ printMetaData:
 
 printString:
 		ldx #$20
-:       lda d00file, y
-		jsr char_out
+:       
+    lda d00file, y
 		iny 
 		dex
 		bne :- 
@@ -186,19 +193,17 @@ d00header:
 		.byte "JCH",$26,$2,$66
 
 loadfile:
-		.importzp ptr1
-    lda paramptr
-    sta ptr1
-		lda paramptr +1
-    sta ptr1+1
-    ldy #0
-:   lda (paramptr),y
-    beq :+
-    jsr char_out
-    iny 
-    bne :-
-:    
-
+;    lda paramptr
+ ;   sta ptr1
+	;	lda paramptr +1
+   ; sta ptr1+1
+;    ldy #0
+;:   lda (paramptr),y
+ ;   beq :+
+  ;  jsr char_out
+   ; iny 
+    ;bne :-
+;:    
 		lda paramptr
 		ldx paramptr +1
 		ldy #O_RDONLY
@@ -217,28 +222,46 @@ loadfile:
 
 player_isr:
 		bit SYS_IRR
-		bvc @exit
-		; do write operations on ym3812 within a user isr directly after reading opl_stat here, "is too hard", we have to delay at least register wait ;)		
-		jsr opl2_delay_register
-		jsr reset_irq
-		jsr restart_timer
-;		lda #Light_Red
-;		jsr vdp_bgcolor
-		lda player_state
-		bne @exit
+		bvc @vdp     ; bit 6 set? (snd)
+		; do write operations on ym3812 within a user isr directly after reading opl_stat here, "is too hard", we have to delay at least register wait ;)
+;		jsr opl2_delay_register
+;    jsr reset_irq
+    jsr restart_timer
+    lda #Medium_Green<<4|Medium_Red
+    nop
+    nop
+    nop
+    ;jsr vdp_bgcolor
+    lda player_state
+		bne @vdp
 		jsr jch_fm_play
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+@vdp:
+    bit SYS_IRR
+    bpl @exit
+    lda #Medium_Green<<4|Dark_Yellow
+    jsr vdp_bgcolor
 @exit:
+    
 		lda #Medium_Green<<4|Transparent
-		jsr vdp_bgcolor
+		nop
+    nop
+    nop
+    ;jsr vdp_bgcolor
 
 		rts
 		
-safe_isr:   .res 2
+safe_isr:     .res 2
 player_state: .res 1,0
-t2_value: .res 1,0
-fd:     .res 1
+t2_value:     .res 1,0
+fd:           .res 1
+irq_counter:  .res 0
+fm_master_volume: .res 1,0
 
 .data
 d00file:
-
-.segment "STARTUP"

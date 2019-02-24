@@ -25,7 +25,7 @@
 .include "kernel_jumptable.inc"
 .include "fat32.inc"
 .include "appstart.inc"
-.include "tools.inc"
+
 .export cnt, files, dirs
 .import dir_show_entry, pagecnt, entries_per_page, dir_attrib_mask
 .import b2ad2

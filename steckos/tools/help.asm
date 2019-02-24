@@ -19,11 +19,13 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
 .include "kernel.inc"
 .include "kernel_jumptable.inc"
+.include "appstart.inc"
 
-.segment "CODE"
+appstart $1000
+
+.code
 
     jsr krn_primm
     .byte "ll                 - show dir long",$0a

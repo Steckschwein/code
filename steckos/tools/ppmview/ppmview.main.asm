@@ -34,6 +34,7 @@
 .include "zeropage.inc"
 
 .importzp ptr2
+.importzp tmp2
 
 .import hexout
 .import vdp_gfx7_on
@@ -475,7 +476,6 @@ cols: .res 1, 0
 rows: .res 1, 0
 fd: .res 1, 0
 tmp: .res 1, 0
-tmp2: .res 1, 0
 scroll_on: .res 1, 0
 scroll_x: .res 1, 0
 irqsafe: .res 2, 0

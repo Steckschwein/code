@@ -19,6 +19,7 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
+.setcpu "65c02"
 
 .include "common.inc"
 .include "vdp.inc"
@@ -202,8 +203,9 @@ gfxui_on:
 	jsr vdp_gfx2_blank
 	 
 	vdp_sreg	<ADDRESS_GFX2_PATTERN, WRITE_ADDRESS + >ADDRESS_GFX2_PATTERN
-	SetVector  content, vdp_ptr    ; only load the pattern data, leave colors black to blend them later
 	ldx #$18	;6k bitmap - $1800
+	lda #<content
+  ldy #>content; only load the pattern data, leave colors black to blend them later
 	jsr vdp_memcpy					;load the pic data
 
 	copypointer  $fffe, irqsafe
@@ -227,5 +229,3 @@ tmp5:	.res 1
 content: ; 6K raw data
 			.res $1800, 0
 color:	; 6K raw color data
-
-.segment "STARTUP"

@@ -42,7 +42,6 @@ acmd23	= $40 + 23	; SET_WR_BLOCK_ERASE_COUNT - Define number of blocks to pre-er
 sd_card_sel         = %01111100		;spi device number 1100
 
 sd_data_token = $fe
-;sd_card_status 		= $0298
 ; SD CArd command parameter/result buffer
 sd_cmd_param 		= $02a0
 sd_cmd_chksum		= sd_cmd_param+4
@@ -61,4 +60,3 @@ sd_card_status_parameter_error  = %01000000
 
 sd_card_error_timeout_busy = $c0
 sd_card_error_timeout = $c1
-

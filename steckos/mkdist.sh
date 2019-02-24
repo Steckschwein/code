@@ -1,12 +1,11 @@
 #!/bin/bash
 
 TARGET=$1
-TOOLS='clear.prg
+TOOLS='
     ls.prg
     ll.prg
     stat.prg
     rename.prg
-    date.prg
     keycode.prg
     view.prg
     rm.prg
@@ -18,10 +17,12 @@ TOOLS='clear.prg
     attrib.prg
     help.prg
     wozmon.prg
-    nvram.prg
-    setdate.prg
     fsinfo.prg
 '
+#    nvram.prg
+#    setdate.prg
+#    clear.prg
+#    date.prg
 
 rm -fr dist/*
 mkdir -p ${TARGET}

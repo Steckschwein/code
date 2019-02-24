@@ -1,18 +1,18 @@
 OBJS=imf.o
 TARGET=imf.prg
 CA65FLAGS=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
-LIBS=../steckos/tools/lib/toollib.a ../steckos/lib/steckschwein-kernel.lib
+LIBS=../steckos/tools/lib/toollib.a ../steckos/lib/steckschwein.a
 
 all: $(TARGET)
 
 sndtest.prg: sndtest.o
-	cl65 --target none --config ../steckos/steckos-c-app.cfg -o $@ sndtest.o ym3812.o $(LIBS)
+	cl65 --target none --config ../steckos/prg.ld65.cfg -o $@ sndtest.o ym3812.o $(LIBS)
 
 beep.prg: beep.o
-	cl65 --target none --config ../steckos/steckos-c-app.cfg -o $@ beep.o ym3812.o $(LIBS)
+	cl65 --target none --config ../steckos/prg.ld65.cfg -o $@ beep.o ym3812.o $(LIBS)
 
 %.prg: $(OBJS) $(LIBS)
-	cl65 --target none --config ../steckos/steckos-c-app.cfg -o $@ $(OBJS) $(LIBS)
+	cl65 --target none --config ../steckos/prg.ld65.cfg -o $@ $(OBJS) $(LIBS)
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) -o $@ $<

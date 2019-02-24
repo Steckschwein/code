@@ -20,14 +20,11 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-vdp_ptr=$e0
-vdp_tmp=$e2
-
-a_vdp		= $0220
-a_vram		= a_vdp
-a_vreg		= a_vdp+1
-a_vregpal	= a_vdp+2
-a_vregi		= a_vdp+3
+a_vdp     = $0220
+a_vram    = a_vdp
+a_vreg    = a_vdp+1
+a_vregpal = a_vdp+2
+a_vregi   = a_vdp+3
 
 s_reg0_F    = 1<<7	; Frame Flag, interrupt flag
 s_reg0_5S   = 1<<6

@@ -8,7 +8,7 @@ all: $(TARGET)
 fortune.prg: fortunes.inc
 
 %.prg: $(OBJS) $(LIBS)
-	cl65 --target none --config ../steckos/kernel/steckosapp.cfg -o $@ $(OBJS) $(LIBS)
+	cl65 --target none --config ../steckos/prg.ld65.cfg -o $@ $(OBJS) $(LIBS)
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) -o $@ $<

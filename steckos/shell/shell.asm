@@ -19,76 +19,63 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
-tmp0    = $a0
-tmp1    = $a1
-tmp5    = $a2
+.setcpu "65c02"
 
 prompt  = $af
 
+.include "zeropage.inc"
 .include "common.inc"
+.include "keyboard.inc"
 .include "rtc.inc"
-.include "../kernel/kernel.inc"
-.include "../kernel/kernel_jumptable.inc"
-
+.include "kernel_jumptable.inc"
 .include "appstart.inc"
-appstart $d800
 
 ; set attrib mask. hide volume label and hidden files
 dir_attrib_mask		= $0a
 
-KEY_RETURN 		= $0d
-KEY_BACKSPACE 		= $08
-KEY_CRSR_UP 		= $1E
-KEY_CRSR_DOWN 	 	= $1F
-KEY_CRSR_RIGHT 	 	= $10
-KEY_CRSR_LEFT 	 	= $11
-
-BUF_SIZE		= 32 ;TODO FIXME too hard
-bufptr			= $d0
-pathptr			= $d2
-p_history   = $d4
-; Address pointers for serial upload
-startaddr		= $d9
-
 SCREENSAVER_TIMEOUT_MINUTES=2
+BUF_SIZE		= 32 ;TODO FIXME too hard
+
+bufptr			= ptr1
+pathptr			= ptr2
+p_history   = ptr3
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
 ;  - print welcome message
 ;---------------------------------------------------------------------------------------------------------
 
-.import hexout
 .export char_out=krn_chrout
+
+appstart
 
 .code
 init:
-		SetVector exit_from_prg, retvec
-		SetVector buf, bufptr
-		SetVector buf, paramptr ; set param to empty buffer
-    SetVector msgbuf, msgptr
-		SetVector PATH, pathptr
+      SetVector exit_from_prg, retvec
+      SetVector buf, bufptr
+      SetVector buf, paramptr ; set param to empty buffer
+      SetVector msgbuf, msgptr
+      SetVector PATH, pathptr
 
-		jsr krn_primm
-		.byte $0a, "steckOS Shell "
-		.include "version.inc"
-		.byte $0a,0
+      jsr krn_primm
+      .byte $0a, "steckOS Shell "
+      .include "version.inc"
+      .byte $0a,0
 
-		bra mainloop
-
+      bra mainloop
+    
 exit_from_prg:
-		; cmp #0
-		; beq mainloop
-		; pha
-		; jsr krn_primm
-		; .byte $0a,"Exit: ",0
-		; pla
-		; jsr char_out
-
-mainloop:
-      crlf
-      lda #'['
-      jsr char_out
+      cld
+    ; cmp #0
+    ; beq mainloop
+    ; pha
+    ; jsr krn_primm
+    ; .byte $0a,"Exit: ",0
+    ; pla
+    ; jsr char_out
+mainloop:      
+      jsr krn_primm
+      .byte $0a, '[', 0
       ; output current path
       lda	#<msgbuf
       ldx #>msgbuf
@@ -110,19 +97,18 @@ mainloop:
         sta crs_x_prompt
 
         ; reset input buffer
-        lda #0
-        tay
-        sta (bufptr)
-
+        ldy #0
+        jsr terminate
+                
 		; put input into buffer until return is pressed
 inputloop:
         jsr screensaver_settimeout  ;reset timeout
 @l_input:
         jsr screensaver_loop
-
+        
         jsr krn_getkey
         bcc @l_input
-
+        
         cmp #KEY_RETURN ; return?
         beq parse
 
@@ -146,6 +132,7 @@ inputloop:
         iny
 line_end:
         jsr char_out
+        bra inputloop
         jsr terminate
 
         bra inputloop
@@ -259,7 +246,7 @@ compare:
 
 		lda cmdlist,x
 		cmp #$ff
-		beq unknown
+		beq try_exec
 		bra @l1
 
 cmdfound:
@@ -267,12 +254,13 @@ cmdfound:
 
 		jmp (cmdlist,x) ; 65c02 FTW!!
 
-unknown:
+try_exec:
 		lda (bufptr)
 		beq @l1
 
-		crlf
-		jmp run
+    lda #$0a
+    jsr char_out
+		jmp exec
 
 @l1:	jmp mainloop
 
@@ -379,6 +367,12 @@ cmdlist:
 
 		.byte "up",0
 		.word krn_upload
+    
+;		.byte "mode40",0
+	;	.word mode_40
+    
+		;.byte "mode80",0
+		;.word mode_80
 
 .ifdef DEBUG
 		.byte "dump",0
@@ -412,7 +406,8 @@ errmsg:
 		.byte $0a,"invalid command",$0a,$00
 		jmp mainloop
 
-@l1:	cmp #$f2
+@l1:
+    cmp #$f2
 		bne @l2
 
 		jsr krn_primm
@@ -424,6 +419,14 @@ errmsg:
 		.byte $0a,"unknown error",$0a,$00
 		jmp mainloop
 
+mode_40:
+    lda #0
+    bra setmode
+mode_80:
+    lda #$80
+setmode:
+    jsr krn_textui_setmode
+    jmp mainloop
 
 cd:
     	lda paramptr
@@ -435,7 +438,7 @@ cd:
 @l2:
 		jmp mainloop
 
-run:
+exec:
 		lda cmdptr
 		ldx cmdptr+1    ; cmdline in a/x
 		jsr krn_execv   ; return A with errorcode
@@ -443,10 +446,10 @@ run:
 		jmp mainloop
 
 @l1:
-		stz tmp0
+		stz tmp2
 @try_path:
 		ldx #0
-		ldy tmp0
+		ldy tmp2
 @cp_path:
 		lda (pathptr), y
 		beq @check_path
@@ -459,14 +462,14 @@ run:
 		lda #$f0
 		jmp errmsg
 @check_path:    ;PATH end reached and nothing to prefix
-		cpy tmp0
+		cpy tmp2
 		bne @cp_next_piece  ;end of path, no iny
 		lda #$f1        ;nothing found, "Invalid command"
 		jmp errmsg
 @cp_next:
 		iny
 @cp_next_piece:
-		sty tmp0        ;safe PATH offset, 4 next try
+		sty tmp2        ;safe PATH offset, 4 next try
 		stz	tmp1
 		ldy #0
 @cp_loop:
@@ -482,10 +485,12 @@ run:
 		iny
 		inx
 		bne @cp_loop
-@l3:	lda tmp1
+@l3:
+    lda tmp1
 		bne	@l4
 		ldy #0
-@l5:	lda	APPEXT,y
+@l5:
+    lda	PRGEXT,y
 		beq @l4
 		sta tmpbuf,x
 		inx
@@ -501,6 +506,7 @@ run:
 
 
 .ifdef DEBUG
+.import hexout
 dumpvec		= $c0
 dumpvec_end   	= dumpvec
 dumpvec_start 	= dumpvec+2
@@ -607,9 +613,9 @@ screensaver_loop:
         cmp screensaver_rtc
         bne l_exit
         lda #<screensaver_prg
-		ldx #>screensaver_prg
+        ldx #>screensaver_prg
         phy
-		jsr krn_execv   ;ignore any errors
+        jsr krn_execv   ;ignore any errors
         ply
 screensaver_settimeout:
         lda rtc_systime_t+time_t::tm_min
@@ -621,15 +627,12 @@ screensaver_settimeout:
 :       sta screensaver_rtc
 l_exit:
         rts
-crs_x_prompt: .res 1
-
+        
 PATH:     .asciiz "./:/steckos/:/progs/"
-APPEXT:   .asciiz ".PRG"
+PRGEXT:           .asciiz ".PRG"
 screensaver_prg:  .asciiz "/steckos/unrclock.prg"
 screensaver_rtc:  .res 1
-hist_s:  .res 1, 0
-hist_e:  .res 1, 0
-hist_r:  .res 1, 0
+crs_x_prompt:     .res 1
 tmpbuf:
 buf = tmpbuf + 64
 msgbuf = buf + BUF_SIZE

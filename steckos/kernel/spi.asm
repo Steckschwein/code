@@ -51,7 +51,7 @@ spi_select_device:
 		jsr spi_isbusy	;check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may chane in between
 		bne @l_exit		;busy, leave section, device could not be selected
 		pla
-		;lda #spi_device_rtc
+
 		sta via1portb
 		plp
 		lda #0			;exit ok
@@ -77,7 +77,7 @@ spi_isbusy:
 ; Destructive: A,X,Y
 ;----------------------------------------------------------------------------------------------
 spi_rw_byte:
-		sta krn_tmp	; zu transferierendes byte im akku nach tmp0 retten
+		sta krn_tmp	; zu transferierendes byte im akku retten
 
 		ldx #$08
 

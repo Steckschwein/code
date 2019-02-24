@@ -31,6 +31,8 @@
 .export vdp_nopslide_8m
 .export vdp_nopslide_2m
 
+.importzp ptr1
+
 .code
 
 m_vdp_nopslide
@@ -59,14 +61,17 @@ vdp_mode_sprites_off:
 	
 ; setup video registers upon given table
 ;	in:
-;		.A - length of init table
-;		vdp_ptr - pointer set to vdp init table for al 8 vdp registers
+;		.X - length of init table
+;		.A/.Y - pointer to vdp init table
 vdp_init_reg:
-			tay			; y offset into init table
+      sta ptr1
+      sty ptr1+1
+      txa         ; x length of init table
+      tay
 			ora #$80		; bit 7 = 1 => register write
 			tax
 @l:		vdp_wait_s 4
-			lda (vdp_ptr),y ; 5c
+			lda (ptr1),y ; 5c
 			sta a_vreg
 			vdp_wait_s
 			stx a_vreg
@@ -119,26 +124,32 @@ vdp_fills:
 		rts
 			
 ;	input:
-;  	.X - amount of 256byte blocks (page counter)
-;		vdp_ptr to source data
+;  	.X    - amount of 256byte blocks (page counter)
+;		.A/.Y - pointer to source data
 vdp_memcpy:
-		ldy #0      	 
-@l1:	vdp_wait_l 11 	 ;3 + 5 + 2 + 1 opcode fetch
-		lda (vdp_ptr),y ;5
+    sta ptr1
+    sty ptr1+1
+		ldy #0
+@l1:
+    vdp_wait_l 11 	 ;3 + 5 + 2 + 1 opcode fetch
+		lda (ptr1),y ;5
 		iny             ;2
 		sta a_vram    	 ;1
 		bne @l1         ;3
-		inc vdp_ptr+1
+		inc ptr1+1
 		dex
 		bne @l1
 		rts
 		
 ;	input:
-;  	.X - amount of bytes to copy
+;  	.X    - amount of bytes to copy
+;   .A/.Y - pointer to data
 vdp_memcpys:
-		ldy   #0
+    sta ptr1
+    sty ptr1+1
+		ldy #0
 @0:	vdp_wait_l 13	 ;2 + 2 + 3 + 5 + 1 opcode fetch
-		lda (vdp_ptr),y ;5
+		lda (ptr1),y ;5
 		sta a_vram    	 ;1+3
 		iny             ;2
 		dex             ;2

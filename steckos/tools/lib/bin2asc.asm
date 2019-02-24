@@ -1,7 +1,7 @@
 .include "../../kernel/kernel_jumptable.inc"
-.include "../tools.inc"
 
 .export b2ad, b2ad2, dpb2ad
+.importzp tmp1, tmp2, tmp3
 .import char_out
 
 .segment "CODE"
@@ -49,17 +49,17 @@ b2ad2:		phx
 
 
 dpb2ad:
-			sta tmp0
+			sta tmp3
 			stx tmp1
 			ldy #$00
 			sty tmp2
 nxtdig:
 
 			ldx #$00
-subem:		lda tmp0
+subem:		lda tmp3
 			sec
 			sbc subtbl,y
-			sta tmp0
+			sta tmp3
 			lda tmp1
 			iny
 			sbc subtbl,y
@@ -72,9 +72,9 @@ subem:		lda tmp0
 adback:
 
 			dey
-			lda tmp0
+			lda tmp3
 			adc subtbl,y
-			sta tmp0
+			sta tmp3
 			txa
 			bne setlzf
 			bit tmp2
@@ -94,7 +94,7 @@ uptbl:		iny
 			iny
 			cpy #08
 			bcc nxtdig
-			lda tmp0
+			lda tmp3
 			ora #$30
 
 

@@ -25,8 +25,6 @@
 .include "kernel_jumptable.inc"
 .include "fat32.inc"
 .include "common.inc"
-.include "tools.inc"
-
 
 .import print_fat_date, print_fat_time, print_filesize, print_filename
 .import files, dirs

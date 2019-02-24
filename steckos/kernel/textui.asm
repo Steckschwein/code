@@ -36,6 +36,7 @@ CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
 KEY_CR=$0d
 KEY_LF=$0a
 KEY_BACKSPACE=$08
+
 STATE_BUFFER_DIRTY  =1<<0
 STATE_CURSOR_OFF    =1<<1
 STATE_CURSOR_BLINK  =1<<2
@@ -56,7 +57,7 @@ screen_buffer:      ;.res COLS*ROWS, CURSOR_BLANK
 .export textui_primm
 .endif
 
-.export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff
+.export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
 
 .import vdp_bgcolor, vdp_memcpy, vdp_mode_text, vdp_display_off
 
@@ -100,16 +101,21 @@ textui_update_crs_ptr:          ; updates the 16 bit pointer crs_p upon crs_x, c
         asl                        ; y*4
         asl                        ; y*8
 
-.ifdef COLS80                    ; crs_y*64 + crs_y*16 (crs_ptr) => y*80
-        asl                        ; y*16
+        bit text_mode
+        bpl @l40
+;.ifdef COLS80                    ; crs_y*64 + crs_y*16 (crs_ptr) => y*80
+        asl                       ; y*16
         sta crs_ptr
-        php                        ; save carry
-        rol crs_ptr+1           ; save carry if overflow
-.else
+        php                       ; save carry
+        rol crs_ptr+1             ; save carry if overflow
+        bra @lae
+;.else
+@l40:
         ; crs_y*32 + crs_y*8  (crs_ptr) => y*40
         sta crs_ptr                ; save
         php                        ; save carry
-.endif
+;.endif
+@lae:
         asl
         rol crs_ptr+1           ; save carry if overflow
         asl
@@ -144,6 +150,14 @@ textui_init0:
 textui_init:
         stz screen_write_lock               ;reset write lock
         jsr textui_enable
+.ifdef COLS80
+        lda #$80
+.else
+        lda #0
+.endif        
+textui_setmode:
+        and #$80
+        sta text_mode
         jmp vdp_mode_text
 
 textui_blank:
@@ -155,24 +169,24 @@ textui_blank:
         sta screen_buffer+$200,x
         sta screen_buffer+$300,x
 
-.ifdef COLS80
+;.ifdef COLS80
         sta screen_buffer+$400,x    ;additional 4 pages for 80 cols
         sta screen_buffer+$500,x
         sta screen_buffer+$600,x
-.endif
+;.endif
         inx
         bne @l1
 @l2:
-.ifdef COLS80
+;.ifdef COLS80
         sta screen_buffer+$700,x
-.endif
+;.endif
         inx
-        cpx #<(COLS*(ROWS+1))
+ ;       cpx #<(COLS*(ROWS+1))
         bne @l2
 
-        stz     crs_x
-        stz     crs_y
-        jsr    textui_update_crs_ptr
+        stz crs_x
+        stz crs_y
+        jsr textui_update_crs_ptr
 
         _screen_dirty
         rts
@@ -217,13 +231,16 @@ textui_update_screen:
         beq    @l1    ;exit if not dirty
 
         SetVector    screen_buffer, addr    ; copy back buffer to video ram
+
+;.ifdef COLS80
+        ldx    #$08
+;.else
+;        ldx    #$04
+;.endif
+;        bit text_mode
+        
         lda    #<ADDRESS_GFX1_SCREEN
         ldy    #WRITE_ADDRESS + >ADDRESS_GFX1_SCREEN
-.ifdef COLS80
-        ldx    #$08
-.else
-        ldx    #$04
-.endif
         jsr    vdp_memcpy
 
         lda    screen_status        ;clean dirty
@@ -250,14 +267,17 @@ textui_scroll_up:
         sta    screen_buffer+$200,x
         inx
         bne    @l3
-.ifndef COLS80
-@le:    lda    screen_buffer+$300+COLS,x
+        bit text_mode
+        bmi @l4
+;.ifndef COLS80
+@le40:  lda    screen_buffer+$300+COLS,x
         sta    screen_buffer+$300,x
         inx
-        cpx #<(COLS * ROWS)
-        bne @le
-.endif
-.ifdef COLS80
+        cpx #<(40 * ROWS)
+        bne @le40
+        bra @exit
+;.endif
+;.ifdef COLS80
 @l4:    lda    screen_buffer+$300+COLS,x
         sta    screen_buffer+$300,x
         inx
@@ -277,9 +297,10 @@ textui_scroll_up:
 @le:    lda    screen_buffer+$700+COLS,x
         sta    screen_buffer+$700,x
         inx
-        cpx #<(COLS * ROWS)
+        cpx #<(80 * ROWS)
         bne @le
-.endif
+;.endif
+@exit:
         plx
         rts
 
@@ -435,7 +456,7 @@ textui_dispatch_char:
 @l5:    stz    crs_x
         jmp    textui_inc_cursor_y
 
-screen_status:       .res 1;screen_buffer + (COLS*(ROWS+1))
-screen_write_lock:   .res 1;screen_status + 1
-screen_frames:       .res 1;screen_status + 2
-saved_char:          .res 1;screen_status + 3
+screen_status:       .res 1
+screen_write_lock:   .res 1
+screen_frames:       .res 1
+saved_char:          .res 1

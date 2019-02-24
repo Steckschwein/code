@@ -46,17 +46,17 @@ vdp_display_off:
 ;	y - high byte vram adress
 ;  	x - amount of 256byte blocks (page counter)
 vdp_memcpy:
-		vdp_sreg
-		ldy #$00     ;2
+      vdp_sreg
+      ldy #$00     ;2
 @l1:	vdp_wait_l	10
-        lda (addr),y ;5
-		iny          ;2
-		sta a_vram    ;1 opcode fetch
-		bne @l1      ;3
-		inc adrh
-		dex
-		bne @l1
-		rts
+      lda (addr),y ;5
+      iny          ;2
+      sta a_vram    ;1 opcode fetch
+      bne @l1      ;3
+      inc adrh
+      dex
+      bne @l1
+      rts
 
 ;
 ;	text mode - 40x24/80x24 character mode, 2 colors
@@ -67,11 +67,16 @@ vdp_mode_text:
 	; enable V9958 /WAIT pin
 	vdp_sreg v_reg25_wait, v_reg25
 .endif
-	ldy	#0
+	SetVector vdp_init_bytes_text, krn_ptr1
+  bit text_mode
+  bpl @l0
+  SetVector vdp_init_bytes_text_80cols, krn_ptr1
+@l0:  
+  ldy #0
 	ldx	#v_reg0
 @l1:
-	lda vdp_init_bytes_text,y
-	vdp_wait_s 4
+	lda (krn_ptr1),y
+	vdp_wait_s 3
 	sta a_vreg
 	iny
 	vdp_wait_s 2
@@ -81,21 +86,27 @@ vdp_mode_text:
 	bne @l1
 	rts
 
-vdp_init_bytes_text:
-.ifdef COLS80
-	.byte v_reg0_m4	; text mode 2
+vdp_init_bytes_text_80cols:
+;.ifdef COLS80
+	.byte v_reg0_m4 ; text mode 2, 80 cols
 	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
 	.byte (ADDRESS_GFX1_SCREEN / $1000)| 1<<1 | 1<<0	; name table - value * $1000 (v9958) --> charset
-.else
-	.byte	0
-	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
-	.byte (ADDRESS_GFX1_SCREEN / $1000) 	; name table - value * $400					--> charset
-.endif
 	.byte 0	; not used
 	.byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
 	.byte	0	; not used
 	.byte 0	; not used
 	.byte	Medium_Green<<4|Black
+;.else
+vdp_init_bytes_text:
+	.byte	0
+	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
+	.byte (ADDRESS_GFX1_SCREEN / $1000) 	; name table - value * $400					--> charset
+	.byte 0	; not used
+	.byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
+	.byte	0	; not used
+	.byte 0	; not used
+	.byte	Medium_Green<<4|Black
+;.endif
 
 ;
 ;   input:	a - color

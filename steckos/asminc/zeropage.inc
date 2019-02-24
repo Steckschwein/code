@@ -20,9 +20,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-; INIT0/SHELL
+.globalzp       ptr1, ptr2, ptr3, ptr4
+.globalzp       tmp1, tmp2, tmp3, tmp4
 
-appstart	= $1000
+; INIT0/SHELL
 
 ; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
 cmdptr		= $d6
@@ -30,26 +31,26 @@ paramptr	= $d8
 retvec 		= $da
 
 ; GENERAL
-addr 		= $e0
-adrl 		= addr
-adrh 		= addr+1
+addr    = $e0
+adrl    = addr
+adrh    = addr+1
 ; TEXTUI
-crs_ptr 	= $e2
-crs_x		= $028c
-crs_y   	= $028d
+crs_ptr = $e2
+crs_x   = $028c
+crs_y   = $028d
 
 ; OUT
 msgptr  	= $e4		; 2 bytes
 
 ; kernel pointer (internally used)
-krn_ptr1    	= $e6	; 2 bytes			;
-krn_ptr2    	= $e8	; 2 bytes			;
+krn_ptr1    	= $e6	; 2 bytes
+krn_ptr2    	= $e8	; 2 bytes
 krn_ptr3    	= $ea	; 2 bytes
 
 krn_tmp     	= $ec		; 16 bit tmp
-krn_tmp2		= krn_tmp+1	; single byte alias tmp1
-krn_tmp3		= krn_tmp+2	; single byte alias tmp2
-krn_tmp4		= krn_tmp+3	; single byte alias tmp2
+krn_tmp2		= krn_tmp+1	; single byte
+krn_tmp3		= krn_tmp+2	; single byte
+krn_tmp4		= krn_tmp+3	; single byte
 
 ; FAT32
 filenameptr 		= $f0   ; 2 byte
@@ -72,4 +73,7 @@ SYS_IRR				= $0287		; system interrupt request register - kernel collects all IR
 	IRQ_VIA			= 1<<5		; irq from VIA (6522)
 	IRQ_IO0			= 1<<4		; i/o port 0
 	;...
+
+text_mode      = $0288   ; 1<<7 - 80 columns mode, 40 columns otherwise
+
 trampolin			= $0010

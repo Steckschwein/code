@@ -1,4 +1,4 @@
-TARGET=steckschwein
+TARGET=steckschwein-kernel
 TARGET_SYS=none
 	
 DEFINES+=-DV9958
@@ -26,10 +26,10 @@ ifeq ($(words $(MAKECMDGOALS)),1)
 endif
 
 
-all: ../lib/$(TARGET).a
+all: ../lib/$(TARGET).lib
 
 clean:
-	rm -f ../lib/$(TARGET).a
+	rm -f ../lib/$(TARGET).lib
 	$(call RMDIR,../libwrk)
 
 mostlyclean:
@@ -44,6 +44,16 @@ SRCDIRS = $(SRCDIR)
 SRCDIRS +=  t99xx
 SRCDIRS +=  joystick
 SRCDIRS +=  ym3812
+SRCDIRS +=  $(CC65_HOME)/libsrc/conio     	\
+			$(CC65_HOME)/libsrc/runtime	 	\
+			$(CC65_HOME)/libsrc/zlib		\
+			$(CC65_HOME)/libsrc/common
+	#		$(CC65_HOME)/libsrc/serial   \
+	#		$(CC65_HOME)/libsrc/tgi      \
+#            $(CC65_HOME)/libsrc/dbg      \
+ #           $(CC65_HOME)/libsrc/em       \
+  #          $(CC65_HOME)/libsrc/joystick \
+   #         $(CC65_HOME)/libsrc/mouse    \
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS) 
@@ -79,7 +89,7 @@ endef # COMPILE_recipe
 ../libwrk/$(TARGET)/%.o: %.c | ../libwrk/$(TARGET)
 	$(COMPILE_recipe)
 	
-../lib/$(TARGET).a: $(OBJS) | ../lib
+../lib/$(TARGET).lib: $(OBJS) | ../lib
 	$(AR65) a $@ $?
 
 ../libwrk/$(TARGET) ../lib ../target/$(TARGET)/util:

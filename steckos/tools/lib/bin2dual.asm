@@ -1,5 +1,4 @@
 .include "../../kernel/kernel_jumptable.inc"
-.include "../tools.inc"
 .export bin2dual
 .import char_out
 .segment "CODE"

@@ -3,27 +3,22 @@ ifndef DIST_TARGET
     DIST_TARGET=/media/dommas/STCKSCHWN/
 endif
 
+.PHONY: all clean
 all: build
 
 clean:
-	(cd test; make clean)
 	(cd tools; make clean)
 	(cd shell; make clean)
 	(cd libsrc; make clean)
 	(cd kernel; make clean)
 	rm -rf dist/*
 
-lib/steckschwein-kernel.lib:
+build:
 	(cd kernel; make )
-	(cd libsrc ; make )
-
-lib: kernel lib/steckschwein-kernel.lib
-
-build: lib
+	(cd libsrc; make )
 	(cd tools/lib; make )
 	(cd shell; make )
 	(cd tools; make )
-	(cd test; make )
 
 test:
 	(cd kernel; make test)

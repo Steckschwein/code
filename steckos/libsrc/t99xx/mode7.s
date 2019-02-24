@@ -34,6 +34,10 @@
 
 .export vdp_wait_cmd
 
+.importzp tmp1, ptr1
+vdp_ptr=ptr1
+vdp_tmp=tmp1
+
 .code
 ;
 ;	gfx 7 - each pixel can be addressed - e.g. for image

@@ -2,9 +2,9 @@
 .include "../../kernel/kernel.inc"
 .include "../../kernel/fat32.inc"
 
-.include "../tools.inc"
-
 .export print_filename, print_fat_date, print_fat_time, print_filesize
+
+.importzp tmp1, tmp2
 .import b2ad, dword2asc, char_out
 .segment "CODE"
 print_filename:
@@ -111,10 +111,10 @@ print_filesize:
  		stx $0a
 		sty $0b
 
-		sta tmp0
+		sta tmp2
 		lda #$06
 		sec
-		sbc tmp0
+		sbc tmp2
 		; beq @l2
 		tax
 		lda #' '
@@ -128,7 +128,7 @@ print_filesize:
 	    lda ($0a),y
 	    jsr char_out
 	    iny
-	    cpy tmp0
+	    cpy tmp2
 	    bne @l2
 		ply
 		rts
