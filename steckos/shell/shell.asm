@@ -623,7 +623,7 @@ l_exit:
         rts
 crs_x_prompt: .res 1
 
-PATH:     .asciiz "./:/steckos/:/utils/"
+PATH:     .asciiz "./:/steckos/:/progs/"
 APPEXT:   .asciiz ".PRG"
 screensaver_prg:  .asciiz "/steckos/unrclock.prg"
 screensaver_rtc:  .res 1
