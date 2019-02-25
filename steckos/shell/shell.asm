@@ -30,6 +30,9 @@ prompt  = $af
 .include "kernel_jumptable.inc"
 .include "appstart.inc"
 
+.importzp tmp1, tmp2
+.importzp ptr1, ptr2, ptr3
+
 ; set attrib mask. hide volume label and hidden files
 dir_attrib_mask		= $0a
 

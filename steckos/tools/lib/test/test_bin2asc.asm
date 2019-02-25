@@ -1,8 +1,8 @@
 .include "asmunit.inc" 	; unit test api
 
-	.import b2ad2				; uut
-	.import b2ad				; uut
-	.import dpb2ad				; uut
+.import b2ad2				; uut
+.import b2ad				; uut
+.import dpb2ad				; uut
 
 .code
 	
