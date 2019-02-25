@@ -66,7 +66,7 @@ init:
       .byte $0a,0
 
       bra mainloop
-    
+
 exit_from_prg:
       cld
     ; cmp #0
@@ -76,7 +76,7 @@ exit_from_prg:
     ; .byte $0a,"Exit: ",0
     ; pla
     ; jsr char_out
-mainloop:      
+mainloop:
       jsr krn_primm
       .byte $0a, '[', 0
       ; output current path
@@ -102,16 +102,16 @@ mainloop:
         ; reset input buffer
         ldy #0
         jsr terminate
-                
+
 		; put input into buffer until return is pressed
 inputloop:
         jsr screensaver_settimeout  ;reset timeout
 @l_input:
         jsr screensaver_loop
-        
+
         jsr krn_getkey
         bcc @l_input
-        
+
         cmp #KEY_RETURN ; return?
         beq parse
 
@@ -370,10 +370,10 @@ cmdlist:
 
 		.byte "up",0
 		.word krn_upload
-    
+
 ;		.byte "mode40",0
 	;	.word mode_40
-    
+
 		;.byte "mode80",0
 		;.word mode_80
 
@@ -630,7 +630,7 @@ screensaver_settimeout:
 :       sta screensaver_rtc
 l_exit:
         rts
-        
+
 PATH:     .asciiz "./:/steckos/:/progs/"
 PRGEXT:           .asciiz ".PRG"
 screensaver_prg:  .asciiz "/steckos/unrclock.prg"

@@ -25,6 +25,10 @@
 appstart $1000
 .export char_out=krn_chrout
 
+.macro  PString Arg
+    .byte   .strlen(Arg), Arg
+.endmacro
+
 
 .importzp ptr1
 

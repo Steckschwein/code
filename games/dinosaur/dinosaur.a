@@ -1,6 +1,8 @@
 !src "../../steckos/kernel/kernel_jumptable.inc"
-!src "../../steckos/kernel/zeropage.inc"
+!src "../../steckos/asminc/zeropage.inc"
 !src "../../steckos/asminc/via.inc"
+
+appstart=$1000
 
 PORT_SEL_2              = !1<<7
 PORT_SEL_1              = 1<<7
@@ -86,14 +88,14 @@ main:
     jsr krn_close
 ++
     sei
-    
+
     jsr krn_textui_disable
-    
+
     lda	#33
     sta	.seed
-    
+
     jsr	vdp_display_off
-    
+
     jsr	.init_vram
 
     jsr	.new_game
@@ -117,20 +119,20 @@ main:
 	jsr	vdp_init_reg
 
 	cli
-    
+
 -   jsr krn_getkey
     cmp #$1b
  ;   bne -
- 
+
     sei
 ;    copypointer .save_isr, $fffe
     cli
 ;    jsr	krn_textui_init
- ;   jsr krn_textui_enable   
+ ;   jsr krn_textui_enable
     ;jmp (retvec)
 -   bra -
-    
-    
+
+
 
 isXmas: ; only 24.12-26.12. load xmas gfx
     lda rtc_systime_t+4
@@ -141,15 +143,15 @@ isXmas: ; only 24.12-26.12. load xmas gfx
     bcc ++
     cmp #27
     bcs +
-    sec    
+    sec
     rts
 +   clc
 ++  rts
-    
-    
-    
-    
-    
+
+
+
+
+
 .vdp_init_gfx
 	!byte 0
 	!byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
@@ -338,8 +340,8 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 	lda	#<(.A_GX_SCR + ((.Y_OFS_GAME_OVER+3)*32))+14
 	ldy	#.WRITE_ADDRESS + >(.A_GX_SCR+((.Y_OFS_GAME_OVER+3)*32))
 	jsr .vdp_print
-    
-    
+
+
 	rts
 
 .vdp_print
@@ -370,7 +372,7 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 	sec
 	sbc	(.sin_tab_ptr), y
 	sta	.sprite_tab+4*4
-	lda	#.DINOSAUR_Y   
+	lda	#.DINOSAUR_Y
 	sec
 	sbc	(.sin_tab_ptr), y
 	sta	.sprite_tab+0*4
@@ -419,7 +421,7 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 	iny
 	lda	(addr),y
 	sta	.sprite_tab+2+1*4
-    
+
     cmp #36 ;dino head shape ducked
     beq +
     lda #.DINOSAUR_X+10     ;.DINOSAUR_Y-10, .DINOSAUR_X+10
@@ -429,11 +431,11 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 +   lda #.DINOSAUR_X+16;    ;.DINOSAUR_Y+4, .DINOSAUR_X+16
     sta	.sprite_tab+1+4*4   ; cap sprite x
     lda #4
-++    
+++
     clc
     adc .sprite_tab+0+0*4 ; y dino head
     sta	.sprite_tab+0+4*4 ; y cap sprite
-    
+
 	iny
 	lda	(addr),y
 	sta	.sprite_tab+2+2*4
@@ -442,7 +444,7 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 	sta	.sprite_tab+2+3*4
     iny
 	lda	(addr),y
-	sta	.sprite_tab+2+4*4    
+	sta	.sprite_tab+2+4*4
 	rts
 
 .animate_enemy
@@ -567,7 +569,7 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 
 	jsr .new_game
 
-+++	
++++
 	jsr	.update_vram
 	inc	.frame_cnt
 
@@ -791,7 +793,7 @@ isXmas: ; only 24.12-26.12. load xmas gfx
 	ldy	#.WRITE_ADDRESS + >.A_SP_PAT
 	ldx	#$04			; sprite patterns
 	jsr	vdp_memcpy
-    
+
 	+SetVector .text_game_label, addr
 	lda	#<(.A_GX_SCR + (22*32))
 	ldy	#.WRITE_ADDRESS + >(.A_GX_SCR+(22*32))
