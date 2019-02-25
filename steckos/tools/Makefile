@@ -35,7 +35,7 @@ toollib:
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 ls.prg: toollib ls.o ls_entry_short.o
-	cl65 $(CA65FLAGS) --target none --config ../prg.ld65.cfg ls.o ls_entry_short.o $(TOOLLIB) -o ls.prg
+	cl65 ls.o ls_entry_short.o $(CA65FLAGS) --target none $(LDFLAGS) $(TOOLLIB) -o ls.prg
 ll.prg: toollib ls.o ls_entry_long.o
 	cl65 $(CA65FLAGS) --target none --config ../prg.ld65.cfg ls.o ls_entry_long.o $(TOOLLIB) -o ll.prg
 stat.prg: toollib ls.o ls_entry_stat.o
