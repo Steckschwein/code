@@ -9,6 +9,7 @@ pipelines:
   default:
     - step:
         script:
+          - ca65 --version
           - ( cd asmunit && make clean all )
           - export CC65_HOME=/cc65
           - ( cd steckos && make clean all )
