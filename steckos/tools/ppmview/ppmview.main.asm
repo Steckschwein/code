@@ -29,7 +29,7 @@
 .include "vdp.inc"
 .include "joystick.inc"
 .include "via.inc"
-.include "fat32.inc"
+.include "fat32.inc"; TODO FIXME get rid of
 .include "fcntl.inc"
 .include "zeropage.inc"
 

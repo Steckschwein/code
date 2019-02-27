@@ -1,4 +1,4 @@
-CA65FLAGS=-v -v --include-dir ../../asminc --include-dir ../../../asmunit --include-dir ../../kernel
+CA65FLAGS=-v -I ../../asminc -I ../../../asmunit -I ../../kernel
 LDFLAGS=--config ../../prg.ld65.cfg
 LIBS=../lib/toollib.a ../../lib/steckschwein.a
 TEST_LIBS=$(LIBS) ../../../asmunit/asmunit.a
