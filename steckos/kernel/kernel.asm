@@ -371,7 +371,7 @@ krn_display_off:				jmp vdp_display_off
 krn_getkey:						jmp getkey
 
 .export krn_chrout
-krn_chrout:						jmp textui_chrout;ansi_chrout
+krn_chrout:						jmp ansi_chrout
 .export krn_putchar
 krn_putchar:					jmp textui_put
 
