@@ -31,7 +31,7 @@
 .export vdp_mc_set_pixel
 .export vdp_mc_init_screen
 
-.importzp vdp_ptr, vdp_tmp
+.importzp vdp_tmp
 
 .code
 ;
@@ -40,10 +40,8 @@
 vdp_mc_on:
 			jsr vdp_mc_init_screen
 			lda #<vdp_init_bytes_mc
-			sta vdp_ptr
-			lda #>vdp_init_bytes_mc
-			sta vdp_ptr+1
-			lda #<(vdp_init_bytes_mc_end-vdp_init_bytes_mc)-1
+			ldy #>vdp_init_bytes_mc
+			ldx #<(vdp_init_bytes_mc_end-vdp_init_bytes_mc)-1
 			jmp vdp_init_reg
 ;
 ; init mc screen to provide

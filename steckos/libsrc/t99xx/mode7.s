@@ -34,19 +34,15 @@
 
 .export vdp_wait_cmd
 
-.importzp vdp_ptr, vdp_tmp
-
 .code
 ;
 ;	gfx 7 - each pixel can be addressed - e.g. for image
 ;
 vdp_gfx7_on:
-			lda #<vdp_init_bytes_gfx7
-			sta vdp_ptr
-			lda #>vdp_init_bytes_gfx7
-			sta vdp_ptr+1
 			vdp_sreg 0, v_reg23	; reset vertical scroll
-			lda #<(vdp_init_bytes_gfx7_end-vdp_init_bytes_gfx7)-1
+			lda #<vdp_init_bytes_gfx7
+			ldy #>vdp_init_bytes_gfx7
+			ldx #<(vdp_init_bytes_gfx7_end-vdp_init_bytes_gfx7)-1
 			jmp vdp_init_reg
 					
 vdp_init_bytes_gfx7:

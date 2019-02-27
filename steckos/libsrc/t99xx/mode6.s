@@ -37,9 +37,8 @@
 ;
 vdp_gfx6_on:
 			lda #<vdp_init_bytes_gfx6
-			sta vdp_ptr
-			lda #>vdp_init_bytes_gfx6
-			sta vdp_ptr+1
+			ldy #>vdp_init_bytes_gfx6
+      ldx #<(vdp_init_bytes_gfx6_end-vdp_init_bytes_gfx6)-1
 			jmp vdp_init_reg
 
 vdp_init_bytes_gfx6:
@@ -51,7 +50,7 @@ vdp_init_bytes_gfx6:
 			.byte	$ff
 			.byte	$3f
 			.byte	$ff
-			
+vdp_init_bytes_gfx6_end:
 
 ;
 ; blank gfx mode 2 with

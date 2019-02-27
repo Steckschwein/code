@@ -29,8 +29,6 @@
 .export vdp_gfx1_blank
 .export vdp_gfx1_on
 
-.importzp vdp_ptr
-
 .code
 
 vdp_gfx1_blank:		; 3 x 256 bytes
@@ -48,6 +46,7 @@ vdp_init_bytes_gfx1:
 	.byte	(ADDRESS_GFX1_SPRITE / $80)	; sprite attribute table - value * $80 		--> offset in VRAM
 	.byte 	(ADDRESS_GFX1_SPRITE_PATTERN / $800)  ; sprite pattern table - value * $800  		--> offset in VRAM
 	.byte	Black
+vdp_init_bytes_gfx1_end:
 
 ;
 ;	gfx mode 1 - 32x24 character mode, 16 colors with same color for 8 characters in a block
@@ -59,7 +58,6 @@ vdp_gfx1_on:
 	ldx #$20		;32 colors
 	jsr vdp_fills
 	lda #<vdp_init_bytes_gfx1
-	sta vdp_ptr
-	lda #>vdp_init_bytes_gfx1
-	sta vdp_ptr+1
-	jmp vdp_init_reg
+	ldy #>vdp_init_bytes_gfx1
+	ldx #<(vdp_init_bytes_gfx1_end-vdp_init_bytes_gfx1)-1
+  jmp vdp_init_reg

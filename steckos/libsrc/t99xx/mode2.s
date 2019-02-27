@@ -37,10 +37,8 @@
 ;	
 vdp_gfx2_on:
 			lda #<vdp_init_bytes_gfx2
-			sta vdp_ptr
-			lda #>vdp_init_bytes_gfx2
-			sta vdp_ptr+1
-			lda #<(vdp_init_bytes_gfx2_end-vdp_init_bytes_gfx2)-1
+			ldy #>vdp_init_bytes_gfx2
+			ldx #<(vdp_init_bytes_gfx2_end-vdp_init_bytes_gfx2)-1
 			jsr vdp_init_reg
 			jmp vdp_fill_name_table
 
