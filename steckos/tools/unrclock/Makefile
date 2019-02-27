@@ -1,6 +1,6 @@
-LIBS=../../lib/steckschwein-kernel.lib ../../tools/lib/toollib.a
-CAFLAGS=--include-dir ../../asminc --include-dir ../../kernel
-LDFLAGS=--config ../../steckos-c-app.cfg $(LIBS)
+LIBS=../../lib/steckschwein.a ../../tools/lib/toollib.a
+CAFLAGS=-I ../../asminc -I ../../kernel
+LDFLAGS=--config ../../prg.ld65.cfg $(LIBS)
 
 .PHONY: all clean
 

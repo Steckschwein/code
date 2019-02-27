@@ -15,6 +15,7 @@ all: toollib $(TOOLS)
 clean:
 	rm -f *.prg *.s *.o toollib.a
 	(cd lib; make clean)
+	(cd unrclock; make clean)
 	(cd xmodem; make clean)
 	(cd ppmview; make clean)
 
