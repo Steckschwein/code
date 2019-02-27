@@ -13,3 +13,5 @@ tmp1:           .res    1
 tmp2:           .res    1
 tmp3:           .res    1
 tmp4:           .res    1
+vdp_ptr:        .res 2
+vdp_tmp:        .res 1

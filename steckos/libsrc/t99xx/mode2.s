@@ -29,9 +29,7 @@
 .export vdp_gfx2_blank
 .export vdp_gfx2_set_pixel
 
-.importzp tmp1, ptr1
-vdp_ptr=ptr1
-vdp_tmp=tmp1
+.importzp vdp_ptr, vdp_tmp
 
 .code
 ;

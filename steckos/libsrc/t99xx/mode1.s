@@ -29,8 +29,7 @@
 .export vdp_gfx1_blank
 .export vdp_gfx1_on
 
-.importzp ptr1
-vdp_ptr=ptr1
+.importzp vdp_ptr
 
 .code
 
