@@ -2,7 +2,7 @@ CA65FLAGS=-v -v --include-dir ../../asminc --include-dir ../../../asmunit --incl
 LDFLAGS=--config ../../prg.ld65.cfg
 LIBS=../lib/toollib.a ../../lib/steckschwein.a
 TEST_LIBS=$(LIBS) ../../../asmunit/asmunit.a
-TEST_LDFLAGS=--config test.cfg -Dasmunit_char_out=0x200
+TEST_LDFLAGS=--config ../../../asmunit/asmunit.cfg -Dasmunit_char_out=0x200
 
 ADDRESS=0x1000
 
@@ -10,7 +10,7 @@ ADDRESS=0x1000
 all: ppmview.prg test.ppmview.main
 
 clean:
-	rm -f *.prg *.o
+	rm -f *.bin *.prg *.o *.log
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
