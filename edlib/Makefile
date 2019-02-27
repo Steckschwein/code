@@ -31,4 +31,4 @@ edlply.prg: edlply.o edlib.o $(LIBS)
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 %: %.prg
-	../../transfer.py $< -s $(APP_START)
+	../transfer.py $< -s $(APP_START)
