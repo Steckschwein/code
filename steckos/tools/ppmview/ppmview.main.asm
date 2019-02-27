@@ -33,9 +33,6 @@
 .include "fcntl.inc"
 .include "zeropage.inc"
 
-.importzp ptr2
-.importzp tmp2
-
 .import hexout
 .import vdp_gfx7_on
 .import vdp_gfx7_blank

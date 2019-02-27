@@ -18,7 +18,7 @@ version.inc:
 	ca65 --target none $(DEBUG) $(CAFLAGS) $<
 
 shell.prg: version.inc shell.o
-	ld65 shell.o zeropage.o $(LDFLAGS) -o shell.prg
+	ld65 shell.o $(LDFLAGS) -o shell.prg
 
 shell: shell.prg
 	../../transfer.py -s $(START_ADDR) shell.prg
