@@ -191,10 +191,10 @@ DIR_Entry_Deleted            = $e5
 ;   openFlags     .byte; +1 flags during open
 .endstruct
 
-FD_Entry_Size = .sizeof(F32_fd)
-FD_Entries_Max = ($0400 - fd_area) / FD_Entry_Size
-FD_INDEX_CURRENT_DIR = 0*FD_Entry_Size    ; current dir always go to fd #0
-FD_INDEX_TEMP_DIR    = 1*FD_Entry_Size   ; temp dir always go to fd #1
+FD_Entry_Size         = .sizeof(F32_fd)
+FD_Entries_Max        = (sd_blktarget - fd_area) / FD_Entry_Size
+FD_INDEX_CURRENT_DIR  = 0*FD_Entry_Size    ; current dir always go to fd #0
+FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size   ; temp dir always go to fd #1
 
 ; TODO: do we need these?
 ;BS_BootSig      = 38
@@ -204,22 +204,21 @@ FD_INDEX_TEMP_DIR    = 1*FD_Entry_Size   ; temp dir always go to fd #1
 
 FAT_EOC         = $0fffffff   ; end of cluster chain marker
 
-volumeID            = $0308 ; address of VolumeID
-cluster_begin_lba       = volumeID + .sizeof(VolumeID) ; begin of cluster area (4 byte)
+volumeID              = $0308 ; address of VolumeID
+cluster_begin_lba     = volumeID + .sizeof(VolumeID) ; begin of cluster area (4 byte)
 fat_lba_begin         = cluster_begin_lba + 4; (2 byte) begin of fat area - TODO FIXME we assume 16bit are sufficient since fat is placed at the beginning of the device
-fat2_lba_begin         = fat_lba_begin + 2   ; (2 byte) end of first fat and begin of 2nd fat (mirror) area - TODO FIXME we assume 16bit ...
-fat_fsinfo_lba         = fat2_lba_begin + 2; (4 byte)
+fat2_lba_begin        = fat_lba_begin + 2   ; (2 byte) end of first fat and begin of 2nd fat (mirror) area - TODO FIXME we assume 16bit ...
+fat_fsinfo_lba        = fat2_lba_begin + 2; (4 byte)
 fat_tmp_dw            = fat_fsinfo_lba + 4; (4 byte) internallly used tmp
-fat_tmp_dw2            = fat_tmp_dw + 4; (4 byte) internallly used tmp
+fat_tmp_dw2           = fat_tmp_dw + 4; (4 byte) internallly used tmp
 fat_tmp_fd            = fat_tmp_dw2 + 4; (1 byte); internallly used fd
-fat_tmp_mode         = fat_tmp_fd + 1; (1 byte) internallly used file mode
-filename_buf         = fat_tmp_mode + 1 ; (13 byte, 8.3 + \0) file name buffer
+fat_tmp_mode          = fat_tmp_fd + 1; (1 byte) internallly used file mode
+filename_buf          = fat_tmp_mode + 1 ; (13 byte, 8.3 + \0) file name buffer
 fat_dirname_mask      = filename_buf + 13; (11 byte, fat32 name and ext)
-fat_vec_matcher         = fat_dirname_mask + 11; (2 byte) jump vector
+fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector
 
-sd_blocksize         = $200
-fd_area					= $0380 ; File descriptor area until $0400
-sd_blktarget			= $0400
-block_data				= sd_blktarget
-block_fat				= block_data+sd_blocksize
-;block_fat_lba_addr	= 
+sd_blocksize          = $200
+fd_area               = $0380 ; File descriptor area until $0400
+sd_blktarget          = $0400
+block_data            = sd_blktarget
+block_fat             = block_data+sd_blocksize

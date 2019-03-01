@@ -1,7 +1,8 @@
 CPU=65c02
-OBJS=fat32.o sdcard.o textui.o t99xx.lib.o rtc.o spi.o uart.o via.o out.o key.o exec.o util.o matcher.o kernel.o debug.o ansi.o
+OBJS=fat32.o sdcard.o textui.o rtc.o spi.o uart.o via.o out.o key.o exec.o util.o matcher.o kernel.o debug.o ansi.o
 ASM_INCLUDE=../asminc
-LDFLAGS=--config kernel.cfg
+LIBS=../lib/steckschwein.a
+LDFLAGS=-C kernel.cfg
 
 # if 9958 is used
 DEFINES+=-DV9958
@@ -21,7 +22,7 @@ DEFINES+=-DV9958
 # do not write anything (metadata)
 # DEBUG += -DFAT_NOWRITE
 #DEBUG += -DV9958
-#DEBUG += -DDEBUG_EXECV
+# DEBUG += -DDEBUG_EXECV
 #DEBUG += -DDEBUG_SPI
 
 # optimize flags
@@ -31,27 +32,25 @@ OPT += -DTEXTUI_PRIMM
 .PHONY: all clean
 all: kernel.bin loader.bin
 
-.PHONY: clean
 clean:
 	rm -f *.o *.bin *.map *.txt kernel_jumptable.inc version.inc
 
-%.o: %.asm $(ASM_INCLUDE)/vdp.inc $(ASM_INCLUDE)/zeropage.inc $(ASM_INCLUDE)/common.inc fat32.inc version.inc debug.inc
-	ca65 --cpu $(CPU) --target none $(DEFINES) $(DEBUG) $(OPT) --include-dir $(ASM_INCLUDE)  $<
+%.o: %.asm $(ASM_INCLUDE)/*.inc version.inc debug.inc
+	ca65 --cpu $(CPU) --target none $(DEFINES) $(DEBUG) $(OPT) -I $(ASM_INCLUDE)  $<
 
 version.inc:
 	echo -n ".byte \"r`hg log -l1 | grep changeset | cut -d ':' -f2 | tr -d ' '`\"" > version.inc
 
-kernel.bin: version.inc $(OBJS)
-	ld65 $(LDFLAGS) $(OBJS) -m kernel.map -Ln symbols.txt -o kernel.bin
+kernel.bin: version.inc $(OBJS) $(LIBS)
+	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -m kernel.map -Ln symbols.txt -o kernel.bin
 	grep krn symbols.txt | sed "s/al 00//" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > kernel_jumptable.inc
 
 loader.bin: kernel.bin loader.o
 	ld65 $(LDFLAGS) loader.o -o loader.bin
 
 	# -m <kernel start adress - $100 (loader)
-disas: loader.bin
-	dcc6502 -o 0xe700 -m 6394 -d -n -c loader.bin > loader.dis
-
+dis: loader.bin
+	dcc6502 -o 0xe700 -m 6398 -d -n -c loader.bin > loader.dis
 transfer: loader.bin
 	../../transfer.py -s 0x1000 loader.bin
 

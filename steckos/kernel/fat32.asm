@@ -68,7 +68,7 @@
 .export __fat_isroot
 .export fat_alloc_fd
 
-.segment "KERNEL"
+.segment "CODE"; WAS KERNEL
 
 		;	seek n bytes within file denoted by the given FD
 		;in:
@@ -182,7 +182,7 @@ fat_read:
 		; out:
 		;   Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_write:
-		debug "f_w_s"
+		debug "fws"
 		stx fat_tmp_fd										; save fd
 
 		jsr __fat_isOpen
@@ -202,7 +202,7 @@ fat_write:
 		jsr __fat_reserve_cluster							; otherwise start cluster is root, we try to find a free cluster, fat_tmp_fd has to be set
 		bne @l_exit
 		restoreptr write_blkptr								; restore write ptr
-		debug "f_w_1"
+		debug "fw1"
 		ldx fat_tmp_fd										; restore fd, go on with writing data
 @l_write:
 		jsr __calc_blocks
@@ -394,7 +394,7 @@ __fat_opendir:
 		bra @l_exit
 @l_ok:	lda #EOK					; ok
 @l_exit:
-		debug "f_od"
+		debug "fod"
 		rts
 
 		;in:
@@ -410,7 +410,7 @@ fat_chdir:
 		jsr	__fat_clone_fd        		; therefore we can simply clone the temp dir to current dir fd - FTW!
 		lda #EOK						; ok
 @l_exit:
-		debug "f_cd"
+		debug "fcd"
 		rts
 
 		; unlink a file denoted by given path in A/X
@@ -425,7 +425,7 @@ fat_unlink:
 		jsr __fat_unlink
 		jsr fat_close
 @l_exit:
-		debug "unlink"
+		debug "unlnk"
 		rts
 
 		; delete a directory entry denoted by given path in A/X
@@ -589,7 +589,7 @@ __fat_read_block:
 		rts
 
 __fat_write_block_fat:
-		debug32 "wbf_lba", lba_addr
+		debug32 "wb_lba", lba_addr
 .ifdef FAT_DUMP_FAT_WRITE
 		debugdump "wbf", block_fat
 .endif
@@ -616,7 +616,7 @@ __fat_write_block:
 		;	Z=1 on success, Z=0 otherwise, A=error code
 __fat_write_dir_entry:
 		jsr __fat_prepare_dir_entry
-		debug16 "f_wde_dp", dirptr
+		debug16 "f_w_dp", dirptr
 
 		;TODO FIXME duplicate code here! - @see fat_find_next:
 		lda dirptr+1
@@ -645,8 +645,8 @@ __fat_write_dir_entry:
 		bpl @l_erase
 
 		;TODO FIXME test end of cluster, if so reserve a new one, update cluster chain for directory ;)
-		debug32 "eod_lba", lba_addr
-		debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
+		;debug32 "eod_lba", lba_addr
+		;debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
 ;		lda lba_addr+0
 ;		adc #02
 ;		sbc volumeID+VolumeID::BPB + BPB::SecPerClus
@@ -686,7 +686,6 @@ __fat_rtc_time:
 		lda rtc_systime_t+time_t::tm_sec								; seconds/2
 		lsr
 		ora krn_tmp2
-		debug "rtime"
 		rts
 
 		; out
@@ -703,7 +702,6 @@ __fat_rtc_date:
 		jsr __fat_rtc_high_word
 		lda rtc_systime_t+time_t::tm_mday							; day of month (1..31)
 		ora krn_tmp2
-		debug "rdate"
 		rts
 
 		; prepare dir entry, expects cluster number set in fd_area of newly allocated fd given in X
@@ -977,7 +975,7 @@ fat_open:
 @l_exit_ok:
 		lda #EOK									; A=0 (EOK)
 @l_exit:
-		debug "fopen"
+		debug "fop"
 		rts
 
 		; open a path to a file or directory starting from current directory
@@ -1146,7 +1144,7 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if f
 @l2:	lda blocks+2
 		ora blocks+1
 		ora blocks+0
-		debug16 "cbl", blocks
+		debug16 "bl", blocks
 		rts
 		
 		; in:
@@ -1463,11 +1461,11 @@ fat_mount:
 		debug8 "sec/cl", volumeID+VolumeID::BPB + BPB::SecPerClus
 		debug32 "r_cl", volumeID+VolumeID::EBPB + EBPB::RootClus
 		debug32 "s_lba", lba_addr
-		debug16 "r_sec", volumeID + VolumeID::BPB + BPB::RsvdSecCnt
+		debug16 "r_sc", volumeID + VolumeID::BPB + BPB::RsvdSecCnt
 		debug16 "f_lba", fat_lba_begin
-		debug32 "f_sec", volumeID +  VolumeID::EBPB + EBPB::FATSz32
+		debug32 "f_sc", volumeID +  VolumeID::EBPB + EBPB::FATSz32
 		debug16 "f2_lba", fat2_lba_begin
-		debug16 "fi_sec", volumeID+ VolumeID::EBPB + EBPB::FSInfoSec
+		debug16 "fi_sc", volumeID+ VolumeID::EBPB + EBPB::FSInfoSec
 		debug32 "fi_lba", fat_fsinfo_lba
 		debug32 "cl_lba", cluster_begin_lba
 		debug16 "fbuf", filename_buf
@@ -1481,7 +1479,6 @@ fat_mount:
 @end_mount:
 		debug "f_mnt"
 		rts
-
 
 
 __fat_clone_cd_td:
@@ -1614,7 +1611,7 @@ __fat_alloc_fd:
         ; in:
         ;   X - offset into fd_area
 fat_close:
-		debug "f_cl_s"
+		debug "f_cls"
 		pha
 		lda #$ff    ; otherwise mark as closed
 		sta fd_area + F32_fd::CurrentCluster +3, x
@@ -1706,7 +1703,7 @@ fat_find_next:
 		bra __fat_find_first					; C=0, go on with next cluster
 ff_exit:
 		clc										; we are at the end, C=0 and return
-        debug "ff_exit"
+        debug "ff_ex"
 ff_end:
 		rts
 
@@ -1739,7 +1736,7 @@ __fat_count_direntries:
 		bcs	@l_next
 @l_exit:
 		lda krn_tmp3
-		debug "f_cde"
+		debug "f_cnt_d"
 		rts
 @l_all:
 		.asciiz "*.*"

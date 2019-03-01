@@ -24,7 +24,7 @@
 .include "via.inc"
 .import spi_r_byte, spi_deselect, spi_select_device
 .export getkey
-.segment "KERNEL"
+.segment "CODE"; WAS KERNEL
 
 spi_device_keyboard=%01111010
 

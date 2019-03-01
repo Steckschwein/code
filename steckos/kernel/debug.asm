@@ -32,7 +32,7 @@
 
 .import	krn_chrout, krn_primm
 
-.segment "KERNEL"
+.segment "CODE"; WAS KERNEL
 
 dbg_acc				= $02f9 ; basic uses $0290 - $02f8
 dbg_xreg			= $02fa

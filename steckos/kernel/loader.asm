@@ -24,7 +24,8 @@
 .include "common.inc"
 .include "kernel.inc"
 
-.segment "CODE"
+;.code
+.segment "LOADER"
 ; 	system attribute has to be set on file system
 
 ; .pages = (.payload_end - .payload) / 256 + 1
@@ -73,3 +74,5 @@ end:
 payload:
 .incbin "kernel.bin"
 payload_end:
+
+.segment "OS_CACHE" ; unsued, linker warning

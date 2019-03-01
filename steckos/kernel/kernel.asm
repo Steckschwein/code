@@ -25,7 +25,7 @@
 .include "via.inc"
 .include "ym3812.inc"
 
-.segment "KERNEL"
+.code
 
 .import init_via1
 .import init_rtc
@@ -454,3 +454,5 @@ krn_sd_read_block:    	jmp sd_read_block
 ; $FFFE/$FFFF IRQ vector
 ;*= $fffe
 .word do_irq
+
+.segment "LOADER" ; unused

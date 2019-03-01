@@ -31,7 +31,7 @@
 .include "fat32.inc"
 .include "fcntl.inc"	; from ca65 api
 
-.segment "KERNEL"
+.segment "CODE"; WAS KERNEL
 
 .import fat_open, fat_read, fat_close, fat_read_block, hexout, sd_read_multiblock, inc_lba_address, calc_blocks
 
@@ -86,10 +86,10 @@ execv:
 		jsr sd_read_multiblock
 
 @l_exec_run:
-		; we came here using jsr, but will not rts.
-		; get return address from stack to prevent stack corruption
-		pla
-		pla
+        ; we came here using jsr, but will not rts.
+        ; get return address from stack to prevent stack corruption
+        pla
+        pla
         jmp (krn_ptr1)
 
 @l_err_exit:

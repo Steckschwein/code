@@ -35,7 +35,7 @@
 ;kernel internal
 .export __rtc_systime_update
 
-.segment "KERNEL"
+.segment "CODE"; WAS KERNEL
 
 spi_device_rtc=%01110110
 

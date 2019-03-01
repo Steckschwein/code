@@ -19,14 +19,14 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
-.include "common.inc"
-.include "kernel.inc"
 .include "vdp.inc"
+.include "common.inc"
+.include "zeropage.inc"
 
-.export vdp_bgcolor, vdp_memcpy, vdp_mode_text, vdp_display_off
+.importzp vdp_ptr
+.import vdp_init_reg
 
-.segment "KERNEL"
+.export vdp_text_on
 
 .ifdef COLS80
 	.ifndef V9958
@@ -34,49 +34,26 @@
 	.endif
 .endif
 
-m_vdp_nopslide
-
-vdp_display_off:
-		vdp_sreg v_reg1, v_reg1_16k
-		rts
-
-;	input:
-;	adrl/adrh vector set
-;	a - low byte vram adress
-;	y - high byte vram adress
-;  	x - amount of 256byte blocks (page counter)
-vdp_memcpy:
-      vdp_sreg
-      ldy #$00     ;2
-@l1:	vdp_wait_l	10
-      lda (addr),y ;5
-      iny          ;2
-      sta a_vram    ;1 opcode fetch
-      bne @l1      ;3
-      inc adrh
-      dex
-      bne @l1
-      rts
-
+.code
 ;
 ;	text mode - 40x24/80x24 character mode, 2 colors
 ;
-vdp_mode_text:
+vdp_text_on:
 .ifdef V9958
 	vdp_sreg <.HIWORD(ADDRESS_GFX1_SCREEN<<2), v_reg14
 	; enable V9958 /WAIT pin
 	vdp_sreg v_reg25_wait, v_reg25
 .endif
-	SetVector vdp_init_bytes_text, krn_ptr1
+	SetVector vdp_init_bytes_text, vdp_ptr
   bit text_mode
   bpl @l0
-  SetVector vdp_init_bytes_text_80cols, krn_ptr1
+  SetVector vdp_init_bytes_text_80cols, vdp_ptr
 @l0:  
   ldy #0
 	ldx	#v_reg0
 @l1:
-	lda (krn_ptr1),y
-	vdp_wait_s 3
+	lda (vdp_ptr),y
+	vdp_wait_s 5
 	sta a_vreg
 	iny
 	vdp_wait_s 2
@@ -107,13 +84,3 @@ vdp_init_bytes_text:
 	.byte 0	; not used
 	.byte	Medium_Green<<4|Black
 ;.endif
-
-;
-;   input:	a - color
-;
-vdp_bgcolor:
-	sta a_vreg
-	lda #v_reg7
-	vdp_wait_s 2
-	sta a_vreg
-	rts

@@ -46,7 +46,7 @@ STATE_TEXTUI_ENABLED=1<<3
 .export screen_buffer;
 screen_buffer:      ;.res COLS*ROWS, CURSOR_BLANK
 
-.segment "KERNEL"
+.segment "CODE"; WAS KERNEL
 .export textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
 
 .ifdef TEXTUI_STROUT
@@ -59,7 +59,7 @@ screen_buffer:      ;.res COLS*ROWS, CURSOR_BLANK
 
 .export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
 
-.import vdp_bgcolor, vdp_memcpy, vdp_mode_text, vdp_display_off
+.import vdp_bgcolor, vdp_memcpy, vdp_text_on, vdp_display_off
 
 .macro _screen_dirty
         lda #STATE_BUFFER_DIRTY
@@ -158,7 +158,7 @@ textui_init:
 textui_setmode:
         and #$80
         sta text_mode
-        jmp vdp_mode_text
+        jmp vdp_text_on
 
 textui_blank:
         ldx #0
@@ -169,20 +169,12 @@ textui_blank:
         sta screen_buffer+$200,x
         sta screen_buffer+$300,x
 
-;.ifdef COLS80
         sta screen_buffer+$400,x    ;additional 4 pages for 80 cols
         sta screen_buffer+$500,x
         sta screen_buffer+$600,x
-;.endif
+        sta screen_buffer+$700,x
         inx
         bne @l1
-@l2:
-;.ifdef COLS80
-        sta screen_buffer+$700,x
-;.endif
-        inx
- ;       cpx #<(COLS*(ROWS+1))
-        bne @l2
 
         stz crs_x
         stz crs_y
@@ -230,18 +222,18 @@ textui_update_screen:
         and    #STATE_BUFFER_DIRTY
         beq    @l1    ;exit if not dirty
 
-        SetVector    screen_buffer, addr    ; copy back buffer to video ram
+        ;SetVector screen_buffer, addr    ; copy back buffer to video ram
 
 ;.ifdef COLS80
-        ldx    #$08
+        ldx    #$04
 ;.else
 ;        ldx    #$04
 ;.endif
 ;        bit text_mode
-        
-        lda    #<ADDRESS_GFX1_SCREEN
-        ldy    #WRITE_ADDRESS + >ADDRESS_GFX1_SCREEN
-        jsr    vdp_memcpy
+        vdp_sreg <ADDRESS_GFX1_SCREEN, (WRITE_ADDRESS + >ADDRESS_GFX1_SCREEN)
+        lda #<screen_buffer
+        ldy #>screen_buffer
+        jsr vdp_memcpy
 
         lda    screen_status        ;clean dirty
         and    #<(~STATE_BUFFER_DIRTY)
