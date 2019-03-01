@@ -39,12 +39,9 @@ dir_attrib_mask		= $0a
 SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 32 ;TODO FIXME too hard
 
-;bufptr			= ptr1
-;pathptr			= ptr2
-;p_history   = ptr3
-bufptr			= $a0
-pathptr			= $a2
-p_history   = $a4
+bufptr			= ptr1
+pathptr			= ptr2
+p_history   = ptr3
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
@@ -57,19 +54,10 @@ appstart
 
 .code
 init:
-      SetVector exit_from_prg, retvec
-      SetVector buf, bufptr
-      SetVector buf, paramptr ; set param to empty buffer
-      SetVector msgbuf, msgptr
-      SetVector PATH, pathptr
-
       jsr krn_primm
       .byte $0a, "steckOS Shell "
       .include "version.inc"
       .byte $0a,0
-
-      bra mainloop
-
 exit_from_prg:
       cld
     ; cmp #0
@@ -79,6 +67,11 @@ exit_from_prg:
     ; .byte $0a,"Exit: ",0
     ; pla
     ; jsr char_out
+      SetVector exit_from_prg, retvec
+      SetVector buf, bufptr
+      SetVector buf, paramptr ; set param to empty buffer
+      SetVector msgbuf, msgptr
+      SetVector PATH, pathptr    
 mainloop:
       jsr krn_primm
       .byte $0a, '[', 0
