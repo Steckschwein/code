@@ -167,7 +167,7 @@ terminate:
 parse:
         copypointer bufptr, cmdptr
 
-        jsr history_push
+        ;jsr history_push
 
         ; find begin of command word
 @l1:
@@ -186,6 +186,7 @@ parse:
 		; first, fast forward until space or abort if null (no parameters then)
 @l4:
       lda (paramptr)
+      ;jsr char_out
       beq @l7
       cmp #$20
       beq @l5
@@ -207,7 +208,7 @@ parse:
 
 compare:
 		; compare
-		ldx #$00
+      ldx #$00
 @l1:	ldy #$00
 @l2:	lda (cmdptr),y
 
@@ -631,7 +632,7 @@ screensaver_settimeout:
 l_exit:
         rts
 
-PATH:     .asciiz "./:/steckos/:/progs/"
+PATH:             .asciiz "./:/steckos/:/progs/"
 PRGEXT:           .asciiz ".PRG"
 screensaver_prg:  .asciiz "/steckos/unrclock.prg"
 screensaver_rtc:  .res 1
