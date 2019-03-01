@@ -39,9 +39,12 @@ dir_attrib_mask		= $0a
 SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 32 ;TODO FIXME too hard
 
-bufptr			= ptr1
-pathptr			= ptr2
-p_history   = ptr3
+;bufptr			= ptr1
+;pathptr			= ptr2
+;p_history   = ptr3
+bufptr			= $a0
+pathptr			= $a2
+p_history   = $a4
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
@@ -152,11 +155,11 @@ escape:
         bra inputloop
 
 key_crs_up:
-        jsr history_back
+;        jsr history_back
         bra inputloop
 
 key_crs_down:
-        jsr history_frwd
+;        jsr history_frwd
         bra inputloop
 
 terminate:
