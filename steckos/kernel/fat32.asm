@@ -68,7 +68,7 @@
 .export __fat_isroot
 .export fat_alloc_fd
 
-.segment "CODE"; WAS KERNEL
+.code
 
 		;	seek n bytes within file denoted by the given FD
 		;in:

@@ -28,7 +28,7 @@
 .include	"fat32.inc"
 .include	"errno.inc"
 
-.segment "CODE"; WAS KERNEL
+.code
 
 .export string_fat_name, fat_name_string, put_char
 .export string_fat_mask

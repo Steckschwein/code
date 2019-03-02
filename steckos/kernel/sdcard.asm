@@ -30,7 +30,7 @@
 .include "kernel.inc"
 .include "sdcard.inc"
 .include "via.inc"
-.segment "CODE"; WAS KERNEL
+.code
 .import spi_rw_byte, spi_r_byte
 .export init_sdcard, sd_select_card, sd_deselect_card
 .export sd_read_block, sd_read_multiblock, sd_write_block

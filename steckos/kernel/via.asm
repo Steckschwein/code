@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 .include "kernel.inc"
-.segment "CODE"; WAS KERNEL
+.code
 .export init_via1
 .include "via.inc"
 

@@ -46,7 +46,7 @@ STATE_TEXTUI_ENABLED=1<<3
 .export screen_buffer;
 screen_buffer:      ;.res COLS*ROWS, CURSOR_BLANK
 
-.segment "CODE"; WAS KERNEL
+.code
 .export textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
 
 .ifdef TEXTUI_STROUT

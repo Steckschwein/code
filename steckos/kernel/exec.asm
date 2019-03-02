@@ -31,7 +31,7 @@
 .include "fat32.inc"
 .include "fcntl.inc"	; from ca65 api
 
-.segment "CODE"; WAS KERNEL
+.code
 
 .import fat_open, fat_read, fat_close, fat_read_block, hexout, sd_read_multiblock, inc_lba_address, calc_blocks
 

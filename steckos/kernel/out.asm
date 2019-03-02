@@ -22,7 +22,7 @@
 
 .include "kernel.inc"
 
-.segment "CODE"; WAS KERNEL
+.code
 .export chrout, strout, primm
 .import textui_chrout
 

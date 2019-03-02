@@ -19,6 +19,7 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
+.setcpu "65c02"
 
 .include "zeropage.inc"
 
@@ -32,7 +33,7 @@
 
 .import	krn_chrout, krn_primm
 
-.segment "CODE"; WAS KERNEL
+.code
 
 dbg_acc				= $02f9 ; basic uses $0290 - $02f8
 dbg_xreg			= $02fa

@@ -20,7 +20,7 @@
 		jsr setUp
 .endmacro
 	
-.segment "KERNEL"	; test must be placed into kernel segment, cuz we wanna use the same linker config
+.code
 
 ; -------------------		
 		setup "fat_alloc_fd"	; test init

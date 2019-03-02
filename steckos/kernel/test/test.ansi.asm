@@ -12,9 +12,9 @@
 	.export textui_chrout=asmunit_chrout
 	.export textui_update_crs_ptr=dummy
 
-.segment "KERNEL"	; test must be placed into kernel segment, cuz we wanna use the same linker config
+.code
 
-    test_name "ansi_chrout"
+  test_name "ansi_chrout"
 
 	stz ansi_state
 	;stz ansi_index

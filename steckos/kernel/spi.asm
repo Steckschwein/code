@@ -26,7 +26,7 @@
 .include "kernel.inc"
 .include "via.inc"
 
-.segment "CODE"; WAS KERNEL
+.code
 .export spi_rw_byte, spi_r_byte, spi_deselect, spi_select_device
 .export spi_isbusy
 

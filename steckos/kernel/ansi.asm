@@ -1,6 +1,6 @@
 .include "kernel.inc"
 
-.segment "CODE"; WAS KERNEL
+.code
 .export ansi_chrout
 .import textui_chrout, textui_update_crs_ptr
 

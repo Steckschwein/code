@@ -2,7 +2,7 @@ OUT_ADDRESS=0x200
 DEFINES=-Dasmunit_char_out=0x200
 KERNEL_ADDRESS=0xe800
 CA65FLAGS=-I ../../../asmunit -I ../../asminc -I ../ $(DEFINES)
-LIBS=../t99xx.lib.o ../debug.o ../../../asmunit/asmunit.a
+LIBS=../debug.o ../../../asmunit/asmunit.a ../../lib/steckschwein.a
 LDFLAGS=--config test.cfg $(DEFINES)
 
 # testing purpose of kernel api from client point of view
@@ -20,10 +20,10 @@ clean:
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
 test.%.bin: test.%.o $(LIBS) $(<:test.%=%)
-	ld65 $(LDFLAGS) $< $(LIBS) ../$(<:test.%=%) -o $@
+	ld65 $(LDFLAGS) $< ../$(<:test.%=%) $(LIBS) -o $@
 
 test.matcher.bin: test.matcher.o ../matcher.o ../util.o $(LIBS)
-	ld65 $(LDFLAGS) $< $(LIBS) ../matcher.o ../util.o -o $@
+	ld65 $(LDFLAGS) $< ../matcher.o ../util.o $(LIBS) -o $@
 
 %.prg: %.o $(LIBS)
 	ld65 $(LDFLAGS_PRG) $< $(LIBS_PRG) -o $@
@@ -33,8 +33,6 @@ test.matcher.bin: test.matcher.o ../matcher.o ../util.o $(LIBS)
 
 %.dbg: %.bin
 	py65mon -m 65c02 --output 0x0200 $< $(KERNEL_ADDRESS)
-
-#../util.o ../textui.o ../fat32.o
 
 test.%: test.%.bin
 	../../../asmunit/asmunit_wrapper.sh $@.bin $(KERNEL_ADDRESS)

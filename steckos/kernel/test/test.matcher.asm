@@ -33,7 +33,7 @@
 	assertCarry expect
 .endmacro
 
-.segment "KERNEL"	; test must be placed into kernel segment, cuz we wanna use the same linker config
+.code
 
 	assertUserInput "a.txt", "A       TXT", 1
 	assertUserInput "ll.prg", "LL      PRG", 1

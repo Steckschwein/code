@@ -1,17 +1,17 @@
 .include "asmunit.inc" 	; unit test api
 	
-	.include "common.inc"
-	.include "zeropage.inc"
+.include "common.inc"
+.include "zeropage.inc"
+
+.include "fat32.inc"
+
+.import string_fat_mask		; uut
+.import string_fat_name		; uut
+
+.import asmunit_chrout
+.export krn_chrout=asmunit_chrout
 	
-	.include "fat32.inc"
-	
-	.import string_fat_mask		; uut
-	.import string_fat_name		; uut
-	
-	.import asmunit_chrout
-	.export krn_chrout=asmunit_chrout
-	
-.segment "KERNEL"	; test must be placed into kernel segment, cuz we wanna use the same linker config
+.code
 
 	test "string_fat_mask"
 	SetVector output, krn_ptr2	; ouput
