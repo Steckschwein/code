@@ -1,3 +1,24 @@
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
 .setcpu "65c02"
 .include "kernel.inc"
 .include "common.inc"
@@ -94,15 +115,15 @@ init_pong:
 ;  .resset $0000  ;;start variables at ram location 0
   
 frame_count:    .res 1,0
-gamestate:  .res 1  ; .res 1 means reserve one byte of space
-ballx:      .res 1  ; ball horizontal position
-bally:      .res 1  ; ball vertical position
-ballup:     .res 1  ; 1 = ball moving up
-balldown:   .res 1  ; 1 = ball moving down
-ballleft:   .res 1  ; 1 = ball moving left
-ballright:  .res 1  ; 1 = ball moving right
-ballspeedx: .res 1  ; ball horizontal speed per frame
-ballspeedy: .res 1  ; ball vertical speed per frame
+gamestate:      .res 1  ; .res 1 means reserve one byte of space
+ballx:          .res 1  ; ball horizontal position
+bally:          .res 1  ; ball vertical position
+ballup:         .res 1  ; 1 = ball moving up
+balldown:       .res 1  ; 1 = ball moving down
+ballleft:       .res 1  ; 1 = ball moving left
+ballright:      .res 1  ; 1 = ball moving right
+ballspeedx:     .res 1  ; ball horizontal speed per frame
+ballspeedy:     .res 1  ; ball vertical speed per frame
 paddle1ytop:    .res 1  ; player 1 paddle top vertical position
 paddle1_velo:   .res 1
 paddle2ytop:    .res 1  ; player 2 paddle bottom vertical position
@@ -113,6 +134,7 @@ score1:     .res 1  ; player 1 score, 0-15
 score2:     .res 1  ; player 2 score, 0-15
 
 ;; DECLARE SOME CONSTANTS HERE
+PADDLE_ACCEL   = $03
 STATETITLE     = $00  ; displaying title screen
 STATEPLAYING   = $01  ; move paddles/ball, check for collisions
 STATEGAMEOVER  = $02  ; displaying game over screen
@@ -398,7 +420,7 @@ MovePaddle1Up:
         CMP #TOPWALL ;; Check if we have hit top wall
         BCC MovePaddle1Reset ;; If so, skip
 
-        DEC paddle1ytop ;; Decrement position	
+        DEC paddle1ytop ;; dec position	
         dex
         bpl :-
         bra MovePaddle1IncVelo
@@ -410,20 +432,20 @@ MovePaddle1Down:
   ;;    move paddle top and bottom down
         LDA buttons1
         AND #JOY_DOWN;%00000100
-        bne MovePaddle1Reset ;; not pressed, skip
+        bne MovePaddle1Reset  ; not pressed, skip
 
         ldx paddle1_velo
 :       LDA paddle1ytop 
         CMP #BOTTOMWALLOFFS ;; Check if we have hit top wall
         BCS MovePaddle1Reset ;; If so, skip
   
-        INC paddle1ytop ;; Decrement position
+        INC paddle1ytop ;; inc position
         dex
         bpl :-
-
+ 
 MovePaddle1IncVelo:
         lda frame_count
-        and #$1
+        and #PADDLE_ACCEL
         bne MovePaddle1Done
         inc paddle1_velo
         bra MovePaddle1Done
@@ -468,7 +490,7 @@ MovePaddle2Down:
         
 MovePaddle2IncVelo:
         lda frame_count
-        and #$1
+        and #PADDLE_ACCEL
         bne MovePaddle2Done
         inc paddle2_velo
         bra MovePaddle2Done
