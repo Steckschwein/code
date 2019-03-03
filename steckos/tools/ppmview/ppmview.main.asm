@@ -213,8 +213,9 @@ byte_to_grb:
 		
 wait_key:
 		keyin
-		cmp #'q'
-		beq :+
+;		cmp #'q'
+    beq wait_key
+;		beq :+
 ;        cmp #'s'
  ;       bne wait_key
   ;      lda scroll_on
@@ -345,22 +346,20 @@ parse_string:
 		rts
 			
 blend_isr:
-		vdp_wait_s
-		bit a_vreg
-		bpl @0
-		save
+      vdp_wait_s
+      bit a_vreg
+      bpl @0
+      save
+
+      lda #%01001010
+      jsr vdp_bgcolor
 		
-		lda #%01001010
-		jsr vdp_bgcolor
-		
-		; irq Payload here
-        
         bit scroll_on
         bpl :+
-        jsr scroll
+;        jsr scroll
 :
-		lda #Black
-		jsr vdp_bgcolor
+      lda #Black
+      jsr vdp_bgcolor
 		
 		restore		
 @0:
@@ -368,9 +367,9 @@ blend_isr:
 
 scroll:
         lda scroll_x
-		and #7
+        and #7
         ldy #v_reg27
-		vdp_sreg
+        vdp_sreg
         lda scroll_x
         bit #7
         bne :+
@@ -388,7 +387,6 @@ scroll:
         
         ldy #v_reg26
         vdp_sreg
-
         
         lda #JOY_PORT2
         jsr read_joystick
@@ -418,9 +416,9 @@ gfxui_on:
         vdp_sreg v_reg25_wait | v_reg25_msk, v_reg25
 
         lda #$ff
-		sta scroll_on
+        sta scroll_on
         stz scroll_x
-        jsr scroll
+        ;jsr scroll
         
 		copypointer  $fffe, irqsafe
 		SetVector  blend_isr, $fffe
@@ -429,20 +427,20 @@ gfxui_on:
 		rts
 
 gfxui_off:
-		sei
+      sei
 		
-		vdp_sreg 0, v_reg9
+      vdp_sreg 0, v_reg9
 		
-        vdp_sreg v_reg25_wait, v_reg25
+      vdp_sreg v_reg25_wait, v_reg25
         
-		copypointer  irqsafe, $fffe
-		cli
+      copypointer  irqsafe, $fffe
+      cli
 		
-		jsr	krn_display_off			;restore textui
-		jsr	krn_textui_init
-		jsr	krn_textui_enable
+      jsr	krn_display_off			;restore textui
+      jsr	krn_textui_init
+      jsr	krn_textui_enable
 	 
-		rts
+      rts
 		
 	; TODO FIXME => lib
 __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if filesize LSB is not 0
