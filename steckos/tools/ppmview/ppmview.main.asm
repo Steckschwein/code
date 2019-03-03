@@ -214,14 +214,13 @@ byte_to_grb:
 wait_key:
 		keyin
 ;		cmp #'q'
-    beq wait_key
+;    beq wait_key
 ;		beq :+
 ;        cmp #'s'
  ;       bne wait_key
   ;      lda scroll_on
    ;     eor #$ff
     ;    sta scroll_on
-        bra wait_key
 :		rts
 		
 set_screen_addr:
