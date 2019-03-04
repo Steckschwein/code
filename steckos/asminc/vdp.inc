@@ -146,6 +146,8 @@ SPRITE_C=3
 SPRITE_INVISIBLE=$bf
 SPRITE_OFF=$d0
 
+SPRITE_EC=1<<7  ;early clock bit
+
 Transparent    =$00
 Black          =$01	;0	0	0		"black"
 Medium_Green   =$02 ;35	203	50		"23
@@ -271,15 +273,15 @@ vdp_nopslide_2m:
 
 .macro	SyncBlank
 	bit a_vreg	; maybe within blank, we clean flag by read to a_vreg
-	nop			; TODO FIXME - investigate, accessing the a_vreg too fast results in machine crash maybe due to bus contention
-	nop
-	nop
-	nop
-@l:	bit	a_vreg	; wait until blank - irq flag set?
+@l:
+  vdp_wait_s
+  bit	a_vreg	; wait until blank - irq flag set?
 	bpl @l
 .endmacro
 
 .macro InBlank
-@l:	bit	a_vreg
-	bpl @l	   ; wait until blank - irq flag set?
+@l:
+  vdp_wait_s
+  bit	a_vreg
+	bpl @l     ; wait until blank - irq flag set?
 .endmacro
