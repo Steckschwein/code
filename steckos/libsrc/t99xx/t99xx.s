@@ -38,16 +38,12 @@
 m_vdp_nopslide
 
 vdp_irq_off:
-		vdp_sreg v_reg1_16k|v_reg1_display_on|v_reg1_spr_size, v_reg1	;switch interupt off
-		rts
+      vdp_sreg v_reg1_16k|v_reg1_display_on|v_reg1_spr_size, v_reg1	;switch interupt off
+      rts
 
 vdp_display_off:
-		lda #v_reg1_16k	;enable 16K? ram, disable screen
-		sta a_vreg
-		vdp_wait_s 2
-		lda #v_reg1
-		sta a_vreg
-		rts
+      vdp_sreg v_reg1_16k, v_reg1 	;enable 16K? ram, disable screen
+      rts
 
 vdp_mode_sprites_off:
 		vdp_sreg <ADDRESS_GFX_SPRITE, WRITE_ADDRESS + >ADDRESS_GFX_SPRITE
@@ -101,57 +97,68 @@ vdp_bgcolor:
 	rts
 
 vdp_fill:
-;	input:
+;	in:
 ;		.A - byte to fill
 ;		.X - amount of 256byte blocks (page counter)
-        ldy   #0    
-@0:     vdp_wait_l 6
+        ldy #0
+@0:     nop
+@1:     vdp_wait_l 8
         iny             ;2
-        sta a_vram 	 ;
-        bne @0        ;3
+        sta a_vram
+        bne @0          ;3
         dex
-        bne @0
+        bne @1
+        vdp_wait_l 12
         rts
 	
 vdp_fills:
 ;	in:
+;   .A - value to write
 ;		.X - amount of bytes
-;
-@0:	vdp_wait_l 6  	;3 + 2 + 1 opcode fetch
-		dex            ;2
-		sta a_vram     ;4
-		bne	@0       ;3
-		rts
+@0:	  vdp_wait_l 6   ;3 + 2 + 1 opcode fetch
+      dex            ;2
+      sta a_vram     ;4
+      bne	@0         ;3
+      vdp_wait_l 8
+      rts
 			
 ;	input:
 ;  	.X    - amount of 256byte blocks (page counter)
 ;		.A/.Y - pointer to source data
 vdp_memcpy:
-    sta vdp_ptr
-    sty vdp_ptr+1
-		ldy #0
+      sta vdp_ptr
+      sty vdp_ptr+1
+      ldy #0
+@l0:
+      nop
+      nop
+      nop
+      nop
+      nop
 @l1:
-    vdp_wait_l 11 	 ;3 + 5 + 2 + 1 opcode fetch
-		lda (vdp_ptr),y ;5
-		iny             ;2
-		sta a_vram    	 ;1
-		bne @l1         ;3
-		inc vdp_ptr+1
-		dex
-		bne @l1
-		rts
+      vdp_wait_l 10+10;3 + 5 + 2 + 1 opcode fetch =10 cl for inner loop, +10 cl outer loop
+      lda (vdp_ptr),y ;5
+      sta a_vram      ;1
+      iny             ;2
+      bne @l0         ;3/2
+      inc vdp_ptr+1   ;5
+      dex             ;2
+      bne @l1         ;3
+      vdp_wait_l 18
+      rts
 		
 ;	input:
 ;  	.X    - amount of bytes to copy
 ;   .A/.Y - pointer to data
 vdp_memcpys:
-    sta vdp_ptr
-    sty vdp_ptr+1
-		ldy #0
-@0:	vdp_wait_l 13	 ;2 + 2 + 3 + 5 + 1 opcode fetch
-		lda (vdp_ptr),y ;5
-		sta a_vram    	 ;1+3
-		iny             ;2
-		dex             ;2
-		bne	@0			 ;3
-		rts
+      sta vdp_ptr
+      sty vdp_ptr+1
+      ldy #0
+@0:   vdp_wait_l 13	 ;2 + 2 + 3 + 5 + 1 opcode fetch
+      lda (vdp_ptr),y ;5
+      sta a_vram    	 ;1+3
+      iny             ;2
+      dex             ;2
+      bne	@0			 ;3
+      vdp_wait_l 12
+      rts
