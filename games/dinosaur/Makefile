@@ -3,7 +3,7 @@ INCLUDES=-I ../../steckos/asminc -I ../../steckos/kernel
 LDFLAGS=-C ../../steckos/prg.ld65.cfg $(LIBS)
 
 UTIL_XPM_8BIT=../utils/xpm_ca65_8bit.sh
-UTIL_XPM_16BIT=../utils/xpm_ca65_16bit.py
+UTIL_XPM_16BIT=python3 ../utils/xpm_ca65_16bit.py
 #UTIL_XPM_8BIT=xpm2acme8bit.sh
 #UTIL_XPM_16BIT=sh xpm2acme16bit.sh
 
