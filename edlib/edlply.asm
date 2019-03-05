@@ -7,6 +7,7 @@
 .include "ym3812.inc"
 .include "via.inc"
 .include "vdp.inc"
+.include "keyboard.inc"
 .include "appstart.inc"
 
 appstart
@@ -52,14 +53,14 @@ main:
 		.byte "not a D00 file",$0a,0
 		jmp exit
 
-:       
+:
 ;		jsr krn_primm
 	;	.byte "edlib player v0.2 (somewhat optimized) by mr.mouse/xentax july 2017@",$0a,0
 		;jsr printMetaData
 
 		jsr krn_textui_crs_onoff
 		jsr jch_fm_init
-    
+
 		sei
     copypointer user_isr, safe_isr
 		SetVector player_isr, user_isr
@@ -70,13 +71,13 @@ main:
 		lda #($ff-(1000000 / freq / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
 		sta t2_value
     jsr set_timer_t2
-    
+
 ;		jsr reset_irq
 		jsr restart_timer
-		
+
 		cli
-		
-@keyin: 
+
+@keyin:
     keyin
 		cmp #'p'
 		bne @key_min
@@ -103,7 +104,7 @@ main:
     jsr set_timer_t2
 		bra @keyin
 @key_esc:
-		cmp #KEY_ESCAPE		
+		cmp #KEY_ESCAPE
 		beq @exit_player
 		bra @keyin
 
@@ -113,23 +114,23 @@ main:
 		ldy #$40
 :		dex
 		bne :-
-		dey 
+		dey
 		bne :-
 		inc fm_master_volume
     lda fm_master_volume
 		jsr jch_fm_set_volume
 		cmp #$3f
 		bne @fadeout
-    
+
 		sei
 		copypointer safe_isr, user_isr
 		cli
-		
+
 exit:
 		jsr opl2_init
 		jsr krn_textui_init
 		jmp (retvec)
-		
+
 restart_timer:
 reset_irq:
 		ldx #opl2_reg_ctrl
@@ -147,7 +148,7 @@ set_timer_t2:
     jsr opl2_reg_write
     plp
     rts
-    
+
 printMetaData:
 		jsr krn_primm
 		.asciiz "Name: "
@@ -171,20 +172,20 @@ printMetaData:
 
 printString:
 		ldx #$20
-:       
+:
     lda d00file, y
-		iny 
+		iny
 		dex
-		bne :- 
+		bne :-
 		rts
 
 isD00File:
 		ldy #0
-:		
+:
 		lda d00file, y
 		cmp d00header,y
 		bne :+
-		iny 
+		iny
 		cpy #6
 		bne :-
 :
@@ -201,9 +202,9 @@ loadfile:
 ;:   lda (paramptr),y
  ;   beq :+
   ;  jsr char_out
-   ; iny 
+   ; iny
     ;bne :-
-;:    
+;:
 		lda paramptr
 		ldx paramptr +1
 		ldy #O_RDONLY
@@ -247,7 +248,7 @@ player_isr:
     lda #Medium_Green<<4|Dark_Yellow
     jsr vdp_bgcolor
 @exit:
-    
+
 		lda #Medium_Green<<4|Transparent
 		nop
     nop
@@ -255,7 +256,7 @@ player_isr:
     ;jsr vdp_bgcolor
 
 		rts
-		
+
 safe_isr:     .res 2
 player_state: .res 1,0
 t2_value:     .res 1,0

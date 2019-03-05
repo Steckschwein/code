@@ -27,6 +27,7 @@
 .include "common.inc"
 .include "zeropage.inc"
 .include "joystick.inc"
+.include "keyboard.inc"
 .include "appstart.inc"
 
 .import joystick_read
@@ -88,7 +89,7 @@ sprite_empty=92
 
 .code
       jsr krn_textui_disable
-      
+
       lda	#33
       sta	seed
 
@@ -96,7 +97,7 @@ sprite_empty=92
       jsr	init_vram
 
       jsr load_highscore
-      
+
       jsr	new_game
       lda #STATUS_GAME_OVER
       sta	game_state
@@ -661,7 +662,7 @@ new_game:
       stz fd_area + 4 + 3,x
       jsr krn_write
       jsr krn_close
-      
+
 @l_ng_reset_score:
       stz	score_value
       stz	score_value+1
@@ -741,7 +742,7 @@ load_highscore:
       jsr krn_read
       jsr krn_close
 :     rts
-      
+
 init_vram:
       jsr isXmas
       bcc :+
@@ -762,8 +763,8 @@ init_vram:
       lda #<charset ; init 2 game charset with character set
       ldy #>charset
       ldx	#$08
-      jsr	vdp_memcpy      
-      
+      jsr	vdp_memcpy
+
       vdp_sreg <A_GX_PAT_2, WRITE_ADDRESS + >A_GX_PAT_2
       lda #<charset
       ldy #>charset
@@ -825,8 +826,8 @@ update_vram:
       lda	score_value_high+1
       jsr digits_out
       lda	score_value_high+2
-      jsr digits_out      
-      
+      jsr digits_out
+
       lda	#' '
       sta a_vram
       lda	score_value
