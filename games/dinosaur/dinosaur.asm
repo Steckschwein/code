@@ -21,7 +21,7 @@
 ; SOFTWARE.
 .setcpu "65c02"
 .include "kernel_jumptable.inc"
-.include "via.inc"
+.include "fcntl.inc"
 .include "vdp.inc"
 .include "rtc.inc"
 .include "common.inc"
@@ -86,29 +86,17 @@ STATUS_JOY_PRESSED=1<<2
 dinosaur_cap=56
 sprite_empty=92
 
-main:
-      lda #<filename
-      ldx #>filename
-      ldy #01		;#01 - O_RDONLY
-      jsr krn_open
-      bne :+ ; not found or other error, dont care...
-
-      SetVector score_data, read_blkptr
-      jsr krn_read
-      ;    bne :+
-      jsr krn_close
-:
+.code
       jsr krn_textui_disable
       
       lda	#33
       sta	seed
 
       sei
-;      SyncBlank
-      .import vdp_display_off
-      jsr vdp_display_off
       jsr	init_vram
 
+      jsr load_highscore
+      
       jsr	new_game
       lda #STATUS_GAME_OVER
       sta	game_state
@@ -662,7 +650,7 @@ new_game:
 
       lda #<filename
       ldx #>filename
-      ldy #$02 ; O_WRONLY
+      ldy #O_WRONLY
       jsr krn_open
       bne @l_ng_reset_score
       SetVector score_data, write_blkptr
@@ -704,15 +692,6 @@ score_board:
 :     cld
       rts
 
-kbd_enable:
-      lda #%01111010
-      sta via1portb
-      rts
-
-kbd_disable:	; disable keyboard
-      ldx #$7e
-      stx via1portb
-      rts
 
 action_handler:
     ;TODO FIXME just for testing
@@ -741,7 +720,7 @@ action_handler:
 :     lda	dinosaur_state
       and #DINOSAUR_JUMP	;only allow jump, if dinosaur is not already jumping
       bne	@l_ah_exit
-      lda via1porta
+      jsr get_joy_status
       and #JOY_DOWN
       bne :+
       lda	#DINOSAUR_DUCK
@@ -752,6 +731,17 @@ action_handler:
 @l_ah_exit:
       rts
 
+load_highscore:
+      lda #<filename
+      ldx #>filename
+      ldy #O_RDONLY
+      jsr krn_open
+      bne :+ ; not found or other error, dont care...
+      SetVector score_data, read_blkptr
+      jsr krn_read
+      jsr krn_close
+:     rts
+      
 init_vram:
       jsr isXmas
       bcc :+
@@ -882,6 +872,8 @@ doEor:
 noEor:
       sta seed
       rts
+
+.data
 
 sprite_tab_enemy_init:
     .byte	PD_Y		,PD_X,	    PD_PTR+0*4, Dark_Red
@@ -1092,15 +1084,12 @@ game_chars_4px_xmas:
 .include "dinosaur.chars.6.4px.res"
 .include "dinosaur.chars.reload.res"
 
-frame_cnt: 
+frame_cnt:
   .byte 0
 filename:
   .asciiz "DINOSAUR.HI"
 
-.data
+score_data: ; it's ok after vram init we can overwrite the charset....
+score_value_high: .byte $00,$00,$00
 charset:
 .include "ati_8x8.h.asm"
-
-.align 256,0
-score_data:
-score_value_high: .byte $00,$00,$00
