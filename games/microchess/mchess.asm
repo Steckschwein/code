@@ -37,9 +37,11 @@
 ; Adapted for the Steckschwein 65c02 homebrew computer by Thomas Woinke, March 2015
 ; - relocate zero page variables
 ;
-.include "../../steckos/kernel/kernel.inc"
-.include "../../steckos/kernel/kernel_jumptable.inc"
-.include "../../steckos/asminc/common.inc"
+.include "kernel_jumptable.inc"
+.include "common.inc"
+.include "zeropage.inc"
+.include "appstart.inc"
+
 __LOADADDR__ = $1000
 .export __LOADADDR__
 .segment "LOADADDR"
