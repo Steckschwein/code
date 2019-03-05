@@ -4,8 +4,6 @@ LDFLAGS=-C ../../steckos/prg.ld65.cfg $(LIBS)
 
 UTIL_XPM_8BIT=sh ../utils/xpm_ca65_8bit.sh
 UTIL_XPM_16BIT=python3 ../utils/xpm_ca65_16bit.py
-#UTIL_XPM_8BIT=xpm2acme8bit.sh
-#UTIL_XPM_16BIT=sh xpm2acme16bit.sh
 
 .PHONY: clean all
 all: dinosaur.prg 
@@ -40,9 +38,6 @@ clean:
 	rm -f *.prg *.labels *.res 
 
 gfx.res: *.res
-
-#%.prg: %.a ${ACME}/t9929.h.a ${ACME}/*.lib.a *.res
-#	acme -v -f cbm --cpu 65c02 -o $@ $<
 
 %.o: %.asm *.res
 	ca65 $(INCLUDES) $(@:.o=.asm)
