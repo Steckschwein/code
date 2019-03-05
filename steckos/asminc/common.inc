@@ -198,3 +198,6 @@
 .endmacro
 
 KEY_ESCAPE = 27
+KEY_CR=$0d
+KEY_LF=$0a
+KEY_BACKSPACE=$08 
