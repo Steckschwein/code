@@ -266,14 +266,8 @@
     ;			= $DE		; unused
     ;			= $DF		; unused
 
-    ;			= $E0		; used by gfx extension
-    ;			= $E1		; used by gfx extension
-    PLOT_XBYT   = $E0
-    PLOT_YBYT   = $E1
-    GFX_MODE    = $E4
-
-
     ;                     = $E2           ; unused
+    GFX_MODE    = $E3
     ;                     = $E3           ; unused
     ;                     = $E4           ; unused
     ;                     = $E5           ; unused
@@ -7997,13 +7991,13 @@ StrTab:
 EndTab:
 
 LAB_MSZM:
-	.byte	$0D,$0A,"Memory size ",$00
+	.byte	KEY_LF,"Memory size ",$00
 ;LAB_MSZM_INIT:
 ;    	.byte    "$a800",$0d,0
 
 LAB_SMSG:
-	.byte	" Bytes free",$0D,$0A,$0A
-	.byte	"Enhanced BASIC 2.22",$0A,$00
+	.byte	" Bytes free",KEY_LF,KEY_LF
+	.byte	"Enhanced BASIC 2.22",KEY_LF,$00
 
 ; numeric constants and series
 
@@ -8925,13 +8919,13 @@ ERR_FN:	.byte	"File not found",$00
 
 ;ERR_UA	.byte	"Undimensioned array",$00
 
-LAB_BMSG:	.byte	$0D,$0A,"Break",$00
+LAB_BMSG:	.byte	KEY_LF,"Break",$00
 LAB_EMSG:	.byte	" Error",$00
 LAB_LMSG:	.byte	" in line ",$00
-LAB_RMSG:	.byte	$0D,$0A,"Ready",$0D,$0A,$00
+LAB_RMSG:	.byte	KEY_LF,"Ready",KEY_LF,$00
 
-LAB_IMSG:	.byte	" Extra ignored",$0D,$0A,$00
-LAB_REDO:	.byte	" Redo from start",$0D,$0A,$00
+LAB_IMSG:	.byte	" Extra ignored",KEY_LF,$00
+LAB_REDO:	.byte	" Redo from start",KEY_LF,$00
 
 AA_end_basic:
 buf:

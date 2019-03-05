@@ -1,5 +1,5 @@
 OBJ=basic.prg
-ASM_INCLUDE=../steckos/asminc
+ASM_INCLUDE=-I ../steckos/asminc -I ../steckos/kernel
 LIBS=../steckos/lib/steckschwein.a
 AR65 := $(if $(wildcard ../bin/ar65*),../bin/ar65,ar65)
 CA65 := $(if $(wildcard ../bin/ca65*),../bin/ca65,ca65)
@@ -14,7 +14,7 @@ clean:
 	rm -f *.prg *.o *.lbl
 
 steck_mon.o: steck_mon.asm basic.asm ext/*.asm $(LIBS)
-	$(CA65) --include-dir $(ASM_INCLUDE) --target none $(DEFINES)  $<
+	$(CA65) $(ASM_INCLUDE) --target none $(DEFINES)  $<
 
 basic.prg: steck_mon.o
 	$(LD65) $(LDFLAGS) steck_mon.o $(LIBS) -o basic.prg

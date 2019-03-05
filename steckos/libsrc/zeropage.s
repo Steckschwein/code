@@ -13,5 +13,7 @@ tmp1:           .res 1
 tmp2:           .res 1
 tmp3:           .res 1
 tmp4:           .res 1
-vdp_ptr:        .res 2
-vdp_tmp:        .res 1
+
+; have to use fixed zp locations to avoid ehbasic clashes
+.exportzp vdp_ptr :=$e0
+.exportzp vdp_tmp :=$e2

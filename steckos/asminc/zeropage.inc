@@ -51,7 +51,6 @@ krn_ptr3    	= $ea	; 2 bytes
 krn_tmp     	= $ec		; 16 bit tmp
 krn_tmp2		= krn_tmp+1	; single byte
 krn_tmp3		= krn_tmp+2	; single byte
-krn_tmp4		= krn_tmp+3	; single byte
 
 ; FAT32
 filenameptr 		= $f0   ; 2 byte

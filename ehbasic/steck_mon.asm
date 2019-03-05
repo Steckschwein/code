@@ -9,12 +9,12 @@
 ; will do nothing, you'll still have to do a reset to run the code.
 
 
-.include "../kernel/kernel.inc"
-.include "../kernel/kernel_jumptable.inc"
-.include "../asminc/common.inc"
-
-.include "../kernel/fat32.inc"
-.include "../kernel/uart.inc"
+.include "kernel.inc"
+.include "kernel_jumptable.inc"
+.include "common.inc"
+.include "keyboard.inc"
+.include "fat32.inc"
+.include "uart.inc"
 .include "fcntl.inc"
 .include "appstart.inc"
 
@@ -22,10 +22,6 @@ appstart $b200
 
 .include "basic.asm"
 .include "ext/gfx.asm"		    ;extensions
-
-ESC = $1B        ; Escape character
-CR  = $0D        ; Return character
-LF  = $0A        ; Line feed character
 
 ; put the IRQ and MNI code in RAM so that it can be changed
 IRQ_vec	= VEC_SV+2		; IRQ code vector	(VEC_SV = ccflag+$0b)

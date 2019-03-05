@@ -26,7 +26,6 @@
 .export GFX_Off
 .export GFX_BgColor
 
-
 ;
 ;	within basic define extensions as follows
 ;
@@ -35,22 +34,20 @@
 ;
 GFX_BgColor:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
-		stx a_vreg
-		lda #$87
-		sta a_vreg
-		RTS ; return to BASIC
+    txa
+		jmp vdp_bgcolor
 
 GFX_Off:
 		sei
-		jsr	krn_display_off			;restore textui
+		jsr	krn_display_off     ;restore textui
 		jsr	krn_textui_init
+    
 		cli
-		jmp	krn_textui_enable
+    rts
 
 GFX_MC_On:
-		sei
-		jsr	krn_textui_disable			;disable textui
-		jsr krn_display_off
+    jsr _prepare_gfx
+    
 		lda #0 ; black/black
 		jsr vdp_mc_blank
 		jsr	vdp_mc_on
@@ -58,9 +55,8 @@ GFX_MC_On:
 		rts
 
 GFX_2_On:
-		sei
-		jsr krn_textui_disable			;disable textui
-		jsr krn_display_off
+    jsr _prepare_gfx
+    
 		lda #Gray<<4|Black
 		jsr vdp_gfx2_blank
 		jsr	vdp_gfx2_on
@@ -68,10 +64,7 @@ GFX_2_On:
 		rts
 
 GFX_7_On:
-		sei
-		jsr krn_textui_disable			;disable textui
-		jsr krn_display_off
-
+    jsr _prepare_gfx
 		jsr vdp_gfx7_on
 		lda #0
 		jsr vdp_gfx7_blank
@@ -80,7 +73,6 @@ GFX_7_On:
 		rts
 
 GFX_2_Plot:
-
 		jsr GFX_Plot_Prepare
 		jmp vdp_gfx2_set_pixel
 GFX_MC_Plot:
@@ -92,10 +84,16 @@ GFX_7_Plot:
 		jsr vdp_gfx7_set_pixel
 
 		sei
-		vdp_wait_l
+		vdp_wait_l 8
 		vdp_sreg <.HIWORD(ADDRESS_GFX1_SCREEN<<2), v_reg14
 		cli
 		rts
+
+_prepare_gfx:
+      sei
+      jsr krn_textui_disable			;disable textui
+      jmp krn_display_off
+      
 
 GFX_Plot_Prepare:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
@@ -107,3 +105,6 @@ GFX_Plot_Prepare:
  		ldx PLOT_XBYT
 		ldy PLOT_YBYT
 		rts
+PLOT_XBYT: .res 1
+PLOT_YBYT: .res 1
+
