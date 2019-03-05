@@ -1,6 +1,9 @@
-KEY_RETURN 		= $0d
-KEY_BACKSPACE 		= $08
-KEY_CRSR_UP 		= $1E
-KEY_CRSR_DOWN 	 	= $1F
+KEY_LF            = $0a
+KEY_CR            = $0d
+KEY_RETURN        = $0d
+KEY_BACKSPACE     = $08
+KEY_CRSR_UP       = $1E
+KEY_CRSR_DOWN     = $1F
 KEY_CRSR_RIGHT 	 	= $10
-KEY_CRSR_LEFT 	 	= $11
+KEY_CRSR_LEFT     = $11
+KEY_ESCAPE        = 27

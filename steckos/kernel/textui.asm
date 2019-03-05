@@ -22,6 +22,7 @@
 
 .include "common.inc"
 .include "kernel.inc"
+.include "keyboard.inc"
 .include "vdp.inc"
 
 ROWS=24
