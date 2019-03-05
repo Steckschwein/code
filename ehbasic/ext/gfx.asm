@@ -75,6 +75,7 @@ GFX_7_On:
 GFX_2_Plot:
 		jsr GFX_Plot_Prepare
 		jmp vdp_gfx2_set_pixel
+    
 GFX_MC_Plot:
 		jsr GFX_Plot_Prepare
 		jmp vdp_mc_set_pixel
@@ -101,10 +102,11 @@ GFX_Plot_Prepare:
 		JSR LAB_SCGB 	; scan for "," and get byte
 		stx PLOT_YBYT	; save plot y
 		JSR LAB_SCGB 	; scan for "," and get byte
-		txa				; color to A
+		txa				    ; color to A
  		ldx PLOT_XBYT
 		ldy PLOT_YBYT
 		rts
+    
+GFX_MODE:  .res 1, 0
 PLOT_XBYT: .res 1
 PLOT_YBYT: .res 1
-
