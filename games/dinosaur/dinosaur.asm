@@ -23,10 +23,13 @@
 .include "kernel_jumptable.inc"
 .include "via.inc"
 .include "vdp.inc"
+.include "rtc.inc"
 .include "common.inc"
 .include "zeropage.inc"
+.include "joystick.inc"
 .include "appstart.inc"
 
+.import joystick_read
 .import vdp_memcpy, vdp_memcpys
 .import vdp_fill, vdp_fills
 .import vdp_init_reg
@@ -34,19 +37,9 @@
 
 appstart $1000
 
-PORT_SEL_2              = ~1<<7
-PORT_SEL_1              = 1<<7
-JOY_UP                  = 1<<0
-JOY_DOWN                = 1<<1
-JOY_LEFT                = 1<<2
-JOY_RIGHT               = 1<<3
-JOY_FIRE                = 1<<4
-
 fd_area					= $0380 ; File descriptor area until $0400
-; last known timestamp with date set to 1970-01-01
-rtc_systime_t = $0300
 
-JOY_PORT=PORT_SEL_1		;port 1
+JOY_PORT=JOY_PORT1		;port 1
 enemy_state=$0
 seed=$1
 game_state=$2
@@ -61,7 +54,6 @@ sin_tab_ptr=$a
 CHAR_BLANK=210
 CHAR_LAST_FG=198		; last character of foreground (cacti), range 128-198
 CHAR_ASSET=211         ; 211-227
-
 
 A_GX_SCR=$1800
 A_GX_COL=$1c80
@@ -93,10 +85,6 @@ STATUS_JOY_PRESSED=1<<2
 
 dinosaur_cap=56
 sprite_empty=92
-
-      jmp main
-
-ENOENT=01
 
 main:
       lda #<filename
@@ -373,10 +361,8 @@ vdp_print:
 :	    rts
 
 get_joy_status:
-      lda	#JOY_PORT	;select joy port
-      sta	via1porta
-      lda	via1porta		;read port input
-      rts
+      lda #JOY_PORT
+      jmp joystick_read
 
 animate_dinosaur:
       lda	dinosaur_state
