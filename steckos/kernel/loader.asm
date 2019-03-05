@@ -24,7 +24,6 @@
 .include "common.inc"
 .include "kernel.inc"
 
-;.code
 .segment "LOADER"
 ; 	system attribute has to be set on file system
 
