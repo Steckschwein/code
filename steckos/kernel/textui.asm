@@ -33,10 +33,6 @@ COLS=40
 CURSOR_BLANK=' '
 CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
 
-KEY_CR=$0d
-KEY_LF=$0a
-KEY_BACKSPACE=$08
-
 STATE_BUFFER_DIRTY  =1<<0
 STATE_CURSOR_OFF    =1<<1
 STATE_CURSOR_BLINK  =1<<2
@@ -101,14 +97,14 @@ textui_update_crs_ptr:          ; updates the 16 bit pointer crs_p upon crs_x, c
         asl                        ; y*4
         asl                        ; y*8
 
-        bit text_mode
-        bpl @l40
+;        bit text_mode
+ ;       bpl @l40
 ;.ifdef COLS80                    ; crs_y*64 + crs_y*16 (crs_ptr) => y*80
-        asl                       ; y*16
-        sta crs_ptr
-        php                       ; save carry
-        rol crs_ptr+1             ; save carry if overflow
-        bra @lae
+  ;      asl                       ; y*16
+   ;     sta crs_ptr
+    ;    php                       ; save carry
+     ;   rol crs_ptr+1             ; save carry if overflow
+      ;  bra @lae
 ;.else
 @l40:
         ; crs_y*32 + crs_y*8  (crs_ptr) => y*40
@@ -225,9 +221,9 @@ textui_update_screen:
         ;SetVector screen_buffer, addr    ; copy back buffer to video ram
 
 ;.ifdef COLS80
-        ldx    #$04
+        ldx    #$08
 ;.else
-;        ldx    #$04
+        ;ldx    #$04
 ;.endif
 ;        bit text_mode
         vdp_sreg <ADDRESS_GFX1_SCREEN, (WRITE_ADDRESS + >ADDRESS_GFX1_SCREEN)
@@ -259,11 +255,11 @@ textui_scroll_up:
         sta    screen_buffer+$200,x
         inx
         bne    @l3
-        bit text_mode
-        bmi @l4
+;        bit text_mode
+ ;       bmi @l4
 ;.ifndef COLS80
-@le40:  lda    screen_buffer+$300+COLS,x
-        sta    screen_buffer+$300,x
+@le40:  lda screen_buffer+$300+COLS,x
+        sta screen_buffer+$300,x
         inx
         cpx #<(40 * ROWS)
         bne @le40

@@ -368,11 +368,11 @@ cmdlist:
 		.byte "up",0
 		.word krn_upload
 
-;		.byte "mode40",0
-	;	.word mode_40
+		.byte "mode40",0
+		.word mode_40
 
-		;.byte "mode80",0
-		;.word mode_80
+		.byte "mode80",0
+		.word mode_80
 
 .ifdef DEBUG
 		.byte "dump",0
