@@ -133,6 +133,13 @@ textui_update_crs_ptr:          ; updates the 16 bit pointer crs_p upon crs_x, c
         rts
 
 textui_init0:
+.ifdef COLS80
+        lda #1
+.else
+        lda #0
+.endif
+        sta max_cols
+
         jsr vdp_display_off                 ;display off
 
         SetVector screen_buffer, crs_ptr    ;set crs ptr initial to screen buffer
@@ -140,11 +147,9 @@ textui_init0:
 textui_init:
         stz screen_write_lock               ;reset write lock
         jsr textui_enable
-.ifdef COLS80
-        lda #1
-.else
-        lda #0
-.endif
+        
+        lda max_cols
+        cmp #40-1
 textui_setmode:
         beq @set40
         lda #80-1
