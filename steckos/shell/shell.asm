@@ -430,10 +430,10 @@ errmsg:
 		jmp mainloop
 
 mode_40:
-    lda #0
+    lda #TEXT_MODE_40
     bra setmode
 mode_80:
-    lda #1
+    lda #TEXT_MODE_80
 setmode:
     jsr krn_textui_setmode
     jmp mainloop
