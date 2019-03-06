@@ -135,24 +135,24 @@ textui_update_crs_ptr:          ; updates the 16 bit pointer crs_p upon crs_x, c
 textui_init0:
         jsr vdp_display_off                 ;display off
         SetVector screen_buffer, crs_ptr    ;set crs ptr initial to screen buffer
-;        jsr textui_blank                    ;blank screen buffer
-
+        
 .ifdef COLS80
-        lda #80-1
+        lda #TEXT_MODE_80
 .else
-        lda #40-1
+        lda #TEXT_MODE_40
 .endif
 textui_setmode:
-        cmp #80-1
+        cmp #TEXT_MODE_80
         beq @setmode
-        lda #40-1
+        lda #TEXT_MODE_40
 @setmode:
         sta max_cols
-
+        jsr textui_blank
+        
 textui_init:
         stz screen_write_lock               ;reset write lock
         jsr textui_enable
-        jsr vdp_text_on
+        jmp vdp_text_on
 
 textui_blank:
         ldx #0
@@ -176,7 +176,7 @@ textui_blank:
 
         _screen_dirty
         rts
-
+        
 textui_cursor:
         lda screen_write_lock
         bne @l_exit

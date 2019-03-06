@@ -21,6 +21,9 @@
 ; SOFTWARE.
 .setcpu "65c02"
 
+TEXT_MODE_40=40-1
+TEXT_MODE_80=80-1
+
 .include  "system.inc"
 .include  "zeropage.inc"
 .include  "debug.inc"
