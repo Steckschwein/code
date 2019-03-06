@@ -20,12 +20,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
+.include "steckos.inc"
 .include "vdp.inc"
 .include "fcntl.inc"
-.include "zeropage.inc"
-.include "kernel_jumptable.inc"
-.include "appstart.inc"
 
 .importzp ptr1, ptr2, ptr3
 .importzp tmp3, tmp4
@@ -48,7 +45,7 @@ main:
 
 		jsr load_image
 
-		keyin		
+		keyin
 
 		jsr	gfxui_off
 
@@ -60,22 +57,22 @@ main:
 
 blend_isr:
 		save
-		
+
 		vdp_sreg 0, v_reg15
 		vdp_wait_s
 		bit a_vreg
 		bpl @0
-	
+
 		lda #%01001011
 		jsr vdp_bgcolor
-	
+
 		lda	#Black
 		jsr vdp_bgcolor
 
 @0:
 		restore
 		rti
-		
+
 load_image:
 		sei
 		vdp_wait_s
@@ -94,8 +91,8 @@ load_image:
 		inc ptr1+1
 		dex
 		bne @l0
-		rts 
-		
+		rts
+
 gfxui_on:
 		sei
 		jsr vdp_display_off			;display off
@@ -105,7 +102,7 @@ gfxui_on:
 
 		lda 	#0
 		jsr 	vdp_gfx7_blank
-		
+
 		copypointer  $fffe, irqsafe
 		SetVector  blend_isr, $fffe
 
@@ -118,7 +115,7 @@ gfxui_off:
 
 	lda 	#0
 	jsr 	vdp_gfx7_blank
-	 
+
 	cli
 	rts
 

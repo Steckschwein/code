@@ -20,12 +20,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
+.include "steckos.inc"
 .include "vdp.inc"
 .include "fcntl.inc"
-.include "zeropage.inc"
-.include "kernel_jumptable.inc"
-.include "appstart.inc"
 
 
 
@@ -86,7 +83,7 @@ main:
 		jmp (retvec)
 
 blend_isr:
-	pha	
+	pha
 	vdp_reg 15,0
 	vnops
     bit a_vreg
