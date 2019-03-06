@@ -45,8 +45,8 @@ vdp_text_on:
 	vdp_sreg v_reg25_wait, v_reg25
 .endif
 	SetVector vdp_init_bytes_text, vdp_ptr
-  bit text_mode
-  bpl @l0
+  bit max_cols
+  bvc @l0
   SetVector vdp_init_bytes_text_80cols, vdp_ptr
 @l0:  
   ldy #0

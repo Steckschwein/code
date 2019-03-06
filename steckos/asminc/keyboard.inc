@@ -7,3 +7,7 @@ KEY_CRSR_DOWN     = $1F
 KEY_CRSR_RIGHT 	 	= $10
 KEY_CRSR_LEFT     = $11
 KEY_ESCAPE        = 27
+
+
+KEY_FN1 = $f1
+KEY_FN2 = $f2

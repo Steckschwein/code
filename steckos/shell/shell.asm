@@ -123,6 +123,12 @@ inputloop:
         cmp #KEY_CRSR_DOWN
         beq key_crs_down
 
+        cmp #KEY_FN1
+        beq key_fn1
+        
+        cmp #KEY_FN2
+        beq key_fn2
+        
         ; prevent overflow of input buffer
         cpy #BUF_SIZE
         beq inputloop
@@ -146,6 +152,11 @@ escape:
         jsr krn_getkey
         jsr printbuf
         bra inputloop
+
+key_fn1:
+        jmp mode_40
+key_fn2:
+        jmp mode_80
 
 key_crs_up:
 ;        jsr history_back
@@ -251,7 +262,6 @@ compare:
 
 cmdfound:
 		inx
-
 		jmp (cmdlist,x) ; 65c02 FTW!!
 
 try_exec:
@@ -423,20 +433,20 @@ mode_40:
     lda #0
     bra setmode
 mode_80:
-    lda #$80
+    lda #1
 setmode:
     jsr krn_textui_setmode
     jmp mainloop
 
 cd:
-    	lda paramptr
-    	ldx paramptr+1
-    	jsr krn_chdir
-		beq @l2
-		lda #$f2 ; invalid dir
-		jmp errmsg
+      lda paramptr
+      ldx paramptr+1
+      jsr krn_chdir
+      beq @l2
+      lda #$f2 ; invalid dir
+      jmp errmsg
 @l2:
-		jmp mainloop
+      jmp mainloop
 
 exec:
 		lda cmdptr

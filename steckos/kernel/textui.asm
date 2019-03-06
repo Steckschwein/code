@@ -26,11 +26,6 @@
 .include "vdp.inc"
 
 ROWS=24
-.ifdef COLS80
-COLS=80
-.else
-COLS=40
-.endif
 CURSOR_BLANK=' '
 CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
 
@@ -41,7 +36,7 @@ STATE_TEXTUI_ENABLED=1<<3
 
 .segment "OS_CACHE"
 .export screen_buffer;
-screen_buffer:      ;.res COLS*ROWS, CURSOR_BLANK
+screen_buffer:
 
 .code
 .export textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
@@ -72,7 +67,7 @@ textui_decy:
 
 textui_incx:
         lda    crs_x
-        cmp    #(COLS-1)
+        cmp    max_cols 
         bne @l1
         rts                    ;TODO should we move to next row automatically ?!?
 @l1:    inc    crs_x
@@ -98,20 +93,18 @@ textui_update_crs_ptr:          ; updates the 16 bit pointer crs_p upon crs_x, c
         asl                        ; y*4
         asl                        ; y*8
 
-;        bit text_mode
- ;       bpl @l40
-;.ifdef COLS80                    ; crs_y*64 + crs_y*16 (crs_ptr) => y*80
-  ;      asl                       ; y*16
-   ;     sta crs_ptr
-    ;    php                       ; save carry
-     ;   rol crs_ptr+1             ; save carry if overflow
-      ;  bra @lae
-;.else
+        bit max_cols
+        bvc @l40
+                                  ; crs_y*64 + crs_y*16 (crs_ptr) => y*80
+        asl                       ; y*16
+        sta crs_ptr
+        php                       ; save carry
+        rol crs_ptr+1             ; save carry if overflow
+        bra @lae
 @l40:
         ; crs_y*32 + crs_y*8  (crs_ptr) => y*40
         sta crs_ptr                ; save
         php                        ; save carry
-;.endif
 @lae:
         asl
         rol crs_ptr+1           ; save carry if overflow
@@ -148,14 +141,19 @@ textui_init:
         stz screen_write_lock               ;reset write lock
         jsr textui_enable
 .ifdef COLS80
-        lda #$80
+        lda #1
 .else
         lda #0
-.endif        
+.endif
 textui_setmode:
-        and #$80
-        sta text_mode
-        jmp vdp_text_on
+        beq @set40
+        lda #80-1
+        bra @setmode
+@set40:
+        lda #40-1
+@setmode:
+        sta max_cols
+        jsr vdp_text_on
 
 textui_blank:
         ldx #0
@@ -219,16 +217,9 @@ textui_update_screen:
         and    #STATE_BUFFER_DIRTY
         beq    @l1    ;exit if not dirty
 
-        ;SetVector screen_buffer, addr    ; copy back buffer to video ram
-
-;.ifdef COLS80
         ldx    #$08
-;.else
-        ;ldx    #$04
-;.endif
-;        bit text_mode
         vdp_sreg <ADDRESS_GFX1_SCREEN, (WRITE_ADDRESS + >ADDRESS_GFX1_SCREEN)
-        lda #<screen_buffer
+        lda #<screen_buffer         ; copy back buffer to video ram
         ldy #>screen_buffer
         jsr vdp_memcpy
 
@@ -243,52 +234,62 @@ textui_update_screen:
 
 textui_scroll_up:
         phx
-        ldx    #0
-@l1:    lda    screen_buffer+$000+COLS,x
+        
+        ldx #0
+        bit max_cols
+        bvc @scroll_40
+@l1:    lda    screen_buffer+$000+80,x
         sta    screen_buffer+$000,x
         inx
         bne    @l1
-@l2:    lda    screen_buffer+$100+COLS,x
+@l2:    lda    screen_buffer+$100+80,x
         sta    screen_buffer+$100,x
         inx
         bne    @l2
-@l3:    lda    screen_buffer+$200+COLS,x
+@l3:    lda    screen_buffer+$200+80,x
         sta    screen_buffer+$200,x
         inx
         bne    @l3
-;        bit text_mode
- ;       bmi @l4
-;.ifndef COLS80
-@le40:  lda screen_buffer+$300+COLS,x
-        sta screen_buffer+$300,x
-        inx
-        cpx #<(40 * ROWS)
-        bne @le40
-        bra @exit
-;.endif
-;.ifdef COLS80
-@l4:    lda    screen_buffer+$300+COLS,x
+@l4:    lda    screen_buffer+$300+80,x
         sta    screen_buffer+$300,x
         inx
         bne    @l4
-@l5:    lda    screen_buffer+$400+COLS,x
+@l5:    lda    screen_buffer+$400+80,x
         sta    screen_buffer+$400,x
         inx
         bne    @l5
-@l6:    lda    screen_buffer+$500+COLS,x
+@l6:    lda    screen_buffer+$500+80,x
         sta    screen_buffer+$500,x
         inx
         bne    @l6
-@l7:    lda    screen_buffer+$600+COLS,x
+@l7:    lda    screen_buffer+$600+80,x
         sta    screen_buffer+$600,x
         inx
         bne    @l7
-@le:    lda    screen_buffer+$700+COLS,x
+@le:    lda    screen_buffer+$700+80,x
         sta    screen_buffer+$700,x
         inx
         cpx #<(80 * ROWS)
         bne @le
-;.endif
+        bra @exit
+@scroll_40:
+        lda screen_buffer+$000+40,x
+        sta screen_buffer+$000,x
+        inx
+        bne @scroll_40
+@l40_1: lda screen_buffer+$100+40,x
+        sta screen_buffer+$100,x
+        inx
+        bne @l40_1
+@l40_2: lda screen_buffer+$200+40,x
+        sta screen_buffer+$200,x
+        inx
+        bne @l40_2
+@l40_e: lda screen_buffer+$300+40,x
+        sta screen_buffer+$300,x
+        inx
+        cpx #<(40 * ROWS)
+        bne @l40_e        
 @exit:
         plx
         rts
@@ -426,7 +427,7 @@ textui_dispatch_char:
         lda    crs_y            ; cursor y=0, no dec
         beq    @lupdate
         dec    crs_y
-        lda    #(COLS-1)            ; set x to end of line above
+        lda    max_cols            ; set x to end of line above
         sta    crs_x
 @l2:    jsr    textui_update_crs_ptr
         lda    #CURSOR_BLANK            ;blank the saved char
@@ -437,7 +438,7 @@ textui_dispatch_char:
 @l4:
         sta    saved_char         ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
         lda    crs_x
-        cmp    #(COLS-1)
+        cmp    max_cols
         beq @l5
         inc    crs_x
 @lupdate:
@@ -445,7 +446,7 @@ textui_dispatch_char:
 @l5:    stz    crs_x
         jmp    textui_inc_cursor_y
 
-screen_status:       .res 1
-screen_write_lock:   .res 1
-screen_frames:       .res 1
-saved_char:          .res 1
+screen_status:      .res 1
+screen_write_lock:  .res 1
+screen_frames:      .res 1
+saved_char:         .res 1

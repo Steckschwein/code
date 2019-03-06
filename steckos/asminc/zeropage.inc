@@ -74,6 +74,6 @@ SYS_IRR				= $0287		; system interrupt request register - kernel collects all IR
 	IRQ_IO0			= 1<<4		; i/o port 0
 	;...
 
-text_mode      = $0288   ; 1<<7 - 80 columns mode, 40 columns otherwise
+max_cols      = $0288   ; 80 columns mode, 40 columns otherwise
 
-trampolin			= $0010
+trampolin     = $0010
