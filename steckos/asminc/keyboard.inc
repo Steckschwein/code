@@ -11,3 +11,4 @@ KEY_ESCAPE        = 27
 
 KEY_FN1 = $f1
 KEY_FN2 = $f2
+KEY_FN12 = $fc

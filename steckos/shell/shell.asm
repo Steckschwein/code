@@ -124,11 +124,8 @@ inputloop:
         cmp #KEY_CRSR_DOWN
         beq key_crs_down
 
-        cmp #KEY_FN1
-        beq key_fn1
-        
-        cmp #KEY_FN2
-        beq key_fn2
+        cmp #KEY_FN12
+        beq key_fn12
         
         ; prevent overflow of input buffer
         cpy #BUF_SIZE
@@ -154,10 +151,8 @@ escape:
         jsr printbuf
         bra inputloop
 
-key_fn1:
-        jmp mode_40
-key_fn2:
-        jmp mode_80
+key_fn12:
+        jmp mode_toggle
 
 key_crs_up:
 ;        jsr history_back
@@ -430,6 +425,10 @@ errmsg:
 		.byte $0a,"unknown error",$0a,$00
 		jmp mainloop
 
+mode_toggle:
+    lda #TEXT_MODE_40
+    cmp max_cols
+    beq mode_80
 mode_40:
     lda #TEXT_MODE_40
     bra setmode
