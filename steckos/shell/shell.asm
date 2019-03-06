@@ -24,10 +24,11 @@
 prompt  = $af
 
 .include "zeropage.inc"
+.include "kernel_jumptable.inc"
+.include "kernel.inc"
 .include "common.inc"
 .include "keyboard.inc"
 .include "rtc.inc"
-.include "kernel_jumptable.inc"
 .include "appstart.inc"
 
 .importzp tmp1, tmp2
