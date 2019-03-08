@@ -44,8 +44,7 @@ __dmm:
 __dmm_next:
 		dey
 		bpl __dmm
-		sec
-		rts
+		rts ;exit, C=! here from cmp above
 __dmm_neq:
 		clc
 		rts
