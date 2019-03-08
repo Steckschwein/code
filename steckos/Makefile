@@ -7,6 +7,7 @@ endif
 all: build
 
 clean:
+	(cd demo; make clean)
 	(cd tools; make clean)
 	(cd shell; make clean)
 	(cd kernel; make clean)
@@ -19,6 +20,7 @@ build:
 	(cd tools/lib; make )
 	(cd shell; make )
 	(cd tools; make )
+	(cd demo; make )
 
 test:
 	(cd kernel; make test)
