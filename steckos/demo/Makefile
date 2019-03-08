@@ -4,7 +4,7 @@ ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 
 .PHONY: all clean
 
-all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7.prg
+all: gfx7pset.prg gfx7line.prg gfx7bench.prg
 
 clean:
 	rm -f *.prg *.s *.o
