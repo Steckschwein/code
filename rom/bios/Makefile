@@ -1,7 +1,7 @@
 OBJS=bios.o charset_8x8.o charset_6x8.o uart.o via.o spi.o out.o vdp.o sdcard.o fat32.o nvram.o
 LDFLAGS=--config bios.cfg -m map.txt
 # 6x8 characters
-DEFINES+=-DCHAR6x8 
+DEFINES+=-DCHAR6x8
 # if 9958 is used
 DEFINES+=-DV9958
 # enable 80 cols
@@ -9,10 +9,10 @@ DEFINES+=-DV9958
 
 
 .PHONY: all clean
-all: version.inc bios.bin 
+all: version.inc bios.bin
 
 clean:
-	rm -f *.o *.bin version.inc bios_call.inc *.txt
+	rm -f *.o *.bin version.inc bios_call.inc
 
 %.o: %.asm version.inc
 	ca65 --target none $(DEFINES) $<
