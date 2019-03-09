@@ -64,7 +64,6 @@ vdp_text_on:
 	rts
 
 vdp_init_bytes_text_80cols:
-;.ifdef COLS80
 	.byte v_reg0_m4 ; text mode 2, 80 cols
 	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
 	.byte (ADDRESS_GFX1_SCREEN / $1000)| 1<<1 | 1<<0	; name table - value * $1000 (v9958) --> charset
@@ -73,7 +72,6 @@ vdp_init_bytes_text_80cols:
 	.byte	0	; not used
 	.byte 0	; not used
 	.byte	Medium_Green<<4|Black
-;.else
 vdp_init_bytes_text:
 	.byte	0
 	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
@@ -83,4 +81,3 @@ vdp_init_bytes_text:
 	.byte	0	; not used
 	.byte 0	; not used
 	.byte	Medium_Green<<4|Black
-;.endif

@@ -10,6 +10,7 @@ DEFINES+=-DV9958
 #DEFINES+=-DCOLS80
 
 # enable debug
+# DEBUG += -DDEBUG_KERNEL
 # DEBUG += -DDEBUG_SDCARD
 # debug rtc updates by kernel
 # DEBUG += -DDEBUG_RTC
@@ -20,9 +21,9 @@ DEFINES+=-DV9958
 # dump fat blocks on write
 #DEBUG += -DFAT_DUMP_FAT_WRITE
 # do not write anything (metadata)
-# DEBUG += -DFAT_NOWRITE
+#DEBUG += -DFAT_NOWRITE
 #DEBUG += -DV9958
-# DEBUG += -DDEBUG_EXECV
+#DEBUG += -DDEBUG_EXECV
 #DEBUG += -DDEBUG_SPI
 
 # optimize flags

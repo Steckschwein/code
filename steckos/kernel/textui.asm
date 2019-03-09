@@ -51,13 +51,16 @@ screen_buffer:
 
 .export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
 
-.import vdp_bgcolor, vdp_memcpy, vdp_text_on, vdp_display_off
+.import vdp_bgcolor
+.import vdp_memcpy
+.import vdp_text_on
+.import vdp_display_off
 
-.macro _screen_dirty
+_screen_dirty:
         lda #STATE_BUFFER_DIRTY
         tsb screen_status ;set dirty
-.endmacro
-
+        rts
+        
 textui_decy:
         lda    crs_y
         bne    @l1
@@ -174,8 +177,7 @@ textui_blank:
         stz crs_y
         jsr textui_update_crs_ptr
 
-        _screen_dirty
-        rts
+        jmp _screen_dirty
         
 textui_cursor:
         lda screen_write_lock
@@ -196,7 +198,7 @@ textui_cursor:
         bra @l2
 @l1:     lda saved_char
 @l2:     sta (crs_ptr)
-        _screen_dirty
+        jmp _screen_dirty
 @l_exit:
         rts
 
@@ -228,7 +230,7 @@ textui_update_screen:
 
 @l1:
         lda    #Medium_Green<<4|Black
-        jsr    vdp_bgcolor
+        ;jsr    vdp_bgcolor
         rts
 
 textui_scroll_up:
@@ -237,6 +239,7 @@ textui_scroll_up:
         ldx #0
         bit max_cols
         bvc @scroll_40
+        
 @l1:    lda    screen_buffer+$000+80,x
         sta    screen_buffer+$000,x
         inx
@@ -344,9 +347,7 @@ textui_strout:
         iny
         bne    @l1
 @l2:    stz    screen_write_lock    ;write lock off
-        _screen_dirty
-
-        rts
+        jmp _screen_dirty
 .endif
 
 ;----------------------------------------------------------------------------------------------
@@ -375,7 +376,7 @@ PSIX1:    inc     krn_ptr3             ;
         inc     krn_ptr3+1             ; account for page crossing
 PSIX2:
         stz screen_write_lock
-        _screen_dirty
+        jsr _screen_dirty
 
         jmp     (krn_ptr3)           ; return to byte following final NULL
 .endif
@@ -384,7 +385,7 @@ textui_put:
         pha
         inc screen_write_lock   ;write lock on
         sta saved_char
-        _screen_dirty
+        jsr _screen_dirty
         stz screen_write_lock   ;write lock off
         pla
         rts
@@ -395,7 +396,7 @@ textui_chrout:
         inc screen_write_lock    ;write on
         jsr textui_dispatch_char
         stz screen_write_lock    ;write off
-        _screen_dirty
+        jsr _screen_dirty
 
         pla                    ; restore a
 @l1:    rts

@@ -20,7 +20,6 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.segment "CODE"
 .include "kernel.inc"
 .include "kernel_jumptable.inc"
 .include "fat32.inc"
@@ -32,6 +31,7 @@
 .export dir_show_entry, pagecnt, entries_per_page, dir_attrib_mask
 
 
+.code
 dir_show_entry:
 		pha
 		jsr print_filename
@@ -71,6 +71,5 @@ dir_show_entry:
 
 entries = 23
 dir_attrib_mask:  .byte $0a
-
 entries_per_page: .byte entries
-pagecnt: .byte entries
+pagecnt:          .byte entries

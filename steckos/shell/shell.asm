@@ -51,9 +51,10 @@ p_history   = ptr3
 
 .export char_out=krn_chrout
 
+.import hexout
+
 appstart
 
-.code
 init:
       jsr krn_primm
       .byte $0a, "steckOS Shell "
@@ -71,7 +72,7 @@ exit_from_prg:
       SetVector exit_from_prg, retvec
       SetVector buf, bufptr
       SetVector buf, paramptr ; set param to empty buffer
-      SetVector msgbuf, msgptr
+      ;SetVector msgbuf, msgptr
       SetVector PATH, pathptr    
 mainloop:
       jsr krn_primm
@@ -135,7 +136,6 @@ inputloop:
         iny
 line_end:
         jsr char_out
-        bra inputloop
         jsr terminate
 
         bra inputloop
@@ -178,9 +178,11 @@ parse:
         bne @l2
         jmp mainloop
 @l2:
-        cmp #$20
+        cmp #' '
         bne @l3
         inc cmdptr
+;        bcc @l1
+ ;       inc cmdptr+1
         bra @l1
 @l3:
         copypointer cmdptr, paramptr
@@ -189,9 +191,8 @@ parse:
 		; first, fast forward until space or abort if null (no parameters then)
 @l4:
       lda (paramptr)
-      ;jsr char_out
       beq @l7
-      cmp #$20
+      cmp #' '
       beq @l5
       inc paramptr
       bra @l4
@@ -210,39 +211,39 @@ parse:
       jsr terminate
 
 compare:
-		; compare
+      ; compare
       ldx #$00
 @l1:	ldy #$00
 @l2:	lda (cmdptr),y
+      
+      ; if not, there is a terminating null
+      bne @l3
 
-		; if not, there is a terminating null
-		bne @l3
+      cmp cmdlist,x
+      beq cmdfound
 
-		cmp cmdlist,x
-		beq cmdfound
-
-		; command string in buffer is terminated with $20 if there are cmd line arguments
+      ; command string in buffer is terminated with $20 if there are cmd line arguments
 
 @l3:
-		cmp #$20
-		bne @l4
+      cmp #$20
+      bne @l4
 
-		cmp cmdlist,x
-		bne cmdfound
+      cmp cmdlist,x
+      bne cmdfound
 
 @l4:
-		; make lowercase
-		ora #$20
+      ; make lowercase
+      ora #$20
 
-		cmp cmdlist,x
-		bne @l5	; difference. this isnt the command were looking for
+      cmp cmdlist,x
+      bne @l5	; difference. this isnt the command were looking for
 
-		iny
-		inx
+      iny
+      inx
 
-		bra @l2
+      bra @l2
 
-		; next cmdlist entry
+      ; next cmdlist entry
 @l5:
 		inx
 		lda cmdlist,x
@@ -257,16 +258,16 @@ compare:
 		bra @l1
 
 cmdfound:
-		inx
-		jmp (cmdlist,x) ; 65c02 FTW!!
+      inx
+      jmp (cmdlist,x) ; 65c02 FTW!!
 
 try_exec:
-		lda (bufptr)
-		beq @l1
+      lda (bufptr)
+      beq @l1
 
-    lda #$0a
-    jsr char_out
-		jmp exec
+      lda #$0a
+      jsr char_out
+      jmp exec
 
 @l1:	jmp mainloop
 
@@ -496,23 +497,25 @@ exec:
 		inx
 		bne @cp_loop
 @l3:
-    lda tmp1
-		bne	@l4
-		ldy #0
+      lda tmp1
+      bne	@l4
+      ldy #0
 @l5:
-    lda	PRGEXT,y
-		beq @l4
-		sta tmpbuf,x
-		inx
-		iny
-		bne	@l5
-@l4:	stz tmpbuf,x
-		lda #<tmpbuf
-		ldx #>tmpbuf    ; cmdline in a/x
-		jsr krn_execv   ; return A with errorcode
-		bne @try_path
-		lda #$fe
-		jmp errmsg
+      lda	PRGEXT,y
+      beq @l4
+      sta tmpbuf,x
+      inx
+      iny
+      bne	@l5
+@l4:
+      stz tmpbuf,x
+    
+      lda #<tmpbuf
+      ldx #>tmpbuf    ; cmdline in a/x
+      jsr krn_execv   ; return A with errorcode
+      bne @try_path
+      lda #$fe
+      jmp errmsg
 
 
 .ifdef DEBUG
@@ -572,7 +575,8 @@ dump:
 		jsr char_out
 
 		ldy #$00
-@l4:	lda (dumpvec_start),y
+@l4:
+    lda (dumpvec_start),y
 		jsr hexout
 		lda #' '
 		jsr char_out
@@ -638,13 +642,14 @@ screensaver_settimeout:
 l_exit:
         rts
 
-PATH:             .asciiz "./:/steckos/:/progs/"
+PATH:             .asciiz "./:/steckos/";:/progs/"
 PRGEXT:           .asciiz ".PRG"
 screensaver_prg:  .asciiz "/steckos/unrclock.prg"
 screensaver_rtc:  .res 1
 crs_x_prompt:     .res 1
-tmpbuf:
-buf = tmpbuf + 64
-msgbuf = buf + BUF_SIZE
+tmpbuf:           .res BUF_SIZE
 
-history=msgbuf+$100
+.data
+buf:              .res BUF_SIZE, 0
+msgbuf:           
+history:

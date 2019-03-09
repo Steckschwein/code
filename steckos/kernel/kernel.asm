@@ -19,6 +19,10 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
+.ifdef DEBUG_KERNEL ; debug switch for this module
+	debug_enabled=1
+.endif
+
 .include "common.inc"
 .include "kernel.inc"
 .include "vdp.inc"
@@ -66,9 +70,7 @@ kern_init:
 	bne @copy
 
     jsr init_via1
-    jsr init_rtc                ;init
-    jsr __rtc_systime_update    ;... and update rtc immediately before any program is loaded
-
+    jsr init_rtc                ;init, rtc is loaded initial
     jsr init_uart
 
     SetVector user_isr_default, user_isr
@@ -77,14 +79,18 @@ kern_init:
 
     cli
 
-	jsr primm
-	.byte $d5,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$b8,$0a
-	.byte $b3," steckOS Kernel "
-	.include "version.inc"
-	.byte $20,$b3,$0a
-	.byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
-	.byte $00
-
+.ifdef DEBUG_KERNEL
+;      jsr primm
+;      .asciiz "dbg"
+.else
+      jsr primm
+      .byte $d5,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$b8,$0a
+      .byte $b3," steckOS Kernel "
+      .include "version.inc"
+      .byte $20,$b3,$0a
+      .byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
+      .byte $00
+.endif
 
 	SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
 

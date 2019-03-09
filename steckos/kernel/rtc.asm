@@ -56,8 +56,7 @@ init_rtc:
 		jsr spi_rw_byte
 
 		; Deselect SPI SS for RTC
-		jmp spi_deselect
-
+		jsr spi_deselect ; go on, read rtc initial
 
 		;in:
 		;	A/X pointer to time_t struct @see asminc/rtc.inc

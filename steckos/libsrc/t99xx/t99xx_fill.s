@@ -22,24 +22,31 @@
 
 .include "vdp.inc"
 
-.export vdp_display_off
-.export vdp_bgcolor
-.export vdp_nopslide_8m
-.export vdp_nopslide_2m
+.export vdp_fills, vdp_fill
 
 .code
-m_vdp_nopslide
-
-vdp_display_off:
-      vdp_sreg v_reg1_16k, v_reg1 	;enable 16K? ram, disable screen
+vdp_fill:
+;	in:
+;		.A - byte to fill
+;		.X - amount of 256byte blocks (page counter)
+        ldy #0
+@0:     nop
+@1:     vdp_wait_l 8
+        iny             ;2
+        sta a_vram
+        bne @0          ;3
+        dex
+        bne @1
+        vdp_wait_l 12
+        rts
+	
+vdp_fills:
+;	in:
+;   .A - value to write
+;		.X - amount of bytes
+@0:	  vdp_wait_l 6   ;3 + 2 + 1 opcode fetch
+      dex            ;2
+      sta a_vram     ;4
+      bne	@0         ;3
+      vdp_wait_l 8
       rts
-   
-;
-;   input:	a - color
-;
-vdp_bgcolor:
-	sta   a_vreg
-	lda   #v_reg7
-	vdp_wait_s 2
-	sta   a_vreg
-	rts

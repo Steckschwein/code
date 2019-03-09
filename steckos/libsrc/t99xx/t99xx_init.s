@@ -22,24 +22,29 @@
 
 .include "vdp.inc"
 
-.export vdp_display_off
-.export vdp_bgcolor
-.export vdp_nopslide_8m
-.export vdp_nopslide_2m
+.export vdp_init_reg
+
+.importzp vdp_ptr
 
 .code
-m_vdp_nopslide
-
-vdp_display_off:
-      vdp_sreg v_reg1_16k, v_reg1 	;enable 16K? ram, disable screen
-      rts
-   
-;
-;   input:	a - color
-;
-vdp_bgcolor:
-	sta   a_vreg
-	lda   #v_reg7
-	vdp_wait_s 2
-	sta   a_vreg
-	rts
+; setup video registers upon given table
+;	in:
+;		.X - length of init table
+;		.A/.Y - pointer to vdp init table
+vdp_init_reg:
+      sta vdp_ptr
+      sty vdp_ptr+1
+      txa         ; x length of init table
+      tay
+			ora #$80		; bit 7 = 1 => register write
+			tax
+@l:		vdp_wait_s 4
+			lda (vdp_ptr),y ; 5c
+			sta a_vreg
+			vdp_wait_s
+			stx a_vreg
+			dex				;2c
+			dey				;2c
+			bpl @l 			;3c
+			rts
+      

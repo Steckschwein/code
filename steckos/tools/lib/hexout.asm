@@ -23,6 +23,7 @@
 .export hexout
 
 .import char_out
+.code
 ;
 ;	hexout a binary number - convert a byte given in A into 2 character ascii and output to char_out
 ;	in :

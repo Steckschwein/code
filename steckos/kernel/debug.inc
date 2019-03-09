@@ -58,14 +58,6 @@
 .endif
 .endmacro
 
-.macro debug32p msg, ptr
-.if .defined(debug_enabled)
-		jsr	_debugout32p
-		.word ptr
-		.asciiz msg
-.endif
-.endmacro
-
 .macro debug32 msg, addr
 .if .defined(debug_enabled)
 		jsr	_debugout32
@@ -74,19 +66,17 @@
 .endif
 .endmacro
 
-.macro debugdump msg, addr, n
+.macro debugdump msg, addr
 .if .defined(debug_enabled)
-		;.assert n<=$80, error, "range error in dump"
 		jsr _debugdump
 		.word addr
 		.asciiz msg
 .endif
 .endmacro
 
-.macro debugdumpptr msg, ptr, n
+.macro debugdumpptr msg, ptr
 .if .defined(debug_enabled)
-		;.assert n<=$80, error, "range error in dump"
-		jsr _debugdumpptr
+		jsr _debugdump
 		.word ptr
 		.asciiz msg
 .endif

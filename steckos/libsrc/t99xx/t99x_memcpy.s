@@ -22,24 +22,49 @@
 
 .include "vdp.inc"
 
-.export vdp_display_off
-.export vdp_bgcolor
-.export vdp_nopslide_8m
-.export vdp_nopslide_2m
+.export vdp_memcpys, vdp_memcpy
+
+.importzp vdp_ptr
 
 .code
-m_vdp_nopslide
-
-vdp_display_off:
-      vdp_sreg v_reg1_16k, v_reg1 	;enable 16K? ram, disable screen
+;	input:
+;  	.X    - amount of 256byte blocks (page counter)
+;		.A/.Y - pointer to source data
+vdp_memcpy:
+      sta vdp_ptr
+      sty vdp_ptr+1
+      ldy #0
+@l0:
+      nop
+      nop
+      nop
+      nop
+      nop
+@l1:
+      vdp_wait_l 10+10;3 + 5 + 2 + 1 opcode fetch =10 cl for inner loop, +10 cl outer loop
+      lda (vdp_ptr),y ;5
+      sta a_vram      ;1
+      iny             ;2
+      bne @l0         ;3/2
+      inc vdp_ptr+1   ;5
+      dex             ;2
+      bne @l1         ;3
+      vdp_wait_l 18
       rts
-   
-;
-;   input:	a - color
-;
-vdp_bgcolor:
-	sta   a_vreg
-	lda   #v_reg7
-	vdp_wait_s 2
-	sta   a_vreg
-	rts
+		
+;	input:
+;  	.X    - amount of bytes to copy
+;   .A/.Y - pointer to data
+vdp_memcpys:
+      sta vdp_ptr
+      sty vdp_ptr+1
+      ldy #0
+@0:   vdp_wait_l 13	 ;2 + 2 + 3 + 5 + 1 opcode fetch
+      lda (vdp_ptr),y ;5
+      sta a_vram    	 ;1+3
+      iny             ;2
+      dex             ;2
+      bne	@0			 ;3
+      vdp_wait_l 12
+      rts
+      

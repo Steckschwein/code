@@ -33,33 +33,33 @@
 
 .code
 
-.import fat_open, fat_read, fat_close, fat_read_block, hexout, sd_read_multiblock, inc_lba_address, calc_blocks
+.import fat_open, fat_read, fat_close, fat_read_block, sd_read_multiblock, inc_lba_address
 
 .export execv
 
         ; in:
         ;   A/X - pointer to string with the file path
 execv:
-		ldy	#O_RDONLY
-		jsr fat_open			   	; A/X - pointer to filename
-		bne @l_err_exit
+        ldy	#O_RDONLY
+        jsr fat_open			   	; A/X - pointer to filename
+        bne @l_err_exit
 
-		SetVector sd_blktarget, read_blkptr
-		phx ; save x register for fat_close
-		jsr	fat_read_block
-		plx
-		jsr fat_close			; close after read to free fd, regardless of error
+        SetVector sd_blktarget, read_blkptr
+        phx ; save x register for fat_close
+        jsr	fat_read_block
+        plx
+        jsr fat_close			; close after read to free fd, regardless of error
 
         lda sd_blktarget
         sta krn_ptr1
-		clc
-		adc #$fe
-		sta read_blkptr
+        clc
+        adc #$fe
+        sta read_blkptr
 
-		lda sd_blktarget+1
+        lda sd_blktarget+1
         sta krn_ptr1+1
         adc #$01
-		sta read_blkptr+1
+        sta read_blkptr+1
 
         ldy #$00
 @l:
@@ -76,14 +76,14 @@ execv:
         cpy #$fe
         bne @l2
 
-		dec krn_ptr1+1
+        dec krn_ptr1+1
 
         jsr inc_lba_address
 
         dec blocks
         beq @l_exec_run
 
-		jsr sd_read_multiblock
+        jsr sd_read_multiblock
 
 @l_exec_run:
         ; we came here using jsr, but will not rts.
@@ -93,5 +93,5 @@ execv:
         jmp (krn_ptr1)
 
 @l_err_exit:
-		debug "exec"
-		rts
+        debug "exec"
+        rts
