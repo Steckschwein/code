@@ -5,6 +5,8 @@ ram_end 			= $0288
 ram_end_l   		= ram_end
 ram_end_h   		= ram_end+1
 
+ctrl_port   = $0230
+
 ; Pointers
 addr 		= $e0
 adrl     	= addr
@@ -48,13 +50,13 @@ dirptr 		= $f4 ; 2 byte
 paramvec	= $f8
 
 
-; pointer for string output functions 
+; pointer for string output functions
 msgptr 		= $fe
 
 
 sd_blktarget 		= $0400
 
-steckos_start		= $1000	
+steckos_start		= $1000
 
 
 
@@ -68,7 +70,7 @@ param_lsr       = $0f ; 1  byte  - uart lcr value , default %00000011 (8N1)
 param_checksum  = $5f ; checksum
 
 
-.macro SetVector word, addr 
+.macro SetVector word, addr
 			lda #<word
 			sta addr
 			lda #>word
@@ -96,7 +98,7 @@ param_checksum  = $5f ; checksum
 	pla
 .endmacro
 
-.macro Copy src, trgt, len 
+.macro Copy src, trgt, len
 	ldx #len
 @l:	lda src,x
 	sta trgt,x
@@ -104,9 +106,9 @@ param_checksum  = $5f ; checksum
 	bpl @l
 .endmacro
 
-.macro copyPointer fromptr, toptr 
+.macro copyPointer fromptr, toptr
 	.repeat 2, i
 		lda fromptr+i
-		sta toptr	+i	
+		sta toptr	+i
 	.endrep
 .endmacro

@@ -13,7 +13,17 @@
 .import fat_mount, fat_read, fat_find_first, calc_lba_addr
 .import read_nvram
 
+.macro set_ctrlport
+            lda ctrl_port
+            lsr
+            lda ctrl_port
+            and #$fe
+            rol
+            sta ctrl_port
+.endmacro
+
 do_reset:
+
 			; disable interrupt
 			sei
 
@@ -23,6 +33,11 @@ do_reset:
 			; init stack pointer
 			ldx #$ff
 			txs
+
+            lda ctrl_port
+            ora #%11111000
+            sta ctrl_port
+
 
    			; Check zeropage and Memory
 check_zp:
@@ -71,7 +86,7 @@ check_memory:
 			dex  				  ; 2 cycles
 			bne @l1			  ; 2 cycles, 3 if taken
 
-			iny  				  ; 2 cycles		
+			iny  				  ; 2 cycles
 			bne @l2				  ; 2 cycles, 3 if taken
 
 			; Stop at $e000 to prevent overwriting BIOS Code when ROMOFF
@@ -82,7 +97,7 @@ check_memory:
 
 			bne @l2 			  ; 2 cycles, 3 if taken
 @l3:  		sty ptr1l		  ; 3 cycles
-		
+
 	  					  ; 42 cycles
 
 	  		; save end address
@@ -90,28 +105,31 @@ check_memory:
 	  		; sta ram_end_l
 	  		; lda ptr1h
 	  		; sta ram_end_h
-	  		
-	  	   
+
 
 			bra mem_ok
 
 mem_broken:
-			lda #$40
-			bra stop
-
-zp_broken:
 			lda #$80
 			bra stop
 
-stack_broken:
+zp_broken:
 			lda #$40
+			bra stop
+
+stack_broken:
+			lda #$20
 stop:
-			sta $0230
+			sta ctrl_port
 @loop:		bra @loop
 
 
 mem_ok:
+            set_ctrlport
+
 			jsr vdp_init
+
+            set_ctrlport
 
 			jsr primm
 			.byte "BIOS "
@@ -119,14 +137,17 @@ mem_ok:
 			.byte $0a,0
 
 			printstring "Memcheck $"
-	  	lda ptr1h
+	  	    lda ptr1h
 			jsr hexout
-	  	lda ptr1l
+	  	    lda ptr1l
 			jsr hexout
-      jsr print_crlf
-      
-      jsr vdp_detect
-      
+            jsr print_crlf
+
+            set_ctrlport
+
+            jsr vdp_detect
+
+            set_ctrlport
 			jsr init_via1
 
 			SetVector param_defaults, paramvec
@@ -136,7 +157,8 @@ mem_ok:
 			jsr read_nvram
 
 			jsr init_uart
-      
+            set_ctrlport
+
 			jsr init_sdcard
 			lda errno
 			beq boot_from_card
@@ -173,7 +195,7 @@ boot_from_card:
 			; bcc @l4
 			; inc ptr1h
 
-@l4: 
+@l4:
 			jsr fat_find_first
 			bcs @loadfile
 
@@ -193,17 +215,17 @@ boot_from_card:
 			ldy #DIR_FstClusHI + 1
 			lda (dirptr),y
 			sta root_dir_first_clus + 3
-			ldy #DIR_FstClusHI 
+			ldy #DIR_FstClusHI
 			lda (dirptr),y
 			sta root_dir_first_clus + 2
 			ldy #DIR_FstClusLO + 1
 			lda (dirptr),y
 			sta root_dir_first_clus + 1
-			ldy #DIR_FstClusLO 
+			ldy #DIR_FstClusLO
 			lda (dirptr),y
 			sta root_dir_first_clus
 			jsr calc_lba_addr
-			
+
 			.repeat 4, i
 				ldy #DIR_FileSize + i
 				lda (dirptr),y
@@ -212,7 +234,7 @@ boot_from_card:
 
 			SetVector steckos_start, startaddr
 			SetVector steckos_start, sd_blkptr
-			jsr fat_read			
+			jsr fat_read
 
 		; re-init stack pointer
 startup:
@@ -245,7 +267,7 @@ dummy_irq:
 		rti
 
 
-num_patterns = $02	
+num_patterns = $02
 pattern:
 	.byte $aa,$55,$00
 
