@@ -1,0 +1,18 @@
+Boot progress indicator:
+XXXXX000
+^^^^^
+|||||_ Memtest passed
+||||__ VDP init passed
+|||___ VDP detect passed
+||____ Read NVRAM passed
+||____ UART init passed
+
+
+
+Memtest failed:
+
+00X00000 Stack check failed
+0X000000 ZP check failed
+X0000000 Memcheck failed
+
+

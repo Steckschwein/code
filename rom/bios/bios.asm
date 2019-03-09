@@ -106,6 +106,13 @@ check_memory:
 	  		; lda ptr1h
 	  		; sta ram_end_h
 
+            lda #$e0
+            cmp ptr1h
+            bne mem_broken
+
+            lda ptr1l
+            bne mem_broken
+
 
 			bra mem_ok
 
@@ -143,7 +150,6 @@ mem_ok:
 			jsr hexout
             jsr print_crlf
 
-            set_ctrlport
 
             jsr vdp_detect
 
@@ -155,6 +161,7 @@ mem_ok:
 			jsr set_filenameptr
 
 			jsr read_nvram
+            set_ctrlport
 
 			jsr init_uart
             set_ctrlport
