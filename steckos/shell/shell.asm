@@ -73,7 +73,7 @@ exit_from_prg:
       SetVector buf, bufptr
       SetVector buf, paramptr ; set param to empty buffer
       ;SetVector msgbuf, msgptr
-      SetVector PATH, pathptr    
+      SetVector PATH, pathptr
 mainloop:
       jsr krn_primm
       .byte $0a, '[', 0
@@ -127,7 +127,7 @@ inputloop:
 
         cmp #KEY_FN12
         beq key_fn12
-        
+
         ; prevent overflow of input buffer
         cpy #BUF_SIZE
         beq inputloop
@@ -215,7 +215,7 @@ compare:
       ldx #$00
 @l1:	ldy #$00
 @l2:	lda (cmdptr),y
-      
+
       ; if not, there is a terminating null
       bne @l3
 
@@ -509,7 +509,7 @@ exec:
       bne	@l5
 @l4:
       stz tmpbuf,x
-    
+
       lda #<tmpbuf
       ldx #>tmpbuf    ; cmdline in a/x
       jsr krn_execv   ; return A with errorcode
@@ -642,7 +642,7 @@ screensaver_settimeout:
 l_exit:
         rts
 
-PATH:             .asciiz "./:/steckos/";:/progs/"
+PATH:             .asciiz "./:/steckos/:/progs/"
 PRGEXT:           .asciiz ".PRG"
 screensaver_prg:  .asciiz "/steckos/unrclock.prg"
 screensaver_rtc:  .res 1
@@ -651,5 +651,5 @@ tmpbuf:           .res BUF_SIZE
 
 .data
 buf:              .res BUF_SIZE, 0
-msgbuf:           
+msgbuf:
 history:
