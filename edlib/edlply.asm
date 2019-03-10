@@ -250,10 +250,7 @@ player_isr:
 @exit:
 
 		lda #Medium_Green<<4|Transparent
-		nop
-    nop
-    nop
-    ;jsr vdp_bgcolor
+		jsr vdp_bgcolor
 
 		rts
 
