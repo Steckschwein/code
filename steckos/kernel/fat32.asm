@@ -1666,10 +1666,7 @@ ff_l3:
       bne ff_exit
 ff_l4:
       lda (dirptr)
-      ;beq ff_exit								   ; first byte of dir entry is $00 (end of directory)
-      bne @l5
-      debug16 "ff4", dirptr
-      bra ff_exit
+      beq ff_exit								   ; first byte of dir entry is $00 (end of directory)
 @l5:
       ldy #F32DirEntry::Attr					; else check if long filename entry
       lda (dirptr),y 							; we are only going to filter those here (or maybe not?)
