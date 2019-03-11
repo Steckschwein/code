@@ -34,9 +34,6 @@ prompt  = $af
 .importzp tmp1, tmp2
 .importzp ptr1, ptr2, ptr3
 
-; set attrib mask. hide volume label and hidden files
-dir_attrib_mask		= $0a
-
 SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 32 ;TODO FIXME too hard
 
