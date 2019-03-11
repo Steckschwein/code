@@ -7,7 +7,7 @@
 ;
 
         .include "time.inc"
-        .include "kernel_jumptable.inc"
+        .include "kernel/kernel_jumptable.inc"
         .include "asminc/rtc.inc"
 
         .import pushax, steaxspidx, incsp1, incsp3, return0

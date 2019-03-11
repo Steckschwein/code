@@ -38,7 +38,7 @@ mostlyclean:
 	$(call RMDIR,../libwrk)
 
 
-CA65FLAGS = --cpu 65c02 -I ../../steckos/kernel -I ../../steckos $(DEFINES)
+CA65FLAGS = --cpu 65c02 -I ../../ $(DEFINES)
 CC65FLAGS = -Or -W error
 
 SRCDIR=.

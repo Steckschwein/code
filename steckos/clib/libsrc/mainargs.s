@@ -6,8 +6,8 @@
 MAXARGS  = 10                   ; Maximum number of arguments allowed
 NAME_LEN = 16                   ; Maximum length of command-name
 
-		.include "kernel_jumptable.inc"
-		.include "asminc/zeropage.inc"
+        .include "kernel/kernel_jumptable.inc"
+        .include "asminc/zeropage.inc"
 
 ; Get possible command-line arguments. Goes into the special ONCE segment,
 ; which may be reused after the startup code is run

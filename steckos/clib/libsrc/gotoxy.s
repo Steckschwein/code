@@ -5,7 +5,7 @@
         .import popa
         
         .include "asminc/zeropage.inc"
-        .include "kernel_jumptable.inc"
+        .include "kernel/kernel_jumptable.inc"
 		
 _gotoxy:
         sta     crs_y

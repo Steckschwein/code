@@ -3,7 +3,7 @@
 ;
 ; int __fastcall__ close(int fd);
 ;
-		.include	"../kernel/kernel_jumptable.inc"
+        .include "kernel/kernel_jumptable.inc"
 
         .export _close
         .import __do_oserror,popax,__oserror

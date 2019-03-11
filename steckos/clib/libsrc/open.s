@@ -2,15 +2,15 @@
 ;
 ; int open(const char *name,int flags,...);
 
-		.include "fcntl.inc"
+        .include "fcntl.inc"
         .include "errno.inc"
-		.include	"../kernel/kernel_jumptable.inc"
-;		.include	"../kernel/zeropage.inc"
+        .include "kernel/kernel_jumptable.inc"
+        ;		.include	"../kernel/zeropage.inc"
 
         .export _open
         .destructor     closeallfiles, 5
 
-		.import popax
+        .import popax
         .import incsp4
         .import ldaxysp,addysp
         .import __oserror
