@@ -28,10 +28,10 @@ ifeq ($(words $(MAKECMDGOALS)),1)
 endif
 
 
-all: ../lib/$(TARGET).lib
+all: ../lib/$(TARGET).a
 
 clean:
-	rm -f ../lib/$(TARGET).lib
+	rm -f ../lib/$(TARGET).a
 	$(call RMDIR,../libwrk)
 
 mostlyclean:
@@ -91,7 +91,7 @@ endef # COMPILE_recipe
 ../libwrk/$(TARGET)/%.o: %.c | ../libwrk/$(TARGET)
 	$(COMPILE_recipe)
 	
-../lib/$(TARGET).lib: $(OBJS) | ../lib
+../lib/$(TARGET).a: $(OBJS) | ../lib
 	$(AR65) a $@ $?
 
 ../libwrk/$(TARGET) ../lib ../target/$(TARGET)/util:

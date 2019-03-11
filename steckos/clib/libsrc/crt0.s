@@ -31,10 +31,10 @@ _init:
 
 ; ---------------------------------------------------------------------------
 ; Set cc65 argument stack pointer
-			LDA     #<(__RAM_START__ + __RAM_SIZE__)
-          	STA     sp
-          	LDA     #>(__RAM_START__ + __RAM_SIZE__)
-          	STA     sp+1
+      LDA     #<(__RAM_START__ + __RAM_SIZE__)
+      STA     sp
+      LDA     #>(__RAM_START__ + __RAM_SIZE__)
+      STA     sp+1
 
 ; Set up the stack.
 ;			lda     #<(__MAIN_START__ + __MAIN_SIZE__ + __STACKSIZE__)

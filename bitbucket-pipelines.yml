@@ -21,3 +21,4 @@ pipelines:
           - ( cd steckos/tools/lib/test && make clean all )
           - ( cd steckos/kernel/test && make clean all )
           - ( cd steckos/clib/libsrc;make clean all )
+          - ( cd steckos/tools/;make clean all )

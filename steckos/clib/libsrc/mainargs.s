@@ -11,7 +11,6 @@ NAME_LEN = 16                   ; Maximum length of command-name
 
 ; Get possible command-line arguments. Goes into the special ONCE segment,
 ; which may be reused after the startup code is run
-
 .segment        "ONCE"
 
 initmainargs:
@@ -90,7 +89,7 @@ done:   lda     #<argv
         stx     __argv + 1
         rts
 
-.segment        "INIT"
+;.segment        "INIT"
 
 name:   .res    NAME_LEN + 1
 

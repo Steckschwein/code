@@ -1,9 +1,19 @@
-CA65FLAGS=--include-dir ../asminc --include-dir ../kernel
-LDFLAGS=--config ../prg.ld65.cfg ../lib/steckschwein.a
+CA65FLAGS=-I ../asminc -I ../kernel
+LDFLAGS=--config ../prg.ld65.cfg ../lib/steckschwein.a ../clib/lib/steckschwein-clib.a
 ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 TOOLLIB=lib/toollib.a
-TOOLS=ls.prg ll.prg stat.prg fsinfo.prg attrib.prg rename.prg help.prg view.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg du.prg keycode.prg fig.prg vramtest.prg wozmon.prg
 
+TOOLS=ls.prg ll.prg stat.prg fsinfo.prg attrib.prg rename.prg help.prg view.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg du.prg keycode.prg fig.prg vramtest.prg wozmon.prg
+# c tools
+TOOLS+=\
+  clear.prg\
+  date.prg\
+  echo.prg\
+  nvram.prg\
+  od.prg\
+  setdate.prg\
+  uname.prg
+  
 .PHONY: all clean
 
 
@@ -14,10 +24,12 @@ all: toollib $(TOOLS)
 
 clean:
 	rm -f *.prg *.s *.o toollib.a
-	(cd lib; make clean)
 	(cd unrclock; make clean)
 	(cd xmodem; make clean)
 	(cd ppmview; make clean)
+
+toollib:
+	( cd lib ; make )
 
 %.o: %.c
 	cc65 -t none -O $<
@@ -25,9 +37,6 @@ clean:
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(ASM_INCLUDE) $(@:.o=.asm)
-
-toollib:
-	( cd lib ; make )
 
 %.prg: %.o toollib ../lib/steckschwein.a
 	ld65 $< $(LDFLAGS) $(TOOLLIB) -o $@

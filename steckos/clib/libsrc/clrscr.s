@@ -6,6 +6,4 @@
         
         .include "kernel/kernel_jumptable.inc"
 
-_clrscr:
-        jsr krn_textui_clrscr_ptr
-        rts
+_clrscr=krn_textui_clrscr_ptr

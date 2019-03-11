@@ -12,6 +12,7 @@ clean:
 	(cd shell; make clean)
 	(cd kernel; make clean)
 	(cd libsrc; make clean)
+	(cd clib/libsrc; make clean)
 	rm -rf dist/*
 
 build:
@@ -19,6 +20,7 @@ build:
 	(cd kernel; make )
 	(cd tools/lib; make )
 	(cd shell; make )
+	(cd clib/libsrc; make )
 	(cd tools; make )
 	(cd demo; make )
 
