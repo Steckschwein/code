@@ -20,3 +20,4 @@ pipelines:
           - ( cd games/microchess && make clean all )
           - ( cd steckos/tools/lib/test && make clean all )
           - ( cd steckos/kernel/test && make clean all )
+          - ( cd clib;make clean all )
