@@ -24,8 +24,8 @@
 #include <string.h>
 #include <conio.h>
 #include <time.h>
-#include "../include/spi.h"
-#include "../include/rtc.h"
+#include "include/spi.h"
+#include "include/rtc.h"
 
 unsigned char DS1306(unsigned char v){
 	unsigned char r = ((v / 10)<<4) | (v % 10);

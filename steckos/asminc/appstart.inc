@@ -20,16 +20,15 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.macro appstart __S__
+.macro appstart addr
   .if .paramcount >0  ;legacy support, start address defined within source code
-    .export __LOADADDR__;: absolute = 1
-    __LOADADDR__=__S__
+      .export __LOADADDR__;: absolute = 1
+      __LOADADDR__= addr
+      .segment "LOADADDR"
+      .word addr
   .else
-    .import __LOADADDR__ ; either default, or by a define argument during linker phase
-  .endif   
-  
-  .segment "LOADADDR"
-  .word __LOADADDR__
+      ;.import __LOADADDR__ ; either default, or by a define argument during linker phase
+  .endif
   
   .code
 .endmacro

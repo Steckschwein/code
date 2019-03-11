@@ -4,25 +4,24 @@
 ; ---------------------------------------------------------------------------
 ;
 ; Startup code for cc65 (Single Board Computer version)
+        .include "zeropage.inc"	;cc65 default zp
+        .include "asminc/zeropage.inc"	; FIXME kernel vs default zp ?!?
+        .include "kernel/kernel_jumptable.inc"
 
 .export   _init, _exit
 
 .export   __STARTUP__ : absolute = 1        ; Mark as startup
 .import   __RAM_START__, __RAM_SIZE__       ; Linker generated
 
-.import    copydata, zerobss, initlib, donelib
-.import    moveinit, callmain
-.import         __MAIN_START__, __MAIN_SIZE__   ; Linker generated
-.import         __STACKSIZE__                   ; from configure file
-.importzp       ST
-
-		.include "zeropage.inc"	;cc65 default zp
-		.include "asminc/zeropage.inc"	; FIXME kernel vs default zp ?!?
-		.include "kernel/kernel_jumptable.inc"
+.import     copydata, zerobss, initlib, donelib
+.import     moveinit
+.import     callmain
+.import     __MAIN_START__, __MAIN_SIZE__   ; Linker generated
+.import     __STACKSIZE__                   ; from configure file
+.importzp   ST
 
 ; ---------------------------------------------------------------------------
 ; Place the startup code in a special segment
-
 .segment  "STARTUP"
 _init:
 
@@ -35,7 +34,7 @@ _init:
       STA     sp
       LDA     #>(__RAM_START__ + __RAM_SIZE__)
       STA     sp+1
-
+      
 ; Set up the stack.
 ;			lda     #<(__MAIN_START__ + __MAIN_SIZE__ + __STACKSIZE__)
 ;			ldx     #>(__MAIN_START__ + __MAIN_SIZE__ + __STACKSIZE__)

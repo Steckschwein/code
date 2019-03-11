@@ -4,10 +4,10 @@
 
 int main (int argc, const char* argv[])
 {
-	int i;
-	for(i=1;i<argc;i++)
-		cprintf("%s ", argv[i]);
-	cprintf("\n");
+  int i;
+  for(i=1;i<argc;i++)
+    cprintf("%s ", argv[i]);
+  cprintf("\n");
 
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
