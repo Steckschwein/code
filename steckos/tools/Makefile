@@ -1,4 +1,4 @@
-CC65FLAGS=-I ../clib
+CC65FLAGS=-I ../clib -D_CC65_V2_17_
 CA65FLAGS=-I ../asminc -I ../kernel
 LDFLAGS=--config ../prg.ld65.cfg ../lib/steckschwein.a ../clib/lib/steckschwein-clib.a
 ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
@@ -11,9 +11,10 @@ TOOLS+=\
   echo.prg\
   nvram.prg\
   od.prg\
-  uname.prg
-#  setdate.prg\
-#  date.prg\
+  uname.prg\
+  date.prg\
+  setdate.prg
+  
   
 .PHONY: all clean
 

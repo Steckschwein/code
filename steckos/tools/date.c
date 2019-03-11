@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <conio.h>
 #include <time.h>
+#include "include/time.cc65_2_17.h"
 
 int main (void)
 {

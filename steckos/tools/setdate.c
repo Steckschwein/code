@@ -26,6 +26,7 @@
 #include <time.h>
 #include "include/spi.h"
 #include "include/rtc.h"
+#include "include/time.cc65_2_17.h"
 
 unsigned char DS1306(unsigned char v){
 	unsigned char r = ((v / 10)<<4) | (v % 10);

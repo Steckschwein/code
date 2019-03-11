@@ -43,6 +43,7 @@ rtc_read = 0
 
 
 .ifdef _CC65_V2_17_
+.global             _clock_gettime
 ;------------------------------------------------------------------------------
 ; Struct timespec - must match the struct defined in time.h
 .struct timespec
