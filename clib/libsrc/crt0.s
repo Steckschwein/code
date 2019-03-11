@@ -16,9 +16,9 @@
 .import         __STACKSIZE__                   ; from configure file
 .importzp       ST
 
-		.include  	"zeropage.inc"	;cc65 default zp
-		.include	"../kernel/zeropage.inc"	; FIXME kernel vs default zp ?!?
-		.include	"../kernel/kernel_jumptable.inc"
+		.include "zeropage.inc"	;cc65 default zp
+		.include "asminc/zeropage.inc"	; FIXME kernel vs default zp ?!?
+		.include "kernel/kernel_jumptable.inc"
 
 ; ---------------------------------------------------------------------------
 ; Place the startup code in a special segment

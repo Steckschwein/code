@@ -6,12 +6,12 @@
 ; int __fastcall__ clock_gettime (clockid_t clk_id, struct timespec *tp);
 ;
 
-        .include        "time.inc"
-		.include		"../kernel/kernel_jumptable.inc"
-		.include		"rtc.inc"
+        .include "time.inc"
+        .include "kernel_jumptable.inc"
+        .include "asminc/rtc.inc"
 
-        .import         pushax, steaxspidx, incsp1, incsp3, return0
-        .importzp       ptr1, tmp1, tmp2
+        .import pushax, steaxspidx, incsp1, incsp3, return0
+        .importzp ptr1, tmp1, tmp2
 
 ;----------------------------------------------------------------------------
 .code

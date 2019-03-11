@@ -40,3 +40,13 @@ rtc_systime_t = $0300
 
 ; read rtc
 rtc_read = 0
+
+
+.ifdef _CC65_V2_17_
+;------------------------------------------------------------------------------
+; Struct timespec - must match the struct defined in time.h
+.struct timespec
+        tv_sec      .dword
+        tv_nsec     .dword
+.endstruct
+.endif

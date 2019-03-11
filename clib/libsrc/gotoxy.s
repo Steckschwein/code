@@ -1,11 +1,11 @@
 ;
 ; void gotoxy (unsigned char x, unsigned char y);
 ;
-        .export         _gotoxy
-        .import         popa
+        .export _gotoxy
+        .import popa
         
-		.include		"../kernel/zeropage.inc"
-		.include		"../kernel/kernel_jumptable.inc"
+        .include "asminc/zeropage.inc"
+        .include "kernel_jumptable.inc"
 		
 _gotoxy:
         sta     crs_y

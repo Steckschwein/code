@@ -3,10 +3,10 @@
 ;	
 ; int __fastcall__ read(int fd,void *buf,int count)
 
-		.include "fcntl.inc"
+      .include "fcntl.inc"
       .include "errno.inc"
-		.include	"../kernel/kernel_jumptable.inc"
-		.include	"../kernel/zeropage.inc"
+      .include "kernel/kernel_jumptable.inc"
+      .include "asminc/zeropage.inc"
 
       .import __rwsetup,__do_oserror,__inviocb,__oserror, popax
 		

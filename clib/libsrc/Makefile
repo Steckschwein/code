@@ -1,7 +1,9 @@
-TARGET=steckschwein-kernel
+TARGET=steckschwein-clib
 TARGET_SYS=none
-	
+
+
 DEFINES+=-DV9958
+DEFINES+=-D_CC65_V2_17_
 
 .PHONY: all mostlyclean clean install zip lib $(TARGET)
 
@@ -36,7 +38,7 @@ mostlyclean:
 	$(call RMDIR,../libwrk)
 
 
-CA65FLAGS = --cpu 65c02 --include-dir ../asminc $(DEFINES)
+CA65FLAGS = --cpu 65c02 -I ../../steckos/kernel -I ../../steckos $(DEFINES)
 CC65FLAGS = -Or -W error
 
 SRCDIR=.
