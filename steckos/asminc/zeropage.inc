@@ -22,8 +22,10 @@
 .ifndef _ZEROPAGE_INC_ 
   _ZEROPAGE_INC_=1
   
+; already defined in cc65 zeropage.inc
 .globalzp ptr1, ptr2, ptr3, ptr4
 .globalzp tmp1, tmp2, tmp3, tmp4
+
 .globalzp vdp_ptr, vdp_tmp
 
 ; INIT0/SHELL
