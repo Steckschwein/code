@@ -60,5 +60,3 @@ direntry:
     .word $0000         ; WrtDate
     .word $0000         ; FstClusLO
     .dword 246543       ; $03c30f
-
-.segment "ASMUNIT"

@@ -93,5 +93,3 @@
   assertUserInput "BEYOND~1.D00", "BEYOND~1D00", 1
   
 	brk
-
-.segment "ASMUNIT"

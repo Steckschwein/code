@@ -47,5 +47,3 @@
 	assertX $00
 
 	brk
-
-.segment "ASMUNIT"

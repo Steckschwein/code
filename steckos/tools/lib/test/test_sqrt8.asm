@@ -19,5 +19,3 @@
 	jsr	sqrt8
 
 	assert8 1, $20
-
-.segment "ASMUNIT"

@@ -272,5 +272,3 @@ mock_read_block:
 	rts
 		
 data_read: .res 512, 0
-
-;.segment "ASMUNIT"

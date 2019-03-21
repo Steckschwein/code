@@ -77,5 +77,3 @@
 	brk
 	dummy:
 		rts
-
-.segment "ASMUNIT"

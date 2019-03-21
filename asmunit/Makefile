@@ -1,6 +1,6 @@
 DEFINES=-Dasmunit_char_out=0x200
 CA65FLAGS=$(DEFINES)
-LDFLAGS=--config asmunit.cfg $(DEFINES)
+LDFLAGS=-C asmunit.cfg $(DEFINES)
 OBJS=asmunit.o
 
 .PHONY: all clean test

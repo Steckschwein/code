@@ -3,14 +3,12 @@
 .include "common.inc"
 .include "zeropage.inc"
 
-.include "fat32.inc"
-
 .import string_fat_mask		; uut
 .import string_fat_name		; uut
 
 .import asmunit_chrout
 .export krn_chrout=asmunit_chrout
-	
+
 .code
 
 	test "string_fat_mask"
@@ -92,5 +90,3 @@ test_data_11:
 	.asciiz "ls*"
 test_data_12:
 	.asciiz "l**"
-	
-.segment "ASMUNIT"

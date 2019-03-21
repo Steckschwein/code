@@ -30,5 +30,3 @@
 
 	assertA '9'
 	brk
-	
-.segment "ASMUNIT"

@@ -52,5 +52,3 @@
 	; assertA $9f
 
 	brk
-
-.segment "ASMUNIT"

@@ -98,4 +98,3 @@
 	brk
 operand:
     .dword $deadbeef
-.segment "ASMUNIT"

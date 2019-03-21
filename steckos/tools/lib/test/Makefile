@@ -1,7 +1,7 @@
 DEFINES=-Dasmunit_char_out=0x200
-CA65FLAGS=--include-dir ../../../../asmunit --include-dir ../../../asminc --include-dir ../../../kernel $(DEFINES)
+CA65FLAGS=-I ../../../../asmunit -I ../../../asminc -I ../../../kernel $(DEFINES)
 LIBS=../toollib.a ../../../lib/steckschwein.a ../../../../asmunit/asmunit.a
-LDFLAGS=--config ../../../../asmunit/asmunit.cfg $(DEFINES) $(LIBS)
+LDFLAGS=-C ../../../../asmunit/asmunit.cfg $(DEFINES) $(LIBS)
 
 .PHONY: all clean
 
@@ -22,5 +22,3 @@ clean:
 
 test_%: test_%.bin
 	../../../../asmunit/asmunit_wrapper.sh $@.bin 1000
-#	py65mon -m 65c02 -o f001
-#	../../../../transfer.py $@.prg

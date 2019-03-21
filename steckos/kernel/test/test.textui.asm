@@ -23,5 +23,3 @@
 		assert8 3, crs_y
 
 		brk
-
-.segment "ASMUNIT"
