@@ -8,7 +8,8 @@
 	
 	.import __calc_lba_addr
 	.import __fat_isroot
-	.import fat_alloc_fd
+  .import __fat_init_fdarea
+	.import __fat_alloc_fd
 	.import fat_fread
 	
 	.import asmunit_chrout
@@ -23,18 +24,37 @@
 .code
 
 ; -------------------		
-		setup "fat_alloc_fd"	; test init
-		lda #$ff
+		setup "__fat_init_fdarea / isOpen"	; test init fd area
+    jsr __fat_init_fdarea
 		ldx #(2*FD_Entry_Size)
-:		sta fd_area,x
+:		lda fd_area,x
+    assertA $ff
 		inx
-		cpx #(3*FD_Entry_Size)
+		cpx #(FD_Entry_Size*FD_Entries_Max)
 		bne :-
-		jsr fat_alloc_fd
-		assertX (2*FD_Entry_Size)
+
+; -------------------
+		setup "__fat_alloc_fd"
+    jsr __fat_init_fdarea
+		jsr __fat_alloc_fd
+		assertX (2*FD_Entry_Size); expect x point to first fd entry which is 2*FD_Entry_Size, cause the first 2 entries are reserved
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::CurrentCluster
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::FileSize
-		assert16 0, (2*FD_Entry_Size)+fd_area+F32_fd::offset
+		assert8 0, (2*FD_Entry_Size)+fd_area+F32_fd::offset
+
+; -------------------
+		setup "fat_alloc_fd with error"
+    jsr __fat_init_fdarea
+    ldy #FD_Entries_Max-2 ; -2 => 2 entries for cd and temp dir
+:
+    jsr __fat_alloc_fd
+    assertZ 1
+    assertA EOK
+    dey
+    bne :-
+    jsr __fat_alloc_fd
+    assertZ 0
+    assertA EMFILE
 
 ; -------------------		
 		setup "__fat_isroot"
@@ -75,6 +95,17 @@
 		assert32 $00007358, lba_addr ; expect $67fe + (clnr * sec/cl) + 10 => $67fe + $16a * 8 + 10 = $7358
 				
 ; -------------------		
+		setup "fat_fread with error"
+		ldx #(2*FD_Entry_Size)
+		SetVector data_read, read_blkptr
+		ldy #2
+		jsr fat_fread
+		assertZero 0; expect error
+		assertA EIO
+		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert16 data_read, read_blkptr
+
+; -------------------		
 		setup "fat_fread 0 blocks 1sec/cl"
 		ldx #(1*FD_Entry_Size)
 		SetVector data_read, read_blkptr
@@ -98,7 +129,7 @@
 		assert32 $00006968, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $016a * 1= $6968
 		assert16 data_read+$0200, read_blkptr
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset
+		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset within cluster +1
 		
 ; -------------------		
 		setup "fat_fread 2 blocks 2/1"
@@ -218,17 +249,23 @@ mock:
 		rts
 
 mock_read_block:
-	;debug32 "m_rd", lba_addr
-	phx
-	cmp32 lba_addr, $2980	;fat block $2980 read?
-	bne :+
+    ;debug32 "m_rd", lba_addr
+    cpx #(2*FD_Entry_Size)
+    bne :+
+    inc read_blkptr+1	; same behaviour as real implementation
+    lda #EIO
+    rts
+:
+    phx
+    cmp32 lba_addr, $2980	;fat block $2980 read?
+    bne :+
 	;simulate fat block read, just fill some values which are reached if the fat32 implementation is correct ;)
 	set32 block_fat+((test_start_cluster+0)<<2 & (sd_blocksize-1)), (test_start_cluster+1) ; build the chain
 	set32 block_fat+((test_start_cluster+1)<<2 & (sd_blocksize-1)), (test_start_cluster+2)
 	set32 block_fat+((test_start_cluster+2)<<2 & (sd_blocksize-1)), (test_start_cluster+3)
 	set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), FAT_EOC
 :
-	stz krn_tmp ; mock behaviour, the real sd_read_block uses krn_tmp
+	stz krn_tmp ; mock behaviour, the real sd_read_block clobbers krn_tmp
 	plx
 	inc read_blkptr+1	; same behaviour as real implementation
 	lda #EOK
@@ -236,4 +273,4 @@ mock_read_block:
 		
 data_read: .res 512, 0
 
-.segment "ASMUNIT"
+;.segment "ASMUNIT"

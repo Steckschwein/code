@@ -37,7 +37,7 @@ clean:
 	rm -f *.o *.bin *.map *.txt kernel_jumptable.inc version.inc
 
 %.o: %.asm $(ASM_INCLUDE)/*.inc version.inc debug.inc
-	ca65 --cpu $(CPU) --target none $(DEFINES) $(DEBUG) $(OPT) -I $(ASM_INCLUDE)  $<
+	ca65 --cpu $(CPU) --target none $(DEFINES) $(DEBUG) $(OPT) -I $(ASM_INCLUDE) $<
 
 version.inc:
 	echo -n ".byte \"r`hg log -l1 | grep changeset | cut -d ':' -f2 | tr -d ' '`\"" > version.inc

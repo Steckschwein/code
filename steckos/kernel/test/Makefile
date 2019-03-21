@@ -1,7 +1,7 @@
 OUT_ADDRESS=0x200
 DEFINES=-Dasmunit_char_out=0x200
-KERNEL_ADDRESS=0xe800
-CA65FLAGS=-I ../../../asmunit -I ../../asminc -I ../ $(DEFINES)
+KERNEL_ADDRESS=0x8000
+CA65FLAGS=-I ../../../asmunit -I ../../asminc -I ../ $(DEFINES) -DTEST
 LIBS=../debug.o ../../../asmunit/asmunit.a ../../lib/steckschwein.a
 LDFLAGS=--config test.cfg $(DEFINES)
 
