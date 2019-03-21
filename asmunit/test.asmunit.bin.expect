@@ -1,35 +1,35 @@
-.Wrote +1391 bytes from $1000 to $156e
+.Wrote +1455 bytes from $1000 to $15ae
 
         PC  AC XR YR SP NV-BDIZC
 65C02: 0000 00 00 00 ff 00110000
 .
 [asmunit assertA]
-FAIL - $1b found, but expected $ef
+FAIL (01) - $1b found, but expected $ef
 [asmunit assertX]
-FAIL - $e9 found, but expected $ab
+FAIL (01) - $e9 found, but expected $ab
 [asmunit assertY]
-FAIL - $9e found, but expected $cd
+FAIL (01) - $9e found, but expected $cd
 [asmunit assertC]
-FAIL - C=0 found, but expected C=1
-FAIL - C=1 found, but expected C=0
+FAIL (00) - C=0 found, but expected C=1
+FAIL (01) - C=1 found, but expected C=0
 [asmunit assertZ]
-FAIL - Z=1 found, but expected Z=0
-FAIL - Z=0 found, but expected Z=1
+FAIL (00) - Z=1 found, but expected Z=0
+FAIL (01) - Z=0 found, but expected Z=1
 [asmunit assert8]
-FAIL - $08 found, but expected $12
+FAIL (01) - $08 found, but expected $12
 [asmunit assert16]
-FAIL - $0816 found, but expected $3412
+FAIL (01) - $0816 found, but expected $3412
 [asmunit assert32]
-FAIL - $08162432 found, but expected $78563412
+FAIL (01) - $08162432 found, but expected $78563412
 [asmunit assertOut]
-FAIL - x found, but expected X
+FAIL (01) - x found, but expected X
 [asmunit assertString]
-FAIL - 65c02 found, but expected 65C02
+FAIL (01) - 65c02 found, but expected 65C02
 [asmunit fail]
-FAIL - raised a fail explicitly!
+FAIL raised a fail explicitly!
 [asmunit assertCycles]
-FAIL - $00000002 found, but expected $00000001
-FAIL - $0000000e found, but expected $0000000d
+FAIL (05) - $00000002 found, but expected $00000001
+FAIL (06) - $0000000e found, but expected $0000000d
         PC  AC XR YR SP NV-BDIZC
-65C02: 12d2 0e e9 9e ff 00110001
+65C02: 12f6 0e e9 9e ff 00110001
 .

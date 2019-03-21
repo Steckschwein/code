@@ -103,6 +103,8 @@ asmunit_addr_instrument = $0202
 
 .macro test label
 	_message .concat("[", label, "]"), _MODE_TESTNAME
+    .import tst_cnt ; reset assertion counter
+    stz tst_cnt
 .endmacro
 
 .macro fail message
@@ -198,18 +200,20 @@ asmunit_addr_instrument = $0202
 ;
 .macro assertC expect
 	.assert expect = 0 || expect = 1, error, "Invalid expect, must be 0 or 1!"
-	.if expect
-		bcs :+
+	.local @l_pass,@l_exit
+  .if expect
+		bcs @l_pass
 		.import asmunit_l_flag_c0
 		asmunit_assertFlag asmunit_l_flag_c0, _FLAG_C1 ; force a fail by compare inverse
 	.else
-		bcc :+
+		bcc @l_pass
 		.import asmunit_l_flag_c1
 		asmunit_assertFlag asmunit_l_flag_c1, _FLAG_C0 ; force a fail by compare inverse
 	.endif
-;	bra :++
-;:	_pass
-:
+      bra @l_exit
+@l_pass:
+      _pass
+@l_exit:
 .endmacro
 
 .macro assertZero expect
@@ -221,19 +225,21 @@ asmunit_addr_instrument = $0202
 ; assertZero 1 => expect zero set
 ;
 .macro assertZ expect
-	.assert expect = 0 || expect = 1, error, "Invalid expect, must be 0 or 1!"
-	.if expect
-		beq :+
-		.import asmunit_l_flag_z0
-		 asmunit_assertFlag asmunit_l_flag_z0, _FLAG_Z1 ; force a fail by compare inverse
-	.else
-		bne :+
-		.import asmunit_l_flag_z1
-		 asmunit_assertFlag asmunit_l_flag_z1, _FLAG_Z0	; force a fail by compare inverse
-	.endif
-;		bra :++
-;:		_pass
-:
+  .assert expect = 0 || expect = 1, error, "Invalid expect, must be 0 or 1!"
+  .local @l_pass,@l_exit
+  .if expect
+      beq @l_pass
+      .import asmunit_l_flag_z0
+      asmunit_assertFlag asmunit_l_flag_z0, _FLAG_Z1 ; force a fail by compare inverse
+  .else
+      bne @l_pass
+      .import asmunit_l_flag_z1
+      asmunit_assertFlag asmunit_l_flag_z1, _FLAG_Z0	; force a fail by compare inverse
+  .endif
+      bra @l_exit
+@l_pass:
+      _pass
+@l_exit:
 .endmacro
 
 .macro assertString expect, address

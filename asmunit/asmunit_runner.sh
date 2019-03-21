@@ -21,12 +21,12 @@ if [ ! -r "$1" ]; then
 	echo "file $1 does not exist or is not accessible!" >&2
 	exit 1;
 fi
-address=$2
-if [ -z ${address} ]; then
-	address="$1000"
+ld_address=$2
+if [ -z ${ld_address} ]; then
+	ld_address="$1000"
 fi
 binary=$1
 ${pythonbin} ${dir}/asmunit.monitor.py -m 65c02 --output $output <<EOUNIT
-.load "${binary}" ${address}
-.goto ${address}
+.load "${binary}" ${ld_address}
+.goto ${ld_address}
 EOUNIT

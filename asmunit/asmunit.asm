@@ -22,6 +22,15 @@
 
 .include "asmunit.inc"
 
+.export tst_cnt
+.export tst_acc
+.export tst_xreg
+.export tst_yreg
+.export tst_status
+.export tst_save_ptr
+.export tst_return_ptr
+.export tst_bytes
+
 .export asmunit_char_out_ix
 .export asmunit_char_out_buffer
 
@@ -34,10 +43,10 @@
 .export asmunit_l_flag_z0
 .export asmunit_l_flag_z1
 
-.segment "ASMUNIT"
-
-asmunit_char_out_buffer:	.res _EXPECT_MAX_LENGTH,0
-asmunit_char_out_ix: 		.res 1,0
+;.segment "ASMUNIT"
+.code
+asmunit_char_out_buffer:  .res _EXPECT_MAX_LENGTH,0
+asmunit_char_out_ix:      .res 1,0
 
 _char_out:
 		phx
@@ -143,14 +152,21 @@ l_return:
 		sta _tst_ptr
 		lda tst_save_ptr+1
 		sta _tst_ptr+1
-		
-		lda tst_status
-		pha
-		lda tst_acc
-		ldx tst_xreg
-		ldy tst_yreg
-		plp
-		jmp (tst_return_ptr)           ; return to byte following final NULL
+
+      sed
+      clc
+      lda tst_cnt             ; count in deciaml
+      adc #1
+      sta tst_cnt
+        
+      lda tst_status
+      pha
+      lda tst_acc
+      ldx tst_xreg
+      ldy tst_yreg
+
+      plp
+      jmp (tst_return_ptr)           ; return to byte following final NULL
 
 l_test_name:
 		lda #$0a
@@ -170,14 +186,25 @@ _l_adjust_ptr:
 		rts
 		
 _assert_fail_msg:
-		ldy #<(_l_msg_fail-_l_messages)	; ouput "FAIL, was "
+		ldy #<(_l_msg_fail_prefix-_l_messages)	; ouput "FAIL "
 		bra _assert_fail_expect
 		;assertion fail
 _assert_fail:
 		jsr _l_adjust_ptr
 		
-		ldy #<(_l_msg_fail-_l_messages)	; ouput "FAIL, was "
+		ldy #<(_l_msg_fail_prefix-_l_messages)	; ouput "FAIL "
 		jsr _print
+        
+        lda #'('
+        jsr asmunit_chrout
+        lda tst_cnt
+        jsr _hexout
+        lda #')'
+        jsr asmunit_chrout
+        
+		ldy #<(_l_msg_fail_suffix-_l_messages)	; ouput ") - was "
+		jsr _print
+        
 		jsr _out_ptr							; argument
 		
 		ldy #<(_l_msg_fail_exp-_l_messages)
@@ -187,9 +214,8 @@ _assert_fail_expect:
 		sta _tst_inp_ptr+1
 		pla
 		sta _tst_inp_ptr
-		jsr _out_ptr							; expected ...
+		jsr _out_ptr				  ; expected ...
 		
-		bra l_return
 		brk										; fail immediately, we will end up in monitor
         
 
@@ -239,6 +265,10 @@ _l_out:
 		bra _l_out
 :		plx
 		rts
+        
+_decout:
+        rts
+        
 _hexout:
 		pha
 		lsr
@@ -259,15 +289,7 @@ asmunit_chrout:
 		sta asmunit_char_out
 		rts
 
-.export tst_yreg
-.export tst_acc
-.export tst_xreg
-.export tst_yreg
-.export tst_status
-.export tst_save_ptr
-.export tst_return_ptr
-.export tst_bytes
-
+tst_cnt:        .res 1 ; assert/fail counter, used to be more verbose on output
 tst_acc:        .res 1
 tst_xreg:		.res 1
 tst_yreg:		.res 1
@@ -278,9 +300,10 @@ tst_bytes:		.res 1
 
         
 _l_messages:
-_l_msg_pass:	 		.byte _l_msg_fail-_l_msg_pass-1,	$0a,"PASS"
-_l_msg_fail: 			.byte _l_msg_fail_exp-_l_msg_fail-1, $0a, "FAIL - "
-_l_msg_fail_exp:		.byte asmunit_l_flag_c0-_l_msg_fail_exp-1, " found, but expected "
+_l_msg_pass:	 		.byte _l_msg_fail_prefix -_l_msg_pass-1,	$0a,"PASS"
+_l_msg_fail_prefix:     .byte _l_msg_fail_suffix - _l_msg_fail_prefix-1, $0a, "FAIL "
+_l_msg_fail_suffix: 	.byte _l_msg_fail_exp - _l_msg_fail_suffix-1, " - "
+_l_msg_fail_exp:		.byte asmunit_l_flag_c0 - _l_msg_fail_exp-1, " found, but expected "
 asmunit_l_flag_c0:	.byte _FLAG_C0
 asmunit_l_flag_c1:	.byte _FLAG_C1
 asmunit_l_flag_z0:	.byte _FLAG_Z0

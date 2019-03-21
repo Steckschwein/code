@@ -23,34 +23,50 @@
 .include "asmunit.inc"
 
 .import char_out
-	
+
+.export test1
+test1:
 	test_name "asmunit assertA"
 	lda #27
 	assertA 27
 	assertA $ef	; expect fail
-	
+
+.export test2
+test2:
 	test_name "asmunit assertX"
 	ldx #$e9
 	assertX $e9
 	assertX $ab	; expect fail
-	
+
+.export test3
+test3:
 	test_name "asmunit assertY"
 	ldy #$9e
 	assertY $9e
 	assertY $cd	; expect fail
 	
+.export test4
+test4:
 	test_name "asmunit assertC"
 	clc
 	assertC 0
 	assertC 1	; expect fail
+    
+.export test5 
+test5:
 	sec
 	assertC 1
 	assertC 0	; expect fail
 	
+.export test6
+test6:
 	test_name "asmunit assertZ"
 	lda #0
 	assertZ 1
 	assertZ 0	; expect fail
+    
+.export test7
+test7:
 	lda #1
 	assertZ 0
 	assertZ 1	; expect fail
@@ -67,44 +83,56 @@
 	assert32 $32241608, _number
 	assert32 $12345678, _number
 	
+.export test8
+test8:
 	test_name "asmunit assertOut"	
 	lda #'x'
 	jsr char_out
 	assertOut "x"
 	assertOut "X"
 	
+.export test9
+test9:
 	test_name "asmunit assertString"	
 	assertString "65c02", _string
 	assertString "65C02", _string
 
+.export test10
+test10:
 	test_name "asmunit fail"	
 	fail"raised a fail explicitly!"
 	
+.export test11
+test11:
 	test_name "asmunit assertCycles"	
 	resetCycles
 	nop
-	assertCycles 2	; pass, >2cl not allowed
+	assertCycles 2	; pass
 
 	resetCycles
 	nop
-	assertCycles 3	; pass, >3cl not allowed
+	assertCycles 3	; pass
 	
 	resetCycles
 	nop
-	assertCycles 100	; pass, >100cl not allowed
+	assertCycles 100	; pass
 	
 	resetCycles
 	nop
-	assertCycles 255	; pass, >$ffcl not allowed
+	assertCycles 255	; pass
 	
 	resetCycles
 	nop
-	assertCycles 65536	; pass, >$10000 not allowed
+	assertCycles 65536	; pass
 	
 	resetCycles
 	nop
 	assertCycles 1	; fail
 	
+.export test13
+test13:
+    test "assertCycles_to_few_cycles"
+
 	resetCycles
 	jsr foo
 	assertCycles 13 ; fail

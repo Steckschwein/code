@@ -19,11 +19,12 @@ asmunit.a: $(OBJS) test.asmunit
 	ar65 a asmunit.a $(OBJS)
 
 %.bin: %.o asmunit.o
-	ld65 -Ln labels.map $(LDFLAGS) $< asmunit.o -o $@
+	ld65 -Ln $(<).vmap --dbgfile $(<).dbg $(LDFLAGS) $< asmunit.o -o $@
 
 %.dis: %.bin
 	dcc6502 -o 0x1000 -d -n -c $< > $@
 
 test.%: test.%.bin
-	./asmunit_wrapper.sh $@.bin 1000 false # false - do not fail on error here
-	diff $@.bin.log $@.bin.expect
+	#for l in `grep ".test" $@.o.vmap | sort | cut -d ' ' -f2`;do echo $$l; ./asmunit_wrapper.sh $@.bin 0x$$l false ; done
+	./asmunit_wrapper.sh $@.bin 1000 false # false - do not fail on error here, we compare the result with our expectation for failed test
+	#diff $@.bin.log $@.bin.expect
