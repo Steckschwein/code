@@ -1,7 +1,8 @@
 CPU=65c02
-CC65FLAGS=--include-dir ../../include
-CA65FLAGS=--include-dir ../../asminc
-LDFLAGS=--config ../../steckos-c-app.cfg ../../lib/steckschwein-kernel.lib ../lib/toollib.a -Dchar_out=0xFFB3
+CC65FLAGS=-I ../../clib/include
+CA65FLAGS=-I ../../asminc
+LIB=../../lib/steckschwein.a ../../clib/lib/steckschwein-clib.a
+LDFLAGS=-C ../../prg.ld65.cfg $(LIB) ../lib/toollib.a # -Dchar_out=0xFFB3
 
 .PHONY: all clean
 
@@ -14,7 +15,7 @@ clean:
 	cc65 $(CC65FLAGS) -t none --cpu $(CPU) -O $<
 	ca65 --cpu $(CPU) $(CA65FLAGS) $(@:.o=.s)
 
-%.prg: %.o ../../lib/steckschwein-kernel.lib
+%.prg: %.o $(LIBS)
 	ld65 $< $(LDFLAGS) -o $@
 
 %.dis: %.prg
