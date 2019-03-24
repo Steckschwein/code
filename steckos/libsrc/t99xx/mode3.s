@@ -22,29 +22,23 @@
 
 .include "vdp.inc"
 
-.export vdp_init_reg
-
-.importzp vdp_ptr
+.import vdp_init_reg
+.export vdp_mode3_on
 
 .code
-; setup video registers upon given table
-;	in:
-;		.X - length of init table
-;		.A/.Y - pointer to vdp init table
-vdp_init_reg:
-      sta vdp_ptr
-      sty vdp_ptr+1
-      txa         ; x length of init table
-      tay
-			ora #$80		; bit 7 = 1 => register write
-			tax
-@l:		vdp_wait_s 4
-			lda (vdp_ptr),y ; 5c
-			sta a_vreg
-			vdp_wait_s
-			stx a_vreg
-			dex				;2c
-			dey				;2c
-			bpl @l 		;3c
-			rts
-      
+vdp_mode3_on:
+      lda #<vdp_init_bytes_mode3
+      ldy #>vdp_init_bytes_mode3
+      ldx #<(vdp_init_bytes_mode3_end-vdp_init_bytes_mode3)-1
+      jmp vdp_init_reg
+
+vdp_init_bytes_mode3:
+      .byte v_reg0_m4
+      .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
+      .byte (ADDRESS_GFX2_SCREEN / $400)	; name table - value * $400
+      .byte	$ff				; color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
+      .byte	$03 			; pattern table - either at vram $0000 (Bit 2 = 0) or at vram $2000 (Bit 2=1), Bit 0,1 are AND to select the pattern array
+      .byte	(ADDRESS_GFX2_SPRITE / $80)	; sprite attribute table - value * $80 --> offset in VRAM
+      .byte	(ADDRESS_GFX2_SPRITE_PATTERN / $800)	; sprite pattern table - value * $800  --> offset in VRAM
+      .byte	Black
+vdp_init_bytes_mode3_end:

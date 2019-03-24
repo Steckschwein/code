@@ -1,6 +1,6 @@
-CAFLAGS=-I ../asminc -I ../kernel
 START_ADDR=0xd800
-LDFLAGS=--define __LOADADDR__=$(START_ADDR) --lib ../tools/lib/toollib.a --lib ../lib/steckschwein.a --config ../prg.ld65.cfg
+CAFLAGS=-I ../asminc -I ../kernel
+LDFLAGS=-S $(START_ADDR) --lib ../tools/lib/toollib.a --lib ../lib/steckschwein.a -C ../prg.ld65.cfg
 
 #DEBUG=-DDEBUG FIXME
 

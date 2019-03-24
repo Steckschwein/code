@@ -26,6 +26,7 @@
 .import vdp_fill
 
 .export vdp_gfx2_on
+.export vdp_mode2_on
 .export vdp_gfx2_blank
 .export vdp_gfx2_set_pixel
 
@@ -35,6 +36,7 @@
 ;
 ;	gfx 2 - each pixel can be addressed - e.g. for image
 ;	
+vdp_mode2_on:
 vdp_gfx2_on:
 			lda #<vdp_init_bytes_gfx2
 			ldy #>vdp_init_bytes_gfx2

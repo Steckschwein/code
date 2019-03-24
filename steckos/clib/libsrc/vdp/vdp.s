@@ -14,17 +14,17 @@
 ;
 .export _vdp_memcpy
 .proc _vdp_memcpy
-        rts
+      rts
 .endproc
 
-
+; void __fastcall__ vdp_init (unsigned char mode);
 .export _vdp_init
 .proc _vdp_init
-  jmp vdp_init_reg
-  rts
+      
+      jmp vdp_init_reg
 .endproc
 
 .export _vdp_restore
 .proc _vdp_restore
-  jmp krn_textui_enable  
+      jmp krn_textui_enable  
 .endproc

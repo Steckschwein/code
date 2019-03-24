@@ -59,6 +59,7 @@ init:
       .byte $0a,0
 exit_from_prg:
       cld
+      jsr	krn_textui_init
     ; cmp #0
     ; beq mainloop
     ; pha
@@ -66,6 +67,7 @@ exit_from_prg:
     ; .byte $0a,"Exit: ",0
     ; pla
     ; jsr char_out
+
       SetVector exit_from_prg, retvec
       SetVector buf, bufptr
       SetVector buf, paramptr ; set param to empty buffer

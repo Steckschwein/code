@@ -21,14 +21,13 @@
 ; SOFTWARE.
 
 .macro appstart addr
+  .segment "LOADADDR"
   .if .paramcount >0  ;legacy support, start address defined within source code
-      .export __LOADADDR__;: absolute = 1
-      __LOADADDR__= addr
-      .segment "LOADADDR"
-      .word addr
+      .export __LOADADDR__=addr;
+      .addr addr
   .else
-      ;.import __LOADADDR__ ; either default, or by a define argument during linker phase
+      .export __LOADADDR__:absolute=1 ; either default, or by a define argument during linker phase
+      .addr *+2
   .endif
-  
   .code
 .endmacro
