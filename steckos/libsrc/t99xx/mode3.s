@@ -22,23 +22,17 @@
 
 .include "vdp.inc"
 
-.import vdp_init_reg
-.export vdp_mode3_on
+      .import vdp_mode2_on
+      .import vdp_mode2_blank
+
+      .export vdp_mode3_on
+      .export vdp_mode3_blank
+
 
 .code
 vdp_mode3_on:
-      lda #<vdp_init_bytes_mode3
-      ldy #>vdp_init_bytes_mode3
-      ldx #<(vdp_init_bytes_mode3_end-vdp_init_bytes_mode3)-1
-      jmp vdp_init_reg
+      jsr vdp_mode2_on
+      vdp_sreg v_reg0_m4, v_reg0  ; reg0 m4, enable G3
+      rts
 
-vdp_init_bytes_mode3:
-      .byte v_reg0_m4
-      .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
-      .byte (ADDRESS_GFX2_SCREEN / $400)	; name table - value * $400
-      .byte	$ff				; color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
-      .byte	$03 			; pattern table - either at vram $0000 (Bit 2 = 0) or at vram $2000 (Bit 2=1), Bit 0,1 are AND to select the pattern array
-      .byte	(ADDRESS_GFX2_SPRITE / $80)	; sprite attribute table - value * $80 --> offset in VRAM
-      .byte	(ADDRESS_GFX2_SPRITE_PATTERN / $800)	; sprite pattern table - value * $800  --> offset in VRAM
-      .byte	Black
-vdp_init_bytes_mode3_end:
+vdp_mode3_blank=vdp_mode2_blank

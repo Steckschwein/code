@@ -59,25 +59,29 @@ vdp_text_on:
 	vdp_wait_s 2
 	stx a_vreg
 	inx
-	cpy #$08
+	cpy #10 ; table length below
 	bne @l1
 	rts
 
 vdp_init_bytes_text_80cols:
-	.byte v_reg0_m4 ; text mode 2, 80 cols
-	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
-	.byte (ADDRESS_GFX1_SCREEN / $1000)| 1<<1 | 1<<0	; name table - value * $1000 (v9958) --> charset
-	.byte 0	; not used
-	.byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
-	.byte	0	; not used
-	.byte 0	; not used
-	.byte	Medium_Green<<4|Black
+      .byte v_reg0_m4 ; text mode 2, 80 cols
+      .byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
+      .byte (ADDRESS_GFX1_SCREEN / $1000)| 1<<1 | 1<<0	; name table - value * $1000 (v9958) --> charset
+      .byte 0	; not used
+      .byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
+      .byte	0	; not used
+      .byte 0	; not used
+      .byte	Medium_Green<<4|Black
+      .byte v_reg8_VR	; VR - 64k VRAM TODO set per define
+      .byte 0
 vdp_init_bytes_text:
-	.byte	0
-	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
-	.byte (ADDRESS_GFX1_SCREEN / $1000) 	; name table - value * $400					--> charset
-	.byte 0	; not used
-	.byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
-	.byte	0	; not used
-	.byte 0	; not used
-	.byte	Medium_Green<<4|Black
+      .byte	0
+      .byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
+      .byte (ADDRESS_GFX1_SCREEN / $1000) 	; name table - value * $400					--> charset
+      .byte 0	; not used
+      .byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
+      .byte	0	; not used
+      .byte 0	; not used
+      .byte	Medium_Green<<4|Black
+      .byte v_reg8_VR	; VR - 64k VRAM TODO set per define
+      .byte 0
