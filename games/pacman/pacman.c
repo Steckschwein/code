@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <conio.h>
 
-#include <vdp.h>
+#include <vdp/vdp.h>
+#include <vdp/mode3.h>
 #include "pacman.sprites.xpm"
 
 int main (int argc, const char* argv[])
@@ -15,11 +16,14 @@ int main (int argc, const char* argv[])
   for(i=0;i<sizeof(pacman_sprites_xpm)/sizeof(unsigned char*);i++){
     cprintf("\n");
     for(l=0;(c=pacman_sprites_xpm[i][l]) != NULL;l++){
-      cprintf("%c", c);
+ //     cprintf("%c", c);
     }
   }
-//  vdp_memcpy(ADDRESS_GFX2_SPRITE_PATTERN, 256, );
   
+//  vdp_init(MODE_3);
+  
+  vdp_restore();
+//  vdp_memcpy(ADDRESS_GFX2_SPRITE_PATTERN, 256, );
   
   return EXIT_SUCCESS;
 }

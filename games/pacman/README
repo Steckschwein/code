@@ -1,5 +1,27 @@
 
 namco 1980 mame
-video: 288x224 => 36x28
-       256x212 => 32x26
+video: 224x288 => 28x36 => 28x31 -5 (score)    => 1px 196x252
 
+       256x212 => vert. display 212x256 => 26x32 :/ -2/-4
+
+
+##########################
+
+
+; color palette
+; 0,0,0
+; red ff,0,0
+; de,97,51
+; ff,b8,ff  => "speedy", rosa
+; 0,0,0
+; 0,ff,ff   => "bashful", cyan
+; 47,b8,ff  =>
+; ff,b8,51  =>
+; 0,0,0
+; ff,ff,0   => yellow
+; 0,0,0
+; 21,21,ff  => blue => ghosts "scared"
+; 0,ff,0    => green
+; 47,b8,ae  =>
+; ff,b8,ae  => "food"
+; de,de,ff  => gray => ghosts "scared"
