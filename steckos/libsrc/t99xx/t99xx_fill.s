@@ -37,7 +37,6 @@ vdp_fill:
         bne @0          ;3
         dex
         bne @1
-        vdp_wait_l 12
         rts
 	
 vdp_fills:
@@ -48,5 +47,4 @@ vdp_fills:
       dex            ;2
       sta a_vram     ;4
       bne	@0         ;3
-      vdp_wait_l 8
       rts

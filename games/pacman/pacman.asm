@@ -31,7 +31,17 @@ game:
       cli
       rts
 
-init_video:      
+init_video:
+
+      vdp_sreg 0, v_reg16
+      ldx #0
+:     vdp_wait_s
+      lda pacman_colors, x
+      sta a_vregpal
+      inx
+      cpx #2*16
+      bne :-
+      
       lda #<vdp_init_bytes
       ldy #>vdp_init_bytes
       ldx #(vdp_init_bytes_end-vdp_init_bytes)-1
@@ -43,11 +53,6 @@ init_video:
       ldx #08
       jsr vdp_memcpy
       
-      vdp_vram_w ADDRESS_GFX3_SCREEN
-      ldx #4
-      lda #' '
-      jsr vdp_fill
-
       vdp_vram_w ADDRESS_GFX3_SCREEN
       ldy #27
 :     
@@ -62,15 +67,10 @@ init_video:
       dey
       bne :-
       
-      vdp_vram_w ADDRESS_GFX3_COLOR
-      ldx #$18
-      lda #Gray<<4
-      jsr vdp_fill
-      
       vdp_vram_w ADDRESS_GFX6_SCREEN
       ldx #0
       ldy #212
-      lda #Gray<<4|Transparent
+      lda #Light_Blue<<4|Transparent
 :     vdp_wait_l
       sta a_vram
       inx 
@@ -87,9 +87,6 @@ init_video:
 sprite_pattern=ADDRESS_GFX3_SPRITE_PATTERN
 sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
 sprite_attr   =ADDRESS_GFX3_SPRITE
-; sprite_pattern=ADDRESS_GFX6_SPRITE_PATTERN
-; sprite_color  =ADDRESS_GFX6_SPRITE_COLOR
-; sprite_attr   =ADDRESS_GFX6_SPRITE
 
       vdp_vram_w sprite_pattern
       lda #$b7
@@ -122,9 +119,22 @@ sprite_attr   =ADDRESS_GFX3_SPRITE
       inx
       cpx #4
       bne :-
-            
+      
+      vdp_vram_w ADDRESS_GFX3_COLOR
+      ldx #$18
+      lda #0
+      jsr vdp_fill
+      
+      vdp_vram_w ADDRESS_GFX3_COLOR
+      ldy #$f0
+      lda #3
+:     vdp_wait_l
+      sta a_vram
+      iny
+      bne :-
+      
       rts
-
+    
 sprite0:
       .byte 50,100,0,0
       
@@ -143,24 +153,33 @@ vdp_init_bytes:
       .byte <.hiword(ADDRESS_GFX3_SPRITE<<1); sprite attribute high
 vdp_init_bytes_end:
 
-      nop
-      nop
-      nop
-;vdp_init_bytes:;mode 6
-			.byte v_reg0_m5|v_reg0_m3												; reg0 mode bits
-			.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 			; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-			.byte >(ADDRESS_GFX6_SCREEN>>2) | $3f	; => 00<A16>1 1111 - entw. bank 0 oder 1 (64k)
-			.byte	$0
-			.byte $0
-      .byte	>(ADDRESS_GFX6_SPRITE<<1) | $04
-			.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);  
-			.byte	Black
-			.byte v_reg8_VR	; VR - 64k VRAM TODO set per define
-			.byte v_reg9_nt | v_reg9_ln
-      .byte 0
-      .byte <.hiword(ADDRESS_GFX6_SPRITE<<1)
-;vdp_init_bytes_end:
-
+pacman_colors:
+  vdp_pal 0,0,0         ;0 
+  vdp_pal $ff,0,0       ;1 "shadow", "blinky" red
+  vdp_pal $de,$97,$51   ;2 "food"
+  vdp_pal $ff,$b8,$ff   ;3 "speedy", "pinky" pink
+  vdp_pal 0,0,0         ;4
+  vdp_pal 0,$ff,$ff     ;5 "bashful", "inky" cyan     
+  vdp_pal $47,$b8,$ff   ;6 "light blue"
+  vdp_pal $ff,$b8,$51   ;7 "pokey", "Clyde" "orange"
+  vdp_pal 0,0,0         ;8
+  vdp_pal $ff,$ff,0     ;9 "yellow"
+  vdp_pal 0,0,0          ;a
+  vdp_pal $21,$21,$ff   ;b blue => ghosts "scared", ghost pupil
+  vdp_pal 0,$ff,0       ;c green
+  vdp_pal $47,$b8,$ae   ;d dark cyan
+  vdp_pal $ff,$b8,$ae   ;e light orange "food"
+  vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes
+  
 .data
 tiles:
       .include "pacman.tiles.inc"
+
+;         0001 
+;         0011
+;         0101
+;         0111
+;         
+;     00001110
+;     00001000
+         

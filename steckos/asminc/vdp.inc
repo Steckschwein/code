@@ -50,7 +50,6 @@ v_reg8_SPD			= 1<<1	; 0/1 sprites enabled/disabled
 v_reg9_ln       = 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
 v_reg9_il       = 1<<3	; interlace
 v_reg9_nt       = 1<<1	; ntsc/pal
-
 v_reg17_aii			= 1<<7	; auto increment
 
 v_reg25_sp2 		= 1<<0
@@ -80,7 +79,7 @@ v_reg9  = $80	+	9
 v_reg11	= $80 + 11
 v_reg14	= $80 + 14
 v_reg15	= $80 + 15
-
+v_reg16 = $80 + 16  ; color palette index register
 v_reg17	= $80 + 17
 v_reg18	= $80 + 18	; display adjust
 v_reg23	= $80 + 23	; screen ram vertical offset
@@ -284,6 +283,11 @@ vdp_nopslide_2m:
 .macro vdp_vram_w _24bit
   vdp_sreg <.hiword(_24bit<<2), v_reg14
   vdp_sreg <_24bit, WRITE_ADDRESS | (>_24bit & $3f)
+.endmacro
+
+.macro vdp_pal _r, _g, _b
+  .byte ((_r>>1) & $70) | _b>>5
+  .byte _g>>5
 .endmacro
 
 .macro	SyncBlank
