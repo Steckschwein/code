@@ -37,21 +37,18 @@ init_video:
       ldx #(vdp_init_bytes_end-vdp_init_bytes)-1
       jsr vdp_init_reg
 
-      vdp_sreg <.hiword(ADDRESS_GFX3_PATTERN<<2), v_reg14
-      vdp_sreg <ADDRESS_GFX3_PATTERN, WRITE_ADDRESS | >ADDRESS_GFX3_PATTERN
+      vdp_vram_w ADDRESS_GFX3_PATTERN
       lda #<tiles
       ldy #>tiles
       ldx #08
       jsr vdp_memcpy
       
-      vdp_sreg <.hiword(ADDRESS_GFX3_SCREEN<<2), v_reg14
-      vdp_sreg <ADDRESS_GFX3_SCREEN, WRITE_ADDRESS | >ADDRESS_GFX3_SCREEN
+      vdp_vram_w ADDRESS_GFX3_SCREEN
       ldx #4
       lda #' '
       jsr vdp_fill
 
-      vdp_sreg <.hiword(ADDRESS_GFX3_SCREEN<<2), v_reg14
-      vdp_sreg <ADDRESS_GFX3_SCREEN, WRITE_ADDRESS | >ADDRESS_GFX3_SCREEN
+      vdp_vram_w ADDRESS_GFX3_SCREEN
       ldy #27
 :     
       phy
@@ -65,14 +62,12 @@ init_video:
       dey
       bne :-
       
-      vdp_sreg <.hiword(ADDRESS_GFX3_COLOR<<2), v_reg14
-      vdp_sreg <ADDRESS_GFX3_COLOR, WRITE_ADDRESS | >ADDRESS_GFX3_COLOR
+      vdp_vram_w ADDRESS_GFX3_COLOR
       ldx #$18
       lda #Gray<<4
       jsr vdp_fill
       
-      vdp_sreg <.hiword(ADDRESS_GFX6_SCREEN<<2), v_reg14
-      vdp_sreg <ADDRESS_GFX6_SCREEN, WRITE_ADDRESS | >ADDRESS_GFX6_SCREEN
+      vdp_vram_w ADDRESS_GFX6_SCREEN
       ldx #0
       ldy #212
       lda #Gray<<4|Transparent
@@ -96,35 +91,30 @@ sprite_attr   =ADDRESS_GFX3_SPRITE
 ; sprite_color  =ADDRESS_GFX6_SPRITE_COLOR
 ; sprite_attr   =ADDRESS_GFX6_SPRITE
 
-      vdp_sreg <.hiword(sprite_pattern<<2), v_reg14
-      vdp_sreg <sprite_pattern, WRITE_ADDRESS | (>sprite_pattern & $3f) ; !!! bit 7 MUST BE 0
+      vdp_vram_w sprite_pattern
       lda #$b7
       ldx #32
       jsr vdp_fills
 
-      vdp_sreg <.hiword(sprite_color<<2), v_reg14
-      vdp_sreg <sprite_color, WRITE_ADDRESS | (>sprite_color & $3f)
+      vdp_vram_w sprite_color
       ldx #1
       lda #0
       jsr vdp_fill
 
-      vdp_sreg <.hiword(sprite_attr<<2), v_reg14
-      vdp_sreg <sprite_attr, WRITE_ADDRESS | (>sprite_attr & $3f)
+      vdp_vram_w sprite_attr
       ldx #1
       lda #$d6
       jsr vdp_fill
 
-      vdp_sreg <.hiword(sprite_color<<2), v_reg14
-      vdp_sreg <sprite_color, WRITE_ADDRESS | (>sprite_color & $3f)
+      vdp_vram_w sprite_color
       ldx #$0f     ;16 colors per line
 :     vdp_wait_l
       lda #White
       sta a_vram
       dex
       bpl :-
-      
-      vdp_sreg <.hiword(sprite_attr<<2), v_reg14
-      vdp_sreg <sprite_attr, WRITE_ADDRESS | (>sprite_attr & $3f)
+
+      vdp_vram_w sprite_attr
       ldx #0
 :     vdp_wait_l
       lda sprite0,x

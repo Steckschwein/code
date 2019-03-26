@@ -281,6 +281,10 @@ vdp_nopslide_2m:
 			sta a_vreg
 .endmacro
 
+.macro vdp_vram_w _24bit
+  vdp_sreg <.hiword(_24bit<<2), v_reg14
+  vdp_sreg <_24bit, WRITE_ADDRESS | (>_24bit & $3f)
+.endmacro
 
 .macro	SyncBlank
 	bit a_vreg	; maybe within blank, we clean flag by read to a_vreg
