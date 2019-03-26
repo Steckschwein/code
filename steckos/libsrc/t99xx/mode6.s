@@ -26,15 +26,16 @@
 .import vdp_fill
 .import vdp_nopslide_8m
 
-.export vdp_gfx6_on
+.export vdp_gfx6_on, vdp_mode6_on
 .export vdp_gfx6_blank
 .export vdp_gfx6_set_pixel
 
 .importzp vdp_ptr, vdp_tmp
 .code
 ;
-;	gfx 6 - 
+;	gfx 6 - 512x192/212px, 16colors, sprite mode 2
 ;
+vdp_mode6_on:
 vdp_gfx6_on:
 			lda #<vdp_init_bytes_gfx6
 			ldy #>vdp_init_bytes_gfx6
@@ -44,12 +45,16 @@ vdp_gfx6_on:
 vdp_init_bytes_gfx6:
 			.byte v_reg0_m5|v_reg0_m3												; reg0 mode bits
 			.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 			; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-			.byte $1f	; => 00<A16>1 1111 - entw. bank 0 oder 1 (64k)
+			.byte >(ADDRESS_GFX6_SCREEN>>2) | $3f	; => 00<A16>1 1111 - entw. bank 0 oder 1 (64k)
 			.byte	$0
-			.byte	$0
-			.byte	$ff
-			.byte	$3f
-			.byte	$ff
+			.byte $0
+      .byte	>(ADDRESS_GFX6_SPRITE<<1) | $04
+			.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);  
+			.byte	Black
+			.byte v_reg8_VR	; VR - 64k VRAM TODO set per define
+			.byte 0; NTSC/262, PAL/313 => v_reg9_nt | v_reg9_ln
+      .byte 0
+      .byte <.hiword(ADDRESS_GFX6_SPRITE<<1)
 vdp_init_bytes_gfx6_end:
 
 ;

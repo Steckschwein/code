@@ -49,7 +49,6 @@ vdp_memcpy:
       inc vdp_ptr+1   ;5
       dex             ;2
       bne @l1         ;3
-      vdp_wait_l 18
       rts
 		
 ;	input:
@@ -61,10 +60,9 @@ vdp_memcpys:
       ldy #0
 @0:   vdp_wait_l 13	 ;2 + 2 + 3 + 5 + 1 opcode fetch
       lda (vdp_ptr),y ;5
-      sta a_vram    	 ;1+3
+      sta a_vram      ;1+3
       iny             ;2
       dex             ;2
-      bne	@0			 ;3
-      vdp_wait_l 12
+      bne	@0			    ;3
       rts
       

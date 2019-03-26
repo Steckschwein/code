@@ -39,9 +39,9 @@ opl2_s_irq		= 1<<7	; timer irq
 opl2_s_irq_t1	= 1<<6	; ... irq cause of t1
 opl2_s_irq_t2	= 1<<5	; ... irq cause of t2
 
-opl2_reg_t1 = 2
-opl2_reg_t2 = 3
-opl2_reg_ctrl   = 4
+opl2_reg_t1   = 2
+opl2_reg_t2   = 3
+opl2_reg_ctrl = 4
 
 ;--------------------------------------------------------------------------------------------------------------
 ; For some of the parameters, there is one register per output channel. For those

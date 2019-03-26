@@ -51,15 +51,6 @@ opl2_init:
 		
 		plp
 		rts
-    
-; TODO FIXME move to clib
-;.export _opl2_write=opl2_write
-; void __fastcall__ opl2_write(unsigned char val, unsigned char reg);
-;
-;opl2_write:
-;.import popa
-;	tax
-;jsr popa
 
 ;
 ;   in:
