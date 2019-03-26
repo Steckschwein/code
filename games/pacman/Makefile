@@ -11,7 +11,7 @@ all: pacman.prg
 clean:
 	rm -f *.prg *.s *.o
 
-%.o: %.asm
+%.o: %.asm ../../steckos/asminc/*.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
 %.o: %.c
