@@ -107,7 +107,6 @@ sprite_empty=92
       copypointer $fffe, save_isr
       SetVector	game_isr, $fffe
 
-      ;SetVector vdp_init_gfx, addr
       lda #<vdp_init_gfx
       ldy #>vdp_init_gfx
       ldx #<(vdp_init_gfx_end-vdp_init_gfx)-1
@@ -153,6 +152,7 @@ vdp_init_gfx:
     .byte (A_SP_PAT / $800)  ; sprite pattern table - value * $800  		--> offset in VRAM
     .byte Light_Blue
     .byte v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM
+    .byte 0
 vdp_init_gfx_end:
 
 init_screen:				;draw desert
