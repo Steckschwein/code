@@ -66,6 +66,29 @@ game_isr:
       dec sprite_tab_attr+SPRITE_X+7*4
       dec sprite_tab_attr+SPRITE_X+6*4
       dec sprite_tab_attr+SPRITE_X+7*4
+
+      dec frame_counter
+      
+      lda frame_counter
+      and #07
+      bne :+
+      jsr animate_ghosts
+:     
+
+animate_ghosts:
+      lda sprite_tab_attr+SPRITE_N+0*4
+      eor #04
+      sta sprite_tab_attr+SPRITE_N+0*4
+      lda sprite_tab_attr+SPRITE_N+2*4
+      eor #04
+      sta sprite_tab_attr+SPRITE_N+2*4
+      lda sprite_tab_attr+SPRITE_N+4*4
+      eor #04
+      sta sprite_tab_attr+SPRITE_N+4*4
+      lda sprite_tab_attr+SPRITE_N+6*4
+      eor #04
+      sta sprite_tab_attr+SPRITE_N+6*4
+      rts
       
 game_isr_exit:
       lda	#0
@@ -164,14 +187,14 @@ sprite_attr   =ADDRESS_GFX3_SPRITE
       rts
 
 sprite_tab_attr:
-      .byte 100, 100, 0, 0
+      .byte 100, 100, 2*4, 0
+      .byte 100, 100, 9*4, 0
+      .byte 100, 100, 0*4, 0
       .byte 100, 100, 8*4, 0
-      .byte 100, 100, 0, 0
-      .byte 100, 100, 8*4, 0
-      .byte 100, 100, 0, 0
-      .byte 100, 100, 8*4, 0
-      .byte 100, 100, 0, 0
-      .byte 100, 100, 8*4, 0
+      .byte 100, 100, 4*4, 0
+      .byte 100, 100, $a*4, 0
+      .byte 100, 100, 6*4, 0
+      .byte 100, 100, $b*4, 0
       
 
 _sprite_tab_attr:
@@ -234,7 +257,8 @@ pacman_colors:
   vdp_pal $21,$21,$ff   ;e blue => ghosts "scared", ghost pupil
   vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes
   
-save_isr: .res 2
+save_isr:       .res 2
+frame_counter:  .res 0
   
 .data
 tiles:
