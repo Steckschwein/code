@@ -74,6 +74,13 @@ game_isr:
       bne :+
       jsr animate_ghosts
 :     
+game_isr_exit:
+      lda	#0
+      jsr	vdp_bgcolor
+
+      restore
+      rti
+      
 
 animate_ghosts:
       lda sprite_tab_attr+SPRITE_N+0*4
@@ -89,13 +96,6 @@ animate_ghosts:
       eor #04
       sta sprite_tab_attr+SPRITE_N+6*4
       rts
-      
-game_isr_exit:
-      lda	#0
-      jsr	vdp_bgcolor
-
-      restore
-      rti
       
       
 .macro ghost _nr, _x, _y, _color

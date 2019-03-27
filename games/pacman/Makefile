@@ -15,7 +15,7 @@ clean:
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
 res: pacman.ghosts.xpm
-	../utils/xpm_ca65_16bit.py pacman.ghosts.xpm > pacman.ghosts.inc
+	python3 ../utils/xpm_ca65_16bit.py pacman.ghosts.xpm > pacman.ghosts.inc
 
 %.o: %.c
 	cc65 -t none $(CC65FLAGS) -O $<
