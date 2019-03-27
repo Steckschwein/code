@@ -6,8 +6,9 @@
       .include "appstart.inc"
 
       .import vdp_init_reg
-      .import vdp_memcpy
+      .import vdp_memcpy, vdp_memcpys
       .import vdp_fill, vdp_fills
+      .import vdp_bgcolor
 
 appstart
 
@@ -20,6 +21,10 @@ main:
       
       keyin
 
+      sei
+      copypointer save_isr, $fffe
+      cli
+
       jmp (retvec)
 
 intro:
@@ -27,12 +32,67 @@ intro:
 
 game:
       sei
+      copypointer $fffe, save_isr
+      SetVector	game_isr, $fffe
       jsr init_video
       cli
       rts
 
-init_video:
+game_isr:
+      save
+      bit	a_vreg
+      bpl	game_isr_exit
+      lda #$0f
+      jsr vdp_bgcolor
+      
+      vdp_vram_w sprite_attr
+      lda #<sprite_tab_attr
+      ldy #>sprite_tab_attr
+      ldx #4*2*4
+      jsr vdp_memcpys
+      
+      inc sprite_tab_attr+SPRITE_X+0*4
+      inc sprite_tab_attr+SPRITE_X+1*4
+      
+      inc sprite_tab_attr+SPRITE_X+2*4
+      inc sprite_tab_attr+SPRITE_X+3*4
+      inc sprite_tab_attr+SPRITE_X+2*4
+      inc sprite_tab_attr+SPRITE_X+3*4
 
+      dec sprite_tab_attr+SPRITE_X+4*4
+      dec sprite_tab_attr+SPRITE_X+5*4
+
+      dec sprite_tab_attr+SPRITE_X+6*4
+      dec sprite_tab_attr+SPRITE_X+7*4
+      dec sprite_tab_attr+SPRITE_X+6*4
+      dec sprite_tab_attr+SPRITE_X+7*4
+      
+game_isr_exit:
+      lda	#0
+      jsr	vdp_bgcolor
+
+      restore
+      rti
+      
+      
+.macro ghost _nr, _x, _y, _color
+      .local _nr,_x,_y,_color
+      vdp_wait_l
+      vdp_vram_w (sprite_attr+(_nr*8))
+      ldx #_x
+      ldy #_y
+      jsr sprite_tab_attrs
+      ;color tab
+      vdp_wait_l
+      vdp_vram_w (sprite_color+(_nr*32))
+      lda #_color
+      jsr sprite_tab_color
+      vdp_wait_l
+      lda #$4e  ; CC | 2nd color
+      jsr sprite_tab_color
+.endmacro
+      
+init_video:
       vdp_sreg 0, v_reg16
       ldx #0
 :     vdp_wait_s
@@ -52,34 +112,26 @@ init_video:
       ldy #>tiles
       ldx #08
       jsr vdp_memcpy
+
+      vdp_vram_w ADDRESS_GFX3_COLOR
+      ldx #$18
+      lda #$e0
+      jsr vdp_fill      
       
       vdp_vram_w ADDRESS_GFX3_SCREEN
-      ldy #27
+      ldx #4
+      lda #' '
+      jsr vdp_fill
+      
+      vdp_vram_w ADDRESS_GFX3_SCREEN
+      ldy #1
 :     
-      phy
-      tya
-      and #$07
-      clc
-      adc #'0'
       ldx #32
+      lda #'0'
       jsr vdp_fills
-      ply
       dey
       bne :-
       
-      vdp_vram_w ADDRESS_GFX6_SCREEN
-      ldx #0
-      ldy #212
-      lda #Light_Blue<<4|Transparent
-:     vdp_wait_l
-      sta a_vram
-      inx 
-      bne :-
-      dey
-      bne :-
-;      jsr krn_getkey
- ;     cmp #ESC
-  ;    beq @ex
       vdp_wait_l
       vdp_sreg $0, v_reg18
 @ex:
@@ -89,64 +141,75 @@ sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
 sprite_attr   =ADDRESS_GFX3_SPRITE
 
       vdp_vram_w sprite_pattern
-      lda #$b7
-      ldx #32
-      jsr vdp_fills
-
-      vdp_vram_w sprite_color
-      ldx #1
-      lda #0
-      jsr vdp_fill
+      lda #<sprite_patterns
+      ldy #>sprite_patterns
+      ldx #2
+      jsr vdp_memcpy
 
       vdp_vram_w sprite_attr
       ldx #1
       lda #$d6
       jsr vdp_fill
-
-      vdp_vram_w sprite_color
-      ldx #$0f     ;16 colors per line
-:     vdp_wait_l
-      lda #White
-      sta a_vram
-      dex
-      bpl :-
-
-      vdp_vram_w sprite_attr
-      ldx #0
-:     vdp_wait_l
-      lda sprite0,x
-      sta a_vram
-      inx
-      cpx #4
-      bne :-
       
-      vdp_vram_w ADDRESS_GFX3_COLOR
-      ldx #$18
-      lda #0
-      jsr vdp_fill
+      vdp_wait_l
+      ghost 1, 130, 80, 3  ;pinky
+      vdp_wait_l
+      ghost 2, 150, 110, 5  ;inky
+      vdp_wait_l
+      ghost 3, 170, 140, 7  ;clyde
+      vdp_wait_l
+      ghost 0, 100, 50, 1  ;blinky
       
-      vdp_vram_w ADDRESS_GFX3_COLOR
-      ldy #$f0
-      lda #3
-:     vdp_wait_l
-      sta a_vram
-      iny
-      bne :-
       
       rts
-    
-sprite0:
-      .byte 50,100,0,0
+
+sprite_tab_attr:
+      .byte 100, 100, 0, 0
+      .byte 100, 100, 8*4, 0
+      .byte 100, 100, 0, 0
+      .byte 100, 100, 8*4, 0
+      .byte 100, 100, 0, 0
+      .byte 100, 100, 8*4, 0
+      .byte 100, 100, 0, 0
+      .byte 100, 100, 8*4, 0
       
+
+_sprite_tab_attr:
+      vdp_wait_l
+      sty a_vram
+      vdp_wait_l
+      stx a_vram
+      vdp_wait_l
+      sta a_vram
+      vdp_wait_l
+      stz a_vram
+      vdp_wait_l
+      rts
+      
+sprite_tab_attrs:
+      lda #0
+      jsr _sprite_tab_attr
+      lda #8*4
+      jmp _sprite_tab_attr
+      
+sprite_tab_color:
+      ldx #$0f     ;16 colors per line
+@l1:  vdp_wait_l
+      sta a_vram
+      dex
+      bpl @l1
+      vdp_wait_l
+      rts
+
 vdp_init_bytes:
 			.byte v_reg0_m4
 			.byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size |v_reg1_int
 			.byte >(ADDRESS_GFX3_SCREEN>>2)       ; name table (screen)
-			.byte >(ADDRESS_GFX3_COLOR<<2)        ; color table
+			.byte >(ADDRESS_GFX3_COLOR<<2)  | $01 ; color table
 			.byte	>(ADDRESS_GFX3_PATTERN>>3)      ; pattern table
 			.byte	>(ADDRESS_GFX3_SPRITE<<1) | $04 ; sprite attribute table - value * $80 --> offset in VRAM
 			.byte	>(ADDRESS_GFX3_SPRITE_PATTERN>>3)
-			.byte	Black
+			.byte	0
 			.byte v_reg8_VR	; VR - 64k VRAM TODO set per define
 			.byte v_reg9_nt | v_reg9_ln
 			.byte <.hiword(ADDRESS_GFX3_COLOR<<2) ; color table high, a16-14
@@ -164,22 +227,27 @@ pacman_colors:
   vdp_pal $ff,$b8,$51   ;7 "pokey", "Clyde" "orange"
   vdp_pal 0,0,0         ;8
   vdp_pal $ff,$ff,0     ;9 "yellow"
-  vdp_pal 0,0,0          ;a
-  vdp_pal $21,$21,$ff   ;b blue => ghosts "scared", ghost pupil
+  vdp_pal 0,0,0         ;a
+  vdp_pal $ff,$b8,$ae   ;b light orange "food"
   vdp_pal 0,$ff,0       ;c green
   vdp_pal $47,$b8,$ae   ;d dark cyan
-  vdp_pal $ff,$b8,$ae   ;e light orange "food"
+  vdp_pal $21,$21,$ff   ;e blue => ghosts "scared", ghost pupil
   vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes
+  
+save_isr: .res 2
   
 .data
 tiles:
       .include "pacman.tiles.inc"
+sprite_patterns:
+      .include "pacman.ghosts.inc"
 
 ;         0001 
 ;         0011
 ;         0101
 ;         0111
 ;         
-;     00001110
-;     00001000
+;     00001110 $0e
+;     00001111 $0f
          
+
