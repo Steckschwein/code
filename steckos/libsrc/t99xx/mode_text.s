@@ -66,9 +66,9 @@ vdp_text_on:
 vdp_init_bytes_text_80cols:
       .byte v_reg0_m4 ; text mode 2, 80 cols
       .byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
-      .byte (ADDRESS_GFX1_SCREEN / $1000)| 1<<1 | 1<<0	; name table - value * $1000 (v9958) --> charset
+      .byte >(ADDRESS_GFX1_SCREEN>>2)	; name table - value * $1000 (v9958) --> charset
       .byte 0	; not used
-      .byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
+      .byte >(ADDRESS_GFX1_PATTERN>>3)| $03 ; pattern table (charset) - value * $800  	--> offset in VRAM
       .byte	0	; not used
       .byte 0	; not used
       .byte	Medium_Green<<4|Black
@@ -77,9 +77,9 @@ vdp_init_bytes_text_80cols:
 vdp_init_bytes_text:
       .byte	0
       .byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
-      .byte (ADDRESS_GFX1_SCREEN / $1000) 	; name table - value * $400					--> charset
+      .byte >(ADDRESS_GFX1_SCREEN>>2)       ; name table - value * $400					--> charset
       .byte 0	; not used
-      .byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
+      .byte >(ADDRESS_GFX1_PATTERN>>3)| $03 ; pattern table (charset) - value * $800  	--> offset in VRAM
       .byte	0	; not used
       .byte 0	; not used
       .byte	Medium_Green<<4|Black
