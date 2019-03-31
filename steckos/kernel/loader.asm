@@ -24,8 +24,8 @@
 .include "common.inc"
 .include "kernel.inc"
 
-.segment "LOADER"
-; 	system attribute has to be set on file system
+.segment "LOADER" ; @see kernel.cfg
+; system attribute has to be set on file system
 
 ; .pages = (.payload_end - .payload) / 256 + 1
 src_ptr	= $0
@@ -39,11 +39,6 @@ dst_ptr = $2
 		lda #>kernel_start
 		sta dst_ptr+1
 		stz dst_ptr
-
-
-;		SetVector payload, src_ptr
-;		SetVector kernel_start, dst_ptr
-
 
 		ldy #$00
 loop:
@@ -73,5 +68,3 @@ end:
 payload:
 .incbin "kernel.bin"
 payload_end:
-
-.segment "OS_CACHE" ; unsued, linker warning
