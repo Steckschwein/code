@@ -23,7 +23,7 @@
 ;----------------------------------------------------------------------------
 ; time struct with date set to 1970-01-01
 .struct time_t
-		tm_sec	.byte		;0-59
+        tm_sec	.byte		;0-59
         tm_min	.byte		;0-59
         tm_hour	.byte		;0-23
         tm_mday	.byte		;1-31
