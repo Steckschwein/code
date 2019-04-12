@@ -19,6 +19,8 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
+.ifndef _VDP_INC_
+  _VDP_INC_ = 1
 
 a_vdp     = $0220
 a_vram    = a_vdp
@@ -304,3 +306,5 @@ vdp_nopslide_2m:
   bit	a_vreg
 	bpl @l     ; wait until blank - irq flag set?
 .endmacro
+
+.endif ;_VDP_INC_

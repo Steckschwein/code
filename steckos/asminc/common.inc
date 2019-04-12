@@ -19,7 +19,9 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
+.ifndef _COMMON_INC_
+  _COMMON_INC_ = 1
+  
 .macro SetVector word, addr
 			lda #<word
 			sta addr
@@ -141,6 +143,15 @@
 	sta ptr
 .endmacro
 
+.macro set_irq irq, irq_save
+      copypointer $fffe, irq_save
+      SetVector irq, $fffe
+.endmacro
+
+.macro restore_irq irq_save
+      copypointer irq_save, $fffe
+.endmacro
+
 .macro copypointer fromptr, toptr
 	.repeat 2, i
 		lda fromptr+i
@@ -196,3 +207,5 @@
         dec word+1 ; 3cl
 :       dec word   ; 3cl
 .endmacro
+
+.endif  ; _COMMON_INC_
