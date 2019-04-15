@@ -230,5 +230,5 @@ tiles_colors:
       .include "pacman.tiles.colors.inc"
       
 sprite_patterns:
-      .include "pacman.ghosts.inc"
-      .include "pacman.pacman.inc"
+      .include "pacman.ghosts.res"
+      .include "pacman.pacman.res"

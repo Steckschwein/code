@@ -8,26 +8,24 @@ OBJS=pacman.boot.o pacman.intro.o pacman.game.o pacman.gfx.o pacman.sound.o
 
 .PHONY: all clean
 
-all: pacman.prg 
+all: pacman.prg
 
 clean:
-	rm -f *.bin *.prg *.dis *.s *.o
+	rm -f *.bin *.prg *.dis *.s *.o *.res
 
-%.o: %.asm ../../steckos/asminc/*.inc res *.inc
+%.res: %.xpm
+	python3 ../utils/xpm_ca65_16bit.py $< > $@
+  
+%.o: %.asm ../../steckos/asminc/*.inc *.inc pacman.ghosts.res pacman.pacman.res
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
-res: pacman.ghosts.xpm pacman.pacman.xpm
-	python3 ../utils/xpm_ca65_16bit.py pacman.ghosts.xpm > pacman.ghosts.inc
-	python3 ../utils/xpm_ca65_16bit.py pacman.pacman.xpm > pacman.pacman.inc
-#	python3 ../utils/xpm_ca65_16bit.py pacman.sprites.died.xpm > pacman.pacman.inc
-  
 pacman.tiles.bin: pacman.tiles.inc
 	ca65 pacman.tiles.inc
 	ld65 pacman.tiles.o -t none -o $@
   
-%.o: %.c
-	cc65 -t none $(CC65FLAGS) -O $<
-	ca65 $(CA65FLAGS) $(@:.o=.s)
+#%.o: %.c
+#	cc65 -t none $(CC65FLAGS) -O $<
+#	ca65 $(CA65FLAGS) $(@:.o=.s)
 
 %.prg: %.o $(OBJS) $(LIBS)
 	ld65 $< $(OBJS) $(LDFLAGS) -o $@
