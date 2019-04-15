@@ -54,8 +54,8 @@ opl2_init:
 
 ;
 ;   in:
-;       X - opl2 register select
-;       A - opl2 data
+;       .X - opl2 register select
+;       .A - opl2 data
 ;
 opl2_reg_write:
 		stx opl_sel

@@ -5,6 +5,13 @@ import argparse
 _bit_1 = "1"
 _bit_0 = "0"
   
+def spriteline(line):
+  print (".byte %%%s" % (line.replace("!", _bit_1).replace(" ", _bit_0)))
+  
+def spritelines(lines):
+  for line in lines:
+    spriteline(line)
+    
 def main():
   parser = argparse.ArgumentParser(description='xpm to resource ca65 res include file')
   parser.add_argument('filename', help="file to transform") 
@@ -29,11 +36,11 @@ def main():
   _2ndcol_arr=[]
   for ix, ln in enumerate(xpmLines[offset:]):
     if ix % 16 == 0:
-      for r in _2ndcol_arr:
-        print (".byte %%%s" % (r.replace("!", _bit_1).replace(" ", _bit_0)))
+      spritelines(_2ndcol_arr)
       _2ndcol_arr=[]
-    print (".byte %%%s" % (ln[1:9].replace("!", _bit_1).replace(" ", _bit_0)))
+    spriteline(ln[1:9])
     _2ndcol_arr.append(ln[9:17])
-    
+  spritelines(_2ndcol_arr)
+  
 if __name__ == "__main__":
     main()

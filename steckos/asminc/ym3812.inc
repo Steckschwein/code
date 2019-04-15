@@ -98,6 +98,12 @@ opl2_chan8_op2	= opl2_op18
 ;--------------------------------------------------------------------------------------------------------------
 
 
+.macro opl_reg reg, val
+      ldx #reg
+      lda #val
+      jsr opl2_reg_write
+.endmacro
+
 .macro oplSetRegVal reg, val
 	lda #reg
 	sta opl_stat
