@@ -1,10 +1,10 @@
 CA65FLAGS=--include-dir ../asminc --include-dir ../kernel
-LDFLAGS=--config ../prg.ld65.cfg ../lib/steckschwein.a
+LDFLAGS=--config ../prg.ld65.cfg ../lib/steckschwein.a ../tools/lib/toollib.a
 ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 
 .PHONY: all clean
 
-all: gfx7pset.prg gfx7line.prg gfx7bench.prg
+all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg
 
 clean:
 	rm -f *.prg *.s *.o

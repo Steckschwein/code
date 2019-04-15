@@ -20,13 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-;.include "common.inc"
-.include "vdp.inc"
-;.include "fcntl.inc"
-;.include "zeropage.inc"
-;.include "kernel_jumptable.inc"
 .include "steckos.inc"
-;.include "rtc.inc"
+.include "vdp.inc"
 
 
 ; draw some pixels using vdp_gfx7_set_pixel, which uses the v9958 PSET command
@@ -52,10 +47,6 @@ list = $2000
 
 appstart $1000
 
-pt_x = 25
-pt_y = 257
-ht_x = 150
-ht_y = 150
 .code
 main:
 		jsr	krn_textui_disable			;disable textui
@@ -72,7 +63,7 @@ foo:
 	    lda #%00000011
 	    jsr vdp_gfx7_blank
 
-        lda #$ff
+        lda #%11100000
         ldx #1
         ldy list,x
 @loop:
@@ -97,49 +88,49 @@ foo:
 		jmp (retvec)
 
 blend_isr:
-	pha
-	vdp_reg 15,0
-	vnops
-    bit a_vreg
-    bpl @0
+        pha
+        vdp_reg 15,0
+        vnops
+        bit a_vreg
+        bpl @0
 
-	lda	#%11100000
-	jsr vdp_bgcolor
+        lda	#%11100000
+        jsr vdp_bgcolor
 
-	lda	#Black
-	jsr vdp_bgcolor
+        lda	#Black
+        jsr vdp_bgcolor
 @0:
-	pla
-	rti
+        pla
+        rti
 
 gfxui_on:
-    sei
-	jsr vdp_display_off			;display off
-	jsr vdp_mode_sprites_off	;sprites off
+        sei
+        jsr vdp_display_off			;display off
+        jsr vdp_mode_sprites_off	;sprites off
 
-	jsr vdp_gfx7_on			    ;enable gfx7 mode
+        jsr vdp_gfx7_on			    ;enable gfx7 mode
 
-	lda #%00000011
-	jsr vdp_gfx7_blank
+        lda #%00000011
+        jsr vdp_gfx7_blank
 
 
 
-	copypointer  $fffe, irqsafe
-	SetVector  blend_isr, $fffe
-    rts
+        copypointer  $fffe, irqsafe
+        SetVector  blend_isr, $fffe
+        rts
 
 @end:
-	vdp_reg 14,0
+        vdp_reg 14,0
 
-    cli
-    rts
+        cli
+        rts
 
 gfxui_off:
-   sei
+        sei
 
-   copypointer  irqsafe, $fffe
-   cli
-   rts
+        copypointer  irqsafe, $fffe
+        cli
+        rts
 
 
 
@@ -165,71 +156,80 @@ shuffle_list:
         cpy #list_size+1
         bne @loop
         rts
-;THIS SUBROUTINE ARRANGES THE 8-BIT ELEMENTS OF A LIST IN ASCENDING
-;ORDER.  THE STARTING ADDRESS OF THE LIST IS IN LOCATIONS $30 AND
-;$31.  THE LENGTH OF THE LIST IS IN THE FIRST BYTE OF THE LIST.  LOCATION
-;$32 IS USED TO HOLD AN EXCHANGE FLAG.
 
-SORT8:   LDY #$00      ;TURN EXCHANGE FLAG OFF (= 0)
-         STY tmp0
-         LDA (ptr1),Y   ;FETCH ELEMENT COUNT
-         TAX           ; AND PUT IT INTO X
-         INY           ;POINT TO FIRST ELEMENT IN LIST
-         DEX           ;DECREMENT ELEMENT COUNT
-NXTEL:   LDA (ptr1),Y   ;FETCH ELEMENT
-         INY
-         CMP (ptr1),Y   ;IS IT LARGER THAN THE NEXT ELEMENT?
-         BCC CHKEND
-         BEQ CHKEND
-;        pha
-;        phx
-;        phy
-;        tya
-;        tax
-;         lda (ptr1),y
-;         tay
-;
-;	     lda #%00011100
-;         jsr vdp_gfx7_set_pixel
-;         ply
-;         plx
-;         pla
-                       ;YES. EXCHANGE ELEMENTS IN MEMORY
-         PHA           ; BY SAVING LOW BYTE ON STACK.
-         LDA (ptr1),Y   ; THEN GET HIGH BYTE AND
-         DEY           ; STORE IT AT LOW ADDRESS
-         STA (ptr1),Y
-         PLA           ;PULL LOW BYTE FROM STACK
-         INY           ; AND STORE IT AT HIGH ADDRESS
-         STA (ptr1),Y
-
+unsetpixel:
         pha
         phx
         phy
         tya
         tax
-         lda (ptr1),y
-         tay
+        lda (ptr1),y
+        tay
 
-         lda #$ff
-         jsr vdp_gfx7_set_pixel
-         ply
-         plx
-         pla
+        lda #%00000000
+        jsr vdp_gfx7_set_pixel
+        ply
+        plx
+        pla
+        rts
 
-         LDA #$FF      ;TURN EXCHANGE FLAG ON (= -1)
-         STA tmp0
+setpixel:
+        pha
+        phx
+        phy
+        tya
+        tax
+        lda (ptr1),y
+        tay
+
+        lda #%00011100
+        jsr vdp_gfx7_set_pixel
+        ply
+        plx
+        pla
+        rts
+
+;THIS SUBROUTINE ARRANGES THE 8-BIT ELEMENTS OF A LIST IN ASCENDING
+;ORDER.  THE STARTING ADDRESS OF THE LIST IS IN LOCATIONS $30 AND
+;$31.  THE LENGTH OF THE LIST IS IN THE FIRST BYTE OF THE LIST.  LOCATION
+;$32 IS USED TO HOLD AN EXCHANGE FLAG.
+
+SORT8:  LDY #$00      ;TURN EXCHANGE FLAG OFF (= 0)
+        STY tmp0
+        LDA (ptr1),Y   ;FETCH ELEMENT COUNT
+        TAX           ; AND PUT IT INTO X
+        INY           ;POINT TO FIRST ELEMENT IN LIST
+        DEX           ;DECREMENT ELEMENT COUNT
+NXTEL:  LDA (ptr1),Y   ;FETCH ELEMENT
+        INY
+        CMP (ptr1),Y   ;IS IT LARGER THAN THE NEXT ELEMENT?
+        BCC CHKEND
+        BEQ CHKEND
+
+                      ;YES. EXCHANGE ELEMENTS IN MEMORY
+        PHA           ; BY SAVING LOW BYTE ON STACK.
+        LDA (ptr1),Y   ; THEN GET HIGH BYTE AND
+        DEY           ; STORE IT AT LOW ADDRESS
+        STA (ptr1),Y
+        PLA           ;PULL LOW BYTE FROM STACK
+        INY           ; AND STORE IT AT HIGH ADDRESS
+        STA (ptr1),Y
+
+        jsr setpixel
+
+        LDA #$FF      ;TURN EXCHANGE FLAG ON (= -1)
+        STA tmp0
 
 
 
 CHKEND:
         DEX           ;END OF LIST?
-         BNE NXTEL     ;NO. FETCH NEXT ELEMENT
-         BIT tmp0       ;YES. EXCHANGE FLAG STILL OFF?
-         BMI SORT8     ;NO. GO THROUGH LIST AGAIN
-         RTS           ;YES. LIST IS NOW ORDERED
+        BNE NXTEL     ;NO. FETCH NEXT ELEMENT
+        BIT tmp0       ;YES. EXCHANGE FLAG STILL OFF?
+        BMI SORT8     ;NO. GO THROUGH LIST AGAIN
+        RTS           ;YES. LIST IS NOW ORDERED
 
-seed:    .BYTE 99
+seed:   .BYTE 99
 
 
 irqsafe: .res 2, 0
