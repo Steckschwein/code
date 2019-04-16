@@ -40,8 +40,9 @@
 
 .importzp ptr1
 tmp0 = $32
+tmp1 = $33
 list_size = 254
-list = $2000
+;list = $2000
 
 .code
 
@@ -66,17 +67,25 @@ foo:
         lda #%11100000
         ldx #1
         ldy list,x
+        ldy #0
 @loop:
+        lda #$ff
         jsr vdp_gfx7_set_pixel
-        vnops
+        ;vnops
         inx
         ldy list,x
+        sty tmp0
+        lda #192
+        sec
+        sbc tmp0
+        tay
         cpx #list_size+1
         bne @loop
+;        jmp out
 
 
         jsr SORT8
-
+out:
 		keyin
 		jsr	gfxui_off
 
@@ -164,9 +173,13 @@ unsetpixel:
         tya
         tax
         lda (ptr1),y
+        sta tmp1
+        lda #192
+        sec
+        sbc tmp1
         tay
 
-        lda #%00000000
+        lda #%00000011
         jsr vdp_gfx7_set_pixel
         ply
         plx
@@ -180,6 +193,10 @@ setpixel:
         tya
         tax
         lda (ptr1),y
+        sta tmp1
+        lda #192
+        sec
+        sbc tmp1
         tay
 
         lda #%00011100
@@ -206,6 +223,10 @@ NXTEL:  LDA (ptr1),Y   ;FETCH ELEMENT
         BCC CHKEND
         BEQ CHKEND
 
+        dey
+        jsr unsetpixel
+        iny
+
                       ;YES. EXCHANGE ELEMENTS IN MEMORY
         PHA           ; BY SAVING LOW BYTE ON STACK.
         LDA (ptr1),Y   ; THEN GET HIGH BYTE AND
@@ -216,6 +237,7 @@ NXTEL:  LDA (ptr1),Y   ;FETCH ELEMENT
         STA (ptr1),Y
 
         jsr setpixel
+
 
         LDA #$FF      ;TURN EXCHANGE FLAG ON (= -1)
         STA tmp0
@@ -235,6 +257,5 @@ seed:   .BYTE 99
 irqsafe: .res 2, 0
 
 .data
-
+list:   .res 255
 .segment "STARTUP"
-
