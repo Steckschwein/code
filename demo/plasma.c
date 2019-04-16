@@ -1,4 +1,8 @@
 /*****************************************************************************\
+** steckschwein adaption 04/2019 by marko lauke                              **
+\*****************************************************************************/
+
+/*****************************************************************************\
 ** plasma test program for cc65.                                             **
 **                                                                           **
 ** (w)2001 by groepaz/hitmen                                                 **
@@ -36,8 +40,8 @@
 #  define outb(addr,val)        (*(addr)) = (val)
 #  define inb(addr)             (*(addr))
 #else  //#elif defined(__STECKSCHWEIN__)
-#  define SCREEN1               0x5400
-#  define SCREEN2               0x5C00
+#  define SCREEN1               SCREEN_BUFFER
+#  define SCREEN2               SCREEN_BUFFER
 #  define CHARSET               0x6000
 #  define COLOR_BLUE  Color_Light_Blue
 #  define COLOR_BLACK Color_Black
@@ -132,7 +136,7 @@ static void doplasma (register unsigned char* scrn)
         ** size a lot.
         */
         for (i = 0; i < 40; ++i, ++scrn) {
-            *scrn = (xbuf[i] + ybuf[ii]);
+            *scrn = '@';(xbuf[i] + ybuf[ii]);
         }
     }
 }
