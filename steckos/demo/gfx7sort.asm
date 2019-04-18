@@ -50,42 +50,21 @@ appstart $1000
 
 .code
 main:
-		jsr	krn_textui_disable			;disable textui
-		jsr	gfxui_on
-
         lda #<list
         sta ptr1
         lda #>list
         sta ptr1+1
 
-foo:
+		jsr	krn_textui_disable			;disable textui
+		jsr	gfxui_on
+
         jsr shuffle_list
 
-	    lda #%00000011
-	    jsr vdp_gfx7_blank
-
-        lda #%11100000
-        ldx #1
-        ldy list,x
-        ldy #0
-@loop:
-        lda #$ff
-        jsr vdp_gfx7_set_pixel
-        ;vnops
-        inx
-        ldy list,x
-        sty tmp0
-        lda #192
-        sec
-        sbc tmp0
-        tay
-        cpx #list_size+1
-        bne @loop
-;        jmp out
-
+        jsr display_list
 
         jsr SORT8
-out:
+
+
 		keyin
 		jsr	gfxui_off
 
@@ -166,24 +145,36 @@ shuffle_list:
         bne @loop
         rts
 
-unsetpixel:
-        pha
-        phx
-        phy
-        tya
-        tax
-        lda (ptr1),y
-        sta tmp1
-        lda #192
-        sec
-        sbc tmp1
-        tay
+display_list:
+        save
 
+        ldx #1
+@loop:
+        ldy list,x
+        lda #$ff
+        jsr vdp_gfx7_set_pixel
+        ;vnops
+        inx
+        cpx #list_size+1
+        bne @loop
+
+        restore
+        rts
+
+display_list2:
+        save
+
+        ldx #1
+@loop:
+        ldy list,x
         lda #%00000011
         jsr vdp_gfx7_set_pixel
-        ply
-        plx
-        pla
+        ;vnops
+        inx
+        cpx #list_size+1
+        bne @loop
+
+        restore
         rts
 
 setpixel:
@@ -217,15 +208,13 @@ SORT8:  LDY #$00      ;TURN EXCHANGE FLAG OFF (= 0)
         TAX           ; AND PUT IT INTO X
         INY           ;POINT TO FIRST ELEMENT IN LIST
         DEX           ;DECREMENT ELEMENT COUNT
-NXTEL:  LDA (ptr1),Y   ;FETCH ELEMENT
+NXTEL:
+        jsr display_list2
+        LDA (ptr1),Y   ;FETCH ELEMENT
         INY
         CMP (ptr1),Y   ;IS IT LARGER THAN THE NEXT ELEMENT?
         BCC CHKEND
         BEQ CHKEND
-
-        dey
-        jsr unsetpixel
-        iny
 
                       ;YES. EXCHANGE ELEMENTS IN MEMORY
         PHA           ; BY SAVING LOW BYTE ON STACK.
@@ -236,13 +225,11 @@ NXTEL:  LDA (ptr1),Y   ;FETCH ELEMENT
         INY           ; AND STORE IT AT HIGH ADDRESS
         STA (ptr1),Y
 
-        jsr setpixel
-
-
         LDA #$FF      ;TURN EXCHANGE FLAG ON (= -1)
         STA tmp0
 
 
+        jsr display_list
 
 CHKEND:
         DEX           ;END OF LIST?
@@ -258,4 +245,9 @@ irqsafe: .res 2, 0
 
 .data
 list:   .res 255
+;list:
+;    .byte 254
+;    .repeat 254, i
+;    .byte i
+;    .endrepeat
 .segment "STARTUP"
