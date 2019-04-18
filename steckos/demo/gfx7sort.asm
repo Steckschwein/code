@@ -64,6 +64,7 @@ main:
 
         jsr SORT8
 
+        jsr display_list
 
 		keyin
 		jsr	gfxui_off
