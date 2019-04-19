@@ -41,6 +41,8 @@
 .importzp ptr1
 tmp0 = $32
 tmp1 = $33
+old_x = $34
+old_y = $35
 list_size = 254
 ;list = $2000
 
@@ -60,11 +62,8 @@ main:
 
         jsr shuffle_list
 
-        jsr display_list
-
         jsr SORT8
 
-        jsr display_list
 
 		keyin
 		jsr	gfxui_off
@@ -151,26 +150,23 @@ display_list:
 
         ldx #1
 @loop:
-        ldy list,x
-        lda #$ff
-        jsr vdp_gfx7_set_pixel
-        ;vnops
-        inx
-        cpx #list_size+1
-        bne @loop
-
-        restore
-        rts
-
-display_list2:
-        save
-
-        ldx #1
-@loop:
-        ldy list,x
+        lda list,x
+        sta old_y
+        ldy #0
+@l1:
         lda #%00000011
         jsr vdp_gfx7_set_pixel
-        ;vnops
+        iny
+        cpy old_y
+        bne @l1
+
+@l2:
+        lda #$ff
+        jsr vdp_gfx7_set_pixel
+        iny
+        cpy #192
+        bne @l2
+
         inx
         cpx #list_size+1
         bne @loop
@@ -191,7 +187,7 @@ setpixel:
         sbc tmp1
         tay
 
-        lda #%00011100
+        lda #$ff
         jsr vdp_gfx7_set_pixel
         ply
         plx
@@ -203,19 +199,22 @@ setpixel:
 ;$31.  THE LENGTH OF THE LIST IS IN THE FIRST BYTE OF THE LIST.  LOCATION
 ;$32 IS USED TO HOLD AN EXCHANGE FLAG.
 
-SORT8:  LDY #$00      ;TURN EXCHANGE FLAG OFF (= 0)
+SORT8:
+        jsr display_list
+
+        LDY #$00      ;TURN EXCHANGE FLAG OFF (= 0)
         STY tmp0
         LDA (ptr1),Y   ;FETCH ELEMENT COUNT
         TAX           ; AND PUT IT INTO X
         INY           ;POINT TO FIRST ELEMENT IN LIST
         DEX           ;DECREMENT ELEMENT COUNT
 NXTEL:
-        jsr display_list2
         LDA (ptr1),Y   ;FETCH ELEMENT
         INY
         CMP (ptr1),Y   ;IS IT LARGER THAN THE NEXT ELEMENT?
         BCC CHKEND
         BEQ CHKEND
+
 
                       ;YES. EXCHANGE ELEMENTS IN MEMORY
         PHA           ; BY SAVING LOW BYTE ON STACK.
@@ -230,8 +229,6 @@ NXTEL:
         STA tmp0
 
 
-        jsr display_list
-
 CHKEND:
         DEX           ;END OF LIST?
         BNE NXTEL     ;NO. FETCH NEXT ELEMENT
@@ -245,10 +242,10 @@ seed:   .BYTE 99
 irqsafe: .res 2, 0
 
 .data
-list:   .res 255
-;list:
-;    .byte 254
-;    .repeat 254, i
-;    .byte i
-;    .endrepeat
+;list:   .res 255
+list:
+    .byte 254
+    .repeat 254, i
+    .byte i
+    .endrepeat
 .segment "STARTUP"
