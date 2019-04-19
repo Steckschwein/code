@@ -28,6 +28,8 @@ game:
       cli
 
 @waitkey:
+      bra @waitkey
+      
       jsr krn_getkey
       cmp #KEY_ESCAPE
       bne @waitkey
@@ -78,7 +80,10 @@ game_isr:
 
 game_isr_exit:
 
+.if DEBUG
       bgcolor Color_Bg
+      jsr debug
+.endif
 
       restore
       rti
@@ -88,14 +93,15 @@ game_ready_wait:
       cmp #STATE_READY_WAIT
       bne @exit
       lda sound_play_state
-      bne @exit
-      
+;      bne @detect_joystick
       draw_text _delete_message_1
       draw_text _delete_message_2
-      
-      
       lda #STATE_PLAYING
       sta game_state
+@detect_joystick:
+      jsr joystick_detect
+      beq @exit
+      sta joystick_port
 @exit:
       rts
       
@@ -110,91 +116,265 @@ game_ready:
 @exit:
       rts
       
-ACT_MOVE    = 1<<7
-ACT_DIRECTION=1<<1 | 1<<0
-ACT_RIGHT   = 0
-ACT_LEFT    = 1
-ACT_UP      = 2
-ACT_DOWN    = 3
 
-move_actor:
-      lda actors+actor::state, x
+      ; key/joy input ?
+      ;   (input direction != current direction)?
+      ;   y - input direction inverse current direction?
+      ;       y - set current direction = input direction
+      ;       n - can move to input direction?
+      ;           y - pre-turn? (+4px)
+      ;                 y - set turn direction = current direction
+      ;                   - set turn bit on
+      ;             - post-turn?  (-3px)
+      ;                 y - set turn direction = inverse current direction (eor)
+      ;                     set turn bit on
+      ;             - set current direction = input direction
+      ;             - change pacman shape
+      ;         - set next direction = input direction
+      ;
+      ; block reached? (center)
+      ;   y - is turn?
+      ;         y - reset turn bit
+      ;           - reset turn direction
+      ;     - can move to current direction?
+      ;         n - change pacman shape to next direction
+      ;             stop move (reset move bit and current direction)
+      ;
+      ; soft move to current direction
+      ; is turn?
+      ;   y - soft move to turn direction
+      
+
+input_direction: .res 1,0
+
+actors_move:
+      ldx #0;actor_pacman
+      jsr actor_update_charpos
+      jsr pacman_input
+      jsr actor_move
+      rts
+      
+actor_move:
+;4+n*8  12,4
+      lda actors+actor::move,x
       bpl @exit
-      and #ACT_DIRECTION
+      
+      ldy actors+actor::sprite,x
+      lda sprite_tab_attr+SPRITE_X,y
+      and #$07
+      cmp #$04  ; center x pos
+      bne @actor_move_soft
+      lda sprite_tab_attr+SPRITE_Y,y
+      and #$07
+      cmp #$04  ; center y pos
+      bne @actor_move_soft
+      lda actors+actor::move,x
+      and #ACT_MOVE_DIR
+      jsr actor_can_move_to_direction
+      bcc @actor_move_soft
+      
+      lda actors+actor::move,x  ;stop move
+      and #<~ACT_MOVE
+      sta actors+actor::move,x
+      lsr ;set shape of next direction
+      lsr
+      jmp pacman_update_shape
+@exit:
+      rts
+      
+@actor_move_soft:
+      lda actors+actor::move,x
+      and #ACT_MOVE_DIR
+      asl
+      tay
+      phy
+      lda _vectors+0, y
+      ldy actors+actor::sprite, x
+      clc
+      adc sprite_tab_attr+SPRITE_X,y
+      sta sprite_tab_attr+SPRITE_X,y
+      ply
+      lda _vectors+1, y
+      ldy actors+actor::sprite, x
+      clc
+      adc sprite_tab_attr+SPRITE_Y,y
+      sta sprite_tab_attr+SPRITE_Y,y
+      
+@pacman_animate:
+      lda game_state+GameState::frames
+      and #$03
+      bne @exit
+      ldy actors+actor::sprite,x
+      lda sprite_tab_attr+SPRITE_N,y
+      eor #$04
+      sta sprite_tab_attr+SPRITE_N,y
+      rts
+      
+pacman_update_shape:
+      and #ACT_MOVE_DIR
+      asl
+      tay
+      lda pacman_shapes,y
+      ldy actors+actor::sprite,x
+      sta sprite_tab_attr+SPRITE_N,y
+      rts
+;
+;###-####
+;####-###
+;#####-##
+;######-#
+;###C###-
+;######-#
+;#####-##
+;####-###
+;
+
+      ; in:   .A - direction
+      ; out:  .C=0 can move, C=1 can not move to direction
+actor_can_move_to_direction:
+      jsr actor_update_charpos_direction  ; update dir char pos
+      jsr calc_maze_ptr_direction         ; calc ptr to next char at input direction
+      lda (p_maze)
+      cmp #Char_Bg
+      rts
+      
+pacman_input:
+      jsr get_input
+      bcc @exit                           ; key/joy input ?
+      sta input_direction
+      jsr actor_can_move_to_direction
+      bcs @set_input_dir_to_next_dir
+      ;pre turn ?
+            
+      ;post turn ?
+      lda actors+actor::move,x
+      and #<~ACT_MOVE_DIR
+      ora #ACT_MOVE
+      ora input_direction
+      sta actors+actor::move,x
+      jsr pacman_update_shape
+      
+@set_input_dir_to_next_dir: ; bit 3-2
+      lda input_direction
+      asl
       asl
       sta game_tmp
-      lda game_state+GameState::frames
-      bit #$03
-      bne @move_pos
-      lda sprite_tab_attr+SPRITE_N,x
-      eor #4
-      sta sprite_tab_attr+SPRITE_N,x
-      
-@move_pos:
-      jsr set_maze_ptr
-      lda (p_game1)
-      cmp #Char_Bg
-      bcs @move_stop
-      
-      ldy game_tmp
-      lda _vectors+0, y
-      clc
-      adc sprite_tab_attr+SPRITE_X,x
-      sta sprite_tab_attr+SPRITE_X,x
-      lda _vectors+1, y
-      clc
-      adc sprite_tab_attr+SPRITE_Y,x
-      sta sprite_tab_attr+SPRITE_Y,x
-      
-      lda sprite_tab_attr+SPRITE_Y,x
-      lsr
-      lsr
-      lsr
-      sta actors+actor::ypos,x
-      rts
-      
-@move_stop:
-      lda actors+actor::state, x
-;      eor #ACT_LEFT
- ;     ora #ACT_MOVE
-      and #!(ACT_MOVE)
-      sta actors+actor::state, x
-      and #03
-      asl 
-      tax
-      lda pacman_shapes,x
-      sta sprite_tab_attr+SPRITE_N
-      
-      rts
-      
-      
-      lda _vectors+0, y
-      clc
-      adc actors+actor::xpos, x
-      sta actors+actor::xpos, x
-      lda _vectors+1, y
-      clc 
-      adc actors+actor::ypos, x
-      sta actors+actor::ypos, x
+      lda actors+actor::move,x
+      and #<~ACT_NEXT_DIR
+      ora game_tmp
+      sta actors+actor::move,x
 @exit:
       rts
 
-
-debug_start:
-      lda #0
-      sta crs_x
-      lda #8
-      sta crs_y
-      jmp gfx_vram_xy
-debug:
-      pha
-      jsr gfx_hex_digits
-      inc crs_x
-      inc crs_x
-      pla
+actor_update_charpos_direction:
+      asl
+      tay
+      lda actors+actor::xpos,x
+      clc
+      adc _vectors+0,y
+      sta actors+actor::xpos_dir,x
+      
+      lda actors+actor::ypos,x
+      clc
+      adc _vectors+1,y
+      sta actors+actor::ypos_dir,x
       rts
       
-set_maze_ptr:
+actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
+      lda actors+actor::sprite,x
+      tay
+      lda sprite_tab_attr+SPRITE_Y,y
+      clc
+      adc #8  ; y adjust
+      lsr 
+      lsr
+      lsr
+      sta actors+actor::ypos,x
+      
+      lda sprite_tab_attr+SPRITE_X,y
+      clc
+      adc #8  ; x adjust
+      lsr
+      lsr
+      lsr
+      sta actors+actor::xpos,x
+      rts
+      
+      
+      ; C=0 if any valid key or joystick input, A=ACT_xxx
+get_input:
+      jsr krn_getkey
+      bcc @joystick
+      cmp #KEY_CRSR_RIGHT
+      beq @r
+      cmp #KEY_CRSR_LEFT
+      beq @l
+      cmp #KEY_CRSR_DOWN
+      beq @d
+      cmp #KEY_CRSR_UP
+      bne @joystick
+@u:   lda #ACT_UP
+      rts
+@r:   lda #ACT_RIGHT
+      rts
+@l:   lda #ACT_LEFT
+      rts
+@d:   lda #ACT_DOWN
+      rts
+@joystick:
+      lda joystick_port
+      jsr joystick_read
+      and #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
+      cmp #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
+      beq @exit; nothing pressed
+      sec
+      bit #JOY_RIGHT
+      beq @r
+      bit #JOY_LEFT
+      beq @l
+      bit #JOY_DOWN
+      beq @d
+      bit #JOY_UP
+      beq @u
+@exit:
+      clc
+      rts
+      
+
+debug:
+      pha
+      phx
+      lda #12
+      sta crs_x
+      lda #0
+      sta crs_y
+      jsr gfx_vram_xy
+      lda actors+actor::move
+      jsr gfx_hex_digits
+      lda actors+actor::xpos
+      jsr gfx_hex_digits
+      lda actors+actor::ypos
+      jsr gfx_hex_digits
+      lda actors+actor::xpos_dir
+      jsr gfx_hex_digits
+      lda actors+actor::ypos_dir
+      jsr gfx_hex_digits
+      lda input_direction
+      jsr gfx_hex_digits
+      lda (p_maze)
+      jsr gfx_hex_digits
+      
+      plx
+      pla
+      rts
+
+calc_maze_ptr_direction:
+      inx ; TODO FIXME maybe little too hacky
+      jsr calc_maze_ptr
+      dex
+      rts
+      
+calc_maze_ptr:
       lda actors+actor::ypos, x; ;.Y * 32
       asl
       asl
@@ -204,28 +384,17 @@ set_maze_ptr:
       ora actors+actor::xpos, x
       clc
       adc #<game_maze
-      sta p_game1+0
+      sta p_maze+0
       lda actors+actor::ypos, x ; .Y * 32
       lsr ; div 8 -> page offset 0-2
       lsr
       lsr
       clc
       adc #>game_maze
-      sta p_game1+1
-      rts
-      
-pacman_move:
-      ldx #0;actor_pacman, p_game1
-      jsr move_actor
+      sta p_maze+1
       rts
       
 game_demo:
-      lda actor_pacman+actor::state
-      bmi @demo_move
-      ; select direction
-      
-@demo_move:
-      jsr pacman_move
 @demo_text:
       lda game_state+GameState::frames
       bit #$07
@@ -247,8 +416,11 @@ game_playing:
 
       jsr game_demo
       
-      jsr food_eaten
-      jsr draw_score
+      jsr actors_move
+      
+      
+;      jsr food_eaten
+;      jsr draw_score
       
 @exit:
       rts
@@ -371,12 +543,12 @@ game_init:
       lda #STATE_READY
       sta game_state
       
-      lda actor_pacman+actor::state
+      lda actor_pacman+actor::move
       and #03
       asl 
       tax
       lda pacman_shapes,x
-      sta sprite_tab_attr+SPRITE_N
+;      sta sprite_tab_attr+SPRITE_N
       
       rts
       
@@ -390,7 +562,10 @@ display_maze:
       rts
 
 sprite_tab_attr:
-      .byte 96, 188,   $18*4, 0
+;      .byte 96, 188,   $18*4, 0
+;      .byte 4, 12+28*8,     $10*4, 0 ;offset y=+4,y=+4
+      .byte 4, 4+1*8,     $10*4, 0 ;offset y=+4,y=+4
+
       .byte $d9, $d9, 0, 0    ; blank
       .byte 95, 92,   2*4, 0  ; 2,3/9x4 left, 0,1/8x4 right, 4/$ax4 up, 6/$bx4 down, 
       .byte 95, 92,   9*4, 0
@@ -434,6 +609,9 @@ _save_irq:  .res 2
 game_maze:
       .include "pacman.maze.inc"
 
+joystick_port:
+      .byte JOY_PORT1
+      
 food:
     .tag actor
     .tag actor
@@ -443,10 +621,15 @@ food:
 actors:
 actor_pacman:
     ;.tag actor
-    .byte 12  ;ypos
-    .byte 24  ;xpos
-    .byte 1<<7 | ACT_LEFT   ;state bit 7 move, bit 1-0 dir 00 r, 01 l, 10 u, 11 d
+    .byte 0   ;xpos
+    .byte 0   ;xpos_dir
+    .byte 0   ;ypos
+    .byte 0   ;ypos_dir
     .byte 0
+    .byte 0   ;sprite
+    .byte 0   ;dots
+    .byte 0
+    
 actor_ghosts:
 actor_blinky:
     ;.tag actor
@@ -473,22 +656,22 @@ actor_clyde:
     .byte 0   ;state
     .byte 0
     
-
-_vectors:
-_vec_right:
-      .byte 0,$ff
-_vec_left:
+    
+_vectors:   ; X, Y adjust
+_vec_right:         ;00
+      .byte 0,$ff   ; +0 X, -1 Y, screen is rotated 90 degree clockwise ;)
+_vec_left:          ;01
       .byte 0, 1
-_vec_up:
+_vec_up:            ;10
       .byte $ff,0
-_vec_down:
+_vec_down:          ;11
       .byte 1, 0
 
 pacman_shapes:
-      .byte $10*4,$11*4 ;r  000
-      .byte $12*4,$13*4 ;l  010
-      .byte $14*4,$15*4 ;u  100 
-      .byte $16*4,$17*4 ;d  110
+      .byte $11*4,$10*4 ;r  000
+      .byte $13*4,$12*4 ;l  010
+      .byte $15*4,$14*4 ;u  100 
+      .byte $17*4,$16*4 ;d  110
 
 _text_pacman:
       .byte 12,15, "PACMAN",0

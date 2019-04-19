@@ -118,7 +118,7 @@ hexdigit:
       cmp #'9'+1		;is it a decimal digit?
       bcc @out
       adc #6			  ;add offset for letter a-f
-@out: vdp_wait_l 12
+@out: vdp_wait_l 16
       sta a_vram
       rts
       
@@ -129,9 +129,9 @@ gfx_digits:
       lsr
       lsr
       ora	#'0'
-      vdp_wait_l 18
-      sta a_vram
+      vdp_wait_l 22
       dec crs_y
+      sta a_vram
       jsr gfx_vram_xy
       pla
 gfx_digit:
@@ -232,3 +232,4 @@ tiles_colors:
 sprite_patterns:
       .include "pacman.ghosts.res"
       .include "pacman.pacman.res"
+      

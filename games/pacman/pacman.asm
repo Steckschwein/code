@@ -17,18 +17,19 @@ main:
       sei
       jsr krn_textui_disable
       
+      jsr joystick_on
       jsr sound_init
 ;      jsr sound_play
-      
+
 :
       jsr gfx_init
       jsr gfx_mode_on
       
-      jsr boot
+      ;jsr boot
 
 @intro:
       jsr init
-      jsr intro
+      ;jsr intro
       bit game_state
       bmi @exit
       jsr game
