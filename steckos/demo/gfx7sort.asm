@@ -43,7 +43,7 @@ tmp0 = $32
 tmp1 = $33
 old_x = $34
 old_y = $35
-list_size = 254
+list_size = 192
 ;list = $2000
 
 .code
@@ -164,7 +164,7 @@ display_list:
         lda #$ff
         jsr vdp_gfx7_set_pixel
         iny
-        cpy #192
+        cpy #list_size
         bne @l2
 
         inx
@@ -242,10 +242,10 @@ seed:   .BYTE 99
 irqsafe: .res 2, 0
 
 .data
-;list:   .res 255
+;list:   .res list_size
 list:
-    .byte 254
-    .repeat 254, i
+    .byte list_size
+    .repeat list_size, i
     .byte i
     .endrepeat
 .segment "STARTUP"
