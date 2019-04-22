@@ -41,10 +41,8 @@
 .importzp ptr1
 tmp0 = $32
 tmp1 = $33
-old_x = $34
-old_y = $35
-list_size = 192
-;list = $2000
+old_y = $34
+list_size = 254
 
 .code
 
@@ -61,6 +59,7 @@ main:
 		jsr	gfxui_on
 
         jsr shuffle_list
+        jsr display_list
 
         jsr SORT8
 
@@ -151,21 +150,8 @@ display_list:
         ldx #1
 @loop:
         lda list,x
-        sta old_y
-        ldy #0
-@l1:
-        lda #%00000011
-        jsr vdp_gfx7_set_pixel
-        iny
-        cpy old_y
-        bne @l1
 
-@l2:
-        lda #$ff
-        jsr vdp_gfx7_set_pixel
-        iny
-        cpy #list_size
-        bne @l2
+        jsr draw_bar
 
         inx
         cpx #list_size+1
@@ -174,25 +160,31 @@ display_list:
         restore
         rts
 
-setpixel:
+; a - value
+; x - pos
+draw_bar:
         pha
-        phx
         phy
-        tya
-        tax
-        lda (ptr1),y
-        sta tmp1
-        lda #192
-        sec
-        sbc tmp1
-        tay
-
+        sta old_y
+        ldy #0
+@l1:
         lda #$ff
         jsr vdp_gfx7_set_pixel
+        iny
+        cpy old_y
+        bne @l1
+
+@l2:
+        lda #%00000011
+        jsr vdp_gfx7_set_pixel
+        iny
+        cpy #list_size+1
+        bne @l2
+
         ply
-        plx
         pla
         rts
+
 
 ;THIS SUBROUTINE ARRANGES THE 8-BIT ELEMENTS OF A LIST IN ASCENDING
 ;ORDER.  THE STARTING ADDRESS OF THE LIST IS IN LOCATIONS $30 AND
@@ -200,7 +192,6 @@ setpixel:
 ;$32 IS USED TO HOLD AN EXCHANGE FLAG.
 
 SORT8:
-        jsr display_list
 
         LDY #$00      ;TURN EXCHANGE FLAG OFF (= 0)
         STY tmp0
@@ -221,9 +212,28 @@ NXTEL:
         LDA (ptr1),Y   ; THEN GET HIGH BYTE AND
         DEY           ; STORE IT AT LOW ADDRESS
         STA (ptr1),Y
+        ;jsr setpixel
+
+        save
+        pha
+        tya
+        tax
+        pla
+        jsr draw_bar
+        restore
+
         PLA           ;PULL LOW BYTE FROM STACK
         INY           ; AND STORE IT AT HIGH ADDRESS
         STA (ptr1),Y
+
+        save
+        pha
+        tya
+        tax
+        pla
+        jsr draw_bar
+        restore
+
 
         LDA #$FF      ;TURN EXCHANGE FLAG ON (= -1)
         STA tmp0
