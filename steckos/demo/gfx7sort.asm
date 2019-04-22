@@ -24,19 +24,17 @@
 .include "vdp.inc"
 
 
-; draw some pixels using vdp_gfx7_set_pixel, which uses the v9958 PSET command
-
 .import vdp_gfx7_on
 .import vdp_gfx7_blank
 ; .import vdp_gfx7_set_pixel_n
 .import vdp_gfx7_set_pixel
-.import vdp_gfx7_set_pixel_cmd
+;.import vdp_gfx7_set_pixel_cmd
 .import vdp_display_off
-.import vdp_memcpy
+;.import vdp_memcpy
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
-.import hexout
-.export char_out=krn_chrout
+;.import hexout
+;.export char_out=krn_chrout
 
 .importzp ptr1
 tmp0 = $32
@@ -57,6 +55,7 @@ main:
 
 		jsr	krn_textui_disable			;disable textui
 		jsr	gfxui_on
+@loop:
 
         jsr shuffle_list
         jsr display_list
@@ -65,6 +64,10 @@ main:
 
 
 		keyin
+        cmp #'q'
+        beq @exit
+        jmp @loop
+@exit:
 		jsr	gfxui_off
 
 		jsr	krn_display_off			;restore textui
@@ -119,8 +122,6 @@ gfxui_off:
         cli
         rts
 
-
-
 prnd:
         lda seed
         beq doEor
@@ -143,6 +144,7 @@ shuffle_list:
         cpy #list_size+1
         bne @loop
         rts
+
 
 display_list:
         save
@@ -199,33 +201,34 @@ SORT8:
         TAX           ; AND PUT IT INTO X
         INY           ;POINT TO FIRST ELEMENT IN LIST
         DEX           ;DECREMENT ELEMENT COUNT
-NXTEL:
-        LDA (ptr1),Y   ;FETCH ELEMENT
+NXTEL:  LDA (ptr1),Y   ;FETCH ELEMENT
         INY
         CMP (ptr1),Y   ;IS IT LARGER THAN THE NEXT ELEMENT?
         BCC CHKEND
         BEQ CHKEND
-
-
                       ;YES. EXCHANGE ELEMENTS IN MEMORY
         PHA           ; BY SAVING LOW BYTE ON STACK.
-        LDA (ptr1),Y   ; THEN GET HIGH BYTE AND
+        LDA (ptr1),Y  ; THEN GET HIGH BYTE AND
         DEY           ; STORE IT AT LOW ADDRESS
         STA (ptr1),Y
-        ;jsr setpixel
 
-        save
-        pha
-        tya
-        tax
-        pla
-        jsr draw_bar
-        restore
+        jsr draw_sort_bar
 
         PLA           ;PULL LOW BYTE FROM STACK
         INY           ; AND STORE IT AT HIGH ADDRESS
         STA (ptr1),Y
 
+        jsr draw_sort_bar
+
+        LDA #$FF      ;TURN EXCHANGE FLAG ON (= -1)
+        STA tmp0
+CHKEND: DEX           ;END OF LIST?
+        BNE NXTEL     ;NO. FETCH NEXT ELEMENT
+        BIT tmp0       ;YES. EXCHANGE FLAG STILL OFF?
+        BMI SORT8     ;NO. GO THROUGH LIST AGAIN
+        RTS           ;YES. LIST IS NOW ORDERED
+
+draw_sort_bar:
         save
         pha
         tya
@@ -233,20 +236,9 @@ NXTEL:
         pla
         jsr draw_bar
         restore
+        rts
 
-
-        LDA #$FF      ;TURN EXCHANGE FLAG ON (= -1)
-        STA tmp0
-
-
-CHKEND:
-        DEX           ;END OF LIST?
-        BNE NXTEL     ;NO. FETCH NEXT ELEMENT
-        BIT tmp0       ;YES. EXCHANGE FLAG STILL OFF?
-        BMI SORT8     ;NO. GO THROUGH LIST AGAIN
-        RTS           ;YES. LIST IS NOW ORDERED
-
-seed:   .BYTE 99
+seed:   .BYTE 242
 
 
 irqsafe: .res 2, 0
