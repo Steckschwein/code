@@ -128,17 +128,17 @@ gfx_digits:
       lsr
       lsr
       lsr
-      ora	#'0'
-      vdp_wait_l 22
-      dec crs_y
-      sta a_vram
-      jsr gfx_vram_xy
+      jsr gfx_digit
       pla
 gfx_digit:
+      pha
+      jsr gfx_vram_xy
+      pla
       and #$0f
       ora	#'0'
-      vdp_wait_l 4
+      vdp_wait_l 20
       sta a_vram
+      dec crs_y
       rts
 
 gfx_text:

@@ -25,11 +25,15 @@ main:
       jsr gfx_init
       jsr gfx_mode_on
       
-      ;jsr boot
-
+      .if DEBUG = 0
+      jsr boot
+      .endif
+      
 @intro:
       jsr init
-      ;jsr intro
+      .if DEBUG = 0
+      jsr intro
+      .endif
       bit game_state
       bmi @exit
       jsr game
@@ -41,10 +45,10 @@ init:
       ldx #.sizeof(GameState)
 :     stz game_state,x
       dex
-      bne :-
+      bpl :-
       rts
       
 .data
 .export game_state
 game_state:
-.tag GameState
+  .tag GameState

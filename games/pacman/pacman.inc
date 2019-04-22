@@ -20,7 +20,7 @@
       .import opl2_init
       .import opl2_reg_write
       .importzp ptr1,ptr2
-      .importzp tmp1,tmp2,tmp3
+      .importzp tmp1,tmp2,tmp3,tmp4,tmp5
         
 .define DEBUG 1
 
@@ -39,7 +39,10 @@ sound_tmp=tmp2
 p_game1=ptr3
 p_maze=p_game1
 p_game2=ptr4
+
 game_tmp=tmp3
+game_tmp2=tmp4
+game_tmp3=tmp4
 
 sprite_pattern=ADDRESS_GFX3_SPRITE_PATTERN
 sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
@@ -89,19 +92,23 @@ STATE_GAMEOVER      = 3
   state       .byte
   credit      .byte
   frames      .byte
-  score       .res 7
-  highscore   .res 7
+  score       .res 4
+  highscore   .res 4
 .endstruct
 
+SPRITE_CENTER     = $04
+SPRITE_ADJUST     = $08
 ACT_MOVE          = 1<<7
-ACT_TURN          = 1<<6
-ACT_MOVE_DIR      = 1<<1|1<<0
 ACT_NEXT_DIR      = 1<<3|1<<2
-ACT_TURN_DIR      = 1<<5|1<<4
-ACT_RIGHT         = 0
-ACT_LEFT          = 1
-ACT_UP            = 2
-ACT_DOWN          = 3
+ACT_RIGHT         = 0 ;00 
+ACT_LEFT          = 1 ;01 
+ACT_UP            = 2 ;10 
+ACT_DOWN          = 3 ;11 
+ACT_MOVE_UP_OR_DOWN    = $02 ; 1x
+ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
+
+ACT_TURN          = 1<<7
+ACT_DIR           = 1<<1|1<<0
 
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
   ; dot timer 4s, 3s (level5)
@@ -111,11 +118,12 @@ ACT_DOWN          = 3
     ypos      .byte   ; character y pos - 0..25
     ypos_dir  .byte   ; character y pos direction
     
-    move      .byte   ; bit 7 move, bit 6 turn bit, bit 5-4 turn direction, bit 3-2 next direction, bit 1-0 current direction
+    move      .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
+    turn      .byte   ; bit 7 turn, bit 1-0 turn direction
     sprite    .byte   ; sprite number, offset to sprite tab
 
-    dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde
-    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30,0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
+    dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
+;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30,0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
 
 .macro draw_text _p
