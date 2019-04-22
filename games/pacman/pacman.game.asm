@@ -149,9 +149,9 @@ input_direction: .res 1,0
 
 actors_move:
       ldx #0;actor_pacman
+      jsr pacman_input
       jsr actor_update_charpos
       jsr actor_move
-      jsr pacman_input
       rts
       
       ; .A direction
@@ -212,11 +212,8 @@ actor_move:
       and #<~ACT_MOVE
       sta actors+actor::move,x
 
-      lsr ;set shape of next direction
-      lsr
-      jsr pacman_update_shape
-
-      rts
+      and #ACT_NEXT_DIR       ;set shape of next direction
+      jmp pacman_update_shape
       
 @actor_move_soft:
       lda actors+actor::move,x
@@ -244,19 +241,17 @@ actor_move:
       
 actor_shape:
       lda game_state+GameState::frames
+      lsr
+      lsr
       and #$03
-      bne @exit
-      ldy actors+actor::sprite,x
-      lda sprite_tab_attr+SPRITE_N,y
-      eor #$04
-      sta sprite_tab_attr+SPRITE_N,y
-@exit:
-      rts
-
-pacman_update_shape:
+      sta game_tmp
+      lda actors+actor::move,x
       and #ACT_DIR
       asl
       asl
+      clc
+      adc game_tmp
+pacman_update_shape:
       tay
       lda pacman_shapes,y
       ldy actors+actor::sprite,x
@@ -265,11 +260,25 @@ pacman_update_shape:
 
 pacman_feed:
       ;TODO
+      jsr calc_maze_ptr
+      lda (p_maze)
+      cmp #Char_Food
+      bne @exit
+      lda #$20
+      sta (p_maze)
+      lda actors+actor::xpos,x
+      sta crs_x
+      lda actors+actor::ypos,x
+      sta crs_y
+      jsr gfx_vram_xy
+      lda #$20
+      sta a_vram
+      
       lda #$10
       sta points+3  ;10pts
       jsr add_score
-
-     rts
+@exit:
+      rts
 
       ; in:   .A - direction
       ; out:  .C=0 can move, C=1 can not move to direction
@@ -316,7 +325,7 @@ pacman_input:
       lda input_direction
       ora #ACT_MOVE
       sta actors+actor::move,x
-      jsr pacman_update_shape
+ ;     jsr pacman_update_shape
       
 @set_input_dir_to_next_dir: ; bit 3-2
       lda input_direction
@@ -601,9 +610,9 @@ game_init:
       actor 0, 80, 48, Color_Yellow ;pacman
       
       actor 1, 80, 48,  Color_Blinky  ;blinky
-      actor 2, 120, 80, Color_Pinky  ;pinky
-      actor 3, 140, 110, Color_Inky ;inky
-      actor 4, 160, 160, Color_Clyde ;clyde
+      actor 2, 120, 80, Color_Pinky   ;pinky
+      actor 3, 140, 110, Color_Inky   ;inky
+      actor 4, 160, 160, Color_Clyde  ;clyde
       
       ldx #3
       lda #Char_Superfood
@@ -613,6 +622,8 @@ game_init:
       
       lda #ACT_MOVE|ACT_RIGHT
       sta actors+actor::move
+      lda #231
+      sta actors+actor::dots
       
       lda #STATE_READY
       sta game_state
