@@ -252,10 +252,10 @@ seed:   .BYTE 99
 irqsafe: .res 2, 0
 
 .data
-;list:   .res list_size
-list:
-    .byte list_size
-    .repeat list_size, i
-    .byte i
-    .endrepeat
+list:   .res list_size
+;list:
+;    .byte list_size
+;    .repeat list_size, i
+;    .byte i
+;    .endrepeat
 .segment "STARTUP"
