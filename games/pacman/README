@@ -9,6 +9,28 @@ video:
       -4 chars x - rm blank lines -2, rm credit line -1, shrink score line -1
       -2 chars y - shrink the maze right/left side
 
+      ;1101 0100 11 01 00 111
+      ;1010      11
+      ;
+      
+                                         
+                $08  $09  $0a  $0b  $0c  $0d  $0e  $0f
+               1000 1001 1010 1011 1100 1101 1110 1111
+      11 00 =>  pt                   c    bt
+      11 01 =>  pt                   c    bt
+            eor 111
+      10 00 =>  bt              c    pt
+      10 01 =>  bt              c    pt
+      
+                $07  $06  $05  $04  $03  $02
+               0111 0110 0101 0100 0011 0010
+      01 10 => 
+      01 11
+      00 10 =>  pt   pt              c
+      00 11 =>  pt                   
+      
+      
+      
 ;pacman cornering
   left > right
   12,16  20,24 02 03  

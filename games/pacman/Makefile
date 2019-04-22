@@ -1,8 +1,11 @@
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
-LIBS=../../steckos/lib/steckschwein.a ../../steckos/tools/lib/toollib.a
+LIBS=../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a ../../steckos/tools/lib/toollib.a
 CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include -D_CC65_V2_17_
-CA65FLAGS=-I ../../steckos/asminc -I ../../steckos/kernel
+CA65FLAGS=-I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel
 LDFLAGS=-C ../../steckos/prg.ld65.cfg $(LIBS)
+
+DEFINES=-Dasmunit_char_out=0x200
+TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(DEFINES)
 
 OBJS=pacman.boot.o pacman.intro.o pacman.game.o pacman.gfx.o pacman.sound.o
 
@@ -26,7 +29,13 @@ pacman.game.asm: pacman.maze.inc
 pacman.tiles.bin: pacman.tiles.inc
 	ca65 pacman.tiles.inc
 	ld65 pacman.tiles.o -t none -o $@
+
+test.%.bin: test.%.o $(LIBS) $(<:test.%=%)
+	ld65 $(LDFLAGS) $< $(<:test.%=%) $(LIBS) -o $@
   
+test.%: test.%.bin
+	../../asmunit/asmunit_wrapper.sh $@.bin
+
 #%.o: %.c
 #	cc65 -t none $(CC65FLAGS) -O $<
 #	ca65 $(CA65FLAGS) $(@:.o=.s)

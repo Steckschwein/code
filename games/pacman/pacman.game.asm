@@ -150,47 +150,59 @@ input_direction: .res 1,0
 actors_move:
       ldx #0;actor_pacman
       jsr actor_update_charpos
-      jsr pacman_input
       jsr actor_move
-      
-      ;stz actors+actor::turn,x  ; stop turning
-      ;stz actors+actor::move,x  ; TEST - single step
-      
+      jsr pacman_input
       rts
       
       ; .A direction
 pacman_cornering:
       ldy actors+actor::sprite,x
       pha
+      lda actors+actor::move,x
       and #$01  ;bit 0 set , either +x or +y, down or left
-      bne @l1
-      lda #$06
+      beq @l1
+      lda #$07
 @l1:
-      eor #$06
+      eor #$07
       sta game_tmp2
-      pla ;1010
+      pla
+      
       and #ACT_MOVE_UP_OR_DOWN
-      bne @_up_or_down
-      lda sprite_tab_attr+SPRITE_Y,y
-      bra @l_cmp
-@_up_or_down:
+      bne l_up_or_down
+l_left_or_right:
       lda sprite_tab_attr+SPRITE_X,y
-@l_cmp:
-;      eor game_tmp2 ; 1100 eor 000 1011
+      bra l_compare
+l_up_or_down:
+      lda sprite_tab_attr+SPRITE_Y,y
+l_compare:
+      eor game_tmp2
       and #$07
       cmp #$04    ; 100 - center pos, <100 pre-turn, >100 post-turn
-@exit:
       rts
-
+pacman_center:
+      stz game_tmp2
+      and #ACT_MOVE_UP_OR_DOWN
+      bne l_left_or_right
+      bra l_up_or_down
+      
 actor_move:
+      lda actors+actor::turn,x  ; turning?
+      bpl @actor_move_dir
+      
+      jsr pacman_center
+      bne @actor_turn_soft
+      stz actors+actor::turn,x
+@actor_turn_soft:
+      lda actors+actor::turn,x
+      jsr @actor_move_sprite
+      
+@actor_move_dir:
       lda actors+actor::move,x
-      jsr pacman_cornering
+      jsr pacman_center
       bne @actor_move_soft      ; center reached?
       
       jsr pacman_feed
-      
-;      stz actors+actor::turn,x
-      
+
       lda actors+actor::move,x
       and #ACT_DIR
       jsr actor_can_move_to_direction
@@ -199,17 +211,15 @@ actor_move:
       lda actors+actor::move,x  ;otherwise stop move
       and #<~ACT_MOVE
       sta actors+actor::move,x
+
       lsr ;set shape of next direction
       lsr
-;      jsr pacman_update_shape
+      jsr pacman_update_shape
+
+      rts
       
 @actor_move_soft:
       lda actors+actor::move,x
-      jsr @actor_move_sprite
-@actor_turn_soft:
-      lda actors+actor::turn,x
-      jsr @actor_move_sprite
-
 @actor_move_sprite:
       bpl @exit
       and #ACT_DIR
@@ -227,10 +237,12 @@ actor_move:
       clc
       adc sprite_tab_attr+SPRITE_Y,y
       sta sprite_tab_attr+SPRITE_Y,y
+      
+      jsr actor_shape
 @exit:
       rts
-
-@actor_shape:
+      
+actor_shape:
       lda game_state+GameState::frames
       and #$03
       bne @exit
@@ -238,17 +250,19 @@ actor_move:
       lda sprite_tab_attr+SPRITE_N,y
       eor #$04
       sta sprite_tab_attr+SPRITE_N,y
+@exit:
       rts
-      
+
 pacman_update_shape:
       and #ACT_DIR
+      asl
       asl
       tay
       lda pacman_shapes,y
       ldy actors+actor::sprite,x
       sta sprite_tab_attr+SPRITE_N,y
       rts
-      
+
 pacman_feed:
       ;TODO
       lda #$10
@@ -256,16 +270,6 @@ pacman_feed:
       jsr add_score
 
      rts
-;
-;###-####
-;####-###
-;#####-##
-;######-#
-;###C###-
-;######-#
-;#####-##
-;####-###
-;
 
       ; in:   .A - direction
       ; out:  .C=0 can move, C=1 can not move to direction
@@ -282,37 +286,37 @@ pacman_input:
       sta input_direction
       jsr actor_can_move_to_direction     ; C=0 can move
       bcs @set_input_dir_to_next_dir
-      
+
+;      lda actors+actor::turn,x
+ ;     bmi @exit
+
       ;current dir == input dir ?
       lda actors+actor::move,x
-      cmp input_direction
-      beq @set_input_dir_to_current_dir    ;nothing...
-      ;current dir == inverse input dir ?
       and #ACT_DIR
+      cmp input_direction
+      beq @set_input_dir_to_next_dir    ;nothing...
+      ;current dir == inverse input dir ?
       eor #ACT_MOVE_INVERSE
       cmp input_direction
       beq @set_input_dir_to_current_dir
-      
-      bra @set_input_dir_to_current_dir
+
       lda input_direction
-;      jsr pacman_cornering
-;      beq @set_input_dir_to_current_dir       ; center position, no pre-/post-turn
+      jsr pacman_cornering
+      beq @set_input_dir_to_current_dir       ; center position, no pre-/post-turn
       lda #0
-      bcc @l_turn           ; pre-turn?
-      lda #ACT_MOVE_INVERSE
+      bcc @l_turn           ; C=0 pre-turn?
+      lda #ACT_MOVE_INVERSE ; C=1 post-turn
 @l_turn:
-      eor actors+actor::move,x
+      eor actors+actor::move,x  ; current direction
       and #ACT_DIR
       ora #ACT_TURN
       sta actors+actor::turn,x
       
-;@reset_turn:
-;      stz actors+actor::turn,x
 @set_input_dir_to_current_dir:
-      lda #ACT_MOVE
-      ora input_direction
+      lda input_direction
+      ora #ACT_MOVE
       sta actors+actor::move,x
-;      jsr pacman_update_shape
+      jsr pacman_update_shape
       
 @set_input_dir_to_next_dir: ; bit 3-2
       lda input_direction
@@ -410,7 +414,7 @@ debug:
       sta crs_y
       jsr gfx_vram_xy
       
-      lda game_tmp2
+      lda input_direction
       jsr gfx_hex_digits
       lda actors+actor::move
       jsr gfx_hex_digits
@@ -724,12 +728,6 @@ actor_clyde:
     .byte 0
     
     
-_cornering:
-      .byte $07 ; r
-      .byte $00 ; l
-      .byte $07 ; u
-      .byte $00 ; d
-      
 _vectors:   ; X, Y adjust
 _vec_right:         ;00
       .byte 0,$ff   ; +0 X, -1 Y, screen is rotated 90 degree clockwise ;)
@@ -741,10 +739,10 @@ _vec_down:          ;11
       .byte 1, 0
 
 pacman_shapes:
-      .byte $11*4,$10*4 ;r  000
-      .byte $13*4,$12*4 ;l  010
-      .byte $15*4,$14*4 ;u  100 
-      .byte $17*4,$16*4 ;d  110
+      .byte $10*4+4,$10*4,$18*4,$10*4 ;r  000
+      .byte $12*4+4,$12*4,$18*4,$12*4 ;l  010
+      .byte $14*4+4,$14*4,$18*4,$14*4 ;u  100 
+      .byte $16*4+4,$16*4,$18*4,$16*4 ;d  110
 
 _text_pacman:
       .byte 12,15, "PACMAN",0
