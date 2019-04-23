@@ -1,5 +1,4 @@
       .export game
-      .export game_maze
 
       .include "pacman.inc"
 
@@ -21,18 +20,25 @@
       
 game:
       sei
-      jsr gfx_hires_off
-      
       set_irq game_isr, _save_irq
-      
+game_reset:
+      sei
+      jsr gfx_hires_off
       jsr game_init
       jsr sound_init_game_start
+      
       cli
 
 @waitkey:
       lda keyboard_input
+      
+      cmp #'r'
+      beq game_reset
       cmp #KEY_ESCAPE
       bne @waitkey
+      
+      lda #STATE_EXIT
+      sta game_state+GameState::state
       
       jsr sound_init
       
@@ -290,7 +296,6 @@ pacman_collect:
 @collect_superfood:
       lda #Points_Superfood
       jmp erase_and_score
-      
 @rts:
       rts
 
@@ -306,7 +311,7 @@ erase_and_score:
       sta (p_maze)
       
       pla
-      sta points+3  ;10pts
+      sta points+3
       jmp add_scores
 
       ; in:   .A - direction
@@ -496,8 +501,8 @@ calc_maze_ptr_ay:
       asl
       asl
       ora crs_x;actors+actor::xpos, x
-      clc
-      adc #<game_maze
+      ;clc
+;      adc #<__RAM_LAST__
       sta p_maze+0
       lda crs_y;actors+actor::ypos, x ; .Y * 32
       lsr ; div 8 -> page offset 0-2
@@ -664,15 +669,28 @@ animate_ghosts:
 .endmacro
 
 game_init:
+      ldx #3
+      ldy #0
+:     lda maze,y
+      sta game_maze,y
+      lda maze+$100,y
+      sta game_maze+$100,y
+      lda maze+$200,y
+      sta game_maze+$200,y
+      lda maze+$300,y
+      cpy #2*32
+      bcc @sta
+      lda #Char_Blank
+@sta:
+      sta game_maze+$300,y
+      iny
+      bne :-
+      
       vdp_vram_w (ADDRESS_GFX3_SCREEN)
       lda #<game_maze
       ldy #>game_maze
       ldx #4
       jsr vdp_memcpy
-      vdp_vram_w (ADDRESS_GFX3_SCREEN+4*$100-$20)  ;blank the last line in the "scren page", it's displayed on top of the screen due to display adjust
-      lda #Char_Blank
-      ldx #$20
-      jsr vdp_fills
       
       actor 0, 80, 48, Color_Yellow ;pacman
       actor 1, 80, 48,  Color_Blinky  ;blinky
@@ -693,6 +711,11 @@ game_init:
       
       lda #STATE_READY
       sta game_state
+      stz game_state+GameState::score+0
+      stz game_state+GameState::score+1
+      stz game_state+GameState::score+2
+      stz game_state+GameState::score+3
+      
       rts
 
 sprite_init:
@@ -739,8 +762,8 @@ sprite_tab_color:
 _save_irq:  .res 2
   
 .data
-game_maze:
-      .include "pacman.maze.inc"
+maze:
+  .include "pacman.maze.inc"
 
 joystick_port:    .byte JOY_PORT1
 input_direction:  .res 1,0

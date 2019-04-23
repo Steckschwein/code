@@ -7,6 +7,10 @@
     .include "pacman.inc"
     
 boot:
+      .if DEBUG = 1
+      rts
+      .endif
+      
       sei
       set_irq boot_isr, _save_irq
       cli

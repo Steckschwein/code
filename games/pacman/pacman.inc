@@ -8,6 +8,7 @@
       .include "ym3812.inc"
       .include "kernel_jumptable.inc"
       
+      .import __RAM_LAST__
       ;i/o
       .import joystick_on
       .import joystick_detect
@@ -43,6 +44,9 @@ p_maze=ptr3
 game_tmp=tmp3
 game_tmp2=tmp4
 game_tmp3=tmp4
+
+game_maze=(__RAM_LAST__+$100) & $ff00
+
 
 sprite_pattern=ADDRESS_GFX3_SPRITE_PATTERN
 sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
@@ -91,8 +95,10 @@ STATE_INIT          = 0
 STATE_READY         = 1
 STATE_READY_WAIT    = 1
 STATE_PLAYING       = 2
-STATE_GAMEOVER      = 3
-;STATE_
+STATE_DIED          = 3
+STATE_LEVEL_CLEARED = 4
+STATE_GAME_OVER     = 5
+STATE_EXIT          = $80
 
 
 .struct GameState

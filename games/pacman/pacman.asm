@@ -2,6 +2,7 @@
       .include "appstart.inc"
 
       .import gfx_mode_on
+      .import gfx_mode_off
       .import gfx_init
       .import gfx_display_maze
       
@@ -19,26 +20,23 @@ main:
       
       jsr joystick_on
       jsr sound_init
-;      jsr sound_play
-
-:
+      
       jsr gfx_init
       jsr gfx_mode_on
       
-      .if DEBUG = 0
       jsr boot
-      .endif
       
 @intro:
       jsr init
-      .if DEBUG = 0
       jsr intro
-      .endif
-      bit game_state
+      bit game_state+GameState::state
       bmi @exit
       jsr game
+      bit game_state+GameState::state
+      bmi @exit
       bra @intro
 @exit:
+      jsr gfx_mode_off
       jmp (retvec)
       
 init:

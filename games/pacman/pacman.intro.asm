@@ -18,7 +18,10 @@
 .endmacro
 
 intro:
-      sei
+      .if DEBUG = 1
+        rts
+      .endif
+            sei
 ;      jsr gfx_hires_on
       set_irq intro_isr, _save_irq
       cli

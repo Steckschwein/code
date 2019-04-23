@@ -2,6 +2,7 @@
 
       .export gfx_init
       .export gfx_mode_on
+      .export gfx_mode_off
       .export gfx_vram_xy
       .export gfx_vram_ay
       .export gfx_blank_screen
@@ -24,6 +25,11 @@
       .include "vdp.inc"
       .include "pacman.inc"
 .code
+gfx_mode_off:
+      vdp_sreg 0, v_reg9   ;
+      vdp_sreg 0, v_reg23  ;
+      rts
+      
 gfx_mode_on:
       lda #<vdp_init_bytes
       ldy #>vdp_init_bytes
@@ -36,7 +42,6 @@ gfx_mode_on:
       rts
       
 gfx_init:
-      
 gfx_init_pal:
       vdp_sreg 0, v_reg16
       ldx #0

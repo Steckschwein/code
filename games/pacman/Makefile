@@ -2,7 +2,7 @@ CLIB=../../steckos/clib/lib/steckschwein-clib.a
 LIBS=../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a ../../steckos/tools/lib/toollib.a
 CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include -D_CC65_V2_17_
 CA65FLAGS=-I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel
-LDFLAGS=-C ../../steckos/prg.ld65.cfg $(LIBS)
+LDFLAGS=-C ../../steckos/prg.ld65.cfg -m pacman.map $(LIBS)
 
 DEFINES=-Dasmunit_char_out=0x200
 TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(DEFINES)

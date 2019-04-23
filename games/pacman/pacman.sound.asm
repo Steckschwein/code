@@ -90,14 +90,14 @@ tempo=0
 .endmacro
  
 .macro initvoice chn, initdata
-      ;stz chn+voice::cnt
-      ;stz chn+voice::ix
+      stz chn+voice::ix
+      lda #L64
+      sta chn+voice::cnt
       ldx #2
 :     lda initdata,x
       sta chn+voice::p_note,x
       dex
       bpl :-
-      
 .endmacro
 
 .code
@@ -155,7 +155,7 @@ player_isr:
       rti
 
 sound_play:
-.if DEBUG = 1
+.if DEBUG = 0
       lda sound_play_state
       beq @exit
       ldx #0*.sizeof(voice)
@@ -244,7 +244,8 @@ sound_init_game_start:
       initvoice voice1, sound_game_start_v1
       initvoice voice2, sound_game_start_v2
       
-      inc sound_play_state
+      lda #1
+      sta sound_play_state
       rts
       
 sound_game_start_v1:
