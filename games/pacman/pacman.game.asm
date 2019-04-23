@@ -4,11 +4,13 @@
       .include "pacman.inc"
 
       .import gfx_vram_xy
+      .import gfx_vram_ay
       .import gfx_blank_screen
       .import gfx_hires_off
       .import gfx_digit,gfx_digits
       .import gfx_hex_digits
       .import gfx_text
+      .import gfx_charout
         
       .import sound_init
       .import sound_init_game_start
@@ -64,7 +66,7 @@ game_isr:
 
       dec game_state+GameState::frames
       lda game_state+GameState::frames
-      and #07
+      and #$07
       bne :+
       jsr animate_ghosts
       jsr animate_food
@@ -91,7 +93,7 @@ game_isr_exit:
 game_ready_wait:
       lda game_state
       cmp #STATE_READY_WAIT
-      bne @exit
+      bne @rts
       lda sound_play_state
 ;      bne @detect_joystick
       draw_text _delete_message_1
@@ -100,20 +102,20 @@ game_ready_wait:
       sta game_state
 @detect_joystick:
       jsr joystick_detect
-      beq @exit
+      beq @rts
       sta joystick_port
-@exit:
+@rts:
       rts
       
 game_ready:
       lda game_state
       cmp #STATE_READY
-      bne @exit
+      bne @rts
       draw_text _text_player_one
       draw_text _text_ready
       lda #STATE_READY_WAIT
       sta game_state
-@exit:
+@rts:
       rts
       
 
@@ -201,7 +203,7 @@ actor_move:
       jsr pacman_center
       bne @actor_move_soft      ; center reached?
       
-      jsr pacman_feed
+      jsr pacman_collect
 
       lda actors+actor::move,x
       and #ACT_DIR
@@ -218,7 +220,7 @@ actor_move:
 @actor_move_soft:
       lda actors+actor::move,x
 @actor_move_sprite:
-      bpl @exit
+      bpl @rts
       and #ACT_DIR
       asl
       tay
@@ -236,13 +238,13 @@ actor_move:
       sta sprite_tab_attr+SPRITE_Y,y
       
       jsr actor_shape
-@exit:
+@rts:
       rts
       
 actor_shape:
       lda game_state+GameState::frames
       lsr
-      lsr
+;      lsr
       and #$03
       sta game_tmp
       lda actors+actor::move,x
@@ -258,27 +260,41 @@ pacman_update_shape:
       sta sprite_tab_attr+SPRITE_N,y
       rts
 
-pacman_feed:
-      ;TODO
-      jsr calc_maze_ptr
+pacman_collect:
+      lda actors+actor::xpos,x
+      ldy actors+actor::ypos,x
+      jsr calc_maze_ptr_ay
       lda (p_maze)
       cmp #Char_Food
-      bne @exit
-      lda #$20
-      sta (p_maze)
+      bne :+
+      lda #Points_Food
+      jmp erase_and_score
+:     cmp #Char_Superfood
+      beq @collect_superfood
+      eor #%00000011
+      cmp #Char_Superfood
+      bne @rts
+@collect_superfood:
+      lda #Points_Superfood
+      jmp erase_and_score
+      
+@rts:
+      rts
+
+erase_and_score:
+      pha
       lda actors+actor::xpos,x
       sta crs_x
       lda actors+actor::ypos,x
       sta crs_y
       jsr gfx_vram_xy
-      lda #$20
+      lda #Char_Blank
       sta a_vram
+      sta (p_maze)
       
-      lda #$10
+      pla
       sta points+3  ;10pts
-      jsr add_score
-@exit:
-      rts
+      jmp add_scores
 
       ; in:   .A - direction
       ; out:  .C=0 can move, C=1 can not move to direction
@@ -291,13 +307,13 @@ actor_can_move_to_direction:
       
 pacman_input:
       jsr get_input
-      bcc @exit                           ; key/joy input ?
+      bcc @rts                           ; key/joy input ?
       sta input_direction
       jsr actor_can_move_to_direction     ; C=0 can move
       bcs @set_input_dir_to_next_dir
 
 ;      lda actors+actor::turn,x
- ;     bmi @exit
+ ;     bmi @rts
 
       ;current dir == input dir ?
       lda actors+actor::move,x
@@ -336,7 +352,7 @@ pacman_input:
       and #<~ACT_NEXT_DIR
       ora game_tmp
       sta actors+actor::move,x
-@exit:
+@rts:
       rts
 
 actor_update_charpos_direction:
@@ -399,7 +415,7 @@ get_input:
       jsr joystick_read
       and #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
       cmp #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
-      beq @exit; nothing pressed
+      beq @rts; nothing pressed
       sec
       bit #JOY_RIGHT
       beq @r
@@ -409,7 +425,7 @@ get_input:
       beq @d
       bit #JOY_UP
       beq @u
-@exit:
+@rts:
       clc
       rts
       
@@ -449,23 +465,25 @@ debug:
       rts
 
 calc_maze_ptr_direction:
-      inx ; TODO FIXME maybe little too hacky
-      jsr calc_maze_ptr
-      dex
-      rts
-      
-calc_maze_ptr:
-      lda actors+actor::ypos, x; ;.Y * 32
+      lda actors+actor::xpos_dir,x
+      ldy actors+actor::ypos_dir,x
+      ;.A x pos
+      ;.Y y pos
+calc_maze_ptr_ay:
+      sta crs_x
+      sty crs_y
+@calc_maze_ptr:
+      lda crs_y;actors+actor::ypos, x; ;.Y * 32
       asl
       asl
       asl
       asl
       asl
-      ora actors+actor::xpos, x
+      ora crs_x;actors+actor::xpos, x
       clc
       adc #<game_maze
       sta p_maze+0
-      lda actors+actor::ypos, x ; .Y * 32
+      lda crs_y;actors+actor::ypos, x ; .Y * 32
       lsr ; div 8 -> page offset 0-2
       lsr
       lsr
@@ -483,23 +501,42 @@ game_demo:
       draw_text _text_demo
       rts
 @l1:  bit #$08
-      beq @exit
+      beq @rts
       draw_text _delete_message_1
       draw_text _delete_message_2
-@exit:
+@rts:
       rts
 
 game_playing:
       lda game_state
       cmp #STATE_PLAYING
-      bne @exit
+      bne @rts
 
       jsr game_demo
       
       jsr actors_move
-      jsr draw_score
-      
-@exit:
+      jsr draw_scores
+@rts:
+      rts
+
+add_scores:
+      jsr add_score
+      ldy #0
+@cmp:
+      lda game_state+GameState::highscore,y
+      cmp game_state+GameState::score,y
+      bcc @copy
+      iny
+      cpy #4
+      bne @cmp
+      rts
+@copy:
+      ldy #3
+@l0:
+      lda game_state+GameState::score,y
+      sta game_state+GameState::highscore,y
+      dey
+      bpl @l0
       rts
       
 add_score:
@@ -513,21 +550,46 @@ add_score:
       bpl @l
       cld
       rts
-      
+
 draw_score:
-      lda #0
       sta crs_x
-      lda #20
-      sta crs_y
-      lda game_state+GameState::score+0
+      sty crs_y
+      ldy #0
+@skip_zeros:
+      lda (p_game),y
+      beq @skip ;00 ?
+      bit #$f0  ;0? ?
+      bne @digits
+      dec crs_y ;output the 0-9 only
       jsr gfx_digit
-      lda game_state+GameState::score+1
-      jsr gfx_digits
-      lda game_state+GameState::score+2
-      jsr gfx_digits
-      lda game_state+GameState::score+3
-      jsr gfx_digits
+      bra @digits_inc
+@skip:
+      dec crs_y ;skip digits
+      dec crs_y
+      iny
+      cpy #04
+      bne @skip_zeros
       rts
+@digits:
+      lda (p_game),y
+      jsr gfx_digits
+@digits_inc:
+      iny
+      cpy #04
+      bne @digits
+      rts
+      
+      
+draw_scores:
+      SetVector (game_state+GameState::score), p_game
+      lda #0
+      ldy #21
+      jsr draw_score
+      SetVector (game_state+GameState::highscore), p_game
+      lda #0
+      ldy #8
+      jmp draw_score
+      
 game_gameover:
 
       rts
@@ -552,21 +614,28 @@ move_ghosts:
       inc sprite_tab_attr+SPRITE_Y+0*4
       inc sprite_tab_attr+SPRITE_Y+1*4
       rts
-
+      
+      
 animate_food:
-      lda food
-      eor #1<<3|1<<0
-      ora #1<<2|1<<1
-      sta food
-      tax
-      vdp_vram_w (ADDRESS_GFX3_SCREEN+4+1*32)
-      stx a_vram
-      vdp_vram_w (ADDRESS_GFX3_SCREEN+24+1*32)
-      stx a_vram
-      vdp_vram_w (ADDRESS_GFX3_SCREEN+4+24*32)
-      stx a_vram
-      vdp_vram_w (ADDRESS_GFX3_SCREEN+24+24*32)
-      stx a_vram
+      lda game_state+GameState::frames
+      and #$07
+      bne @rts
+      ldx #0
+@l1:  lda superfood,x
+      inx
+      ldy superfood,x
+      jsr calc_maze_ptr_ay
+      lda (p_maze)
+      cmp #Char_Blank
+      beq @next
+      eor #$03
+      sta (p_maze)
+      jsr gfx_charout
+@next:
+      inx
+      cpx #superfood_end-superfood
+      bne @l1
+@rts:
       rts
       
       
@@ -613,12 +682,6 @@ game_init:
       actor 2, 120, 80, Color_Pinky   ;pinky
       actor 3, 140, 110, Color_Inky   ;inky
       actor 4, 160, 160, Color_Clyde  ;clyde
-      
-      ldx #3
-      lda #Char_Superfood
-:     sta food,x
-      dex
-      bpl :-
       
       lda #ACT_MOVE|ACT_RIGHT
       sta actors+actor::move
@@ -693,13 +756,15 @@ joystick_port:
 
 points:
     .res 4, 0
-      
-food:
-    .tag actor
-    .tag actor
-    .tag actor
-    .tag actor
-    
+
+
+superfood:
+    .byte 4,1;,Char_Superfood
+    .byte 24,1;,Char_Superfood
+    .byte 4,24;,Char_Superfood
+    .byte 24,24;,Char_Superfood
+superfood_end:
+
 actors:
 actor_pacman:
     ;.tag actor

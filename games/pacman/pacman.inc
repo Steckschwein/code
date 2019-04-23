@@ -19,7 +19,7 @@
       ;sound
       .import opl2_init
       .import opl2_reg_write
-      .importzp ptr1,ptr2
+      .importzp ptr1,ptr2,ptr3
       .importzp tmp1,tmp2,tmp3,tmp4,tmp5
         
 .define DEBUG 0
@@ -36,9 +36,9 @@ p_video=ptr1
 video_tmp=tmp1
 p_sound=ptr2
 sound_tmp=tmp2
-p_game1=ptr3
-p_maze=p_game1
-p_game2=ptr4
+
+p_game=ptr4
+p_maze=ptr3
 
 game_tmp=tmp3
 game_tmp2=tmp4
@@ -70,9 +70,16 @@ Color_Food    = $0b
 Color_Border  = Color_Blue
 
 Char_Food           = $cc   ;1100 1100
-Char_Superfood      = $ce   ;1100 1110
+
+                            ;1100 1101
+Char_Superfood      = $ce   ;1100 1110 $cd/$ce
+
 Char_Blank          = $c7   ;1100 0111
 Char_Bg             = $cf   ;1100 1111
+
+; scoring
+Points_Food         = $10 ;BCD values
+Points_Superfood    = $50 ;
 
 .define Char_Pts $2a,$2b,$2c
 

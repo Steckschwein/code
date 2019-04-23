@@ -3,12 +3,14 @@
       .export gfx_init
       .export gfx_mode_on
       .export gfx_vram_xy
+      .export gfx_vram_ay
       .export gfx_blank_screen
       .export gfx_digits,gfx_digit
       .export gfx_hex_digits
       
       
       .export gfx_text
+      .export gfx_charout
       .export gfx_hires_on
       .export gfx_hires_off
       
@@ -79,6 +81,9 @@ gfx_blank_screen:
 ;   in:
 ;     crs_x - x 0..31
 ;     crs_y - y 0..26
+gfx_vram_ay:
+      sta crs_x
+      sty crs_y
 gfx_vram_xy:
       lda crs_y ;.Y * 32
       asl
@@ -135,12 +140,20 @@ gfx_digit:
       jsr gfx_vram_xy
       pla
       and #$0f
-      ora	#'0'
-      vdp_wait_l 20
+      ora #'0'
+      vdp_wait_l 12
       sta a_vram
       dec crs_y
       rts
 
+gfx_charout:
+      pha
+      jsr gfx_vram_xy
+      pla
+      vdp_wait_l 8
+      sta a_vram
+      rts
+      
 gfx_text:
       ldy #0
       lda (p_video),y
@@ -153,7 +166,7 @@ gfx_text:
       jsr gfx_vram_xy
       vdp_wait_l (6+6+2)
       lda (p_video),y
-      beq @exit
+      beq @rts
       cmp #WAIT
       beq @wait
       cmp #WAIT2
@@ -169,7 +182,7 @@ gfx_text:
 @next:
       iny
       bne @l1
-@exit:
+@rts:
       rts
 
 wait:
