@@ -22,7 +22,7 @@
       .importzp ptr1,ptr2,ptr3
       .importzp tmp1,tmp2,tmp3,tmp4,tmp5
         
-.define DEBUG 0
+.define DEBUG 1
 
 .macro bgcolor color
   .if DEBUG

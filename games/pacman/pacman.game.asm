@@ -512,7 +512,7 @@ game_playing:
       cmp #STATE_PLAYING
       bne @rts
 
-      jsr game_demo
+      ;jsr game_demo
       
       jsr actors_move
       jsr draw_scores
