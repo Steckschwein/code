@@ -40,7 +40,7 @@
 tmp0 = $32
 tmp1 = $33
 old_y = $34
-list_size = 254
+list_size = 212
 
 .code
 
