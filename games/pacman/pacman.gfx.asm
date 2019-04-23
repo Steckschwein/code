@@ -29,8 +29,9 @@ gfx_mode_on:
       ldy #>vdp_init_bytes
       ldx #(vdp_init_bytes_end-vdp_init_bytes)-1
       jsr vdp_init_reg
-      vdp_sreg $0, v_reg18
-      vdp_sreg $0, v_reg23
+      
+      vdp_sreg $0, v_reg18  ;x/y screen adjust
+      vdp_sreg <-2, v_reg23  ;y offset
       rts
       
 gfx_init:
@@ -214,7 +215,7 @@ vdp_init_bytes:
 			.byte	>(ADDRESS_GFX3_SPRITE_PATTERN>>3)
 			.byte	0
 			.byte v_reg8_VR	; VR - 64k VRAM TODO set per define
-			.byte v_reg9_nt | v_reg9_ln
+			.byte v_reg9_nt | v_reg9_ln ; ntsc on, 212 lines
 			.byte <.hiword(ADDRESS_GFX3_COLOR<<2) ; color table high, a16-14
       .byte <.hiword(ADDRESS_GFX3_SPRITE<<1); sprite attribute high
 vdp_init_bytes_end:

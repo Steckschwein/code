@@ -145,7 +145,7 @@ SPRITE_N=2
 SPRITE_C=3
 
 SPRITE_INVISIBLE=$bf
-SPRITE_OFF=$d0
+SPRITE_OFF=$d0    ; in 192 line mode +8 ($d8) in 212 line mode
 
 SPRITE_EC=1<<7  ;early clock bit
 

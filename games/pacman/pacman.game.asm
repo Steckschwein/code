@@ -30,9 +30,7 @@ game:
       cli
 
 @waitkey:
-      bra @waitkey
-      
-      jsr krn_getkey
+      lda keyboard_input
       cmp #KEY_ESCAPE
       bne @waitkey
       
@@ -56,7 +54,7 @@ game_isr:
       bit	a_vreg
       bpl	game_isr_exit
       
-      bgcolor Color_Gray
+      bgcolor Color_Inky
       
       vdp_vram_w sprite_attr
       lda #<sprite_tab_attr
@@ -147,7 +145,10 @@ game_ready:
       ;   y - soft move to turn direction
       
 
-input_direction: .res 1,0
+keyboard_read:
+      jsr krn_getkey
+      sta keyboard_input
+      rts
 
 actors_move:
       ldx #0;actor_pacman
@@ -218,6 +219,8 @@ actor_move:
       jmp pacman_update_shape
       
 @actor_move_soft:
+      jsr actor_shape
+
       lda actors+actor::move,x
 @actor_move_sprite:
       bpl @rts
@@ -232,19 +235,24 @@ actor_move:
       sta sprite_tab_attr+SPRITE_X,y
       ply
       lda _vectors+1, y
+      sta game_tmp
       ldy actors+actor::sprite, x
+@y_add:
       clc
       adc sprite_tab_attr+SPRITE_Y,y
+      cmp #SPRITE_OFF+$08; 212 line mode
+      bne :+
+      lda game_tmp
+      eor #$10
+      bra @y_add
+:
       sta sprite_tab_attr+SPRITE_Y,y
-      
-      jsr actor_shape
 @rts:
       rts
       
 actor_shape:
       lda game_state+GameState::frames
       lsr
-;      lsr
       and #$03
       sta game_tmp
       lda actors+actor::move,x
@@ -325,6 +333,11 @@ pacman_input:
       cmp input_direction
       beq @set_input_dir_to_current_dir
 
+      lda actors+actor::ypos            ;is tunnel ?
+      beq @rts                          ;ypos=0
+      cmp #26                           ;... or >=26
+      bcs @rts                          ;ignore input
+      
       lda input_direction
       jsr pacman_cornering
       beq @set_input_dir_to_current_dir       ; center position, no pre-/post-turn
@@ -392,7 +405,7 @@ actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
       
       ; C=0 if any valid key or joystick input, A=ACT_xxx
 get_input:
-      jsr krn_getkey
+      jsr keyboard_read
       bcc @joystick
       cmp #KEY_CRSR_RIGHT
       beq @r
@@ -467,8 +480,6 @@ debug:
 calc_maze_ptr_direction:
       lda actors+actor::xpos_dir,x
       ldy actors+actor::ypos_dir,x
-      ;.A x pos
-      ;.Y y pos
 calc_maze_ptr_ay:
       sta crs_x
       sty crs_y
@@ -674,7 +685,16 @@ animate_ghosts:
 .endmacro
 
 game_init:
-      jsr display_maze
+      vdp_vram_w (ADDRESS_GFX3_SCREEN)
+      lda #<game_maze
+      ldy #>game_maze
+      ldx #4
+      jsr vdp_memcpy
+      vdp_vram_w (ADDRESS_GFX3_SCREEN+4*$100-$20)  ;blank the last line in the "scren page", it's displayed on top of the screen due to display adjust
+      lda #Char_Blank
+      ldx #$20
+      jsr vdp_fills
+      
       
       actor 0, 80, 48, Color_Yellow ;pacman
       
@@ -683,31 +703,19 @@ game_init:
       actor 3, 140, 110, Color_Inky   ;inky
       actor 4, 160, 160, Color_Clyde  ;clyde
       
-      lda #ACT_MOVE|ACT_RIGHT
+      lda #ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT ; move left, next dir left
       sta actors+actor::move
       lda #231
       sta actors+actor::dots
       
       lda #STATE_READY
       sta game_state
-      
-      rts
-      
-display_maze:
-      vdp_vram_w ADDRESS_GFX3_SCREEN
-      lda #<game_maze
-      ldy #>game_maze
-      ldx #4
-      jsr vdp_memcpy
-      
       rts
 
 sprite_tab_attr:
-;      .byte 96, 188,   $18*4, 0
-;      .byte 4, 12+28*8,     $10*4, 0 ;offset y=+4,y=+4
-      .byte 4+1*8, 4+1*8,     $18*4, 0 ;offset y=+4,y=+4
+      .byte 96, 188,  $18*4, 0 ;offset y=+4,y=+4
 
-      .byte $d9, $d9, 0, 0    ; blank
+      .byte $d0, $d9, 0, 0    ; blank
       .byte 95, 92,   2*4, 0  ; 2,3/9x4 left, 0,1/8x4 right, 4/$ax4 up, 6/$bx4 down, 
       .byte 95, 92,   9*4, 0
       .byte 95, 116,  6*4, 0
@@ -750,13 +758,11 @@ _save_irq:  .res 2
 game_maze:
       .include "pacman.maze.inc"
 
-joystick_port:
-      .byte JOY_PORT1
+joystick_port:    .byte JOY_PORT1
+input_direction:  .res 1,0
+keyboard_input:   .res 1,0
       
-
-points:
-    .res 4, 0
-
+points:           .res 4, 0
 
 superfood:
     .byte 4,1;,Char_Superfood
