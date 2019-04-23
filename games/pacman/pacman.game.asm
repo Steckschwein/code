@@ -83,11 +83,16 @@ game_isr:
       jsr sound_play
       
       bgcolor Color_Yellow
+      
+      lda game_state+GameState::frames
+      and #$03
+;      bne :+
       jsr game_ready
       jsr game_ready_wait
       jsr game_playing
       jsr game_welldone
       jsr game_gameover
+:
 
 game_isr_exit:
 
@@ -163,16 +168,16 @@ keyboard_read:
 
 actors_move:
       ldx #0;actor_pacman
-      jsr pacman_input
       jsr actor_update_charpos
+      jsr pacman_input
       jsr actor_move
       rts
       
-      ; .A direction
+      ; .A new direction
+      ; .Y direction
 pacman_cornering:
-      ldy actors+actor::sprite,x
       pha
-      lda actors+actor::move,x
+      tya
       and #$01  ;bit 0 set , either +x or +y, down or left
       beq @l1
       lda #$07
@@ -180,6 +185,9 @@ pacman_cornering:
       eor #$07
       sta game_tmp2
       pla
+      
+l_test:
+      ldy actors+actor::sprite,x
       
       and #ACT_MOVE_UP_OR_DOWN
       bne l_up_or_down
@@ -195,23 +203,26 @@ l_compare:
       rts
 pacman_center:
       stz game_tmp2
-      and #ACT_MOVE_UP_OR_DOWN
-      bne l_left_or_right
-      bra l_up_or_down
+      eor #ACT_MOVE_UP_OR_DOWN
+      bra l_test
       
 actor_move:
       lda actors+actor::turn,x  ; turning?
       bpl @actor_move_dir
-      
+      lda actors+actor::turn,x
       jsr pacman_center
       bne @actor_turn_soft
-      stz actors+actor::turn,x
+      lda actors+actor::turn,x
+      and #<~ACT_TURN
+      sta actors+actor::turn,x
 @actor_turn_soft:
       lda actors+actor::turn,x
       jsr @actor_move_sprite
       
 @actor_move_dir:
       lda actors+actor::move,x
+      bpl @rts
+      
       jsr pacman_center
       bne @actor_move_soft      ; center reached?
       
@@ -228,7 +239,7 @@ actor_move:
 
       and #ACT_NEXT_DIR       ;set shape of next direction
       jmp pacman_update_shape
-      
+
 @actor_move_soft:
       jsr actor_shape
 
@@ -349,6 +360,7 @@ pacman_input:
       bcs @rts                          ;ignore input
       
       lda input_direction
+      ldy actors+actor::move,x
       jsr pacman_cornering
       beq @set_input_dir_to_current_dir       ; center position, no pre-/post-turn
       lda #0
@@ -364,7 +376,6 @@ pacman_input:
       lda input_direction
       ora #ACT_MOVE
       sta actors+actor::move,x
- ;     jsr pacman_update_shape
       
 @set_input_dir_to_next_dir: ; bit 3-2
       lda input_direction
