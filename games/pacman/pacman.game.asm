@@ -41,9 +41,13 @@ game:
       cli
       rts
 
+game_gameover:
+      rts
+
 game_welldone:
       ; just update palette color
       rts
+      
       
 color_welldone:
 .res  Color_Gray
@@ -76,6 +80,7 @@ game_isr:
       jsr game_ready
       jsr game_ready_wait
       jsr game_playing
+      jsr game_welldone
       jsr game_gameover
 
 game_isr_exit:
@@ -600,33 +605,7 @@ draw_scores:
       lda #0
       ldy #8
       jmp draw_score
-      
-game_gameover:
-
-      rts
-
-move_ghosts:
-      inc sprite_tab_attr+SPRITE_X+2*4
-      inc sprite_tab_attr+SPRITE_X+3*4
-      inc sprite_tab_attr+SPRITE_X+2*4
-      inc sprite_tab_attr+SPRITE_X+3*4
-
-      inc sprite_tab_attr+SPRITE_X+4*4
-      inc sprite_tab_attr+SPRITE_X+5*4
-
-      dec sprite_tab_attr+SPRITE_X+6*4
-      dec sprite_tab_attr+SPRITE_X+7*4
-      dec sprite_tab_attr+SPRITE_X+6*4
-      dec sprite_tab_attr+SPRITE_X+7*4
-      
-      dec sprite_tab_attr+SPRITE_X+8*4
-      dec sprite_tab_attr+SPRITE_X+9*4
-
-      inc sprite_tab_attr+SPRITE_Y+0*4
-      inc sprite_tab_attr+SPRITE_Y+1*4
-      rts
-      
-      
+            
 animate_food:
       lda game_state+GameState::frames
       and #$07
@@ -695,13 +674,17 @@ game_init:
       ldx #$20
       jsr vdp_fills
       
-      
       actor 0, 80, 48, Color_Yellow ;pacman
-      
       actor 1, 80, 48,  Color_Blinky  ;blinky
       actor 2, 120, 80, Color_Pinky   ;pinky
       actor 3, 140, 110, Color_Inky   ;inky
       actor 4, 160, 160, Color_Clyde  ;clyde
+      
+      ldx #(sprite_init_end-sprite_init)-1
+:     lda sprite_init,x
+      sta sprite_tab_attr,x
+      dex
+      bpl :-
       
       lda #ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT ; move left, next dir left
       sta actors+actor::move
@@ -712,9 +695,8 @@ game_init:
       sta game_state
       rts
 
-sprite_tab_attr:
+sprite_init:
       .byte 96, 188,  $18*4, 0 ;offset y=+4,y=+4
-
       .byte $d0, $d9, 0, 0    ; blank
       .byte 95, 92,   2*4, 0  ; 2,3/9x4 left, 0,1/8x4 right, 4/$ax4 up, 6/$bx4 down, 
       .byte 95, 92,   9*4, 0
@@ -724,7 +706,10 @@ sprite_tab_attr:
       .byte 111, 116, $a*4, 0
       .byte 79, 116,  4*4, 0
       .byte 79, 116,  $a*4, 0
-      
+sprite_init_end:
+
+sprite_tab_attr:
+      .res  (sprite_init_end-sprite_init),0
       
 _sprite_tab_attr:
       vdp_wait_l
@@ -754,7 +739,6 @@ sprite_tab_color:
 _save_irq:  .res 2
   
 .data
-.align 256
 game_maze:
       .include "pacman.maze.inc"
 

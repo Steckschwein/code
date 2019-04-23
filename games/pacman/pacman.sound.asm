@@ -155,7 +155,7 @@ player_isr:
       rti
 
 sound_play:
-.if DEBUG = 0
+.if DEBUG = 1
       lda sound_play_state
       beq @exit
       ldx #0*.sizeof(voice)
