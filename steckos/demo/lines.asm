@@ -24,6 +24,7 @@
 .include "vdp.inc"
 .include "fcntl.inc"
 .include "zeropage.inc"
+.include "kernel.inc"
 .include "kernel_jumptable.inc"
 .include "appstart.inc"
 
@@ -87,9 +88,9 @@ vdp_isr:
 		
 	lda #bg_color
 	sta color
-;	jsr draw_vertices
+	jsr draw_vertices
 
-;	jsr animate_vertices	
+  jsr animate_vertices	
 	
 	lda #$ff
 	sta color
@@ -187,6 +188,4 @@ color: .res 1,$ff
 irqsafe: .res 2, 0
 .data
 .include "lines_data.inc"
-
 vertices_end:
- .segment "STARTUP"
