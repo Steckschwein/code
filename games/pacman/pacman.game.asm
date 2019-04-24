@@ -64,35 +64,21 @@ game_isr:
       bit	a_vreg
       bpl	game_isr_exit
       
-      bgcolor Color_Inky
-      
-      vdp_vram_w sprite_attr
-      lda #<sprite_tab_attr
-      ldy #>sprite_tab_attr
-      ldx #4*2*5
-      jsr vdp_memcpys
-
       dec game_state+GameState::frames
-      lda game_state+GameState::frames
-      and #$07
-      bne :+
-      jsr animate_ghosts
-      jsr animate_food
-:     
-      bgcolor Color_Cyan
-      jsr sound_play
       
       bgcolor Color_Yellow
-      
-      lda game_state+GameState::frames
-      and #$03
-;      bne :+
       jsr game_ready
       jsr game_ready_wait
       jsr game_playing
       jsr game_welldone
       jsr game_gameover
-:
+      
+      bgcolor Color_Inky
+      vdp_vram_w sprite_attr
+      lda #<sprite_tab_attr
+      ldy #>sprite_tab_attr
+      ldx #6*2*4;<(sprite_tab_attr_end-sprite_tab_attr)
+      jsr vdp_memcpys
 
 game_isr_exit:
 
@@ -104,12 +90,24 @@ game_isr_exit:
       restore
       rti
 
+game_ready:
+      lda game_state
+      cmp #STATE_READY
+      bne @rts
+      draw_text _text_player_one
+      draw_text _text_ready
+      lda #STATE_READY_WAIT
+      sta game_state
+@rts:
+      rts
+      
 game_ready_wait:
       lda game_state
       cmp #STATE_READY_WAIT
       bne @rts
+;      jsr sound_play
       lda sound_play_state
-;      bne @detect_joystick
+ ;     bne @detect_joystick
       draw_text _delete_message_1
       draw_text _delete_message_2
       lda #STATE_PLAYING
@@ -121,16 +119,6 @@ game_ready_wait:
 @rts:
       rts
       
-game_ready:
-      lda game_state
-      cmp #STATE_READY
-      bne @rts
-      draw_text _text_player_one
-      draw_text _text_ready
-      lda #STATE_READY_WAIT
-      sta game_state
-@rts:
-      rts
       
 
       ; key/joy input ?
@@ -236,13 +224,12 @@ actor_move:
       lda actors+actor::move,x  ;otherwise stop move
       and #<~ACT_MOVE
       sta actors+actor::move,x
-
-      and #ACT_NEXT_DIR       ;set shape of next direction
+      and #ACT_NEXT_DIR         ;set shape of next direction
       jmp pacman_update_shape
 
 @actor_move_soft:
-      jsr actor_shape
-
+      jsr pacman_shape_move
+      
       lda actors+actor::move,x
 @actor_move_sprite:
       bpl @rts
@@ -263,16 +250,16 @@ actor_move:
       clc
       adc sprite_tab_attr+SPRITE_Y,y
       cmp #SPRITE_OFF+$08; 212 line mode
-      bne :+
+      bne @y_sta
       lda game_tmp
       eor #$10
       bra @y_add
-:
+@y_sta:
       sta sprite_tab_attr+SPRITE_Y,y
 @rts:
       rts
       
-actor_shape:
+pacman_shape_move:
       lda game_state+GameState::frames
       lsr
       and #$03
@@ -288,6 +275,31 @@ pacman_update_shape:
       lda pacman_shapes,y
       ldy actors+actor::sprite,x
       sta sprite_tab_attr+SPRITE_N,y
+      rts
+      
+actor_shape_move:
+      lda game_state+GameState::frames
+      lsr
+      lsr
+      lsr
+      and #$01
+      sta game_tmp
+      lda actors+actor::move,x
+      and #ACT_DIR
+      asl
+      asl
+      clc
+      adc game_tmp
+actor_update_shape:
+      tay
+      phy
+      lda ghost_shapes,y
+      ldy actors+actor::sprite,x
+      sta sprite_tab_attr+SPRITE_N,y
+      ply
+      lda ghost_shapes+2,y
+      ldy actors+actor::sprite,x
+      sta sprite_tab_attr+4+SPRITE_N,y
       rts
 
 pacman_collect:
@@ -487,8 +499,6 @@ debug:
       jsr gfx_hex_digits
       lda actors+actor::ypos_dir
       jsr gfx_hex_digits
-      lda (p_maze)
-      jsr gfx_hex_digits
       lda sprite_tab_attr+SPRITE_X
       jsr gfx_hex_digits
       lda sprite_tab_attr+SPRITE_Y
@@ -545,9 +555,11 @@ game_playing:
       bne @rts
 
       ;jsr game_demo
-      
       jsr actors_move
+      jsr animate_ghosts
+      jsr animate_food
       jsr draw_scores
+      
 @rts:
       rts
 
@@ -646,43 +658,29 @@ animate_food:
       
       
 animate_ghosts:
-      ;test
-      lda sprite_tab_attr+SPRITE_N+0*4
-      eor #04
-;      sta sprite_tab_attr+SPRITE_N+0*4
-      
-      lda sprite_tab_attr+SPRITE_N+8*4
-      eor #04
-      sta sprite_tab_attr+SPRITE_N+8*4
-      lda sprite_tab_attr+SPRITE_N+2*4
-      eor #04
-      sta sprite_tab_attr+SPRITE_N+2*4
-      lda sprite_tab_attr+SPRITE_N+4*4
-      eor #04
-      sta sprite_tab_attr+SPRITE_N+4*4
-      lda sprite_tab_attr+SPRITE_N+6*4
-      eor #04
-      sta sprite_tab_attr+SPRITE_N+6*4
+      ldx #1*.sizeof(actor)
+      jsr actor_shape_move
+      ldx #2*.sizeof(actor)
+      jsr actor_shape_move
+      ldx #3*.sizeof(actor)
+      jsr actor_shape_move
+      ldx #4*.sizeof(actor)
+      jsr actor_shape_move
       rts
       
-.macro actor _nr, _x, _y, _color
-      .local _nr,_x,_y,_color
-      vdp_vram_w (sprite_attr+_nr*2*4)
-      ldx #_x
-      ldy #_y
-      jsr sprite_tab_attrs
+.macro actor_colors _nr, _color
+      .local _nr,_color
       ;color tab
-      vdp_vram_w (sprite_color+_nr*2*16)
-      lda #_color
-      jsr sprite_tab_color
-      lda #$40 | $0e  ; CC | 2nd color
+      vdp_vram_w (sprite_color+_nr*16)
+      lda #(_color)
       jsr sprite_tab_color
 .endmacro
 
 game_init:
       ldx #3
       ldy #0
-:     lda maze,y
+@init_maze:
+      lda maze,y
       sta game_maze,y
       lda maze+$100,y
       sta game_maze+$100,y
@@ -692,10 +690,9 @@ game_init:
       cpy #2*32
       bcc @sta
       lda #Char_Blank
-@sta:
-      sta game_maze+$300,y
+@sta: sta game_maze+$300,y
       iny
-      bne :-
+      bne @init_maze
       
       vdp_vram_w (ADDRESS_GFX3_SCREEN)
       lda #<game_maze
@@ -703,20 +700,69 @@ game_init:
       ldx #4
       jsr vdp_memcpy
       
-      actor 0, 80, 48, Color_Yellow ;pacman
-      actor 1, 80, 48,  Color_Blinky  ;blinky
-      actor 2, 120, 80, Color_Pinky   ;pinky
-      actor 3, 140, 110, Color_Inky   ;inky
-      actor 4, 160, 160, Color_Clyde  ;clyde
+      vdp_vram_w (sprite_color+0*16)
+      lda #Color_Yellow
+      jsr sprite_tab_color
+      lda #Color_Bg
+      jsr sprite_tab_color
       
-      ldx #(sprite_init_end-sprite_init)-1
-:     lda sprite_init,x
-      sta sprite_tab_attr,x
+      lda #Color_Blinky
+      jsr sprite_tab_color
+      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+      jsr sprite_tab_color
+      
+      lda #Color_Inky
+      jsr sprite_tab_color
+      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+      jsr sprite_tab_color
+
+      lda #Color_Pinky
+      jsr sprite_tab_color
+      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+      jsr sprite_tab_color
+
+      lda #Color_Clyde
+      jsr sprite_tab_color
+      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+      jsr sprite_tab_color
+      
+      ldx #5*2*4
+:     stz sprite_tab_attr,x
       dex
-      bpl :-
+      bne :-
       
-      lda #ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT ; move left, next dir left
-      sta actors+actor::move
+      ldy #0
+init:
+      phy
+      tya
+      asl
+      asl
+      tax
+      asl
+      tay
+      lda sprite_init_n+0,x
+      sta sprite_tab_attr+0+SPRITE_X,y
+      sta sprite_tab_attr+4+SPRITE_X,y
+      lda sprite_init_n+1,x
+      sta sprite_tab_attr+0+SPRITE_Y,y
+      sta sprite_tab_attr+4+SPRITE_Y,y
+      lda #0
+      sta sprite_tab_attr+0+SPRITE_N,y
+      sta sprite_tab_attr+4+SPRITE_N,y
+      lda sprite_init_n+2,x
+      sta actors+actor::move,y
+      tya
+      sta actors+actor::sprite,y
+      
+      ply
+      iny
+      cpy #5
+      bne init
+
+      stz sprite_tab_attr+1*4+SPRITE_X
+      stz sprite_tab_attr+1*4+SPRITE_Y
+      stz sprite_tab_attr+1*4+SPRITE_N
+      
       lda #231
       sta actors+actor::dots
       
@@ -729,39 +775,27 @@ game_init:
       
       rts
 
-sprite_init:
-      .byte 96, 188,  $18*4, 0 ;offset y=+4,y=+4
-      .byte $d0, $d9, 0, 0    ; blank
-      .byte 95, 92,   2*4, 0  ; 2,3/9x4 left, 0,1/8x4 right, 4/$ax4 up, 6/$bx4 down, 
-      .byte 95, 92,   9*4, 0
-      .byte 95, 116,  6*4, 0
-      .byte 95, 116,  $b*4, 0
-      .byte 111, 116, 4*4, 0
-      .byte 111, 116, $a*4, 0
-      .byte 79, 116,  4*4, 0
-      .byte 79, 116,  $a*4, 0
-sprite_init_end:
+sprite_init_n: ;x,y,init direction,color
+      .byte 188,96,   ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT, Color_Yellow ;offset y=+4,y=+4  ; pacman
+      .byte 92,95,    ACT_LEFT, Color_Blinky
+      .byte 116,111,  ACT_UP,   Color_Inky
+      .byte 116,95,   ACT_DOWN, Color_Pinky
+      .byte 116,79,   ACT_UP,   Color_Clyde
+sprite_init_n_end:
 
-sprite_tab_attr:
-      .res  (sprite_init_end-sprite_init),0
-      
-_sprite_tab_attr:
-      vdp_wait_l
-      sty a_vram
-      vdp_wait_l
-      stx a_vram
-      vdp_wait_l
-      sta a_vram
-      vdp_wait_l
-      stz a_vram
-      rts
-      
-sprite_tab_attrs:
-      lda #0
-      jsr _sprite_tab_attr
-      lda #8*4
-      jmp _sprite_tab_attr
-      
+;sprite_init: ;x,y,init direction,color
+      .byte 96, 188,  $18*4, 0 ;offset y=+4,y=+4  ; pacman
+      .byte $df, $df, 0,0
+      xoffs=0
+      .byte 95, xoffs+92,   2*4, 0  ; 2,3/9x4 left, 0,1/8x4 right, 4/$ax4 up, 6/$bx4 down, 
+      .byte 95, xoffs+92,   9*4, 0  ;eyes
+      .byte 111, xoffs+116, 4*4, 0  ;
+      .byte 111, xoffs+116, $a*4, 0
+      .byte 95, xoffs+116,  6*4, 0  ;
+      .byte 95, xoffs+116,  $b*4, 0
+      .byte 79, xoffs+116,  4*4, 0  ;
+      .byte 79, xoffs+116,  $a*4, 0
+
 sprite_tab_color:
       ldx #16     ;16 colors per line
 @l1:  vdp_wait_l
@@ -789,45 +823,6 @@ superfood:
     .byte 24,24;,Char_Superfood
 superfood_end:
 
-actors:
-actor_pacman:
-    ;.tag actor
-    .byte 0   ;xpos
-    .byte 0   ;xpos_dir
-    .byte 0   ;ypos
-    .byte 0   ;ypos_dir
-    .byte 0   ;move
-    .byte 0   ;turn
-    .byte 0   ;sprite
-    .byte 0   ;dots
-    
-actor_ghosts:
-actor_blinky:
-    ;.tag actor
-    .byte 12  ;ypos
-    .byte 12  ;xpos
-    .byte 0   ;state
-    .byte 0
-actor_inky:
-;    .tag actor
-    .byte 12  ;ypos
-    .byte 12  ;xpos
-    .byte 0   ;state
-    .byte 0
-actor_pinky:
-;    .tag actor
-    .byte 12  ;ypos
-    .byte 12  ;xpos
-    .byte 0   ;state
-    .byte 0
-actor_clyde:
-;    .tag actor
-    .byte 12  ;ypos
-    .byte 12  ;xpos
-    .byte 0   ;state
-    .byte 0
-    
-    
 _vectors:   ; X, Y adjust
 _vec_right:         ;00
       .byte 0,$ff   ; +0 X, -1 Y, screen is rotated 90 degree clockwise ;)
@@ -839,10 +834,16 @@ _vec_down:          ;11
       .byte 1, 0
 
 pacman_shapes:
-      .byte $10*4+4,$10*4,$18*4,$10*4 ;r  000
-      .byte $12*4+4,$12*4,$18*4,$12*4 ;l  010
-      .byte $14*4+4,$14*4,$18*4,$14*4 ;u  100 
-      .byte $16*4+4,$16*4,$18*4,$16*4 ;d  110
+      .byte $10*4+4,$10*4,$18*4,$10*4 ;r  00
+      .byte $12*4+4,$12*4,$18*4,$12*4 ;l  01
+      .byte $14*4+4,$14*4,$18*4,$14*4 ;u  10 
+      .byte $16*4+4,$16*4,$18*4,$16*4 ;d  11
+
+ghost_shapes:
+      .byte $00*4,$00*4+4,$08*4,$08*4 ;r  00
+      .byte $02*4,$02*4+4,$09*4,$09*4 ;l  01
+      .byte $04*4,$04*4+4,$0a*4,$0a*4 ;u  10 
+      .byte $06*4,$06*4+4,$0b*4,$0b*4 ;d  11
 
 _text_pacman:
       .byte 12,15, "PACMAN",0

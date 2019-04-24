@@ -45,9 +45,6 @@ game_tmp=tmp3
 game_tmp2=tmp4
 game_tmp3=tmp4
 
-game_maze=(__RAM_LAST__+$100) & $ff00
-
-
 sprite_pattern=ADDRESS_GFX3_SPRITE_PATTERN
 sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
 sprite_attr   =ADDRESS_GFX3_SPRITE
@@ -68,13 +65,11 @@ Color_Blinky  = Color_Red
 Color_Inky    = Color_Cyan
 Color_Clyde   = Color_Orange
 Color_Pinky   = Color_Pink
-
 Color_Food    = $0b
-
 Color_Border  = Color_Blue
 
-Char_Food           = $cc   ;1100 1100
 
+Char_Food           = $cc   ;1100 1100
                             ;1100 1101
 Char_Superfood      = $ce   ;1100 1110 $cd/$ce
 
@@ -100,17 +95,9 @@ STATE_LEVEL_CLEARED = 4
 STATE_GAME_OVER     = 5
 STATE_EXIT          = $80
 
-
-.struct GameState
-  state       .byte
-  credit      .byte
-  frames      .byte
-  score       .res 4
-  highscore   .res 4
-.endstruct
-
-SPRITE_CENTER     = $04
+SPRITE_NR_PACMAN    = 0*4
 SPRITE_ADJUST     = $08
+
 ACT_MOVE          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_RIGHT         = 0 ;00 
@@ -122,6 +109,14 @@ ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
 
 ACT_TURN          = 1<<7
 ACT_DIR           = 1<<1|1<<0
+
+.struct GameState
+  state       .byte
+  credit      .byte
+  frames      .byte
+  score       .res 4
+  highscore   .res 4
+.endstruct
 
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
   ; dot timer 4s, 3s (level5)
@@ -143,3 +138,8 @@ ACT_DIR           = 1<<1|1<<0
       SetVector _p, ptr1
       jsr gfx_text
 .endmacro
+
+game_maze=(__RAM_LAST__+$100) & $ff00
+actors=game_maze+$0400
+sprite_tab_attr=actors+5*.sizeof(actor)
+sprite_tab_attr_end=sprite_tab_attr+5*4*2

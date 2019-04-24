@@ -1,4 +1,7 @@
-
+TODO:
+- 
+- optimize sprite init
+      
 video:
   - original paxman, namco 1980
     - 224x288 => 28x36 => 28x31 -5 (score)    => 1px 196x252

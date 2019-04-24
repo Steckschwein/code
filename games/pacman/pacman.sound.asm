@@ -155,7 +155,6 @@ player_isr:
       rti
 
 sound_play:
-.if DEBUG = 0
       lda sound_play_state
       beq @exit
       ldx #0*.sizeof(voice)
@@ -163,7 +162,6 @@ sound_play:
       ldx #1*.sizeof(voice)
       jsr sound_play_voice
 @exit:
-.endif
       rts
 
 sound_play_state:
@@ -244,8 +242,7 @@ sound_init_game_start:
       initvoice voice1, sound_game_start_v1
       initvoice voice2, sound_game_start_v2
       
-      lda #1
-      sta sound_play_state
+      inc sound_play_state
       rts
       
 sound_game_start_v1:
