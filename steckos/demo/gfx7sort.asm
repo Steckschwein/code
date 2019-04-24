@@ -53,45 +53,22 @@ main:
         lda #>list
         sta ptr1+1
 
-		jsr	krn_textui_disable			;disable textui
-		jsr	gfxui_on
+        jsr	krn_textui_disable			;disable textui
+        jsr	gfxui_on
 @loop:
-
         jsr shuffle_list
         jsr display_list
 
         jsr SORT8
 
-
-		keyin
+        keyin
         cmp #'q'
         beq @exit
+        
         jmp @loop
 @exit:
-		jsr	gfxui_off
-
-		jsr	krn_display_off			;restore textui
-		jsr	krn_textui_init
-		jsr	krn_textui_enable
-		cli
-
-		jmp (retvec)
-
-blend_isr:
-        pha
-        vdp_reg 15,0
-        vnops
-        bit a_vreg
-        bpl @0
-
-        lda	#%11100000
-        jsr vdp_bgcolor
-
-        lda	#Black
-        jsr vdp_bgcolor
-@0:
-        pla
-        rti
+        jsr	krn_textui_enable
+        jmp (retvec)
 
 gfxui_on:
         sei
@@ -107,23 +84,11 @@ gfxui_on:
 
         lda #%00000011
         jsr vdp_gfx7_blank
-
-
-
-        copypointer  $fffe, irqsafe
-        SetVector  blend_isr, $fffe
+        cli
         rts
 
 @end:
         vdp_reg 14,0
-
-        cli
-        rts
-
-gfxui_off:
-        sei
-
-        copypointer  irqsafe, $fffe
         cli
         rts
 
