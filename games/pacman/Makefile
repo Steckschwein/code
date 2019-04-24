@@ -19,11 +19,13 @@ clean:
 %.res: %.xpm
 	python3 ../utils/xpm_ca65_16bit.py $< > $@
   
-pacman.gfx.asm: pacman.ghosts.res pacman.pacman.res pacman.tiles.rot.inc pacman.tiles.colors.inc
+pacman.gfx.o: pacman.ghosts.res pacman.pacman.res pacman.tiles.rot.inc pacman.tiles.colors.inc
 
-pacman.game.asm: pacman.maze.inc
+pacman.game.o: pacman.maze.inc
 
-%.o: %.asm ../../steckos/asminc/*.inc pacman.inc
+%.asm: pacman.inc
+
+%.o: %.asm ../../steckos/asminc/*.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
 pacman.tiles.bin: pacman.tiles.inc

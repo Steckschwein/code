@@ -30,8 +30,7 @@ game_reset:
       cli
 
 @waitkey:
-      lda keyboard_input
-      
+      jsr keyboard_read
       cmp #'r'
       beq game_reset
       cmp #KEY_ESCAPE
@@ -47,13 +46,9 @@ game_reset:
       cli
       rts
 
-game_gameover:
+game_game_over:
       rts
 
-game_welldone:
-      ; just update palette color
-      rts
-      
       
 color_welldone:
 .res  Color_Gray
@@ -64,14 +59,14 @@ game_isr:
       bit	a_vreg
       bpl	game_isr_exit
       
-      dec game_state+GameState::frames
+      inc game_state+GameState::frames
       
       bgcolor Color_Yellow
       jsr game_ready
       jsr game_ready_wait
       jsr game_playing
-      jsr game_welldone
-      jsr game_gameover
+      jsr game_level_cleared
+      jsr game_game_over
       
       bgcolor Color_Inky
       vdp_vram_w sprite_attr
@@ -119,7 +114,11 @@ game_ready_wait:
 @rts:
       rts
       
-      
+keyboard_read:
+      jsr krn_getkey
+      sta keyboard_input
+      rts
+
 
       ; key/joy input ?
       ;   (input direction != current direction)?
@@ -148,11 +147,6 @@ game_ready_wait:
       ; turn bit on?
       ;   y - soft move to turn direction
       
-
-keyboard_read:
-      jsr krn_getkey
-      sta keyboard_input
-      rts
 
 actors_move:
       ldx #0;actor_pacman
@@ -313,8 +307,7 @@ pacman_collect:
       jmp erase_and_score
 :     cmp #Char_Superfood
       beq @collect_superfood
-      eor #%00000011
-      cmp #Char_Superfood
+      cmp #Char_Superfood-1
       bne @rts
 @collect_superfood:
       lda #Points_Superfood
@@ -323,6 +316,7 @@ pacman_collect:
       rts
 
 erase_and_score:
+      dec actors+actor::dots,x
       pha
       lda actors+actor::xpos,x
       sta crs_x
@@ -438,7 +432,7 @@ actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
       
       ; C=0 if any valid key or joystick input, A=ACT_xxx
 get_input:
-      jsr keyboard_read
+      lda keyboard_input
       bcc @joystick
       cmp #KEY_CRSR_RIGHT
       beq @r
@@ -503,7 +497,8 @@ debug:
       jsr gfx_hex_digits
       lda sprite_tab_attr+SPRITE_Y
       jsr gfx_hex_digits
-      
+      lda actors+actor::dots
+      jsr gfx_hex_digits
       plx
       pla
       rts
@@ -553,15 +548,45 @@ game_playing:
       lda game_state
       cmp #STATE_PLAYING
       bne @rts
-
       ;jsr game_demo
       jsr actors_move
       jsr animate_ghosts
       jsr animate_food
       jsr draw_scores
+      lda actors+actor::dots
+      bne @rts
       
-@rts:
-      rts
+      lda #Sprite_Pattern_Pacman
+      sta sprite_tab_attr+SPRITE_NR_PACMAN+SPRITE_N
+      lda #SPRITE_OFF+$08; 212 line mode
+      sta sprite_tab_attr+SPRITE_NR_GHOST+SPRITE_Y
+      lda #STATE_LEVEL_CLEARED
+      sta game_state+GameState::state
+      stz game_state+GameState::frames
+@rts: rts
+
+game_level_cleared:
+      lda game_state+GameState::state
+      cmp #STATE_LEVEL_CLEARED
+      bne @rts
+      
+      lda game_state+GameState::frames
+      cmp #$88
+      bne @rotate
+      jsr game_init
+      lda #STATE_READY
+      sta game_state+GameState::state
+      lda #0
+@rotate:
+      lsr
+      lsr
+      lsr
+      and #$03
+      tay
+      .import gfx_rotate_pal
+      jsr gfx_rotate_pal
+      
+@rts: rts
 
 add_scores:
       jsr add_score
@@ -569,7 +594,7 @@ add_scores:
 @cmp:
       lda game_state+GameState::highscore,y
       cmp game_state+GameState::score,y
-      bcc @copy
+      bcc @copy ; highscore < score ?
       iny
       cpy #4
       bne @cmp
@@ -763,7 +788,7 @@ init:
       stz sprite_tab_attr+1*4+SPRITE_Y
       stz sprite_tab_attr+1*4+SPRITE_N
       
-      lda #231
+      lda #MAX_DOTS
       sta actors+actor::dots
       
       lda #STATE_READY

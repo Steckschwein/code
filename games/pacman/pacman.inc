@@ -95,8 +95,11 @@ STATE_LEVEL_CLEARED = 4
 STATE_GAME_OVER     = 5
 STATE_EXIT          = $80
 
-SPRITE_NR_PACMAN    = 0*4
+SPRITE_NR_PACMAN  = 0*4
+SPRITE_NR_GHOST   = 1*4
 SPRITE_ADJUST     = $08
+
+Sprite_Pattern_Pacman = $18*4
 
 ACT_MOVE          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2

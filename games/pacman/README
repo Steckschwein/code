@@ -1,6 +1,9 @@
 TODO:
-- 
-- optimize sprite init
+- ghost ai
+-- red zone
+-- tunnel zone
+- pacman sprint - speed to original differs, so add some px if contiguous move to a direction
+- optimize sprite init and reorder, pacman to lower order ghosts have to overlapp
       
 video:
   - original paxman, namco 1980

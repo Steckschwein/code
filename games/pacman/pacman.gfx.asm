@@ -40,14 +40,28 @@ gfx_mode_on:
       vdp_sreg <-2, v_reg23  ;y offset
       
       rts
+
+.export gfx_rotate_pal
+gfx_pacman_colors_offset:
+.byte Color_Blue<<1, Color_Light_Blue<<1, Color_Gray<<1, Color_Light_Blue<<1
+gfx_rotate_pal:
+      vdp_sreg Color_Blue, v_reg16 ; rotate blue 
+      ldx gfx_pacman_colors_offset,y
+gfx_write_pal:
+      vdp_wait_s
+      lda pacman_colors+0, x
+      sta a_vregpal
+      vdp_wait_s
+      lda pacman_colors+1, x
+      sta a_vregpal
+      rts
       
 gfx_init:
 gfx_init_pal:
       vdp_sreg 0, v_reg16
       ldx #0
-:     vdp_wait_s
-      lda pacman_colors, x
-      sta a_vregpal
+:     jsr gfx_write_pal
+      inx
       inx
       cpx #2*16
       bne :-
