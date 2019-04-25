@@ -28,18 +28,15 @@
 .include "appstart.inc"
 
 
-; draw some pixels using vdp_gfx7_set_pixel, which uses the v9958 PSET command
+; draw some pixels using vdp_gfx7_set_pixel_cmd, which uses the v9958 PSET command
 
 .import vdp_gfx7_on
 .import vdp_gfx7_blank
-; .import vdp_gfx7_set_pixel_n
-.import vdp_gfx7_set_pixel
+;.import vdp_gfx7_set_pixel
 .import vdp_gfx7_set_pixel_cmd
 .import vdp_display_off
-.import vdp_memcpy
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
-.import hexout
 
 appstart $1000
 
