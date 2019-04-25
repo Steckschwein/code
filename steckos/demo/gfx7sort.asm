@@ -26,17 +26,17 @@
 
 .import vdp_gfx7_on
 .import vdp_gfx7_blank
+; .import vdp_gfx7_set_pixel_n
 .import vdp_gfx7_set_pixel
+;.import vdp_gfx7_set_pixel_cmd
 .import vdp_display_off
+;.import vdp_memcpy
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
+;.import hexout
+;.export char_out=krn_chrout
 
 .importzp ptr1
-pt_x = $10
-pt_y = $12
-ht_x = $14
-ht_y = $16
-
 tmp0 = $32
 tmp1 = $33
 old_y = $34
@@ -53,45 +53,45 @@ main:
         lda #>list
         sta ptr1+1
 
-        lda #0
-        sta pt_x
-        stz pt_x+1
+		jsr	krn_textui_disable			;disable textui
+		jsr	gfxui_on
+@loop:
 
-        lda #0
-        sta pt_y
-        lda #1
-        sta pt_y+1
+        jsr shuffle_list
+        jsr display_list
 
-        lda #0
-        sta ht_x
-        lda #0
-        sta ht_x+1
-
-        lda #100
-        sta ht_y
-        lda #0
-        sta ht_y+1
+        jsr SORT8
 
 
-        jsr	krn_textui_disable			;disable textui
-        jsr	gfxui_on
-
-        jsr vdp_gfx7_line
-
-;@loop:
-        ;jsr shuffle_list
-        ;jsr display_list
-;
-        ;jsr SORT8
-
-        keyin
-        ;cmp #'q'
-        ;beq @exit
-
-        ;jmp @loop
+		keyin
+        cmp #'q'
+        beq @exit
+        jmp @loop
 @exit:
-        jsr	krn_textui_enable
-        jmp (retvec)
+		jsr	gfxui_off
+
+		jsr	krn_display_off			;restore textui
+		jsr	krn_textui_init
+		jsr	krn_textui_enable
+		cli
+
+		jmp (retvec)
+
+blend_isr:
+        pha
+        vdp_reg 15,0
+        vnops
+        bit a_vreg
+        bpl @0
+
+        lda	#%11100000
+        jsr vdp_bgcolor
+
+        lda	#Black
+        jsr vdp_bgcolor
+@0:
+        pla
+        rti
 
 gfxui_on:
         sei
@@ -107,11 +107,23 @@ gfxui_on:
 
         lda #%00000011
         jsr vdp_gfx7_blank
-        cli
+
+
+
+        copypointer  $fffe, irqsafe
+        SetVector  blend_isr, $fffe
         rts
 
 @end:
         vdp_reg 14,0
+
+        cli
+        rts
+
+gfxui_off:
+        sei
+
+        copypointer  irqsafe, $fffe
         cli
         rts
 
@@ -230,46 +242,6 @@ draw_sort_bar:
         jsr draw_bar
         restore
         rts
-
-
-vdp_gfx7_line:
-    phx
-    pha
-
-    vdp_reg 17,36
-
-    ldx #0
-@loop:
-    vnops
-    lda pt_x,x
-    sta a_vregi
-    inx
-    cpx #8
-    bne @loop
-
-    vnops
-    pla
-    sta a_vregi
-
-    vnops
-    lda #0
-    sta a_vregi
-
-    vnops
-    lda #v_cmd_line
-    sta a_vregi
-
-    vnops
-
-    vdp_reg 15,2
-@wait:
-    vnops
-    lda a_vreg
-    ror
-    bcs @wait
-
-    plx
-    rts
 
 seed:   .BYTE 242
 
