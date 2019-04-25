@@ -62,7 +62,7 @@ main:
 		lda #0
 		sta ht_y+1
 
-		ldx #21
+;		ldx #21
 
 		jsr	krn_textui_disable			;disable textui
 		jsr	gfxui_on
