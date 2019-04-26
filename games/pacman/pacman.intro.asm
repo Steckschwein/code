@@ -40,7 +40,7 @@ intro:
 @wait_credit:
       jsr krn_getkey
       cmp #'c'          ; increment credit
-;      bne @wait_credit
+      bne @wait_credit
       
       jsr credit_inc
       
@@ -54,8 +54,9 @@ intro:
       cmp #'1'
       beq @start_1up
       cmp #'c'          ; increment credit
-     ; bne @wait_start1up
-      
+      bne @wait_start1up
+      jsr credit_inc
+.if DEBUG
       lda game_state+GameState::frames
       and #WAIT
       bne @wait_start1up
@@ -64,7 +65,7 @@ intro:
       lda game_state+GameState::credit
       cmp #$99
       beq @start_1up
-      
+.endif
       bra @wait_start1up
       
 @start_1up:
