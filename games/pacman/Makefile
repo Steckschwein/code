@@ -7,7 +7,7 @@ LDFLAGS=-C ../../steckos/prg.ld65.cfg -m pacman.map $(LIBS)
 DEFINES=-Dasmunit_char_out=0x200
 TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(DEFINES)
 
-OBJS=pacman.boot.o pacman.intro.o pacman.game.o pacman.gfx.o pacman.sound.o
+OBJS=pacman.boot.o pacman.intro.o pacman.ai.o pacman.game.o pacman.gfx.o pacman.sound.o
 
 .PHONY: all clean
 

@@ -24,6 +24,9 @@
       .importzp tmp1,tmp2,tmp3,tmp4,tmp5
         
 .define DEBUG 0
+.define BOOT 0
+.define INTRO 0
+
 
 .macro bgcolor color
   .if DEBUG
@@ -32,6 +35,35 @@
   .endif
 .endmacro
 
+.macro draw_text _p
+      SetVector _p, ptr1
+      jsr gfx_text
+.endmacro
+
+
+.struct GameState
+  state       .byte
+  credit      .byte
+  frames      .byte
+  score       .res 4
+  highscore   .res 4
+.endstruct
+
+  ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
+  ; dot timer 4s, 3s (level5)
+.struct actor ; !!! do not change order of attributes !!!
+    xpos      .byte   ; character x pos - 0..31
+    xpos_dir  .byte   ; character x pos direction
+    ypos      .byte   ; character y pos - 0..25
+    ypos_dir  .byte   ; character y pos direction
+    
+    move      .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
+    turn      .byte   ; bit 7 turn, bit 1-0 turn direction
+    sprite    .byte   ; sprite number, offset to sprite tab
+
+    dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
+;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30,0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
+.endstruct
 
 p_video=ptr1
 video_tmp=tmp1
@@ -111,6 +143,11 @@ GHOST_FRIGHTENED  = 3;
 
 Sprite_Pattern_Pacman = $18*4
 
+ACTOR_BLINKY  = 1*.sizeof(actor)
+ACTOR_INKY    = 2*.sizeof(actor)
+ACTOR_PINKY   = 3*.sizeof(actor)
+ACTOR_CLYDE   = 4*.sizeof(actor)
+
 ACT_MOVE          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_RIGHT         = 0 ;00 
@@ -122,35 +159,6 @@ ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
 
 ACT_TURN          = 1<<7
 ACT_DIR           = 1<<1|1<<0
-
-.struct GameState
-  state       .byte
-  credit      .byte
-  frames      .byte
-  score       .res 4
-  highscore   .res 4
-.endstruct
-
-  ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
-  ; dot timer 4s, 3s (level5)
-.struct actor ; !!! do not change order of attributes !!!
-    xpos      .byte   ; character x pos - 0..31
-    xpos_dir  .byte   ; character x pos direction
-    ypos      .byte   ; character y pos - 0..25
-    ypos_dir  .byte   ; character y pos direction
-    
-    move      .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
-    turn      .byte   ; bit 7 turn, bit 1-0 turn direction
-    sprite    .byte   ; sprite number, offset to sprite tab
-
-    dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
-;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30,0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
-.endstruct
-
-.macro draw_text _p
-      SetVector _p, ptr1
-      jsr gfx_text
-.endmacro
 
 game_maze=(__RAM_LAST__+$100) & $ff00
 actors=game_maze+$0400

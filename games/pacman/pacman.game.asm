@@ -16,6 +16,11 @@
       .import sound_play
       .import sound_play_state
       
+      .import ai_blinky
+      .import ai_inky
+      .import ai_pinky
+      .import ai_clyde
+      
       .import game_state
       
 game:
@@ -85,13 +90,12 @@ game_ready:
       draw_text _text_ready
 .if DEBUG = 0
       jsr sound_play
-.endif
       lda game_state+GameState::frames
       and #$7f
       bne @detect_joystick
+.endif
 
       draw_text _delete_message_1
-      draw_text _delete_message_2
       jsr game_init_sprites
       lda #STATE_READY_WAIT
       sta game_state+GameState::state
@@ -110,6 +114,7 @@ game_ready_wait:
       lda sound_play_state
       bne @rts
 .endif
+      draw_text _delete_message_2
       lda #STATE_PLAYING
       sta game_state+GameState::state
 @rts: rts
@@ -156,7 +161,20 @@ actors_move:
       jsr actor_update_charpos
       jsr pacman_input
       jsr actor_move
+      
+      ldx #ACTOR_BLINKY
+      jsr ghost_move
+      ldx #ACTOR_INKY
+      jsr ghost_move
+      ldx #ACTOR_PINKY
+      jsr ghost_move
+      ldx #ACTOR_CLYDE
+      jsr ghost_move
       rts
+      
+ghost_move:
+      jsr actor_update_charpos
+      jmp actor_move_dir
       
       ; .A new direction
 pacman_cornering:
@@ -185,49 +203,39 @@ l_compare:
       and #$07
       cmp #$04    ; 100 - center pos, <100 pre-turn, >100 post-turn
       rts
-pacman_center:
+actor_center:
       stz game_tmp2
       eor #ACT_MOVE_UP_OR_DOWN
       bra l_test
       
 actor_move:
       lda actors+actor::turn,x  ; turning?
-      bpl @actor_move_dir
+      bpl actor_move_dir
       lda actors+actor::turn,x
-      jsr pacman_center
+      jsr actor_center
       bne @actor_turn_soft
       lda actors+actor::turn,x
       and #<~ACT_TURN
       sta actors+actor::turn,x
 @actor_turn_soft:
       lda actors+actor::turn,x
-      jsr @actor_move_sprite
+      jsr actor_move_sprite
       
-@actor_move_dir:
+actor_move_dir:
       lda actors+actor::move,x
       bpl @rts
       
-      jsr pacman_center
-      bne @actor_move_soft      ; center reached?
+      phx
+      jsr actor_strategy
+      plx 
       
-      jsr pacman_collect
+@rts: rts
 
-      lda actors+actor::move,x
-      and #ACT_DIR
-      jsr actor_can_move_to_direction
-      bcc @actor_move_soft  ; C=0, can move to
-      
-      lda actors+actor::move,x  ;otherwise stop move
-      and #<~ACT_MOVE
-      sta actors+actor::move,x
-      and #ACT_NEXT_DIR         ;set shape of next direction
-      jmp pacman_update_shape
-
-@actor_move_soft:
+actor_move_soft:
       jsr pacman_shape_move
       
       lda actors+actor::move,x
-@actor_move_sprite:
+actor_move_sprite:
       bpl @rts
       and #ACT_DIR
       asl
@@ -238,6 +246,7 @@ actor_move:
       clc
       adc sprite_tab_attr+SPRITE_X,y
       sta sprite_tab_attr+SPRITE_X,y
+      sta sprite_tab_attr+4+SPRITE_X,y
       ply
       lda _vectors+1, y
       sta game_tmp
@@ -252,8 +261,8 @@ actor_move:
       bra @y_add
 @y_sta:
       sta sprite_tab_attr+SPRITE_Y,y
-@rts:
-      rts
+      sta sprite_tab_attr+4+SPRITE_Y,y
+@rts: rts
       
 pacman_shape_move:
       lda game_state+GameState::frames
@@ -297,6 +306,27 @@ actor_shape_move:
       sta sprite_tab_attr+4+SPRITE_N,y
       rts
 
+pacman_move:
+      tya
+      tax
+      jsr actor_center
+      bne @actor_move_soft      ; center reached?
+
+      jsr pacman_collect
+      
+      lda actors+actor::move,x
+      and #ACT_DIR
+      jsr actor_can_move_to_direction
+      bcc @actor_move_soft  ; C=0, can move to
+      
+      lda actors+actor::move,x  ;otherwise stop move
+      and #<~ACT_MOVE
+      sta actors+actor::move,x
+      and #ACT_NEXT_DIR         ;set shape of next direction
+      jmp pacman_update_shape
+@actor_move_soft:
+      jmp actor_move_soft
+      
 pacman_collect:
       lda actors+actor::xpos,x
       ldy actors+actor::ypos,x
@@ -313,8 +343,7 @@ pacman_collect:
 @collect_superfood:
       lda #Points_Superfood
       jmp erase_and_score
-@rts:
-      rts
+@rts: rts
 
 erase_and_score:
       dec actors+actor::dots,x
@@ -419,7 +448,6 @@ actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
       lsr
       lsr
       sta actors+actor::xpos,x
-      
       lda sprite_tab_attr+SPRITE_Y,y
       clc
       adc #SPRITE_ADJUST  ; y adjust
@@ -427,7 +455,6 @@ actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
       lsr
       lsr
       sta actors+actor::ypos,x
-      
       rts
       
       
@@ -685,7 +712,7 @@ animate_food:
       
       
 animate_ghosts:
-      ldx #1*.sizeof(actor)
+      ldx #ACTOR_BLINKY
       jsr actor_shape_move
       ldx #2*.sizeof(actor)
       jsr actor_shape_move
@@ -817,27 +844,18 @@ game_init_sprites:
       stz sprite_tab_attr+1*4+SPRITE_Y
       stz sprite_tab_attr+1*4+SPRITE_N
       rts
-      
+     
+ 
 sprite_init_n: ;x,y,init direction,color
       .byte 188,96,   ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT, Color_Yellow ;offset y=+4,y=+4  ; pacman
-      .byte 92,95,    ACT_LEFT, Color_Blinky
-      .byte 116,111,  ACT_UP,   Color_Inky
-      .byte 116,95,   ACT_DOWN, Color_Pinky
-      .byte 116,79,   ACT_UP,   Color_Clyde
+      .byte 92,95,    ACT_MOVE|ACT_LEFT, Color_Blinky
+;      .byte 116,111,  ACT_MOVE|ACT_UP,   Color_Inky
+       .byte 116,108,  ACT_MOVE|ACT_UP,   Color_Inky
+;      .byte 116,95,   ACT_DOWN, Color_Pinky
+      .byte 116,92,   ACT_MOVE|ACT_DOWN, Color_Pinky
+;      .byte 116,79,   ACT_UP,   Color_Clyde
+      .byte 116,76,   ACT_MOVE|ACT_UP,   Color_Clyde
 sprite_init_n_end:
-
-;sprite_init: ;x,y,init direction,color
-      .byte 96, 188,  $18*4, 0 ;offset y=+4,y=+4  ; pacman
-      .byte $df, $df, 0,0
-      xoffs=0
-      .byte 95, xoffs+92,   2*4, 0  ; 2,3/9x4 left, 0,1/8x4 right, 4/$ax4 up, 6/$bx4 down, 
-      .byte 95, xoffs+92,   9*4, 0  ;eyes
-      .byte 111, xoffs+116, 4*4, 0  ;
-      .byte 111, xoffs+116, $a*4, 0
-      .byte 95, xoffs+116,  6*4, 0  ;
-      .byte 95, xoffs+116,  $b*4, 0
-      .byte 79, xoffs+116,  4*4, 0  ;
-      .byte 79, xoffs+116,  $a*4, 0
 
 sprite_tab_color:
       ldx #16     ;16 colors per line
@@ -846,6 +864,47 @@ sprite_tab_color:
       dex
       bne @l1
       rts
+
+ai_ghost:
+      tya
+      tax
+      jsr actor_center
+      bne @soft      ; center reached?
+
+      lda actors+actor::move,x
+      and #ACT_DIR
+      jsr actor_can_move_to_direction
+      bcc @soft  ; C=0, can move to
+      
+      lda actors+actor::move,x
+      eor #ACT_DIR ;? inverse
+:     sta game_tmp
+      jsr actor_can_move_to_direction
+      lda game_tmp
+      eor #$01     ; ?left right?
+      bcs :-
+      lda actors+actor::move,x  ;otherwise stop move
+      and #<~ACT_DIR
+      ora game_tmp
+      sta actors+actor::move,x
+      rts
+@soft:
+      jmp actor_move_soft
+
+actor_strategy:
+     txa
+     tay
+     lsr
+     lsr
+     tax
+     jmp (actor_strategy_tab,x)
+
+actor_strategy_tab:
+      .word pacman_move
+      .word ai_ghost
+      .word ai_ghost
+      .word ai_ghost
+      .word ai_ghost
 
 _save_irq:  .res 2
   
