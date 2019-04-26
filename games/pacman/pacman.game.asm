@@ -21,13 +21,12 @@
 game:
       sei
       set_irq game_isr, _save_irq
-game_reset:
-      sei
       jsr gfx_hires_off
-      jsr game_init
-      jsr sound_init_game_start
-      
       cli
+
+game_reset:
+      lda #STATE_INIT
+      sta game_state+GameState::state
 
 @waitkey:
       jsr keyboard_read
@@ -46,33 +45,26 @@ game_reset:
       cli
       rts
 
-game_game_over:
-      rts
-
-      
-color_welldone:
-.res  Color_Gray
-  
-      
 game_isr:
       save
       bit	a_vreg
       bpl	game_isr_exit
       
+      bgcolor Color_Yellow
+      jsr game_init
       inc game_state+GameState::frames
       
-      bgcolor Color_Yellow
       jsr game_ready
       jsr game_ready_wait
       jsr game_playing
       jsr game_level_cleared
       jsr game_game_over
       
-      bgcolor Color_Inky
-      vdp_vram_w sprite_attr
+      bgcolor Color_Cyan
+      vdp_vram_w VRAM_SPRITE_ATTR
       lda #<sprite_tab_attr
       ldy #>sprite_tab_attr
-      ldx #6*2*4;<(sprite_tab_attr_end-sprite_tab_attr)
+      ldx #5*2*4
       jsr vdp_memcpys
 
 game_isr_exit:
@@ -86,32 +78,43 @@ game_isr_exit:
       rti
 
 game_ready:
-      lda game_state
+      lda game_state+GameState::state
       cmp #STATE_READY
       bne @rts
       draw_text _text_player_one
       draw_text _text_ready
-      lda #STATE_READY_WAIT
-      sta game_state
-@rts:
-      rts
-      
-game_ready_wait:
-      lda game_state
-      cmp #STATE_READY_WAIT
-      bne @rts
-;      jsr sound_play
-      lda sound_play_state
- ;     bne @detect_joystick
+.if DEBUG = 0
+      jsr sound_play
+.endif
+      lda game_state+GameState::frames
+      and #$7f
+      bne @detect_joystick
+
       draw_text _delete_message_1
       draw_text _delete_message_2
-      lda #STATE_PLAYING
-      sta game_state
+      jsr game_init_sprites
+      lda #STATE_READY_WAIT
+      sta game_state+GameState::state
 @detect_joystick:
       jsr joystick_detect
       beq @rts
       sta joystick_port
-@rts:
+@rts: rts
+      
+game_ready_wait:
+      lda game_state+GameState::state
+      cmp #STATE_READY_WAIT
+      bne @rts
+.if DEBUG = 0
+      jsr sound_play
+      lda sound_play_state
+      bne @rts
+.endif
+      lda #STATE_PLAYING
+      sta game_state+GameState::state
+@rts: rts
+
+game_game_over:
       rts
       
 keyboard_read:
@@ -156,10 +159,9 @@ actors_move:
       rts
       
       ; .A new direction
-      ; .Y direction
 pacman_cornering:
       pha
-      tya
+      lda actors+actor::move,x
       and #$01  ;bit 0 set , either +x or +y, down or left
       beq @l1
       lda #$07
@@ -243,7 +245,7 @@ actor_move:
 @y_add:
       clc
       adc sprite_tab_attr+SPRITE_Y,y
-      cmp #SPRITE_OFF+$08; 212 line mode
+      cmp #SpriteOff
       bne @y_sta
       lda game_tmp
       eor #$10
@@ -284,7 +286,6 @@ actor_shape_move:
       asl
       clc
       adc game_tmp
-actor_update_shape:
       tay
       phy
       lda ghost_shapes,y
@@ -328,7 +329,7 @@ erase_and_score:
       sta (p_maze)
       
       pla
-      sta points+3
+      sta points+3  ; high to low
       jmp add_scores
 
       ; in:   .A - direction
@@ -366,12 +367,12 @@ pacman_input:
       bcs @rts                          ;ignore input
       
       lda input_direction
-      ldy actors+actor::move,x
+      ;ldy actors+actor::move,x
       jsr pacman_cornering
-      beq @set_input_dir_to_current_dir       ; center position, no pre-/post-turn
+      beq @set_input_dir_to_current_dir   ; Z=1 center position, no pre-/post-turn
       lda #0
-      bcc @l_turn           ; C=0 pre-turn?
-      lda #ACT_MOVE_INVERSE ; C=1 post-turn
+      bcc @l_turn                         ; C=0 pre-turn
+      lda #ACT_MOVE_INVERSE               ; C=1 post-turn
 @l_turn:
       eor actors+actor::move,x  ; current direction
       and #ACT_DIR
@@ -545,7 +546,7 @@ game_demo:
       rts
 
 game_playing:
-      lda game_state
+      lda game_state+GameState::state
       cmp #STATE_PLAYING
       bne @rts
       ;jsr game_demo
@@ -558,7 +559,7 @@ game_playing:
       
       lda #Sprite_Pattern_Pacman
       sta sprite_tab_attr+SPRITE_NR_PACMAN+SPRITE_N
-      lda #SPRITE_OFF+$08; 212 line mode
+      lda #SpriteOff
       sta sprite_tab_attr+SPRITE_NR_GHOST+SPRITE_Y
       lda #STATE_LEVEL_CLEARED
       sta game_state+GameState::state
@@ -573,8 +574,7 @@ game_level_cleared:
       lda game_state+GameState::frames
       cmp #$88
       bne @rotate
-      jsr game_init
-      lda #STATE_READY
+      lda #STATE_INIT
       sta game_state+GameState::state
       lda #0
 @rotate:
@@ -595,9 +595,11 @@ add_scores:
       lda game_state+GameState::highscore,y
       cmp game_state+GameState::score,y
       bcc @copy ; highscore < score ?
+      bne @rts
       iny
       cpy #4
       bne @cmp
+@rts:
       rts
 @copy:
       ldy #3
@@ -702,6 +704,15 @@ animate_ghosts:
 .endmacro
 
 game_init:
+      lda game_state+GameState::state
+      cmp #STATE_INIT
+      beq @init
+      rts
+@init:
+      stz game_state+GameState::frames
+      
+      jsr sound_init_game_start
+      
       ldx #3
       ldy #0
 @init_maze:
@@ -751,55 +762,62 @@ game_init:
       lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
       jsr sprite_tab_color
       
-      ldx #5*2*4
-:     stz sprite_tab_attr,x
-      dex
-      bne :-
-      
-      ldy #0
-init:
-      phy
-      tya
-      asl
-      asl
-      tax
-      asl
-      tay
-      lda sprite_init_n+0,x
-      sta sprite_tab_attr+0+SPRITE_X,y
-      sta sprite_tab_attr+4+SPRITE_X,y
-      lda sprite_init_n+1,x
-      sta sprite_tab_attr+0+SPRITE_Y,y
-      sta sprite_tab_attr+4+SPRITE_Y,y
-      lda #0
-      sta sprite_tab_attr+0+SPRITE_N,y
-      sta sprite_tab_attr+4+SPRITE_N,y
-      lda sprite_init_n+2,x
-      sta actors+actor::move,y
-      tya
-      sta actors+actor::sprite,y
-      
-      ply
-      iny
-      cpy #5
-      bne init
-
-      stz sprite_tab_attr+1*4+SPRITE_X
-      stz sprite_tab_attr+1*4+SPRITE_Y
-      stz sprite_tab_attr+1*4+SPRITE_N
+      lda #SpriteOff
+      sta sprite_tab_attr+SPRITE_Y
       
       lda #MAX_DOTS
       sta actors+actor::dots
-      
-      lda #STATE_READY
-      sta game_state
+    
       stz game_state+GameState::score+0
       stz game_state+GameState::score+1
       stz game_state+GameState::score+2
       stz game_state+GameState::score+3
-      
+      lda #STATE_READY
+      sta game_state+GameState::state
       rts
-
+      
+game_init_sprites:
+      ldy #0
+@sprites:
+      phy
+      tya
+      asl
+      asl
+      tay
+      asl
+      tax
+      lda sprite_init_n+0,y
+      sta sprite_tab_attr+0+SPRITE_X,x
+      sta sprite_tab_attr+4+SPRITE_X,x
+      lda sprite_init_n+1,y
+      sta sprite_tab_attr+0+SPRITE_Y,x
+      sta sprite_tab_attr+4+SPRITE_Y,x
+      lda #0
+      sta sprite_tab_attr+0+SPRITE_N,x
+      sta sprite_tab_attr+4+SPRITE_N,x
+      lda sprite_init_n+2,y
+      sta actors+actor::move,x
+      txa
+      sta actors+actor::sprite,x  ; x is sprite number
+      ; TODO FIXME ugly code...
+      cpx #SPRITE_NR_PACMAN
+      bne @ghost
+      lda #Sprite_Pattern_Pacman
+      sta sprite_tab_attr+SPRITE_N,x
+      bra @next
+@ghost:
+      jsr actor_shape_move
+@next:      
+      ply
+      iny
+      cpy #5
+      bne @sprites
+      
+      stz sprite_tab_attr+1*4+SPRITE_X
+      stz sprite_tab_attr+1*4+SPRITE_Y
+      stz sprite_tab_attr+1*4+SPRITE_N
+      rts
+      
 sprite_init_n: ;x,y,init direction,color
       .byte 188,96,   ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT, Color_Yellow ;offset y=+4,y=+4  ; pacman
       .byte 92,95,    ACT_LEFT, Color_Blinky

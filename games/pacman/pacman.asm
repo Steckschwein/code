@@ -25,8 +25,8 @@ main:
       jsr gfx_mode_on
       
       jsr boot
-      
 @intro:
+      
       jsr init
       jsr intro
       bit game_state+GameState::state
@@ -40,7 +40,7 @@ main:
       jmp (retvec)
       
 init:
-      ldx #.sizeof(GameState)
+      ldx #.sizeof(GameState)-1
 :     stz game_state,x
       dex
       bpl :-

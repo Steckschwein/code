@@ -1,4 +1,15 @@
 TODO:
+- food compare and animation, use frames as state
+- 50 vs. 60Hz problem? => 20ms/16,7ms => 3,3ms
+- pacman/ghost speed 
+    PAC-MAN SPEED	GHOST SPEED
+  LEVEL	NORM	NORM DOTS	FRIGHT	FRIGHT DOTS	NORM	FRIGHT	TUNNEL
+  1	80%	71%	90%	79%	75%	50%	40%
+  2 - 4	90%	79%	95%	83%	85%	55%	45%
+  5 - 20	100%	87%	100%	87%	95%	60%	50%
+  21+	90%	79%	-	-	95%	-	50%
+
+- scoring - score > highscore compare
 - ghost ai
 -- red zone
 -- tunnel zone
@@ -6,7 +17,7 @@ TODO:
 - optimize sprite init and reorder, pacman to lower order ghosts have to overlapp
       
 video:
-  - original paxman, namco 1980
+  - original paxman, namco May 22nd, 1980
     - 224x288 => 28x36 => 28x31 -5 (score)    => 1px 196x252
 
   - steckschwein
@@ -27,6 +38,7 @@ video:
             eor 111
       10 00 =>  bt              c    pt
       10 01 =>  bt              c    pt
+                              1100 1011 1010 1001 1000
       
                 $07  $06  $05  $04  $03  $02
                0111 0110 0101 0100 0011 0010
@@ -80,23 +92,29 @@ video:
 
 ; color palette
 ; 0,0,0
-; red ff,0,0
+; red ff,0,0  => "shadow" "blinky"
 ; de,97,51
-; ff,b8,ff  => "speedy", rosa
+; ff,b8,ff  => "speedy", "pinky" 
 ; 0,0,0
-; 0,ff,ff   => "bashful", cyan
+; 0,ff,ff   => "bashful"/"inky" "cyan" 
 ; 47,b8,ff  =>
-; ff,b8,51  =>
+; ff,b8,51  => "pokey" "clyde" (orange)
 ; 0,0,0
 ; ff,ff,0   => yellow
 ; 0,0,0
 ; 21,21,ff  => blue => ghosts "scared"
 ; 0,ff,0    => green
-; 47,b8,ae  =>
-; ff,b8,ae  => "food"
+; 47,b8,ae  =>        (71,184,174)
+; ff,b8,ae  => "food" (255,184,174)
 ; de,de,ff  => gray => ghosts "scared"
 
+; ghosts:
+  -  By level 19, the ghosts stop turning blue altogether and can no longer be eaten for additional points.
+  
 ; scoring
+  - perfect score of 3,333,360 at Pac-Man,
+  -  all four ghosts are captured at all four energizers => additional 12,000 
+ 
   per level
     228 food      x 10                    2280
       4 superfood x 50                     200

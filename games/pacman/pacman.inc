@@ -23,7 +23,7 @@
       .importzp ptr1,ptr2,ptr3
       .importzp tmp1,tmp2,tmp3,tmp4,tmp5
         
-.define DEBUG 1
+.define DEBUG 0
 
 .macro bgcolor color
   .if DEBUG
@@ -47,7 +47,7 @@ game_tmp3=tmp4
 
 sprite_pattern=ADDRESS_GFX3_SPRITE_PATTERN
 sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
-sprite_attr   =ADDRESS_GFX3_SPRITE
+VRAM_SPRITE_ATTR   =ADDRESS_GFX3_SPRITE
 
     
 Color_Bg          = $00
@@ -82,22 +82,32 @@ Points_Superfood    = $50 ;
 
 .define Char_Pts $2a,$2b,$2c
 
+SpriteOff=SPRITE_OFF+$08 ; +8, 212 line mode
+
 FRAMES_DELAY = $0f
 WAIT=$01
 WAIT2=$02
 
 STATE_INIT          = 0
 STATE_READY         = 1
-STATE_READY_WAIT    = 1
-STATE_PLAYING       = 2
-STATE_DIED          = 3
-STATE_LEVEL_CLEARED = 4
-STATE_GAME_OVER     = 5
+STATE_READY_WAIT    = 2
+STATE_PLAYING       = 3
+STATE_DIED          = 4
+STATE_LEVEL_CLEARED = 5
+STATE_GAME_OVER     = 6
 STATE_EXIT          = $80
 
 SPRITE_NR_PACMAN  = 0*4
 SPRITE_NR_GHOST   = 1*4
 SPRITE_ADJUST     = $08
+
+;A ghost's objective in chase mode is to find and capture Pac-Man by hunting him down through the maze. Each ghost exhibits unique behavior when chasing Pac-Man, giving them their different personalities: Blinky (red) is very aggressive and hard to shake once he gets behind you, Pinky (pink) tends to get in front of you and cut you off, Inky (light blue) is the least predictable of the bunch, and Clyde (orange) seems to do his own thing and stay out of the way.
+GHOST_CHASE       = 0
+;In scatter mode, the ghosts give up the chase for a few seconds and head for their respective home corners. It is a welcome but brief rest-soon enough, they will revert to chase mode and be after Pac-Man again.
+GHOST_SCATTER     = 1
+; Ghosts enter frightened mode whenever Pac-Man eats one of the four energizers located in the far corners of the maze. During the early levels, the ghosts will all turn dark blue (meaning they 
+; are vulnerable) and aimlessly wander the maze for a few seconds. They will flash moments before returning to their previous mode of behavior.
+GHOST_FRIGHTENED  = 3;
 
 Sprite_Pattern_Pacman = $18*4
 

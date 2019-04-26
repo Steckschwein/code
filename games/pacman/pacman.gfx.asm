@@ -6,6 +6,8 @@
       .export gfx_vram_xy
       .export gfx_vram_ay
       .export gfx_blank_screen
+      .export gfx_sprites_off
+
       .export gfx_digits,gfx_digit
       .export gfx_hex_digits
       
@@ -85,18 +87,17 @@ gfx_init_sprites:
       ldy #>sprite_patterns
       ldx #4
       jsr vdp_memcpy
-      
-      vdp_vram_w sprite_attr; sprites off
-      ldx #1
-      lda #$d0
-      jsr vdp_fill
 
 gfx_blank_screen:
       vdp_vram_w ADDRESS_GFX3_SCREEN
       lda #0
       ldx #4
+      jsr vdp_fill
+gfx_sprites_off:
+      vdp_vram_w VRAM_SPRITE_ATTR; sprites off
+      ldx #1
+      lda #SpriteOff
       jmp vdp_fill
-
 
 ; set the vdp vram address
 ;   in:

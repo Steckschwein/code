@@ -23,9 +23,7 @@ pacman.gfx.o: pacman.ghosts.res pacman.pacman.res pacman.tiles.rot.inc pacman.ti
 
 pacman.game.o: pacman.maze.inc
 
-%.asm: pacman.inc
-
-%.o: %.asm ../../steckos/asminc/*.inc
+%.o: %.asm ../../steckos/asminc/*.inc pacman.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
 pacman.tiles.bin: pacman.tiles.inc
