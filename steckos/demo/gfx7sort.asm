@@ -110,8 +110,8 @@ gfxui_on:
 
 
 
-        copypointer  $fffe, irqsafe
-        SetVector  blend_isr, $fffe
+        ;copypointer  $fffe, irqsafe
+        ;SetVector  blend_isr, $fffe
         rts
 
 @end:
@@ -123,7 +123,7 @@ gfxui_on:
 gfxui_off:
         sei
 
-        copypointer  irqsafe, $fffe
+        ;copypointer  irqsafe, $fffe
         cli
         rts
 
