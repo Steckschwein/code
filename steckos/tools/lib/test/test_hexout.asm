@@ -30,6 +30,6 @@
 	lda	#$9f
     resetCycles
     jsr hexout
-    assertCycles $83  ; pass
+    assertCycles 131  ; pass
 
 	brk
