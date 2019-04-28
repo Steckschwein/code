@@ -77,22 +77,6 @@ main:
 
 		jmp (retvec)
 
-blend_isr:
-        pha
-        vdp_reg 15,0
-        vnops
-        bit a_vreg
-        bpl @0
-
-        lda	#%11100000
-        jsr vdp_bgcolor
-
-        lda	#Black
-        jsr vdp_bgcolor
-@0:
-        pla
-        rti
-
 gfxui_on:
         sei
         jsr vdp_display_off			;display off
@@ -109,9 +93,6 @@ gfxui_on:
         jsr vdp_gfx7_blank
 
 
-
-        ;copypointer  $fffe, irqsafe
-        ;SetVector  blend_isr, $fffe
         rts
 
 @end:
@@ -121,10 +102,6 @@ gfxui_on:
         rts
 
 gfxui_off:
-        sei
-
-        ;copypointer  irqsafe, $fffe
-        cli
         rts
 
 prnd:
