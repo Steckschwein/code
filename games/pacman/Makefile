@@ -7,7 +7,7 @@ LDFLAGS=-C ../../steckos/prg.ld65.cfg -m pacman.map $(LIBS)
 DEFINES=-Dasmunit_char_out=0x200
 TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(DEFINES)
 
-OBJS=pacman.boot.o pacman.intro.o pacman.game.o pacman.gfx.o pacman.sound.o
+OBJS=pacman.boot.o pacman.intro.o pacman.ai.o pacman.game.o pacman.gfx.o pacman.sound.o
 
 .PHONY: all clean
 
@@ -23,9 +23,7 @@ pacman.gfx.o: pacman.ghosts.res pacman.pacman.res pacman.tiles.rot.inc pacman.ti
 
 pacman.game.o: pacman.maze.inc
 
-%.asm: pacman.inc
-
-%.o: %.asm ../../steckos/asminc/*.inc
+%.o: %.asm ../../steckos/asminc/*.inc pacman.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
 pacman.tiles.bin: pacman.tiles.inc
