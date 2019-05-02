@@ -37,6 +37,11 @@ STATE_TEXTUI_ENABLED=1<<3
 .segment "OS_CACHE"
 .export screen_buffer;
 screen_buffer:
+.ifdef COLS80
+  color_buffer=screen_buffer+$0800  ;80x25
+.else
+  color_buffer=screen_buffer+$0400  ;40x25
+.endif
 
 .code
 .export textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
@@ -170,6 +175,7 @@ textui_blank:
         sta screen_buffer+$500,x
         sta screen_buffer+$600,x
         sta screen_buffer+$700,x
+        stz color_buffer,x
         inx
         bne @l1
 
@@ -206,30 +212,35 @@ textui_update_screen:
 ;        lda    #Dark_Green
  ;       jsr    vdp_bgcolor
 
-        lda    screen_status
-        and    #STATE_TEXTUI_ENABLED
-        beq    @l1
+        lda screen_status
+        and #STATE_TEXTUI_ENABLED
+        beq @l1
 
-        inc    screen_frames
+        inc screen_frames
 
-        jsr    textui_cursor
+        jsr textui_cursor
 
-        lda    screen_status
-        and    #STATE_BUFFER_DIRTY
-        beq    @l1    ;exit if not dirty
+        lda screen_status
+        and #STATE_BUFFER_DIRTY
+        beq @l1    ;exit if not dirty
 
-        ldx    #$08
-        vdp_sreg <ADDRESS_GFX1_SCREEN, (WRITE_ADDRESS + >ADDRESS_GFX1_SCREEN)
+        vdp_sreg <ADDRESS_TEXT_COLOR, (WRITE_ADDRESS + >ADDRESS_TEXT_COLOR)
+        lda #<color_buffer         ; copy back buffer to video ram
+        ldy #>color_buffer
+        ldx #1
+        jsr vdp_memcpy
+        vdp_sreg <ADDRESS_TEXT_SCREEN, (WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
         lda #<screen_buffer         ; copy back buffer to video ram
         ldy #>screen_buffer
+        ldx #$08
         jsr vdp_memcpy
 
-        lda    screen_status        ;clean dirty
-        and    #<(~STATE_BUFFER_DIRTY)
-        sta    screen_status
+        lda screen_status        ;clean dirty
+        and #<(~STATE_BUFFER_DIRTY)
+        sta screen_status
 
 @l1:
-        lda    #Medium_Green<<4|Black
+        lda #Medium_Green<<4|Black
         ;jsr    vdp_bgcolor
         rts
 
@@ -391,6 +402,7 @@ textui_put:
         rts
 
 textui_chrout:
+        cmp #0
         beq @l1    ; \0 char
         pha        ; safe char
         inc screen_write_lock    ;write on

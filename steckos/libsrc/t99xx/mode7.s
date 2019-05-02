@@ -31,6 +31,7 @@
 .export vdp_gfx7_blank
 .export vdp_gfx7_set_pixel
 .export vdp_gfx7_set_pixel_cmd
+.export vdp_gfx7_set_pixel_direct
 
 .export vdp_wait_cmd
 
@@ -97,7 +98,6 @@ colour:
 ;	.Y - y coordinate [0..bf]
 ;	.A - color GRB [0..ff] as 332
 ; 	VRAM ADDRESS = .X + 256*.Y
-	
 vdp_gfx7_set_pixel:
         sei
         stx a_vreg                 ; A7-A0 vram address low byte
@@ -126,6 +126,29 @@ vdp_gfx7_set_pixel:
         pla
         sta a_vram                 ; set color
         cli
+        rts
+        
+; requires
+;   - int handling is done outside
+;   - page register set accordingly (v_reg14)
+;	.X - x coordinate [0..ff]
+;	.Y - y coordinate [0..bf]
+;	.A - color GRB [0..ff] as 332
+; 	VRAM ADDRESS = .X + 256*.Y
+vdp_gfx7_set_pixel_direct:
+        stx a_vreg                 ; A7-A0 vram address low byte
+        pha
+        tya
+        and #$3f                   ; A13-A8 vram address highbyte
+        ora #WRITE_ADDRESS
+        nop
+        nop
+        nop
+        nop
+        sta a_vreg
+        vdp_wait_l 2
+        pla
+        sta a_vram                 ; set color
         rts
 
 vdp_wait_cmd:

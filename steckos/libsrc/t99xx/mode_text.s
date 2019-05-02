@@ -59,29 +59,35 @@ vdp_text_on:
 	vdp_wait_s 2
 	stx a_vreg
 	inx
-	cpy #10 ; table length below
+	cpy #(vdp_init_bytes_text-vdp_init_bytes_text_80cols)  ; table length below
 	bne @l1
+  
+  vdp_sreg Black<<4|Medium_Green, v_reg12 ; blink color to inverse text
+  vdp_sreg $f0, v_reg13 ; blink "full on" per default, means no off time and therefore no blink at all
+  
 	rts
 
 vdp_init_bytes_text_80cols:
       .byte v_reg0_m4 ; text mode 2, 80 cols
       .byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
-      .byte >(ADDRESS_GFX1_SCREEN>>2)	; name table - value * $1000 (v9958) --> charset
-      .byte 0	; not used
-      .byte >(ADDRESS_GFX1_PATTERN>>3)| $03 ; pattern table (charset) - value * $800  	--> offset in VRAM
+      .byte (>(ADDRESS_TEXT_SCREEN>>2)) | $03	; name table - value * $1000 (v9958)      R#02
+      .byte >(ADDRESS_TEXT_COLOR<<2) | $07	; name table - value * $1000 (v9958)
+      .byte >(ADDRESS_TEXT_PATTERN>>3) ; pattern table (charset) - value * $800  	--> offset in VRAM
       .byte	0	; not used
       .byte 0	; not used
       .byte	Medium_Green<<4|Black
-      .byte v_reg8_VR	; VR - 64k VRAM TODO set per define
+      .byte v_reg8_VR	; VR - 64k VRAM TODO set per define   ;#R08
       .byte 0
+      .byte <.HIWORD(ADDRESS_TEXT_COLOR<<2)   ;#R10
 vdp_init_bytes_text:
       .byte	0
       .byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
-      .byte >(ADDRESS_GFX1_SCREEN>>2)       ; name table - value * $400					--> charset
+      .byte >(ADDRESS_TEXT_SCREEN>>2) ; name table - value * $1000 (v9958)      R#02
       .byte 0	; not used
-      .byte >(ADDRESS_GFX1_PATTERN>>3)| $03 ; pattern table (charset) - value * $800  	--> offset in VRAM
+      .byte >(ADDRESS_TEXT_PATTERN>>3); pattern table (charset) - value * $800  	--> offset in VRAM
       .byte	0	; not used
       .byte 0	; not used
       .byte	Medium_Green<<4|Black
-      .byte v_reg8_VR	; VR - 64k VRAM TODO set per define
+      .byte v_reg8_VR	; VR - 64k VRAM TODO set per define   ;#R08
+      .byte 0
       .byte 0

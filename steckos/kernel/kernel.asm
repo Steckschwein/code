@@ -174,6 +174,10 @@ do_irq:
 
 		bit SYS_IRR					; was vdp irq?
 		bpl @exit
+    .import vdp_bgcolor
+    lda #Cyan
+;    jsr vdp_bgcolor
+    
 		jsr	textui_update_screen    ; update text ui
 		dec frame
 		lda frame
@@ -182,6 +186,9 @@ do_irq:
 		jsr __rtc_systime_update    ; update system time, read date time store to rtc_systime_t (see rtc.inc)
 
 @exit:
+    lda #Medium_Green<<4 | Black
+ ;   jsr vdp_bgcolor
+    
 		stz SYS_IRR
 		restore
 		rti

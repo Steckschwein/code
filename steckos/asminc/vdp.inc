@@ -79,6 +79,10 @@ v_reg7  = $80	+	7
 v_reg8  = $80	+	8
 v_reg9  = $80	+	9
 v_reg11	= $80 + 11
+
+v_reg12	= $80 + 12    ; blink color
+v_reg13	= $80 + 13    ; on time / off time
+
 v_reg14	= $80 + 14
 v_reg15	= $80 + 15
 v_reg16 = $80 + 16  ; color palette index register
@@ -169,6 +173,11 @@ White          =$0f ;255 255 255	"white"
 WRITE_ADDRESS			=$40
 
 ADDRESS_GFX_SPRITE		=$1e00
+
+ADDRESS_TEXT_SCREEN    =$1000			; name table
+ADDRESS_TEXT_PATTERN   =$3800			; pattern table
+ADDRESS_TEXT_COLOR     =$2000			; color table
+
 
 ADDRESS_GFX1_SCREEN		=$1800			; name table
 ADDRESS_GFX1_PATTERN	=$3800
