@@ -36,12 +36,9 @@ STATE_TEXTUI_ENABLED=1<<3
 
 .segment "OS_CACHE"
 .export screen_buffer;
+.export color_buffer;
 screen_buffer:
-.ifdef COLS80
-  color_buffer=screen_buffer+$0800  ;80x25
-.else
-  color_buffer=screen_buffer+$0400  ;40x25
-.endif
+color_buffer=screen_buffer+$0800  ;+80x25
 
 .code
 .export textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
@@ -251,6 +248,11 @@ textui_scroll_up:
         bit max_cols
         bvc @scroll_40
         
+@l0:    lda color_buffer+10,x
+        sta color_buffer+00,x
+        inx
+        cpx #$100-10
+        bne @l0
 @l1:    lda    screen_buffer+$000+80,x
         sta    screen_buffer+$000,x
         inx
