@@ -1,9 +1,15 @@
+;sound
       .include "pacman.inc"
+      .include "ym3812.inc"
 
       .export sound_init
       .export sound_init_game_start
       .export sound_play
       .export sound_play_state
+      
+      ;ym3812
+      .import opl2_init
+      .import opl2_reg_write
       
       .import wait
       .import game_state
@@ -57,14 +63,14 @@ SCALE_3=1<<6
 .endmacro
 
 tempo=0
-.macro sound note, octave, delay
-    .if note = NOTE_C ;adjust octave, ym3812 ends with C .... wired
-      .byte <note
-      .byte (1<<5) | ((octave-1)<<2) | (>note & $03)
+.macro note _note, octave, delay
+    .if _note = NOTE_C ;adjust octave, ym3812 ends with C ... wired
+      .byte <_note
+      .byte (1<<5) | ((octave-1)<<2) | (>_note & $03)
       .byte delay>>tempo
     .else
-      .byte <note
-      .byte (1<<5) | (octave<<2) | (>note & $03)
+      .byte <_note
+      .byte (1<<5) | (octave<<2) | (>_note & $03)
       .byte delay>>tempo
     .endif
 .endmacro
@@ -278,82 +284,82 @@ voice2:
 ; game start sound
 game_start_voice1: ; piano
       ;1 takt
-      sound NOTE_C, 4, L8
-      sound NOTE_C, 5, L8
-      sound NOTE_G, 4, L8
-      sound NOTE_E, 4, L8
-      sound NOTE_C, 5, L16
-      sound NOTE_G, 4, L16
+      note NOTE_C, 4, L8
+      note NOTE_C, 5, L8
+      note NOTE_G, 4, L8
+      note NOTE_E, 4, L8
+      note NOTE_C, 5, L16
+      note NOTE_G, 4, L16
       pause L8
-      sound NOTE_E, 4, L8
+      note NOTE_E, 4, L8
       pause L8
       ; 2nd takt
-      sound NOTE_Cis, 4, L8
-      sound NOTE_Cis, 5, L8
-      sound NOTE_Gis, 4, L8
-      sound NOTE_F, 4, L8
-      sound NOTE_Cis, 5, L16
-      sound NOTE_Gis, 4, L16
+      note NOTE_Cis, 4, L8
+      note NOTE_Cis, 5, L8
+      note NOTE_Gis, 4, L8
+      note NOTE_F, 4, L8
+      note NOTE_Cis, 5, L16
+      note NOTE_Gis, 4, L16
       pause L8
-      sound NOTE_F, 4, L8
+      note NOTE_F, 4, L8
       pause L8
       ;3 takt
-      sound NOTE_C, 4, L8
-      sound NOTE_C, 5, L8
-      sound NOTE_G, 4, L8
-      sound NOTE_E, 4, L8
-      sound NOTE_C, 5, L16
-      sound NOTE_G, 4, L16
+      note NOTE_C, 4, L8
+      note NOTE_C, 5, L8
+      note NOTE_G, 4, L8
+      note NOTE_E, 4, L8
+      note NOTE_C, 5, L16
+      note NOTE_G, 4, L16
       pause L8
-      sound NOTE_E, 4, L8
+      note NOTE_E, 4, L8
       pause L8
       ; 4 takt
-      sound NOTE_E, 4, L16
-      sound NOTE_F, 4, L16
-      sound NOTE_Fis, 4, L16
+      note NOTE_E, 4, L16
+      note NOTE_F, 4, L16
+      note NOTE_Fis, 4, L16
       pause L16
-      sound NOTE_Fis, 4, L16
-      sound NOTE_G, 4, L16
-      sound NOTE_Gis, 4, L16
+      note NOTE_Fis, 4, L16
+      note NOTE_G, 4, L16
+      note NOTE_Gis, 4, L16
       pause L16
-      sound NOTE_Gis, 4, L16
-      sound NOTE_A, 4, L16
-      sound NOTE_Ais, 4, L16
+      note NOTE_Gis, 4, L16
+      note NOTE_A, 4, L16
+      note NOTE_Ais, 4, L16
       pause L16
-      sound NOTE_C, 5, 3*L16
+      note NOTE_C, 5, 3*L16
       pause L16
       soundEnd
 game_start_voice1_end:
 
 game_start_voice2:
-      sound NOTE_C, 2, L8
+      note NOTE_C, 2, L8
       pause L4      
-      sound NOTE_G, 2, L8
-      sound NOTE_C, 2, L8
+      note NOTE_G, 2, L8
+      note NOTE_C, 2, L8
       pause L4
-      sound NOTE_G, 2, L8
+      note NOTE_G, 2, L8
       ; 2nd takt
-      sound NOTE_Cis, 2, L8
+      note NOTE_Cis, 2, L8
       pause L4
-      sound NOTE_Gis, 2, L8
-      sound NOTE_Cis, 2, L8
+      note NOTE_Gis, 2, L8
+      note NOTE_Cis, 2, L8
       pause L4
-      sound NOTE_Gis, 2, L8
+      note NOTE_Gis, 2, L8
       ; 3nd takt 
-      sound NOTE_C, 2, L8
+      note NOTE_C, 2, L8
       pause L4
-      sound NOTE_G, 2, L8
-      sound NOTE_C, 2, L8
+      note NOTE_G, 2, L8
+      note NOTE_C, 2, L8
       pause L4
-      sound NOTE_G, 2, L8
+      note NOTE_G, 2, L8
       ; 4nd takt 
-      sound NOTE_G, 2, L8
+      note NOTE_G, 2, L8
       pause L8
-      sound NOTE_A, 2, L8
+      note NOTE_A, 2, L8
       pause L8
-      sound NOTE_B, 2, L8
+      note NOTE_B, 2, L8
       pause L8
-      sound NOTE_C, 3, L8
+      note NOTE_C, 3, L8
       pause L8
       soundEnd
       

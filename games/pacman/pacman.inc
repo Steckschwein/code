@@ -1,45 +1,54 @@
       .setcpu "65c02"
 
-      .include "zeropage.inc"
-      .include "common.inc"
-      .include "keyboard.inc"
-      .include "joystick.inc"
-      .include "vdp.inc"
-      .include "ym3812.inc"
-      .include "kernel_jumptable.inc"
-      
-      .import __RAM_LAST__
-      ;i/o
-      .import joystick_on
-      .import joystick_detect
-      .import joystick_read
-      ;vdp
-      .import vdp_bgcolor
-      .import vdp_fill,vdp_fills
-      .import vdp_memcpy,vdp_memcpys
-      ;sound
-      .import opl2_init
-      .import opl2_reg_write
       .importzp ptr1,ptr2,ptr3
       .importzp tmp1,tmp2,tmp3,tmp4,tmp5
         
+      .import __BSS_RUN__
+
+.if .defined (__C64__)
+      .include "c64.inc"
+.else
+      .include "zeropage.inc"
+      .include "common.inc"
+      .include "kernel_jumptable.inc"
+      .include "joystick.inc"
+      .include "keyboard.inc"
+      .include "vdp.inc"
+      SpriteOff=SPRITE_OFF+$08 ; +8, 212 line mode
+
+.endif
+
 .define DEBUG 0
 .define BOOT 0
 .define INTRO 0
 
-
 .macro bgcolor color
   .if DEBUG
+    .import gfx_bgcolor
     lda #color
-    jsr vdp_bgcolor
+    jsr gfx_bgcolor
   .endif
 .endmacro
 
 .macro draw_text _p
       SetVector _p, ptr1
-      jsr gfx_text
+      jsr out_text
 .endmacro
 
+.macro push_axy
+      pha
+      tya
+      pha
+      txa
+      pha
+.endmacro
+.macro pop_axy
+      pla
+      tax
+      pla
+      tay
+      pla
+.endmacro
 
 .struct GameState
   state       .byte
@@ -77,11 +86,6 @@ game_tmp=tmp3
 game_tmp2=tmp4
 game_tmp3=tmp4
 
-sprite_pattern=ADDRESS_GFX3_SPRITE_PATTERN
-sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
-VRAM_SPRITE_ATTR   =ADDRESS_GFX3_SPRITE
-
-    
 Color_Bg          = $00
 Color_Red         = $01
 Color_Pink        = $03
@@ -113,8 +117,6 @@ Points_Food         = $10 ;BCD values
 Points_Superfood    = $50 ;
 
 .define Char_Pts $2a,$2b,$2c
-
-SpriteOff=SPRITE_OFF+$08 ; +8, 212 line mode
 
 FRAMES_DELAY = $0f
 WAIT=$01
@@ -160,7 +162,7 @@ ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
 ACT_TURN          = 1<<7
 ACT_DIR           = 1<<1|1<<0
 
-game_maze=(__RAM_LAST__+$100) & $ff00
+game_maze=(__BSS_RUN__) & $ff00
 actors=game_maze+$0400
 sprite_tab_attr=actors+5*.sizeof(actor)
 sprite_tab_attr_end=sprite_tab_attr+5*4*2

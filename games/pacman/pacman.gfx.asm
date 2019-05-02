@@ -1,4 +1,5 @@
-
+      .include "vdp.inc"
+      .include "pacman.inc"
 
       .export gfx_init
       .export gfx_mode_on
@@ -6,27 +7,38 @@
       .export gfx_vram_xy
       .export gfx_vram_ay
       .export gfx_blank_screen
+      .export gfx_bgcolor
       .export gfx_sprites_off
+      .export gfx_vblank
 
       .export gfx_digits,gfx_digit
       .export gfx_hex_digits
-      
       
       .export gfx_text
       .export gfx_charout
       .export gfx_hires_on
       .export gfx_hires_off
+      .export gfx_update
+      .export gfx_display_maze
       
-      
+      ;vdp
+      .import vdp_bgcolor
+      .import vdp_fill,vdp_fills
+      .import vdp_memcpy,vdp_memcpys
       .import vdp_init_reg
-      .import vdp_memcpy
-      .import vdp_fill
       
       .import game_state; 
 
-      .include "vdp.inc"
-      .include "pacman.inc"
+;SpriteOff=SPRITE_OFF+$08 ; +8, 212 line mode
+sprite_pattern=ADDRESS_GFX3_SPRITE_PATTERN
+sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
+VRAM_SPRITE_ATTR   =ADDRESS_GFX3_SPRITE
+
 .code
+gfx_vblank:
+      bit	a_vreg
+      rts
+
 gfx_mode_off:
       vdp_sreg 0, v_reg9   ;
       vdp_sreg 0, v_reg23  ;
@@ -87,18 +99,69 @@ gfx_init_sprites:
       ldy #>sprite_patterns
       ldx #4
       jsr vdp_memcpy
+      
+      vdp_vram_w (sprite_color+0*16)
+      lda #Color_Yellow
+      jsr _fills
+      lda #Color_Bg
+      jsr _fills
+      
+      lda #Color_Blinky
+      jsr _fills
+      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+      jsr _fills
+      
+      lda #Color_Inky
+      jsr _fills
+      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+      jsr _fills
+
+      lda #Color_Pinky
+      jsr _fills
+      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+      jsr _fills
+
+      lda #Color_Clyde
+      jsr _fills
+      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+      jsr _fills
+      
+      lda #SpriteOff
+      sta sprite_tab_attr+SPRITE_Y
 
 gfx_blank_screen:
       vdp_vram_w ADDRESS_GFX3_SCREEN
       lda #0
       ldx #4
       jsr vdp_fill
+
 gfx_sprites_off:
       vdp_vram_w VRAM_SPRITE_ATTR; sprites off
       ldx #1
       lda #SpriteOff
       jmp vdp_fill
 
+_fills:
+      ldx #16     ;16 colors per line
+      jmp vdp_fills
+
+gfx_update:
+      vdp_vram_w VRAM_SPRITE_ATTR
+      lda #<sprite_tab_attr
+      ldy #>sprite_tab_attr
+      ldx #5*2*4
+      jmp vdp_memcpys
+
+gfx_display_maze:
+      vdp_vram_w (ADDRESS_GFX3_SCREEN)
+      lda #<game_maze
+      ldy #>game_maze
+      ldx #4
+      jmp vdp_memcpy
+      
+
+gfx_bgcolor=vdp_bgcolor
+      
 ; set the vdp vram address
 ;   in:
 ;     crs_x - x 0..31

@@ -6,15 +6,22 @@
       .import gfx_vram_ay
       .import gfx_blank_screen
       .import gfx_hires_off
-      .import gfx_digit,gfx_digits
-      .import gfx_hex_digits
-      .import gfx_text
       .import gfx_charout
-        
+      .import gfx_rotate_pal
+      .import gfx_update
+      .import gfx_display_maze
+
+      .import out_digit,out_digits
+      .import out_hex_digits
+      .import out_text
+      
       .import sound_init
       .import sound_init_game_start
       .import sound_play
       .import sound_play_state
+      
+      .import io_joystick_read
+      .import io_detect_joystick
       
       .import ai_blinky
       .import ai_inky
@@ -64,13 +71,9 @@ game_isr:
       jsr game_playing
       jsr game_level_cleared
       jsr game_game_over
-      
+
       bgcolor Color_Cyan
-      vdp_vram_w VRAM_SPRITE_ATTR
-      lda #<sprite_tab_attr
-      ldy #>sprite_tab_attr
-      ldx #5*2*4
-      jsr vdp_memcpys
+      jsr gfx_update
 
 game_isr_exit:
 
@@ -94,15 +97,12 @@ game_ready:
       and #$7f
       bne @detect_joystick
 .endif
-
       draw_text _delete_message_1
       jsr game_init_sprites
       lda #STATE_READY_WAIT
       sta game_state+GameState::state
 @detect_joystick:
-      jsr joystick_detect
-      beq @rts
-      sta joystick_port
+      jsr io_detect_joystick
 @rts: rts
       
 game_ready_wait:
@@ -124,8 +124,9 @@ game_game_over:
       
 keyboard_read:
       jsr krn_getkey
+      bcc :+
       sta keyboard_input
-      rts
+:     rts
 
 
       ; key/joy input ?
@@ -224,11 +225,9 @@ actor_move:
 actor_move_dir:
       lda actors+actor::move,x
       bpl @rts
-      
       phx
       jsr actor_strategy
       plx 
-      
 @rts: rts
 
 actor_move_soft:
@@ -313,7 +312,7 @@ pacman_move:
       bne @actor_move_soft      ; center reached?
 
       jsr pacman_collect
-      
+
       lda actors+actor::move,x
       and #ACT_DIR
       jsr actor_can_move_to_direction
@@ -352,10 +351,9 @@ erase_and_score:
       sta crs_x
       lda actors+actor::ypos,x
       sta crs_y
-      jsr gfx_vram_xy
       lda #Char_Blank
-      sta a_vram
       sta (p_maze)
+      jsr gfx_charout
       
       pla
       sta points+3  ; high to low
@@ -396,7 +394,6 @@ pacman_input:
       bcs @rts                          ;ignore input
       
       lda input_direction
-      ;ldy actors+actor::move,x
       jsr pacman_cornering
       beq @set_input_dir_to_current_dir   ; Z=1 center position, no pre-/post-turn
       lda #0
@@ -461,7 +458,7 @@ actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
       ; C=0 if any valid key or joystick input, A=ACT_xxx
 get_input:
       lda keyboard_input
-      bcc @joystick
+      beq @joystick
       cmp #KEY_CRSR_RIGHT
       beq @r
       cmp #KEY_CRSR_LEFT
@@ -479,8 +476,7 @@ get_input:
 @d:   lda #ACT_DOWN
       rts
 @joystick:
-      lda joystick_port
-      jsr joystick_read
+      jsr io_joystick_read
       and #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
       cmp #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
       beq @rts; nothing pressed
@@ -505,28 +501,27 @@ debug:
       sta crs_x
       lda #0
       sta crs_y
-      jsr gfx_vram_xy
       
       lda input_direction
-      jsr gfx_hex_digits
+      jsr out_hex_digits
       lda actors+actor::move
-      jsr gfx_hex_digits
+      jsr out_hex_digits
       lda actors+actor::turn
-      jsr gfx_hex_digits
+      jsr out_hex_digits
       lda actors+actor::xpos
-      jsr gfx_hex_digits
+      jsr out_hex_digits
       lda actors+actor::ypos
-      jsr gfx_hex_digits
+      jsr out_hex_digits
       lda actors+actor::xpos_dir
-      jsr gfx_hex_digits
+      jsr out_hex_digits
       lda actors+actor::ypos_dir
-      jsr gfx_hex_digits
+      jsr out_hex_digits
       lda sprite_tab_attr+SPRITE_X
-      jsr gfx_hex_digits
+      jsr out_hex_digits
       lda sprite_tab_attr+SPRITE_Y
-      jsr gfx_hex_digits
-      lda actors+actor::dots
-      jsr gfx_hex_digits
+      jsr out_hex_digits
+      lda keyboard_input
+      jsr out_hex_digits
       plx
       pla
       rts
@@ -610,7 +605,6 @@ game_level_cleared:
       lsr
       and #$03
       tay
-      .import gfx_rotate_pal
       jsr gfx_rotate_pal
       
 @rts: rts
@@ -659,7 +653,7 @@ draw_score:
       bit #$f0  ;0? ?
       bne @digits
       dec crs_y ;output the 0-9 only
-      jsr gfx_digit
+      jsr out_digit
       bra @digits_inc
 @skip:
       dec crs_y ;skip digits
@@ -670,7 +664,7 @@ draw_score:
       rts
 @digits:
       lda (p_game),y
-      jsr gfx_digits
+      jsr out_digits
 @digits_inc:
       iny
       cpy #04
@@ -757,40 +751,7 @@ game_init:
       iny
       bne @init_maze
       
-      vdp_vram_w (ADDRESS_GFX3_SCREEN)
-      lda #<game_maze
-      ldy #>game_maze
-      ldx #4
-      jsr vdp_memcpy
-      
-      vdp_vram_w (sprite_color+0*16)
-      lda #Color_Yellow
-      jsr sprite_tab_color
-      lda #Color_Bg
-      jsr sprite_tab_color
-      
-      lda #Color_Blinky
-      jsr sprite_tab_color
-      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
-      jsr sprite_tab_color
-      
-      lda #Color_Inky
-      jsr sprite_tab_color
-      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
-      jsr sprite_tab_color
-
-      lda #Color_Pinky
-      jsr sprite_tab_color
-      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
-      jsr sprite_tab_color
-
-      lda #Color_Clyde
-      jsr sprite_tab_color
-      lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
-      jsr sprite_tab_color
-      
-      lda #SpriteOff
-      sta sprite_tab_attr+SPRITE_Y
+      jsr gfx_display_maze
       
       lda #MAX_DOTS
       sta actors+actor::dots
@@ -857,14 +818,6 @@ sprite_init_n: ;x,y,init direction,color
       .byte 116,76,   ACT_MOVE|ACT_UP,   Color_Clyde
 sprite_init_n_end:
 
-sprite_tab_color:
-      ldx #16     ;16 colors per line
-@l1:  vdp_wait_l
-      sta a_vram
-      dex
-      bne @l1
-      rts
-
 ai_ghost:
       tya
       tax
@@ -912,10 +865,9 @@ _save_irq:  .res 2
 maze:
   .include "pacman.maze.inc"
 
-joystick_port:    .byte JOY_PORT1
 input_direction:  .res 1,0
 keyboard_input:   .res 1,0
-      
+
 points:           .res 4, 0
 
 superfood:

@@ -1,24 +1,28 @@
       .include "pacman.inc"
-      .include "appstart.inc"
 
+      .export game_state
+      
       .import gfx_mode_on
       .import gfx_mode_off
       .import gfx_init
       .import gfx_display_maze
       
+      .import io_init
       .import sound_init
       .import sound_play
       .import boot
       .import intro
       .import game
       
-appstart
+
+;appstart $1000
+.code
 
 main:
       sei
       jsr krn_textui_disable
       
-      jsr joystick_on
+      jsr io_init
       jsr sound_init
       
       jsr gfx_init
@@ -26,7 +30,6 @@ main:
       
       jsr boot
 @intro:
-      
       jsr init
       jsr intro
       bit game_state+GameState::state
@@ -34,19 +37,18 @@ main:
       jsr game
       bit game_state+GameState::state
       bmi @exit
-      bra @intro
+      jmp @intro
 @exit:
       jsr gfx_mode_off
       jmp (retvec)
       
 init:
       ldx #.sizeof(GameState)-1
-:     stz game_state,x
+:     lda #0
+      sta game_state,x
       dex
       bpl :-
       rts
-      
 .data
-.export game_state
 game_state:
   .tag GameState

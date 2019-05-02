@@ -4,9 +4,11 @@
 
       .import gfx_vram_xy
       .import gfx_blank_screen
-      .import gfx_digits,gfx_digit
-      .import gfx_text
       .import gfx_hires_on
+      .import frame_isr
+      
+      .import out_text
+      .import out_digits,out_digit
       
       .import game_state
       
@@ -23,7 +25,7 @@ intro:
       .endif
             sei
 ;      jsr gfx_hires_on
-      set_irq intro_isr, _save_irq
+      set_irq frame_isr, _save_irq
       cli
       
       jsr intro_frame
@@ -66,7 +68,7 @@ intro:
       cmp #$99
       beq @start_1up
 .endif
-      bra @wait_start1up
+      jmp @wait_start1up
       
 @start_1up:
       
@@ -83,22 +85,21 @@ intro_frame:
       draw_text _copyright
       draw_text _copyright_sw
       draw_text _footer
-      jsr gfx_text
+      jsr out_text
 
 display_credit:
       lda #31
       sta crs_x
       lda #16
       sta crs_y
-      jsr gfx_vram_xy
       
       lda game_state+GameState::credit
-      cmp #9
+      cmp #10
       bcs @l1
       dec crs_y
-      jmp gfx_digit
+      jmp out_digit
 @l1:
-      jmp gfx_digits
+      jmp out_digits
 
 credit_dec:
       lda game_state+GameState::credit
@@ -122,21 +123,6 @@ credit_inc:
 @exit:
       rts
       
-intro_isr:
-      save
-      bit	a_vreg
-      bpl	@exit
-      
-      bgcolor Color_Yellow      
-      
-      inc game_state+GameState::frames
-      
-@exit:
-      bgcolor Color_Bg
-
-      restore
-      rti
-
       
 .data
 _save_irq:  .res 2, 0

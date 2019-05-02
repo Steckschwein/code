@@ -98,7 +98,7 @@ video:
 ; 0,0,0
 ; 0,ff,ff   => "bashful"/"inky" "cyan" 
 ; 47,b8,ff  =>
-; ff,b8,51  => "pokey" "clyde" (orange)
+; ff,b8,51  255,184,81, => "pokey" "clyde" (orange)
 ; 0,0,0
 ; ff,ff,0   => yellow
 ; 0,0,0
