@@ -28,4 +28,4 @@
     
 .data
 charset:
-    .include "../../rom/bios/charset_8x8.asm"
+;    .include "../../rom/bios/charset_8x8.asm"
