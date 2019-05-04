@@ -48,6 +48,7 @@ v_reg1_spr_mag		= 1<<0
 
 v_reg8_VR			  = 1<<3	; 0/1 16k/64k video ram
 v_reg8_SPD			= 1<<1	; 0/1 sprites enabled/disabled
+v_reg8_BW			  = 1<<0	; 0/1 grayscale off/on
 
 v_reg9_ln       = 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
 v_reg9_il       = 1<<3	; interlace
@@ -293,6 +294,11 @@ vdp_nopslide_2m:
 .macro vdp_vram_w _24bit
     vdp_sreg <.HIWORD(_24bit<<2), v_reg14
     vdp_sreg <.LOWORD(_24bit), WRITE_ADDRESS | (>.LOWORD(_24bit) & $3f)
+.endmacro
+
+.macro vdp_vram_r _24bit
+    vdp_sreg <.HIWORD(_24bit<<2), v_reg14
+    vdp_sreg <.LOWORD(_24bit), (>.LOWORD(_24bit) & $3f)
 .endmacro
 
 .macro vdp_pal _r, _g, _b
