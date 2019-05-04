@@ -302,6 +302,8 @@ vdp_init_bytes:
 			.byte v_reg9_ln ; 212 lines
 			.byte <.hiword(ADDRESS_GFX3_COLOR<<2) ; color table high, a16-14
       .byte <.hiword(ADDRESS_GFX3_SPRITE<<1); sprite attribute high
+      .byte	0
+			.byte	0 ;#R13
 vdp_init_bytes_end:
 
 pacman_colors:

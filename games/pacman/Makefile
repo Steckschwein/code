@@ -50,6 +50,9 @@ pacman.prg: $(OBJS) $(LIBS)
 pacman64.prg: $(C64_OBJS) $(C64_LIBS)
 	ld65 $(C64_LDFLAGS) $(C64_OBJS) -o $@
 
+x64: pacman64.prg
+	x64 -device8 1 -autostartprgmode 1 pacman64.prg
+
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 

@@ -39,11 +39,23 @@ game:
 game_reset:
       lda #STATE_INIT
       sta game_state+GameState::state
-
 @waitkey:
       jsr keyboard_read
       cmp #'r'
       beq game_reset
+      cmp #'p'
+      bne :+
+      lda game_state+GameState::state
+      eor #STATE_PAUSE
+      sta game_state+GameState::state
+      and #STATE_PAUSE
+      lsr
+      lsr
+      lsr
+      ora #v_reg8_VR
+      ldy #v_reg8
+      vdp_sreg
+:
       cmp #KEY_ESCAPE
       bne @waitkey
       
