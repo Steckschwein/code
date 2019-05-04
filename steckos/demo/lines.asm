@@ -50,7 +50,6 @@ main:
 
 		jsr	gfxui_off
 
-		jsr krn_display_off			;restore textui
 		jsr krn_textui_init
 		jsr krn_textui_enable
 		bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts

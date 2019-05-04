@@ -45,32 +45,25 @@ vdp_gfx6_on:
 vdp_init_bytes_gfx6:
 			.byte v_reg0_m5|v_reg0_m3												; reg0 mode bits
 			.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 			; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-			.byte >(ADDRESS_GFX6_SCREEN>>2) | $3f	; => 00<A16>1 1111 - entw. bank 0 oder 1 (64k)
+      .byte $7f	; => 0<A16>11 1111 - either bank 0 oder 1 (64k)
 			.byte	$0
 			.byte $0
-      .byte	>(ADDRESS_GFX6_SPRITE<<1) | $04
+      .byte	>(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
 			.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);  
 			.byte	Black
-			.byte v_reg8_VR	; VR - 64k VRAM TODO set per define
+			.byte v_reg8_VR	; VR - 64k VRAM TODO FIXME aware of max vram (bios)
 			.byte 0; NTSC/262, PAL/313 => v_reg9_nt | v_reg9_ln
       .byte 0
-      .byte <.hiword(ADDRESS_GFX6_SPRITE<<1)
+      .byte <.hiword(ADDRESS_GFX6_SPRITE<<1); sprite attribute high
 vdp_init_bytes_gfx6_end:
-
 ;
 ; blank gfx mode 2 with
 ; 	A - color to fill (RGB) 3+3+2)
 ;
-vdp_gfx6_blank:		; 2 x 6K
-;.ifdef V9958
-	sta vdp_tmp
-	lda #%00000000
-	ldy #v_reg14
-	vdp_sreg
-	
-	lda #<ADDRESS_GFX7_SCREEN
-	ldy #WRITE_ADDRESS + >ADDRESS_GFX7_SCREEN
-	ldx #32
+vdp_gfx6_blank:		; 64K
+  vdp_vram_w ADDRESS_GFX6_SCREEN
+  lda #Black<<4|Black
+	ldx #192
 	jmp vdp_fill
 
 ;	set pixel to gfx2 mode screen

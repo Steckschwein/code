@@ -46,7 +46,7 @@ v_reg1_m2			= 1<<3
 v_reg1_spr_size		= 1<<1
 v_reg1_spr_mag		= 1<<0
 
-v_reg8_VR			= 1<<3	; 0/1 16k/64k video ram
+v_reg8_VR			  = 1<<3	; 0/1 16k/64k video ram
 v_reg8_SPD			= 1<<1	; 0/1 sprites enabled/disabled
 
 v_reg9_ln       = 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
@@ -178,10 +178,9 @@ ADDRESS_TEXT_SCREEN    =$1000			; name table
 ADDRESS_TEXT_PATTERN   =$3800			; pattern table
 ADDRESS_TEXT_COLOR     =$2000			; color table
 
-
-ADDRESS_GFX1_SCREEN		=$1800			; name table
-ADDRESS_GFX1_PATTERN	=$3800
-ADDRESS_GFX1_COLOR		=$1b80
+ADDRESS_GFX1_SCREEN         =$1800			; name table
+ADDRESS_GFX1_PATTERN        =$3800
+ADDRESS_GFX1_COLOR          =$1b80
 ADDRESS_GFX1_SPRITE		=ADDRESS_GFX_SPRITE
 ADDRESS_GFX1_SPRITE_PATTERN=$1000;
 
@@ -203,10 +202,10 @@ ADDRESS_GFX3_SPRITE_PATTERN = ADDRESS_GFX2_SPRITE_PATTERN;$0f000
 ADDRESS_GFX3_SPRITE         = ADDRESS_GFX_SPRITE
 ADDRESS_GFX3_SPRITE_COLOR   = ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
 
-ADDRESS_GFX6_SCREEN         =$10000			; screen
-ADDRESS_GFX6_SPRITE_PATTERN =$0f000     ;
-ADDRESS_GFX6_SPRITE         =$0fa00     ;
-ADDRESS_GFX6_SPRITE_COLOR   =ADDRESS_GFX6_SPRITE-$0200
+ADDRESS_GFX6_SCREEN           =$10000 ; screen
+ADDRESS_GFX6_SPRITE_PATTERN   =$0f000     ;
+ADDRESS_GFX6_SPRITE           =$0fa00     ;
+ADDRESS_GFX6_SPRITE_COLOR     =ADDRESS_GFX6_SPRITE-$0200
 
 ADDRESS_GFX7_SCREEN			      =$10000							; 2nd 64 RAM
 ADDRESS_GFX7_SPRITE			      =ADDRESS_GFX_SPRITE
@@ -292,8 +291,8 @@ vdp_nopslide_2m:
 .endmacro
 
 .macro vdp_vram_w _24bit
-  vdp_sreg <.hiword(_24bit<<2), v_reg14
-  vdp_sreg <_24bit, WRITE_ADDRESS | (>_24bit & $3f)
+    vdp_sreg <.HIWORD(_24bit<<2), v_reg14
+    vdp_sreg <.LOWORD(_24bit), WRITE_ADDRESS | (>.LOWORD(_24bit) & $3f)
 .endmacro
 
 .macro vdp_pal _r, _g, _b

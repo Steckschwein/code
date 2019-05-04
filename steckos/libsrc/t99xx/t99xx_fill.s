@@ -30,11 +30,10 @@ vdp_fill:
 ;		.A - byte to fill
 ;		.X - amount of 256byte blocks (page counter)
         ldy #0
-@0:     nop
-@1:     vdp_wait_l 8
+@1:     vdp_wait_l 4
         iny             ;2
         sta a_vram
-        bne @0          ;3
+        bne @1          ;3
         dex
         bne @1
         rts

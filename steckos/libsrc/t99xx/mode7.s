@@ -49,25 +49,28 @@ vdp_gfx7_on:
 vdp_init_bytes_gfx7:
 			.byte v_reg0_m5|v_reg0_m4|v_reg0_m3									; reg0 mode bits
 			.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 				; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-			.byte $3f	; => 00<A16>1 1111 - entw. bank 0 (offset $0000) or 1 (offset $10000)
+			.byte >(ADDRESS_GFX7_SCREEN>>3) | $1f	; => 00<A16>1 1111 - entw. bank 0 (offset $0000) or 1 (offset $10000)
 			.byte $0
 			.byte $0
 			.byte $ff
 			.byte $3f
 			.byte Black ; border color
-			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM
+			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
 			.byte 0;v_reg9_ln	;//TODO FIXME ntsc off => gfx_off
+      .byte 0;  #R10
+      .byte 0;  #R11
+      .byte 0;  #R12
+      .byte 0;  #R13
 vdp_init_bytes_gfx7_end:
 ;
 ; blank gfx mode 7 with
 ; 	A - color to fill in GRB (3+3+2)
 ;
 vdp_gfx7_blank:
+  sei
 	phx
-	
 	sta colour
-	
-	vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
+  vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
 	vdp_sreg <.LOWORD(ADDRESS_GFX7_SCREEN), (WRITE_ADDRESS + >.LOWORD(ADDRESS_GFX7_SCREEN))
 	vdp_sreg 36, v_reg17 ; set reg index to #36
 	ldx #0
@@ -82,6 +85,7 @@ vdp_gfx7_blank:
 	jsr vdp_wait_cmd
 		
 	plx
+  cli
 	rts
 
 data:

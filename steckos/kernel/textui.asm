@@ -253,6 +253,8 @@ textui_scroll_up:
         inx
         cpx #$100-10
         bne @l0
+        
+        ldx #0
 @l1:    lda    screen_buffer+$000+80,x
         sta    screen_buffer+$000,x
         inx

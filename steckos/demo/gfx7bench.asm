@@ -48,20 +48,17 @@ main:
 
 		keyin
 		jsr fill_setpixel
-		keyin
-		lda #0
+		
+    keyin
+    lda #0    
 		jsr vdp_gfx7_blank
-		keyin
-		jsr fill_setpixel_cmd
-
-
-		keyin
+		
+    keyin
+    jsr fill_setpixel_cmd
 
 		jsr	gfxui_off
 
-		jsr	krn_display_off			;restore textui
 		jsr	krn_textui_init
-		jsr	krn_textui_enable
 
 		jmp (retvec)
 
@@ -130,7 +127,7 @@ gfxui_off:
 	copypointer  irqsafe, $fffe
 
 	lda 	#0
-	jsr 	vdp_gfx7_blank
+	;jsr 	vdp_gfx7_blank
 
 	cli
 	rts
