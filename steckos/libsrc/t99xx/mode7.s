@@ -67,7 +67,6 @@ vdp_init_bytes_gfx7_end:
 ; 	A - color to fill in GRB (3+3+2)
 ;
 vdp_gfx7_blank:
-  sei
 	phx
 	sta colour
   vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
@@ -85,7 +84,6 @@ vdp_gfx7_blank:
 	jsr vdp_wait_cmd
 		
 	plx
-  cli
 	rts
 
 data:
@@ -103,6 +101,7 @@ colour:
 ;	.A - color GRB [0..ff] as 332
 ; 	VRAM ADDRESS = .X + 256*.Y
 vdp_gfx7_set_pixel:
+        php
         sei
         stx a_vreg                 ; A7-A0 vram address low byte
         pha
@@ -129,7 +128,7 @@ vdp_gfx7_set_pixel:
         vdp_wait_l 2
         pla
         sta a_vram                 ; set color
-        cli
+        plp
         rts
         
 ; requires
@@ -156,14 +155,17 @@ vdp_gfx7_set_pixel_direct:
         rts
 
 vdp_wait_cmd:
-		vdp_sreg 2, v_reg15         ; 2 - to select status register S#2
+    php
+    sei
+    vdp_sreg 2, v_reg15         ; 2 - to select status register S#2
 @wait:
-		vdp_wait_l 4
-		lda a_vreg
-		ror
-		bcs @wait
-		vdp_sreg 0, v_reg15         ; 0 - reset status register selection to S#0
-		rts
+    vdp_wait_l 4
+    lda a_vreg
+    ror
+    bcs @wait
+    vdp_sreg 0, v_reg15         ; 0 - reset status register selection to S#0
+    plp                         ; restore, irq flag
+    rts
 	
 ;	set pixel to gfx7 using v9958 command engine
 ;
@@ -173,10 +175,9 @@ vdp_wait_cmd:
 ;
 ; 	VRAM ADDRESS = 8(INT(X DIV 8)) + 256(INT(Y DIV 8)) + (Y MOD 8)
 vdp_gfx7_set_pixel_cmd:
-		pha
-		pha
-		
+		php
 		sei
+		pha
 		vdp_reg 17,36
 		
 		vdp_wait_s
@@ -215,6 +216,5 @@ vdp_gfx7_set_pixel_cmd:
 		vdp_wait_s 4
 		jsr vdp_wait_cmd
 
-		pla
-		cli
+		plp
 		rts
