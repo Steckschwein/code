@@ -2,9 +2,8 @@
 .import spi_rw_byte
 .include "bios.inc"
 .include "sdcard.inc"
-.include "via.inc"
-.segment "BIOS"
 
+.code
 ;---------------------------------------------------------------------
 ; Init SD Card 
 ; Destructive: A, X, Y

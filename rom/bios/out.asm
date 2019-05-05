@@ -1,9 +1,8 @@
-
-.segment "BIOS"
 .export hexout, primm, print_crlf
 .import vdp_chrout
 .include "bios.inc"
 
+.code
 ;----------------------------------------------------------------------------------------------
 ; Output byte as hex string on active output device
 ;----------------------------------------------------------------------------------------------
@@ -62,7 +61,5 @@ print_crlf:
 		pha
 		lda #$0a
 		jsr vdp_chrout
-;		lda #$0d
-;		jsr vdp_chrout
 		pla
 		rts

@@ -1,9 +1,8 @@
 .export read_nvram
 .import spi_rw_byte, print_crlf, primm, set_filenameptr
 .include "bios.inc"
-.include "via.inc"
-.segment "BIOS"
 
+.code
 ;---------------------------------------------------------------------
 ; read 96 bytes from RTC as parameter buffer
 ;---------------------------------------------------------------------
@@ -43,8 +42,8 @@ read_nvram:
 	restore
 	rts
 @invalid_sig:
-	printlnstring "NVRAM: Invalid signature."
+	println "NVRAM: Invalid signature."
 	bra @exit
 ; .nvram_crc_error
-; 	+PrintString .txt_nvram_crc_error
+; 	+print .txt_nvram_crc_error
 ; 	bra -

@@ -1,87 +1,62 @@
-.segment "BIOS"
-.export vdp_init, vdp_chrout, vdp_scroll_up
+      .export vdp_init, vdp_chrout, vdp_scroll_up
 
-.import primm
+      .include "bios.inc"
+      .include "vdp.inc"
 
+      .import primm
+      .import vdp_text_on
+      .import vdp_text_blank
+      .import vdp_bgcolor
+      ;.importzp ptr1,ptr2
+
+ROWS=23
 .ifdef CHAR6x8
-.import charset_6x8
+  .import charset_6x8
+  .ifdef COLS80
+    .ifndef V9958
+      .assert 0, error, "80 COLUMNS ARE SUPPORTED ON V9958 ONLY! MAKE SURE -DV9958 IS ENABLED"
+    .endif 
+    COLS=80
+  .else
+    COLS=40
+  .endif 
 .endif
 .ifndef CHAR6x8
-.import charset_8x8
+  COLS=32
+  .import charset_8x8
 .endif
 
-.include "bios.inc"
-.include "vdp.inc"
-
-.macro	vnops_l
-			jsr vnopslide_long
-.endmacro
-
-.macro	vnops
-			jsr vnopslide
-.endmacro
-
-.macro	SyncBlank
-     		lda a_vreg
-@lada:
- 			bit a_vreg
- 			bpl @lada	   ; wait until blank - irq flag set?
-.endmacro
-
-.macro vdp_sreg
-			vnops
-			sta	a_vreg
-			vnops
-			sty	a_vreg
-.endmacro
-
+.code
 ;----------------------------------------------------------------------------------------------
 ; init tms99xx with gfx1 mode
 ;----------------------------------------------------------------------------------------------
 vdp_init:
+      lda a_vreg
       lda #v_reg1_16k	;enable 16K/64k ram, disable screen
       ldy #v_reg1
       vdp_sreg
 
 .ifdef V9958
 			; enable V9958 wait state generator
-			lda #1<<2
+			lda #v_reg25_wait
 			ldy #v_reg25
 			vdp_sreg
 
-			lda #1<<3 	; assume 64kx4 video ram, so we set bit 3 here TODO FIXME vram detection
-			ldy #v_reg8
-			vdp_sreg
 .endif
-
+      jsr vdp_text_blank
+      
 			lda	#<ADDRESS_GFX_SPRITE
 			ldy	#(WRITE_ADDRESS + >ADDRESS_GFX_SPRITE)
 			vdp_sreg
 			lda	#$d0					;sprites off, at least y=$d0 will disable the sprite subsystem
-			vnops_l
+			vnops
 			sta a_vram
-
-			lda	#<ADDRESS_GFX1_SCREEN
-			ldy	#(WRITE_ADDRESS + >ADDRESS_GFX1_SCREEN)
-			vdp_sreg
-			ldy #$00      ;2
-
-			ldx	#$08                    ;8 pages - 8x256 byte, sufficient for 32*24 and 40*24 and 80*24 mode
-
-			lda	#' '					;fill vram screen with blank
-@l1:
-			vnops_l          ;8
-			iny             ;2
-			sta   a_vram    ;
-			bne   @l1        ;3
-			dex
-			bne   @l1
 
 			stz crs_x
 			stz crs_y
 
-			lda #<ADDRESS_GFX1_PATTERN
-			ldy #(WRITE_ADDRESS + >ADDRESS_GFX1_PATTERN)
+			lda #<ADDRESS_TEXT_PATTERN
+			ldy #(WRITE_ADDRESS + >ADDRESS_TEXT_PATTERN)
 			vdp_sreg
 			ldx #$08                    ;load charset
 			ldy   #$00
@@ -94,7 +69,7 @@ vdp_init:
 @l2:
 			lda   (addr),y ;5
 			iny            ;2
-			vnops_l         ;8
+			vnops         ;8
 			sta   a_vram   ;1 opcode fetch
 			bne   @l2        ;3
 			inc   adrh
@@ -107,25 +82,33 @@ vdp_init:
 			vdp_sreg
 			lda #Gray<<4|Black          ;enable gfx 1 with gray on black background
 			ldx	#$20
-@l3:		vnops_l
+@l3:		vnops
 			dex
 			sta a_vram
 			bne @l3
 
-			ldx	#$00					;init vdp regs
-			ldy	#v_reg0
-@l4:		.ifdef CHAR6x8
-			lda vdp_init_bytes_text,x
-			.endif
-			.ifndef CHAR6x8
+.ifdef COLS80
+      lda #80-1 ; TODO constant
+.else
+      lda #40-1 ; TODO constant
+.endif
+      sta max_cols
+      
+.ifdef CHAR6x8
+      jsr vdp_text_on
+      lda #BIOS_COLOR
+      jmp vdp_bgcolor
+.endif
+
+.ifndef CHAR6x8
 			lda vdp_init_bytes_gfx1,x
-			.endif
 			vdp_sreg
 			iny
 			inx
-			cpx	#$08
+			cpx	#09
 			bne @l4
 			rts
+.endif
 
 .export vdp_detect
 vdp_detect:
@@ -134,7 +117,7 @@ vdp_detect:
       lda #1          ; select sreg #1
       ldy #v_reg15
       vdp_sreg
-      vnops_l
+      vnops
       lda a_vreg
       lsr             ; shift right
       and #$1f        ; and mask chip ID#
@@ -150,21 +133,20 @@ vdp_detect:
       ; VRAM detection
       jsr _vdp_detect_vram
       
-      ; Ext RAM detection      
+      ; Ext RAM detection
 _vdp_detect_ext_ram:
       jsr primm
       .asciiz " ExtRAM: "
-      lda #v_reg45_MXC
+      lda #v_reg45_mxc
       ldy #v_reg45
       vdp_sreg
-      ldx #4  ;max 4 16k banks
+      ldx #4  ;max 4 16k banks = 64k
       jsr _vdp_detect_ram
       lda #KEY_LF
 			jmp vdp_chrout
       
 _vdp_detect_vram:
-      ldx #8  ;max 8 16k banks
-      
+      ldx #8  ;max 8 16k banks = 128k
 _vdp_detect_ram:
       lda #$ff
       sta tmp1  ; the bank, start at $0, first inc below
@@ -221,7 +203,7 @@ _vdp_bank_available:
       lda tmp1
       sta a_vram
       pha
-      vnops_l
+      vnops
       jsr _vdp_r_vram ; ... read back again
       pla
       lda tmp1
@@ -247,12 +229,12 @@ _vdp_r_vram:
 _vdp_vram0:
       lda #<bank_end
       vdp_sreg
-      vnops_l
+      vnops
       rts
       
 vdp_scroll_up:
-			SetVector	(ADDRESS_GFX1_SCREEN+COLS), ptr1		        ; +COLS - offset second row
-			SetVector	(ADDRESS_GFX1_SCREEN+(WRITE_ADDRESS<<8)), ptr2	; offset first row as "write adress"
+			SetVector	(ADDRESS_TEXT_SCREEN+COLS), ptr1		        ; +COLS - offset second row
+			SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr2	; offset first row as "write adress"
 
 			lda	a_vreg  ; clear v-blank bit, we dont know where we are...
 @l1:
@@ -264,22 +246,22 @@ vdp_scroll_up:
 			nop
 			lda	ptr1h	; 3cl
 			sta	a_vreg
-			vnops_l		; wait 2µs, 8Mhz = 16cl => 8 nop
+			vnops		; wait 2µs, 8Mhz = 16cl => 8 nop
 			ldx	a_vram	;
-			vnops_l
+			vnops
 
 			lda	ptr2l	; 3cl
 			sta	a_vreg
 			vnops
 			lda	ptr2h	; 3cl
 			sta a_vreg
-			vnops_l
+			vnops
 			stx	a_vram
 			inc	ptr1l	; 5cl
 			bne	@l3		; 3cl
 			inc	ptr1h
 			lda	ptr1h
-			cmp	#>(ADDRESS_GFX1_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))	;screen ram $1800 - $1b00
+			cmp	#>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))	;screen ram $1800 - $1b00
 			beq	@l4
 @l3:
 			inc	ptr2l  ; 5cl
@@ -291,7 +273,7 @@ vdp_scroll_up:
 			lda	#' '
 @l5:
 			sta	a_vram
-			vnops_l
+			vnops
 			dex
 			bne	@l5
 			rts
@@ -367,26 +349,27 @@ vdp_set_addr:				; set the vdp vram adress, write A to vram
 		lsr					; div 8 -> page offset 0-2
 		lsr
 		lsr
-		ora #(WRITE_ADDRESS + >ADDRESS_GFX1_SCREEN)
+		ora #(WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
 		nop
 		nop
 		sta a_vreg
 		rts
 
 vdp_init_bytes_gfx1:
-		.byte 0
-		.byte	v_reg1_16k|v_reg1_display_on|v_reg1_spr_size
-		.byte (ADDRESS_GFX1_SCREEN / $400)	; name table - value * $400					--> characters
-		.byte (ADDRESS_GFX1_COLOR /  $40)	; color table - value * $40 (gfx1), 7f/ff (gfx2)
-		.byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
-		.byte	(ADDRESS_GFX1_SPRITE / $80)	; sprite attribute table - value * $80 		--> offset in VRAM
-		.byte (ADDRESS_GFX1_SPRITE_PATTERN / $800)  ; sprite pattern table - value * $800  		--> offset in VRAM
-		.byte	Black
+    .byte 0
+    .byte	v_reg1_16k|v_reg1_display_on|v_reg1_spr_size
+    .byte (ADDRESS_TEXT_SCREEN / $400)	; name table - value * $400					--> characters
+    .byte (ADDRESS_GFX1_COLOR /  $40)	; color table - value * $40 (gfx1), 7f/ff (gfx2)
+    .byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
+    .byte	(ADDRESS_GFX1_SPRITE / $80)	; sprite attribute table - value * $80 		--> offset in VRAM
+    .byte (ADDRESS_GFX1_SPRITE_PATTERN / $800)  ; sprite pattern table - value * $800  		--> offset in VRAM
+    .byte	Black ;#R07
+    .byte v_reg8_VR	; VR - 64k VRAM TODO FIXME aware of max vram (bios) - #R08
 .endif
 
 .ifdef CHAR6x8
-v_l=tmp0
-v_h=tmp1
+v_l=tmp1
+v_h=tmp2
 vdp_set_addr:			; set the vdp vram adress, write A to vram
 		stz	v_h
 		lda crs_y
@@ -413,30 +396,16 @@ vdp_set_addr:			; set the vdp vram adress, write A to vram
 		bcc @l1
 		inc	v_h			; overflow inc page count
 		clc				;
-@l1:	adc crs_x		; add x to address
+@l1:
+    adc crs_x		; add x to address
 		sta a_vreg
-		lda #(WRITE_ADDRESS + >ADDRESS_GFX1_SCREEN)
+		lda #(WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
 		adc v_h			; add carry and page to address high byte
 		vnops
 		sta a_vreg
 		rts
+.endif
 
-vdp_init_bytes_text:
-.ifdef COLS80
-	.byte v_reg0_m4	; text mode 2
-	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
-	.byte (ADDRESS_GFX1_SCREEN / $1000)| 1<<1 | 1<<0	; name table - value * $1000 (v9958) --> charset
-.else
-	.byte	0
-	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1
-	.byte (ADDRESS_GFX1_SCREEN / $1000) 	; name table - value * $400					--> charset
-.endif
-	.byte 0	; not used
-	.byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
-	.byte	0	; not used
-	.byte 0	; not used
-	.byte	Gray<<4|Black
-.endif
 
 vnopslide_long: ;64cl
 		jsr vnopslide 		; 16cl

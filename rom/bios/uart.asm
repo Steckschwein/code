@@ -1,9 +1,11 @@
-.export init_uart, uart_tx, uart_rx, upload
-.import vdp_chrout, print_crlf, hexout, primm
-.include "bios.inc"
-.include "uart.inc"
-.segment "BIOS"
+    .export init_uart, uart_tx, uart_rx, upload
+    
+    .import vdp_chrout, print_crlf, hexout, primm
 
+    .include "bios.inc"
+    .include "uart.inc"
+
+.code
 ;----------------------------------------------------------------------------------------------
 ; init UART
 ;----------------------------------------------------------------------------------------------
@@ -70,7 +72,7 @@ uart_rx:
 
 upload:
 		jsr print_crlf
-		printstring "Serial upload.."
+		print "Serial upload.."
 		; load start address
 		jsr uart_rx
 		sta startaddr
@@ -147,7 +149,7 @@ upload:
 
 		jsr upload_ok
 
-		printstring "OK"
+		print "OK"
 		rts
 
 upload_ok:

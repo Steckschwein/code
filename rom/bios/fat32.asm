@@ -3,8 +3,8 @@
 .include "bios.inc"
 .include "sdcard.inc"
 .include "fat32.inc"
-.segment "BIOS"
 
+.code
 ;---------------------------------------------------------------------
 ; Mount FAT32 on Partition 0
 ;---------------------------------------------------------------------
@@ -127,8 +127,7 @@ fat_mount:
 		; init file descriptor area
 		; jsr .fat_init_fdarea
 
-		Copy sd_blktarget + BPB_RootClus, root_dir_first_clus, 3
-
+		m_memcpy sd_blktarget + BPB_RootClus, root_dir_first_clus, 4
 
 		; now we have the lba address of the first sector of the first cluster
 
@@ -153,33 +152,33 @@ calc_lba_addr:
 		sec
 		lda root_dir_first_clus
 		sbc #$02
-		sta tmp0 
+		sta tmp1 
 		lda root_dir_first_clus + 1
 		sbc #$00
-		sta tmp0 + 1
+		sta tmp1 + 1
 		lda root_dir_first_clus + 2
 		sbc #$00
-		sta tmp0 + 2
+		sta tmp1 + 2
 		lda root_dir_first_clus + 3
 		sbc #$00
-		sta tmp0 + 3
+		sta tmp1 + 3
 
 
-		Copy cluster_begin_lba, lba_addr, 3
+		m_memcpy cluster_begin_lba, lba_addr, 4
 		
 		ldx sectors_per_cluster
 @l1:	clc
 		; FOOBAR
-		lda tmp0 + 0
+		lda tmp1 + 0
 		adc lba_addr + 0
 		sta lba_addr + 0	
-		lda tmp0 + 1
+		lda tmp1 + 1
 		adc lba_addr + 1
 		sta lba_addr + 1	
-		lda tmp0 + 2
+		lda tmp1 + 2
 		adc lba_addr + 2
 		sta lba_addr + 2	
-		lda tmp0 + 3
+		lda tmp1 + 3
 		adc lba_addr + 3
 		sta lba_addr + 3	
 

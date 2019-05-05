@@ -23,6 +23,8 @@
 .ifndef _SYSTEM_INC_
   _SYSTEM_INC_ = 1
 
-clockspeed   = 8
+clockspeed  = 8
+
+ctrl_port   = $0230
 
 .endif

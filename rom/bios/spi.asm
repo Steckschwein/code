@@ -1,9 +1,8 @@
-.setcpu "65c02"
-.segment "BIOS"
 .export spi_rw_byte
 .include "bios.inc"
 .include "via.inc"
 
+.code
 ;----------------------------------------------------------------------------------------------
 ; Transmit byte VIA SPI
 ; Byte to transmit in A, received byte in A at exit
@@ -11,7 +10,7 @@
 ;----------------------------------------------------------------------------------------------
 
 spi_rw_byte:
-		sta tmp0	; zu transferierendes byte im akku nach tmp0 retten
+		sta tmp1	; zu transferierendes byte im akku nach tmp1 retten
 
 		ldx #$08
 		
@@ -22,7 +21,7 @@ spi_rw_byte:
 		tay		 ; bunkern
 
 @l:
-		rol tmp0
+		rol tmp1
 		tya		; portinhalt
 		ror		; datenbit reinschieben
 

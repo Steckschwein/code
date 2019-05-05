@@ -1,9 +1,8 @@
-.setcpu "65c02"
-.segment "BIOS"
-.export init_via1
-.include "bios.inc"
-.include "via.inc"
+      .export init_via1
+      
+      .include "bios.inc"
 
+.code
 ;----------------------------------------------------------------------------------------------
 ; init VIA1 - set all ports to input
 ;----------------------------------------------------------------------------------------------
