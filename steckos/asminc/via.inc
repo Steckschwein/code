@@ -35,3 +35,7 @@ via1acr     = via1 + $0b
 via1pcr     = via1 + $0c
 via1ifr     = via1 + $0d
 via1ier     = via1 + $0e
+
+
+SDCARD_WRITE_PROTECT  = 1<<5
+SDCARD_DETECT         = 1<<6

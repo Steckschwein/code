@@ -49,7 +49,12 @@
 ; Destructive: A, X, Y
 ;---------------------------------------------------------------------
 init_sdcard:
-			; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
+      lda via1portb
+      and #SDCARD_DETECT
+      beq @init
+      rts
+@init:
+      ; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
 
 			; set ALL CS lines and DO to HIGH
