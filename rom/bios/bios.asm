@@ -178,7 +178,18 @@ mem_ok:
 			bne @l3
 			print "No SD card"
 @l3:
-foo:		jsr upload
+foo:
+      ldx #0
+      ldy #0
+@l:
+      dex
+      bne @l
+      lda @b
+      jsr hexout
+      inc @b
+      bra @l
+@b:   .byte 0      
+      jsr upload
 			jmp startup
 
 boot_from_card:

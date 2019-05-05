@@ -233,40 +233,36 @@ _vdp_vram0:
       rts
       
 vdp_scroll_up:
-			SetVector	(ADDRESS_TEXT_SCREEN+COLS), ptr1		        ; +COLS - offset second row
-			SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr2	; offset first row as "write adress"
-
-			lda	a_vreg  ; clear v-blank bit, we dont know where we are...
+			SetVector	(ADDRESS_TEXT_SCREEN+COLS), ptr3		        ; +COLS - offset second row
+			SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr4	; offset first row as "write adress"
 @l1:
-			bit	a_vreg  ; sync with next v-blank, so that we have the full 4300µs to copy the vram
-			bpl	@l1
 @l2:
-			lda	ptr1l	; 3cl
+			lda	ptr3+0	; 3cl
 			sta	a_vreg
 			nop
-			lda	ptr1h	; 3cl
+			lda	ptr3+1	; 3cl
 			sta	a_vreg
 			vnops		; wait 2µs, 8Mhz = 16cl => 8 nop
 			ldx	a_vram	;
 			vnops
 
-			lda	ptr2l	; 3cl
+			lda	ptr4+0	; 3cl
 			sta	a_vreg
 			vnops
-			lda	ptr2h	; 3cl
+			lda	ptr4+1	; 3cl
 			sta a_vreg
 			vnops
 			stx	a_vram
-			inc	ptr1l	; 5cl
+			inc	ptr3+0	; 5cl
 			bne	@l3		; 3cl
-			inc	ptr1h
-			lda	ptr1h
+			inc	ptr3+1
+			lda	ptr3+1
 			cmp	#>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))	;screen ram $1800 - $1b00
 			beq	@l4
 @l3:
-			inc	ptr2l  ; 5cl
+			inc	ptr4+0  ; 5cl
 			bne	@l2		; 3cl
-			inc	ptr2h
+			inc	ptr4+1
 			bra	@l1
 @l4:
 			ldx	#COLS	; write address is already setup from loop
@@ -405,14 +401,3 @@ vdp_set_addr:			; set the vdp vram adress, write A to vram
 		sta a_vreg
 		rts
 .endif
-
-
-vnopslide_long: ;64cl
-		jsr vnopslide 		; 16cl
-		jsr vnopslide 		; 16cl
-		jsr vnopslide 		; 16cl
-vnopslide:	;8Mhz, 2µs => 16cl = 12cl jsr/rts + 2nop
-		nop
-		nop
-vnopslide_12cl:
-		rts

@@ -9,7 +9,7 @@
       .include "vdp.inc"
     
       .importzp tmp1,tmp2
-      .importzp ptr1,ptr2,ptr3
+      .importzp ptr1,ptr2,ptr3,ptr4
       
 ptr1l=ptr1+0
 ptr1h=ptr1+1
@@ -29,7 +29,7 @@ ram_end_h   		= ram_end+1
 ; Address pointers for serial upload
 startaddr	= ptr1
 endaddr		= ptr2
-length		= $e0
+length		= tmp1
 
 errno	 	= $0300
 nvram		= $1000
