@@ -146,50 +146,46 @@ do_irq:
 ; system interrupt handler
 ; handle keyboard input and text screen refresh
 @irq:
-		save
-		cld	;clear decimal flag, maybe an app has modified it during execution
+      save
+      cld	;clear decimal flag, maybe an app has modified it during execution
 
-		bit a_vreg					; VDP IRQ flag set?
-		bpl @is_irq_snd
-		lda #IRQ_VDP
-		;bra @store_isr
-    sta SYS_IRR
+      bit a_vreg					; VDP IRQ flag set?
+      bpl @is_irq_snd
+      lda #IRQ_VDP
+      bra @sta_irr
 @is_irq_snd:
-		bit opl_stat
-		bpl @is_irq_via
-		lda #IRQ_SND
-		ora SYS_IRR
-    sta SYS_IRR
-    ;bra @store_isr
+      bit opl_stat
+      bpl @is_irq_via
+      lda #IRQ_SND
+      bra @sta_irr
 @is_irq_via:
-		bit via1ifr		; Interrupt from VIA?
-		bpl @user_isr
-		lda #IRQ_VIA
-
-@store_isr:
-		sta SYS_IRR
-
+      bit via1ifr		; Interrupt from VIA?
+      bpl @user_isr
+      lda #IRQ_VIA
+@sta_irr:
+      sta SYS_IRR
 @user_isr:
-		jsr call_user_isr			; user isr first, maybe there timing critical things
+      jsr call_user_isr			; user isr first, maybe there are timing critical things
 
-		bit SYS_IRR					; was vdp irq?
-		bpl @exit
-    .import vdp_bgcolor
-    lda #Cyan
-;    jsr vdp_bgcolor
-    
-		jsr	textui_update_screen    ; update text ui
-		dec frame
-		lda frame
-		and #%00000111              ; every 8 frames we try to update rtc, gives 160ms clock resolution
-		bne @exit
-		jsr __rtc_systime_update    ; update system time, read date time store to rtc_systime_t (see rtc.inc)
+      bit SYS_IRR					; was vdp irq?
+      bpl @exit
+      .import vdp_bgcolor
+      lda #Cyan
+      jsr vdp_bgcolor
+      jsr	textui_update_screen    ; update text ui
+      dec frame
+      lda frame
+      and #$0f              ; every 16 frames we try to update rtc, gives 160ms clock resolution
+      bne @exit
+      lda #White
+      jsr vdp_bgcolor
+      jsr __rtc_systime_update    ; update system time, read date time store to rtc_systime_t (see rtc.inc)
 
 @exit:
     lda #Medium_Green<<4 | Black
- ;   jsr vdp_bgcolor
+    jsr vdp_bgcolor
     
-		stz SYS_IRR
+		stz SYS_IRR                 ; reset
 		restore
 		rti
 

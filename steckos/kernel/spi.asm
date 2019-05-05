@@ -28,47 +28,43 @@
 
 .code
 .export spi_rw_byte, spi_r_byte, spi_deselect, spi_select_device
-.export spi_isbusy
 
-spi_device_deselect=$7e		; deselect any device
+spi_device_deselect=%00011110		; deselect any device
 
 spi_deselect:
-		pha
-		lda #spi_device_deselect
-		sta via1portb
-		pla
-		rts
+      pha
+      lda #spi_device_deselect
+      sta via1portb
+      pla
+      rts
  
 		; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
 		; in:
 		;	A = spi device
 		; out:
-		;   Z = 1 spi for rtc could be selected (not busy), Z=0 otherwise
+		;   Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
 spi_select_device:
-		php
-		pha
-		sei				;critical section start
-		jsr spi_isbusy	;check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may chane in between
-		bne @l_exit		;busy, leave section, device could not be selected
-		pla
-
-		sta via1portb
-		plp
-		lda #0			;exit ok
-		rts
-@l_exit:
-		pla
-		plp				;restore P (interrupt flag)
-		lda #$ff
-		rts
- 
-        ; out:
-        ;   Z=1 not busy, Z=0 spi is busy
+      php
+      sei ;critical section start
+      pha
+      ;check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
+      ;   Z=1 not busy, Z=0 spi is busy
 spi_isbusy:
-        lda via1portb
-        and #%00011110
-        cmp #%00011110
-        rts
+      lda via1portb
+      and #%00011110
+      cmp #%00011110
+      bne @l_exit		;busy, leave section, device could not be selected
+      
+      pla
+      sta via1portb
+      plp
+      lda #0			;exit ok
+      rts
+@l_exit:
+      pla
+      plp				;restore P (interrupt flag)
+      lda #$ff
+      rts
 
 
 ;----------------------------------------------------------------------------------------------

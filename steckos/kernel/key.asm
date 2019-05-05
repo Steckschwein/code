@@ -26,7 +26,7 @@
 .export getkey
 .code
 
-spi_device_keyboard=%01111010
+spi_device_keyboard=%00011010
 
 ; Select Keyboard controller on SPI, get byte from buffer
 ;	in:	-
