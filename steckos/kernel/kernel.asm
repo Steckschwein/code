@@ -94,23 +94,8 @@ kern_init:
 
 	SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
 
-	jsr init_sdcard
-	bne do_upload
-
-	jsr fat_mount
-	beq @l_init
-	pha
-	jsr primm
-	.asciiz "mount error ("
-	pla
-
-	and #%00001111
-	ora #'0'
-	jsr krn_chrout
-
-	jsr primm
-	.byte ")",$0a,0
-	bra do_upload
+      jsr __automount
+      bne do_upload
 
 @l_init:
 	lda #<filename
@@ -175,11 +160,13 @@ do_irq:
       jsr	textui_update_screen    ; update text ui
       dec frame
       lda frame
-      and #$0f              ; every 16 frames we try to update rtc, gives 160ms clock resolution
+      and #$0f              ; every 16 frames we try to update rtc, gives 320ms clock resolution
       bne @exit
       ;lda #White
       ;jsr vdp_bgcolor
       jsr __rtc_systime_update    ; update system time, read date time store to rtc_systime_t (see rtc.inc)
+      .import __automount
+      jsr __automount
 
 @exit:
       lda #Medium_Green<<4 | Black

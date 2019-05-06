@@ -1,6 +1,6 @@
 CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
-OBJS=kernel.o fat32.o sdcard.o textui.o rtc.o spi.o uart.o via.o out.o key.o exec.o util.o matcher.o debug.o ansi.o
+OBJS=kernel.o fat32.o sdcard.o textui.o rtc.o spi.o uart.o via.o out.o key.o exec.o util.o matcher.o debug.o ansi.o automount.o
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
 LDFLAGS=-C kernel.cfg
@@ -52,7 +52,7 @@ loader.bin: kernel.bin loader.o
 
 	# -m <kernel start adress - $100 (loader)
 dis: loader.bin
-	dcc6502 -o 0xe700 -m 6398 -d -n -c loader.bin > loader.dis
+	dcc6502 -o 0xe700 -m 0x1800 -d -n -c loader.bin > loader.dis
 transfer: loader.bin
 	../../transfer.py -s 0x1000 loader.bin
 
