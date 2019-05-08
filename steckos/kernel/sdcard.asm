@@ -28,10 +28,13 @@
 
 .include "common.inc"
 .include "kernel.inc"
+.include "errno.inc"
 .include "sdcard.inc"
+.include "spi.inc"
 .include "via.inc"
 .code
-.import spi_rw_byte, spi_r_byte
+.import spi_rw_byte, spi_r_byte, spi_select_device, spi_deselect
+
 .export init_sdcard, sd_select_card, sd_deselect_card
 .export sd_read_block, sd_read_multiblock, sd_write_block
 
@@ -47,9 +50,26 @@
 ;---------------------------------------------------------------------
 ; Init SD Card
 ; Destructive: A, X, Y
+;
+;   out:  ?
+;
 ;---------------------------------------------------------------------
 init_sdcard:
-			; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
+      lda #spi_device_sdcard
+      jsr spi_select_device
+      beq @sd_detect
+      debug "sd_sel"
+      jsr sd_deselect_card
+      rts
+@sd_detect:
+      lda via1portb
+      and #SDCARD_DETECT
+      beq @init
+      lda #ENODEV
+      debug "sd_det"
+      rts
+@init:
+      ; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
 
 			; set ALL CS lines and DO to HIGH
@@ -272,23 +292,21 @@ sd_read_block:
 ; to allow card to deinit
 ;---------------------------------------------------------------------
 sd_deselect_card:
-			pha
-			phx
-			; set CS line to HI
-			lda #%01111110
-			sta via1portb
+      pha
+      phy
+      
+      jsr spi_deselect
 
-			ldx #$04
+      ldy #$04
 @l1:
-			phx
-			jsr spi_r_byte
-			plx
-			dex
-			bne @l1
-			plx
-			pla
+      jsr spi_r_byte
+      dey
+      bne @l1
+      
+      ply
+      pla
 
-			rts
+      rts
 
 fullblock:
 			; wait for sd card data token
@@ -505,7 +523,7 @@ sd_wait:
 ; select sd card, pull CS line to low
 ;---------------------------------------------------------------------
 sd_select_card:
-			lda #sd_card_sel
+			lda #spi_device_sdcard
 			sta via1portb
 			;TODO FIXME race condition here!
 			

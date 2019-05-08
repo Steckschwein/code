@@ -27,4 +27,6 @@ clockspeed  = 8
 
 ctrl_port   = $0230
 
+CODE_LF  = $0a ; line feed
+
 .endif

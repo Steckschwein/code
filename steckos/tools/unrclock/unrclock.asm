@@ -6,7 +6,6 @@
 .include "rtc.inc"
 .include "vdp.inc"
 .include "appstart.inc"
-appstart $1000
 
 .importzp ptr1,ptr2
 .importzp tmp1,tmp2,tmp3,tmp4
@@ -16,9 +15,7 @@ appstart $1000
 .import vdp_mc_blank
 .import vdp_fill
 
-clock_update_trigger=tmp1
-color=tmp3
-clock_position_trigger=tmp4
+appstart $1000
 
 color_bg=Transparent
 color_off=Gray
@@ -29,17 +26,14 @@ color_hour_l=Light_Blue
 color_hour_h=Medium_Red
 
 .code
-main:
         sei
         jsr krn_textui_disable
         jsr clock_init
-        
         copypointer user_isr, safe_isr
         SetVector clock_isr, user_isr
         
         stz clock_update_trigger
         stz clock_position_trigger
-        
         cli
         
 @main_loop:
@@ -48,16 +42,13 @@ main:
         jsr clock_update
         jsr clock_position
         stz clock_update_trigger
-        
         jsr	krn_getkey
-        bne exit
-        bra @main_loop
-exit:                
+        bcc @main_loop
+exit:
         sei
         copypointer safe_isr, user_isr
-		jsr	krn_textui_init
         cli
-
+        jsr	krn_textui_init
         jmp (retvec)
 
 clock_position:
@@ -89,31 +80,34 @@ clock_init:
 clock_update:
         jsr clock_reset
         jsr clock_calc
+        
         jsr clock_draw_sec
         
         SetVector color_mask_l, ptr1
         lda #color_min_l<<4 | color_min_l
-        sta tmp2      ; color
-        lda #($10*8)
+        sta color      ; color
+        lda #($10*8)                    ; block offset, vram address in mc mode
         ldy #<(tab_min_l-tab_lights)    ; offset min low
         jsr clock_draw_3x3_block
 
         lda #color_hour_h<<4 | color_hour_h
-        sta tmp2
-        lda #0
-        ldx #2
+        sta color
+        lda #0    ;offset vram
+        
+        ldx #3-1  ;blocks
+        
         ldy #<(tab_hour_h-tab_lights)   ; offset hours high
         jsr clock_draw_3x3_block_n
         
         SetVector color_mask_r, ptr1
         lda #color_min_h<<4 | color_min_h
-        sta tmp2
-        lda #(9*8)
+        sta color
+        lda #(9*8) ;offset vram
         ldy #<(tab_min_h-tab_lights)    ; offset min high
         jsr clock_draw_3x3_block
         
         lda #color_hour_l<<4 | color_hour_l
-        sta tmp2
+        sta color
         lda #(2*8)
         ldy #<(tab_hour_l-tab_lights)   ; offset hours low
         jsr clock_draw_3x3_block
@@ -121,8 +115,8 @@ clock_update:
 
 
 clock_draw_3x3_block: ;
-        ldx #8        ; 0-8, 1-9 blocks
-clock_draw_3x3_block_n:        
+        ldx #9-1        ; 0-8, 1-9 blocks
+clock_draw_3x3_block_n:
         sta tmp1      ; block offset
 @loop:  lda tab_lights, y
         beq @l_skip
@@ -131,7 +125,7 @@ clock_draw_3x3_block_n:
         sta ptr2+1
         
         lda clock_ptr_tab_block_1_l, x
-        jsr clock_draw_row_3x        
+        jsr clock_draw_row_3x
         inc ptr1
         
         lda clock_ptr_tab_block_2_l, x
@@ -149,7 +143,7 @@ clock_draw_row_3x:
         adc tmp1
         sta ptr2
         
-        lda tmp2    ; color
+        lda color    ; color
         and (ptr1)  ; ... and mask
         
         sta (ptr2)
@@ -160,14 +154,14 @@ clock_draw_row_3x:
         rts
 
 clock_draw_sec:
-        ldx #58 ;59 states - 0-58
+        ldx #60-1 ;60 states - 0-59
 :       lda tab_sec, x
         beq :+
         
         lda clock_ptr_tab_l_sec, x
         sta ptr2
         lda clock_ptr_tab_h_sec, x
-        sta ptr2+1        
+        sta ptr2+1
         lda #Transparent<<4|color_sec
         sta (ptr2)
 :        
@@ -176,17 +170,16 @@ clock_draw_sec:
         
         rts
 
-        
 clock_calc:
         ldy #0  ; offset into last rtc
         
-        lda #59 ;sequence max
+        lda #60-1 ;sequence max
         sta tmp2
         SetVector tab_sec, ptr1
         lda rtc_systime_t+time_t::tm_sec
         jsr rnd_sequence
-
-        lda #9 ;sequence max - 9 blocks
+        
+        lda #9-1 ;sequence max - 9 blocks
         sta tmp2
         
         SetVector tab_min_l, ptr1
@@ -202,11 +195,10 @@ clock_calc:
         jsr bin2dec
         jsr rnd_sequence_l_nibble
         
-        lda #3 ;sequence max - 1-3 blocks
+        lda #3-1 ;sequence max - 1-3 blocks
         sta tmp2
         SetVector tab_hour_h, ptr1
         jsr rnd_sequence_h_nibble
-
         rts
 
 rnd_sequence_l_nibble:
@@ -232,11 +224,10 @@ rnd_sequence:
         tax             ; "n" as loop counter to x
         
         ldy tmp2        ; erase current tab
-        dey
         lda #0
 :       sta (ptr1), y
         dey
-        bpl :-       
+        bpl :-
         
         cpx #0                  ; zero number?     
         beq @l_end_restore      ; skip and leave an empty sequence
@@ -245,17 +236,17 @@ rnd_sequence:
 @l_mod:
         cmp tmp2
         bcc @l_ix
+        beq @l_ix
         sbc tmp2
         bra @l_mod
 @l_ix:
         tay
-@l_tst:        
+@l_tst:
         lda (ptr1), y
         beq @l_set
-        iny
-        cpy tmp2
-        bne @l_tst
-        ldy #0
+        dey
+        bpl @l_tst
+        ldy tmp2
         bra @l_tst
 @l_set:
         lda #1
@@ -269,13 +260,13 @@ rnd_sequence:
         iny ; update y into last_rtc
         rts
 
-;convert A to packed decimal (MAX 99)       
+;convert A to packed decimal (MAX 99)
 bin2dec:
         pha
+        lsr
+        lsr
         lsr 
-        lsr 
-        lsr  
-        lsr 
+        lsr
         tax
         sed
         pla
@@ -292,7 +283,7 @@ bindecl:
 bindech:
         .byte $00,$16,$32,$48,$64,$80,$96 
 
-clock_reset:        
+clock_reset:
         lda #Transparent<<4|color_off
         sta color
         ldy #0
@@ -393,11 +384,11 @@ clock_isr:
         lda SYS_IRR
         bpl @l_exit
         
-;        lda #Dark_Green<<4 | Cyan
- ;       jsr vdp_bgcolor
-
+        ;lda #Light_Red<<4 | Light_Red
+;        jsr vdp_bgcolor
+        
         inc clock_update_trigger
-
+        
         lda vaddr
         cmp vaddr_new
         bne @l_erase
@@ -405,7 +396,7 @@ clock_isr:
         cpy vaddr_new+1
         beq @l_update
 @l_erase:   ; clear clock at old position
-            vdp_sreg
+            vdp_sreg  ; vram a/y
             lda #Transparent<<4|Transparent
             ldx #2
             jsr vdp_fill
@@ -421,10 +412,9 @@ clock_isr:
         inc ptr1+1
         ldx #<(32*8)
         jsr copy_vram
-        
-        lda #Dark_Green<<4| Transparent
-        jsr vdp_bgcolor
 @l_exit:
+        ;lda #Dark_Green<<4| Transparent
+        ;jsr vdp_bgcolor
         rts
         
 copy_vram:
@@ -450,11 +440,15 @@ noEor:
         sta seed
         rts
         
+safe_isr: .res 2
+seed:     .res 1, 123
+
+clock_update_trigger:    .res 1
+color:                   .res 1
+clock_position_trigger:  .res 1
+        
 vaddr:       .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
 vaddr_new:   .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
-
-safe_isr:  .res 2
-seed: .res 1, 123
 
 .data
 clock_data: 
@@ -506,12 +500,11 @@ color_mask_l:
         .byte %11111111, %1111<<4 | color_bg
 
 tab_lights:
-tab_sec:    .res 59
+tab_sec:    .res 60
 tab_min_l:  .res 9
 tab_min_h:  .res 9
 tab_hour_l: .res 9
 tab_hour_h: .res 3
-tab_lights_end:
 
 last_rtc:      
         .res 1 ; sec

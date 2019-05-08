@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschein.de
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -19,26 +19,9 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.ifndef _VIA_INC_
-  _VIA_INC_=1
 
-; VIA address and registers
-via1        = $0210
-via1porta   = via1+1
-via1portb   = via1
-via1ddrb    = via1+2
-via1ddra    = via1+3
-via1t1cl    = via1+4
-via1t1ch    = via1+5
-via1t2cl    = via1+8
-via1t2ch    = via1+9
-via1sr      = via1 + $0a
-via1acr     = via1 + $0b
-via1pcr     = via1 + $0c
-via1ifr     = via1 + $0d
-via1ier     = via1 + $0e
+spi_device_sdcard   = %00011100 ;spi device number 1110 (SPI_SS1)
+spi_device_keyboard = %00011010 ;spi device number 1101 (SPI_SS2)
+spi_device_rtc      = %00010110 ;spi device number 1011 (SPI_SS3)
 
-SDCARD_WRITE_PROTECT  = 1<<5
-SDCARD_DETECT         = 1<<6
-
-.endif
+spi_device_deselect = %00011110 ; deselect any device
