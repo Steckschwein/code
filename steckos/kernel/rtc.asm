@@ -26,6 +26,7 @@
 
 .include "kernel.inc"
 .include "rtc.inc"
+.include "spi.inc"
 .include "via.inc"
 .import spi_rw_byte, spi_r_byte, spi_deselect, spi_select_device
 
@@ -36,8 +37,6 @@
 .export __rtc_systime_update
 
 .code
-
-spi_device_rtc=%01110110
 
         ; out:
         ;   Z=1 spi for rtc could be selected (not busy), Z=0 otherwise
@@ -54,6 +53,7 @@ init_rtc:
 		jsr spi_rw_byte
 		lda #$00
 		jsr spi_rw_byte
+    jsr spi_deselect
     ; fall trhough - read rtc initial
 
 		;in:

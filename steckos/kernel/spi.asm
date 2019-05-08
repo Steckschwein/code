@@ -25,11 +25,11 @@
 
 .include "kernel.inc"
 .include "via.inc"
+.include "spi.inc"
+.include "errno.inc"
 
 .code
 .export spi_rw_byte, spi_r_byte, spi_deselect, spi_select_device
-
-spi_device_deselect=%00011110		; deselect any device
 
 spi_deselect:
       pha
@@ -51,6 +51,7 @@ spi_select_device:
       ;   Z=1 not busy, Z=0 spi is busy
 spi_isbusy:
       lda via1portb
+      debug "viab"
       and #%00011110
       cmp #%00011110
       bne @l_exit		;busy, leave section, device could not be selected
@@ -63,7 +64,7 @@ spi_isbusy:
 @l_exit:
       pla
       plp				;restore P (interrupt flag)
-      lda #$ff
+      lda #EBUSY
       rts
 
 

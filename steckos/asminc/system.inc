@@ -25,4 +25,6 @@
 
 clockspeed   = 8
 
+CODE_LF  = $0a ; line feed
+
 .endif

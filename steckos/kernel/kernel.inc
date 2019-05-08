@@ -24,9 +24,9 @@
 TEXT_MODE_40=40-1
 TEXT_MODE_80=80-1
 
-.include  "system.inc"
-.include  "zeropage.inc"
-.include  "debug.inc"
+.include "system.inc"
+.include "zeropage.inc"
+.include "debug.inc"
 
 kernel_start = $e800
 user_isr     = $028a

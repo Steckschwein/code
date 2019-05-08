@@ -58,26 +58,25 @@
 .import __rtc_systime_update
 
 kern_init:
-	sei
+      sei
 
-	; copy trampolin code for ml monitor entry to ram
-	ldx #$00
-@copy:
-	lda trampolin_code,x
-	sta trampolin,x
-	inx
-	cpx #(trampolin_code_end - trampolin_code)
-	bne @copy
+      ; copy trampolin code for ml monitor entry to ram
+      ldx #$00
+      @copy:
+      lda trampolin_code,x
+      sta trampolin,x
+      inx
+      cpx #(trampolin_code_end - trampolin_code)
+      bne @copy
 
-    jsr init_via1
-    jsr init_rtc                ;init, rtc is loaded initial
-    jsr init_uart
+      SetVector user_isr_default, user_isr
+      jsr textui_init0
+      
+      jsr init_via1
+      jsr init_rtc                ;init, rtc is loaded initial
+      jsr init_uart
 
-    SetVector user_isr_default, user_isr
-
-    jsr textui_init0
-
-    cli
+      cli
 
 .ifdef DEBUG_KERNEL
 ;      jsr primm
@@ -92,23 +91,22 @@ kern_init:
       .byte $00
 .endif
 
-	SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
+      SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
 
       jsr __automount
       bne do_upload
 
-@l_init:
-	lda #<filename
-	ldx #>filename
-	jsr execv
+      lda #<filename
+      ldx #>filename
+      jsr execv
 
 do_upload:
-	jsr upload
+      jsr upload
 
-	ldx #$ff
-	txs
+      ldx #$ff
+      txs
 
-	jmp (startaddr)
+      jmp (startaddr)
 
 ;----------------------------------------------------------------------------------------------
 ; IO_IRQ Routine. Handle IRQ
