@@ -29,6 +29,7 @@
         .importzp vdp_ptr
         .import vdp_init_reg
         .import vdp_fill
+        .import vdp_fills
 
 .ifdef COLS80
 	.ifndef V9958
@@ -41,9 +42,13 @@
 ; blank screen
 vdp_text_blank:
       vdp_vram_w ADDRESS_TEXT_SCREEN
-      ldx #4
+      ldx #8
       lda #' '
-      jmp vdp_fill
+      jsr vdp_fill
+      vdp_vram_w ADDRESS_TEXT_COLOR
+      lda #0
+      ldx #0
+      jmp vdp_fills
 ;
 ;	text mode - 40x24/80x24 character mode, 2 colors
 ;
@@ -53,7 +58,6 @@ vdp_text_on:
 	; enable V9958 /WAIT pin
 	vdp_sreg v_reg25_wait, v_reg25
 .endif
-
       SetVector vdp_init_bytes_text, vdp_ptr
       ldy #0
       ldx	#v_reg0

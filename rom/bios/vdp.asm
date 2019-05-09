@@ -7,7 +7,8 @@
       .import vdp_text_on
       .import vdp_text_blank
       .import vdp_bgcolor
-      ;.importzp ptr1,ptr2
+      .import vdp_memcpy
+      .import vdp_fills
 
 ROWS=23
 .ifdef CHAR6x8
@@ -31,66 +32,46 @@ ROWS=23
 ; init tms99xx with gfx1 mode
 ;----------------------------------------------------------------------------------------------
 vdp_init:
-      lda a_vreg
-      lda #v_reg1_16k	;enable 16K/64k ram, disable screen
-      ldy #v_reg1
-      vdp_sreg
+      vdp_sreg v_reg1_16k, v_reg1;enable 16K/64k ram, disable screen
 
 .ifdef V9958
-			; enable V9958 wait state generator
-			lda #v_reg25_wait
-			ldy #v_reg25
-			vdp_sreg
-
+      vdp_sreg v_reg8_VR, v_reg8	    ; VR - 64k VRAM
+			vdp_sreg v_reg25_wait, v_reg25  ; enable V9958 wait state generator
 .endif
       jsr vdp_text_blank
       
-			lda	#<ADDRESS_GFX_SPRITE
-			ldy	#(WRITE_ADDRESS + >ADDRESS_GFX_SPRITE)
-			vdp_sreg
-			lda	#$d0					;sprites off, at least y=$d0 will disable the sprite subsystem
+      vdp_vram_w ADDRESS_GFX_SPRITE
 			vnops
+			lda	#$d0					;sprites off, at least y=$d0 will disable the sprite subsystem
 			sta a_vram
 
 			stz crs_x
 			stz crs_y
 
-			lda #<ADDRESS_TEXT_PATTERN
-			ldy #(WRITE_ADDRESS + >ADDRESS_TEXT_PATTERN)
-			vdp_sreg
+      vdp_vram_w ADDRESS_TEXT_PATTERN
+.ifdef CHAR6x8
+;			SetVector    charset_6x8, addr
+      lda #<charset_6x8
+      ldy #>charset_6x8
+.endif
+.ifndef CHAR6x8		; 8x8 and 32 cols, also setup colors in color ram
+      lda #<charset_8x8
+      ldy #>charset_8x8
+;			SetVector    charset_8x8, addr
+.endif
 			ldx #$08                    ;load charset
-			ldy   #$00
-			.ifdef CHAR6x8
-			SetVector    charset_6x8, addr
-			.endif
-			.ifndef CHAR6x8		; 8x8 and 32 cols, also setup colors in color ram
-			SetVector    charset_8x8, addr
-			.endif
-@l2:
-			lda   (addr),y ;5
-			iny            ;2
-			vnops         ;8
-			sta   a_vram   ;1 opcode fetch
-			bne   @l2        ;3
-			inc   adrh
-			dex
-			bne   @l2
+      jsr vdp_memcpy
 
 			; in 8x8 and 32 cols we must setup colors in color vram
-			lda	#<ADDRESS_GFX1_COLOR
-			ldy	#WRITE_ADDRESS + >ADDRESS_GFX1_COLOR
-			vdp_sreg
+      vdp_vram_w ADDRESS_GFX1_COLOR
 			lda #Gray<<4|Black          ;enable gfx 1 with gray on black background
 			ldx	#$20
-@l3:		vnops
-			dex
-			sta a_vram
-			bne @l3
+      jsr vdp_fills
 
 .ifdef COLS80
-      lda #80-1 ; TODO constant
+      lda #TEXT_MODE_80
 .else
-      lda #40-1 ; TODO constant
+      lda #TEXT_MODE_40
 .endif
       sta max_cols
       

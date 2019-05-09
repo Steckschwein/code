@@ -27,6 +27,14 @@ clockspeed  = 8
 
 ctrl_port   = $0230
 
+ROM_OFF = 1<<0
+BANK_SEL0 = 1<<1
+BANK_SEL1 = 1<<2
+BANK0 = 0
+BANK1 = BANK_SEL0
+BANK2 = BANK_SEL1
+BANK3 = BANK_SEL1 | BANK_SEL0
+
 CODE_LF  = $0a ; line feed
 
 .endif

@@ -7,7 +7,7 @@ DEFINES+=-DCHAR6x8
 # if 9958 is used
 DEFINES+=-DV9958
 # enable 80 cols
-# DEFINES+=-DCOLS80
+#DEFINES+=-DCOLS80
 
 
 .PHONY: all clean
@@ -26,7 +26,7 @@ version.inc:
 
 bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -o bios.bin
-	cat symbols.txt | sed "s/al 0[0-9]//g" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > bios_call.inc
+	cat bios.lbl | sed "s/al 0[0-9]//g" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > bios_call.inc
   
 bios.dis: bios.bin
 	dcc6502 -o 0xe000 -m 0x1fff -d -n -c $< > $@

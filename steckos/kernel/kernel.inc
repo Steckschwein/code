@@ -21,9 +21,6 @@
 ; SOFTWARE.
 .setcpu "65c02"
 
-TEXT_MODE_40=40-1
-TEXT_MODE_80=80-1
-
 .include "system.inc"
 .include "zeropage.inc"
 .include "debug.inc"
@@ -41,15 +38,6 @@ user_isr     = $028a
   lda #$0a		;\n already does the carriage return
   jsr krn_chrout
 .endmacro
-
-memctl = $0230
-ROM_OFF = 1<<0
-BANK_SEL0 = 1<<1
-BANK_SEL1 = 1<<2
-BANK0 = 0
-BANK1 = BANK_SEL0
-BANK2 = BANK_SEL1
-BANK3 = BANK_SEL1 | BANK_SEL0
 
 .macro krn_ram_on
     +krn_rom_off
