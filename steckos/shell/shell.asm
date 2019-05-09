@@ -25,7 +25,7 @@ prompt  = $af
 
 .include "zeropage.inc"
 .include "kernel_jumptable.inc"
-.include "kernel.inc"
+.include "vdp.inc"
 .include "common.inc"
 .include "keyboard.inc"
 .include "rtc.inc"
@@ -135,6 +135,7 @@ inputloop:
         iny
 line_end:
         jsr char_out
+;        jsr hexout
         jsr terminate
 
         bra inputloop

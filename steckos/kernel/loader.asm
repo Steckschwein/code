@@ -59,7 +59,7 @@ loop:
 		bne loop
 end:
 		lda #$01
-		sta memctl
+		sta ctrl_port
 
 		; jump to reset vector
 		jmp ($fffc)

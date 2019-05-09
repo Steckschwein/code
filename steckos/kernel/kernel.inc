@@ -46,41 +46,41 @@ user_isr     = $028a
 .macro krn_rom_off     ; disable ROM - enable RAM
     +krn_save_memctl
     lda #ROM_OFF
-    sta memctl
+    sta ctrl_port
 .endmacro
 
 .macro krn_bank0_on       ; enable bank 0 - ROM $0000-$1fff to $e000-$ffff
     +krn_save_memctl
-    stz memctl
+    stz ctrl_port
 .endmacro
 
 .macro krn_bank1_on       ; enable bank 1 - ROM $2000-$3fff to $e000-$ffff
     +krn_save_memctl
     lda #BANK1
-    sta memctl
+    sta ctrl_port
 .endmacro
 
 .macro krn_bank2_on       ; enable bank 2 - ROM $4000-$5fff to $e000-$ffff
     +krn_save_memctl
     lda #BANK2
-    sta memctl
+    sta ctrl_port
 .endmacro
 
 .macro krn_bank3_on        ; enable bank 3 - ROM $6000-$7fff to $e000-$ffff
     +krn_save_memctl
     lda #BANK3
-    sta memctl
+    sta ctrl_port
 .endmacro
 
 .macro krn_save_memctl    ; save memctl and a
     pha
-    lda memctl
+    lda ctrl_port
     pha
 .endmacro
 
 .macro krn_restore_memctl  ; restore memctl
     pla
-    sta memctl
+    sta ctrl_port
     pla
 .endmacro
 
