@@ -19,14 +19,16 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.include "vdp.inc"
-.include "common.inc"
-.include "zeropage.inc"
+        .export vdp_text_on
+        .export vdp_text_blank
 
-.importzp vdp_ptr
-.import vdp_init_reg
+        .include "vdp.inc"
+        .include "common.inc"
+        .include "zeropage.inc"
 
-.export vdp_text_on
+        .importzp vdp_ptr
+        .import vdp_init_reg
+        .import vdp_fill
 
 .ifdef COLS80
 	.ifndef V9958
@@ -35,6 +37,13 @@
 .endif
 
 .code
+
+; blank screen
+vdp_text_blank:
+      vdp_vram_w ADDRESS_TEXT_SCREEN
+      ldx #4
+      lda #' '
+      jmp vdp_fill
 ;
 ;	text mode - 40x24/80x24 character mode, 2 colors
 ;

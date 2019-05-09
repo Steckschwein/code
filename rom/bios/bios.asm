@@ -1,17 +1,16 @@
-.setcpu "65c02"
-.include "bios.inc"
-.include "sdcard.inc"
-.include "fat32.inc"
+      .include "bios.inc"
+      .include "sdcard.inc"
+      .include "fat32.inc"
+      
+      .export set_filenameptr
 
-.export set_filenameptr
-.segment "BIOS"
-.import init_uart, upload
-.import init_via1
-.import hexout, primm, print_crlf
-.import vdp_init, vdp_chrout, vdp_detect
-.import init_sdcard
-.import fat_mount, fat_read, fat_find_first, calc_lba_addr
-.import read_nvram
+      .import init_uart, upload
+      .import init_via1
+      .import hexout, primm, print_crlf
+      .import vdp_init, vdp_chrout, vdp_detect
+      .import init_sdcard
+      .import fat_mount, fat_read, fat_find_first, calc_lba_addr
+      .import read_nvram
 
 .macro set_ctrlport
             lda ctrl_port
@@ -22,11 +21,10 @@
             sta ctrl_port
 .endmacro
 
+.code
 do_reset:
-
 			; disable interrupt
 			sei
-
 			; clear decimal flag
 			cld
 
@@ -134,7 +132,7 @@ stop:
 mem_ok:
             set_ctrlport
 
-			jsr vdp_init
+      jsr vdp_init
 
             set_ctrlport
 
@@ -142,8 +140,8 @@ mem_ok:
 			.byte "BIOS "
 			.include "version.inc"
 			.byte $0a,0
-
-			printstring "Memcheck $"
+      
+			print "Memcheck $"
 	  	    lda ptr1h
 			jsr hexout
 	  	    lda ptr1l
@@ -172,25 +170,26 @@ mem_ok:
 			; display sd card error message
 			cmp #$0f
 			bne @l1
-			printstring "Invalid SD card"
+			print "Invalid SD card"
 @l1:		cmp #$1f
 			bne @l2
-			printstring "SD card init failed"
+			print "SD card init failed"
 @l2:		cmp #$ff
 			bne @l3
-			printstring "No SD card"
+			print "No SD card"
 @l3:
-foo:		jsr upload
+foo:
+      jsr upload
 			jmp startup
 
 boot_from_card:
-			printstring "Boot from SD card.. "
+			print "Boot from SD card.. "
 			jsr fat_mount
 
 			lda errno
 			beq @findfile
 			jsr print_crlf
-			printstring "FAT32 mount error: "
+			print "FAT32 mount error: "
 			jsr hexout
 
 @findfile:
@@ -215,7 +214,7 @@ boot_from_card:
 			iny
 			cpy #$0b
 			bne @loop
-			printstring " not found."
+			print " not found."
 
 			bra foo
 @loadfile:
@@ -252,9 +251,8 @@ startup:
 			jmp (startaddr)
 
 
-
 set_filenameptr:
-			copyPointer paramvec, ptr1
+			copypointer paramvec, ptr1
 			clc
 			lda #param_filename
 			adc ptr1l
@@ -264,15 +262,13 @@ set_filenameptr:
 @l4:
 			rts
 
-
-
-
-
-
-
-dummy_irq:
+bios_irq:
 		rti
-
+;    save
+ ;   bit a_vreg
+  ;  bpl @exit
+;@exit:
+ ;   restore
 
 num_patterns = $02
 pattern:
@@ -300,4 +296,4 @@ param_defaults:
 .word do_reset
 ; $FFFE/$FFFF IRQ vector
 ;*= $fffe
-.word dummy_irq
+.word bios_irq
