@@ -51,7 +51,6 @@ spi_select_device:
       ;   Z=1 not busy, Z=0 spi is busy
 spi_isbusy:
       lda via1portb
-      debug "viab"
       and #%00011110
       cmp #%00011110
       bne @l_exit		;busy, leave section, device could not be selected

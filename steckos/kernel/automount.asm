@@ -39,12 +39,11 @@
       .include "debug.inc"
 .code
 
+MOUNT_RETRIES=6
+
 __automount_init:
       jsr sdcard_detect
-      beq sdinit
-      jsr primm
-      .byte "No SD card!",CODE_LF,0
-      rts
+      bne sdcard_err_detect
 __automount:
       jsr sdcard_detect
       bne reset_retry    ; no card, reset retry and exit
@@ -52,14 +51,13 @@ __automount:
       beq exit
 sdinit:
       jsr sdcard_init
+      debug8 "init", sdcard_retry
       beq @mount
       dec sdcard_retry
-      bne exit
-      jsr primm
-      .byte "SD card init failed!",CODE_LF,0
+      beq sdcard_err_init
       rts
 @mount:
-      stz sdcard_retry
+      stz sdcard_retry    ; ok, no further retries
       jsr fat_mount
       beq exit
       pha
@@ -74,8 +72,21 @@ sdinit:
 exit:
       rts
 reset_retry:
-      lda #3              ; yes, try init and mount otherwise
+      lda #MOUNT_RETRIES              ; yes, try init and mount otherwise
       sta sdcard_retry
       rts
-      
+msg_sdcard:
+      jsr primm
+      .byte "SD card ",0
+      rts
+sdcard_err_detect:
+      jsr msg_sdcard
+      jsr primm
+      .byte "not found!",CODE_LF,0
+      rts
+sdcard_err_init:
+      jsr msg_sdcard
+      jsr primm
+      .byte "init failed!",CODE_LF,0
+      rts
 sdcard_retry: .res 1,1; initial with 1, during boot only one try

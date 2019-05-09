@@ -59,15 +59,14 @@ sdcard_detect:
 ; Init SD Card
 ; Destructive: A, X, Y
 ;
-;   out:  ?
+;   out:  Z=1 on success, Z=0 otherwise
 ;
 ;---------------------------------------------------------------------
 sdcard_init:
       lda #spi_device_sdcard
       jsr spi_select_device
       beq @init
-      debug "spi busy"
-      jmp sd_deselect_card
+      rts
 @init:
       ; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
