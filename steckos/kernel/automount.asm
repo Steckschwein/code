@@ -24,9 +24,11 @@
 .endif
 
       .export __automount
+      .export __automount_init
       
       .import primm
-      .import init_sdcard
+      .import sdcard_init
+      .import sdcard_detect
       .import fat_mount
       .import krn_chrout
       
@@ -37,32 +39,29 @@
       .include "debug.inc"
 .code
 
+__automount_init:
+      jsr sdcard_detect
+      beq sdinit
+      jsr primm
+      .byte "No SD card!",CODE_LF,0
+      rts
 __automount:
-      lda via1portb
-      and #SDCARD_DETECT
-      cmp sdcard_state    ; changed?
-      sta sdcard_state    
-      beq @retry          ; no, go on with retry if any
-      and #SDCARD_DETECT  ; yes, card inserted?
-      bne @exit           ; no, exit
-@init:                    ; yes, try init and mount otherwise
-      lda #3
-      sta sdcard_retry
-@retry:
-      lda sdcard_retry
-      beq @exit
-      jsr init_sdcard
+      jsr sdcard_detect
+      bne reset_retry    ; no card, reset retry and exit
+      lda sdcard_retry   ; should we try?
+      beq exit
+sdinit:
+      jsr sdcard_init
       beq @mount
       dec sdcard_retry
-      bne @exit
+      bne exit
       jsr primm
-      .byte "sdcard failed!",CODE_LF,0
+      .byte "SD card init failed!",CODE_LF,0
       rts
 @mount:
       stz sdcard_retry
       jsr fat_mount
-      beq @exit
-@error:
+      beq exit
       pha
       jsr primm
       .byte "mount error (",0
@@ -72,8 +71,11 @@ __automount:
       jsr krn_chrout
       jsr primm
       .byte ")",CODE_LF,0
-@exit:
+exit:
+      rts
+reset_retry:
+      lda #3              ; yes, try init and mount otherwise
+      sta sdcard_retry
       rts
       
-sdcard_retry: .res 1,0
-sdcard_state: .res 1,0
+sdcard_retry: .res 1,1; initial with 1, during boot only one try

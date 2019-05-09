@@ -39,7 +39,7 @@
 .import getkey
 .import textui_enable, textui_disable, vdp_display_off,  textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
 
-.import init_sdcard
+.import sdcard_init
 
 .import fat_mount, fat_open, fat_close, fat_close_all, fat_read, fat_find_first, fat_find_next
 .import fat_mkdir, fat_chdir, fat_rmdir
@@ -55,6 +55,9 @@
 .import strout, primm
 .import ansi_chrout
 
+; internal kernel api stuff
+.import __automount
+.import __automount_init
 .import __rtc_systime_update
 
 kern_init:
@@ -78,10 +81,7 @@ kern_init:
 
       cli
 
-.ifdef DEBUG_KERNEL
-;      jsr primm
-;      .asciiz "dbg"
-.else
+.ifndef DEBUG_KERNEL
       jsr primm
       .byte $d5,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$b8,$0a
       .byte $b3," steckOS Kernel "
@@ -93,7 +93,7 @@ kern_init:
 
       SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
 
-      jsr __automount
+      jsr __automount_init
       bne do_upload
 
       lda #<filename
@@ -163,7 +163,6 @@ do_irq:
       ;lda #White
       ;jsr vdp_bgcolor
       jsr __rtc_systime_update    ; update system time, read date time store to rtc_systime_t (see rtc.inc)
-      .import __automount
       jsr __automount
 
 @exit:
@@ -390,7 +389,7 @@ krn_textui_setmode:     jmp textui_setmode
 krn_textui_crs_onoff:   jmp textui_cursor_onoff
 
 .export krn_init_sdcard
-krn_init_sdcard:		jmp init_sdcard
+krn_init_sdcard:		jmp sdcard_init
 
 .export krn_upload
 krn_upload:				jmp do_upload

@@ -35,7 +35,8 @@
 .code
 .import spi_rw_byte, spi_r_byte, spi_select_device, spi_deselect
 
-.export init_sdcard, sd_select_card, sd_deselect_card
+.export sdcard_init, sdcard_detect
+.export sd_select_card, sd_deselect_card
 .export sd_read_block, sd_read_multiblock, sd_write_block
 
 ; public bock api
@@ -47,6 +48,13 @@
 .endif
 
 
+;   out:
+;     Z=1 sd card available, Z=0 otherwise A=ENODEV
+sdcard_detect:
+      lda via1portb
+      and #SDCARD_DETECT
+      rts
+
 ;---------------------------------------------------------------------
 ; Init SD Card
 ; Destructive: A, X, Y
@@ -54,20 +62,12 @@
 ;   out:  ?
 ;
 ;---------------------------------------------------------------------
-init_sdcard:
+sdcard_init:
       lda #spi_device_sdcard
       jsr spi_select_device
-      beq @sd_detect
-      debug "sd_sel"
-      jsr sd_deselect_card
-      rts
-@sd_detect:
-      lda via1portb
-      and #SDCARD_DETECT
       beq @init
-      lda #ENODEV
-      debug "sd_det"
-      rts
+      debug "spi busy"
+      jmp sd_deselect_card
 @init:
       ; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
