@@ -11,12 +11,14 @@ clean:
 	(cd tools; make clean)
 	(cd shell; make clean)
 	(cd kernel; make clean)
+	(cd bios; make clean)
 	(cd libsrc; make clean)
 	(cd clib/libsrc; make clean)
 	rm -rf dist/*
 
 build:
 	(cd libsrc; make )
+	(cd bios; make )
 	(cd kernel; make )
 	(cd tools/lib; make )
 	(cd shell; make )

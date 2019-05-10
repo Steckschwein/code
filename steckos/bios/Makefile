@@ -1,6 +1,6 @@
-LIBS=../../steckos/lib/steckschwein.a
+LIBS=../lib/steckschwein.a
 OBJS=bios.o charset_8x8.o charset_6x8.o uart.o via.o spi.o out.o vdp.o sdcard.o fat32.o nvram.o
-CA65FLAGS=-I ../../steckos/asminc
+CA65FLAGS=-I ../asminc
 LDFLAGS=-C bios.cfg -m bios.map -Ln bios.lbl
 # 6x8 characters
 DEFINES+=-DCHAR6x8
@@ -27,7 +27,7 @@ version.inc:
 bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -o bios.bin
 	cat bios.lbl | sed "s/al 0[0-9]//g" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > bios_call.inc
-  
+
 bios.dis: bios.bin
 	dcc6502 -o 0xe000 -m 0x1fff -d -n -c $< > $@
 
