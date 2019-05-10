@@ -46,20 +46,17 @@ __automount_init:
       bne sdcard_err_detect
 __automount:
       jsr sdcard_detect
-      bne reset_retry    ; no card, reset retry and exit
-      lda sdcard_retry   ; should we try?
-      beq exit
-sdinit:
-      jsr sdcard_init
+      bne reset_retry     ; no card, reset retry and exit
+      lda sdcard_retry    ; should we try?
+      beq exit            ; no, exit
+      
+      jsr sdcard_init     ; yes, try init
       debug8 "init", sdcard_retry
-      beq @mount
-      dec sdcard_retry
-      beq sdcard_err_init
-      rts
+      bne sdcard_err_init
 @mount:
       stz sdcard_retry    ; ok, no further retries
       jsr fat_mount
-      beq exit
+      beq exit            ; init and mount ok, exit
       pha
       jsr primm
       .byte "mount error (",0
@@ -71,10 +68,6 @@ sdinit:
       .byte ")",CODE_LF,0
 exit:
       rts
-reset_retry:
-      lda #MOUNT_RETRIES              ; yes, try init and mount otherwise
-      sta sdcard_retry
-      rts
 msg_sdcard:
       jsr primm
       .byte "SD card ",0
@@ -83,9 +76,14 @@ sdcard_err_detect:
       jsr msg_sdcard
       jsr primm
       .byte "not found!",CODE_LF,0
+reset_retry:
+      lda #MOUNT_RETRIES              ; yes, try init and mount otherwise
+      sta sdcard_retry
       rts
-sdcard_err_init:
-      jsr msg_sdcard
+sdcard_err_init:          
+      dec sdcard_retry  ; dec retry
+      bne exit         ; .. and exit
+      jsr msg_sdcard    ; or fail if retries exhausted
       jsr primm
       .byte "init failed!",CODE_LF,0
       rts
