@@ -138,7 +138,7 @@ textui_update_crs_ptr:          ; updates the 16 bit pointer crs_p upon crs_x, c
         rts
 
 textui_init0:
-        jsr vdp_display_off                 ;display off
+;        jsr vdp_display_off                 ;display off
         SetVector screen_buffer, crs_ptr    ;set crs ptr initial to screen buffer
         
 .ifdef COLS80
@@ -221,12 +221,12 @@ textui_update_screen:
         and #STATE_BUFFER_DIRTY
         beq @l1    ;exit if not dirty
 
-        vdp_sreg <ADDRESS_TEXT_COLOR, (WRITE_ADDRESS + >ADDRESS_TEXT_COLOR)
+        vdp_vram_w ADDRESS_TEXT_COLOR
         lda #<color_buffer         ; copy back buffer to video ram
         ldy #>color_buffer
         ldx #1
         jsr vdp_memcpy
-        vdp_sreg <ADDRESS_TEXT_SCREEN, (WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
+        vdp_vram_w ADDRESS_TEXT_SCREEN
         lda #<screen_buffer         ; copy back buffer to video ram
         ldy #>screen_buffer
         ldx #$08

@@ -176,16 +176,16 @@ WRITE_ADDRESS			=$40
 ADDRESS_GFX_SPRITE		=$1e00
 
 ADDRESS_TEXT_SCREEN    =$1000			; name table
-ADDRESS_TEXT_PATTERN   =$3800			; pattern table
+ADDRESS_TEXT_PATTERN   =$0000			; pattern table
 ADDRESS_TEXT_COLOR     =$2000			; color table, v9938/58 "blink" color code vram
 
-ADDRESS_GFX1_SCREEN         =$1800			; name table
-ADDRESS_GFX1_PATTERN        =$3800
+ADDRESS_GFX1_SCREEN         =$1000    ; name table
+ADDRESS_GFX1_PATTERN        =$0000
 ADDRESS_GFX1_COLOR          =$1b80
 ADDRESS_GFX1_SPRITE		=ADDRESS_GFX_SPRITE
 ADDRESS_GFX1_SPRITE_PATTERN=$1000;
 
-ADDRESS_GFX2_SCREEN         = $1800			 ; name table (layout)
+ADDRESS_GFX2_SCREEN         = $1000			 ; name table (layout)
 ADDRESS_GFX2_PATTERN        = $0000      ; pattern generator
 ADDRESS_GFX2_COLOR          = $2000      ; pattern colors
 ADDRESS_GFX2_SPRITE         = ADDRESS_GFX_SPRITE

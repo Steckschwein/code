@@ -7,7 +7,7 @@ DEFINES+=-DCHAR6x8
 # if 9958 is used
 DEFINES+=-DV9958
 # enable 80 cols
-#DEFINES+=-DCOLS80
+DEFINES+=-DCOLS80
 
 
 .PHONY: all clean
@@ -31,7 +31,10 @@ bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 bios.dis: bios.bin
 	dcc6502 -o 0xe000 -m 0x1fff -d -n -c $< > $@
 
-loader.bin: bios.bin loader.o
+loader.o: loader.asm bios.bin
+	ca65 --target none $(CA65FLAGS) $(DEFINES) $<
+
+loader.bin: loader.o
 	ld65 -C loader.cfg -m loader.map loader.o $(LIBS) -o loader.bin
 
 %.dis: %.bin

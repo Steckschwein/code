@@ -5,7 +5,9 @@
 
       .import primm
       .import vdp_text_on
+      .import vdp_gfx1_on
       .import vdp_text_blank
+      .import vdp_gfx1_blank
       .import vdp_bgcolor
       .import vdp_memcpy
       .import vdp_fills
@@ -38,8 +40,6 @@ vdp_init:
       vdp_sreg v_reg8_VR, v_reg8	    ; VR - 64k VRAM
 			vdp_sreg v_reg25_wait, v_reg25  ; enable V9958 wait state generator
 .endif
-      jsr vdp_text_blank
-      
       vdp_vram_w ADDRESS_GFX_SPRITE
 			vnops
 			lda	#$d0					;sprites off, at least y=$d0 will disable the sprite subsystem
@@ -48,25 +48,26 @@ vdp_init:
 			stz crs_x
 			stz crs_y
 
-      vdp_vram_w ADDRESS_TEXT_PATTERN
 .ifdef CHAR6x8
-;			SetVector    charset_6x8, addr
+      jsr vdp_text_blank
+      
+      vdp_vram_w ADDRESS_TEXT_PATTERN
       lda #<charset_6x8
       ldy #>charset_6x8
-.endif
-.ifndef CHAR6x8		; 8x8 and 32 cols, also setup colors in color ram
-      lda #<charset_8x8
-      ldy #>charset_8x8
-;			SetVector    charset_8x8, addr
-.endif
-			ldx #$08                    ;load charset
-      jsr vdp_memcpy
-
+.else ; 8x8 and 32 cols, also setup colors in color ram
 			; in 8x8 and 32 cols we must setup colors in color vram
       vdp_vram_w ADDRESS_GFX1_COLOR
 			lda #Gray<<4|Black          ;enable gfx 1 with gray on black background
 			ldx	#$20
       jsr vdp_fills
+      jsr vdp_gfx1_blank
+      
+      vdp_vram_w ADDRESS_GFX1_PATTERN
+      lda #<charset_8x8
+      ldy #>charset_8x8
+.endif
+			ldx #$08                    ;load charset
+      jsr vdp_memcpy
 
 .ifdef COLS80
       lda #TEXT_MODE_80
@@ -79,16 +80,10 @@ vdp_init:
       jsr vdp_text_on
       lda #BIOS_COLOR
       jmp vdp_bgcolor
-.endif
-
-.ifndef CHAR6x8
-			lda vdp_init_bytes_gfx1,x
-			vdp_sreg
-			iny
-			inx
-			cpx	#09
-			bne @l4
-			rts
+.else
+      lda #BIOS_COLOR
+      jmp vdp_gfx1_on
+      
 .endif
 
 .export vdp_detect
@@ -118,9 +113,7 @@ vdp_detect:
 _vdp_detect_ext_ram:
       jsr primm
       .asciiz " ExtRAM: "
-      lda #v_reg45_mxc
-      ldy #v_reg45
-      vdp_sreg
+      vdp_sreg v_reg45_mxc, v_reg45 ; enable ext ram
       ldx #4  ;max 4 16k banks = 64k
       jsr _vdp_detect_ram
       lda #KEY_LF
@@ -141,12 +134,8 @@ _vdp_detect_ram:
       jsr _vdp_bank_available
       beq @l_detect
 @l_end:
-      lda #0        ;switch back to bank 0 and vram
-      ldy #v_reg14
-      vdp_sreg
-      lda #0
-      ldy #v_reg45
-      vdp_sreg
+      vdp_sreg 0, v_reg14 ;switch back to bank 0 and vram
+      vdp_sreg 0, v_reg45
       
       ldx #$ff
       lda tmp1
@@ -304,12 +293,12 @@ vdp_chrout:
 			bra	inc_cursor_y
 
 vdp_putchar:
-		pha
-		jsr vdp_set_addr
-		pla
-		vnops
-		sta a_vram
-		rts
+      pha
+      jsr vdp_set_addr
+      pla
+      vdp_wait_l 8
+      sta a_vram
+      rts
 
 .ifndef CHAR6x8
 vdp_set_addr:				; set the vdp vram adress, write A to vram
@@ -327,21 +316,10 @@ vdp_set_addr:				; set the vdp vram adress, write A to vram
 		lsr
 		lsr
 		ora #(WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
-		nop
+    nop
 		nop
 		sta a_vreg
 		rts
-
-vdp_init_bytes_gfx1:
-    .byte 0
-    .byte	v_reg1_16k|v_reg1_display_on|v_reg1_spr_size
-    .byte (ADDRESS_TEXT_SCREEN / $400)	; name table - value * $400					--> characters
-    .byte (ADDRESS_GFX1_COLOR /  $40)	; color table - value * $40 (gfx1), 7f/ff (gfx2)
-    .byte (ADDRESS_GFX1_PATTERN / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
-    .byte	(ADDRESS_GFX1_SPRITE / $80)	; sprite attribute table - value * $80 		--> offset in VRAM
-    .byte (ADDRESS_GFX1_SPRITE_PATTERN / $800)  ; sprite pattern table - value * $800  		--> offset in VRAM
-    .byte	Black ;#R07
-    .byte v_reg8_VR	; VR - 64k VRAM TODO FIXME aware of max vram (bios) - #R08
 .endif
 
 .ifdef CHAR6x8
@@ -378,7 +356,7 @@ vdp_set_addr:			; set the vdp vram adress, write A to vram
 		sta a_vreg
 		lda #(WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
 		adc v_h			; add carry and page to address high byte
-		vnops
+		vdp_wait_s 4
 		sta a_vreg
 		rts
 .endif
