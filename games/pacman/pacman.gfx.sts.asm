@@ -1,6 +1,5 @@
-      .include "vdp.inc"
-      .include "pacman.inc"
-
+      .include "pacman.sts.inc"
+      
       .export gfx_init
       .export gfx_mode_on
       .export gfx_mode_off
@@ -20,19 +19,26 @@
       .export gfx_hires_off
       .export gfx_update
       .export gfx_display_maze
-      
+      .export gfx_pause
+      .export gfx_Sprite_Adjust_X,gfx_Sprite_Adjust_Y
+      .export gfx_Sprite_Off
+
       ;vdp
       .import vdp_bgcolor
       .import vdp_fill,vdp_fills
       .import vdp_memcpy,vdp_memcpys
       .import vdp_init_reg
       
-      .import game_state; 
+      .import game_state
+      .import game_maze
+      .import sprite_tab_attr
 
-;SpriteOff=SPRITE_OFF+$08 ; +8, 212 line mode
 sprite_pattern=ADDRESS_GFX3_SPRITE_PATTERN
 sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
-VRAM_SPRITE_ATTR   =ADDRESS_GFX3_SPRITE
+
+VRAM_SPRITE_PATTERN =ADDRESS_GFX3_SPRITE_PATTERN
+VRAM_SPRITE_COLOR   =ADDRESS_GFX3_SPRITE_COLOR
+VRAM_SPRITE_ATTR    =ADDRESS_GFX3_SPRITE
 
 .code
 gfx_vblank:
@@ -126,7 +132,7 @@ gfx_init_sprites:
       lda #(Color_Blue | $20 | $40)  ; CC | IC | 2nd color
       jsr _fills
       
-      lda #SpriteOff
+      lda gfx_Sprite_Off
       sta sprite_tab_attr+SPRITE_Y
 
 gfx_blank_screen:
@@ -138,7 +144,7 @@ gfx_blank_screen:
 gfx_sprites_off:
       vdp_vram_w VRAM_SPRITE_ATTR; sprites off
       ldx #1
-      lda #SpriteOff
+      lda gfx_Sprite_Off
       jmp vdp_fill
 
 _fills:
@@ -158,6 +164,15 @@ gfx_display_maze:
       ldy #>game_maze
       ldx #4
       jmp vdp_memcpy
+      
+gfx_pause:
+      lsr
+      lsr
+      lsr
+      ora #v_reg8_VR
+      ldy #v_reg8
+      vdp_sreg
+      rts
       
 
 gfx_bgcolor=vdp_bgcolor
@@ -306,6 +321,13 @@ vdp_init_bytes:
 			.byte	0 ;#R13
 vdp_init_bytes_end:
 
+.data
+gfx_Sprite_Adjust_X:
+gfx_Sprite_Adjust_Y:
+      .byte 8
+gfx_Sprite_Off:
+      .byte SPRITE_OFF+$08 ; +8, 212 line mode
+      
 pacman_colors:
   vdp_pal 0,0,0         ;0
   vdp_pal $ff,0,0       ;1 "shadow", "blinky" red
@@ -332,4 +354,3 @@ tiles_colors:
 sprite_patterns:
       .include "pacman.ghosts.res"
       .include "pacman.pacman.res"
-      

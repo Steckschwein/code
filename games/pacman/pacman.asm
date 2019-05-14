@@ -8,6 +8,7 @@
       .import gfx_display_maze
       
       .import io_init
+      .import io_exit
       .import sound_init
       .import sound_play
       .import boot
@@ -20,8 +21,6 @@
 
 main:
       sei
-      jsr krn_textui_disable
-      
       jsr io_init
       jsr sound_init
       
@@ -40,7 +39,7 @@ main:
       jmp @intro
 @exit:
       jsr gfx_mode_off
-      jmp (retvec)
+      jmp io_exit
       
 init:
       ldx #.sizeof(GameState)-1

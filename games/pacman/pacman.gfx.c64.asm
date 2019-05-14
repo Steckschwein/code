@@ -11,7 +11,9 @@
       .export gfx_update
       .export gfx_display_maze
       .export gfx_hires_off
-      
+      .export gfx_pause
+      .export gfx_Sprite_Adjust_X,gfx_Sprite_Adjust_Y
+      .export gfx_Sprite_Off
       
       .import vdp_init_reg
       .import vdp_memcpy
@@ -20,6 +22,11 @@
       .import game_state;
 
       .include "pacman.inc"
+
+      
+      ;sprite y = 50, 250 off
+      ;sprite x = 24
+      ;
 .code
 gfx_mode_off:
 gfx_mode_on:
@@ -39,6 +46,15 @@ gfx_vblank:
 gfx_hires_off:  ;?!?
 
   rts
+  
+gfx_pause:
+      rts
 
 
 .data
+gfx_Sprite_Adjust_X:
+      .byte 24+8
+gfx_Sprite_Adjust_Y:
+      .byte 50+8
+gfx_Sprite_Off:
+      .byte 250

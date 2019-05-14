@@ -1,3 +1,5 @@
+      .setcpu "6502"
+      
       .export game
 
       .include "pacman.inc"
@@ -10,6 +12,9 @@
       .import gfx_rotate_pal
       .import gfx_update
       .import gfx_display_maze
+      .import gfx_pause
+      .import gfx_Sprite_Adjust_X,gfx_Sprite_Adjust_Y
+      .import gfx_Sprite_Off
 
       .import out_digit,out_digits
       .import out_hex_digits
@@ -21,7 +26,10 @@
       .import sound_play_state
       
       .import io_joystick_read
+      .import io_getkey
+      .import io_player_direction
       .import io_detect_joystick
+      .import io_irq
       
       .import ai_blinky
       .import ai_inky
@@ -31,32 +39,28 @@
       .import game_state
       
 game:
-      sei
-      set_irq game_isr, _save_irq
-      jsr gfx_hires_off
-      cli
+      setIRQ game_isr, _save_irq
+;      jsr gfx_hires_off
 
 game_reset:
       lda #STATE_INIT
       sta game_state+GameState::state
 @waitkey:
-      jsr keyboard_read
+      jsr io_getkey
+      bcc :+
+      sta keyboard_input
+:
       cmp #'r'
       beq game_reset
       cmp #'p'
-      bne :+
+      bne @exit
       lda game_state+GameState::state
       eor #STATE_PAUSE
       sta game_state+GameState::state
       and #STATE_PAUSE
-      lsr
-      lsr
-      lsr
-      ora #v_reg8_VR
-      ldy #v_reg8
-      vdp_sreg
-:
-      cmp #KEY_ESCAPE
+      jsr gfx_pause
+@exit:
+      cmp #KEY_EXIT
       bne @waitkey
       
       lda #STATE_EXIT
@@ -64,14 +68,12 @@ game_reset:
       
       jsr sound_init
       
-      sei
-      restore_irq _save_irq
-      cli
+      restoreIRQ _save_irq
       rts
 
 game_isr:
-      save
-      bit	a_vreg
+      push_axy
+      jsr io_irq
       bpl	game_isr_exit
       
       bgcolor Color_Yellow
@@ -94,7 +96,7 @@ game_isr_exit:
       jsr debug
 .endif
 
-      restore
+      pop_axy
       rti
 
 game_ready:
@@ -134,12 +136,6 @@ game_ready_wait:
 game_game_over:
       rts
       
-keyboard_read:
-      jsr krn_getkey
-      bcc :+
-      sta keyboard_input
-:     rts
-
 
       ; key/joy input ?
       ;   (input direction != current direction)?
@@ -207,19 +203,22 @@ l_test:
       and #ACT_MOVE_UP_OR_DOWN
       bne l_up_or_down
 l_left_or_right:
-      lda sprite_tab_attr+SPRITE_X,y
-      bra l_compare
+      lda sprite_tab_attr+SpriteTab::xpos,y
+      jmp l_compare
 l_up_or_down:
-      lda sprite_tab_attr+SPRITE_Y,y
+      lda sprite_tab_attr+SpriteTab::ypos,y
 l_compare:
       eor game_tmp2
       and #$07
       cmp #$04    ; 100 - center pos, <100 pre-turn, >100 post-turn
       rts
 actor_center:
-      stz game_tmp2
+      pha
+      lda #0
+      sta game_tmp2
+      pla
       eor #ACT_MOVE_UP_OR_DOWN
-      bra l_test
+      jmp l_test
       
 actor_move:
       lda actors+actor::turn,x  ; turning?
@@ -237,9 +236,11 @@ actor_move:
 actor_move_dir:
       lda actors+actor::move,x
       bpl @rts
-      phx
+      txa
+      pha
       jsr actor_strategy
-      plx 
+      pla
+      tax
 @rts: rts
 
 actor_move_soft:
@@ -251,28 +252,29 @@ actor_move_sprite:
       and #ACT_DIR
       asl
       tay
-      phy
+      pha
       lda _vectors+0, y
       ldy actors+actor::sprite, x
       clc
-      adc sprite_tab_attr+SPRITE_X,y
-      sta sprite_tab_attr+SPRITE_X,y
-      sta sprite_tab_attr+4+SPRITE_X,y
-      ply
+      adc sprite_tab_attr+SpriteTab::xpos,y
+      sta sprite_tab_attr+SpriteTab::xpos,y
+      sta sprite_tab_attr+4+SpriteTab::xpos,y
+      pla
+      tay
       lda _vectors+1, y
       sta game_tmp
       ldy actors+actor::sprite, x
 @y_add:
       clc
-      adc sprite_tab_attr+SPRITE_Y,y
-      cmp #SpriteOff
+      adc sprite_tab_attr+SpriteTab::ypos,y
+      cmp gfx_Sprite_Off
       bne @y_sta
       lda game_tmp
       eor #$10
-      bra @y_add
+      jmp @y_add
 @y_sta:
-      sta sprite_tab_attr+SPRITE_Y,y
-      sta sprite_tab_attr+4+SPRITE_Y,y
+      sta sprite_tab_attr+SpriteTab::ypos,y
+      sta sprite_tab_attr+4+SpriteTab::ypos,y
 @rts: rts
       
 pacman_shape_move:
@@ -290,7 +292,7 @@ pacman_update_shape:
       tay
       lda pacman_shapes,y
       ldy actors+actor::sprite,x
-      sta sprite_tab_attr+SPRITE_N,y
+      sta sprite_tab_attr+SpriteTab::shape,y
       rts
       
 actor_shape_move:
@@ -299,6 +301,7 @@ actor_shape_move:
       lsr
       lsr
       and #$01
+actor_shape_move_direct:
       sta game_tmp
       lda actors+actor::move,x
       and #ACT_DIR
@@ -307,14 +310,15 @@ actor_shape_move:
       clc
       adc game_tmp
       tay
-      phy
+      pha
       lda ghost_shapes,y
       ldy actors+actor::sprite,x
-      sta sprite_tab_attr+SPRITE_N,y
-      ply
+      sta sprite_tab_attr+SpriteTab::shape,y
+      pla
+      tay
       lda ghost_shapes+2,y
       ldy actors+actor::sprite,x
-      sta sprite_tab_attr+4+SPRITE_N,y
+      sta sprite_tab_attr+4+SpriteTab::shape,y
       rts
 
 pacman_move:
@@ -342,7 +346,8 @@ pacman_collect:
       lda actors+actor::xpos,x
       ldy actors+actor::ypos,x
       jsr calc_maze_ptr_ay
-      lda (p_maze)
+      ldy #0
+      lda (p_maze),y
       cmp #Char_Food
       bne :+
       lda #Points_Food
@@ -360,11 +365,12 @@ erase_and_score:
       dec actors+actor::dots,x
       pha
       lda actors+actor::xpos,x
-      sta crs_x
+      sta cursor_x
       lda actors+actor::ypos,x
-      sta crs_y
+      sta cursor_y
       lda #Char_Blank
-      sta (p_maze)
+      ldy #0
+      sta (p_maze),y
       jsr gfx_charout
       
       pla
@@ -376,7 +382,8 @@ erase_and_score:
 actor_can_move_to_direction:
       jsr actor_update_charpos_direction  ; update dir char pos
       jsr calc_maze_ptr_direction         ; calc ptr to next char at input direction
-      lda (p_maze)
+      ldy #0
+      lda (p_maze),y
       cmp #Char_Bg
       rts
       
@@ -450,69 +457,35 @@ actor_update_charpos_direction:
       
 actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
       ldy actors+actor::sprite,x
-      lda sprite_tab_attr+SPRITE_X,y
+      lda sprite_tab_attr+SpriteTab::xpos,y
       clc
-      adc #SPRITE_ADJUST  ; x adjust
+      adc gfx_Sprite_Adjust_X  ; x adjust
       lsr
       lsr
       lsr
       sta actors+actor::xpos,x
-      lda sprite_tab_attr+SPRITE_Y,y
+      lda sprite_tab_attr+SpriteTab::ypos,y
       clc
-      adc #SPRITE_ADJUST  ; y adjust
+      adc gfx_Sprite_Adjust_Y  ; y adjust
       lsr 
       lsr
       lsr
       sta actors+actor::ypos,x
       rts
       
-      
       ; C=0 if any valid key or joystick input, A=ACT_xxx
 get_input:
       lda keyboard_input
-      beq @joystick
-      cmp #KEY_CRSR_RIGHT
-      beq @r
-      cmp #KEY_CRSR_LEFT
-      beq @l
-      cmp #KEY_CRSR_DOWN
-      beq @d
-      cmp #KEY_CRSR_UP
-      bne @joystick
-@u:   lda #ACT_UP
-      rts
-@r:   lda #ACT_RIGHT
-      rts
-@l:   lda #ACT_LEFT
-      rts
-@d:   lda #ACT_DOWN
-      rts
-@joystick:
-      jsr io_joystick_read
-      and #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
-      cmp #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
-      beq @rts; nothing pressed
-      sec
-      bit #JOY_RIGHT
-      beq @r
-      bit #JOY_LEFT
-      beq @l
-      bit #JOY_DOWN
-      beq @d
-      bit #JOY_UP
-      beq @u
-@rts:
-      clc
-      rts
-      
+      jmp io_player_direction
 
 debug:
       pha
-      phx
+      txa
+      pha
       lda #11
-      sta crs_x
+      sta cursor_x
       lda #0
-      sta crs_y
+      sta cursor_y
       
       lda input_direction
       jsr out_hex_digits
@@ -528,13 +501,14 @@ debug:
       jsr out_hex_digits
       lda actors+actor::ypos_dir
       jsr out_hex_digits
-      lda sprite_tab_attr+SPRITE_X
+      lda sprite_tab_attr+SpriteTab::xpos
       jsr out_hex_digits
-      lda sprite_tab_attr+SPRITE_Y
+      lda sprite_tab_attr+SpriteTab::ypos
       jsr out_hex_digits
       lda keyboard_input
       jsr out_hex_digits
-      plx
+      pla
+      tax
       pla
       rts
 
@@ -542,20 +516,20 @@ calc_maze_ptr_direction:
       lda actors+actor::xpos_dir,x
       ldy actors+actor::ypos_dir,x
 calc_maze_ptr_ay:
-      sta crs_x
-      sty crs_y
+      sta cursor_x
+      sty cursor_y
 @calc_maze_ptr:
-      lda crs_y;actors+actor::ypos, x; ;.Y * 32
+      lda cursor_y;actors+actor::ypos, x; ;.Y * 32
       asl
       asl
       asl
       asl
       asl
-      ora crs_x;actors+actor::xpos, x
+      ora cursor_x;actors+actor::xpos, x
       ;clc
 ;      adc #<__RAM_LAST__
       sta p_maze+0
-      lda crs_y;actors+actor::ypos, x ; .Y * 32
+      lda cursor_y;actors+actor::ypos, x ; .Y * 32
       lsr ; div 8 -> page offset 0-2
       lsr
       lsr
@@ -567,12 +541,13 @@ calc_maze_ptr_ay:
 game_demo:
 @demo_text:
       lda game_state+GameState::frames
-      bit #$07
+      and #$07
       bne @l1
       draw_text _text_pacman
       draw_text _text_demo
       rts
-@l1:  bit #$08
+@l1:  lda game_state+GameState::frames
+      and #$08
       beq @rts
       draw_text _delete_message_1
       draw_text _delete_message_2
@@ -590,14 +565,16 @@ game_playing:
       jsr draw_scores
       lda actors+actor::dots
       bne @rts
-      
+
       lda #Sprite_Pattern_Pacman
-      sta sprite_tab_attr+SPRITE_NR_PACMAN+SPRITE_N
-      lda #SpriteOff
-      sta sprite_tab_attr+SPRITE_NR_GHOST+SPRITE_Y
+      sta sprite_tab_attr+SPRITE_NR_PACMAN+SpriteTab::shape
+      lda gfx_Sprite_Off
+      sta sprite_tab_attr+SPRITE_NR_GHOST+SpriteTab::ypos
+      
       lda #STATE_LEVEL_CLEARED
       sta game_state+GameState::state
-      stz game_state+GameState::frames
+      lda #0
+      sta game_state+GameState::frames
 @rts: rts
 
 game_level_cleared:
@@ -656,20 +633,20 @@ add_score:
       rts
 
 draw_score:
-      sta crs_x
-      sty crs_y
+      sta cursor_x
+      sty cursor_y
       ldy #0
 @skip_zeros:
       lda (p_game),y
       beq @skip ;00 ?
-      bit #$f0  ;0? ?
+      and #$f0  ;0? ?
       bne @digits
-      dec crs_y ;output the 0-9 only
+      dec cursor_y ;output the 0-9 only
       jsr out_digit
-      bra @digits_inc
+      jmp @digits_inc
 @skip:
-      dec crs_y ;skip digits
-      dec crs_y
+      dec cursor_y ;skip digits
+      dec cursor_y
       iny
       cpy #04
       bne @skip_zeros
@@ -685,11 +662,11 @@ draw_score:
       
       
 draw_scores:
-      SetVector (game_state+GameState::score), p_game
+      setPtr (game_state+GameState::score), p_game
       lda #0
       ldy #21
       jsr draw_score
-      SetVector (game_state+GameState::highscore), p_game
+      setPtr (game_state+GameState::highscore), p_game
       lda #0
       ldy #8
       jmp draw_score
@@ -699,15 +676,16 @@ animate_food:
       and #$07
       bne @rts
       ldx #0
+      ldy #0
 @l1:  lda superfood,x
       inx
       ldy superfood,x
       jsr calc_maze_ptr_ay
-      lda (p_maze)
+      lda (p_maze),y
       cmp #Char_Blank
       beq @next
       eor #$03
-      sta (p_maze)
+      sta (p_maze),y
       jsr gfx_charout
 @next:
       inx
@@ -742,7 +720,8 @@ game_init:
       beq @init
       rts
 @init:
-      stz game_state+GameState::frames
+      lda #0
+      sta game_state+GameState::frames
       
       jsr sound_init_game_start
       
@@ -768,10 +747,11 @@ game_init:
       lda #MAX_DOTS
       sta actors+actor::dots
     
-      stz game_state+GameState::score+0
-      stz game_state+GameState::score+1
-      stz game_state+GameState::score+2
-      stz game_state+GameState::score+3
+      lda #0
+      sta game_state+GameState::score+0
+      sta game_state+GameState::score+1
+      sta game_state+GameState::score+2
+      sta game_state+GameState::score+3
       lda #STATE_READY
       sta game_state+GameState::state
       rts
@@ -779,23 +759,23 @@ game_init:
 game_init_sprites:
       ldy #0
 @sprites:
-      phy
       tya
+      pha
       asl
       asl
       tay
       asl
       tax
-      lda sprite_init_n+0,y
-      sta sprite_tab_attr+0+SPRITE_X,x
-      sta sprite_tab_attr+4+SPRITE_X,x
-      lda sprite_init_n+1,y
-      sta sprite_tab_attr+0+SPRITE_Y,x
-      sta sprite_tab_attr+4+SPRITE_Y,x
+      lda sprite_init+0,y
+      sta sprite_tab_attr+0+SpriteTab::xpos,x
+      sta sprite_tab_attr+4+SpriteTab::xpos,x
+      lda sprite_init+1,y
+      sta sprite_tab_attr+0+SpriteTab::ypos,x
+      sta sprite_tab_attr+4+SpriteTab::ypos,x
       lda #0
-      sta sprite_tab_attr+0+SPRITE_N,x
-      sta sprite_tab_attr+4+SPRITE_N,x
-      lda sprite_init_n+2,y
+      sta sprite_tab_attr+0+SpriteTab::shape,x
+      sta sprite_tab_attr+4+SpriteTab::shape,x
+      lda sprite_init+2,y
       sta actors+actor::move,x
       txa
       sta actors+actor::sprite,x  ; x is sprite number
@@ -803,23 +783,25 @@ game_init_sprites:
       cpx #SPRITE_NR_PACMAN
       bne @ghost
       lda #Sprite_Pattern_Pacman
-      sta sprite_tab_attr+SPRITE_N,x
-      bra @next
+      sta sprite_tab_attr+SpriteTab::shape,x
+      jmp @next
 @ghost:
-      jsr actor_shape_move
+      lda #0
+      jsr actor_shape_move_direct
 @next:      
-      ply
+      pla
+      tay
       iny
       cpy #5
       bne @sprites
       
-      stz sprite_tab_attr+1*4+SPRITE_X
-      stz sprite_tab_attr+1*4+SPRITE_Y
-      stz sprite_tab_attr+1*4+SPRITE_N
+      lda #0
+      sta sprite_tab_attr+1*4+SpriteTab::xpos
+      sta sprite_tab_attr+1*4+SpriteTab::ypos
+      sta sprite_tab_attr+1*4+SpriteTab::shape
       rts
-     
  
-sprite_init_n: ;x,y,init direction,color
+sprite_init: ;x,y,init direction,color
       .byte 188,96,   ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT, Color_Yellow ;offset y=+4,y=+4  ; pacman
       .byte 92,95,    ACT_MOVE|ACT_LEFT, Color_Blinky
 ;      .byte 116,111,  ACT_MOVE|ACT_UP,   Color_Inky
@@ -828,7 +810,7 @@ sprite_init_n: ;x,y,init direction,color
       .byte 116,92,   ACT_MOVE|ACT_DOWN, Color_Pinky
 ;      .byte 116,79,   ACT_UP,   Color_Clyde
       .byte 116,76,   ACT_MOVE|ACT_UP,   Color_Clyde
-sprite_init_n_end:
+sprite_init_end:
 
 ai_ghost:
       tya
@@ -857,12 +839,11 @@ ai_ghost:
       jmp actor_move_soft
 
 actor_strategy:
-     txa
-     tay
-     lsr
-     lsr
-     tax
-     jmp (actor_strategy_tab,x)
+      cpx #0
+      bne @ghost
+      jmp pacman_move
+@ghost:
+      jmp ai_ghost
 
 actor_strategy_tab:
       .word pacman_move
@@ -926,3 +907,14 @@ _delete_message_1:
       .byte 12,17, "          ",0
 _delete_message_2:
       .byte 18,17, "          ",0
+
+;.bss
+cursor_x:
+cursor_y:
+.export game_maze
+.segment	"RODATA"
+game_maze:
+;             =(cursor_y + $0100) & $ff00
+actors:                 ;=
+sprite_tab_attr:        ;=actors+5*.sizeof(actor)
+sprite_tab_attr_end:    ;=sprite_tab_attr+5*4*2

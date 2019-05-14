@@ -1,4 +1,5 @@
 ;sound
+      .setcpu "65c02"
       .include "pacman.inc"
       .include "ym3812.inc"
 
@@ -118,19 +119,14 @@ sound_init:
       jmp opl2_init
       
 sound_off:
-      opl_reg $b0,  0
+      opl_reg $b0,  0   ; 
       rts
-
-      set_irq player_isr, _save_irq
-      cli
       
 @loop:
       jmp @loop
       
 @exit:
-      sei
-      restore_irq _save_irq
-      cli
+      restoreIRQ _save_irq
 
       jsr sound_off
 
@@ -144,21 +140,6 @@ sound_off:
     p_note    .word
     length    .byte
 .endstruct
-
-player_isr:
-      save
-      bit	a_vreg
-      bpl	@exit
-      
-      bgcolor Color_Yellow
-      
-      inc game_state+GameState::frames
-      
-@exit:
-      bgcolor Color_Bg
-
-      restore
-      rti
 
 sound_play:
       lda sound_play_state

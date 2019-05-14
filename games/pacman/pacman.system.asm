@@ -4,6 +4,8 @@
       .export out_hex_digit,out_hex_digits
       .export out_text
       .export frame_isr
+      .export sys_crs_x
+      .export sys_crs_y
       
       .import game_state
       .import gfx_charout
@@ -27,7 +29,8 @@ frame_isr:
 
 out_hex_digits:
       pha
-      phx
+      txa
+      pha
 
       tax
       lsr
@@ -37,7 +40,8 @@ out_hex_digits:
       jsr out_hex_digit
       txa
       jsr out_hex_digit
-      plx
+      pla
+      tax
       pla
       rts
 out_hex_digit:
@@ -61,16 +65,16 @@ out_digit:
       ora #'0'
 charout:
       jsr gfx_charout
-      dec crs_y
+      dec sys_crs_y
       rts
       
 out_text:
       ldy #0
       lda (p_video),y
-      sta crs_x
+      sta sys_crs_x
       iny
       lda (p_video),y
-      sta crs_y
+      sta sys_crs_y
       iny
 @l1:
       lda (p_video),y
@@ -99,3 +103,12 @@ wait:
       rts
       
 .data
+
+;.bss
+sys_crs_x: .res 1
+sys_crs_y: .res 1
+actors: 
+.export sprite_tab_attr
+sprite_tab_attr:
+;sprite_tab_attr       =actors+5*.sizeof(actor)
+;sprite_tab_attr_end   =sprite_tab_attr+5*4*2

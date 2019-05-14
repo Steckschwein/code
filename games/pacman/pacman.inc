@@ -1,26 +1,40 @@
-      .setcpu "65c02"
-
+      .include "zeropage.inc"
+      
       .importzp ptr1,ptr2,ptr3
       .importzp tmp1,tmp2,tmp3,tmp4,tmp5
-        
-      .import __BSS_RUN__
-
-.if .defined (__C64__)
-      .include "c64.inc"
-.else
-      .include "zeropage.inc"
-      .include "common.inc"
-      .include "kernel_jumptable.inc"
-      .include "joystick.inc"
-      .include "keyboard.inc"
-      .include "vdp.inc"
-      SpriteOff=SPRITE_OFF+$08 ; +8, 212 line mode
-
-.endif
+      
+      KEY_EXIT = 27
 
 .define DEBUG 1
 .define BOOT 0
 .define INTRO 0
+
+.macro setIRQ irq, irq_save
+      sei
+      copyPtr $fffe, irq_save
+      setPtr irq, $fffe
+      cli
+.endmacro
+
+.macro restoreIRQ irq_save
+      sei
+      copyPtr irq_save, $fffe
+      cli
+.endmacro
+
+.macro setPtr addr, ptr
+			lda #<addr
+			sta ptr
+			lda #>addr
+			sta ptr+1
+.endmacro
+
+.macro copyPtr src, dest
+      lda src
+      sta dest
+      lda src+1
+      sta dest+1
+.endmacro
 
 .macro bgcolor color
   .if DEBUG
@@ -31,7 +45,7 @@
 .endmacro
 
 .macro draw_text _p
-      SetVector _p, ptr1
+      setPtr _p, ptr1
       jsr out_text
 .endmacro
 
@@ -42,6 +56,7 @@
       txa
       pha
 .endmacro
+
 .macro pop_axy
       pla
       tax
@@ -49,6 +64,13 @@
       tay
       pla
 .endmacro
+
+.struct SpriteTab
+  ypos    .byte
+  xpos    .byte
+  shape   .byte
+  color   .byte
+.endstruct
 
 .struct GameState
   state       .byte
@@ -144,7 +166,7 @@ GHOST_SCATTER     = 1
 ; are vulnerable) and aimlessly wander the maze for a few seconds. They will flash moments before returning to their previous mode of behavior.
 GHOST_FRIGHTENED  = 3;
 
-Sprite_Pattern_Pacman = $18*4
+Sprite_Pattern_Pacman = $18*4     ; pacman shape filled circle (game init)
 
 ACTOR_BLINKY  = 1*.sizeof(actor)
 ACTOR_INKY    = 2*.sizeof(actor)
@@ -162,8 +184,3 @@ ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
 
 ACT_TURN          = 1<<7
 ACT_DIR           = 1<<1|1<<0
-
-game_maze=(__BSS_RUN__) & $ff00
-actors=game_maze+$0400
-sprite_tab_attr=actors+5*.sizeof(actor)
-sprite_tab_attr_end=sprite_tab_attr+5*4*2

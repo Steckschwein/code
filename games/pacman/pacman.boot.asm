@@ -14,9 +14,7 @@ boot:
       rts
       .endif
       
-      sei
-      set_irq frame_isr, _save_irq
-      cli
+      setIRQ frame_isr, _save_irq
 
       draw_text text_1_0
       draw_text text_1_1
@@ -27,9 +25,7 @@ boot:
       draw_text text_5
       draw_text text_6
 
-      sei
-      restore_irq _save_irq
-      cli
+      restoreIRQ _save_irq
       
       rts
 

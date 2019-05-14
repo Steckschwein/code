@@ -6,9 +6,11 @@
       .import gfx_blank_screen
       .import gfx_hires_on
       .import frame_isr
-      
+      .import io_getkey
       .import out_text
       .import out_digits,out_digit
+      .import sys_crs_x
+      .import sys_crs_y
       
       .import game_state
       
@@ -23,10 +25,8 @@ intro:
       .if DEBUG = 1
         rts
       .endif
-            sei
 ;      jsr gfx_hires_on
-      set_irq frame_isr, _save_irq
-      cli
+      setIRQ frame_isr, _save_irq
       
       jsr intro_frame
       draw_text _table_head
@@ -40,7 +40,7 @@ intro:
       draw_text _points_2
       
 @wait_credit:
-      jsr krn_getkey
+      jsr io_getkey
       cmp #'c'          ; increment credit
       bne @wait_credit
       
@@ -52,7 +52,7 @@ intro:
       draw_text _bonus
       
 @wait_start1up:
-      jsr krn_getkey
+      jsr io_getkey
       cmp #'1'
       beq @start_1up
       cmp #'c'          ; increment credit
@@ -72,9 +72,7 @@ intro:
       
 @start_1up:
       
-      sei
-      restore_irq _save_irq
-      cli
+      restoreIRQ _save_irq
       
       rts
 
@@ -89,14 +87,14 @@ intro_frame:
 
 display_credit:
       lda #31
-      sta crs_x
+      sta sys_crs_x
       lda #16
-      sta crs_y
+      sta sys_crs_y
       
       lda game_state+GameState::credit
       cmp #10
       bcs @l1
-      dec crs_y
+      dec sys_crs_y
       jmp out_digit
 @l1:
       jmp out_digits
