@@ -1,26 +1,37 @@
+
+#DEBUG=-D__DEBUG
+#DEBUG+=-D__NO_BOOT
+#DEBUG+=-D__NO_INTRO
+
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
 CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include -D_CC65_V2_17_
 
 LIBS=
-CA65FLAGS=-I $(CC65_HOME)/asminc
+CA65FLAGS=-I $(CC65_HOME)/asminc $(DEBUG)
 
 LDFLAGS=-m pacman.map $(LIBS)
 OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.ai.o pacman.game.o pacman.system.o
 
-CA65FLAGS_STS=-D__STECKSCHWEIN__ -I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel
+CA65FLAGS_STS=-D__STECKSCHWEIN__ -I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel $(DEBUG)
 OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.sts.o pacman.sound.sts.o
 LIBS_STS=../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a ../../steckos/tools/lib/toollib.a
 LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map
 
-CA65FLAGS_C64=-t c64 -I $(CC65_HOME)/asminc
+CA65FLAGS_C64=-t c64 -I $(CC65_HOME)/asminc $(DEBUG)
 OBJS_C64=$(OBJS) pacman.io.c64.o pacman.gfx.c64.o pacman.sound.c64.o
 LIBS_C64=$(CC65_HOME)/lib/c64.lib
+#LDFLAGS_C64=-C c64-asm.cfg -m pacman64.map
 LDFLAGS_C64=-t c64 -m pacman64.map
 
 DEFINES=-Dasmunit_char_out=0x200
 TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(DEFINES)
 
-
+RESOURCES=\
+  pacman.ghosts.res \
+  pacman.pacman.res \
+  pacman.tiles.rot.inc \
+  pacman.tiles.colors.inc
+  
 .PHONY: all clean
 
 all: pacman.prg pacman64.prg
@@ -31,20 +42,18 @@ clean:
 %.res: %.xpm
 	python3 ../utils/xpm_ca65_16bit.py $< > $@
   
-gfx_res: pacman.ghosts.res pacman.pacman.res pacman.tiles.rot.inc pacman.tiles.colors.inc
-
-pacman.gfx.sts.o: gfx_res
-pacman.gfx.c64.o: gfx_res
+pacman.gfx.sts.o: $(RESOURCES)
+pacman.gfx.c64.o: $(RESOURCES)
 
 pacman.game.o: pacman.maze.inc
 
-%.o: %.asm ../../steckos/asminc/*.inc pacman.inc
+%.o: %.asm ../../steckos/asminc/*.inc pacman.inc pacman.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
-%.sts.o: %.sts.asm ../../steckos/asminc/*.inc pacman.inc
+%.sts.o: %.sts.asm ../../steckos/asminc/*.inc pacman.sts.inc
 	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
 
-%.c64.o: %.c64.asm pacman.inc
+%.c64.o: %.c64.asm pacman.c64.inc
 	ca65 $(CA65FLAGS_C64) $(@:.o=.asm)
 
 pacman.tiles.bin: pacman.tiles.inc
@@ -67,14 +76,14 @@ pacman.prg: $(OBJS_STS) $(LIBS)
 pacman64.prg: $(OBJS_C64) $(LIBS_C64)
 	ld65 -o $@ $(LDFLAGS_C64) $(OBJS_C64) $(LIBS_C64)
   
-x64: pacman64.prg
-	x64 -device8 1 -autostartprgmode 1 pacman64.prg
+pacman64: pacman64.prg
+	x64 -device8 1 -autostartprgmode 1 $<
 
 pacman.dis: pacman.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 pacman64.dis: pacman64.prg
-	dcc6502 -o 0x801 -d -n -c $< > $@
+	dcc6502 -o 0x7ff -d -n -c $< > $@
 
 %: %.prg
 	../../transfer.py $< -s 0x1000

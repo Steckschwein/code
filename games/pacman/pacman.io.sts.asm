@@ -8,6 +8,7 @@
       .export io_getkey
       .export io_player_direction
       .export io_irq
+      .export io_irq_on
       
       .import joystick_on
       .import joystick_detect
@@ -24,6 +25,9 @@ io_init:
       
 io_irq:
       bit	a_vreg
+      rts
+      
+io_irq_on:
       rts
       
 io_detect_joystick:

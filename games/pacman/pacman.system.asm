@@ -7,21 +7,17 @@
       .export sys_crs_x
       .export sys_crs_y
       
-      .import game_state
-      .import gfx_charout
-      .import gfx_vblank
-      
-      
 .code
 frame_isr:
       push_axy
       
-      jsr gfx_vblank
+      jsr io_irq
       bpl @exit
       
       bgcolor Color_Yellow
       
-      inc game_state+GameState::frames
+      dec game_state+GameState::frames
+      
 @exit:
       bgcolor Color_Bg
       pop_axy
@@ -70,14 +66,14 @@ charout:
       
 out_text:
       ldy #0
-      lda (p_video),y
+      lda (p_text),y
       sta sys_crs_x
       iny
-      lda (p_video),y
+      lda (p_text),y
       sta sys_crs_y
       iny
 @l1:
-      lda (p_video),y
+      lda (p_text),y
       beq @rts
       cmp #WAIT
       beq @wait
@@ -99,12 +95,12 @@ wait:
       lda game_state+GameState::frames
       and #FRAMES_DELAY
       bne wait
-      inc game_state+GameState::frames
+      dec game_state+GameState::frames
       rts
       
 .data
 
-;.bss
+.bss
 sys_crs_x: .res 1
 sys_crs_y: .res 1
 actors: 

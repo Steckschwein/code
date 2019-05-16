@@ -1,123 +1,29 @@
+      .smart on
+      .autoimport on
+      .case on
+      .debuginfo on
+
       .include "zeropage.inc"
-      
-      .importzp ptr1,ptr2,ptr3
-      .importzp tmp1,tmp2,tmp3,tmp4,tmp5
-      
+
+      .importzp ptr1,ptr2,ptr3,ptr4
+      .importzp tmp1,tmp2,tmp3,tmp4
+
       KEY_EXIT = 27
 
-.define DEBUG 1
-.define BOOT 0
-.define INTRO 0
-
-.macro setIRQ irq, irq_save
-      sei
-      copyPtr $fffe, irq_save
-      setPtr irq, $fffe
-      cli
-.endmacro
-
-.macro restoreIRQ irq_save
-      sei
-      copyPtr irq_save, $fffe
-      cli
-.endmacro
-
-.macro setPtr addr, ptr
-			lda #<addr
-			sta ptr
-			lda #>addr
-			sta ptr+1
-.endmacro
-
-.macro copyPtr src, dest
-      lda src
-      sta dest
-      lda src+1
-      sta dest+1
-.endmacro
-
-.macro bgcolor color
-  .if DEBUG
-    .import gfx_bgcolor
-    lda #color
-    jsr gfx_bgcolor
-  .endif
-.endmacro
-
-.macro draw_text _p
-      setPtr _p, ptr1
-      jsr out_text
-.endmacro
-
-.macro push_axy
-      pha
-      tya
-      pha
-      txa
-      pha
-.endmacro
-
-.macro pop_axy
-      pla
-      tax
-      pla
-      tay
-      pla
-.endmacro
-
-.struct SpriteTab
-  ypos    .byte
-  xpos    .byte
-  shape   .byte
-  color   .byte
-.endstruct
-
-.struct GameState
-  state       .byte
-  credit      .byte
-  frames      .byte
-  score       .res 4
-  highscore   .res 4
-.endstruct
-
-  ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
-  ; dot timer 4s, 3s (level5)
-.struct actor ; !!! do not change order of attributes !!!
-    xpos      .byte   ; character x pos - 0..31
-    xpos_dir  .byte   ; character x pos direction
-    ypos      .byte   ; character y pos - 0..25
-    ypos_dir  .byte   ; character y pos direction
-    
-    move      .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
-    turn      .byte   ; bit 7 turn, bit 1-0 turn direction
-    sprite    .byte   ; sprite number, offset to sprite tab
-
-    dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
-;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30,0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
-.endstruct
 
 p_video=ptr1
 video_tmp=tmp1
 p_sound=ptr2
 sound_tmp=tmp2
+p_text=ptr3
 
-p_game=ptr4
-p_maze=ptr3
+p_game= ptr4
+p_maze= ptr4+2
+p_tmp=  ptr4+4
 
-game_tmp=tmp3
-game_tmp2=tmp4
-game_tmp3=tmp4
-
-Color_Bg          = $00
-Color_Red         = $01
-Color_Pink        = $03
-Color_Cyan        = $05
-Color_Light_Blue  = $06
-Color_Orange      = $07
-Color_Yellow      = $09
-Color_Dark_Cyan   = $0d
-Color_Blue        = $0e
-Color_Gray        = $0f
+game_tmp  = tmp3
+game_tmp2=  tmp4
+gfx_tmp=    tmp4+1
 
 Color_Blinky  = Color_Red
 Color_Inky    = Color_Cyan
@@ -168,11 +74,6 @@ GHOST_FRIGHTENED  = 3;
 
 Sprite_Pattern_Pacman = $18*4     ; pacman shape filled circle (game init)
 
-ACTOR_BLINKY  = 1*.sizeof(actor)
-ACTOR_INKY    = 2*.sizeof(actor)
-ACTOR_PINKY   = 3*.sizeof(actor)
-ACTOR_CLYDE   = 4*.sizeof(actor)
-
 ACT_MOVE          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_RIGHT         = 0 ;00 
@@ -184,3 +85,94 @@ ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
 
 ACT_TURN          = 1<<7
 ACT_DIR           = 1<<1|1<<0
+
+.macro setIRQ irq, irq_save
+      copyPtr $fffe, irq_save
+      setPtr irq, $fffe
+.endmacro
+
+.macro restoreIRQ irq_save
+      sei
+      copyPtr irq_save, $fffe
+      cli
+.endmacro
+
+.macro setPtr addr, ptr
+			lda #<addr
+			sta ptr
+			lda #>addr
+			sta ptr+1
+.endmacro
+
+.macro copyPtr src, dest
+      lda src
+      sta dest
+      lda src+1
+      sta dest+1
+.endmacro
+
+.macro bgcolor color
+  .ifdef __DEBUG
+    .import gfx_bgcolor
+    lda color
+    jsr gfx_bgcolor
+  .endif
+.endmacro
+
+.macro draw_text _p
+      setPtr _p, p_text
+      jsr out_text
+.endmacro
+
+.macro push_axy
+      pha
+      txa
+      pha
+      tya
+      pha
+.endmacro
+
+.macro pop_axy
+      pla
+      tay
+      pla
+      tax
+      pla
+.endmacro
+
+.struct SpriteTab
+  ypos    .byte
+  xpos    .byte
+  shape   .byte
+  color   .byte
+.endstruct
+
+.struct GameState
+  state       .byte
+  credit      .byte
+  frames      .byte
+  score       .res 4
+  highscore   .res 4
+.endstruct
+
+  ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
+  ; dot timer 4s, 3s (level5)
+.struct actor ; !!! do not change order of attributes !!!
+    xpos      .byte   ; character x pos - 0..31
+    xpos_dir  .byte   ; character x pos direction
+    ypos      .byte   ; character y pos - 0..25
+    ypos_dir  .byte   ; character y pos direction
+    
+    move      .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
+    turn      .byte   ; bit 7 turn, bit 1-0 turn direction
+    sprite    .byte   ; sprite number, offset to sprite tab
+
+    dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
+;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30,0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
+.endstruct
+
+ACTOR_PACMAN  = 0*.sizeof(actor)
+ACTOR_BLINKY  = 1*.sizeof(actor)
+ACTOR_INKY    = 2*.sizeof(actor)
+ACTOR_PINKY   = 3*.sizeof(actor)
+ACTOR_CLYDE   = 4*.sizeof(actor)

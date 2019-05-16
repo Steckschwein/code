@@ -91,7 +91,7 @@ game_isr:
 
 game_isr_exit:
 
-.if DEBUG
+.ifdef __DEBUG
       bgcolor Color_Bg
       jsr debug
 .endif
@@ -105,7 +105,7 @@ game_ready:
       bne @rts
       draw_text _text_player_one
       draw_text _text_ready
-.if DEBUG = 0
+.ifndef __DEBUG
       jsr sound_play
       lda game_state+GameState::frames
       and #$7f
@@ -123,7 +123,7 @@ game_ready_wait:
       lda game_state+GameState::state
       cmp #STATE_READY_WAIT
       bne @rts
-.if DEBUG = 0
+.ifndef __DEBUG
       jsr sound_play
       lda sound_play_state
       bne @rts
@@ -802,14 +802,14 @@ game_init_sprites:
       rts
  
 sprite_init: ;x,y,init direction,color
-      .byte 188,96,   ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT, Color_Yellow ;offset y=+4,y=+4  ; pacman
-      .byte 92,95,    ACT_MOVE|ACT_LEFT, Color_Blinky
-;      .byte 116,111,  ACT_MOVE|ACT_UP,   Color_Inky
-       .byte 116,108,  ACT_MOVE|ACT_UP,   Color_Inky
-;      .byte 116,95,   ACT_DOWN, Color_Pinky
-      .byte 116,92,   ACT_MOVE|ACT_DOWN, Color_Pinky
-;      .byte 116,79,   ACT_UP,   Color_Clyde
-      .byte 116,76,   ACT_MOVE|ACT_UP,   Color_Clyde
+      .byte 188,96,   ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT, ACTOR_PACMAN ;offset y=+4,y=+4  ; pacman
+      .byte 92,95,    ACT_MOVE|ACT_LEFT, ACTOR_BLINKY
+;      .byte 116,111,  ACT_MOVE|ACT_UP,   ACTOR_INKY
+       .byte 116,108,  ACT_MOVE|ACT_UP,   ACTOR_INKY
+;      .byte 116,95,   ACT_DOWN, ACTOR_BLINKY
+      .byte 116,92,   ACT_MOVE|ACT_DOWN, ACTOR_PINKY
+;      .byte 116,79,   ACT_UP,   ACTOR_CLYDE
+      .byte 116,76,   ACT_MOVE|ACT_UP,   ACTOR_CLYDE
 sprite_init_end:
 
 ai_ghost:

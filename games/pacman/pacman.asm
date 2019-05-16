@@ -14,16 +14,12 @@
       .import boot
       .import intro
       .import game
-      
 
-;appstart $1000
 .code
-
+.proc	_main: near
 main:
-      sei
       jsr io_init
       jsr sound_init
-      
       jsr gfx_init
       jsr gfx_mode_on
       
@@ -48,6 +44,8 @@ init:
       dex
       bpl :-
       rts
+.endproc
+
 .data
 game_state:
   .tag GameState

@@ -3,17 +3,11 @@
       .export gfx_init
       .export gfx_mode_on
       .export gfx_mode_off
-      .export gfx_vram_xy
-      .export gfx_vram_ay
       .export gfx_blank_screen
       .export gfx_bgcolor
       .export gfx_sprites_off
       .export gfx_vblank
 
-      .export gfx_digits,gfx_digit
-      .export gfx_hex_digits
-      
-      .export gfx_text
       .export gfx_charout
       .export gfx_hires_on
       .export gfx_hires_off
@@ -32,14 +26,6 @@
       .import game_state
       .import game_maze
       .import sprite_tab_attr
-
-sprite_pattern=ADDRESS_GFX3_SPRITE_PATTERN
-sprite_color  =ADDRESS_GFX3_SPRITE_COLOR
-
-VRAM_SPRITE_PATTERN =ADDRESS_GFX3_SPRITE_PATTERN
-VRAM_SPRITE_COLOR   =ADDRESS_GFX3_SPRITE_COLOR
-VRAM_SPRITE_ATTR    =ADDRESS_GFX3_SPRITE
-
 .code
 gfx_vblank:
       bit	a_vreg
@@ -202,50 +188,6 @@ gfx_vram_xy:
       sta a_vreg
       rts
 
-gfx_hex_digits:
-      pha
-      phx
-
-      tax
-      lsr
-      lsr
-      lsr
-      lsr
-      jsr hexdigit
-      txa
-      jsr hexdigit
-      plx
-      pla
-      rts
-hexdigit:
-      and #$0f      ;mask lsb for hex print
-      ora #'0'			;add "0"
-      cmp #'9'+1		;is it a decimal digit?
-      bcc @out
-      adc #6			  ;add offset for letter a-f
-@out: vdp_wait_l 16
-      sta a_vram
-      rts
-      
-gfx_digits:
-      pha
-      lsr
-      lsr
-      lsr
-      lsr
-      jsr gfx_digit
-      pla
-gfx_digit:
-      pha
-      jsr gfx_vram_xy
-      pla
-      and #$0f
-      ora #'0'
-      vdp_wait_l 12
-      sta a_vram
-      dec crs_y
-      rts
-
 gfx_charout:
       pha
       jsr gfx_vram_xy
@@ -253,45 +195,7 @@ gfx_charout:
       vdp_wait_l 8
       sta a_vram
       rts
-      
-gfx_text:
-      ldy #0
-      lda (p_video),y
-      sta crs_x
-      iny
-      lda (p_video),y
-      sta crs_y
-      iny
-@l1:
-      jsr gfx_vram_xy
-      vdp_wait_l (6+6+2)
-      lda (p_video),y
-      beq @rts
-      cmp #WAIT
-      beq @wait
-      cmp #WAIT2
-      bne @out
-      jsr wait
-@wait:
-      jsr wait
-      
-      bra @next
-@out:      
-      sta a_vram
-      dec crs_y
-@next:
-      iny
-      bne @l1
-@rts:
-      rts
 
-wait:
-      lda game_state+GameState::frames
-      and #FRAMES_DELAY
-      bne wait
-      inc game_state+GameState::frames
-      rts
-      
 gfx_hires_on:
       
       vdp_sreg >(ADDRESS_GFX3_COLOR<<2)   | $7f, v_reg3 ; need more colors for colored text
@@ -349,8 +253,7 @@ pacman_colors:
 tiles:
       .include "pacman.tiles.rot.inc"
 tiles_colors:
-      .include "pacman.tiles.colors.inc"
-      
+      .include "pacman.tiles.colors.inc"      
 sprite_patterns:
       .include "pacman.ghosts.res"
       .include "pacman.pacman.res"

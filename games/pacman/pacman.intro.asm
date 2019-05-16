@@ -22,7 +22,7 @@
 .endmacro
 
 intro:
-      .if DEBUG = 1
+      .ifdef __NO_INTRO
         rts
       .endif
 ;      jsr gfx_hires_on
@@ -58,7 +58,7 @@ intro:
       cmp #'c'          ; increment credit
       bne @wait_start1up
       jsr credit_inc
-.if DEBUG
+.ifdef __DEBUG
       lda game_state+GameState::frames
       and #WAIT
       bne @wait_start1up
