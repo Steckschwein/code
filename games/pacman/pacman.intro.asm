@@ -14,8 +14,8 @@
       
       .import game_state
       
-.macro draw_actor addr
-      draw_text addr
+.macro draw_actor addr, color
+      draw_text addr, color
       draw_text (addr+6)
       draw_text (addr+11)
       draw_text (addr+16)
@@ -25,18 +25,16 @@ intro:
       .ifdef __NO_INTRO
         rts
       .endif
-;      jsr gfx_hires_on
-      setIRQ frame_isr, _save_irq
-      
+      ;jsr gfx_hires_on
       jsr intro_frame
       draw_text _table_head
       
-      draw_actor _row1      
-      draw_actor _row2
-      draw_actor _row3
-      draw_actor _row4
+      draw_actor _row1, Color_Blinky
+      draw_actor _row2, Color_Pinky
+      draw_actor _row3, Color_Inky
+      draw_actor _row4, Color_Clyde
       
-      draw_text _points_1
+      draw_text _points_1, Color_Gray
       draw_text _points_2
       
 @wait_credit:
@@ -71,20 +69,15 @@ intro:
       jmp @wait_start1up
       
 @start_1up:
-      
-      restoreIRQ _save_irq
-      
       rts
 
 intro_frame:
       jsr gfx_blank_screen
-      draw_text _header_1
+      draw_text _header_1, 0;Color_Gray
       draw_text _header_2
       draw_text _copyright
       draw_text _copyright_sw
       draw_text _footer
-      jsr out_text
-
 display_credit:
       lda #31
       sta sys_crs_x

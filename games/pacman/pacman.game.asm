@@ -39,8 +39,10 @@
       .import game_state
       
 game:
+      sei
       setIRQ game_isr, _save_irq
 ;      jsr gfx_hires_off
+      cli
 
 game_reset:
       lda #STATE_INIT
@@ -95,7 +97,6 @@ game_isr_exit:
       bgcolor Color_Bg
       jsr debug
 .endif
-
       pop_axy
       rti
 
@@ -105,7 +106,7 @@ game_ready:
       bne @rts
       draw_text _text_player_one
       draw_text _text_ready
-.ifndef __DEBUG
+.ifndef __NO_SOUND
       jsr sound_play
       lda game_state+GameState::frames
       and #$7f
@@ -123,7 +124,7 @@ game_ready_wait:
       lda game_state+GameState::state
       cmp #STATE_READY_WAIT
       bne @rts
-.ifndef __DEBUG
+.ifndef __NO_SOUND
       jsr sound_play
       lda sound_play_state
       bne @rts
@@ -292,7 +293,7 @@ pacman_update_shape:
       tay
       lda pacman_shapes,y
       ldy actors+actor::sprite,x
-      sta sprite_tab_attr+SpriteTab::shape,y
+;      sta sprite_tab_attr+SpriteTab::shape,y
       rts
       
 actor_shape_move:
@@ -365,9 +366,9 @@ erase_and_score:
       dec actors+actor::dots,x
       pha
       lda actors+actor::xpos,x
-      sta cursor_x
+      sta sys_crs_x
       lda actors+actor::ypos,x
-      sta cursor_y
+      sta sys_crs_y
       lda #Char_Blank
       ldy #0
       sta (p_maze),y
@@ -483,10 +484,9 @@ debug:
       txa
       pha
       lda #11
-      sta cursor_x
+      sta sys_crs_x
       lda #0
-      sta cursor_y
-      
+      sta sys_crs_y
       lda input_direction
       jsr out_hex_digits
       lda actors+actor::move
@@ -507,6 +507,7 @@ debug:
       jsr out_hex_digits
       lda keyboard_input
       jsr out_hex_digits
+@ex:
       pla
       tax
       pla
@@ -516,20 +517,20 @@ calc_maze_ptr_direction:
       lda actors+actor::xpos_dir,x
       ldy actors+actor::ypos_dir,x
 calc_maze_ptr_ay:
-      sta cursor_x
-      sty cursor_y
+      sta sys_crs_x
+      sty sys_crs_y
 @calc_maze_ptr:
-      lda cursor_y;actors+actor::ypos, x; ;.Y * 32
+      lda sys_crs_y;actors+actor::ypos, x; ;.Y * 32
       asl
       asl
       asl
       asl
       asl
-      ora cursor_x;actors+actor::xpos, x
+      ora sys_crs_x;actors+actor::xpos, x
       ;clc
 ;      adc #<__RAM_LAST__
       sta p_maze+0
-      lda cursor_y;actors+actor::ypos, x ; .Y * 32
+      lda sys_crs_y;actors+actor::ypos, x ; .Y * 32
       lsr ; div 8 -> page offset 0-2
       lsr
       lsr
@@ -633,20 +634,20 @@ add_score:
       rts
 
 draw_score:
-      sta cursor_x
-      sty cursor_y
+      sta sys_crs_x
+      sty sys_crs_y
       ldy #0
 @skip_zeros:
       lda (p_game),y
       beq @skip ;00 ?
       and #$f0  ;0? ?
       bne @digits
-      dec cursor_y ;output the 0-9 only
+      dec sys_crs_y ;output the 0-9 only
       jsr out_digit
       jmp @digits_inc
 @skip:
-      dec cursor_y ;skip digits
-      dec cursor_y
+      dec sys_crs_y ;skip digits
+      dec sys_crs_y
       iny
       cpy #04
       bne @skip_zeros
@@ -676,13 +677,13 @@ animate_food:
       and #$07
       bne @rts
       ldx #0
-      ldy #0
 @l1:  lda superfood,x
       inx
       ldy superfood,x
       jsr calc_maze_ptr_ay
+      ldy #0
       lda (p_maze),y
-      cmp #Char_Blank
+      cmp #Char_Blank ; eaten?
       beq @next
       eor #$03
       sta (p_maze),y
@@ -787,7 +788,7 @@ game_init_sprites:
       jmp @next
 @ghost:
       lda #0
-      jsr actor_shape_move_direct
+ ;     jsr actor_shape_move_direct
 @next:      
       pla
       tay
@@ -843,17 +844,11 @@ actor_strategy:
       bne @ghost
       jmp pacman_move
 @ghost:
+      rts ; TODO FIXME
       jmp ai_ghost
 
-actor_strategy_tab:
-      .word pacman_move
-      .word ai_ghost
-      .word ai_ghost
-      .word ai_ghost
-      .word ai_ghost
-
 _save_irq:  .res 2
-  
+
 .data
 maze:
   .include "pacman.maze.inc"
@@ -908,13 +903,12 @@ _delete_message_1:
 _delete_message_2:
       .byte 18,17, "          ",0
 
-;.bss
-cursor_x:
-cursor_y:
-.export game_maze
-.segment	"RODATA"
-game_maze:
-;             =(cursor_y + $0100) & $ff00
-actors:                 ;=
-sprite_tab_attr:        ;=actors+5*.sizeof(actor)
-sprite_tab_attr_end:    ;=sprite_tab_attr+5*4*2
+      .export sprite_tab_attr
+      .export game_maze
+      .import __BSS_RUN__,__BSS_SIZE__
+
+.bss
+actors: .res (5*.sizeof(actor))
+sprite_tab_attr:  .res 5*4*2
+sprite_tab_attr_end:
+game_maze=((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100

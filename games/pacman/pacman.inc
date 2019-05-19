@@ -1,15 +1,19 @@
-      .smart on
-      .autoimport on
-      .case on
-      .debuginfo on
-
       .include "zeropage.inc"
-
+;      .smart 
+      .autoimport
+      
       .importzp ptr1,ptr2,ptr3,ptr4
       .importzp tmp1,tmp2,tmp3,tmp4
 
-      KEY_EXIT = 27
+        Color_Blinky  = Color_Red
+        Color_Inky    = Color_Cyan
+        Color_Clyde   = Color_Orange
+        Color_Pinky   = Color_Pink
+        Color_Food    = Color_Dark_Pink
+        Color_Border  = Color_Blue
 
+        KEY_EXIT = 27
+        MAX_DOTS=226+4  ; food + superfood
 
 p_video=ptr1
 video_tmp=tmp1
@@ -17,20 +21,14 @@ p_sound=ptr2
 sound_tmp=tmp2
 p_text=ptr3
 
-p_game= ptr4
-p_maze= ptr4+2
-p_tmp=  ptr4+4
+p_game        = ptr4
+p_maze        = ptr4+2
+p_tmp         = ptr4+4
 
-game_tmp  = tmp3
-game_tmp2=  tmp4
-gfx_tmp=    tmp4+1
-
-Color_Blinky  = Color_Red
-Color_Inky    = Color_Cyan
-Color_Clyde   = Color_Orange
-Color_Pinky   = Color_Pink
-Color_Food    = $0b
-Color_Border  = Color_Blue
+game_tmp      = tmp3
+game_tmp2     = tmp4
+gfx_tmp       = tmp4+1
+text_color    = tmp4+2
 
 
 Char_Food           = $cc   ;1100 1100
@@ -119,8 +117,13 @@ ACT_DIR           = 1<<1|1<<0
   .endif
 .endmacro
 
-.macro draw_text _p
+.macro draw_text _p, color
+      .if .paramcount > 1
+        lda color
+        sta text_color
+      .endif
       setPtr _p, p_text
+      .import out_text
       jsr out_text
 .endmacro
 

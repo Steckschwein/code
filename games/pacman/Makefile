@@ -1,7 +1,8 @@
 
-#DEBUG=-D__DEBUG
-#DEBUG+=-D__NO_BOOT
-#DEBUG+=-D__NO_INTRO
+DEBUG=-D__DEBUG
+DEBUG+=-D__NO_SOUND
+DEBUG+=-D__NO_BOOT
+DEBUG+=-D__NO_INTRO
 
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
 CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include -D_CC65_V2_17_
@@ -47,10 +48,10 @@ pacman.gfx.c64.o: $(RESOURCES)
 
 pacman.game.o: pacman.maze.inc
 
-%.o: %.asm ../../steckos/asminc/*.inc pacman.inc pacman.inc
+%.o: %.asm ../../steckos/asminc/*.inc pacman.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
-%.sts.o: %.sts.asm ../../steckos/asminc/*.inc pacman.sts.inc
+%.sts.o: %.sts.asm ../../steckos/asminc/*.inc pacman.inc pacman.sts.inc
 	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
 
 %.c64.o: %.c64.asm pacman.c64.inc
@@ -77,7 +78,8 @@ pacman64.prg: $(OBJS_C64) $(LIBS_C64)
 	ld65 -o $@ $(LDFLAGS_C64) $(OBJS_C64) $(LIBS_C64)
   
 pacman64: pacman64.prg
-	x64 -device8 1 -autostartprgmode 1 $<
+	x64 -device8 1 -VICIIdscan -VICIIdsize -autostartprgmode 1 $<
+#-fullscreen 
 
 pacman.dis: pacman.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@

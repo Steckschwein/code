@@ -7,6 +7,10 @@
       .export sys_crs_x
       .export sys_crs_y
       
+      .import gfx_charout
+      .import game_state
+      .import io_irq
+      
 .code
 frame_isr:
       push_axy
@@ -25,20 +29,13 @@ frame_isr:
 
 out_hex_digits:
       pha
-      txa
-      pha
-
-      tax
       lsr
       lsr
       lsr
       lsr
       jsr out_hex_digit
-      txa
+      pla
       jsr out_hex_digit
-      pla
-      tax
-      pla
       rts
 out_hex_digit:
       and #$0f      ;mask lsb for hex print
@@ -46,7 +43,10 @@ out_hex_digit:
       cmp #'9'+1		;is it a decimal digit?
       bcc @out
       adc #6			  ;add offset for letter a-f
-@out: jmp charout
+@out: jsr charout
+      inc sys_crs_x
+      inc sys_crs_y
+      rts
       
 out_digits:
       pha
@@ -103,8 +103,3 @@ wait:
 .bss
 sys_crs_x: .res 1
 sys_crs_y: .res 1
-actors: 
-.export sprite_tab_attr
-sprite_tab_attr:
-;sprite_tab_attr       =actors+5*.sizeof(actor)
-;sprite_tab_attr_end   =sprite_tab_attr+5*4*2

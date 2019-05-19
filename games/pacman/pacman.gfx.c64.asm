@@ -25,6 +25,7 @@
       .export Color_Dark_Cyan
       .export Color_Blue
       .export Color_Gray
+      .export Color_Dark_Pink
       
       .import vdp_init_reg
       .import vdp_memcpy
@@ -40,17 +41,6 @@
       ;sprite x = 24
       ;
 .code
-      Color_Bg:         .byte $00
-      Color_Red:        .byte $02
-      Color_Pink:       .byte $04
-      Color_Cyan:       .byte $03
-      Color_Light_Blue: .byte $0e
-      Color_Orange:     .byte $02
-      Color_Yellow:     .byte $07
-      Color_Dark_Cyan:  .byte $03
-      Color_Blue:       .byte $06
-      Color_Gray:       .byte COLOR_GRAY3
-
 gfx_mode_off:
       
 gfx_mode_on:
@@ -69,15 +59,7 @@ gfx_init_chars:
       ldx #8
       setPtr tiles,  p_tmp
       setPtr VRAM_PATTERN, p_video
-      ldy #0
-:     lda (p_tmp),y
-      sta (p_video),y
-      iny
-      bne :-
-      inc p_tmp+1
-      inc p_video+1
-      dex
-      bne :-
+      jsr _gfx_memcpy
 gfx_init_sprites:
 gfx_blank_screen:
       setPtr VRAM_SCREEN, p_video
@@ -90,27 +72,77 @@ gfx_blank_screen:
       inc p_video+1
       dex
       bne :-
-      ldy #0
-      lda #COLOR_GRAY3<<4|COLOR_GRAY3
-:     sta VRAM_COLOR+$000,y
-      sta VRAM_COLOR+$100,y
-      sta VRAM_COLOR+$200,y
-      sta VRAM_COLOR+$300,y
-      dey 
-      bne :-
       rts
       
 gfx_sprites_off:
 
 gfx_update:
-
+      rts
+      
 gfx_display_maze:
-
+_gfx_setcolor:
+      ldx #4
+      ldy #0
+      sty sys_crs_x
+      sty sys_crs_y
+      setPtr game_maze, p_maze
+@loop:
+      lda (p_maze), y
+      cmp #Char_Food
+      bne @s_food
+      lda Color_Food
+      bne @color
+@s_food:
+      cmp #Char_Superfood
+      bne @text
+      lda Color_Food
+      bne @color
+@text:
+      cmp #Char_Bg
+      bcs @color
+      lda Color_Border
+      bne @color
+      lda Color_Gray
+@color:
+      sta text_color
+      jsr gfx_charout
+      inc sys_crs_x
+      lda sys_crs_x
+      cmp #32
+      bne @next
+      inc sys_crs_y
+      lda #0
+      sta sys_crs_x
+@next:
+      iny 
+      bne @loop
+      inc p_maze+1
+      dex
+      bne @loop
+      rts 
+      
+      setPtr game_maze, p_tmp
+      setPtr VRAM_SCREEN, p_video
+      ldx #4
+_gfx_memcpy:
+      ldy #0
+:     lda (p_tmp),y
+      sta (p_video),y
+      iny
+      bne :-
+      inc p_tmp+1
+      inc p_video+1
+      dex
+      bne :-
+      rts
+      
 gfx_charout:
       pha
       sty gfx_tmp
+      
       lda #0
       sta p_video+1
+      sta p_tmp+1
       lda sys_crs_y ;.Y * 40 => y*8 + y*32
       asl
       asl
@@ -127,12 +159,18 @@ gfx_charout:
 l_add:
       adc sys_crs_x
       sta p_video
+      sta p_tmp
       lda #>VRAM_SCREEN
       adc p_video+1
       sta p_video+1
+      clc
+      adc #>(VRAM_COLOR-VRAM_SCREEN)
+      sta p_tmp+1
       pla
       ldy #0
       sta (p_video),y
+      lda text_color
+      sta (p_tmp),y
       ldy gfx_tmp
       rts
       
@@ -149,6 +187,18 @@ gfx_pause:
 
 
 .data
+Color_Bg:         .byte COLOR_BLACK
+Color_Red:        .byte COLOR_RED
+Color_Pink:       .byte COLOR_VIOLET
+Color_Cyan:       .byte COLOR_CYAN
+Color_Light_Blue: .byte COLOR_LIGHTBLUE
+Color_Orange:     .byte COLOR_ORANGE
+Color_Yellow:     .byte COLOR_YELLOW
+Color_Dark_Cyan:  .byte COLOR_CYAN
+Color_Blue:       .byte COLOR_BLUE
+Color_Gray:       .byte COLOR_GRAY3
+Color_Dark_Pink:  .byte COLOR_LIGHTRED
+
 gfx_Sprite_Adjust_X:
       .byte 24+8
 gfx_Sprite_Adjust_Y:

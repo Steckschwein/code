@@ -11,12 +11,7 @@ boot:
       rts
       .endif
      
-      sei
-      jsr io_irq_on
-      setIRQ frame_isr, _save_irq
-      cli
-      
-      draw_text text_1_0
+      draw_text text_1_0, 0;Color_Gray
       draw_text text_1_1
       draw_text text_1_2
       draw_text text_2
@@ -25,13 +20,8 @@ boot:
       ;draw_text text_5
       ;draw_text text_6
 
-      restoreIRQ _save_irq
-      
       rts
-      
 .data
-_save_irq:  .res 2, 0
-
 ;    MARKO LAUKE
 ;        AND
 ;   STEFAN WEGNER
@@ -41,7 +31,7 @@ _save_irq:  .res 2, 0
 ;THOMAS WOINKE / FTW!!!
 ;MY LOVELY WIFE SUSAN!
 text_1_0:
-  .byte 6,18,1,2,3,4,WAIT2,WAIT,"M",WAIT,"A",WAIT,"R",WAIT,"K",WAIT,"O ",WAIT,"L",WAIT,"A",WAIT,"U",WAIT,"K",WAIT,"E",0
+  .byte 6,18,WAIT2,WAIT,"M",WAIT,"A",WAIT,"R",WAIT,"K",WAIT,"O ",WAIT,"L",WAIT,"A",WAIT,"U",WAIT,"K",WAIT,"E",0
 text_1_1:
   .byte 8,14,WAIT2,"AND",0
 text_1_2:

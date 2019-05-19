@@ -16,6 +16,16 @@ TODO:
 - pacman sprint - speed to original differs, so add some px if contiguous move to a direction
 - optimize sprite init and reorder, pacman to lower order ghosts have to overlapp
       
+
+------------------------------------------------
+| pacman (6502)                                |
+------------------------------------------------
+| pacman.hw.sts (65c02) |                      |
+------------------------- pacman.hw.c64 (6502) |
+| steckschwein.lib      |                      |
+------------------------------------------------
+
+
 video:
   - original paxman, namco May 22nd, 1980
     - 224x288 => 28x36 => 28x31 -5 (score)    => 1px 196x252

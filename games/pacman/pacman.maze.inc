@@ -26,8 +26,6 @@
 .byte '1',$da,$cc,$cc,$ce,$cc,$cc,$cc,$cc,$cc,$db,$00,$00,$00,$da,$20,$db,$00,$00,$00,$da,$cc,$cc,$cc,$ce,$e2,$e4,$cc,$cc,$cc,$cc,$db
 .byte $00,$d1,$d3,$d3,$d3,$d3,$d3,$d3,$d3,$d3,$d5,$00,$00,$00,$da,$20,$db,$00,$00,$00,$d1,$d3,$d3,$d3,$d3,$d7,$d9,$d3,$d3,$d3,$d3,$d5
 
-MAX_DOTS=226+4
-
 ; CREDIT  0   HIGH      00
 
 ; 1UP      00 HIGH      00
