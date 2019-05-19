@@ -1,7 +1,7 @@
 CPU=65c02
-ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
-LDFLAGS=--config ../steckos/kernel/steckosapp.cfg ../steckos/tools/lib/toollib.a
-OBJS=userport.o 
+ASM_INCLUDE=--include-dir ../../steckos/kernel --include-dir ../../steckos/asminc
+LDFLAGS=--config ../../steckos/prg.ld65.cfg ../../steckos/tools/lib/toollib.a
+OBJS=userport.o
 .PHONY: all clean
 
 all: userport.prg
