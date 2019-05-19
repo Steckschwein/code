@@ -11,6 +11,7 @@
         Color_Pinky   = Color_Pink
         Color_Food    = Color_Dark_Pink
         Color_Border  = Color_Blue
+        Color_Text    = Color_Gray
 
         KEY_EXIT = 27
         MAX_DOTS=226+4  ; food + superfood

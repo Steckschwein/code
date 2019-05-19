@@ -73,10 +73,9 @@ gfx_blank_screen:
       dex
       bne :-
       rts
-      
-gfx_sprites_off:
-
 gfx_update:
+      rts
+gfx_sprites_off:
       rts
       
 gfx_display_maze:
@@ -88,6 +87,7 @@ _gfx_setcolor:
       setPtr game_maze, p_maze
 @loop:
       lda (p_maze), y
+      sta gfx_tmp
       cmp #Char_Food
       bne @s_food
       lda Color_Food
@@ -99,12 +99,14 @@ _gfx_setcolor:
       bne @color
 @text:
       cmp #Char_Bg
-      bcs @color
-      lda Color_Border
-      bne @color
+      bcs @color_bg
       lda Color_Gray
+      bne @color
+@color_bg:
+      lda Color_Border
 @color:
       sta text_color
+      lda gfx_tmp
       jsr gfx_charout
       inc sys_crs_x
       lda sys_crs_x

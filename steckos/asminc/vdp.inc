@@ -171,19 +171,20 @@ Magenta        =$0d ;200 90	198 	"C85AC6" (Purple)
 Gray           =$0e ;204 204 204	"CCCCCC"
 White          =$0f ;255 255 255	"white"
 
-WRITE_ADDRESS			=$40
+WRITE_ADDRESS=$40
 
-ADDRESS_GFX_SPRITE		=$1e00
+ADDRESS_GFX_SPRITE          =$1e00
+ADDRESS_GFX_SPRITE_PATTERN  =$2800
 
-ADDRESS_TEXT_SCREEN    =$1000			; name table
-ADDRESS_TEXT_PATTERN   =$0000			; pattern table
-ADDRESS_TEXT_COLOR     =$2000			; color table, v9938/58 "blink" color code vram
+ADDRESS_TEXT_SCREEN         =$1000			; name table
+ADDRESS_TEXT_PATTERN        =$0000			; pattern table
+ADDRESS_TEXT_COLOR          =$2000			; color table, v9938/58 "blink" color code vram
 
 ADDRESS_GFX1_SCREEN         =$1000    ; name table
 ADDRESS_GFX1_PATTERN        =$0000
 ADDRESS_GFX1_COLOR          =$1b80
-ADDRESS_GFX1_SPRITE		=ADDRESS_GFX_SPRITE
-ADDRESS_GFX1_SPRITE_PATTERN=$1000;
+ADDRESS_GFX1_SPRITE         =ADDRESS_GFX_SPRITE
+ADDRESS_GFX1_SPRITE_PATTERN =$1800;
 
 ADDRESS_GFX2_SCREEN         = $1000			 ; name table (layout)
 ADDRESS_GFX2_PATTERN        = $0000      ; pattern generator

@@ -293,7 +293,7 @@ pacman_update_shape:
       tay
       lda pacman_shapes,y
       ldy actors+actor::sprite,x
-;      sta sprite_tab_attr+SpriteTab::shape,y
+      sta sprite_tab_attr+SpriteTab::shape,y
       rts
       
 actor_shape_move:
@@ -487,6 +487,8 @@ debug:
       sta sys_crs_x
       lda #0
       sta sys_crs_y
+      lda Color_Text
+      sta text_color
       lda input_direction
       jsr out_hex_digits
       lda actors+actor::move
@@ -636,6 +638,8 @@ add_score:
 draw_score:
       sta sys_crs_x
       sty sys_crs_y
+      lda Color_Text
+      sta text_color
       ldy #0
 @skip_zeros:
       lda (p_game),y
@@ -673,6 +677,8 @@ draw_scores:
       jmp draw_score
             
 animate_food:
+      lda Color_Food
+      sta text_color
       lda game_state+GameState::frames
       and #$07
       bne @rts
@@ -788,7 +794,7 @@ game_init_sprites:
       jmp @next
 @ghost:
       lda #0
- ;     jsr actor_shape_move_direct
+      jsr actor_shape_move_direct
 @next:      
       pla
       tay
