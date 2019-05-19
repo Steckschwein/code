@@ -1,8 +1,8 @@
 
-#DEBUG=-D__DEBUG
+DEBUG=-D__DEBUG
 DEBUG+=-D__NO_SOUND
-#DEBUG+=-D__NO_BOOT
-#DEBUG+=-D__NO_INTRO
+DEBUG+=-D__NO_BOOT
+DEBUG+=-D__NO_INTRO
 
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
 CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include -D_CC65_V2_17_

@@ -54,10 +54,11 @@ out_digits:
       lsr
       lsr
       lsr
-      jsr out_digit
+      jsr _od
       pla
 out_digit:
       and #$0f
+_od:
       ora #'0'
 charout:
       jsr gfx_charout

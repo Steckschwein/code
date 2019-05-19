@@ -635,6 +635,15 @@ add_score:
       cld
       rts
 
+      
+draw_scores:
+      setPtr (game_state+GameState::score), p_game
+      lda #0
+      ldy #21
+      jsr draw_score
+      setPtr (game_state+GameState::highscore), p_game
+      lda #0
+      ldy #8
 draw_score:
       sta sys_crs_x
       sty sys_crs_y
@@ -647,6 +656,7 @@ draw_score:
       and #$f0  ;0? ?
       bne @digits
       dec sys_crs_y ;output the 0-9 only
+      lda (p_game),y
       jsr out_digit
       jmp @digits_inc
 @skip:
@@ -665,17 +675,7 @@ draw_score:
       bne @digits
       rts
       
-      
-draw_scores:
-      setPtr (game_state+GameState::score), p_game
-      lda #0
-      ldy #21
-      jsr draw_score
-      setPtr (game_state+GameState::highscore), p_game
-      lda #0
-      ldy #8
-      jmp draw_score
-            
+
 animate_food:
       lda Color_Food
       sta text_color
@@ -850,7 +850,7 @@ actor_strategy:
       bne @ghost
       jmp pacman_move
 @ghost:
-      rts ; TODO FIXME
+;      rts ; TODO FIXME
       jmp ai_ghost
 
 _save_irq:  .res 2

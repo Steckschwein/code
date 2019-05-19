@@ -30,9 +30,10 @@ main:
       setIRQ frame_isr, _save_irq
       cli
 
+      jsr init
+
       jsr boot
 @intro:
-      jsr init
       jsr intro
       bit game_state+GameState::state
       bmi @exit
@@ -49,8 +50,8 @@ main:
       
 init:
       ldx #.sizeof(GameState)-1
-:     lda #0
-      sta game_state,x
+      lda #0
+:     sta game_state,x
       dex
       bpl :-
       rts

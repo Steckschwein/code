@@ -61,6 +61,7 @@ gfx_init_chars:
       setPtr VRAM_PATTERN, p_video
       jsr _gfx_memcpy
 gfx_init_sprites:
+
 gfx_blank_screen:
       setPtr VRAM_SCREEN, p_video
       ldx #4

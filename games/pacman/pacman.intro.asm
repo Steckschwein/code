@@ -149,9 +149,9 @@ _row4:
   .byte 16,24, $b4,$b5,0
   .byte 15,24,WAIT2, $b2,$b3, WAIT,"  -POKEY     ",WAIT,'"',"CLYDE",'"',0
 _points_1:
-  .byte 22,17,Char_Food, " 10", Char_Pts,0
+  .byte 22,17,Char_Food, " 10 ", Char_Pts,0
 _points_2:
-  .byte 24,17,Char_Superfood, " 50", Char_Pts,0
+  .byte 24,17,Char_Superfood, " 50 ", Char_Pts,0
   
 _start:
   .byte 16,21,"PUSH START BUTTON",0
