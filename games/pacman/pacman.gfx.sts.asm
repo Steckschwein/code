@@ -5,6 +5,7 @@
       .export gfx_mode_off
       .export gfx_blank_screen
       .export gfx_bgcolor
+      .export gfx_bordercolor
       .export gfx_sprites_off
       .export gfx_vblank
 
@@ -86,7 +87,7 @@ gfx_init_pal:
       bne :-
 
 gfx_init_chars:
-      vdp_vram_w ADDRESS_GFX3_PATTERN
+      vdp_vram_w VRAM_PATTERN
       lda #<tiles
       ldy #>tiles
       ldx #08
@@ -136,7 +137,7 @@ gfx_init_sprites:
 
 gfx_blank_screen:
       vdp_vram_w VRAM_SCREEN
-      lda #0
+      lda #Char_Blank
       ldx #4
       jsr vdp_fill
 
@@ -162,7 +163,12 @@ gfx_display_maze:
       lda #<game_maze
       ldy #>game_maze
       ldx #4
-      jmp vdp_memcpy
+      jsr vdp_memcpy
+      vdp_vram_w (VRAM_SCREEN+$400-32)
+      ldx #32
+      lda #Char_Blank
+      jmp vdp_fills      
+      
       
 gfx_pause:
       lsr
@@ -174,6 +180,7 @@ gfx_pause:
       rts
       
 
+gfx_bordercolor=vdp_bgcolor
 gfx_bgcolor=vdp_bgcolor
       
 ; set the vdp vram address
@@ -212,12 +219,12 @@ gfx_charout:
 gfx_hires_on:
       
       vdp_sreg >(VRAM_COLOR<<2)   | $7f, v_reg3 ; need more colors for colored text
-      vdp_sreg >(ADDRESS_GFX3_PATTERN>>3) | $03, v_reg4 ; pattern table
+      vdp_sreg >(VRAM_PATTERN>>3) | $03, v_reg4 ; pattern table
       rts
       
 gfx_hires_off:
       vdp_sreg >(VRAM_COLOR<<2)   | $1f, v_reg3 ; 
-      vdp_sreg >(ADDRESS_GFX3_PATTERN>>3) | $00, v_reg4 ; 
+      vdp_sreg >(VRAM_PATTERN>>3) | $00, v_reg4 ; 
       rts
       
 .data

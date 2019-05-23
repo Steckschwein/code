@@ -4,7 +4,9 @@
 
       VRAM_SCREEN         = $0400
       VRAM_PATTERN        = $3800
+      VRAM_SPRITE_PATTERN = $3000
       VRAM_COLOR          = $d800
+      VRAM_SPRITE_POINTER = VRAM_SCREEN+$3f8
 
       COLOR_BLACK             = $00
       COLOR_WHITE             = $01
@@ -24,9 +26,8 @@
       COLOR_LIGHTBLUE         = $0E
       COLOR_GRAY3             = $0F
       
+.assert __BSS_RUN__ < VRAM_SPRITE_PATTERN, error, "bss overflow!"
 
-      ;VRAM_SPRITE_PATTERN =ADDRESS_GFX3_SPRITE_PATTERN
-      
 ;just to fulfill the linker contract of the ld65 target -t c64
 .segment "EXEHDR"
 .segment "STARTUP"

@@ -4,6 +4,7 @@
       .export gfx_blank_screen
       .export gfx_sprites_off
       .export gfx_bgcolor
+      .export gfx_bordercolor
       .export gfx_vblank
 
       .export gfx_charout
@@ -27,10 +28,7 @@
       .export Color_Gray
       .export Color_Dark_Pink
       
-      .import vdp_init_reg
-      .import vdp_memcpy
-      .import vdp_fill
-      .import game_state;
+      .import game_state
       
       .import sys_crs_x,sys_crs_y
       
@@ -47,7 +45,27 @@ gfx_mode_on:
       lda #(VRAM_SCREEN>>6 | VRAM_PATTERN>>10)
       sta VIC_VIDEO_ADR
       
+      lda #$ff
+      sta VIC_SPR_ENA
+      lda #%01010100
+      sta VIC_SPR_MCOLOR
+      
 gfx_rotate_pal:
+      rts
+      
+gfx_vblank:
+      lda #254
+:     cmp VIC_HLINE
+      bne :-
+      lda Color_Blue
+      sta VIC_BORDERCOLOR
+      sta VIC_BG_COLOR0
+      lda #255
+:     cmp VIC_HLINE
+      bne :-
+      lda Color_Bg
+      sta VIC_BORDERCOLOR
+      sta VIC_BG_COLOR0
       rts
       
 gfx_init:
@@ -61,6 +79,8 @@ gfx_init_chars:
       setPtr VRAM_PATTERN, p_video
       jsr _gfx_memcpy
 gfx_init_sprites:
+      lda sprite_patterns
+      setPtr VRAM_SCREEN, p_video
 
 gfx_blank_screen:
       setPtr VRAM_SCREEN, p_video
@@ -74,7 +94,30 @@ gfx_blank_screen:
       dex
       bne :-
       rts
+
 gfx_update:
+      lda #7
+      sta gfx_tmp
+:     lda gfx_tmp
+      tax
+      asl
+      asl
+      tay
+      lda sprite_tab_attr+SpriteTab::shape,y
+      sta VRAM_SPRITE_POINTER, x
+      lda sprite_tab_attr+SpriteTab::color,y
+      sta VIC_SPR0_COLOR, x
+      
+      lda gfx_tmp
+      asl
+      tax
+      lda sprite_tab_attr+SpriteTab::xpos,y
+      sta VIC_SPR0_X, x
+      lda sprite_tab_attr+SpriteTab::ypos,y
+      sta VIC_SPR0_Y, x
+      dec gfx_tmp
+      bpl :-
+
       rts
 gfx_sprites_off:
       rts
@@ -100,6 +143,10 @@ _gfx_setcolor:
       bne @color
 @text:
       cmp #Char_Bg
+      bne @color_border
+      lda Color_Pink
+      bne @color
+@color_border:
       bcs @color_bg
       lda Color_Gray
       bne @color
@@ -177,11 +224,12 @@ l_add:
       ldy gfx_tmp
       rts
       
-gfx_vblank:
 gfx_hires_off:  ;?!?
       rts
-gfx_bgcolor:
+gfx_bordercolor:
       sta VIC_BORDERCOLOR
+      rts
+gfx_bgcolor:
       sta VIC_BG_COLOR0
       rts
       
@@ -190,6 +238,13 @@ gfx_pause:
 
 
 .data
+.export sprite_patterns
+sprite_patterns:
+      .include "pacman.ghosts.res"
+      .include "pacman.pacman.res"
+tiles:
+      .include "pacman.tiles.rot.inc"
+
 Color_Bg:         .byte COLOR_BLACK
 Color_Red:        .byte COLOR_RED
 Color_Pink:       .byte COLOR_VIOLET
@@ -209,8 +264,3 @@ gfx_Sprite_Adjust_Y:
 gfx_Sprite_Off:
       .byte 250
       
-tiles:
-      .include "pacman.tiles.rot.inc"
-sprite_patterns:
-      .include "pacman.ghosts.res"
-      .include "pacman.pacman.res"

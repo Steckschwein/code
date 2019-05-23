@@ -78,10 +78,9 @@ game_isr:
       jsr io_irq
       bpl	game_isr_exit
       
-      bgcolor Color_Yellow
-      jsr game_init
-      inc game_state+GameState::frames
+      bgcolor Color_Gray
       
+      jsr game_init
       jsr game_ready
       jsr game_ready_wait
       jsr game_playing
@@ -89,6 +88,7 @@ game_isr:
       jsr game_game_over
 
       bgcolor Color_Cyan
+      inc game_state+GameState::frames
       jsr gfx_update
 
 game_isr_exit:
@@ -566,7 +566,8 @@ game_playing:
       jsr animate_ghosts
       jsr animate_food
       jsr draw_scores
-      lda actors+actor::dots
+      
+      lda actors+actor::dots    ; all dots collected ?
       bne @rts
 
       lda #Sprite_Pattern_Pacman
@@ -734,22 +735,22 @@ game_init:
       
       ldx #3
       ldy #0
-@init_maze:
-      lda maze,y
-      sta game_maze,y
+:
+      lda maze+$000,y
+      sta game_maze+$000,y
       lda maze+$100,y
       sta game_maze+$100,y
       lda maze+$200,y
       sta game_maze+$200,y
-      lda maze+$300,y
-      cpy #2*32
-      bcc @sta
-      lda #Char_Blank
-@sta: sta game_maze+$300,y
       iny
-      bne @init_maze
-      
-      jsr gfx_display_maze
+      bne :-
+:     lda maze+$300,y
+      sta game_maze+$300,y
+      lda #Char_Blank
+      sta game_maze+$300+1*32,y
+      iny
+      cpy #2*32
+      bne :-
       
       lda #MAX_DOTS
       sta actors+actor::dots
@@ -761,7 +762,8 @@ game_init:
       sta game_state+GameState::score+3
       lda #STATE_READY
       sta game_state+GameState::state
-      rts
+      
+      jmp gfx_display_maze
       
 game_init_sprites:
       ldy #0
@@ -795,7 +797,7 @@ game_init_sprites:
 @ghost:
       lda #0
       jsr actor_shape_move_direct
-@next:      
+@next:
       pla
       tay
       iny
@@ -850,8 +852,8 @@ actor_strategy:
       bne @ghost
       jmp pacman_move
 @ghost:
-;      rts ; TODO FIXME
-      jmp ai_ghost
+      rts ; TODO FIXME
+;      jmp ai_ghost
 
 _save_irq:  .res 2
 

@@ -18,16 +18,14 @@ io_irq_on:
       lda #LORAM | IOEN ;disable kernel rom to setup irq
       sta $01           ;PLA
       
-      lda #250                           ;Bei STARTBLACK soll ein
-      sta VIC_HLINE                      ;Raster-IRQ ausgelöst werden
-
-      lda VIC_CTRL1                      
-      and #%01111111                     
-      sta VIC_CTRL1                      
-
-      lda VIC_IMR                        
-      ora #%00000001                     
+      lda #250        ;bottom border
+      sta VIC_HLINE   ;... Raster-IRQ
+      lda VIC_CTRL1
+      and #%01111111
+      sta VIC_CTRL1
+      lda #%00000001
       sta VIC_IMR
+      inc VIC_IRR     ;ack
       rts
       
 io_exit:
@@ -37,9 +35,10 @@ io_irq:
       lda VIC_IRR
       bpl @rts
       sta VIC_IRR
-      lda #$80    ;
+      jsr gfx_vblank
+      lda #$80    ;bit 7 to signal irq
       rts
-@rts: lda $dc0d
+@rts: lda CIA1_ICR
       rts
       
 io_player_direction:

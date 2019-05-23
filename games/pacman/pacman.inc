@@ -112,9 +112,9 @@ ACT_DIR           = 1<<1|1<<0
 
 .macro bgcolor color
   .ifdef __DEBUG
-    .import gfx_bgcolor
+    .import gfx_bordercolor
     lda color
-    jsr gfx_bgcolor
+    jsr gfx_bordercolor
   .endif
 .endmacro
 
