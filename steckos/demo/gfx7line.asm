@@ -25,8 +25,6 @@
 .include "fcntl.inc"
 
 
-
-
 .import vdp_gfx7_on
 .import vdp_gfx7_blank
 .import vdp_display_off
@@ -47,36 +45,58 @@ main:
 		sta pt_x
 		stz pt_x+1
 
-		; lda #100
+		lda #0
 		sta pt_y
 		lda #$01
 		sta pt_y+1
 
-		lda #255
+		lda #0
 		sta ht_x
 		lda #0
 		sta ht_x+1
 
-		lda #212
+		lda #0
 		sta ht_y
 		lda #0
 		sta ht_y+1
 
-;		ldx #21
 
+        sei
 		jsr	krn_textui_disable			;disable textui
 		jsr	gfxui_on
 
-		keyin
+		ldx #0
 
-		jsr	gfxui_off
+@loop:
+        lda #$ff
+        jsr vdp_gfx7_line
+
+        stx ht_x
+        stx pt_x
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+;        dec ht_y
+
+        inx
+        cpx #212
+        bne @loop
+
+		keyin
 
 		jsr	krn_display_off			;restore textui
 		jsr	krn_textui_init
 		jsr	krn_textui_enable
 		bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts
-
-		cli
+        cli
 
 		jmp (retvec)
 
@@ -100,86 +120,87 @@ blend_isr:
 
 
 gfxui_on:
-	sei
 	jsr vdp_display_off			;display off
 	jsr vdp_mode_sprites_off	;sprites off
 
+
 	jsr vdp_gfx7_on			    ;enable gfx7 mode
+    ; set vertical dot count to 212
+    ; V9938 Programmer's Guide Pg 18
+    vdp_sreg  v_reg9_ln , v_reg9
 
 	lda #%00000011
 	jsr vdp_gfx7_blank
 
-@loop:
-	lda #$ff
-	jsr vdp_gfx7_line
-
-
-	dec ht_y
-	dec ht_y
-	dec ht_y
-	dec ht_y
-	dec ht_y
-	dec ht_y
-	dec ht_y
-	dec ht_y
-	dec ht_y
-	dec ht_y
-	dec ht_y
-	dec ht_y
-
-	dex
-	bne @loop
-	copypointer  $fffe, irqsafe
-	SetVector  blend_isr, $fffe
-
-	cli
 	rts
 
-gfxui_off:
-    sei
-
-    copypointer  irqsafe, $fffe
-
-    cli
-    rts
 
 vdp_gfx7_line:
-	phx
 	pha
 
-	vdp_reg 17,36
+    vdp_sreg 36, v_reg17 ; start at ref36
+    vdp_wait_s 4
 
-	ldx #0
-@loop:
-	vnops
-	lda pt_x,x
+	lda pt_x
 	sta a_vregi
-	inx
-	cpx #8
-	bne @loop
+    vdp_wait_s 2
 
-	vnops
+	lda pt_x+1
+	sta a_vregi
+    vdp_wait_s 4
+
+	lda pt_y
+	sta a_vregi
+    vdp_wait_s 2
+
+	lda pt_y+1
+	sta a_vregi
+    vdp_wait_s 4
+
+	lda ht_x
+	sta a_vregi
+    vdp_wait_s 2
+
+	lda ht_x+1
+	sta a_vregi
+    vdp_wait_s 4
+
+	lda ht_y
+	sta a_vregi
+    vdp_wait_s 2
+
+	lda ht_y+1
+	sta a_vregi
+    vdp_wait_s 4
+
 	pla
 	sta a_vregi
+    vdp_wait_s 4
 
-	vnops
-	lda #0
+    ; R#45 Set mode byte
+	lda #%0000001
+         ;^^^^^^^
+         ;|||||||--- Long/short axis definition - 0: long x, 1: long y
+         ;||||||---- undefined
+         ;|||||----- x transfer direction       - 0: right,  1: left
+         ;||||------ y transfer direction       -
+         ;|||------- Destination location       - 0: VRAM,   1: ExpRAM
+         ;||-------- undefined
+         ;|--------- 0
 	sta a_vregi
+    vdp_wait_s 2
 
-	vnops
+    ; R#46 - define logical operation and exec command
 	lda #v_cmd_line
 	sta a_vregi
 
-	vnops
 
 	vdp_reg 15,2
 @wait:
-	vnops
+;    vdp_wait_s 2
 	lda a_vreg
 	ror
 	bcs @wait
-
-	plx
 	rts
 
 irqsafe: .res 2, 0
