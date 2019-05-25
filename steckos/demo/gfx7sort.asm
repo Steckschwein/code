@@ -37,6 +37,12 @@
 ;.export char_out=krn_chrout
 
 .importzp ptr1
+pt_x = $10
+pt_y = $12
+ht_x = $14
+ht_y = $16
+mode = $18
+
 tmp0 = $32
 tmp1 = $33
 old_y = $34
@@ -46,8 +52,23 @@ list_size = 254
 
 appstart $1000
 
-.code
 main:
+        stz pt_x
+        stz pt_x+1
+
+        stz pt_y
+        lda #$01
+        sta pt_y+1
+
+        stz ht_x
+        stz ht_x+1
+
+        stz ht_y
+        stz ht_y+1
+
+        lda #%00000001
+        sta mode
+
         lda #<list
         sta ptr1
         lda #>list
@@ -73,7 +94,9 @@ main:
 		jsr	krn_display_off			;restore textui
 		jsr	krn_textui_init
 		jsr	krn_textui_enable
-		cli
+
+        bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts
+        cli
 
 		jmp (retvec)
 
@@ -148,6 +171,30 @@ display_list:
 ; x - pos
 draw_bar:
         pha
+        phx
+        pha
+        stx pt_x
+
+        ldx #212
+        stx ht_x
+
+        lda #%00000011
+        jsr vdp_gfx7_line
+
+        pla
+        sta ht_x
+
+        vdp_wait_s 4
+
+        lda #$ff
+        jsr vdp_gfx7_line
+
+        plx
+        pla
+        rts
+
+draw_bar2:
+        pha
         phy
         sta old_y
         ldy #0
@@ -219,6 +266,78 @@ draw_sort_bar:
         jsr draw_bar
         restore
         rts
+
+vdp_gfx7_line:
+    pha
+
+    vdp_sreg 36, v_reg17 ; start at ref36
+    vdp_wait_s 4
+
+    lda pt_x
+    sta a_vregi
+    vdp_wait_s 2
+
+    lda pt_x+1
+    sta a_vregi
+    vdp_wait_s 4
+
+    lda pt_y
+    sta a_vregi
+    vdp_wait_s 2
+
+    lda pt_y+1
+    sta a_vregi
+    vdp_wait_s 4
+
+    lda ht_x
+    sta a_vregi
+    vdp_wait_s 2
+
+    lda ht_x+1
+    sta a_vregi
+    vdp_wait_s 4
+
+    lda ht_y
+    sta a_vregi
+    vdp_wait_s 2
+
+    lda ht_y+1
+    sta a_vregi
+    vdp_wait_s 4
+
+    pla
+    sta a_vregi
+    vdp_wait_s 4
+
+    ; R#45 Set mode byte
+
+;   lda #%0000001
+         ;^^^^^^^
+         ;|||||||--- Long/short axis definition - 0: long x, 1: long y
+         ;||||||---- undefined
+         ;|||||----- x transfer direction       - 0: right,  1: left
+         ;||||------ y transfer direction       -
+         ;|||------- Destination location       - 0: VRAM,   1: ExpRAM
+         ;||-------- undefined
+         ;|--------- 0
+    lda mode
+    sta a_vregi
+    vdp_wait_s 2
+
+    ; R#46 - define logical operation and exec command
+    lda #v_cmd_line
+    sta a_vregi
+
+
+    vdp_reg 15,2
+@wait:
+;    vdp_wait_s 2
+    lda a_vreg
+    ror
+    bcs @wait
+    rts
+
+
 
 seed:   .BYTE 242
 
