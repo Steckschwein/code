@@ -87,6 +87,8 @@ main:
 		keyin
         cmp #'q'
         beq @exit
+        sta seed
+        nop
         jmp @loop
 @exit:
 		jsr	gfxui_off
