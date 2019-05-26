@@ -82,7 +82,7 @@ vdp_gfx7_blank:
 	bne @loop
 
 	jsr vdp_wait_cmd
-		
+
 	plx
 	rts
 
@@ -159,7 +159,6 @@ vdp_wait_cmd:
     sei
     vdp_sreg 2, v_reg15         ; 2 - to select status register S#2
 @wait:
-    vdp_wait_l 4
     lda a_vreg
     ror
     bcs @wait

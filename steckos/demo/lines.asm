@@ -36,7 +36,6 @@
 .import vdp_memcpy
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
-.import vdp_wait_cmd
 
 appstart $1000
 

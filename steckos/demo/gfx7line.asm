@@ -22,17 +22,13 @@
 
 .include "steckos.inc"
 .include "vdp.inc"
-.include "fcntl.inc"
-
 
 .import vdp_gfx7_on
 .import vdp_gfx7_blank
-.import vdp_display_off
-.import vdp_mode_sprites_off
+.import vdp_wait_cmd
 .import vdp_bgcolor
 
 appstart $1000
-
 
 pt_x = $10
 pt_y = $12
@@ -61,18 +57,18 @@ main:
 		sta ht_y+1
 
 
-        sei
-		jsr	krn_textui_disable			;disable textui
-		jsr	gfxui_on
+    sei
+    jsr	krn_textui_disable			;disable textui
+    jsr	gfxui_on
 
 		ldx #0
 
 @loop:
-        lda #$ff
-        jsr vdp_gfx7_line
+    lda #$ff
+    jsr vdp_gfx7_line
 
-        stx ht_x
-        stx pt_x
+    stx ht_x
+    stx pt_x
 ;        dec ht_y
 ;        dec ht_y
 ;        dec ht_y
@@ -86,54 +82,29 @@ main:
 ;        dec ht_y
 ;        dec ht_y
 
-        inx
-        cpx #212
-        bne @loop
+    inx
+    cpx #212
+    bne @loop
 
-		keyin
+    keyin
 
-		jsr	krn_display_off			;restore textui
-		jsr	krn_textui_init
-		jsr	krn_textui_enable
-		bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts
-        cli
+    cli
+    jsr	krn_textui_init
+    jsr	krn_textui_enable
+    bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts
 
 		jmp (retvec)
 
-blend_isr:
-	pha
-	vdp_reg 15,0
-	vnops
-    bit a_vreg
-    bpl @0
-
-	lda	#%11100000
-	jsr vdp_bgcolor
-
-	lda	#Black
-	jsr vdp_bgcolor
-
-
-@0:
-	pla
-	rti
-
-
 gfxui_on:
-	jsr vdp_display_off			;display off
-	jsr vdp_mode_sprites_off	;sprites off
-
-
-	jsr vdp_gfx7_on			    ;enable gfx7 mode
+    jsr vdp_gfx7_on			    ;enable gfx7 mode
     ; set vertical dot count to 212
     ; V9938 Programmer's Guide Pg 18
     vdp_sreg  v_reg9_ln , v_reg9
 
-	lda #%00000011
-	jsr vdp_gfx7_blank
+    lda #%00000011
+    jsr vdp_gfx7_blank
 
-	rts
-
+    rts
 
 vdp_gfx7_line:
 	pha
@@ -188,20 +159,9 @@ vdp_gfx7_line:
          ;||-------- undefined
          ;|--------- 0
 	sta a_vregi
-    vdp_wait_s 2
+  vdp_wait_s 2
 
     ; R#46 - define logical operation and exec command
 	lda #v_cmd_line
 	sta a_vregi
-
-
-	vdp_reg 15,2
-@wait:
-;    vdp_wait_s 2
-	lda a_vreg
-	ror
-	bcs @wait
-	rts
-
-irqsafe: .res 2, 0
- .segment "STARTUP"
+  jmp vdp_wait_cmd
