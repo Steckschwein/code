@@ -33,19 +33,23 @@
 ;.import vdp_memcpy
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
+.import vdp_wait_cmd
 ;.import hexout
 ;.export char_out=krn_chrout
 
-.importzp ptr1
-pt_x = $10
-pt_y = $12
-ht_x = $14
-ht_y = $16
-mode = $18
+.importzp ptr1,ptr2,ptr3,ptr4
+.importzp tmp1,tmp2,tmp3
+.globalzp ptr5
+.zeropage
+  ptr5:  .res 2
+pt_x = ptr2;$10
+pt_y = ptr3;$12
+ht_x = ptr4;$14
+ht_y = ptr5;$16
+mode = tmp2;$18
+;tmp1 = $32
+old_y = tmp3;$34
 
-tmp0 = $32
-tmp1 = $33
-old_y = $34
 list_size = 254
 
 .code
@@ -212,9 +216,8 @@ draw_bar2:
 ;$32 IS USED TO HOLD AN EXCHANGE FLAG.
 
 SORT8:
-
         LDY #$00      ;TURN EXCHANGE FLAG OFF (= 0)
-        STY tmp0
+        STY tmp1
         LDA (ptr1),Y   ;FETCH ELEMENT COUNT
         TAX           ; AND PUT IT INTO X
         INY           ;POINT TO FIRST ELEMENT IN LIST
@@ -239,10 +242,10 @@ NXTEL:  LDA (ptr1),Y   ;FETCH ELEMENT
         jsr draw_sort_bar
 
         LDA #$FF      ;TURN EXCHANGE FLAG ON (= -1)
-        STA tmp0
+        STA tmp1
 CHKEND: DEX           ;END OF LIST?
         BNE NXTEL     ;NO. FETCH NEXT ELEMENT
-        BIT tmp0       ;YES. EXCHANGE FLAG STILL OFF?
+        BIT tmp1       ;YES. EXCHANGE FLAG STILL OFF?
         BMI SORT8     ;NO. GO THROUGH LIST AGAIN
         RTS           ;YES. LIST IS NOW ORDERED
 
@@ -317,27 +320,13 @@ vdp_gfx7_line:
     lda #v_cmd_line
     sta a_vregi
 
-
-    vdp_reg 15,2
-@wait:
-;    vdp_wait_s 2
-    lda a_vreg
-    ror
-    bcs @wait
-    rts
-
-
-
-seed:   .BYTE 242
-
-
-irqsafe: .res 2, 0
-
+    jmp vdp_wait_cmd
+    
 .data
+seed:   .BYTE 242
 list:   .res list_size
 ;list:
 ;    .byte list_size
 ;    .repeat list_size, i
 ;    .byte i
 ;    .endrepeat
-.segment "STARTUP"
