@@ -26,13 +26,8 @@
 
 .import vdp_gfx7_on
 .import vdp_gfx7_blank
-; .import vdp_gfx7_set_pixel_n
 .import vdp_gfx7_set_pixel
 ;.import vdp_gfx7_set_pixel_cmd
-.import vdp_display_off
-;.import vdp_memcpy
-.import vdp_mode_sprites_off
-.import vdp_bgcolor
 .import vdp_wait_cmd
 ;.import hexout
 ;.export char_out=krn_chrout
@@ -78,8 +73,8 @@ main:
         lda #>list
         sta ptr1+1
 
-		jsr	krn_textui_disable			;disable textui
-		jsr	gfxui_on
+        jsr	krn_textui_disable			;disable textui
+        jsr	gfxui_on
 @loop:
 
         jsr shuffle_list
@@ -87,19 +82,17 @@ main:
 
         jsr SORT8
 
-
-		keyin
+        keyin
         cmp #'q'
         beq @exit
         sta seed
-        nop
         jmp @loop
 @exit:
         jsr	krn_textui_init
         bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts
         cli
 
-		jmp (retvec)
+        jmp (retvec)
 
 gfxui_on:
         sei
@@ -263,43 +256,42 @@ vdp_gfx7_line:
     pha
 
     vdp_sreg 36, v_reg17 ; start at ref36
-    vdp_wait_s 4
 
     lda pt_x
-    sta a_vregi
     vdp_wait_s 2
+    sta a_vregi
 
     lda pt_x+1
+    vdp_wait_s 2
     sta a_vregi
-    vdp_wait_s 4
 
     lda pt_y
-    sta a_vregi
     vdp_wait_s 2
+    sta a_vregi
 
     lda pt_y+1
+    vdp_wait_s 2
     sta a_vregi
-    vdp_wait_s 4
 
     lda ht_x
-    sta a_vregi
     vdp_wait_s 2
+    sta a_vregi
 
     lda ht_x+1
+    vdp_wait_s 2
     sta a_vregi
-    vdp_wait_s 4
 
     lda ht_y
-    sta a_vregi
     vdp_wait_s 2
+    sta a_vregi
 
     lda ht_y+1
+    vdp_wait_s 2
     sta a_vregi
-    vdp_wait_s 4
 
     pla
+    vdp_wait_s 2
     sta a_vregi
-    vdp_wait_s 4
 
     ; R#45 Set mode byte
 
@@ -313,11 +305,12 @@ vdp_gfx7_line:
          ;||-------- undefined
          ;|--------- 0
     lda mode
-    sta a_vregi
     vdp_wait_s 2
+    sta a_vregi
 
     ; R#46 - define logical operation and exec command
     lda #v_cmd_line
+    vdp_wait_s 2
     sta a_vregi
 
     jmp vdp_wait_cmd

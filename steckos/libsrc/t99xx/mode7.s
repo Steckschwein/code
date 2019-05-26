@@ -159,6 +159,7 @@ vdp_wait_cmd:
     sei
     vdp_sreg 2, v_reg15         ; 2 - to select status register S#2
 @wait:
+    vdp_wait_s 4
     lda a_vreg
     ror
     bcs @wait
