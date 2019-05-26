@@ -91,12 +91,7 @@ main:
         nop
         jmp @loop
 @exit:
-		jsr	gfxui_off
-
-		jsr	krn_display_off			;restore textui
-		jsr	krn_textui_init
-		jsr	krn_textui_enable
-
+        jsr	krn_textui_init
         bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts
         cli
 
@@ -104,10 +99,6 @@ main:
 
 gfxui_on:
         sei
-        jsr vdp_display_off			;display off
-        jsr vdp_mode_sprites_off	;sprites off
-
-
         jsr vdp_gfx7_on			    ;enable gfx7 mode
 
         ; set vertical dot count to 212
@@ -117,16 +108,12 @@ gfxui_on:
         lda #%00000011
         jsr vdp_gfx7_blank
 
-
         rts
 
 @end:
         vdp_reg 14,0
 
         cli
-        rts
-
-gfxui_off:
         rts
 
 prnd:
