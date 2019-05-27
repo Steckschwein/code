@@ -317,9 +317,9 @@ vdp_gfx7_line:
     lda #v_cmd_line
     vdp_wait_s 2
     sta a_vregi
+    jsr vdp_wait_cmd  ; optimize if move to library.... since wait cmd also disables irq
     cli ; interrupts back on
-
-    jmp vdp_wait_cmd
+    rts
 
 .data
 seed:   .BYTE 242
