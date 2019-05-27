@@ -46,6 +46,8 @@ mode = tmp2;$18
 old_y = tmp3;$34
 
 list_size = 254
+draw_bar  = draw_bar_cmd
+
 
 .code
 
@@ -157,7 +159,33 @@ display_list:
 
 ; a - value
 ; x - pos
-draw_bar:
+draw_bar_cmd:
+        pha
+        phx
+        pha
+        stx pt_x
+
+        ldx #212
+        stx ht_x
+
+        lda #%00000011
+        jsr vdp_gfx7_line
+
+        pla
+        sta ht_x
+
+        vdp_wait_s 4
+
+        lda #$ff
+        jsr vdp_gfx7_line
+
+        plx
+        pla
+        rts
+
+; a - value
+; x - pos
+draw_bar_cmd_color:
         pha
         phx
         pha
@@ -182,7 +210,7 @@ draw_bar:
         pla
         rts
 
-draw_bar2:
+draw_bar_slow:
         pha
         phy
         sta old_y
@@ -323,6 +351,7 @@ vdp_gfx7_line:
 
 .data
 seed:   .BYTE 242
+.bss
 list:   .res list_size
 ;list:
 ;    .byte list_size
