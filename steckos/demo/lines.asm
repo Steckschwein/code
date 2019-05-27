@@ -32,10 +32,9 @@
 
 .import vdp_gfx7_on
 .import vdp_gfx7_blank
-.import vdp_display_off
 .import vdp_memcpy
-.import vdp_mode_sprites_off
 .import vdp_bgcolor
+.import vdp_wait_cmd
 
 appstart $1000
 
@@ -105,7 +104,6 @@ vdp_isr:
 	rti
 
 vdp_gfx7_line:
-	
 	lda #%000111000
 	jsr vdp_bgcolor
 	
@@ -117,8 +115,8 @@ vdp_gfx7_line:
 	vdp_wait_s 2
 	lda #0
 	sta a_vregi
-	vdp_wait_s 4
 	lda yl,y
+	vdp_wait_s 4
 	sta a_vregi
 	vdp_wait_s 2
 	lda #$01
@@ -150,19 +148,10 @@ vdp_gfx7_line:
 
 	lda #%11111100
 	jsr vdp_bgcolor
-@wait:
-;	vdp_wait_l 4
-	lda a_vreg
-	ror
-	bcs @wait
-	rts
-		
+  jmp vdp_wait_cmd
 
 gfxui_on:
 	sei
-	jsr vdp_display_off			;display off
-	jsr vdp_mode_sprites_off	;sprites off
-
 	jsr vdp_gfx7_on			    ;enable gfx7 mode
 
 	lda #%00000011
