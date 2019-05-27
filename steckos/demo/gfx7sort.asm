@@ -166,16 +166,17 @@ draw_bar:
         ldx #212
         stx ht_x
 
-        lda #%00000011
-        jsr vdp_gfx7_line
-
+        ;lda #%00000011
         pla
-        sta ht_x
-
-        vdp_wait_s 4
-
-        lda #$ff
         jsr vdp_gfx7_line
+
+        ;pla
+        ;sta ht_x
+
+        ;vdp_wait_s 4
+
+        ;lda #$ff
+        ;jsr vdp_gfx7_line
 
         plx
         pla
