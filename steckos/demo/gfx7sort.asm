@@ -105,13 +105,15 @@ gfxui_on:
         lda #%00000011
         jsr vdp_gfx7_blank
 
-        rts
-
-@end:
-        vdp_reg 14,0
-
         cli
         rts
+
+;@end:
+
+;        vdp_reg 14,0
+
+;        cli
+;        rts
 
 prnd:
         lda seed
@@ -255,6 +257,8 @@ draw_sort_bar:
 vdp_gfx7_line:
     pha
 
+    sei ; disable interrupts while we feed the VDP to prevent intermittend writes to the vdp regs by the isr
+
     vdp_sreg 36, v_reg17 ; start at ref36
 
     lda pt_x
@@ -312,9 +316,10 @@ vdp_gfx7_line:
     lda #v_cmd_line
     vdp_wait_s 2
     sta a_vregi
+    cli ; interrupts back on
 
     jmp vdp_wait_cmd
-    
+
 .data
 seed:   .BYTE 242
 list:   .res list_size
