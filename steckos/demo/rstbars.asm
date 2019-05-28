@@ -24,8 +24,7 @@
 .include "vdp.inc"
 
       .import vdp_bgcolor
-.importzp ptr1,ptr2,ptr3,ptr4
-.importzp tmp1,tmp2,tmp3
+      .importzp tmp1
 
 .code
 
@@ -34,8 +33,6 @@
 
         sei
         set_irq isr, save_irq
-        lda #100
-        sta tmp1
         vdp_sreg v_reg0_IE1, v_reg0
         cli
 @loop:
@@ -63,10 +60,12 @@ isr:
   jsr vdp_bgcolor
   lda #$40
   sta tmp1
+  ldy #v_reg19
+  vdp_sreg
   bra @black
 @hblank:
   vdp_sreg 1, v_reg15 ; status register 1
-  vdp_wait_s
+  vdp_wait_s 4
   lda a_vreg  ; v-blank?
   and #1
   beq @exit
@@ -85,5 +84,6 @@ isr:
   rti
 
 .data
+
 .bss
 save_irq: .res 2
