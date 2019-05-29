@@ -37,8 +37,12 @@ v_reg0_m4			= 1<<2
 v_reg0_m5			= 1<<3
 
 v_reg0_extV			= 1<<0
-v_reg0_IE1      = 1<<4  ; h-blank interrupt
+v_reg0_DG       = 1<<6  ; Digitize mode: sets the color bus to the input or output mode
 v_reg0_IE2      = 1<<5  ; light pen interrupt
+v_reg0_IE1      = 1<<4  ; h-blank interrupt
+v_reg0_m5       = 1<<3  ; light pen interrupt
+v_reg0_m4       = 1<<2  ; light pen interrupt
+v_reg0_m3       = 1<<1  ; light pen interrupt
 
 
 v_reg1_16k			= 1<<7
@@ -236,7 +240,7 @@ vdp_nopslide_8m:
 			.repeat MAX_NOPS_8M
 			nop
 			.endrepeat
-vdp_nopslide_2m:	
+vdp_nopslide_2m:
 			.repeat MAX_NOPS_2M
 			nop
 			.endrepeat
