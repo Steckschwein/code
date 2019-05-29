@@ -66,6 +66,7 @@ isr:
       asl
       asl
       asl
+;      ora raster_bar_colors,x
       sta a_vreg
       lda #v_reg7
       vdp_wait_s 2
@@ -93,7 +94,7 @@ isr:
       ;asl
       eor #$ff
       clc
-      adc #180
+      adc #50
       sta hline
 @sethline:
       ldy #v_reg19
