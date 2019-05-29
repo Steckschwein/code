@@ -37,10 +37,14 @@ v_reg0_m4			= 1<<2
 v_reg0_m5			= 1<<3
 
 v_reg0_extV			= 1<<0
+v_reg0_IE1      = 1<<4  ; h-blank interrupt
+v_reg0_IE2      = 1<<5  ; light pen interrupt
+
 
 v_reg1_16k			= 1<<7
 v_reg1_display_on	= 1<<6
-v_reg1_int			= 1<<5
+v_reg1_int			  = 1<<5
+
 v_reg1_m1			= 1<<4
 v_reg1_m2			= 1<<3
 v_reg1_spr_size		= 1<<1
@@ -89,6 +93,7 @@ v_reg15	= $80 + 15
 v_reg16 = $80 + 16  ; color palette index register
 v_reg17	= $80 + 17
 v_reg18	= $80 + 18	; display adjust
+v_reg19 = $80 + 19  ; h-blank irq scanline
 v_reg23	= $80 + 23	; screen ram vertical offset
 
 ; V9958 specific
