@@ -62,6 +62,10 @@ isr:
       ldx index
       bmi @exit
       lda raster_bar_colors,x
+      asl
+      asl
+      asl
+      asl
       sta a_vreg
       lda #v_reg7
       vdp_wait_s 2
