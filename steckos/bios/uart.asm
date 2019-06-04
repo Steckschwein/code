@@ -10,7 +10,7 @@
 ; init UART
 ;----------------------------------------------------------------------------------------------
 init_uart:
-			lda #%10000000
+			lda #lcr_DLAB
 			sta uart1+uart_lcr
 
 
@@ -22,16 +22,12 @@ init_uart:
 			lda (paramvec),y
 			sta uart1+uart_dlh
 
-			; ; $0001 , 115200 baud
-			; lda #$01
-			; sta uart1dll
-			; stz uart1dlh
-
 			ldy #param_lsr
 			lda (paramvec),y
 			sta uart1+uart_lcr
 
-	                lda #%00000111  ; Enable FIFO, reset tx/rx FIFO
+            ; Enable FIFO, reset tx/rx FIFO
+            lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
 			sta uart1+uart_fcr
 
 			stz uart1+uart_ier	; polled mode (so far)

@@ -42,7 +42,8 @@ init_uart:
 ;		lda #%00000011
 ;		sta uart1lcr
 
-		lda #%00000111	; Enable FIFO, reset tx/rx FIFO
+		; Enable FIFO, reset tx/rx FIFO
+        lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
 		sta uart1+uart_fcr
 
 		stz uart1+uart_ier	; polled mode (so far)
