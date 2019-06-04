@@ -1,5 +1,5 @@
     .export init_uart, uart_tx, uart_rx, upload
-    
+
     .import vdp_chrout, print_crlf, hexout, primm
 
     .include "bios.inc"
@@ -11,61 +11,62 @@
 ;----------------------------------------------------------------------------------------------
 init_uart:
 			lda #%10000000
-			sta uart1lcr
+			sta uart1+uart_lcr
 
 
-			ldy #param_uart_div	
+			ldy #param_uart_div
 			lda (paramvec),y
-			sta uart1dll	
+			sta uart1+uart_dll
 
 			iny
 			lda (paramvec),y
-			sta uart1dlh	
+			sta uart1+uart_dlh
 
 			; ; $0001 , 115200 baud
 			; lda #$01
-			; sta uart1dll	
+			; sta uart1dll
 			; stz uart1dlh
 
-			ldy #param_lsr  
+			ldy #param_lsr
 			lda (paramvec),y
-			sta uart1lcr
+			sta uart1+uart_lcr
 
 	                lda #%00000111  ; Enable FIFO, reset tx/rx FIFO
-			sta uart1fcr	
+			sta uart1+uart_fcr
 
-			stz uart1ier	; polled mode (so far) 
-			stz uart1mcr	; reset DTR, RTS
+			stz uart1+uart_ier	; polled mode (so far)
+			stz uart1+uart_mcr	; reset DTR, RTS
 
 			rts
 
 ;----------------------------------------------------------------------------------------------
-; send byte in A 
+; send byte in A
 ;----------------------------------------------------------------------------------------------
 uart_tx:
                 pha
 
-                lda #$20
+                lda #lsr_THRE
+
 @l:
-                bit uart1lsr
+                bit uart1+uart_lsr
                 beq @l
 
                 pla
 
-                sta uart1rxtx
+                sta uart1+uart_rxtx
 
                 rts
 
 
 ;----------------------------------------------------------------------------------------------
-; receive byte, store in A 
+; receive byte, store in A
 ;----------------------------------------------------------------------------------------------
 uart_rx:
-                lda #$01        ; Maske fuer DataReady Bit
+                lda #lsr_DR
 @l:
-                bit uart1lsr
+                bit uart1+uart_lsr
                 beq @l
-                lda uart1rxtx
+                lda uart1+uart_rxtx
                 rts
 
 ;----------------------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ upload:
 		; load start address
 		jsr uart_rx
 		sta startaddr
-		
+
 		jsr uart_rx
 		sta startaddr+1
 
@@ -94,7 +95,7 @@ upload:
 		; load number of bytes to be uploaded
 		jsr uart_rx
 		sta length
-			
+
 		jsr uart_rx
 		sta length+1
 
@@ -113,15 +114,15 @@ upload:
 
 		lda endaddr
 		jsr hexout
-		
+
 		lda #' '
 		jsr vdp_chrout
-		
+
 
 		lda startaddr
 		sta addr
 		lda startaddr+1
-		sta addr+1	
+		sta addr+1
 
 		jsr upload_ok
 
@@ -130,12 +131,12 @@ upload:
 		jsr uart_rx
 		sta (addr),y
 
-		iny	
+		iny
 		cpy #$00
 		bne @l2
 		inc addr+1
 
-@l2:		
+@l2:
 		; msb of current address equals msb of end address?
 		lda addr+1
 		cmp endaddr+1
@@ -145,7 +146,7 @@ upload:
 		cpy endaddr
 		bne @l1 ; no? read next byte
 
-		; yes? write OK 
+		; yes? write OK
 
 		jsr upload_ok
 
