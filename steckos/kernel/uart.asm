@@ -29,7 +29,6 @@
 ; init UART
 ;----------------------------------------------------------------------------------------------
 init_uart:
-;		lda #%10000000
 ;		sta uart1lcr
 
 		; 115200 baud0
@@ -44,10 +43,10 @@ init_uart:
 ;		sta uart1lcr
 
 		lda #%00000111	; Enable FIFO, reset tx/rx FIFO
-		sta uart1fcr
+		sta uart1+uart_fcr
 
-		stz uart1ier	; polled mode (so far)
-		stz uart1mcr	; reset DTR, RTS
+		stz uart1+uart_ier	; polled mode (so far)
+		stz uart1+uart_mcr	; reset DTR, RTS
 
 		rts
 ;----------------------------------------------------------------------------------------------
@@ -58,14 +57,14 @@ init_uart:
 uart_tx:
 		pha
 
-		lda #$20
+		lda #lsr_THRE
 @l:
-		bit uart1lsr
+		bit uart1+uart_lsr
 		beq @l
 
 		pla
 
-		sta uart1rxtx
+		sta uart1+uart_rxtx
 
 		rts
 ;----------------------------------------------------------------------------------------------
@@ -74,11 +73,11 @@ uart_tx:
 ; receive byte, wait until received, store in A
 ;----------------------------------------------------------------------------------------------
 uart_rx:
-		lda #$01        ; Maske fuer DataReady Bit
+		lda #lsr_DR
 @l:
-		bit uart1lsr
+		bit uart1+uart_lsr
 		beq @l
-		lda uart1rxtx
+		lda uart1+uart_rxtx
 		rts
 ;----------------------------------------------------------------------------------------------
 
@@ -86,13 +85,13 @@ uart_rx:
 ; receive byte, no wait, set carry and store in A when received
 ;----------------------------------------------------------------------------------------------
 uart_rx_nowait:
-                lda #$01        ; Maske fuer DataReady Bit
-                bit uart1lsr
-                beq @l
-                lda uart1rxtx
-                sec
-                rts
+        lda #lsr_DR
+        bit uart1+uart_lsr
+        beq @l
+        lda uart1+uart_rxtx
+        sec
+        rts
 @l:
-                clc
-                rts
+        clc
+        rts
 ;----------------------------------------------------------------------------------------------
