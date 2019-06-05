@@ -21,7 +21,7 @@ shell.prg: version.inc shell.o
 	ld65 shell.o $(LDFLAGS) -o shell.prg
 
 shell: shell.prg
-	../../transfer.py -s $(START_ADDR) shell.prg
+	../../transfer.py shell.prg
 
 %.dis: %.prg
 	dcc6502 -o 0xd7fe -d -n -c $< > $@
