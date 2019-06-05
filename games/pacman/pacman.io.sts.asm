@@ -14,7 +14,7 @@
       .import joystick_detect
       .import joystick_read
       
-              
+appstart $1000
 
 io_init:
       jsr krn_textui_disable

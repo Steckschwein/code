@@ -5,6 +5,7 @@
       .include "joystick.inc"
       .include "keyboard.inc"
       .include "vdp.inc"
+      .include "appstart.inc"
       
       .include "pacman.inc"
 

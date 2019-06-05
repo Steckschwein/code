@@ -88,4 +88,4 @@ pacman64.dis: pacman64.prg
 	dcc6502 -o 0x7ff -d -n -c $< > $@
 
 %: %.prg
-	../../transfer.py $< -s 0x1000
+	../../transfer.py $<
