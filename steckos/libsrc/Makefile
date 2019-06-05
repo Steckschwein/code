@@ -44,6 +44,7 @@ SRCDIRS = $(SRCDIR)
 SRCDIRS +=  t99xx
 SRCDIRS +=  joystick
 SRCDIRS +=  ym3812
+SRCDIRS +=  uart/16550
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS) 

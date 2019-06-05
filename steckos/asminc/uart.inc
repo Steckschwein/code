@@ -92,4 +92,8 @@ msr_DSR         = 1<<5 ; data set ready
 msr_RI          = 1<<6 ; ring indicator
 msr_DCD         = 1<<7 ; data carrier detect
 
+.struct uart_init
+    div  .word ;$0d ; 2  bytes  - baudrate divisor value
+    lsr  .byte ;$0f ; 1  byte  - uart lcr value , default %00000011 (8N1)
+.endstruct
 
