@@ -15,7 +15,7 @@
 .import vdp_mc_blank
 .import vdp_fill
 
-appstart $1000
+appstart
 
 color_bg=Transparent
 color_off=Gray
