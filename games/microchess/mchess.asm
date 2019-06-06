@@ -42,14 +42,10 @@
 .include "zeropage.inc"
 .include "appstart.inc"
 
-__LOADADDR__ = $1000
-.export __LOADADDR__
-.segment "LOADADDR"
-.word __LOADADDR__
-.segment "CODE"
 .import hexout
 .export char_out=krn_chrout
 
+appstart
 
 key = $09
 
