@@ -19,15 +19,19 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
+.ifndef _APPSTART_INC_
+      _APPSTART_INC_ = 1
+  
 .macro appstart addr
   .segment "LOADADDR"
-  .if .paramcount >0  ;legacy support, start address defined within source code
-      .export __LOADADDR__=addr;
+  .if .paramcount >0                  ; app start address defined within source code
+      .export __APP_START__=addr;
       .addr addr
   .else
-      .export __LOADADDR__:absolute=1 ; either default, or by a define argument during linker phase
+      .export __APP_START__=$1000     ; app start address defaults to $1000
       .addr *+2
   .endif
   .code
 .endmacro
+
+.endif ; _APPSTART_INC_

@@ -4,10 +4,11 @@
 ; ---------------------------------------------------------------------------
 ;
 ; Startup code for cc65 (Single Board Computer version)
+
         .include "zeropage.inc"	;cc65 default zp
         .include "asminc/zeropage.inc"	; FIXME kernel vs default zp ?!?
-        .include "kernel/kernel_jumptable.inc"
-
+        .include "asminc/appstart.inc"
+        
 .export   _init, _exit
 
 .export   __STARTUP__ : absolute = 1        ; Mark as startup
@@ -19,6 +20,9 @@
 .import     __MAIN_START__, __MAIN_SIZE__   ; Linker generated
 .import     __STACKSIZE__                   ; from configure file
 .importzp   ST
+
+
+appstart  ; app start address to $1000, see appstart.inc
 
 ; ---------------------------------------------------------------------------
 ; Place the startup code in a special segment

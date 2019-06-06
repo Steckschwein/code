@@ -32,7 +32,8 @@
 
 .export char_out=krn_chrout
 
-appstart
+appstart $1000
+
 main:
 l1:
       crlf

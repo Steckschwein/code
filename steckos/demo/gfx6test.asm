@@ -5,6 +5,8 @@
       .import vdp_gfx6_blank
       .import vdp_fill
       
+appstart
+
 .code
     
     jsr	krn_textui_disable			;disable textui 
@@ -19,13 +21,12 @@
     lda $0300;#Cyan<<4
     ldx #192  ;lines
     jsr vdp_fill
-;    keyin
+    keyin
     
     jsr	krn_textui_init
-    
     
 		jmp (retvec) 
     
 .data
 charset:
-;    .include "../../rom/bios/charset_8x8.asm"
+    .include "../bios/charset_8x8.asm"
