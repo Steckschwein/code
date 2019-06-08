@@ -41,9 +41,10 @@ read_nvram:
 	sta via1portb
 
 
+
     ldy nvram::signature
-	lda #$42
-	cmp (ptr1),y
+    lda (ptr1),y
+	cmp #nvram_signature
 	beq @exit
 
     ; copy defaults

@@ -1,5 +1,6 @@
-nvram_start = $20
-nvram_write = $80
+nvram_start        = $20
+nvram_write        = $80
+nvram_signature    = $42
 
 .struct nvram
     signature       .byte

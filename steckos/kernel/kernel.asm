@@ -33,8 +33,9 @@
 
 .import init_via1
 .import init_rtc
+.import read_nvram
 .import spi_r_byte, spi_rw_byte, spi_deselect, spi_select_rtc
-.import init_uart, uart_tx, uart_rx, uart_rx_nowait
+.import uart_init, uart_tx, uart_rx, uart_rx_nowait
 .import textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
 .import getkey
 .import textui_enable, textui_disable, vdp_display_off,  textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
@@ -60,12 +61,14 @@
 .import __automount_init
 .import __rtc_systime_update
 
+nvram = $1000
+
 kern_init:
       sei
 
       ; copy trampolin code for ml monitor entry to ram
       ldx #$00
-      @copy:
+@copy:
       lda trampolin_code,x
       sta trampolin,x
       inx
@@ -74,10 +77,15 @@ kern_init:
 
       SetVector user_isr_default, user_isr
       jsr textui_init0
-      
+
       jsr init_via1
-      jsr init_rtc                ;init, rtc is loaded initial
-      jsr init_uart
+;      jsr init_rtc                ;init, rtc is loaded initial
+
+      lda #<nvram
+      ldy #>nvram
+      jsr read_nvram
+
+      jsr uart_init
 
       cli
 
@@ -168,7 +176,7 @@ do_irq:
 @exit:
       lda #Medium_Green<<4 | Black
       jsr vdp_bgcolor
-    
+
       stz SYS_IRR                 ; reset
       restore
       rti
