@@ -1,29 +1,34 @@
 .export read_nvram
 .import spi_rw_byte, print_crlf, primm, set_filenameptr
 .include "bios.inc"
+.include "nvram.inc"
+.importzp ptr1
 
 .code
 ;---------------------------------------------------------------------
-; read 96 bytes from RTC as parameter buffer
+; read sizeof(struct nvram) bytes from RTC as parameter buffer
+; A/X - destination address
 ;---------------------------------------------------------------------
 read_nvram:
 	save
+    sta ptr1
+    stx ptr1+1
 	; select RTC
 	lda #%01110110
 	sta via1portb
 
-	lda #$20
+	lda #nvram_start
 	jsr spi_rw_byte
 
-	ldx #$00
-@l1:	
-	phx
+	ldy #$00
+@l1:
+	phy
 	lda #$ff
 	jsr spi_rw_byte
-	plx
-	sta nvram,x
-	inx
-	cpx #96
+	ply
+	sta (ptr1),y
+	iny
+	cpy #nvram_size
 	bne @l1
 
 	; deselect all SPI devices
@@ -31,8 +36,9 @@ read_nvram:
 	sta via1portb
 
 
+    ldy nvram::signature
 	lda #$42
-	cmp nvram + param_sig
+	cmp (ptr1),y
 	bne @invalid_sig
 
 	SetVector nvram, paramvec

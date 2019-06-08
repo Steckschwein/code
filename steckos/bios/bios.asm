@@ -1,7 +1,7 @@
       .include "bios.inc"
       .include "sdcard.inc"
       .include "fat32.inc"
-      
+
       .export set_filenameptr
 
       .import init_uart, upload
@@ -140,7 +140,7 @@ mem_ok:
 			.byte "BIOS "
 			.include "version.inc"
 			.byte $0a,0
-      
+
 			print "Memcheck $"
 	  	    lda ptr1h
 			jsr hexout
@@ -158,7 +158,17 @@ mem_ok:
 
 			jsr set_filenameptr
 
+            lda #<nvram
+            ldx #>nvram
 			jsr read_nvram
+
+            ldx #$00
+@l:
+            lda nvram,x
+            jsr hexout
+            inx
+            cpx #16
+            bne @l
             set_ctrlport
 
 			jsr init_uart
