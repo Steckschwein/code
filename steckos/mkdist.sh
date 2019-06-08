@@ -18,11 +18,11 @@ TOOLS='
     help.prg
     wozmon.prg
     fsinfo.prg
+    nvram.prg
+    setdate.prg
+    clear.prg
+    date.prg
 '
-#    nvram.prg
-#    setdate.prg
-#    clear.prg
-#    date.prg
 
 rm -fr dist/*
 mkdir -p ${TARGET}
