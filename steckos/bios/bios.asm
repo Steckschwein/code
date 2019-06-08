@@ -2,7 +2,6 @@
       .include "sdcard.inc"
       .include "fat32.inc"
       .include "nvram.inc"
-      .export param_defaults
 
       .import uart_init, upload
       .import init_via1
@@ -287,13 +286,6 @@ bios_irq:
 num_patterns = $02
 pattern:
 	.byte $aa,$55,$00
-
-param_defaults:
-	.byte $42
-	.byte $00
-	.byte "LOADER  BIN"
-	.word $01
-	.byte %00000011
 .SEGMENT "VECTORS"
 
 ;----------------------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 TARGET=steckschwein
 TARGET_SYS=none
-	
+
 DEFINES+=-DV9958
 
 .PHONY: all mostlyclean clean install zip lib $(TARGET)
@@ -44,17 +44,18 @@ SRCDIRS = $(SRCDIR)
 SRCDIRS +=  t99xx
 SRCDIRS +=  joystick
 SRCDIRS +=  ym3812
+SRCDIRS +=  nvram
 SRCDIRS +=  uart/16550
 
 vpath %.s $(SRCDIRS)
-vpath %.c $(SRCDIRS) 
+vpath %.c $(SRCDIRS)
 
 OBJS := $(patsubst %.s,%.o,$(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.s)))
 OBJS += $(patsubst %.c,%.o,$(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c)))
 
 OBJS := $(addprefix ../libwrk/$(TARGET)/,$(sort $(notdir $(OBJS))))
-	
-DEPS = $(OBJS:.o=.d) 
+
+DEPS = $(OBJS:.o=.d)
 
 AR65 := $(if $(wildcard ../bin/ar65*),../bin/ar65,ar65)
 CA65 := $(if $(wildcard ../bin/ca65*),../bin/ca65,ca65)
@@ -79,7 +80,7 @@ endef # COMPILE_recipe
 
 ../libwrk/$(TARGET)/%.o: %.c | ../libwrk/$(TARGET)
 	$(COMPILE_recipe)
-	
+
 ../lib/$(TARGET).a: $(OBJS) | ../lib
 	$(AR65) a $@ $?
 
