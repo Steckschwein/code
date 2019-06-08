@@ -4,7 +4,8 @@
 .importzp tmp1, tmp2, tmp3
 .import char_out
 
-.segment "CODE"
+.code
+
 b2ad:		phx
 			ldx #$00
 @c10:		cmp #10
