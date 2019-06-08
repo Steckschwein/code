@@ -15,7 +15,6 @@ syntax: glob
 *.bak
 *~
 *.d
-*.s
 steckos/dist
 *.log
 *.xml
