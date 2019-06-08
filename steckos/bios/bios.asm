@@ -1,10 +1,10 @@
       .include "bios.inc"
       .include "sdcard.inc"
       .include "fat32.inc"
+      .include "nvram.inc"
+      .export param_defaults
 
-      .export set_filenameptr
-
-      .import init_uart, upload
+      .import uart_init, upload
       .import init_via1
       .import hexout, primm, print_crlf
       .import vdp_init, vdp_chrout, vdp_detect
@@ -13,12 +13,14 @@
       .import read_nvram
 
 .macro set_ctrlport
+            pha
             lda ctrl_port
             lsr
             lda ctrl_port
             and #$fe
             rol
             sta ctrl_port
+            pla
 .endmacro
 
 .code
@@ -132,7 +134,7 @@ stop:
 mem_ok:
             set_ctrlport
 
-      jsr vdp_init
+            jsr vdp_init
 
             set_ctrlport
 
@@ -154,27 +156,23 @@ mem_ok:
             set_ctrlport
 			jsr init_via1
 
-			SetVector param_defaults, paramvec
+			;SetVector param_defaults, paramvec
 
-			jsr set_filenameptr
+			;jsr set_filenameptr
 
             lda #<nvram
-            ldx #>nvram
+            ldy #>nvram
 			jsr read_nvram
-
-            ldx #$00
-@l:
-            lda nvram,x
-            jsr hexout
-            inx
-            cpx #16
-            bne @l
             set_ctrlport
 
-			jsr init_uart
+
+            lda #<nvram
+            ldy #>nvram
+			jsr uart_init
             set_ctrlport
 
 			jsr init_sdcard
+
 			lda errno
 			beq boot_from_card
 			; display sd card error message
@@ -189,10 +187,12 @@ mem_ok:
 			print "No SD card"
 @l3:
 foo:
-      jsr upload
-			jmp startup
+            jsr upload
+            jmp startup
 
 boot_from_card:
+			jsr set_filenameptr
+
 			print "Boot from SD card.. "
 			jsr fat_mount
 
@@ -262,13 +262,17 @@ startup:
 
 
 set_filenameptr:
-			copypointer paramvec, ptr1
+           ;	copypointer paramvec, ptr1
+
+            sta ptr1l
+            sty ptr1h
+
 			clc
-			lda #param_filename
+			lda #nvram::filename
 			adc ptr1l
 			sta ptr1l
 			bcc @l4
-			inc ptr1h
+            inc ptr1h
 @l4:
 			rts
 
@@ -288,12 +292,8 @@ param_defaults:
 	.byte $42
 	.byte $00
 	.byte "LOADER  BIN"
-	.word $0001
+	.word $01
 	.byte %00000011
-	; !fill .default_params + param_checksum - *, $00
-	; .res    param_defaults + param_checksum - * , $AA
-	; .byte $00
-
 .SEGMENT "VECTORS"
 
 ;----------------------------------------------------------------------------------------------

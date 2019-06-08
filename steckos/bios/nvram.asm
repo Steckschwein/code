@@ -1,5 +1,6 @@
 .export read_nvram
-.import spi_rw_byte, print_crlf, primm, set_filenameptr
+.import spi_rw_byte, print_crlf, primm
+.import param_defaults
 .include "bios.inc"
 .include "nvram.inc"
 .importzp ptr1
@@ -7,12 +8,13 @@
 .code
 ;---------------------------------------------------------------------
 ; read sizeof(struct nvram) bytes from RTC as parameter buffer
-; A/X - destination address
+; copy defaults if nvram signature fail or crc error
+; A/Y - destination address
 ;---------------------------------------------------------------------
 read_nvram:
 	save
     sta ptr1
-    stx ptr1+1
+    sty ptr1+1
 	; select RTC
 	lda #%01110110
 	sta via1portb
@@ -39,17 +41,17 @@ read_nvram:
     ldy nvram::signature
 	lda #$42
 	cmp (ptr1),y
-	bne @invalid_sig
+	beq @exit
 
-	SetVector nvram, paramvec
-	jsr set_filenameptr
+    ; copy defaults
+	println "NVRAM: Invalid signature."
+    ldy #.sizeof(nvram)
+@lp1:
+    lda param_defaults,y
+    sta (ptr1),y
+    dey
+    bpl @lp1
 
 @exit:
 	restore
 	rts
-@invalid_sig:
-	println "NVRAM: Invalid signature."
-	bra @exit
-; .nvram_crc_error
-; 	+print .txt_nvram_crc_error
-; 	bra -

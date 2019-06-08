@@ -5,14 +5,16 @@
 
 .code
 ;---------------------------------------------------------------------
-; Init SD Card 
+; Init SD Card
 ; Destructive: A, X, Y
 ;---------------------------------------------------------------------
 init_sdcard:
+        pha
+        phy
 		; 80 Taktzyklen
 		ldx #74
 
-		; set ALL CS lines and DO to HIGH 
+		; set ALL CS lines and DO to HIGH
 		lda #%11111110
 		sta via1portb
 
@@ -46,9 +48,11 @@ init_sdcard:
 		cmp #$01
 		beq @l2
 
-		; No Card     
+		; No Card
 		lda #$ff
 		sta errno
+        ply
+        pla
 		rts
 @l2:
 		lda #$01
@@ -65,7 +69,7 @@ init_sdcard:
 
 		ldx #$00
 
-@l3:   
+@l3:
 		lda #$ff
 		phx
 		jsr spi_rw_byte
@@ -82,9 +86,11 @@ init_sdcard:
 		; Invalid Card (or card we can't handle yet)
 		lda #$0f
 		sta errno
-		jsr sd_deselect_card 
+		jsr sd_deselect_card
+        ply
+        pla
 		rts
-@l4:       
+@l4:
 		jsr sd_param_init
 		jsr sd_busy_wait
 		lda #cmd55
@@ -97,11 +103,13 @@ init_sdcard:
 		beq @l5
 
 		; Init failed
-		lda #$f1      
+		lda #$f1
 		sta errno
-		rts 
+        ply
+        pla
+		rts
 
-@l5:   
+@l5:
 		jsr sd_param_init
 
 		lda #$40
@@ -125,6 +133,8 @@ init_sdcard:
 
 		lda #$42
 		sta errno
+        ply
+        pla
 		rts
 @l6:
 
@@ -162,10 +172,12 @@ init_sdcard:
 		jsr sd_cmd
 
 		lda #$ff
-		jsr spi_rw_byte  
-@l8:   
+		jsr spi_rw_byte
+@l8:
 		; SD card init successful
 		stz errno
+        ply
+        pla
 		rts
 
 ;---------------------------------------------------------------------
@@ -189,7 +201,7 @@ sd_cmd:
 
 		; send 8 clocks with DI 1
 		lda #$ff
-		jsr spi_rw_byte             
+		jsr spi_rw_byte
 
 		rts
 
@@ -216,7 +228,7 @@ sd_select_card:
 		rts
 
 ;---------------------------------------------------------------------
-; deselect sd card, puSH CS line to HI and generate few clock cycles 
+; deselect sd card, puSH CS line to HI and generate few clock cycles
 ; to allow card to deinit
 ;---------------------------------------------------------------------
 sd_deselect_card:
@@ -293,12 +305,12 @@ sd_read_block:
 ; @l3:	lda tmp0
 
 ; 		.repeat 8
-; 			STA via1portb ; Takt An 
+; 			STA via1portb ; Takt An
 ; 			STX via1portb ; Takt aus
 ; 		.endrep
 
 ; 		lda via1sr
-	
+
 ; 		sta (sd_blkptr),y
 ; 		iny
 ; 		bne @l3
@@ -309,7 +321,7 @@ sd_read_block:
 ; @l4:	lda tmp0
 
 ; 		.repeat 8
-; 			STA via1portb ; Takt An 
+; 			STA via1portb ; Takt An
 ; 			STX via1portb ; Takt aus
 ; 		.endrep
 
@@ -331,15 +343,15 @@ sd_read_block:
 		; rts
 
 halfblock:
-@l:		
+@l:
 		; lda tmp0
 
 		; .repeat 8
-		; 	STA via1portb ; Takt An 
+		; 	STA via1portb ; Takt An
 		; 	STX via1portb ; Takt aus
 		; .endrep
 
-	
+
 		; lda via1sr
 
 		lda #$ff
