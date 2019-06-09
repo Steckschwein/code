@@ -27,7 +27,7 @@ all: $(TOOLS)
 	(cd clavier; make )
 
 clean:
-	rm -f *.prg *.s *.o
+	rm -f *.prg *.s *.o *.map
 	(cd unrclock; make clean)
 	(cd xmodem; make clean)
 	(cd ppmview; make clean)
