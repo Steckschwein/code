@@ -13,7 +13,8 @@ polynom = $89
 ;polynom = $91
 ;
 ;  in:
-;     .A/.Y - pointer to input data with data length at position 0
+;     .A/.Y - pointer to input data
+;     .X length
 ;  out:
 ;     .A calculated crc7
 .proc crc7
@@ -22,13 +23,15 @@ polynom = $89
 
          stz crc
 
-         lda (ptr1)  ;zero length?
+         ;lda (ptr1)  ;zero length?
+         cpx #$00
          beq exit
 
-         inc
-         sta tmp1 ; data length
+         ;inc
+         ;sta tmp1 ; data length
+         stx tmp1
 
-         ldy #1
+         ldy #0
 loop:
          ldx #7
 loop_x:
