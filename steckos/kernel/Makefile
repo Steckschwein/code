@@ -1,8 +1,8 @@
 CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
-OBJS=kernel.o fat32.o sdcard.o textui.o rtc.o via.o out.o key.o exec.o util.o matcher.o debug.o ansi.o automount.o
+OBJS=kernel.o fat32.o sdcard.o textui.o rtc.o via.o out.o key.o exec.o util.o matcher.o debug.o automount.o
 ASM_INCLUDE=../asminc
-LIBS=../lib/steckschwein.a
+LIBS=../lib/steckschwein.a ../tools/lib/toollib.a
 LDFLAGS=-C kernel.cfg
 
 # if 9958 is used

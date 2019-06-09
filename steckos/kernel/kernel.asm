@@ -54,7 +54,7 @@
 
 .import execv
 .import strout, primm
-.import ansi_chrout
+;.import ansi_chrout
 
 ; internal kernel api stuff
 .import __automount
@@ -372,7 +372,7 @@ krn_display_off:				jmp vdp_display_off
 krn_getkey:						jmp getkey
 
 .export krn_chrout
-krn_chrout:						jmp ansi_chrout
+krn_chrout:						jmp textui_chrout
 .export krn_putchar
 krn_putchar:					jmp textui_put
 
