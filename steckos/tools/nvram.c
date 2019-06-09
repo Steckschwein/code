@@ -22,6 +22,7 @@ struct nvram
 	unsigned char uart_baudrate;
 	unsigned char dummy; // temp. placeholder
 	unsigned char uart_lsr;
+	unsigned char crc7;
 };
 
 struct baudrate
@@ -56,6 +57,18 @@ struct nvram n;
 unsigned char * p;
 unsigned long l;
 
+unsigned char CRC7(const unsigned char message[], const unsigned int length) {
+  const unsigned char poly = 0x89;
+  unsigned char crc = 0;
+  unsigned char i,j;
+  for (i = 0; i < length; i++) {
+     crc ^= message[i];
+     for (j = 0; j < 8; j++) {
+      crc = (crc & 0x80u) ? ((crc << 1) ^ (poly << 1)) : (crc << 1);
+    }
+  }
+  return crc >> 1;
+}
 
 void write_nvram()
 {
@@ -111,6 +124,21 @@ unsigned long int lookup_divisor(unsigned char div)
 
 	return 0;
 }
+void init_nvram()
+{
+        cprintf("Setting to default values ... ");
+	 	n.signature 	= 0x42;
+	 	n.version 		= 0;
+	 	memcpy(n.filename, "LOADER  BIN", 11);
+
+	 	n.uart_baudrate = 0x01; // 115200 baud
+	 	n.uart_lsr		= 0x03; // 8N1
+
+        n.crc7 = CRC7((unsigned char *)&n, sizeof(struct nvram)-1);
+
+	 	write_nvram();
+	 	cprintf("done.\r\n");
+}
 
 unsigned char lookup_baudrate(unsigned long int baud)
 {
@@ -129,7 +157,7 @@ unsigned char lookup_baudrate(unsigned long int baud)
 
 int main (int argc, const char* argv[])
 {
-	// unsigned char i;
+    unsigned char crc;
 
 	if (argc == 1)
 	{
@@ -138,19 +166,19 @@ int main (int argc, const char* argv[])
 	}
 
 	read_nvram();
+    crc = CRC7((unsigned char *)&n, sizeof(struct nvram)-1);
+
+    if (crc != n.crc7)
+    {
+        cprintf("NVRAM CRC7 mismatch - CRC: %0x, NVRAM: %0x\n", crc, n.crc7);
+        init_nvram();
+    }
+
 
 	if (n.signature != 0x42)
 	{
-		cprintf("NVRAM signature invalid.\r\nSetting to default values ... ");
-	 	n.signature 	= 0x42;
-	 	n.version 		= 0;
-	 	memcpy(n.filename, "LOADER  BIN", 11);
-
-	 	n.uart_baudrate = 0x01; // 115200 baud
-	 	n.uart_lsr		= 0x03; // 8N1
-
-	 	write_nvram();
-	 	cprintf("done.\r\n");
+		cprintf("NVRAM signature invalid.\n");
+        init_nvram();
 	}
 
 	if (strcmp(argv[1], "get") == 0)
@@ -220,14 +248,16 @@ int main (int argc, const char* argv[])
 			}
 		}
 
+        n.crc7 = CRC7((unsigned char *)&n, sizeof(struct nvram)-1);
 		write_nvram();
 	}
 	else if (strcmp(argv[1], "list") == 0)
 	{
-		cprintf("Signature  : $%02x\r\nOS filename: %.11s\r\nBaud rate  : %ld\r\n",
+		cprintf("Signature  : $%02x\nOS filename: %.11s\nBaud rate  : %ld\nCRC        : $%02x\n",
 			n.signature,
 			n.filename,
-			lookup_divisor(n.uart_baudrate)
+			lookup_divisor(n.uart_baudrate),
+            n.crc7
 		);
 	}
 
