@@ -41,17 +41,6 @@ read_nvram:
 	lda #%01111110
 	sta via1portb
 
-
-    ldy #nvram::signature
-    lda (ptr1),y
-	cmp #nvram_signature
-	beq @crc
-
-    jsr primm
-    .byte "NVRAM: Invalid signature.", KEY_LF, 0
-    bra @copy_defaults
-
-@crc:
     lda ptr1
     ldy ptr1+1
     ldx #.sizeof(nvram)-1
