@@ -18,9 +18,9 @@ clean:
 
 build:
 	(cd libsrc; make )
-	(cd bios; make )
 	(cd kernel; make )
 	(cd tools/lib; make )
+	(cd bios; make )
 	(cd shell; make )
 	(cd clib/libsrc; make )
 	(cd tools; make )
