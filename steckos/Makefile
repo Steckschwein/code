@@ -18,11 +18,11 @@ clean:
 
 build:
 	(cd libsrc; make )
-	(cd tools/lib; make )
 	(cd kernel; make )
 	(cd bios; make )
 	(cd shell; make )
 	(cd clib/libsrc; make )
+	(cd tools/lib; make )
 	(cd tools; make )
 	(cd demo; make )
 
