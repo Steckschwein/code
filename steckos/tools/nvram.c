@@ -5,22 +5,11 @@
 #include "include/spi.h"
 #include "include/rtc.h"
 
-/*
-param_sig	= $00 ; 1  byte  - parameter array signature byte. must be $42
-param_version	= $01 ; 1  byte  - version number. initially zero
-param_filename	= $02 ; 11 bytes - file to boot. example "LOADER  BIN"
-param_baud	= $0d ; 1  byte  - baudrate divisor value, entry# from .uart_divisor, default 15 (9600 baud)
-param_lsr       = $0e ; 1  byte  - uart lcr value , default %00000011 (8N1)
-param_checksum  = $5f ; checksum
-*/
-
 struct nvram
 {
-	unsigned char signature;
 	unsigned char version;
 	unsigned char filename[11];
 	unsigned char uart_baudrate;
-	unsigned char dummy; // temp. placeholder
 	unsigned char uart_lsr;
 	unsigned char crc7;
 };
@@ -72,7 +61,6 @@ unsigned char CRC7(const unsigned char message[], const unsigned int length) {
 
 void write_nvram()
 {
-	n.signature = 0x42;
 	n.uart_lsr  = 0x03; // 8N1
 	p = (unsigned char *)&n;
 
@@ -127,7 +115,6 @@ unsigned long int lookup_divisor(unsigned char div)
 void init_nvram()
 {
         cprintf("Setting to default values ... ");
-	 	n.signature 	= 0x42;
 	 	n.version 		= 0;
 	 	memcpy(n.filename, "LOADER  BIN", 11);
 
@@ -173,13 +160,6 @@ int main (int argc, const char* argv[])
         cprintf("NVRAM CRC7 mismatch - CRC: %0x, NVRAM: %0x\n", crc, n.crc7);
         init_nvram();
     }
-
-
-	if (n.signature != 0x42)
-	{
-		cprintf("NVRAM signature invalid.\n");
-        init_nvram();
-	}
 
 	if (strcmp(argv[1], "get") == 0)
 	{
@@ -253,8 +233,7 @@ int main (int argc, const char* argv[])
 	}
 	else if (strcmp(argv[1], "list") == 0)
 	{
-		cprintf("Signature  : $%02x\nOS filename: %.11s\nBaud rate  : %ld\nCRC        : $%02x\n",
-			n.signature,
+		cprintf("OS filename: %.11s\nBaud rate  : %ld\nCRC        : $%02x\n",
 			n.filename,
 			lookup_divisor(n.uart_baudrate),
             n.crc7
