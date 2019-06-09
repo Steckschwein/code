@@ -35,8 +35,7 @@ clean:
 mostlyclean:
 	$(call RMDIR,../libwrk)
 
-
-CA65FLAGS = --cpu 65c02 --include-dir ../asminc $(DEFINES)
+CA65FLAGS = --cpu 65c02 --include-dir ../asminc --include-dir ../../asmunit $(DEFINES)
 CC65FLAGS = -Or -W error
 
 SRCDIR=.
@@ -54,17 +53,21 @@ vpath %.c $(SRCDIRS)
 
 OBJS := $(patsubst %.s,%.o,$(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.s)))
 OBJS += $(patsubst %.c,%.o,$(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c)))
-
 OBJS := $(addprefix ../libwrk/$(TARGET)/,$(sort $(notdir $(OBJS))))
 
+# sub directory named test per convention
+TEST_SRCDIRS := $(foreach dir,$(SRCDIRS),$(dir)/test/)
+OBJS_TEST := $(patsubst %.s,%.o,$(foreach dir,$(TEST_SRCDIRS),$(wildcard $(dir)/*.s)))
+OBJS_TEST := $(addprefix ../libwrk/$(TARGET)/,$(sort $(notdir $(OBJS_TEST))))
+vpath %.s $(TEST_SRCDIRS)
+
 DEPS = $(OBJS:.o=.d)
+DEPS_TEST = $(OBJS_TEST:.o=.d)
 
 AR65 := $(if $(wildcard ../bin/ar65*),../bin/ar65,ar65)
 CA65 := $(if $(wildcard ../bin/ca65*),../bin/ca65,ca65)
 CC65 := $(if $(wildcard ../bin/cc65*),../bin/cc65,cc65)
 LD65 := $(if $(wildcard ../bin/ld65*),../bin/ld65,ld65)
-
-# export CC65_HOME := $(abspath ..)
 
 define ASSEMBLE_recipe
 $(if $(QUIET),,@echo $(TARGET) - $<)
@@ -86,7 +89,11 @@ endef # COMPILE_recipe
 ../lib/$(TARGET).a: $(OBJS) | ../lib
 	$(AR65) a $@ $?
 
-../libwrk/$(TARGET) ../lib ../target/$(TARGET)/util:
+../libwrk/$(TARGET) ../lib:
 	@$(call MKDIR,$@)
 
+test: $(OBJS_TEST) | ../libwrk/$(TARGET)
+	#echo $(OBJS_TEST)
+  
 -include $(DEPS)
+-include $(DEPS_TEST)

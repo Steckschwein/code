@@ -36,7 +36,7 @@ loop:
 loop_x:
          asl crc        ;crc <<= 1;
 
-         lda (ptr1),y   ; crc |= ((data[i] >> x) & 1);
+         lda (ptr1),y   ;crc |= ((data[i] >> x) & 1);
          cpx #0
          beq d_msk
 

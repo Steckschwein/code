@@ -6,6 +6,14 @@
    <artifactId>jtools</artifactId>
    <version>0.0.1-SNAPSHOT</version>
 
+   <description></description>
+   <developers>
+      <developer>
+         <email>info@steckschwein.de</email>
+      </developer>
+   </developers>
+   <inceptionYear>2019</inceptionYear>
+
    <properties>
       <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
       <maven.compiler.target>1.8</maven.compiler.target>
