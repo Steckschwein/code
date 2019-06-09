@@ -1,6 +1,7 @@
 .export read_nvram
 .import spi_rw_byte, print_crlf, primm
 .import nvram_defaults
+.import crc7
 .include "system.inc"
 .include "common.inc"
 .include "nvram.inc"
@@ -41,22 +42,37 @@ read_nvram:
 	sta via1portb
 
 
-
     ldy nvram::signature
     lda (ptr1),y
 	cmp #nvram_signature
-	beq @exit
+	beq @crc
 
-    ; copy defaults
     jsr primm
     .byte "NVRAM: Invalid signature.", KEY_LF, 0
+    bra @copy_defaults
 
+@crc:
+    lda ptr1
+    ldy ptr1+1
+    ldx #.sizeof(nvram)-1
+    jsr crc7
+
+    ldy #nvram::crc7
+    cmp (ptr1),y
+    beq @exit
+
+    jsr primm
+    .byte "NVRAM: CRC error.", KEY_LF, 0
+
+@copy_defaults:
     ldy #.sizeof(nvram)
 @lp1:
     lda nvram_defaults,y
     sta (ptr1),y
     dey
     bpl @lp1
+
+
 
 @exit:
 	restore
