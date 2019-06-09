@@ -2,6 +2,8 @@
       .importzp ptr1
       .importzp tmp1,tmp2
 
+      .import char_out
+
       .export crc7
 
 .code
@@ -17,34 +19,46 @@ polynom = $89
 .proc crc7
          sta ptr1
          sty ptr1+1
-         lda (ptr1)
-         beq @exit
 
-         sta tmp1 ; data length
          stz crc
+
+         lda (ptr1)  ;zero length?
+         beq exit
+
+         inc
+         sta tmp1 ; data length
+
          ldy #1
-@loop:
+loop:
          ldx #7
-@loop_x:
-         ;crc <<= 1;
-         asl crc
-         ; crc |= ((data[i] >> x) & 1);
-         jsr _data
+loop_x:
+         asl crc        ;crc <<= 1;
+
+         lda (ptr1),y   ; crc |= ((data[i] >> x) & 1);
+         cpx #0
+         beq d_msk
+
+         phx
+l0:      lsr
+         dex
+         bne l0
+         plx
+d_msk:
+         and #$01
          ora crc
-         brk
-         bpl @s_crc
+
+         bpl s_crc
          eor #polynom
-@s_crc:  sta crc
+s_crc:   sta crc
 
          dex
-         bpl @loop_x
+         bpl loop_x
 
          iny
          cpy tmp1
-         bcc @loop
+         bne loop
 
-         ldx #0
-;         lda crc
+         ldx #7
 @loop2:
          ;crc <<= 1;
          asl
@@ -52,21 +66,8 @@ polynom = $89
          eor #polynom
 @s2_crc:
          sta crc
-         inx
-         cpx #7
-         bne @loop2
-
-;         lda crc
-@exit:
-         rts
-
-_data:
-         phx
-         lda (ptr1),y
-@l0:     lsr
          dex
-         bne @l0
-         and #$01
-         plx
+         bne @loop2
+exit:
          rts
 .endproc
