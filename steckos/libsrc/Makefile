@@ -46,6 +46,7 @@ SRCDIRS +=  joystick
 SRCDIRS +=  ym3812
 SRCDIRS +=  nvram
 SRCDIRS +=  uart/16550
+SRCDIRS +=  spi
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS)
