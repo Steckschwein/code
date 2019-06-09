@@ -20,9 +20,9 @@ build:
 	(cd libsrc; make )
 	(cd kernel; make )
 	(cd bios; make )
-	(cd shell; make )
 	(cd clib/libsrc; make )
 	(cd tools/lib; make )
+	(cd shell; make )
 	(cd tools; make )
 	(cd demo; make )
 
