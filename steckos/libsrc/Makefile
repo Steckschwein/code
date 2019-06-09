@@ -47,6 +47,7 @@ SRCDIRS +=  ym3812
 SRCDIRS +=  nvram
 SRCDIRS +=  uart/16550
 SRCDIRS +=  spi
+SRCDIRS +=  util/crc7
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS)

@@ -1,4 +1,4 @@
-LIBS=../lib/steckschwein.a ../tools/lib/toollib.a
+LIBS=../lib/steckschwein.a
 OBJS=bios.o charset_8x8.o charset_6x8.o via.o out.o vdp.o sdcard.o fat32.o upload.o
 CA65FLAGS=-I ../asminc
 LDFLAGS=-C bios.cfg -m bios.map -Ln bios.lbl
