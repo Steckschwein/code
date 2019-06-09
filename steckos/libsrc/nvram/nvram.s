@@ -42,7 +42,7 @@ read_nvram:
 	sta via1portb
 
 
-    ldy nvram::signature
+    ldy #nvram::signature
     lda (ptr1),y
 	cmp #nvram_signature
 	beq @crc
