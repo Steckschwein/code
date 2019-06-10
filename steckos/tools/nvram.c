@@ -349,7 +349,7 @@ int main (int argc, const char* argv[])
         {
             unsigned char lsr;
             lsr = make_line_byte((unsigned char *)argv[3]);
-            if (lsr == -1)
+            if (lsr == 0xff)
             {
                 cprintf("Parameter error\n");
                 return EXIT_FAILURE;
