@@ -22,7 +22,7 @@
 
 unsigned char get_parity(unsigned char lsr)
 {
-    switch (112 & lsr)
+    switch (56 & lsr)
     {
         case UART_PARITY_NONE:
             return 'N';
@@ -58,7 +58,62 @@ unsigned char get_stopbits(unsigned char lsr)
     }
 }
 
+unsigned char make_line_byte(unsigned char * line)
+{
+    unsigned char lsr = 0;
+    unsigned char * p = line;
 
+    switch (*p)
+    {
+        case '8':
+            lsr |= UART_DATA_BITS8;
+            break;
+        case '7':
+            lsr |= UART_DATA_BITS7;
+            break;
+        case '6':
+            lsr |= UART_DATA_BITS6;
+            break;
+        case '5':
+            lsr |= UART_DATA_BITS6;
+            break;
+        default:
+            return -1;
+    }
+
+    p++;
+    switch(*p)
+    {
+        case 'N':
+        case 'n':
+            lsr |= UART_PARITY_NONE;
+            break;
+        case 'E':
+        case 'e':
+            lsr |= UART_PARITY_EVEN;
+            break;
+        case 'O':
+        case 'o':
+            lsr |= UART_PARITY_ODD;
+            break;
+        default:
+            return -1;
+    }
+    p++;
+    switch(*p)
+    {
+        case '1':
+            lsr |= UART_STOP_BITS1;
+            break;
+        case '2':
+            lsr |= UART_STOP_BITS2;
+            break;
+        default:
+            return -1;
+    }
+    return lsr;
+
+}
 struct nvram
 {
 	unsigned char version;
@@ -116,7 +171,6 @@ unsigned char CRC7(const unsigned char message[], const unsigned int length)
 
 void write_nvram()
 {
-	n.uart_lsr  = 0x03; // 8N1
 	p = (unsigned char *)&n;
 
     spi_select_rtc();
@@ -204,13 +258,14 @@ int main (int argc, const char* argv[])
 	if (argc == 1)
 	{
 		usage();
-		return 0;
+		return EXIT_SUCCESS;
 	}
 
 	read_nvram();
+
     crc = CRC7((unsigned char *)&n, sizeof(struct nvram)-1);
 
-    if (crc != n.crc7)
+    if (n.crc7 != crc)
     {
         cprintf("NVRAM CRC7 mismatch - CRC: %0x, NVRAM: %0x\n", crc, n.crc7);
         init_nvram();
@@ -290,6 +345,17 @@ int main (int argc, const char* argv[])
 				++x;
 			}
 		}
+		else if (strcmp(argv[2], "line") == 0)
+        {
+            unsigned char lsr;
+            lsr = make_line_byte((unsigned char *)argv[3]);
+            if (lsr == -1)
+            {
+                cprintf("Parameter error\n");
+                return EXIT_FAILURE;
+            }
+            n.uart_lsr = lsr;
+        }
 
         n.crc7 = CRC7((unsigned char *)&n, sizeof(struct nvram)-1);
 		write_nvram();
