@@ -155,18 +155,11 @@ mem_ok:
             set_ctrlport
 			jsr init_via1
 
-			;SetVector param_defaults, paramvec
-
-			;jsr set_filenameptr
-
             lda #<nvram
             ldy #>nvram
 			jsr read_nvram
             set_ctrlport
 
-
-            lda #<nvram
-            ldy #>nvram
 			jsr uart_init
             set_ctrlport
 
@@ -174,6 +167,7 @@ mem_ok:
 
 			lda errno
 			beq boot_from_card
+
 			; display sd card error message
 			cmp #$0f
 			bne @l1
@@ -202,13 +196,6 @@ boot_from_card:
 			jsr hexout
 
 @findfile:
-			; copyPointer paramvec, ptr1
-			; clc
-			; lda #param_filename
-			; adc ptr1l
-			; sta ptr1l
-			; bcc @l4
-			; inc ptr1h
 
 @l4:
 			jsr fat_find_first
