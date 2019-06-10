@@ -5,6 +5,60 @@
 #include "include/spi.h"
 #include "include/rtc.h"
 
+#define UART_DATA_BITS5 0
+#define UART_DATA_BITS6 1
+#define UART_DATA_BITS7 2
+#define UART_DATA_BITS8 3
+
+#define UART_STOP_BITS1 0
+#define UART_STOP_BITS2 4
+
+#define UART_PARITY_NONE 0
+#define UART_PARITY_ODD  8
+#define UART_PARITY_EVEN 24
+#define UART_PARITY_MARK 40
+#define UART_PARITY_SPACE 56
+
+
+unsigned char get_parity(unsigned char lsr)
+{
+    switch (112 & lsr)
+    {
+        case UART_PARITY_NONE:
+            return 'N';
+        case UART_PARITY_ODD:
+            return 'O';
+        case UART_PARITY_EVEN:
+            return 'E';
+    }
+}
+
+unsigned char get_databits(unsigned char lsr)
+{
+    switch(0x03 & lsr)
+    {
+        case UART_DATA_BITS8:
+            return '8';
+        case UART_DATA_BITS7:
+            return '7';
+        case UART_DATA_BITS6:
+            return '6';
+        case UART_DATA_BITS5:
+            return '5';
+    }
+}
+unsigned char get_stopbits(unsigned char lsr)
+{
+    switch(4 & lsr)
+    {
+        case UART_STOP_BITS1:
+            return '1';
+        case UART_STOP_BITS2:
+            return '2';
+    }
+}
+
+
 struct nvram
 {
 	unsigned char version;
@@ -46,7 +100,8 @@ struct nvram n;
 unsigned char * p;
 unsigned long l;
 
-unsigned char CRC7(const unsigned char message[], const unsigned int length) {
+unsigned char CRC7(const unsigned char message[], const unsigned int length)
+{
   const unsigned char poly = 0x89;
   unsigned char crc = 0;
   unsigned char i,j;
@@ -66,7 +121,7 @@ void write_nvram()
 
     spi_select_rtc();
 
-	spi_write(0xA0);
+	spi_write(0x20|0x80);
 
 	for(i = 0; i<=sizeof(n); i++)
 	{
@@ -94,7 +149,7 @@ void read_nvram()
 void usage()
 {
 	cprintf(
-		"set/get nvram values\r\nusage:\r\nnvram get filename|baudrate\r\nnvram set filename|baudrate <value>\r\nnvram list\r\n",
+		"set/get nvram values\r\nusage:\r\nnvram get filename|baudrate|line\r\nnvram set filename|baudrate|line <value>\r\nnvram list\r\n",
 	);
 }
 
@@ -119,7 +174,7 @@ void init_nvram()
 	 	memcpy(n.filename, "LOADER  BIN", 11);
 
 	 	n.uart_baudrate = 0x01; // 115200 baud
-	 	n.uart_lsr		= 0x03; // 8N1
+	 	n.uart_lsr		= UART_DATA_BITS8|UART_PARITY_NONE|UART_STOP_BITS1; // 8N1
 
         n.crc7 = CRC7((unsigned char *)&n, sizeof(struct nvram)-1);
 
@@ -178,6 +233,14 @@ int main (int argc, const char* argv[])
 		{
 			cprintf("%ld\r\n", lookup_divisor(n.uart_baudrate));
 		}
+		else if (strcmp(argv[2], "line") == 0)
+		{
+			cprintf("%c%c%c\n",
+                    get_databits(n.uart_lsr),
+                    get_parity(n.uart_lsr),
+                    get_stopbits(n.uart_lsr)
+            );
+		}
 
 	}
 	else if (strcmp(argv[1], "set") == 0)
@@ -233,9 +296,12 @@ int main (int argc, const char* argv[])
 	}
 	else if (strcmp(argv[1], "list") == 0)
 	{
-		cprintf("OS filename: %.11s\nBaud rate  : %ld\nCRC        : $%02x\n",
+		cprintf("OS filename     : %.11s\nUART baud rate  : %ld\nUART line conf  : %c%c%c\nCRC             : $%02x\n",
 			n.filename,
 			lookup_divisor(n.uart_baudrate),
+			get_databits(n.uart_lsr),
+			get_parity(n.uart_lsr),
+			get_stopbits(n.uart_lsr),
             n.crc7
 		);
 	}
