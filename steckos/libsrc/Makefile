@@ -101,11 +101,11 @@ endef
 ../libwrk/$(TARGET) ../lib:
 	@$(call MKDIR,$@)
 
-../libwrk/$(TARGET)/%.bin: $(TEST_OBJS) | ../libwrk/$(TARGET)
+../libwrk/$(TARGET)/%.bin: $(TEST_OBJS) $(OBJS) | ../libwrk/$(TARGET)
 	$(RUNTEST_recipe)
- 
+
 test: $(TEST_BINS) | ../libwrk/$(TARGET)
-	
-  
+
+
 -include $(DEPS)
 -include $(DEPS_TEST)

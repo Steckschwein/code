@@ -12,12 +12,29 @@ public class crc7 {
       return crc7(polynom_crc7_0x89, data);
    }
 
+   static final byte crc7(byte polynom, byte[] data) {
+
+     byte crc = 0;
+     if (data == null)
+        return crc;
+
+     byte p_shift = (byte) (polynom << 1 & 0xff);
+
+     for (byte i = 0; i < data.length; i++) {
+        crc ^= data[i];
+        for (byte j = 0; j < 8; j++) {
+         crc = (byte) ((crc & 0x80) != 0 ? ((crc << 1) ^ (p_shift)) : (crc << 1));
+       }
+     }
+     return (byte) ((crc & 0xff) >> 1);
+   }
+
    /**
     * @param data
     * @param offset
     * @param len
     */
-   public static byte crc7(byte polynom, byte[] data) {
+   public static byte crc7_2(byte polynom, byte[] data) {
 
       byte crc = 0;
       if (data == null)
