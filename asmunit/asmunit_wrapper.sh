@@ -18,7 +18,9 @@ if [ "${tests}" -eq 0 ]; then
     exit 1
 fi
 
-TARGET_DIR=target/test-reports
+if [ -z "${TARGET_DIR}" ]; then 
+	TARGET_DIR=target/test-reports
+fi
 
 mkdir -p ${TARGET_DIR}
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>

@@ -16,6 +16,26 @@ polynom = $89
 ;     .X length
 ;  out:
 ;     .A calculated crc7
+.proc crc7_n
+         cpx #0
+         beq @rts
+         
+         sta ptr1
+         sty ptr1+1
+         stz crc
+         
+         
+@rts:
+         rts
+         
+.endproc
+
+;
+;  in:
+;     .A/.Y - pointer to input data
+;     .X length
+;  out:
+;     .A calculated crc7
 .proc crc7
          sta ptr1
          sty ptr1+1

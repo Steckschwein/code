@@ -10,7 +10,7 @@ all: test asmunit.a
 test: test.asmunit
 
 clean:
-	rm -f *.o *.a *.log *.map
+	rm -f *.o *.a *.log *.map *.dbg *.bin *.dis
 
 %.o: %.asm asmunit.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
@@ -19,7 +19,7 @@ asmunit.a: $(OBJS) test.asmunit
 	ar65 a asmunit.a $(OBJS)
 
 %.bin: %.o asmunit.o
-	ld65 -Ln $(<).vmap --dbgfile $(<).dbg $(LDFLAGS) $< asmunit.o -o $@
+	ld65 -Ln $(<).map --dbgfile $(<).dbg $(LDFLAGS) $< asmunit.o -o $@
 
 %.dis: %.bin
 	dcc6502 -o 0x1000 -d -n -c $< > $@

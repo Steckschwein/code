@@ -1,8 +1,6 @@
+      .include "asmunit.inc" 	; unit test api
 
-
-.include "asmunit.inc" 	; unit test api
-
-.import crc7				; uut
+      .import crc7				; uut
 
 .macro testcase label, data, length, expect
       test label
