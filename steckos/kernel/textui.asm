@@ -20,6 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;| VDP VRAM              |
+;|---------------------- |
+;| SCREEN_BUFFER (ascii) |
+;|---------------------- |
+;| SCREEN RAM (gfx mode) |
+;|---------------------- |
+
 .include "common.inc"
 .include "kernel.inc"
 .include "keyboard.inc"
