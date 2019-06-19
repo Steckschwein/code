@@ -47,6 +47,7 @@ SRCDIRS += joystick
 SRCDIRS += ym3812
 SRCDIRS += vdp
 SRCDIRS += opl2
+SRCDIRS += util
 SRCDIRS +=  $(CC65_HOME)/libsrc/conio     	\
 			$(CC65_HOME)/libsrc/runtime	 	\
 			$(CC65_HOME)/libsrc/zlib		\

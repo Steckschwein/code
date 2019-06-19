@@ -1,6 +1,6 @@
 CC65FLAGS=-I ../clib -D_CC65_V2_17_
 CA65FLAGS=-I ../asminc -I ../kernel
-LIBS=lib/toollib.a ../lib/steckschwein.a
+LIBS=../lib/steckschwein.a lib/toollib.a
 CLIB=../clib/lib/steckschwein-clib.a
 LDFLAGS=-C ../prg.ld65.cfg -m $<.map $(LIBS)
 
@@ -34,7 +34,7 @@ clean:
 	(cd clavier; make clean)
 
 %.prg: %.c $(LIBS) $(CLIB)
-	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(LDFLAGS) $(CLIB) -o $@
+	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
