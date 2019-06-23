@@ -32,7 +32,7 @@ RESOURCES=\
   pacman.pacman.res \
   pacman.tiles.rot.inc \
   pacman.tiles.colors.inc
-  
+
 .PHONY: all clean
 
 all: pacman.prg pacman64.prg
@@ -42,7 +42,7 @@ clean:
 
 %.res: %.xpm
 	python3 ../utils/xpm_ca65_16bit.py $< > $@
-  
+
 pacman.gfx.sts.o: $(RESOURCES)
 pacman.gfx.c64.o: $(RESOURCES)
 
@@ -54,7 +54,7 @@ pacman.game.o: pacman.maze.inc
 %.sts.o: %.sts.asm ../../steckos/asminc/*.inc pacman.inc pacman.sts.inc
 	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
 
-%.c64.o: %.c64.asm pacman.c64.inc
+%.c64.o: %.c64.asm pacman.inc pacman.c64.inc
 	ca65 $(CA65FLAGS_C64) $(@:.o=.asm)
 
 pacman.tiles.bin: pacman.tiles.inc
@@ -63,7 +63,7 @@ pacman.tiles.bin: pacman.tiles.inc
 
 test.%.bin: test.%.o $(LIBS) $(<:test.%=%)
 	ld65 $(LDFLAGS) $< $(<:test.%=%) $(LIBS) -o $@
-  
+
 test.%: test.%.bin
 	../../asmunit/asmunit_wrapper.sh $@.bin
 
@@ -73,13 +73,13 @@ test.%: test.%.bin
 
 pacman.prg: $(OBJS_STS) $(LIBS)
 	ld65 -o $@ $(LDFLAGS_STS) $(OBJS_STS) $(LIBS_STS)
-  
+
 pacman64.prg: $(OBJS_C64) $(LIBS_C64)
 	ld65 -o $@ $(LDFLAGS_C64) $(OBJS_C64) $(LIBS_C64)
-  
+
 pacman64: pacman64.prg
 	x64 -device8 1 -VICIIdscan -VICIIdsize -autostartprgmode 1 $<
-#-fullscreen 
+#-fullscreen
 
 pacman.dis: pacman.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
