@@ -14,7 +14,8 @@ TOOLS+=\
   od.prg\
   uname.prg\
   date.prg\
-  setdate.prg
+  setdate.prg \
+  crc7.prg
 
 
 .PHONY: all clean
