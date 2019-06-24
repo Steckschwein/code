@@ -4,6 +4,8 @@
 #include <ctype.h>
 #include "include/spi.h"
 #include "include/rtc.h"
+#include "include/util/crc7.h"
+
 
 #define UART_DATA_BITS5 0
 #define UART_DATA_BITS6 1
@@ -155,6 +157,7 @@ struct nvram n;
 unsigned char * p;
 unsigned long l;
 
+/*
 unsigned char CRC7(const unsigned char message[], const unsigned int length)
 {
   const unsigned char poly = 0x89;
@@ -168,6 +171,7 @@ unsigned char CRC7(const unsigned char message[], const unsigned int length)
   }
   return crc >> 1;
 }
+*/
 
 void write_nvram()
 {
@@ -230,7 +234,7 @@ void init_nvram()
 	 	n.uart_baudrate = 0x01; // 115200 baud
 	 	n.uart_lsr		= UART_DATA_BITS8|UART_PARITY_NONE|UART_STOP_BITS1; // 8N1
 
-        n.crc7 = CRC7((unsigned char *)&n, sizeof(struct nvram)-1);
+        n.crc7 = crc7((unsigned char *)&n, sizeof(struct nvram)-1);
 
 	 	write_nvram();
 	 	cprintf("done.\r\n");
@@ -263,7 +267,7 @@ int main (int argc, const char* argv[])
 
 	read_nvram();
 
-    crc = CRC7((unsigned char *)&n, sizeof(struct nvram)-1);
+    crc = crc7((unsigned char *)&n, sizeof(struct nvram)-1);
 
     if (n.crc7 != crc)
     {
@@ -357,7 +361,7 @@ int main (int argc, const char* argv[])
             n.uart_lsr = lsr;
         }
 
-        n.crc7 = CRC7((unsigned char *)&n, sizeof(struct nvram)-1);
+        n.crc7 = crc7((unsigned char *)&n, sizeof(struct nvram)-1);
 		write_nvram();
 	}
 	else if (strcmp(argv[1], "list") == 0)
