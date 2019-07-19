@@ -61,6 +61,7 @@ appstart $1000
 		bne @err_close_fd1
 		stx fd2
 
+		;TODO check whether f2 denotes the same file as f1
 		;TODO copy loop
 
 		jsr krn_close
