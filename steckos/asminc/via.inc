@@ -19,8 +19,8 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.ifndef _VIA_INC_
-  _VIA_INC_=1
+;.ifndef _VIA_INC_
+;  _VIA_INC_=1
 
 ; VIA address and registers
 via1        = $0210
@@ -41,4 +41,4 @@ via1ier     = via1 + $0e
 SDCARD_WRITE_PROTECT  = 1<<5
 SDCARD_DETECT         = 1<<6
 
-.endif
+;.endif
