@@ -8,9 +8,9 @@
       .include "via.inc"
       .include "vdp.inc"
     
-      .importzp tmp1,tmp2
-      .importzp ptr1,ptr2,ptr3,ptr4
-      
+;     .importzp tmp1,tmp2
+;     .importzp ptr1,ptr2,ptr3,ptr4
+            
 ptr1l=ptr1+0
 ptr1h=ptr1+1
 ptr2l=ptr2+0
@@ -21,21 +21,22 @@ DPH=ptr3+1
 BIOS_COLOR=Gray<<4|Black  ; gray text, black backdrop/border
 
 ; start memcheck here
-start_check = $0300
-ram_end 			= $0288
+start_check       = $0300
+ram_end 			   = $0288
 ram_end_l   		= ram_end
 ram_end_h   		= ram_end+1
 
 ; Address pointers for serial upload
 startaddr	= ptr1
 endaddr		= ptr2
+p_addr      = ptr5
 length		= tmp1
 
 errno	 	= $0300
 nvram		= $1000
 
-;dirptr 		= $f4 ; 2 byte
-paramvec	= $f8
+;dirptr     = $f4 ; 2 byte
+paramvec	   = $f8
 
 ; pointer for string output functions
 sd_blktarget 		= $0400

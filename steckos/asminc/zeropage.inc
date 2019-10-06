@@ -23,42 +23,35 @@
   _ZEROPAGE_INC_=1
   
 ; already defined in cc65 zeropage.inc
-.globalzp ptr1, ptr2, ptr3, ptr4
+.globalzp ptr1, ptr2, ptr3, ptr4, ptr5, ptr6
 .globalzp tmp1, tmp2, tmp3, tmp4
-
 .globalzp vdp_ptr, vdp_tmp
-
-; INIT0/SHELL
 
 ; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
 cmdptr		= $d6
-paramptr	= $d8
+paramptr	   = $d8
 retvec 		= $da
 
-; GENERAL
-addr    = $e0
-adrl    = addr
-adrh    = addr+1
 ; TEXTUI
-crs_ptr = $e2
+crs_ptr = $e0
 crs_x   = $028c
 crs_y   = $028d
 
-; OUT
-msgptr  	= $e4		; 2 bytes
-
 ; kernel pointer (internally used)
-krn_ptr1    	= $e6	; 2 bytes
-krn_ptr2    	= $e8	; 2 bytes
-krn_ptr3    	= $ea	; 2 bytes
+krn_ptr1    	= $e2	; 2 bytes
+krn_ptr1l      = krn_ptr1
+krn_ptr1h      = krn_ptr1+1
 
-krn_tmp     	= $ec		; 16 bit tmp
-krn_tmp2		= krn_tmp+1	; single byte
-krn_tmp3		= krn_tmp+2	; single byte
+krn_ptr2    	= $e4	; 2 bytes
+krn_ptr3    	= $e6	; 2 bytes
+
+krn_tmp        = $e8		; 16 bit tmp
+krn_tmp2       = krn_tmp+1	; single byte
+krn_tmp3       = krn_tmp+2	; single byte
 
 ; FAT32
-filenameptr 		= $f0   ; 2 byte
-dirptr 	    		= $f2 	; 2 byte
+filenameptr       = $f0   ; 2 byte
+dirptr            = $f2   ; 2 byte
 
 ; SDCARD/storage block pointer
 read_blkptr  		= $f4

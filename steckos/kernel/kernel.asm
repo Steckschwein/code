@@ -114,7 +114,8 @@ do_upload:
       ldx #$ff
       txs
 
-      jmp (startaddr)
+      jmp (startaddr); jump to start addr set by upload
+
 
 ;----------------------------------------------------------------------------------------------
 ; IO_IRQ Routine. Handle IRQ
@@ -225,7 +226,7 @@ do_reset:
 
 startaddr = $b0 ; FIXME - find better location for this
 endaddr   = $fd
-length	  = $ff
+length    = $ff
 
 upload:
 	save
@@ -259,36 +260,34 @@ upload:
 	sta endaddr+1
 
 	lda startaddr
-	sta addr
+	sta krn_ptr1l
 	lda startaddr+1
-	sta addr+1
+	sta krn_ptr1h
 
 	jsr upload_ok
 
 	sei	; disable interrupt while loading the actual data
-	ldy #$00
+	ldy #0
 @l1:
 	jsr uart_rx
-	sta (addr),y
+	sta (krn_ptr1l),y
 
 	iny
-	cpy #$00
+   cpy #0
 	bne @l2
-	inc addr+1
+	inc krn_ptr1h
 @l2:
-
 	; msb of current address equals msb of end address?
-	lda addr+1
+	lda krn_ptr1h
 	cmp endaddr+1
 	bne @l1 ; no? read next byte
 
 	; yes? compare y to lsb of endaddr
 	cpy endaddr
 	bne @l1 ; no? read next byte
-
+   
 	cli
-	; yes? write OK and jump to start addr
-
+   ; yes? send OK
 	jsr upload_ok
 
 	jsr krn_primm

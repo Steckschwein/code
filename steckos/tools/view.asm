@@ -56,7 +56,7 @@ main:
 		bne @err
 
 		jsr krn_textui_disable			;disable textui
-		SetVector content, addr
+		;SetVector content, addr
 		jsr gfxui_on
 		jsr gfxui_blend_on
 

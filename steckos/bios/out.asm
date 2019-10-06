@@ -34,8 +34,8 @@ hexdigit:
 
 ;Put the string following in-line until a NULL out to the console
 primm:
-PUTSTRI: 
-		pla			; Get the low part of "return" address
+PUTSTRI:
+        pla			; Get the low part of "return" address
                                 ; (data start address)
         sta     DPL
         pla
