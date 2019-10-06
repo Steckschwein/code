@@ -324,15 +324,15 @@ game_over:
 set_state:
       sta game_state
 
-      SetVector text_game_over, addr
+      SetVector text_game_over, ptr1
       lda	#<(A_GX_SCR + (Y_OFS_GAME_OVER*32))+11
       ldy	#WRITE_ADDRESS + >(A_GX_SCR+(Y_OFS_GAME_OVER*32))
       jsr vdp_print
-      SetVector text_game_reload_1, addr
+      SetVector text_game_reload_1, ptr1
       lda	#<(A_GX_SCR + ((Y_OFS_GAME_OVER+2)*32))+14
       ldy	#WRITE_ADDRESS + >(A_GX_SCR+((Y_OFS_GAME_OVER+2)*32))
       jsr vdp_print
-      SetVector text_game_reload_2, addr
+      SetVector text_game_reload_2, ptr1
       lda	#<(A_GX_SCR + ((Y_OFS_GAME_OVER+3)*32))+14
       ldy	#WRITE_ADDRESS + >(A_GX_SCR+((Y_OFS_GAME_OVER+3)*32))
 ;      jsr vdp_print
@@ -341,7 +341,7 @@ set_state:
 vdp_print:
       vdp_sreg
       ldy	#0
-:     lda	(addr),y
+:     lda	(ptr1),y
       beq	:+
       vdp_wait_l
       sta	a_vram
@@ -357,7 +357,7 @@ animate_dinosaur:
       lda	dinosaur_state
       bit	#DINOSAUR_JUMP
       beq	@l_ad_dead
-      SetVector	dino_jump, addr
+      SetVector	dino_jump, ptr1
       jsr	update_sprite_data
       ldy sin_tab_offs
       lda	#DINOSAUR_Y-10
@@ -385,7 +385,7 @@ animate_dinosaur:
 @l_ad_dead:
       bit #DINOSAUR_DEAD
       beq	:+
-      SetVector	dino_dead, addr
+      SetVector	dino_dead, ptr1
       bra	update_sprite_data
 :     lda	frame_cnt
       bit	#03
@@ -396,25 +396,25 @@ animate_dinosaur:
       lda	frame_cnt
       and	#04
       beq	:+
-      SetVector	dino_duck_1, addr
+      SetVector	dino_duck_1, ptr1
       bra update_sprite_data
-:	    SetVector	dino_duck_2, addr
+:	    SetVector	dino_duck_2, ptr1
       bra update_sprite_data
 @l_ad_run:
       lda	frame_cnt
       and	#04
       beq	:+
-      SetVector	dino_run_1, addr
+      SetVector	dino_run_1, ptr1
       bra update_sprite_data
-:     SetVector	dino_run_2, addr
+:     SetVector	dino_run_2, ptr1
 ;	    bra update_sprite_data
 
 update_sprite_data:
       ldy	#0
-      lda	(addr),y
+      lda	(ptr1),y
       sta	sprite_tab+2+0*4
       iny
-      lda	(addr),y
+      lda	(ptr1),y
       sta	sprite_tab+2+1*4
 
       cmp #36 ;dino head shape ducked
@@ -432,13 +432,13 @@ update_sprite_data:
       sta	sprite_tab+0+4*4 ; y cap sprite
 
       iny
-      lda	(addr),y
+      lda	(ptr1),y
       sta	sprite_tab+2+2*4
       iny
-      lda	(addr),y
+      lda	(ptr1),y
       sta	sprite_tab+2+3*4
       iny
-      lda	(addr),y
+      lda	(ptr1),y
       sta	sprite_tab+2+4*4
       rts
 
@@ -797,14 +797,14 @@ init_vram:
       ldx	#$04			; sprite patterns
       jsr	vdp_memcpy
 
-      SetVector text_game_label, addr
+      SetVector text_game_label, ptr1
       lda	#<(A_GX_SCR + (22*32))
       ldy	#WRITE_ADDRESS + >(A_GX_SCR+(22*32))
       jmp vdp_print
 
 update_vram:
       ;update sprite tab
-      ;SetVector sprite_tab, addr
+      ;SetVector sprite_tab, ptr1
       vdp_sreg <A_SP_ATR, WRITE_ADDRESS + >A_SP_ATR
       lda #<sprite_tab
       ldy #>sprite_tab
