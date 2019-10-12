@@ -63,7 +63,6 @@ color_buffer=screen_buffer+$0800  ;+80x25
 .import vdp_bgcolor
 .import vdp_memcpy
 .import vdp_text_on
-.import vdp_display_off
 
 _screen_dirty:
         lda #STATE_BUFFER_DIRTY
@@ -145,7 +144,6 @@ textui_update_crs_ptr:          ; updates the 16 bit pointer crs_p upon crs_x, c
         rts
 
 textui_init0:
-;        jsr vdp_display_off                 ;display off
         SetVector screen_buffer, crs_ptr    ;set crs ptr initial to screen buffer
         
 .ifdef COLS80
@@ -213,8 +211,8 @@ textui_cursor:
         rts
 
 textui_update_screen:
-;        lda    #Dark_Green
- ;       jsr    vdp_bgcolor
+        ;lda    #Dark_Green
+        ;jsr    vdp_bgcolor
 
         lda screen_status
         and #STATE_TEXTUI_ENABLED
@@ -245,7 +243,7 @@ textui_update_screen:
 
 @l1:
         lda #Medium_Green<<4|Black
-        ;jsr    vdp_bgcolor
+        jsr    vdp_bgcolor
         rts
 
 textui_scroll_up:

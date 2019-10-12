@@ -25,11 +25,12 @@
 .include "kernel.inc"
 
 .segment "LOADER" ; @see kernel.cfg
+
 ; system attribute has to be set on file system
 
 ; .pages = (.payload_end - .payload) / 256 + 1
-src_ptr	= $0
-dst_ptr = $2
+src_ptr  = $0
+dst_ptr  = $2
 		; copy kernel code to $f000
 
 		lda #>payload

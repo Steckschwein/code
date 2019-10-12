@@ -55,6 +55,7 @@
 .import execv
 .import strout, primm
 ;.import ansi_chrout
+.importzp krn_ptr1
 
 ; internal kernel api stuff
 .import __automount
@@ -65,7 +66,12 @@ nvram = $1000
 
 kern_init:
       sei
-
+      
+      sta krn_ptr1; test
+      sta krn_tmp; test
+      sta vdp_ptr ; test
+      sta vdp_tmp    ; test
+      
       ; copy trampolin code for ml monitor entry to ram
       ldx #$00
 @copy:
@@ -115,7 +121,6 @@ do_upload:
       txs
 
       jmp (startaddr); jump to start addr set by upload
-
 
 ;----------------------------------------------------------------------------------------------
 ; IO_IRQ Routine. Handle IRQ
@@ -260,9 +265,9 @@ upload:
 	sta endaddr+1
 
 	lda startaddr
-	sta krn_ptr1l
+	sta krn_ptr1
 	lda startaddr+1
-	sta krn_ptr1h
+	sta krn_ptr1+1
 
 	jsr upload_ok
 
@@ -270,15 +275,15 @@ upload:
 	ldy #0
 @l1:
 	jsr uart_rx
-	sta (krn_ptr1l),y
+	sta (krn_ptr1),y
 
 	iny
    cpy #0
 	bne @l2
-	inc krn_ptr1h
+	inc krn_ptr1+1
 @l2:
 	; msb of current address equals msb of end address?
-	lda krn_ptr1h
+	lda krn_ptr1+1
 	cmp endaddr+1
 	bne @l1 ; no? read next byte
 

@@ -97,5 +97,6 @@ PSICHO:	lda     (krn_ptr3)	        ; Get the next string character
 PSIX1:	inc     krn_ptr3             ;
 		bne     PSIX2           ;
 		inc     krn_ptr3+1             ; account for page crossing
-PSIX2:	jmp     (krn_ptr3)           ; return to byte following final NULL
+PSIX2:
+      jmp     (krn_ptr3)           ; return to byte following final NULL
 .endif

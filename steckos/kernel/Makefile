@@ -4,6 +4,7 @@ OBJS=kernel.o fat32.o sdcard.o textui.o rtc.o via.o out.o key.o exec.o util.o ma
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
 LDFLAGS=-C kernel.cfg
+#LDFLAGS=-C ../prg.ld65.cfg
 
 # if 9958 is used
 DEFINES+=-DV9958
