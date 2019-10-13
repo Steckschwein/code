@@ -20,16 +20,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 .ifndef _APPSTART_INC_
-      _APPSTART_INC_ = 1
+		_APPSTART_INC_ = 1
   
 .macro appstart addr
   .segment "LOADADDR"
-  .if .paramcount >0                  ; app start address defined within source code
-      .export __APP_START__=addr;
-      .addr addr
+  .if .paramcount >0						; app start address defined within source code
+		.export __APP_START__=addr;
+		.addr addr
   .else
-      .export __APP_START__=$1000     ; app start address defaults to $1000
-      .addr *+2
+		.export __APP_START__=$1000	  ; app start address defaults to $1000
+		.addr *+2
   .endif
   .code
 .endmacro

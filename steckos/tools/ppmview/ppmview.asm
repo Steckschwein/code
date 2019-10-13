@@ -48,10 +48,8 @@ appstart $1000
 		jsr ppmview_main
 		jmp (retvec)
 
-ppm_width: .res 1, 0
-ppm_height: .res 1, 0 
+ppm_width:  .res 1, 0
+ppm_height: .res 1, 0
 		
-.segment "DATA"
+.data
 ppmdata:
-
-.segment "STARTUP"

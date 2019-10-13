@@ -45,7 +45,7 @@ spi_rw_byte:
 		ldx #$08
 
 		lda via1portb	; Port laden
-		and #$fe        ; SPICLK loeschen
+		and #$fe		  ; SPICLK loeschen
 
 		asl		; Nach links rotieren, damit das bit nachher an der richtigen stelle steht
 		tay		 ; bunkern

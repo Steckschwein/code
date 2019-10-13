@@ -25,7 +25,7 @@
 
 .include "system.inc"
 
-opl_stat = $0240        ; status register
+opl_stat = $0240		  ; status register
 opl_sel  = opl_stat		; register select
 opl_data = opl_stat + 1 ; data register (write only)
 
@@ -39,8 +39,8 @@ opl2_s_irq		= 1<<7	; timer irq
 opl2_s_irq_t1	= 1<<6	; ... irq cause of t1
 opl2_s_irq_t2	= 1<<5	; ... irq cause of t2
 
-opl2_reg_t1   = 2
-opl2_reg_t2   = 3
+opl2_reg_t1	= 2
+opl2_reg_t2	= 3
 opl2_reg_ctrl = 4
 
 ;--------------------------------------------------------------------------------------------------------------
@@ -99,9 +99,9 @@ opl2_chan8_op2	= opl2_op18
 
 
 .macro opl_reg reg, val
-      ldx #reg
-      lda #val
-      jsr opl2_reg_write
+		ldx #reg
+		lda #val
+		jsr opl2_reg_write
 .endmacro
 
 .macro oplSetRegVal reg, val

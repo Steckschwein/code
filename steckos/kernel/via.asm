@@ -31,7 +31,7 @@
 init_via1:
 
 		; disable VIA1 interrupts
-		lda #%01111111          ; bit 7 "0", to clear all int sources
+		lda #%01111111			 ; bit 7 "0", to clear all int sources
 		sta via1ier
 
 		;Port A directions

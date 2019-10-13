@@ -17,8 +17,8 @@
 ;---------------------------------------------------------------------
 read_nvram:
 	save
-    sta ptr1
-    sty ptr1+1
+	 sta ptr1
+	 sty ptr1+1
 	; select RTC
 	lda #%01110110
 	sta via1portb
@@ -41,25 +41,25 @@ read_nvram:
 	lda #%01111110
 	sta via1portb
 
-    lda ptr1
-    ldy ptr1+1
-    ldx #.sizeof(nvram)-1
-    jsr crc7
+	 lda ptr1
+	 ldy ptr1+1
+	 ldx #.sizeof(nvram)-1
+	 jsr crc7
 
-    ldy #nvram::crc7
-    cmp (ptr1),y
-    beq @exit
+	 ldy #nvram::crc7
+	 cmp (ptr1),y
+	 beq @exit
 
-    jsr primm
-    .byte "NVRAM: CRC error.", KEY_LF, 0
+	 jsr primm
+	 .byte "NVRAM: CRC error.", KEY_LF, 0
 
 @copy_defaults:
-    ldy #.sizeof(nvram)
+	 ldy #.sizeof(nvram)
 @lp1:
-    lda nvram_defaults,y
-    sta (ptr1),y
-    dey
-    bpl @lp1
+	 lda nvram_defaults,y
+	 sta (ptr1),y
+	 dey
+	 bpl @lp1
 
 
 

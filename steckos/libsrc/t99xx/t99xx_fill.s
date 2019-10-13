@@ -29,21 +29,21 @@ vdp_fill:
 ;	in:
 ;		.A - byte to fill
 ;		.X - amount of 256byte blocks (page counter)
-        ldy #0
-@1:     vdp_wait_l 4
-        iny             ;2
-        sta a_vram
-        bne @1          ;3
-        dex
-        bne @1
-        rts
+		  ldy #0
+@1:	  vdp_wait_l 4
+		  iny				 ;2
+		  sta a_vram
+		  bne @1			 ;3
+		  dex
+		  bne @1
+		  rts
 	
 vdp_fills:
 ;	in:
-;   .A - value to write
+;	.A - value to write
 ;		.X - amount of bytes
-@0:	  vdp_wait_l 6   ;3 + 2 + 1 opcode fetch
-      dex            ;2
-      sta a_vram     ;4
-      bne	@0         ;3
-      rts
+@0:	  vdp_wait_l 6	;3 + 2 + 1 opcode fetch
+		dex				;2
+		sta a_vram	  ;4
+		bne	@0			;3
+		rts

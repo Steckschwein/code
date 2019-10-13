@@ -144,12 +144,12 @@
 .endmacro
 
 .macro set_irq irq, irq_save
-      copypointer $fffe, irq_save
-      SetVector irq, $fffe
+		copypointer $fffe, irq_save
+		SetVector irq, $fffe
 .endmacro
 
 .macro restore_irq irq_save
-      copypointer irq_save, $fffe
+		copypointer irq_save, $fffe
 .endmacro
 
 .macro copypointer fromptr, toptr
@@ -173,8 +173,8 @@
 
 .macro keyin
 	.local @l
-@l:     jsr krn_getkey
-        bcc @l
+@l:	  jsr krn_getkey
+		  bcc @l
 .endmacro
 
 ; swap nibbles of byte in A
@@ -202,10 +202,10 @@
 .endmacro
 
 .macro dec16 word
-        lda word   ; 2cl
-        bne :+	   ;2/3cl
-        dec word+1 ; 3cl
-:       dec word   ; 3cl
+		  lda word	; 2cl
+		  bne :+		;2/3cl
+		  dec word+1 ; 3cl
+:		 dec word	; 3cl
 .endmacro
 
 .endif  ; _COMMON_INC_

@@ -39,9 +39,9 @@
 ; Destructive: A,X
 ;----------------------------------------------------------------------------------------------
 spi_r_byte:
-		lda via1portb   ; Port laden
-		AND #$fe        ; Takt ausschalten
-		TAX             ; aufheben
+		lda via1portb	; Port laden
+		AND #$fe		  ; Takt ausschalten
+		TAX				 ; aufheben
 		ORA #$01
 
 		STA via1portb ; Takt An 1

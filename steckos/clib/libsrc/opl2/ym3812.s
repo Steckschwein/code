@@ -19,12 +19,12 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-      .import opl2_reg_write
-      .import popa
+		.import opl2_reg_write
+		.import popa
 
-      ; void __fastcall__ opl2_write(unsigned char val, unsigned char reg);
-      .export _opl2_write
+		; void __fastcall__ opl2_write(unsigned char val, unsigned char reg);
+		.export _opl2_write
 _opl2_write:
-      tax
-      jsr popa
-      jmp opl2_reg_write
+		tax
+		jsr popa
+		jmp opl2_reg_write

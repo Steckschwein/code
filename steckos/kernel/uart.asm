@@ -43,7 +43,7 @@ init_uart:
 ;		sta uart1lcr
 
 		; Enable FIFO, reset tx/rx FIFO
-        lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
+		  lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
 		sta uart1+uart_fcr
 
 		stz uart1+uart_ier	; polled mode (so far)
@@ -86,13 +86,13 @@ uart_rx:
 ; receive byte, no wait, set carry and store in A when received
 ;----------------------------------------------------------------------------------------------
 uart_rx_nowait:
-        lda #lsr_DR
-        bit uart1+uart_lsr
-        beq @l
-        lda uart1+uart_rxtx
-        sec
-        rts
+		  lda #lsr_DR
+		  bit uart1+uart_lsr
+		  beq @l
+		  lda uart1+uart_rxtx
+		  sec
+		  rts
 @l:
-        clc
-        rts
+		  clc
+		  rts
 ;----------------------------------------------------------------------------------------------

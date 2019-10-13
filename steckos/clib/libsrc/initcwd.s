@@ -2,13 +2,13 @@
 ; steckos _cwd
 ;
 
-        .export         initcwd
-        .import         __cwd
-        .importzp       sreg, ptr1, ptr2
+		  .export			initcwd
+		  .import			__cwd
+		  .importzp		 sreg, ptr1, ptr2
 
-        .macpack        generic
+		  .macpack		  generic
 
 initcwd:
-        lda     #<__cwd
-        ldx     #>__cwd
-        rts
+		  lda	  #<__cwd
+		  ldx	  #>__cwd
+		  rts

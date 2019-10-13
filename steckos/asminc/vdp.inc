@@ -22,21 +22,21 @@
 .ifndef _VDP_INC_
   _VDP_INC_ = 1
 
-a_vdp     = $0220
-a_vram    = a_vdp
-a_vreg    = a_vdp+1
+a_vdp	  = $0220
+a_vram	 = a_vdp
+a_vreg	 = a_vdp+1
 a_vregpal = a_vdp+2
-a_vregi   = a_vdp+3
+a_vregi	= a_vdp+3
 
-s_reg0_F    = 1<<7	; Frame Flag, interrupt flag
-s_reg0_5S   = 1<<6
-s_reg0_C    = 1<<5
+s_reg0_F	 = 1<<7	; Frame Flag, interrupt flag
+s_reg0_5S	= 1<<6
+s_reg0_C	 = 1<<5
 
 
 v_reg0_extV		= 1<<0
-v_reg0_DG       = 1<<6  ; Digitize mode: sets the color bus to the input or output mode
-v_reg0_IE2      = 1<<5  ; light pen interrupt
-v_reg0_IE1      = 1<<4  ; h-blank interrupt
+v_reg0_DG		 = 1<<6  ; Digitize mode: sets the color bus to the input or output mode
+v_reg0_IE2		= 1<<5  ; light pen interrupt
+v_reg0_IE1		= 1<<4  ; h-blank interrupt
 v_reg0_m5		= 1<<3
 v_reg0_m4		= 1<<2
 v_reg0_m3		= 1<<1
@@ -55,9 +55,9 @@ v_reg8_VR			  = 1<<3	; 0/1 16k/64k video ram
 v_reg8_SPD			= 1<<1	; 0/1 sprites enabled/disabled
 v_reg8_BW			  = 1<<0	; 0/1 grayscale off/on
 
-v_reg9_ln       = 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
-v_reg9_il       = 1<<3	; interlace
-v_reg9_nt       = 1<<1	; ntsc/pal
+v_reg9_ln		 = 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
+v_reg9_il		 = 1<<3	; interlace
+v_reg9_nt		 = 1<<1	; ntsc/pal
 v_reg17_aii			= 1<<7	; auto increment
 
 v_reg25_sp2 		= 1<<0
@@ -86,8 +86,8 @@ v_reg8  = $80	+	8
 v_reg9  = $80	+	9
 v_reg11	= $80 + 11
 
-v_reg12	= $80 + 12    ; blink color
-v_reg13	= $80 + 13    ; on time / off time
+v_reg12	= $80 + 12	 ; blink color
+v_reg13	= $80 + 13	 ; on time / off time
 
 v_reg14	= $80 + 14
 v_reg15	= $80 + 15
@@ -156,68 +156,68 @@ SPRITE_N=2
 SPRITE_C=3
 
 SPRITE_INVISIBLE=$bf
-SPRITE_OFF=$d0    ; in 192 line mode +8 ($d8) in 212 line mode
+SPRITE_OFF=$d0	 ; in 192 line mode +8 ($d8) in 212 line mode
 
 SPRITE_EC=1<<7  ;early clock bit
 
-Transparent    =$00
-Black          =$01	;0	0	0		"black"
-Medium_Green   =$02 ;35	203	50		"23
-Light_Green    =$03	;96	221	108
-Dark_Blue      =$04 ;84	78	255		"544EFF"
-Light_Blue     =$05 ;125 112 255	"7D70FF"
-Dark_Red       =$06 ;210 84	66		"D25442"
-Cyan           =$07 ;69 232	255		(Aqua Blue)
-Medium_Red     =$08 ;250 89	72 		"FA5948"
-Light_Red      =$09 ;255 124 108	"FF7C6C"
-Dark_Yellow    =$0a ;211 198 60		"D3C63C"
-Light_Yellow   =$0b ;229 210 109	"E5D26D"
-Dark_Green     =$0c ;35 178	44
-Magenta        =$0d ;200 90	198 	"C85AC6" (Purple)
-Gray           =$0e ;204 204 204	"CCCCCC"
-White          =$0f ;255 255 255	"white"
+Transparent	 =$00
+Black			 =$01	;0	0	0		"black"
+Medium_Green	=$02 ;35	203	50		"23
+Light_Green	 =$03	;96	221	108
+Dark_Blue		=$04 ;84	78	255		"544EFF"
+Light_Blue	  =$05 ;125 112 255	"7D70FF"
+Dark_Red		 =$06 ;210 84	66		"D25442"
+Cyan			  =$07 ;69 232	255		(Aqua Blue)
+Medium_Red	  =$08 ;250 89	72 		"FA5948"
+Light_Red		=$09 ;255 124 108	"FF7C6C"
+Dark_Yellow	 =$0a ;211 198 60		"D3C63C"
+Light_Yellow	=$0b ;229 210 109	"E5D26D"
+Dark_Green	  =$0c ;35 178	44
+Magenta		  =$0d ;200 90	198 	"C85AC6" (Purple)
+Gray			  =$0e ;204 204 204	"CCCCCC"
+White			 =$0f ;255 255 255	"white"
 
 WRITE_ADDRESS=$40
 
-ADDRESS_GFX_SPRITE          =$1e00
+ADDRESS_GFX_SPRITE			 =$1e00
 ADDRESS_GFX_SPRITE_PATTERN  =$2800
 
-ADDRESS_TEXT_SCREEN         =$1000			; name table
-ADDRESS_TEXT_PATTERN        =$0000			; pattern table
-ADDRESS_TEXT_COLOR          =$2000			; color table, v9938/58 "blink" color code vram
+ADDRESS_TEXT_SCREEN			=$1000			; name table
+ADDRESS_TEXT_PATTERN		  =$0000			; pattern table
+ADDRESS_TEXT_COLOR			 =$2000			; color table, v9938/58 "blink" color code vram
 
-ADDRESS_GFX1_SCREEN         =$1000    ; name table
-ADDRESS_GFX1_PATTERN        =$0000
-ADDRESS_GFX1_COLOR          =$2000
-ADDRESS_GFX1_SPRITE         =ADDRESS_GFX_SPRITE
+ADDRESS_GFX1_SCREEN			=$1000	 ; name table
+ADDRESS_GFX1_PATTERN		  =$0000
+ADDRESS_GFX1_COLOR			 =$2000
+ADDRESS_GFX1_SPRITE			=ADDRESS_GFX_SPRITE
 ADDRESS_GFX1_SPRITE_PATTERN =$1800;
 
-ADDRESS_GFX2_SCREEN         = $1000			 ; name table (layout)
-ADDRESS_GFX2_PATTERN        = $0000      ; pattern generator
-ADDRESS_GFX2_COLOR          = $2000      ; pattern colors
-ADDRESS_GFX2_SPRITE         = ADDRESS_GFX_SPRITE
+ADDRESS_GFX2_SCREEN			= $1000			 ; name table (layout)
+ADDRESS_GFX2_PATTERN		  = $0000		; pattern generator
+ADDRESS_GFX2_COLOR			 = $2000		; pattern colors
+ADDRESS_GFX2_SPRITE			= ADDRESS_GFX_SPRITE
 ADDRESS_GFX2_SPRITE_PATTERN = ADDRESS_GFX1_SPRITE_PATTERN
 
-ADDRESS_GFX_MC_SCREEN         = $1000  ; name table
-ADDRESS_GFX_MC_PATTERN        = $1800  ; pattern table
-ADDRESS_GFX_MC_SPRITE         = ADDRESS_GFX_SPRITE	  ; sprite attributes
+ADDRESS_GFX_MC_SCREEN			= $1000  ; name table
+ADDRESS_GFX_MC_PATTERN		  = $1800  ; pattern table
+ADDRESS_GFX_MC_SPRITE			= ADDRESS_GFX_SPRITE	  ; sprite attributes
 ADDRESS_GFX_MC_SPRITE_PATTERN = ADDRESS_GFX_SPRITE_PATTERN	; sprite pattern
 
-ADDRESS_GFX3_SCREEN   =       ADDRESS_GFX2_SCREEN
-ADDRESS_GFX3_PATTERN  =       ADDRESS_GFX2_PATTERN
-ADDRESS_GFX3_COLOR    =       ADDRESS_GFX2_COLOR
+ADDRESS_GFX3_SCREEN	=		 ADDRESS_GFX2_SCREEN
+ADDRESS_GFX3_PATTERN  =		 ADDRESS_GFX2_PATTERN
+ADDRESS_GFX3_COLOR	 =		 ADDRESS_GFX2_COLOR
 ADDRESS_GFX3_SPRITE_PATTERN = ADDRESS_GFX2_SPRITE_PATTERN
-ADDRESS_GFX3_SPRITE         = ADDRESS_GFX_SPRITE
-ADDRESS_GFX3_SPRITE_COLOR   = ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
+ADDRESS_GFX3_SPRITE			= ADDRESS_GFX_SPRITE
+ADDRESS_GFX3_SPRITE_COLOR	= ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
 
-ADDRESS_GFX6_SCREEN           =$10000 ; screen
-ADDRESS_GFX6_SPRITE_PATTERN   =$0f000     ;
-ADDRESS_GFX6_SPRITE           =$0fa00     ;
-ADDRESS_GFX6_SPRITE_COLOR     =ADDRESS_GFX6_SPRITE-$0200
+ADDRESS_GFX6_SCREEN			  =$10000 ; screen
+ADDRESS_GFX6_SPRITE_PATTERN	=$0f000	  ;
+ADDRESS_GFX6_SPRITE			  =$0fa00	  ;
+ADDRESS_GFX6_SPRITE_COLOR	  =ADDRESS_GFX6_SPRITE-$0200
 
-ADDRESS_GFX7_SCREEN			      =$10000							; 2nd 64 RAM
-ADDRESS_GFX7_SPRITE			      =ADDRESS_GFX_SPRITE
-ADDRESS_GFX7_SPRITE_PATTERN   =ADDRESS_GFX1_SPRITE_PATTERN
+ADDRESS_GFX7_SCREEN					=$10000							; 2nd 64 RAM
+ADDRESS_GFX7_SPRITE					=ADDRESS_GFX_SPRITE
+ADDRESS_GFX7_SPRITE_PATTERN	=ADDRESS_GFX1_SPRITE_PATTERN
 
 TEXT_MODE_40=40-1
 TEXT_MODE_80=80-1
@@ -302,13 +302,13 @@ vdp_nopslide_2m:
 .endmacro
 
 .macro vdp_vram_w _24bit
-    vdp_sreg <.HIWORD(_24bit<<2), v_reg14
-    vdp_sreg <.LOWORD(_24bit), WRITE_ADDRESS | (>.LOWORD(_24bit) & $3f)
+	 vdp_sreg <.HIWORD(_24bit<<2), v_reg14
+	 vdp_sreg <.LOWORD(_24bit), WRITE_ADDRESS | (>.LOWORD(_24bit) & $3f)
 .endmacro
 
 .macro vdp_vram_r _24bit
-    vdp_sreg <.HIWORD(_24bit<<2), v_reg14
-    vdp_sreg <.LOWORD(_24bit), (>.LOWORD(_24bit) & $3f)
+	 vdp_sreg <.HIWORD(_24bit<<2), v_reg14
+	 vdp_sreg <.LOWORD(_24bit), (>.LOWORD(_24bit) & $3f)
 .endmacro
 
 .macro vdp_pal _r, _g, _b
@@ -328,7 +328,7 @@ vdp_nopslide_2m:
 @l:
   vdp_wait_s
   bit	a_vreg
-	bpl @l     ; wait until blank - irq flag set?
+	bpl @l	  ; wait until blank - irq flag set?
 .endmacro
 
 .endif ;_VDP_INC_

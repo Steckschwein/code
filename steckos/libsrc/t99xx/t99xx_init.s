@@ -32,10 +32,10 @@
 ;		.X - length of init table
 ;		.A/.Y - pointer to vdp init table
 vdp_init_reg:
-      sta vdp_ptr
-      sty vdp_ptr+1
-      txa         ; x length of init table
-      tay
+		sta vdp_ptr
+		sty vdp_ptr+1
+		txa			; x length of init table
+		tay
 			ora #$80		; bit 7 = 1 => register write
 			tax
 @l:		vdp_wait_s 4
@@ -47,4 +47,4 @@ vdp_init_reg:
 			dey				;2c
 			bpl @l 		;3c
 			rts
-      
+		

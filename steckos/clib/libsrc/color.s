@@ -6,14 +6,14 @@
 ;
 
 
-        .export         _textcolor, _bgcolor
+		  .export			_textcolor, _bgcolor
 
-        .import vdp_bgcolor
+		  .import vdp_bgcolor
 
 _textcolor:
-        asl
-        asl
-        asl
-        asl
+		  asl
+		  asl
+		  asl
+		  asl
 _bgcolor:
-        jmp vdp_bgcolor
+		  jmp vdp_bgcolor

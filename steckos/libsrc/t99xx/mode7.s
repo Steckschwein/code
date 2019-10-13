@@ -57,10 +57,10 @@ vdp_init_bytes_gfx7:
 			.byte Black ; border color
 			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
 			.byte 0;v_reg9_ln	;//TODO FIXME ntsc off => gfx_off
-      .byte 0;  #R10
-      .byte 0;  #R11
-      .byte 0;  #R12
-      .byte 0;  #R13
+		.byte 0;  #R10
+		.byte 0;  #R11
+		.byte 0;  #R12
+		.byte 0;  #R13
 vdp_init_bytes_gfx7_end:
 ;
 ; blank gfx mode 7 with
@@ -101,71 +101,71 @@ colour:
 ;	.A - color GRB [0..ff] as 332
 ; 	VRAM ADDRESS = .X + 256*.Y
 vdp_gfx7_set_pixel:
-        php
-        sei
-        stx a_vreg                 ; A7-A0 vram address low byte
-        pha
-        tya
-        and #$3f                   ; A13-A8 vram address highbyte
-        ora #WRITE_ADDRESS
-        nop
-        nop
-        nop
-        nop
-        sta a_vreg
-        tya
-        rol								; A16-A14 bank select via reg#14, rol over carry
-        rol
-        rol
-        and #$03
-        ora #<.HIWORD(ADDRESS_GFX7_SCREEN<<2)
-        nop
-        nop
-        sta a_vreg
-        vdp_wait_s 2
-        lda #v_reg14
-        sta a_vreg
-        vdp_wait_l 2
-        pla
-        sta a_vram                 ; set color
-        plp
-        rts
-        
+		  php
+		  sei
+		  stx a_vreg					  ; A7-A0 vram address low byte
+		  pha
+		  tya
+		  and #$3f						 ; A13-A8 vram address highbyte
+		  ora #WRITE_ADDRESS
+		  nop
+		  nop
+		  nop
+		  nop
+		  sta a_vreg
+		  tya
+		  rol								; A16-A14 bank select via reg#14, rol over carry
+		  rol
+		  rol
+		  and #$03
+		  ora #<.HIWORD(ADDRESS_GFX7_SCREEN<<2)
+		  nop
+		  nop
+		  sta a_vreg
+		  vdp_wait_s 2
+		  lda #v_reg14
+		  sta a_vreg
+		  vdp_wait_l 2
+		  pla
+		  sta a_vram					  ; set color
+		  plp
+		  rts
+		  
 ; requires
-;   - int handling is done outside
-;   - page register set accordingly (v_reg14)
+;	- int handling is done outside
+;	- page register set accordingly (v_reg14)
 ;	.X - x coordinate [0..ff]
 ;	.Y - y coordinate [0..bf]
 ;	.A - color GRB [0..ff] as 332
 ; 	VRAM ADDRESS = .X + 256*.Y
 vdp_gfx7_set_pixel_direct:
-        stx a_vreg                 ; A7-A0 vram address low byte
-        pha
-        tya
-        and #$3f                   ; A13-A8 vram address highbyte
-        ora #WRITE_ADDRESS
-        nop
-        nop
-        nop
-        nop
-        sta a_vreg
-        vdp_wait_l 2
-        pla
-        sta a_vram                 ; set color
-        rts
+		  stx a_vreg					  ; A7-A0 vram address low byte
+		  pha
+		  tya
+		  and #$3f						 ; A13-A8 vram address highbyte
+		  ora #WRITE_ADDRESS
+		  nop
+		  nop
+		  nop
+		  nop
+		  sta a_vreg
+		  vdp_wait_l 2
+		  pla
+		  sta a_vram					  ; set color
+		  rts
 
 vdp_wait_cmd:
-    php
-    sei
-    vdp_sreg 2, v_reg15         ; 2 - to select status register S#2
+	 php
+	 sei
+	 vdp_sreg 2, v_reg15			; 2 - to select status register S#2
 @wait:
-    vdp_wait_s 4
-    lda a_vreg
-    ror
-    bcs @wait
-    vdp_sreg 0, v_reg15         ; 0 - reset status register selection to S#0
-    plp                         ; restore, irq flag
-    rts
+	 vdp_wait_s 4
+	 lda a_vreg
+	 ror
+	 bcs @wait
+	 vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
+	 plp								 ; restore, irq flag
+	 rts
 	
 ;	set pixel to gfx7 using v9958 command engine
 ;

@@ -25,7 +25,7 @@
 
 clockspeed  = 8
 
-ctrl_port   = $0230
+ctrl_port	= $0230
 
 ROM_OFF = 1<<0
 BANK_SEL0 = 1<<1

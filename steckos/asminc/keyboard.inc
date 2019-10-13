@@ -1,18 +1,18 @@
-KEY_ENCODED       = $80
+KEY_ENCODED		 = $80
 
-KEY_LF            = $0a
-KEY_CR            = $0d
-KEY_RETURN        = $0d
-KEY_BACKSPACE     = $08
+KEY_LF				= $0a
+KEY_CR				= $0d
+KEY_RETURN		  = $0d
+KEY_BACKSPACE	  = $08
 
 
-KEY_CRSR_UP       = $1E
-KEY_CRSR_DOWN     = $1F
+KEY_CRSR_UP		 = $1E
+KEY_CRSR_DOWN	  = $1F
 KEY_CRSR_RIGHT 	 	= $10
-KEY_CRSR_LEFT     = $11
+KEY_CRSR_LEFT	  = $11
 
-KEY_ESCAPE        = 27
+KEY_ESCAPE		  = 27
 
-KEY_FN1           = $f1
-KEY_FN2           = $f2
-KEY_FN12          = $fc
+KEY_FN1			  = $f1
+KEY_FN2			  = $f2
+KEY_FN12			 = $fc

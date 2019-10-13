@@ -9,46 +9,46 @@
 
 		.export _closedir
 		
-;        .include        "dir.inc"
-        .include        "zeropage.inc"
+;		  .include		  "dir.inc"
+		  .include		  "zeropage.inc"
 
-        .import         _close, _free
+		  .import			_close, _free
 
 
-.proc   _closedir
+.proc	_closedir
 
-        sta     ptr1
-        stx     ptr1+1
+		  sta	  ptr1
+		  stx	  ptr1+1
 
 ; Load dir->fd
-;        ldy     #DIR::fd+1
- ;       lda     (ptr1),y
-  ;      tax
-   ;     dey
-    ;    lda     (ptr1),y
+;		  ldy	  #DIR::fd+1
+ ;		 lda	  (ptr1),y
+  ;		tax
+	;	  dey
+	 ;	 lda	  (ptr1),y
 
 ; Close the file
 
-;        jsr     _close
+;		  jsr	  _close
 
 ; Save the error code
 
- ;       pha
-  ;      txa
-   ;     pha
+ ;		 pha
+  ;		txa
+	;	  pha
 
 ; Free the memory block
 
-    ;    lda     ptr1
-     ;   ldx     ptr1+1
-      ;  jsr     _free
+	 ;	 lda	  ptr1
+	  ;	ldx	  ptr1+1
+		;  jsr	  _free
 
 ; Return the error code from close()
 
-;        pla
- ;       tax
-  ;      pla
-        rts
+;		  pla
+ ;		 tax
+  ;		pla
+		  rts
 
 .endproc
 

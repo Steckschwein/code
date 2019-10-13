@@ -114,10 +114,10 @@ _debugout0:
 		sta		dbg_bytes
 		pla							; Get the low part of "return" address
 									; (data start address)
-		sta     dbg_return
+		sta	  dbg_return
 		sta 	__dbg_ptr
 		pla
-		sta     dbg_return+1  	 	; Get the high part of "return" address
+		sta	  dbg_return+1  	 	; Get the high part of "return" address
 		sta 	__dbg_ptr+1			; (data start address)
 
 		ldy 	dbg_bytes			; bytes to output
@@ -157,17 +157,17 @@ _debugout0:
 		sta		__dbg_ptr+1
 
 @PSINB:							; Note: actually we're pointing one short
-		inc     __dbg_ptr       ; update the pointer
-		bne     @PSICHO         ; if not, we're pointing to next character
-		inc     __dbg_ptr+1		; account for page crossing
+		inc	  __dbg_ptr		 ; update the pointer
+		bne	  @PSICHO			; if not, we're pointing to next character
+		inc	  __dbg_ptr+1		; account for page crossing
 
-@PSICHO:lda     (__dbg_ptr)	    ; Get the next string character
-		beq     @PSIX1          ; don't print the final NULL
-		jsr     krn_chrout		; write it out
-		bra     @PSINB          ; back around
-@PSIX1:	inc     __dbg_ptr  		;
-		bne     @PSIX2      	;
-		inc     __dbg_ptr+1     ; account for page crossing
+@PSICHO:lda	  (__dbg_ptr)		 ; Get the next string character
+		beq	  @PSIX1			 ; don't print the final NULL
+		jsr	  krn_chrout		; write it out
+		bra	  @PSINB			 ; back around
+@PSIX1:	inc	  __dbg_ptr  		;
+		bne	  @PSIX2			;
+		inc	  __dbg_ptr+1	  ; account for page crossing
 @PSIX2:	lda		#$0a			; line feed
 		jsr 	krn_chrout
 
@@ -188,7 +188,7 @@ _debugout0:
 		ldy		dbg_yreg
 		plp
 
-		jmp     (dbg_return)           ; return to byte following final NULL
+		jmp	  (dbg_return)			  ; return to byte following final NULL
 
 ;----------------------------------------------------------------------------------------------
 ; Output byte as hex string on active output device
@@ -210,10 +210,10 @@ _hexout:
 		rts
 
 @hexdigit:
-		and     #%00001111      ;mask lsd for hex print
-		ora     #'0'            ;add "0"
-		cmp     #'9'+1          ;is it a decimal digit?
-		bcc     @l	            ;yes! output it
-		adc     #6              ;add offset for letter a-f
+		and	  #%00001111		;mask lsd for hex print
+		ora	  #'0'				;add "0"
+		cmp	  #'9'+1			 ;is it a decimal digit?
+		bcc	  @l					;yes! output it
+		adc	  #6				  ;add offset for letter a-f
 @l:
 		jmp 	krn_chrout

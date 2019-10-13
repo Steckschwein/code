@@ -31,15 +31,15 @@
 m_vdp_nopslide
 
 vdp_display_off:
-      vdp_sreg v_reg1_16k, v_reg1 	;enable 16K? ram, disable screen
-      rts
-   
+		vdp_sreg v_reg1_16k, v_reg1 	;enable 16K? ram, disable screen
+		rts
+	
 ;
-;   input:	a - color
+;	input:	a - color
 ;
 vdp_bgcolor:
-	sta   a_vreg
-	lda   #v_reg7
+	sta	a_vreg
+	lda	#v_reg7
 	vdp_wait_s 2
-	sta   a_vreg
+	sta	a_vreg
 	rts

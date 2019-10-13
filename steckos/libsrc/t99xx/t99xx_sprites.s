@@ -30,8 +30,8 @@ vdp_mode_sprites_off:
 		lda	#$d0					;sprites off, at least y=$d0 will disable the sprite subsystem
 		ldx	#32*4					;32 sprites / 4 byte each
 @0:	vdp_wait_l 6
-		dex             ;2
-		sta   a_vram    ;4
-		bne	@0        ;3
+		dex				 ;2
+		sta	a_vram	 ;4
+		bne	@0		  ;3
 		rts
-    
+	 

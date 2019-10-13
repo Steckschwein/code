@@ -6,11 +6,11 @@
 ;
 
 
-        ; The following symbol is used by linker config to force the module
-        ; to get included into the output file
-        .export         __LOADADDR__: absolute = 1
+		  ; The following symbol is used by linker config to force the module
+		  ; to get included into the output file
+		  .export			__LOADADDR__: absolute = 1
 
-.segment        "LOADADDR"
+.segment		  "LOADADDR"
 
-        .addr   *+2
+		  .addr	*+2
 

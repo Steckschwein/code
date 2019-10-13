@@ -2,6 +2,6 @@
 
 
 	lda #'A'
-    	jsr krn_chrout
+	 	jsr krn_chrout
 loop:
 	jmp loop

@@ -48,27 +48,27 @@
 .endif
 
 
-;   out:
-;     Z=1 sd card available, Z=0 otherwise A=ENODEV
+;	out:
+;	  Z=1 sd card available, Z=0 otherwise A=ENODEV
 sdcard_detect:
-      lda via1portb
-      and #SDCARD_DETECT
-      rts
+		lda via1portb
+		and #SDCARD_DETECT
+		rts
 
 ;---------------------------------------------------------------------
 ; Init SD Card
 ; Destructive: A, X, Y
 ;
-;   out:  Z=1 on success, Z=0 otherwise
+;	out:  Z=1 on success, Z=0 otherwise
 ;
 ;---------------------------------------------------------------------
 sdcard_init:
-      lda #spi_device_sdcard
-      jsr spi_select_device
-      beq @init
-      rts
+		lda #spi_device_sdcard
+		jsr spi_select_device
+		beq @init
+		rts
 @init:
-      ; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
+		; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
 
 			; set ALL CS lines and DO to HIGH
@@ -222,7 +222,7 @@ sdcard_init:
 ; 	A - cmd byte
 ; 	sd_cmd_param - parameters
 ; out:
-;   A - SD Card R1 status byte in
+;	A - SD Card R1 status byte in
 ;---------------------------------------------------------------------
 sd_cmd:
 			pha
@@ -268,7 +268,7 @@ sd_block_cmd_timeout:
 ; Read block from SD Card
 ;in:
 ;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
-;   block lba in lba_addr
+;	block lba in lba_addr
 ;
 ;out:
 ;	A - A = 0 on success, error code otherwise
@@ -280,7 +280,7 @@ sd_read_block:
 			lda #cmd17
 			jsr sd_cmd
 
-		   	bne @exit
+				bne @exit
 @l1:
 			jsr fullblock
 
@@ -291,27 +291,27 @@ sd_read_block:
 ; to allow card to deinit
 ;---------------------------------------------------------------------
 sd_deselect_card:
-      pha
-      phy
-      
-      jsr spi_deselect
+		pha
+		phy
+		
+		jsr spi_deselect
 
-      ldy #$04
+		ldy #$04
 @l1:
-      jsr spi_r_byte
-      dey
-      bne @l1
-      
-      ply
-      pla
+		jsr spi_r_byte
+		dey
+		bne @l1
+		
+		ply
+		pla
 
-      rts
+		rts
 
 fullblock:
 			; wait for sd card data token
 			lda #sd_data_token
 			jsr sd_wait
-            bne @exit
+				bne @exit
 
 			ldy #$00
 			jsr halfblock
@@ -337,8 +337,8 @@ halfblock:
 ; Read multiple blocks from SD Card
 ;in:
 ;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
-;   block lba in lba_addr
-;   block count in blocks
+;	block lba in lba_addr
+;	block count in blocks
 ;
 ;out:
 ;	A - A = 0 on success, error code otherwise
@@ -362,21 +362,21 @@ sd_read_multiblock:
 			dec blocks
 			bne @l1
 
-	        ; all blocks read, send cmd12 to end transmission
-	        ; jsr sd_param_init
-	        lda #cmd12
-	        jsr sd_cmd
+			  ; all blocks read, send cmd12 to end transmission
+			  ; jsr sd_param_init
+			  lda #cmd12
+			  jsr sd_cmd
 
 @exit:
-	        ply
+			  ply
 			plx
-	        jmp sd_deselect_card
+			  jmp sd_deselect_card
 
 ;---------------------------------------------------------------------
 ; Write block to SD Card
 ;in:
 ;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
-;   block lba in lba_addr
+;	block lba in lba_addr
 ;
 ;out:
 ;	A - A = 0 on success, error code otherwise
@@ -389,7 +389,7 @@ sd_write_block:
 			jsr sd_cmd_lba
 			lda #cmd24
 			jsr sd_cmd
-		    bne @exit
+			 bne @exit
 
 			lda #sd_data_token
 			jsr spi_rw_byte
@@ -425,7 +425,7 @@ sd_write_block:
 @exit:
 			ply
 			plx
-	        jmp sd_deselect_card
+			  jmp sd_deselect_card
 
 ;---------------------------------------------------------------------
 ; Write multiple blocks to SD Card
@@ -448,7 +448,7 @@ sd_write_multiblock:
 			; wait for command response.
 			lda #$00
 			jsr sd_wait
-	       	bne @exit
+			 	bne @exit
 
 @block:
 			lda #sd_data_token
@@ -484,10 +484,10 @@ sd_write_multiblock:
 			dec blocks
 			bne @block
 
-	        ; all blocks read, send cmd12 to end transmission
-	        ; jsr sd_param_init
-	        lda #cmd12
-	        jsr sd_cmd
+			  ; all blocks read, send cmd12 to end transmission
+			  ; jsr sd_param_init
+			  lda #cmd12
+			  jsr sd_cmd
 
 @exit:
 			restore
@@ -534,18 +534,18 @@ sd_select_card:
 ;---------------------------------------------------------------------
 sd_busy_wait:
 			ldx #$ff
-@l1:    	lda #$ff
+@l1:	 	lda #$ff
 			dex
 			beq @err
 
 			phx
-	        jsr spi_rw_byte
+			  jsr spi_rw_byte
 			plx
-	        cmp #$ff
-	        bne @l1
+			  cmp #$ff
+			  bne @l1
 
 			lda #$00
-	       	rts
+			 	rts
 
 @err:
 			lda #sd_card_error_timeout_busy
@@ -569,7 +569,7 @@ sd_param_init:
 ; in:
 ;	lba_addr - LBA address
 ; out:
-;   sd_cmd_param
+;	sd_cmd_param
 ;---------------------------------------------------------------------
 sd_cmd_lba:
 			ldx #$03

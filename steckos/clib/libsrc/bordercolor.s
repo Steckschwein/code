@@ -5,8 +5,8 @@
 ;
 
 
-        .export _bordercolor
+		  .export _bordercolor
 
-        .import vdp_bgcolor
+		  .import vdp_bgcolor
 
 _bordercolor=vdp_bgcolor

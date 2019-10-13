@@ -7,7 +7,7 @@
 ; extern unsigned char __fastcall__ crc7 (unsigned char *data, unsigned char length);
 
 .proc _crc7
-         pha			; length to stack
+			pha			; length to stack
 			jsr popax	; reorg arguments for crc7, .A/.Y data pointer .X length
 			phx
 			ply

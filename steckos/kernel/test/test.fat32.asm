@@ -43,7 +43,7 @@
 		assert8 0, (2*FD_Entry_Size)+fd_area+F32_fd::offset
 
 ; -------------------
-		setup "fat_alloc_fd with error"
+	setup "fat_alloc_fd with error"
     jsr __fat_init_fdarea
     ldy #FD_Entries_Max-2 ; -2 => 2 entries for cd and temp dir
 :

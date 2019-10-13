@@ -21,8 +21,9 @@
 ; SOFTWARE.
 
 ;
-; use imagemagick $convert <image> -geometry 256 -colort 256 <image.ppm>
-; convert.exe <file>.pdf[page] -resize 256x212^ -gravity center -crop x212+0+0 +repage pic.ppm
+; use imagemagick $convert <image> -geometry 256 -color 256 <image.ppm>
+; convert <file>.pdf[page] -resize 256x212^ -gravity center -crop x212+0+0 +repage pic.ppm
+; convert <file> -resize 256^x192 -gravity center -crop 256x192+0+0 +repage <out file>.ppm
 ;
 .setcpu "65c02"
 .include "common.inc"
@@ -131,7 +132,7 @@ read_blocks:
 		SetVector ppmdata, read_blkptr
 		ldx fd
 		ldy #(3*BLOCK_BUFFER) ; multiples of 3 blocks at once, cause of the ppm header and alignment
-		jmp krn_fread		
+		jmp krn_fread
 
 load_image:
 		stz cols
@@ -146,6 +147,10 @@ load_image:
 		
 		jsr read_blocks
 		bne @l_exit
+    phy
+    tya
+    jsr hexout
+    ply
 		cpy #0	; no blocks where read
 		beq @l_exit
 		jsr adjust_blocks
@@ -171,17 +176,20 @@ blocks_to_vram:
 		bne @l1
 		stz cols
 		inc rows
-		lda rows
-;		jsr hexout
+    lda rows
 		cmp ppm_height
-		beq @l_exit
+		beq @l_exit_d
 		jsr set_screen_addr
 @l1:
 		lda read_blkptr+1
-		cmp #>(ppmdata+(BLOCK_BUFFER*3*$200))	;end of 3 blocks reached?
+		cmp #>(ppmdata+(BLOCK_BUFFER*3*sd_blocksize))	;end of 3 blocks reached?
 		bne blocks_to_vram
 @l_exit:
 		rts
+@l_exit_d:
+    jsr hexout
+    jmp _dbg_blocks
+  
 			
 next_byte:
 		lda (read_blkptr),y
@@ -276,11 +284,14 @@ parse_header:
 		cmp #<MAX_WIDTH
 		bcc @l_invalid_ppm ;
 		sta ppm_width
+    jsr hexout
+
 		jsr parse_int	;height
 		cmp #MAX_HEIGHT+1
 		bcs @l_invalid_ppm
 		sta ppm_height
 		sty tmp2;safe y offset, to check how many chars are consumed during parse
+    jsr hexout
 		jsr parse_int	;depth
 		cmp #COLOR_DEPTH
 		bne @l_exit
@@ -407,12 +418,13 @@ gfxui_on:
 		jsr vdp_display_off			;display off
 		jsr vdp_gfx7_on			   ;enable gfx7 mode
 
-		vdp_sreg v_reg9_ln, v_reg9
+		vdp_sreg v_reg9_ln | v_reg9  ; 212px
 		
 		lda #%00000000
 		jsr vdp_gfx7_blank
 
-        vdp_sreg v_reg25_wait | v_reg25_msk, v_reg25
+        ;vdp_sreg v_reg25_wait | v_reg25_msk, v_reg25
+        
 
         lda #$ff
         sta scroll_on
@@ -443,32 +455,41 @@ gfxui_off:
 		
 	; TODO FIXME => lib
 __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if filesize LSB is not 0
-		lda fd_area + F32_fd::FileSize + 3,x
-		lsr
-		sta blocks + 2
-		lda fd_area + F32_fd::FileSize + 2,x
-		ror
-		sta blocks + 1
-		lda fd_area + F32_fd::FileSize + 1,x
-		ror
-		sta blocks + 0
-		bcs @l1
-		lda fd_area + F32_fd::FileSize + 0,x
-		beq @l2
-@l1:	inc blocks
-		bne @l2
-		inc blocks+1
-		bne @l2
-		inc blocks+2
-@l2:	lda blocks+2
-		ora blocks+1
-		ora blocks+0
-		rts
+        lda fd_area + F32_fd::FileSize + 3,x
+        lsr
+        sta blocks + 2
+        lda fd_area + F32_fd::FileSize + 2,x
+        ror
+        sta blocks + 1
+        lda fd_area + F32_fd::FileSize + 1,x
+        ror
+        sta blocks + 0
+        bcs @l1
+        lda fd_area + F32_fd::FileSize + 0,x
+        beq @l2
+@l1:    inc blocks
+        bne @l2
+        inc blocks+1
+        bne @l2
+        inc blocks+2
+@l2:
+        lda blocks+2
+        ora blocks+1
+        ora blocks+0
+
+        rts
+_dbg_blocks:
+        lda blocks+2
+        jsr hexout
+        lda blocks+1
+        jsr hexout
+        lda blocks+0
+        jmp hexout
 		
-data_offset: .res 1, 0
 cols: .res 1, 0
 rows: .res 1, 0
-fd: .res 1, 0
+fd:   .res 1, 0
+data_offset: .res 1, 0
 tmp: .res 1, 0
 scroll_on: .res 1, 0
 scroll_x: .res 1, 0

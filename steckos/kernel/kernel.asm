@@ -65,127 +65,127 @@
 nvram = $1000
 
 kern_init:
-      sei
-      
-      sta krn_ptr1; test
-      sta krn_tmp; test
-      sta vdp_ptr ; test
-      sta vdp_tmp    ; test
-      
-      ; copy trampolin code for ml monitor entry to ram
-      ldx #$00
+		sei
+		
+		sta krn_ptr1; test
+		sta krn_tmp; test
+		sta vdp_ptr ; test
+		sta vdp_tmp	 ; test
+		
+		; copy trampolin code for ml monitor entry to ram
+		ldx #$00
 @copy:
-      lda trampolin_code,x
-      sta trampolin,x
-      inx
-      cpx #(trampolin_code_end - trampolin_code)
-      bne @copy
+		lda trampolin_code,x
+		sta trampolin,x
+		inx
+		cpx #(trampolin_code_end - trampolin_code)
+		bne @copy
 
-      SetVector user_isr_default, user_isr
-      jsr textui_init0
+		SetVector user_isr_default, user_isr
+		jsr textui_init0
 
-      jsr init_via1
-;      jsr init_rtc                ;init, rtc is loaded initial
+		jsr init_via1
+;		jsr init_rtc					 ;init, rtc is loaded initial
 
-      lda #<nvram
-      ldy #>nvram
-      jsr read_nvram
+		lda #<nvram
+		ldy #>nvram
+		jsr read_nvram
 
-      jsr uart_init
+		jsr uart_init
 
-      cli
+		cli
 
 .ifndef DEBUG_KERNEL
-      jsr primm
-      .byte $d5,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$b8,$0a
-      .byte $b3," steckOS Kernel "
-      .include "version.inc"
-      .byte $20,$b3,$0a
-      .byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
-      .byte $00
+		jsr primm
+		.byte $d5,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$b8,$0a
+		.byte $b3," steckOS Kernel "
+		.include "version.inc"
+		.byte $20,$b3,$0a
+		.byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
+		.byte $00
 .endif
 
-      SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
+		SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
 
-      jsr __automount_init
-      bne do_upload
+		jsr __automount_init
+		bne do_upload
 
-      lda #<filename
-      ldx #>filename
-      jsr execv
+		lda #<filename
+		ldx #>filename
+		jsr execv
 
 do_upload:
-      jsr upload
+		jsr upload
 
-      ldx #$ff
-      txs
+		ldx #$ff
+		txs
 
-      jmp (startaddr); jump to start addr set by upload
+		jmp (startaddr); jump to start addr set by upload
 
 ;----------------------------------------------------------------------------------------------
 ; IO_IRQ Routine. Handle IRQ
 ;----------------------------------------------------------------------------------------------
 do_irq:
-	PHX                     ;
-	PHA                     ;
-	TSX                     ; get stack pointer
-	LDA   $0103,X           ; load INT-P Reg off stack
-	AND   #$10              ; mask BRK
-	BNE   @BrkCmd           ; BRK CMD
-	PLA                     ;
-	PLX                     ;
-	;jmp   (INTvector)       ; let user routine have it
+	PHX							;
+	PHA							;
+	TSX							; get stack pointer
+	LDA	$0103,X			  ; load INT-P Reg off stack
+	AND	#$10				  ; mask BRK
+	BNE	@BrkCmd			  ; BRK CMD
+	PLA							;
+	PLX							;
+	;jmp	(INTvector)		 ; let user routine have it
 	bra @irq
 @BrkCmd:
-	pla                     ;
-	plx                     ;
-	jmp   do_nmi
+	pla							;
+	plx							;
+	jmp	do_nmi
 ; system interrupt handler
 ; handle keyboard input and text screen refresh
 @irq:
-      save
-      cld	;clear decimal flag, maybe an app has modified it during execution
+		save
+		cld	;clear decimal flag, maybe an app has modified it during execution
 
-      bit a_vreg					; VDP IRQ flag set?
-      bpl @is_irq_snd
-      lda #IRQ_VDP
-      bra @sta_irr
+		bit a_vreg					; VDP IRQ flag set?
+		bpl @is_irq_snd
+		lda #IRQ_VDP
+		bra @sta_irr
 @is_irq_snd:
-      bit opl_stat
-      bpl @is_irq_via
-      lda #IRQ_SND
-      bra @sta_irr
+		bit opl_stat
+		bpl @is_irq_via
+		lda #IRQ_SND
+		bra @sta_irr
 @is_irq_via:
-      bit via1ifr		; Interrupt from VIA?
-      bpl @user_isr
-      lda #IRQ_VIA
+		bit via1ifr		; Interrupt from VIA?
+		bpl @user_isr
+		lda #IRQ_VIA
 @sta_irr:
-      sta SYS_IRR
+		sta SYS_IRR
 @user_isr:
-      jsr call_user_isr			; user isr first, maybe there are timing critical things
+		jsr call_user_isr			; user isr first, maybe there are timing critical things
 
-      bit SYS_IRR					; was vdp irq?
-      bpl @exit
-      .import vdp_bgcolor
-      ;lda #Cyan
-      ;jsr vdp_bgcolor
-      jsr	textui_update_screen    ; update text ui
-      dec frame
-      lda frame
-      and #$0f              ; every 16 frames we try to update rtc, gives 320ms clock resolution
-      bne @exit
-      ;lda #White
-      ;jsr vdp_bgcolor
-      jsr __rtc_systime_update    ; update system time, read date time store to rtc_systime_t (see rtc.inc)
-      jsr __automount
+		bit SYS_IRR					; was vdp irq?
+		bpl @exit
+		.import vdp_bgcolor
+		;lda #Cyan
+		;jsr vdp_bgcolor
+		jsr	textui_update_screen	 ; update text ui
+		dec frame
+		lda frame
+		and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution
+		bne @exit
+		;lda #White
+		;jsr vdp_bgcolor
+		jsr __rtc_systime_update	 ; update system time, read date time store to rtc_systime_t (see rtc.inc)
+		jsr __automount
 
 @exit:
-      lda #Medium_Green<<4 | Black
-      jsr vdp_bgcolor
+		lda #Medium_Green<<4 | Black
+		jsr vdp_bgcolor
 
-      stz SYS_IRR                 ; reset
-      restore
-      rti
+		stz SYS_IRR					  ; reset
+		restore
+		rti
 
 call_user_isr:
 	jmp (user_isr)
@@ -193,7 +193,7 @@ user_isr_default:
 	rts
 
 frame:
-    .res 1
+	 .res 1
 
 ;----------------------------------------------------------------------------------------------
 ; IO_NMI Routine. Handle NMI
@@ -230,8 +230,8 @@ do_reset:
 	jmp kern_init
 
 startaddr = $b0 ; FIXME - find better location for this
-endaddr   = $fd
-length    = $ff
+endaddr	= $fd
+length	 = $ff
 
 upload:
 	save
@@ -278,7 +278,7 @@ upload:
 	sta (krn_ptr1),y
 
 	iny
-   cpy #0
+	cpy #0
 	bne @l2
 	inc krn_ptr1+1
 @l2:
@@ -290,9 +290,9 @@ upload:
 	; yes? compare y to lsb of endaddr
 	cpy endaddr
 	bne @l1 ; no? read next byte
-   
+	
 	cli
-   ; yes? send OK
+	; yes? send OK
 	jsr upload_ok
 
 	jsr krn_primm
@@ -336,13 +336,13 @@ krn_execv:							jmp execv
 krn_uart_rx_nowait:				jmp uart_rx_nowait
 
 .export krn_mount
-krn_mount: 				    		jmp fat_mount
+krn_mount: 					 		jmp fat_mount
 
 .export krn_open
-krn_open: 				    jmp fat_open
+krn_open: 					 jmp fat_open
 
 .export krn_chdir
-krn_chdir: 				    jmp fat_chdir
+krn_chdir: 					 jmp fat_chdir
 
 .export krn_unlink
 krn_unlink: 				jmp fat_unlink
@@ -356,7 +356,7 @@ krn_close_all:					jmp fat_close_all
 krn_read:						jmp fat_read
 
 .export krn_fread
-krn_fread:    					jmp fat_fread
+krn_fread:	 					jmp fat_fread
 
 .export krn_find_first
 krn_find_first:				jmp fat_find_first
@@ -384,21 +384,21 @@ krn_putchar:					jmp textui_put
 krn_strout:						jmp strout
 
 .export krn_textui_crsxy
-krn_textui_crsxy:           jmp textui_crsxy
+krn_textui_crsxy:			  jmp textui_crsxy
 
 .export krn_textui_update_crs_ptr
 krn_textui_update_crs_ptr:  jmp textui_update_crs_ptr
 
 .export krn_textui_clrscr_ptr
-krn_textui_clrscr_ptr:      jmp textui_blank
+krn_textui_clrscr_ptr:		jmp textui_blank
 
 ;.export krn_fseek
 ;krn_fseek:						jmp fat_fseek
 .export krn_textui_setmode
-krn_textui_setmode:     jmp textui_setmode
+krn_textui_setmode:	  jmp textui_setmode
 
 .export krn_textui_crs_onoff
-krn_textui_crs_onoff:   jmp textui_cursor_onoff
+krn_textui_crs_onoff:	jmp textui_cursor_onoff
 
 .export krn_init_sdcard
 krn_init_sdcard:		jmp sdcard_init
@@ -407,10 +407,10 @@ krn_init_sdcard:		jmp sdcard_init
 krn_upload:				jmp do_upload
 
 .export krn_spi_select_rtc
-krn_spi_select_rtc:     jmp spi_select_rtc
+krn_spi_select_rtc:	  jmp spi_select_rtc
 
 .export krn_spi_deselect
-krn_spi_deselect:       jmp spi_deselect
+krn_spi_deselect:		 jmp spi_deselect
 
 .export krn_spi_rw_byte
 krn_spi_rw_byte:		jmp spi_rw_byte
@@ -425,26 +425,26 @@ krn_uart_tx:			jmp uart_tx
 krn_uart_rx:			jmp uart_rx
 
 .export krn_primm
-krn_primm:      		jmp primm
+krn_primm:				jmp primm
 
 .export krn_getcwd
-krn_getcwd:      		jmp fat_get_root_and_pwd
+krn_getcwd:				jmp fat_get_root_and_pwd
 
 .export krn_getfilesize
-krn_getfilesize:      	jmp fat_getfilesize
+krn_getfilesize:			jmp fat_getfilesize
 
 .export krn_write
-krn_write:    		jmp fat_write
+krn_write:	 		jmp fat_write
 
 .export krn_sd_write_block
-krn_sd_write_block:    	jmp sd_write_block
+krn_sd_write_block:	 	jmp sd_write_block
 
 .export krn_sd_read_block
-krn_sd_read_block:    	jmp sd_read_block
+krn_sd_read_block:	 	jmp sd_read_block
 
 ;.import uart_rx_nowait
 ;.export krn_uart_rx_nowait
-;krn_uart_rx_nowait:    	jmp uart_rx_nowait
+;krn_uart_rx_nowait:	 	jmp uart_rx_nowait
 
 .segment "VECTORS"
 ; ----------------------------------------------------------------------------------------------

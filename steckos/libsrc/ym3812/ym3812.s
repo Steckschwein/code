@@ -46,23 +46,23 @@ opl2_init:
 @l:
 		jsr opl2_reg_write
 		inx
-		cpx #$f6                ; until reg 245
+		cpx #$f6					 ; until reg 245
 		bne @l
 		
 		plp
 		rts
 
 ;
-;   in:
-;       .X - opl2 register select
-;       .A - opl2 data
+;	in:
+;		 .X - opl2 register select
+;		 .A - opl2 data
 ;
 opl2_reg_write:
 		stx opl_sel
 		jsr opl2_delay_register
 		sta opl_data
 		jmp opl2_delay_data
-    
+	 
 ; jsr here: 6 cycles
 ; rts back: 6 cycles
 
