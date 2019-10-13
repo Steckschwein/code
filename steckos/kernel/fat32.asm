@@ -1745,7 +1745,7 @@ __fat_count_direntries:
 		.asciiz "*.*"
 
 __fat_unlink:
-		jsr __fat_isroot						; no clnr assigned yet, file was just touched
+		jsr __fat_isroot							; no clnr assigned yet, file was just touched
 		beq @l_unlink_direntry					; if so, we can skip freeing clusters from fat
 
 		jsr __fat_free_cluster					; free cluster, update fsinfo
@@ -1753,7 +1753,7 @@ __fat_unlink:
 @l_unlink_direntry:
 		jsr __fat_read_direntry					; read the dir entry
 		bne	@l_exit
-		lda	#DIR_Entry_Deleted					; mark dir entry as deleted ($e5)
+		lda	#DIR_Entry_Deleted				; mark dir entry as deleted ($e5)
 		sta (dirptr)
 		jsr __fat_write_block_data				; write back dir entry
 @l_exit:

@@ -1,4 +1,3 @@
-
 ; MIT License
 ;
 ; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
@@ -23,6 +22,8 @@
 
 .include "common.inc"
 .include "kernel.inc"
+
+.import kernel_start
 
 .segment "LOADER" ; @see kernel.cfg
 
