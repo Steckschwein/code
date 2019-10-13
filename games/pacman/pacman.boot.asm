@@ -1,33 +1,33 @@
-    .export boot
+	 .export boot
 
-    .import game_state
-    .import frame_isr
-    
-    .include "pacman.inc"
-    
+	 .import game_state
+	 .import frame_isr
+	 
+	 .include "pacman.inc"
+	 
 
 boot:
-      .ifdef __NO_BOOT
-      rts
-      .endif
-     
-      draw_text text_1_0, 0;Color_Gray
-      draw_text text_1_1
-      draw_text text_1_2
-      draw_text text_2
-      draw_text text_3
-      draw_text text_4
-      ;draw_text text_5
-      ;draw_text text_6
+		.ifdef __NO_BOOT
+		rts
+		.endif
+	  
+		draw_text text_1_0, 0;Color_Gray
+		draw_text text_1_1
+		draw_text text_1_2
+		draw_text text_2
+		draw_text text_3
+		draw_text text_4
+		;draw_text text_5
+		;draw_text text_6
 
-      rts
+		rts
 .data
-;    MARKO LAUKE
-;        AND
-;   STEFAN WEGNER
-;      PRESENT
+;	 MARKO LAUKE
+;		  AND
+;	STEFAN WEGNER
+;		PRESENT
 ; FOR THOMAS WOINKE
-;        FOR
+;		  FOR
 ;THOMAS WOINKE / FTW!!!
 ;MY LOVELY WIFE SUSAN!
 text_1_0:

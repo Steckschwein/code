@@ -1,10 +1,20 @@
-all: invaders.bin
+.PHONY: all clean
+all: build
 
 clean:
-	rm -f *.bin *.labels
+	(cd pacman; make clean)
+	(cd dinosaur; make clean)
+	(cd pong; make clean)
+	(cd asteroids; make clean)
+	(cd microchess; make clean)
 
-%.bin:	%.a ${ACME}/t9929.h.a ${ACME}/*.lib.a
-	acme -v -f plain --cpu 65c02 -o $@ $<
 
-transfer: all
-	../transfer.py invaders.bin	
+build:
+	(cd pacman; make )
+	(cd dinosaur; make )
+	(cd pong; make )
+#	(cd asteroids; make )
+	(cd microchess; make )
+
+test:
+	
