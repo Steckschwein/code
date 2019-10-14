@@ -70,12 +70,12 @@
 .code
 ppmview_main:
         stz fd
-		
+
 		lda paramptr
 		ldx paramptr+1
 ;		lda #<filename
 ;		ldx #>filename
-		
+
 		ldy #O_RDONLY
 		jsr krn_open
 		bne @io_error
@@ -83,23 +83,23 @@ ppmview_main:
 
 		;512byte/block * 3 => 1536byte => div 256 => 6 pixel lines => height / 6 => height / (2*2 + 1*2) => height / 2 * (2+1)
 		jsr __calc_blocks
-		
+
 		jsr read_blocks
 		bne @io_error
-		
+
 		jsr parse_header					; .Y - return with offset to first data byte
 		bne @invalid_ppm
 		sty data_offset
-		
+
 		jsr gfxui_on
 
 		jsr load_image
 		bne @gfx_io_error
 
 		jsr wait_key
-		
+
 		jsr gfxui_off
-		
+
 		bra @close_exit
 
 @invalid_ppm:
@@ -127,7 +127,7 @@ ppmview_main:
 filename:
 ;	.asciiz "pic22.ppm"
 ;	.asciiz "felix.ppm"
-				
+
 read_blocks:
 		SetVector ppmdata, read_blkptr
 		ldx fd
@@ -137,35 +137,35 @@ read_blocks:
 load_image:
 		stz cols
 		stz rows
-		
+
 		jsr set_screen_addr	; initial vram address
-		
+
 		ldy data_offset ; .Y - data offset
 @loop:
-		SetVector ppmdata, read_blkptr ; reset ptr to begin of buffer	
+		SetVector ppmdata, read_blkptr ; reset ptr to begin of buffer
 		jsr blocks_to_vram
-		
+
 		jsr read_blocks
 		bne @l_exit
-    phy
-    tya
-    jsr hexout
-    ply
+        phy
+        tya
+        ; jsr hexout
+        ply
 		cpy #0	; no blocks where read
 		beq @l_exit
 		jsr adjust_blocks
 		bra @loop
 @l_exit:
 		rts
-		
+
 adjust_blocks:
-@l:	jsr dec_blocks
+@l:	    jsr dec_blocks
 		beq @l_exit ; zero blocks reached
 		dey
 		bne @l
 @l_exit:
 		rts
-		
+
 blocks_to_vram:
 		jsr byte_to_grb
 		sta a_vram
@@ -176,7 +176,7 @@ blocks_to_vram:
 		bne @l1
 		stz cols
 		inc rows
-    lda rows
+        lda rows
 		cmp ppm_height
 		beq @l_exit_d
 		jsr set_screen_addr
@@ -187,19 +187,19 @@ blocks_to_vram:
 @l_exit:
 		rts
 @l_exit_d:
-    jsr hexout
-    jmp _dbg_blocks
-  
-			
+        ;jsr hexout
+        ;jmp _dbg_blocks
+
+
 next_byte:
 		lda (read_blkptr),y
 		iny
 		beq @l_inc
-		rts		
+		rts
 @l_inc:
 		inc read_blkptr+1
 		rts
-		
+
 byte_to_grb:
 		jsr next_byte	;R
 		and #$e0
@@ -218,19 +218,19 @@ byte_to_grb:
 		and #$03		;blue - bit 1,0
 		ora tmp
 		rts
-		
+
 wait_key:
 		keyin
-;		cmp #'q'
-;    beq wait_key
-;		beq :+
-;        cmp #'s'
- ;       bne wait_key
-  ;      lda scroll_on
-   ;     eor #$ff
-    ;    sta scroll_on
+        ; cmp #'q'
+        ; beq wait_key
+        ; beq :+
+        ; cmp #'s'
+        ; bne wait_key
+        ; lda scroll_on
+        ; eor #$ff
+        ; sta scroll_on
 :		rts
-		
+
 set_screen_addr:
 		sei	;critical section, avoid vdp irq here
         vdp_wait_s
@@ -253,8 +253,8 @@ set_screen_addr:
 		lda #v_reg14
 		sta a_vreg
 		cli
-		rts		
-		
+		rts
+
 dec_blocks:
 		lda blocks+0
 		bne @l0
@@ -263,11 +263,11 @@ dec_blocks:
 		dec blocks+2
 @l1:	dec blocks+1
 @l0:	dec blocks+0
-		lda blocks+2	
+		lda blocks+2
 		ora blocks+1
 		ora blocks+0	;Z=1 if zero
 		rts
-		
+
 parse_header:
 		lda #'P'
 		cmp ppmdata
@@ -278,20 +278,19 @@ parse_header:
 
 		ldy #0
 		jsr parse_string		;skip "P6"
-		
+
 		jsr parse_until_size	;skip until <width> <height>
 		jsr parse_int	;width
 		cmp #<MAX_WIDTH
 		bcc @l_invalid_ppm ;
 		sta ppm_width
-    jsr hexout
 
 		jsr parse_int	;height
 		cmp #MAX_HEIGHT+1
 		bcs @l_invalid_ppm
 		sta ppm_height
 		sty tmp2;safe y offset, to check how many chars are consumed during parse
-    jsr hexout
+
 		jsr parse_int	;depth
 		cmp #COLOR_DEPTH
 		bne @l_exit
@@ -310,12 +309,12 @@ parse_header:
 parse_until_size:
 		lda ppmdata, y
 		cmp #'#'				; skip comments
-		bne @l		
+		bne @l
 		jsr parse_string
 		bra parse_until_size
-@l:	
+@l:
 		rts
-		
+
 parse_int:
 		stz tmp
 @l_toi:
@@ -354,24 +353,24 @@ parse_string:
 		bne @l0
 @le:	iny
 		rts
-			
-blend_isr:
-      vdp_wait_s
-      bit a_vreg
-      bpl @0
-      save
 
-      lda #%01001010
-      jsr vdp_bgcolor
-		
+blend_isr:
+        vdp_wait_s
+        bit a_vreg
+        bpl @0
+        save
+
+        lda #%01001010
+        jsr vdp_bgcolor
+
         bit scroll_on
         bpl :+
-;        jsr scroll
+        ; jsr scroll
 :
-      lda #Black
-      jsr vdp_bgcolor
-		
-		restore		
+        lda #Black
+        jsr vdp_bgcolor
+
+		restore
 @0:
 		rti
 
@@ -390,14 +389,14 @@ scroll:
         sta scroll_x
         dey
         tya
-        
+
 :       lsr
         lsr
         lsr
-        
+
         ldy #v_reg26
         vdp_sreg
-        
+
         lda #JOY_PORT2
         jsr read_joystick
         bit #JOY_LEFT
@@ -407,11 +406,11 @@ scroll:
 :       bit #JOY_RIGHT
         bne @l_exit
         inc scroll_x
-        
-@l_exit:       
+
+@l_exit:
         rts
-        
-gfxui_on:	
+
+gfxui_on:
 		jsr krn_textui_disable			;disable textui
 
 		sei
@@ -419,18 +418,18 @@ gfxui_on:
 		jsr vdp_gfx7_on			   ;enable gfx7 mode
 
 		vdp_sreg v_reg9_ln | v_reg9  ; 212px
-		
+
 		lda #%00000000
 		jsr vdp_gfx7_blank
 
         ;vdp_sreg v_reg25_wait | v_reg25_msk, v_reg25
-        
+
 
         lda #$ff
         sta scroll_on
         stz scroll_x
-        ;jsr scroll
-        
+        ; jsr scroll
+
 		copypointer  $fffe, irqsafe
 		SetVector  blend_isr, $fffe
 
@@ -439,20 +438,20 @@ gfxui_on:
 
 gfxui_off:
       sei
-		
+
       vdp_sreg 0, v_reg9
-		
+
       vdp_sreg v_reg25_wait, v_reg25
-        
+
       copypointer  irqsafe, $fffe
       cli
-		
+
       jsr	krn_display_off			;restore textui
       jsr	krn_textui_init
       jsr	krn_textui_enable
-	 
+
       rts
-		
+
 	; TODO FIXME => lib
 __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if filesize LSB is not 0
         lda fd_area + F32_fd::FileSize + 3,x
@@ -485,7 +484,7 @@ _dbg_blocks:
         jsr hexout
         lda blocks+0
         jmp hexout
-		
+
 cols: .res 1, 0
 rows: .res 1, 0
 fd:   .res 1, 0
