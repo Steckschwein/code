@@ -45,7 +45,7 @@ vdp_gfx7_on:
 			ldy #>vdp_init_bytes_gfx7
 			ldx #<(vdp_init_bytes_gfx7_end-vdp_init_bytes_gfx7)-1
 			jmp vdp_init_reg
-					
+
 vdp_init_bytes_gfx7:
 			.byte v_reg0_m5|v_reg0_m4|v_reg0_m3									; reg0 mode bits
 			.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 				; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
@@ -56,11 +56,11 @@ vdp_init_bytes_gfx7:
 			.byte $3f
 			.byte Black ; border color
 			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
-			.byte 0;v_reg9_ln	;//TODO FIXME ntsc off => gfx_off
-		.byte 0;  #R10
-		.byte 0;  #R11
-		.byte 0;  #R12
-		.byte 0;  #R13
+			.byte v_reg9_nt ; #R9, set bit 1 to 1 for PAL
+			.byte 0;  #R10
+			.byte 0;  #R11
+			.byte 0;  #R12
+			.byte 0;  #R13
 vdp_init_bytes_gfx7_end:
 ;
 ; blank gfx mode 7 with
@@ -130,7 +130,7 @@ vdp_gfx7_set_pixel:
 		  sta a_vram					  ; set color
 		  plp
 		  rts
-		  
+
 ; requires
 ;	- int handling is done outside
 ;	- page register set accordingly (v_reg14)
@@ -166,7 +166,7 @@ vdp_wait_cmd:
 	 vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
 	 plp								 ; restore, irq flag
 	 rts
-	
+
 ;	set pixel to gfx7 using v9958 command engine
 ;
 ;	X - x coordinate [0..ff]
@@ -179,7 +179,7 @@ vdp_gfx7_set_pixel_cmd:
 		sei
 		pha
 		vdp_reg 17,36
-		
+
 		vdp_wait_s
 		stx a_vregi
 
@@ -212,7 +212,7 @@ vdp_gfx7_set_pixel_cmd:
 		vdp_wait_s 2
 		lda #v_cmd_pset
 		sta a_vregi
-		
+
 		vdp_wait_s 4
 		jsr vdp_wait_cmd
 

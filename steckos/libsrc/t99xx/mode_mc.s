@@ -78,7 +78,7 @@ vdp_mc_init_screen:
 vdp_mc_blank:
 			vdp_sreg <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS+>ADDRESS_GFX_MC_PATTERN
 			ldx #(1536/256)
-		lda #0
+			lda #0
 			jmp vdp_fill
 
 ;	set pixel to mc screen
@@ -91,9 +91,9 @@ vdp_mc_blank:
 ;	!!! NOTE !!! mc screen vram adress is assumed to be at $0000 (ADDRESS_GFX_MC_PATTERN)
 ;
 vdp_mc_set_pixel:
-		  phx
-		  phy
-		  
+		phx
+		phy
+
 		and #$0f				;only the 16 colors
 		sta vdp_tmp+1		;safe color
 
@@ -114,20 +114,20 @@ vdp_mc_set_pixel:
 		lsr						;2
 		lsr						;2
 		lsr						;2
-	 ora #(>.LOWORD(ADDRESS_GFX_MC_PATTERN) & $3f)
-	 vdp_wait_s 5
-	 sta	a_vreg				;set vdp vram address high byte
+		ora #(>.LOWORD(ADDRESS_GFX_MC_PATTERN) & $3f)
+		vdp_wait_s 5
+		sta	a_vreg				;set vdp vram address high byte
 		ora #WRITE_ADDRESS | (>.LOWORD(ADDRESS_GFX_MC_PATTERN) & $3f) ;2 adjust for write
-	 
+
 		tay						;2 safe vram high byte for write in y
 
 		txa						;2
 		bit #1					;3 test color shift required, upper nibble?
 		beq l1					;2/3
-		  
+
 		lda #$f0				;2
-		  bra l2					;3
-l1:		 lda vdp_tmp+1				;3
+		bra l2					;3
+l1:		lda vdp_tmp+1				;3
 		asl						;2
 		asl						;2
 		asl						;2
@@ -135,31 +135,33 @@ l1:		 lda vdp_tmp+1				;3
 		sta vdp_tmp+1
 		lda #$0f
 l2:
-		  vdp_wait_l 14
-		  and a_vram
+		vdp_wait_l 14
+		and a_vram
 		ora vdp_tmp+1
-		  
+
 		ldx vdp_tmp				;3
 		vdp_wait_l 5
-		  stx	a_vreg				;4 setup write address
+		stx	a_vreg				;4 setup write address
 		vdp_wait_s
-		  sty a_vreg
+		sty a_vreg
 		vdp_wait_l
 		sta a_vram
-		  
-		  ply
-		  plx
-		  
+
+		ply
+		plx
+
 		rts
 
 vdp_init_bytes_mc:
 			.byte 0;
 			.byte v_reg1_16k|v_reg1_display_on|v_reg1_m2|v_reg1_spr_size|v_reg1_int
 			.byte >(ADDRESS_GFX_MC_SCREEN>>2) ; name table - value * $400 -> 3 * 256 pattern names (3 pages)
-		.byte	$ff									; color table not used in multicolor mode
+			.byte	$ff									; color table not used in multicolor mode
 			.byte	>(ADDRESS_GFX_MC_PATTERN>>3) 	; pattern table, 1536 byte - 3 * 256
-		.byte >(ADDRESS_GFX_MC_SPRITE<<1) ; sprite attribute table - value * $80 --> offset in VRAM
+			.byte >(ADDRESS_GFX_MC_SPRITE<<1) ; sprite attribute table - value * $80 --> offset in VRAM
 			.byte	>(ADDRESS_GFX_MC_SPRITE_PATTERN>>3)	; sprite pattern table - value * $800  --> offset in VRAM
 			.byte	Black
 			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
+			.byte v_reg9_nt ; #R9, set bit 1 to 1 for PAL
+
 vdp_init_bytes_mc_end:

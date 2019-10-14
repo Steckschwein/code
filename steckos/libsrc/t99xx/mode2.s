@@ -35,7 +35,7 @@
 .code
 ;
 ;	gfx 2 - each pixel can be addressed - e.g. for image
-;	
+;
 vdp_mode2_on:
 vdp_gfx2_on:
 		lda #<vdp_init_bytes_gfx2
@@ -45,7 +45,7 @@ vdp_gfx2_on:
 		jmp vdp_fill_name_table
 
 vdp_fill_name_table:
-		;set 768 different patterns --> name table			
+		;set 768 different patterns --> name table
 		vdp_sreg <ADDRESS_GFX2_SCREEN, WRITE_ADDRESS+ >ADDRESS_GFX2_SCREEN
 		ldy #$03
 		ldx #$00
@@ -58,7 +58,7 @@ vdp_fill_name_table:
 		rts
 
 vdp_init_bytes_gfx2:
-			.byte v_reg0_m3		; 
+			.byte v_reg0_m3		;
 			.byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size |v_reg1_int
 			.byte (ADDRESS_GFX2_SCREEN / $400)  ; name table - value * $400
 			.byte	$ff	  ; color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
@@ -68,14 +68,14 @@ vdp_init_bytes_gfx2:
 			.byte	Black
 	.ifdef V9958
 			.byte v_reg8_VR	; VR - 64k VRAM TODO set per define
-			.byte 0
+			.byte v_reg9_nt ; #R9, set bit 1 to 1 for PAL
 	.endif
 vdp_init_bytes_gfx2_end:
 
 ;
-; blank gfx mode 2 with 
+; blank gfx mode 2 with
 ; 	.A - color to fill [0..f]
-;	 
+;
 vdp_mode2_blank:		; 2 x 6K
 vdp_gfx2_blank:		; 2 x 6K
 	tax
@@ -83,17 +83,17 @@ vdp_gfx2_blank:		; 2 x 6K
 	txa
 	ldx #$18		;$1800 byte color map
 	jsr vdp_fill
-	
+
 	vdp_sreg <ADDRESS_GFX2_PATTERN, WRITE_ADDRESS + >ADDRESS_GFX2_PATTERN
 	ldx #$18		;$1800 byte pattern map
 	lda #0
 	jsr vdp_fill
-	
+
 	vdp_sreg <ADDRESS_GFX2_SCREEN, WRITE_ADDRESS + >ADDRESS_GFX2_SCREEN
 	ldx #3		;768 byte screen map
 	lda #0
 	jmp vdp_fill
-	
+
 ;	set pixel to gfx2 mode screen
 ;
 ;	X - x coordinate [0..ff]
@@ -103,7 +103,7 @@ vdp_gfx2_blank:		; 2 x 6K
 ; 	VRAM ADDRESS = 8(INT(X DIV 8)) + 256(INT(Y DIV 8)) + (Y MOD 8)
 vdp_gfx2_set_pixel:
 		beq vdp_gfx2_set_pixel_e	; 0 - not set, leave blank
-		; calculate low byte vram adress	
+		; calculate low byte vram adress
 		txa						;2
 		and	#$f8
 		sta	vdp_tmp
@@ -112,7 +112,7 @@ vdp_gfx2_set_pixel:
 		ora	vdp_tmp
 		sta	a_vreg	;4 set vdp vram address low byte
 		sta	vdp_tmp	;3 safe vram low byte
-		
+
 		; high byte vram address - div 8, result is vram address "page" $0000, $0100, ...
 		tya						;2
 		lsr						;2
@@ -121,8 +121,8 @@ vdp_gfx2_set_pixel:
 		sta	a_vreg				;set vdp vram address high byte
 		ora #WRITE_ADDRESS		;2 adjust for write
 		tay						;2 safe vram high byte for write in y
-	
-		txa						;2 set the appropriate bit 
+
+		txa						;2 set the appropriate bit
 		and	#$07				;2
 		tax						;2
 		lda	bitmask,x			;4

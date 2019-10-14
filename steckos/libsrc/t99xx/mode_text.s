@@ -86,7 +86,7 @@ vdp_init_bytes_text_80cols:
 		.byte 0	; not used
 		.byte	Medium_Green<<4|Black
 		.byte v_reg8_VR	; VR - 64k VRAM TODO FIXME aware of max vram (bios) - #R08
-		.byte 0
+		.byte v_reg9_nt ; #R9, set bit 1 to 1 for PAL
 		.byte <.HIWORD(ADDRESS_TEXT_COLOR<<2)	;#R10
 		.byte 0
 		.byte Black<<4|Medium_Green ; blink color to inverse text	#R12
@@ -101,7 +101,7 @@ vdp_init_bytes_text:
 		.byte 0	; not used
 		.byte	Medium_Green<<4|Black
 		.byte v_reg8_VR	; VR - 64k VRAM TODO set per define	;#R08
-		.byte 0 ;#R09
+		.byte v_reg9_nt ; #R9, set bit 1 to 1 for PAL
 		.byte 0 ;#R10
 		.byte 0 ;#R11
 		.byte 0 ;#R12
