@@ -63,3 +63,6 @@ test.bin: test.o
 
 test:
 	(cd test; make test)
+
+../lib/steckschwein.a:
+	(cd ../libsrc ; make)
