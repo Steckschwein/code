@@ -23,7 +23,7 @@ MODE            = $2B           ;  $00=XAM, $7F=STOR, $AE=BLOCK XAM
 
 ; Other Variables
 
-IN              = $0300         ;  Input buffer to $027F
+IN              = $0800         ;  Input buffer to $027F
 ; KBD             = $D010         ;  PIA.A keyboard input
 ; KBDCR           = $D011         ;  PIA.A keyboard control register
 ; DSP             = $D012         ;  PIA.B display output register
