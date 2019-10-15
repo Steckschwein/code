@@ -95,14 +95,21 @@ sdcard_init:
 			lda #$95
 			sta sd_cmd_chksum
 
-			; send CMD0 - init SD card to SPI mode
-			lda #cmd0
-			jsr sd_cmd
-			debug "CMD0"
-			cmp #$01
-			beq @l2
+			ldy #sd_cmd_response_retries
+@lcmd:
+			dey
+			bne @l2
+			;debug "sd_i_cmd0_max_retries"
 			jmp @exit
 @l2:
+			; send CMD0 - init SD card to SPI mode
+			lda #cmd0
+			phy
+			jsr sd_cmd
+			ply
+			; debug "CMD0"
+			cmp #$01
+			bne @lcmd
 
 			lda #$01
 			sta sd_cmd_param+2
@@ -254,8 +261,10 @@ sd_cmd_response_wait:
 @l:			dey
 			beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
 			jsr spi_r_byte
-			bit #80	; bit 7 clear
+			debug "sd_r_wait"
+			bit #$80	; bit 7 clear
 			bne @l  ; no, next byte
+			debug "sd_r_wait_resp"
 			cmp #$00 ; got cmd response, check if $00 to set z flag accordingly
 			rts
 sd_block_cmd_timeout:
@@ -293,7 +302,7 @@ sd_read_block:
 sd_deselect_card:
 		pha
 		phy
-		
+
 		jsr spi_deselect
 
 		ldy #$04
@@ -301,7 +310,7 @@ sd_deselect_card:
 		jsr spi_r_byte
 		dey
 		bne @l1
-		
+
 		ply
 		pla
 
@@ -525,7 +534,7 @@ sd_select_card:
 			lda #spi_device_sdcard
 			sta via1portb
 			;TODO FIXME race condition here!
-			
+
 ; fall through to sd_busy_wait
 
 ;---------------------------------------------------------------------
