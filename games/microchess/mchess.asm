@@ -37,9 +37,11 @@
 ; Adapted for the Steckschwein 65c02 homebrew computer by Thomas Woinke, March 2015
 ; - relocate zero page variables
 ;
-.include "kernel_jumptable.inc"
-.include "common.inc"
-.include "zeropage.inc"
+.include "steckos.inc"
+
+; .include "kernel_jumptable.inc"
+; .include "common.inc"
+; .include "zeropage.inc"
 .include "appstart.inc"
 
 .import hexout
@@ -95,55 +97,7 @@ DIS1	 =	$6B
 DIS2	 =	$6A
 DIS3	 =	$69
 temp	 =	$6C
-; BOARD	=	$50
-; BK		=	$60
-; PIECE	=	$B0
-; SQUARE  =	$B1
-; SP2	  =	$B2
-; SP1	  =	$B3
-; INCHEK  =	$B4
-; STATE	=	$B5
-; MOVEN	=	$B6
-; REV	=		 $B7
-; OMOVE	=	$DC
-; WCAP0	=	$DD
-; COUNT	=	$DE
-; BCAP2	=	$DE
-; WCAP2	=	$DF
-; BCAP1	=	$E0
-; WCAP1	=	$E1
-; BCAP0	=	$E2
-; MOB	  =	$E3
-; MAXC	 =	$E4
-; CC		=	$E5
-; PCAP	 =	$E6
-; BMOB	 =	$E3
-; BMAXC	=	$E4
-; BMCC	 =	$E5 		; was BCC (TASS doesn't like it as a label)
-; BMAXP	=	$E6
-; XMAXC	=	$E8
-; WMOB	 =	$EB
-; WMAXC	=	$EC
-; WCC	  =	$ED
-; WMAXP	=	$EE
-; PMOB	 =	$EF
-; PMAXC	=	$F0
-; PCC	  =	$F1
-; PCP	  =	$F2
-; OLDKY	=	$F3
-; BESTP	=	$FB
-; BESTV	=	$FA
-; BESTM	=	$F9
-; DIS1	 =	$FB
-; DIS2	 =	$FA
-; DIS3	 =	$F9
-; temp	 =	$FC
 
-;		*=$1000			; load into RAM @ $1000-$15FF
-		; jmp .init
-
-; !src "../shell/util.h.a"
-; !src "../kernel/textui.a"
 
 init
 		LDA	  #$00		; REVERSE TOGGLE
@@ -802,18 +756,18 @@ POUT2	TYA					; scan the pieces for a location match
 ;		.byte	$2c		; used to skip over LDA #$20
 		bra foo
 POUT25	LDA		#$20		; ASCII space
-foo:		JSR		syschout	; PRINT ONE ASCII CHR - SPACE
+foo:	JSR		syschout	; PRINT ONE ASCII CHR - SPACE
 		JSR		syschout	; PRINT ONE ASCII CHR - SPACE
 POUT3	INY			;
-		 TYA			; get row number
-		  AND		#$08		; have we completed the row?
-		  BEQ		POUT1		; no, do next column
+		TYA			; get row number
+		AND		#$08		; have we completed the row?
+		BEQ		POUT1		; no, do next column
 ;		LDA		#"|"		; yes, put the right edge on
 		lda 	#$B3
 		JSR		syschout	; PRINT ONE ASCII CHR - |
 		jsr	POUT12		; print row number
 		JSR		POUT9		; print CRLF
-		  	;JSR		POUT5		; print bottom edge of board
+		;JSR		POUT5		; print bottom edge of board
 
 		ldx #$00
 @l1:
@@ -859,19 +813,19 @@ POUT42	JSR	syschout	;
 POUT8	jsr	POUT10		;
 		LDA		DIS1
 		JSR		syshexout	; PRINT 1 BYTE AS 2 HEX CHRS
-		  LDA		#$20
+		LDA		#$20
 		JSR		syschout	; PRINT ONE ASCII CHR - SPACE
-		 	LDA		DIS2
+		LDA		DIS2
 		JSR		syshexout	; PRINT 1 BYTE AS 2 HEX CHRS
-		 	LDA		#$20
+		LDA		#$20
 		JSR		syschout	; PRINT ONE ASCII CHR - SPACE
-		 	LDA		DIS3
+		LDA		DIS3
 		JSR		syshexout	; PRINT 1 BYTE AS 2 HEX CHRS
 
 POUT9	LDA		#$0D
 		JSR		syschout	; PRINT ONE ASCII CHR - CR
-		 	LDA		#$0A
-		 	JMP syschout
+		LDA		#$0A
+		JMP syschout
 		; JSR		syschout	; PRINT ONE ASCII CHR - LF
 		; RTS
 
@@ -904,8 +858,8 @@ POUT15	rts
 KIN	 	LDA		#'?'
 		JSR		syschout	; PRINT ONE ASCII CHR - ?
 		JSR		syskin		; GET A KEYSTROKE FROM SYSTEM
-		 	AND		#$4F				; MASK 0-7, AND ALPHA'S
-		 	RTS
+	 	AND		#$4F				; MASK 0-7, AND ALPHA'S
+	 	RTS
 
 syskin:
 		keyin
@@ -925,24 +879,28 @@ cph		.byte	"KQCCBBRRPPPPPPPPKQCCBBRRPPPPPPPP"
 ;
 ; BLOCK DATA
 ;		*= $1580
-SETW		.byte 	$03, $04, $00, $07, $02, $05, $01, $06
-		  	.byte 	$10, $17, $11, $16, $12, $15, $14, $13
-		  	.byte 	$73, $74, $70, $77, $72, $75, $71, $76
-	 	.byte	$60, $67, $61, $66, $62, $65, $64, $63
+SETW
+	.byte 	$03, $04, $00, $07, $02, $05, $01, $06
+  	.byte 	$10, $17, $11, $16, $12, $15, $14, $13
+  	.byte 	$73, $74, $70, $77, $72, $75, $71, $76
+ 	.byte	$60, $67, $61, $66, $62, $65, $64, $63
 
-MOVEX		.byte 	$00, $F0, $FF, $01, $10, $11, $0F, $EF, $F1
-		.byte	$DF, $E1, $EE, $F2, $12, $0E, $1F, $21
+MOVEX
+	.byte 	$00, $F0, $FF, $01, $10, $11, $0F, $EF, $F1
+	.byte	$DF, $E1, $EE, $F2, $12, $0E, $1F, $21
 
-POINTS  	.byte 	$0B, $0A, $06, $06, $04, $04, $04, $04
-		.byte 	$02, $02, $02, $02, $02, $02, $02, $02
+POINTS
+  	.byte 	$0B, $0A, $06, $06, $04, $04, $04, $04
+	.byte 	$02, $02, $02, $02, $02, $02, $02, $02
 
-OPNING  	.byte 	$99, $25, $0B, $25, $01, $00, $33, $25
-		.byte	$07, $36, $34, $0D, $34, $34, $0E, $52
-		  	.byte 	$25, $0D, $45, $35, $04, $55, $22, $06
-		.byte	$43, $33, $0F, $CC
+OPNING
+  	.byte 	$99, $25, $0B, $25, $01, $00, $33, $25
+	.byte	$07, $36, $34, $0D, $34, $34, $0E, $52
+	.byte 	$25, $0D, $45, $35, $04, $55, $22, $06
+	.byte	$43, $33, $0F, $CC
 
 TOP		.byte	$da, $c4, $c4, $c2, $c4, $c4, $c2, $c4, $c4, $c2, $c4, $c4, $c2, $c4, $c4, $c2, $c4, $c4, $c2, $c4, $c4, $c2, $c4, $c4, $c2, $0a, $00
-MIDDLE		.byte	$c3, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $0a, $00
+MIDDLE	.byte	$c3, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $c4, $c4, $c5, $0a, $00
 ;BOTTOM		.byte	$c0, $c4, $c4, $c1, $c4, $c4, $c1, $c4, $c4, $c1, $c4, $c4, $c1, $c4, $c4, $c1, $c4, $c4, $c1, $c4, $c4, $c1, $c4, $c4, $d9, $0a, $00
 ;
 ;
