@@ -9,17 +9,17 @@ fat_invalid_partition_type	=	$02
 fat_invalid_sector_size		=	$03
 fat_invalid_num_fats		=	$04
 fat_open_error				=	$05
-fat_too_many_files			=   $06
-fat_file_not_found			=   $07
-fat_file_not_open			=   $08
-fat_file_not_dir			=   $10
+fat_too_many_files			=	$06
+fat_file_not_found			=	$07
+fat_file_not_open			=	$08
+fat_file_not_dir			=	$10
 ; SD card error codes
 sd_no_card					= 	$ff
 sd_invalid_card				=	$0f
 sd_init_failed				= 	$f1
 
 BS_Partition0	= 446
-BS_Signature	= 510   ; must be 0x55AA
+BS_Signature	= 510	; must be 0x55AA
 
 
 ;--------------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ DIR_Name		= $00	;Filename, 8 Bytes
 DIR_Ext			= $08 	;Extension, 3 Bytes
 DIR_Attr		= $0B	;8 Bits
 DIR_FstClusHI	= $14	;16 Bits
-DIR_WrtTime		= $16   ; File write time, 16 bits
+DIR_WrtTime		= $16	; File write time, 16 bits
 						; Bits 0–4: 2-second count, valid value range 0–29 inclusive (0 – 58 seconds). 
 						; Bits 5–10: Minutes, valid value range 0–59 inclusive.
 						; Bits 11–15: Hours, valid value range 0–23 inclusive.

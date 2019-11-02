@@ -6,20 +6,22 @@
       .import uart_init, upload
       .import init_via1
       .import hexout, primm, print_crlf
-      .import vdp_init, vdp_chrout, vdp_detect
+      .import vdp_init, _vdp_chrout, vdp_detect
       .import init_sdcard
       .import fat_mount, fat_read, fat_find_first, calc_lba_addr
       .import read_nvram
+		
+		.export vdp_chrout
 
 .macro set_ctrlport
-            pha
-            lda ctrl_port
-            lsr
-            lda ctrl_port
-            and #$fe
-            rol
-            sta ctrl_port
-            pla
+			pha
+			lda ctrl_port
+			lsr
+			lda ctrl_port
+			and #$fe
+			rol
+			sta ctrl_port
+			pla
 .endmacro
 
 .code
@@ -33,12 +35,11 @@ do_reset:
 			ldx #$ff
 			txs
 
-            lda ctrl_port
-            ora #%11111000
-            sta ctrl_port
+			lda ctrl_port
+			ora #%11111000
+			sta ctrl_port
 
-
-   			; Check zeropage and Memory
+  			; Check zeropage and Memory
 check_zp:
 		    ; Start at $ff
 			ldy #$ff
@@ -95,7 +96,7 @@ check_memory:
 			cpx #$e0			  ; 2 cycles
 
 			bne @l2 			  ; 2 cycles, 3 if taken
-@l3:  		sty ptr1l		  ; 3 cycles
+@l3:  	sty ptr1l		  ; 3 cycles
 
 	  					  ; 42 cycles
 
@@ -105,12 +106,12 @@ check_memory:
 	  		; lda ptr1h
 	  		; sta ram_end_h
 
-            lda #$e0
-            cmp ptr1h
-            bne mem_broken
+			lda #$e0
+			cmp ptr1h
+			bne mem_broken
 
-            lda ptr1l
-            bne mem_broken
+			lda ptr1l
+			bne mem_broken
 
 
 			bra mem_ok
@@ -131,11 +132,11 @@ stop:
 
 
 mem_ok:
-            set_ctrlport
+			set_ctrlport
 
-            jsr vdp_init
+			jsr vdp_init
 
-            set_ctrlport
+			set_ctrlport
 
 			jsr primm
 			.byte "BIOS "
@@ -143,16 +144,15 @@ mem_ok:
 			.byte $0a,0
 
 			print "Memcheck $"
-	  	    lda ptr1h
+			lda ptr1h
 			jsr hexout
-	  	    lda ptr1l
+			lda ptr1l
 			jsr hexout
-            jsr print_crlf
+			jsr print_crlf
 
+			jsr vdp_detect
 
-            jsr vdp_detect
-
-            set_ctrlport
+			set_ctrlport
 			jsr init_via1
 
             lda #<nvram
@@ -273,8 +273,13 @@ bios_irq:
 num_patterns = $02
 pattern:
 	.byte $aa,$55,$00
-.SEGMENT "VECTORS"
+.segment "JUMPTABLE"
+; TODO can be removed if the steckschwein emu is finished one day and no chrout hook is required anymore
+; jump table - required for fixed adressing within steckschwein-emu to hook some calls
+vdp_chrout:
+			jmp _vdp_chrout
 
+.SEGMENT "VECTORS"
 ;----------------------------------------------------------------------------------------------
 ; Interrupt vectors
 ;----------------------------------------------------------------------------------------------

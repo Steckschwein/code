@@ -1,9 +1,9 @@
 ;----------------------------------------------------------------------------------------------
 ; SD Card commands
 ;----------------------------------------------------------------------------------------------
-cmd0 	= $40       ; GO_IDLE_STATE
+cmd0 	= $40		 ; GO_IDLE_STATE
 cmd1 	= $40 + 1 	; SEND_OP_COND
-cmd8 	= $40 + 8   ; SEND_IF_COND
+cmd8 	= $40 + 8	; SEND_IF_COND
 cmd12	= $40 + 12  ; STOP_TRANSMISSION
 cmd16	= $40 + 16 	; SET_BLOCKLEN
 cmd17	= $40 + 17	; READ_SINGLE_BLOCK

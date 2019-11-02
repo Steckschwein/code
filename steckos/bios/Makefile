@@ -32,10 +32,10 @@ bios.dis: bios.bin
 	dcc6502 -o 0xe000 -m 0x1fff -d -n -c $< > $@
 
 loader.o: loader.asm bios.bin
-	ca65 --target none $(CA65FLAGS) $(DEFINES) $<
+	ca65 --target none $(CA65FLAGS) $<
 
 loader.bin: loader.o
-	ld65 -C loader.cfg -m loader.map loader.o $(LIBS) -o loader.bin
+	ld65 -C loader.cfg -m loader.map loader.o -o loader.bin
 
 %.dis: %.bin
 	dcc6502 -o 0x0300 -d -n -c $< > $@

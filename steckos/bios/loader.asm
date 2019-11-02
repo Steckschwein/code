@@ -1,20 +1,21 @@
       .setcpu "65c02"
 
-      .include "bios.inc"
+      .include "common.inc"
+      .include "system.inc"
       
-      .importzp ptr3,ptr4
-      
+src=$0
+tgt=$2
 .code
-      SetVector biosdata, ptr3
-      SetVector $e000, ptr4
+      SetVector biosdata, src
+      SetVector $e000, tgt
       ldy #0
 loop:
-      lda (ptr3),y
-      sta (ptr4),y
+      lda (src),y
+      sta (tgt),y
       iny
       bne loop
-      inc ptr3+1
-      inc ptr4+1
+      inc src+1
+      inc tgt+1
       bne loop
       
       ; rom off
