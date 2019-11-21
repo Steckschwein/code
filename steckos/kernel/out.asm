@@ -25,6 +25,7 @@
 .code
 .export chrout, strout, primm
 .import textui_chrout
+.import krn_chrout
 
 .ifdef TEXTUI_STROUT
 .import textui_strout
@@ -40,7 +41,8 @@
 ;  A - char to output
 ;----------------------------------------------------------------------------------------------
 ;chrout:	  jmp textui_chrout
-chrout = textui_chrout
+;chrout = textui_chrout
+chrout = krn_chrout
 
 ;----------------------------------------------------------------------------------------------
 ; Output string on active output device
