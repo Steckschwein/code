@@ -14,10 +14,10 @@ ptr3:			  .res 2
 ptr4:			  .res 2
 ptr5:			  .res 2
 ptr6:			  .res 2
-;tmp1:			  .res 1
-;tmp2:			  .res 1
-;tmp3:			  .res 1
-;tmp4:			  .res 1
+tmp1:			  .res 1
+tmp2:			  .res 1
+tmp3:			  .res 1
+tmp4:			  .res 1
 spi_sr:           .res 1
 tmp:           .res 1
 
