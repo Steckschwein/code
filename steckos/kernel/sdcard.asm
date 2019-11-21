@@ -512,12 +512,16 @@ sd_write_multiblock:
 sd_wait:
 			sta sd_tmp
 			ldy #sd_data_token_retries
-			stz	krn_tmp				; use krn_tmp as loop var, not needed here
+            ldx #0
+			;stz	krn_tmp				; use krn_tmp as loop var, not needed here
 @l1:
+            phx
 			jsr spi_r_byte
+            plx
 			cmp sd_tmp
 			beq @l2
-			dec	krn_tmp
+            dex
+			;dec	krn_tmp
 			bne	@l1
 			dey
 			bne @l1
