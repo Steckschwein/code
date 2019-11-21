@@ -29,7 +29,7 @@
 .include "errno.inc"
 
 .zeropage
-.importzp tmp1
+.importzp spi_sr
 .code
 .export spi_rw_byte
 
@@ -40,7 +40,7 @@
 ; Destructive: A,X,Y
 ;----------------------------------------------------------------------------------------------
 spi_rw_byte:
-		sta tmp1	; zu transferierendes byte im akku retten
+		sta spi_sr	; zu transferierendes byte im akku retten
 
 		ldx #$08
 
@@ -51,7 +51,7 @@ spi_rw_byte:
 		tay		 ; bunkern
 
 @l:
-		rol tmp1
+		rol spi_sr
 		tya		; portinhalt
 		ror		; datenbit reinschieben
 
