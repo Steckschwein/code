@@ -42,7 +42,8 @@ spi_r_byte:
 		lda via1portb	; Port laden
 		AND #$fe		  ; Takt ausschalten
 		TAX				 ; aufheben
-		ORA #$01
+		;ORA #$01
+        inc
 
 		STA via1portb ; Takt An 1
 		STX via1portb ; Takt aus
