@@ -2,7 +2,7 @@ OUT_ADDRESS=0x200
 DEFINES=-Dasmunit_char_out=0x200
 KERNEL_ADDRESS=0x1000
 CA65FLAGS=-I ../../../asmunit -I ../../asminc -I ../ $(DEFINES) -DTEST
-LIBS=../debug.o ../../../asmunit/asmunit.a ../../lib/steckschwein.a
+LIBS=../../../asmunit/asmunit.a ../../lib/steckschwein.a
 LDFLAGS=-C ../../../asmunit/asmunit.cfg $(DEFINES)
 
 # testing purpose of kernel api from client point of view
