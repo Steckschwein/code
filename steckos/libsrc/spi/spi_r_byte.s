@@ -29,7 +29,6 @@
 .include "errno.inc"
 
 .zeropage
-.importzp tmp1
 .code
 .export spi_r_byte
 
