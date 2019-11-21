@@ -321,7 +321,7 @@ fullblock:
 			; wait for sd card data token
 			lda #sd_data_token
 			jsr sd_wait
-				bne @exit
+			bne @exit
 
 			ldy #$00
 			jsr halfblock
@@ -513,7 +513,6 @@ sd_wait:
 			sta sd_tmp
 			ldy #sd_data_token_retries
             ldx #0
-			;stz	krn_tmp				; use krn_tmp as loop var, not needed here
 @l1:
             phx
 			jsr spi_r_byte
@@ -521,7 +520,6 @@ sd_wait:
 			cmp sd_tmp
 			beq @l2
             dex
-			;dec	krn_tmp
 			bne	@l1
 			dey
 			bne @l1
@@ -553,13 +551,13 @@ sd_busy_wait:
 			beq @err
 
 			phx
-			  jsr spi_rw_byte
+			jsr spi_rw_byte
 			plx
-			  cmp #$ff
-			  bne @l1
+			cmp #$ff
+			bne @l1
 
 			lda #$00
-			 	rts
+			rts
 
 @err:
 			lda #sd_card_error_timeout_busy
