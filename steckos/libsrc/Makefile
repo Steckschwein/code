@@ -46,6 +46,8 @@ SRCDIRS +=  ym3812
 SRCDIRS +=  nvram
 SRCDIRS +=  uart/16550
 SRCDIRS +=  spi
+SRCDIRS +=  sdcard
+SRCDIRS +=  debug
 SRCDIRS +=  util/crc7
 
 vpath %.s $(SRCDIRS)
