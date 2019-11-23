@@ -38,11 +38,11 @@
 
 .export sdcard_init, sdcard_detect
 .export sd_select_card, sd_deselect_card
-.export sd_read_block, sd_read_multiblock, sd_write_block
+.export sd_read_block, sd_cmd, sd_cmd_lba
+.export fullblock
 
 ; public bock api
 .export read_block=sd_read_block
-.export write_block=sd_write_block
 
 .ifdef MULTIBLOCK_WRITE
 .export sd_write_multiblock
@@ -343,167 +343,6 @@ halfblock:
 			iny
 			bne @l
 			rts
-
-;---------------------------------------------------------------------
-; Read multiple blocks from SD Card
-;in:
-;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
-;	block lba in lba_addr
-;	block count in blocks
-;
-;out:
-;	A - A = 0 on success, error code otherwise
-;---------------------------------------------------------------------
-sd_read_multiblock:
-			phx
-			phy
-
-			jsr sd_select_card
-
-			jsr sd_cmd_lba
-			lda #cmd18	; Send CMD18 command byte
-			jsr sd_cmd
-			bne @exit
-@l1:
-
-			jsr fullblock
-			bne @exit
-			inc read_blkptr+1
-
-			dec blocks
-			bne @l1
-
-			  ; all blocks read, send cmd12 to end transmission
-			  ; jsr sd_param_init
-			  lda #cmd12
-			  jsr sd_cmd
-
-@exit:
-			  ply
-			plx
-			  jmp sd_deselect_card
-
-;---------------------------------------------------------------------
-; Write block to SD Card
-;in:
-;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
-;	block lba in lba_addr
-;
-;out:
-;	A - A = 0 on success, error code otherwise
-;---------------------------------------------------------------------
-sd_write_block:
-			phx
-			phy
-			jsr sd_select_card
-
-			jsr sd_cmd_lba
-			lda #cmd24
-			jsr sd_cmd
-			 bne @exit
-
-			lda #sd_data_token
-			jsr spi_rw_byte
-
-			ldy #$00
-@l2:		lda (write_blkptr),y
-			phy
-			jsr spi_rw_byte
-			ply
-			iny
-			bne @l2
-
-			inc write_blkptr+1
-
-			ldy #$00
-@l3:		lda (write_blkptr),y
-			phy
-			jsr spi_rw_byte
-			ply
-			iny
-			bne @l3
-
-
-
-			; Send fake CRC bytes
-			lda #$00
-			jsr spi_rw_byte
-			lda #$00
-			jsr spi_rw_byte
-			inc write_blkptr+1
-			lda #$00
-
-@exit:
-			ply
-			plx
-			  jmp sd_deselect_card
-
-;---------------------------------------------------------------------
-; Write multiple blocks to SD Card
-;---------------------------------------------------------------------#
-.ifdef MULTIBLOCK_WRITE
-sd_write_multiblock:
-			save
-
-			; TODO
-			; 1. make this work
-			; 2. use SET_WR_BLOCK_ERASE_COUNT (ACMD23) to pre-erase number of blocks
-
-			jsr sd_select_card
-			bne @exit
-
-			jsr sd_cmd_lba
-			lda #cmd25	; Send CMD25 command byte
-			jsr sd_cmd
-
-			; wait for command response.
-			lda #$00
-			jsr sd_wait
-			 	bne @exit
-
-@block:
-			lda #sd_data_token
-			jsr spi_rw_byte
-
-			ldy #$00
-@l2:		lda (write_blkptr),y
-			phy
-			jsr spi_rw_byte
-			ply
-			iny
-			bne @l2
-
-			inc 	write_blkptr+1
-
-			ldy #$00
-@l3:		lda (write_blkptr),y
-			phy
-			jsr spi_rw_byte
-			ply
-			iny
-			bne @l3
-
-			; Send fake CRC bytes
-			lda #$00
-			jsr spi_rw_byte
-			lda #$00
-			jsr spi_rw_byte
-
-			inc write_blkptr+1
-
-
-			dec blocks
-			bne @block
-
-			  ; all blocks read, send cmd12 to end transmission
-			  ; jsr sd_param_init
-			  lda #cmd12
-			  jsr sd_cmd
-
-@exit:
-			restore
-			jmp sd_deselect_card
-.endif
 
 ;---------------------------------------------------------------------
 ; wait for sd card whatever
