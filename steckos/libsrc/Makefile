@@ -47,6 +47,7 @@ SRCDIRS +=  nvram
 SRCDIRS +=  uart/16550
 SRCDIRS +=  spi
 SRCDIRS +=  sdcard
+SRCDIRS +=  fat32
 SRCDIRS +=  debug
 SRCDIRS +=  util/crc7
 
