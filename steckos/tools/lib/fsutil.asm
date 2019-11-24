@@ -1,6 +1,6 @@
 .include "../../kernel/kernel_jumptable.inc"
 .include "../../kernel/kernel.inc"
-.include "../../kernel/fat32.inc"
+.include "fat32.inc"
 
 .export print_filename, print_fat_date, print_fat_time, print_filesize
 
