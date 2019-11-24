@@ -19,6 +19,9 @@ clean:
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
+test.fat32.bin: test.fat32.o $(LIBS) $(<:test.%=%)
+	ld65 $(LDFLAGS) $< $(LIBS) -o $@
+
 test.%.bin: test.%.o $(LIBS) $(<:test.%=%)
 	ld65 $(LDFLAGS) $< ../$(<:test.%=%) $(LIBS) -o $@
 
