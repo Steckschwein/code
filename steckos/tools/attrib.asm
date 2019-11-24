@@ -24,7 +24,7 @@
 .include "common.inc"
 .include "../kernel/kernel.inc"
 .include "../kernel/kernel_jumptable.inc"
-.include "../kernel/fat32.inc"
+.include "fat32.inc"
 .include "appstart.inc"
 
 appstart $1000

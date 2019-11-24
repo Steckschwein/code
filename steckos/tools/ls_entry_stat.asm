@@ -24,7 +24,7 @@
 .segment "CODE"
 .include "../kernel/kernel.inc"
 .include "../kernel/kernel_jumptable.inc"
-.include "../kernel/fat32.inc"
+.include "fat32.inc"
 
 .import print_filename
 .import b2ad, dpb2ad, print_fat_date, print_fat_time, bin2dual, hexout
