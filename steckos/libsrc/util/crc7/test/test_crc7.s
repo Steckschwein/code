@@ -22,6 +22,8 @@
 		testcase "crc7_d6", d6, 1, $76, 4500
 		testcase "crc7_d7", d7, 2, $10, 6000
 		testcase "crc7_d8", d8, 4, $6c, 7000
+		
+		testcase "crc7_d9", d9, 12, 0, 10000
 
 		brk
 
@@ -33,3 +35,5 @@ d5: .byte 'A'
 d6: .byte 'B'
 d7: .byte "AB"
 d8: .byte $de, $ad, $be, $ef
+d9: .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
