@@ -10,7 +10,7 @@
       .import init_sdcard
       .import fat_mount, fat_read, fat_find_first, calc_lba_addr
       .import read_nvram
-		
+
 		.export vdp_chrout
 
 .macro set_ctrlport
@@ -155,17 +155,16 @@ mem_ok:
 			set_ctrlport
 			jsr init_via1
 
-            lda #<nvram
-            ldy #>nvram
+         lda #<nvram
+         ldy #>nvram
 			jsr read_nvram
-            set_ctrlport
+         set_ctrlport
 
 			jsr uart_init
-            set_ctrlport
+         set_ctrlport
 
 			jsr init_sdcard
-
-			lda errno
+         lda errno
 			beq boot_from_card
 
 			; display sd card error message
@@ -179,12 +178,15 @@ mem_ok:
 			bne @l3
 			print "No SD card"
 @l3:
-foo:
-            jsr upload
-            jmp startup
+do_upload:
+         jsr upload
+         jmp startup
 
 boot_from_card:
-			jsr set_filenameptr
+         lda #(<nvram)+nvram::filename
+         sta ptr1l
+         lda #>nvram
+         sta ptr1h
 
 			print "Boot from SD card.. "
 			jsr fat_mount
@@ -194,9 +196,9 @@ boot_from_card:
 			jsr print_crlf
 			print "FAT32 mount error: "
 			jsr hexout
+         bra do_upload
 
 @findfile:
-
 @l4:
 			jsr fat_find_first
 			bcs @loadfile
@@ -205,14 +207,14 @@ boot_from_card:
 
 			ldy #$00
 @loop:
-      lda (ptr1),y
+         lda (ptr1),y
 			jsr vdp_chrout
 			iny
 			cpy #$0b
 			bne @loop
 			print " not found."
 
-			bra foo
+			bra do_upload
 @loadfile:
 			ldy #DIR_FstClusHI + 1
 			lda (dirptr),y
@@ -245,22 +247,6 @@ startup:
 
 			; jump to new code
 			jmp (startaddr)
-
-
-set_filenameptr:
-           ;	copypointer paramvec, ptr1
-
-            sta ptr1l
-            sty ptr1h
-
-			clc
-			lda #nvram::filename
-			adc ptr1l
-			sta ptr1l
-			bcc @l4
-            inc ptr1h
-@l4:
-			rts
 
 bios_irq:
 		rti

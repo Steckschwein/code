@@ -4,9 +4,9 @@ nvram_signature	 = $42
 
 .struct nvram
 	 version			.byte
-	 filename		  .byte 11
+	 filename		.byte 11
 	 uart_baudrate	.byte
-	 uart_lsr		  .byte
+	 uart_lsr		.byte
 	 crc7				.byte
 .endstruct
 

@@ -23,7 +23,6 @@
 	debug_enabled=1
 .endif
 
-;.include "kernel.inc"
 .include "via.inc"
 .include "spi.inc"
 .include "errno.inc"

@@ -17,8 +17,8 @@
 ;---------------------------------------------------------------------
 read_nvram:
 	save
-	 sta ptr1
-	 sty ptr1+1
+ 	sta ptr1
+ 	sty ptr1+1
 	; select RTC
 	lda #%01110110
 	sta via1portb
@@ -45,7 +45,7 @@ read_nvram:
 	 ldy ptr1+1
 	 ldx #.sizeof(nvram)-1
 	 jsr crc7
-	 
+
 	 cmp#0
 	 beq @copy_defaults
 
