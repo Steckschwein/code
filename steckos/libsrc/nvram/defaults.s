@@ -4,5 +4,6 @@
 nvram_defaults:
 	 .byte nvram_signature
 	 .byte "LOADER  BIN"
-	 .word $01
-	 .byte $2e
+	 .byte $01	;115200
+	 .byte $03	;8N1
+	 .byte $37	;crc7
