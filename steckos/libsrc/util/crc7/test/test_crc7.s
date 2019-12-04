@@ -25,6 +25,7 @@
 		
 		testcase "crc7_d9", d9, 12, 0, 10000
 
+		testcase "crc7_nvram", d10, 14, $2e, 20000
 		brk
 
 d1: .byte 0
@@ -36,4 +37,4 @@ d6: .byte 'B'
 d7: .byte "AB"
 d8: .byte $de, $ad, $be, $ef
 d9: .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-
+d10:.byte $42,"LOADER  BIN",0,1,3

@@ -1,6 +1,8 @@
+.include "nvram.inc"
+
 .export nvram_defaults
 nvram_defaults:
-	 .byte $42
+	 .byte nvram_signature
 	 .byte "LOADER  BIN"
 	 .word $01
-	 .byte %00000011
+	 .byte $2e
