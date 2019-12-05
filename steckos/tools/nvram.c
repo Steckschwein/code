@@ -276,7 +276,7 @@ void write_nvram()
 
 	spi_write(0x20|0x80);
 
-	for(i = 0; i<=sizeof(n); i++)
+	for(i = 0; i<sizeof(n); i++)
 	{
 		spi_write(*p++);
 	}
@@ -290,7 +290,7 @@ void read_nvram()
     spi_select_rtc();
     spi_write(0x20);
 
-	for(i = 0; i<=sizeof(n); i++)
+	for(i = 0; i<sizeof(n); i++)
 	{
         *p++ = spi_read();
 	}
