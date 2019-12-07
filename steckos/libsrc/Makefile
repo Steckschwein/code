@@ -107,7 +107,10 @@ endef
 ../libwrk/$(TARGET)/%.bin: $(TEST_OBJS) $(OBJS) | ../libwrk/$(TARGET)
 	$(RUNTEST_recipe)
 
-test: $(TEST_BINS) | ../libwrk/$(TARGET)
+test: ../../asmunit/asmunit.a $(TEST_BINS) | ../libwrk/$(TARGET)
+
+../../asmunit/asmunit.a:
+	(cd ../../asmunit ; make)
 
 
 -include $(DEPS)
