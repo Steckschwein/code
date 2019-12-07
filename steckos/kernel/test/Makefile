@@ -11,16 +11,13 @@ LDFLAGS_PRG=-C ../../prg.ld65.cfg
 
 .PHONY: all clean
 
-all: test.util test.textui test.matcher test.fat32 # test.ansi
+all: test.util test.textui test.matcher # test.fat32 # test.ansi
 
 clean:
 	rm -f *.prg *.bin *.o *.dis *.log
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
-
-test.fat32.bin: test.fat32.o $(LIBS) $(<:test.%=%)
-	ld65 $(LDFLAGS) $< $(LIBS) -o $@
 
 test.%.bin: test.%.o $(LIBS) $(<:test.%=%)
 	ld65 $(LDFLAGS) $< ../$(<:test.%=%) $(LIBS) -o $@
@@ -42,3 +39,7 @@ test.%: test.%.bin
 
 %: %.prg
 	../../../transfer.py $<
+
+../../../asmunit/asmunit.a:
+	(cd ../../../asmunit ; make)
+
