@@ -91,19 +91,14 @@ define RUNTEST_recipe
   	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 1000
 endef
 
-#test: ../../asmunit/asmunit.a $(TEST_BINS) | ../libwrk/$(TARGET)
-
 ../libwrk/$(TARGET)/%.o: %.s | ../libwrk/$(TARGET)
 	$(ASSEMBLE_recipe)
 
 ../libwrk/$(TARGET)/%.o: %.c | ../libwrk/$(TARGET)
 	$(COMPILE_recipe)
 
-../libwrk/$(TARGET)/%.bin: ../libwrk/$(TARGET)/%.o ../lib/$(TARGET).a | ../libwrk/$(TARGET)
+../libwrk/$(TARGET)/%.bin: ../libwrk/$(TARGET)/%.o | ../libwrk/$(TARGET)
 	$(RUNTEST_recipe)
-#	@$(LD65) $< $(TEST_LDFLAGS) -o $@
-
-runtests: $(TEST_BINS)
 
 ../libwrk/$(TARGET) ../lib:
 	@$(call MKDIR,$@)
@@ -114,6 +109,7 @@ runtests: $(TEST_BINS)
 ../../asmunit/asmunit.a:
 	(cd ../../asmunit ; make)
 
+runtests: $(TEST_BINS)
 
 -include $(DEPS)
 -include $(DEPS_TEST)
