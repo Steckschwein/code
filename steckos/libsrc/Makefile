@@ -25,8 +25,7 @@ ifeq ($(words $(MAKECMDGOALS)),1)
   endif
 endif
 
-
-all: ../lib/$(TARGET).a test
+all: ../lib/$(TARGET).a runtests
 
 clean:
 	rm -f ../lib/$(TARGET).a
@@ -63,7 +62,7 @@ TEST_SRCDIRS := $(foreach dir,$(SRCDIRS),$(dir)/test)
 vpath %.s $(TEST_SRCDIRS)
 TEST_OBJS := $(patsubst %.s,%.o,$(foreach dir,$(TEST_SRCDIRS),$(wildcard $(dir)/*.s)))
 TEST_OBJS := $(addprefix ../libwrk/$(TARGET)/,$(sort $(notdir $(TEST_OBJS))))
-TEST_BINS := $(patsubst %.s,%.bin,$(foreach dir,$(TEST_SRCDIRS),$(wildcard $(dir)/*.s)))
+TEST_BINS := $(patsubst %.s,%.bin,$(foreach dir,$(TEST_SRCDIRS),$(wildcard $(dir)/*.s)))# from source names
 TEST_BINS := $(addprefix ../libwrk/$(TARGET)/,$(sort $(notdir $(TEST_BINS))))
 TEST_LIBS := ../../asmunit/asmunit.a
 TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(TEST_LIBS) ../lib/$(TARGET).a
@@ -88,9 +87,11 @@ $(if $(QUIET),,@echo $(TARGET) - $<)
 endef # COMPILE_recipe
 
 define RUNTEST_recipe
-	ld65 $< $(TEST_LDFLAGS) -o $@
+	@$(LD65) $< $(TEST_LDFLAGS) -o $@
   	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 1000
 endef
+
+#test: ../../asmunit/asmunit.a $(TEST_BINS) | ../libwrk/$(TARGET)
 
 ../libwrk/$(TARGET)/%.o: %.s | ../libwrk/$(TARGET)
 	$(ASSEMBLE_recipe)
@@ -98,16 +99,17 @@ endef
 ../libwrk/$(TARGET)/%.o: %.c | ../libwrk/$(TARGET)
 	$(COMPILE_recipe)
 
-../lib/$(TARGET).a: $(OBJS) | ../lib
-	$(AR65) a $@ $?
+../libwrk/$(TARGET)/%.bin: ../libwrk/$(TARGET)/%.o ../lib/$(TARGET).a | ../libwrk/$(TARGET)
+	$(RUNTEST_recipe)
+#	@$(LD65) $< $(TEST_LDFLAGS) -o $@
+
+runtests: $(TEST_BINS)
 
 ../libwrk/$(TARGET) ../lib:
 	@$(call MKDIR,$@)
 
-../libwrk/$(TARGET)/%.bin: $(TEST_OBJS) $(OBJS) | ../libwrk/$(TARGET)
-	$(RUNTEST_recipe)
-
-test: ../../asmunit/asmunit.a $(TEST_BINS) | ../libwrk/$(TARGET)
+../lib/$(TARGET).a: $(OBJS) | ../lib
+	$(AR65) a $@ $?
 
 ../../asmunit/asmunit.a:
 	(cd ../../asmunit ; make)

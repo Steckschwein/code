@@ -41,7 +41,7 @@
 .export sd_read_block, sd_cmd, sd_cmd_lba
 .export fullblock
 
-; public bock api
+; public block api
 .export read_block=sd_read_block
 
 .ifdef MULTIBLOCK_WRITE

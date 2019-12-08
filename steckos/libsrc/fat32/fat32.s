@@ -28,7 +28,7 @@
 ; TODO OPTIMIZATIONS
 ; 	1. __calc_lba_addr - check whether we can skip the cluster_begin adc if we can proof that the cluster_begin is a multiple of sec/cl. if so we can setup the lba_addr as a cluster number, we can safe one addition
 ;							  => a + (b * c) => with a = n * c => n * c + b * c => c * (n + b)
-;  2. avoid fat block read - calculate fat lba address, but before reading a the fat block, compare the new lba_addr with the previously saved fat_lba 
+;  2. avoid fat block read - calculate fat lba address, but before reading a the fat block, compare the new lba_addr with the previously saved fat_lba
 ;
 ;
 .include "zeropage.inc"
@@ -76,12 +76,12 @@
 		;	seek n bytes within file denoted by the given FD
 		;in:
 		;	X	 - offset into fd_area
-		;	A/Y - pointer to seek_struct - @see 
+		;	A/Y - pointer to seek_struct - @see
 		;out:
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_fseek:
 		rts
-		
+
 		;in:
 		;	X	 - offset into fd_area
 		;out:
@@ -89,7 +89,7 @@ fat_fseek:
 __fat_fseek:
 		;SetVector block_data, read_blkptr
 		rts
-		
+
 	 ; TODO FIXME currently until end of cluster is read
 	 ;
 		;	read n blocks from file denoted by the given FD and maintains FD.offset
@@ -112,19 +112,19 @@ fat_fread:
 		ldy krn_tmp2
 		cpy krn_tmp3
 		beq @l_exit_ok
-		
+
 		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  ; last block of cluster reached?
 		bne @_l_read															 ; no, go on reading...
-		
+
 		copypointer read_blkptr, krn_ptr1					; backup read_blkptr
 		jsr __fat_read_cluster_block_and_select		; read fat block of the current cluster
 		bne @l_exit_err									; read error...
 		bcs @l_exit										 ; EOC reached?	return ok, and block counter
 		jsr __fat_next_cln								; select next cluster
-		stz fd_area+F32_fd::offset+0,x				; and reset offset within cluster		
+		stz fd_area+F32_fd::offset+0,x				; and reset offset within cluster
 		copypointer krn_ptr1, read_blkptr					; restore read_blkptr
-		
+
 @_l_read:
 		jsr __calc_lba_addr
 		jsr __fat_read_block
@@ -139,7 +139,7 @@ fat_fread:
 @l_exit_ok:
 		lda #EOK														; A=0 (EOK)
 @l_exit_err:
-		rts		
+		rts
 
 
 		;	@deprecated - use fat_read_blocks instead, just for backward compatibility
@@ -589,7 +589,7 @@ __fat_write_newdir_entry:
 __fat_read_block:
 		phx
 		jsr read_block
-		dec read_blkptr+1		; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided		
+		dec read_blkptr+1		; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
 		plx
 		cmp #0
 		rts
@@ -794,7 +794,7 @@ __fat_read_cluster_block_and_select:
 		lda volumeID + VolumeID::EBPB + EBPB::RootClus+0
 		bra @l_clnr_page
 @l_clnr_fd:
-		lda fd_area+F32_fd::CurrentCluster+0,x 	; offset within block_fat, clnr<<2 (* 4)		
+		lda fd_area+F32_fd::CurrentCluster+0,x 	; offset within block_fat, clnr<<2 (* 4)
 @l_clnr_page:
 		bit #$40										; clnr within 2nd page of the 512 byte block ?
 		beq @l_clnr
@@ -892,7 +892,7 @@ __fat_find_free_cluster:
 		cmp fat2_lba_begin+0
 		bne @next_block		;
 		lda #ENOSPC				; end reached, answer ENOSPC () - "No space left on device"
-@exit:	
+@exit:
 	 ;debug32 "free_cl", fd_area+(2*.sizeof(F32_fd)) + F32_fd::CurrentCluster ; almost the 3rd entry
 		rts
 @l_found_hb: ; found in "high" block (2nd page of the sd_blocksize)
@@ -1153,7 +1153,7 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if f
 		ora blocks+0
 		;debug16 "bl", blocks
 		rts
-		
+
 		; in:
 		;	X - file descriptor
 		; out:
@@ -1205,7 +1205,7 @@ __calc_lba_addr:
 			adc lba_addr+i
 			sta lba_addr+i
 		.endrepeat
-		
+
 		lda fd_area+F32_fd::offset+0,x			; load the current block counter
 		adc lba_addr+0									; add to lba_addr
 		sta lba_addr+0
@@ -1215,9 +1215,9 @@ __calc_lba_addr:
 			adc #0
 			sta lba_addr+1+i
 		.endrepeat
-:		
+:
 		;debug32 "f_lba", lba_addr
-		
+
 		pla
 		rts
 
@@ -1674,7 +1674,7 @@ ff_l4:
 		beq fat_find_next
 
 		jsr __fat_matcher			  ; call matcher strategy
-		lda #EOK						  ; Z=1 (success) and no error 
+		lda #EOK						  ; Z=1 (success) and no error
 		bcs ff_end						; if C=1 we had a match
 
 		; in:
