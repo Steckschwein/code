@@ -86,9 +86,13 @@ mainloop:
       lda #<msgbuf
       ldx #>msgbuf
       jsr krn_strout
-      lda #']'
-      jsr char_out
+      bra @prompt
 @nocwd:
+         lda #'?'
+         jsr char_out
+@prompt:
+         lda #']'
+         jsr char_out
         ; output prompt character
         lda #prompt
         jsr char_out
