@@ -22,15 +22,11 @@ appstart
 .import jch_fm_init, jch_fm_play
 .import jch_fm_set_volume
 .import opl2_detect, opl2_init, opl2_reg_write
-;.import opl2_delay_register
 
 .export d00file
 .export char_out=krn_chrout
 main:
-	;	jsr opl2_detect
-    nop
-    nop
-		clc ; TODO FIXME
+		jsr opl2_detect
 		bcc @load
 		jsr krn_primm
 		.byte "YM3526/YM3812 not available!",$0a,0
@@ -47,22 +43,22 @@ main:
 		jsr char_out
 		jmp exit
 
-:   jsr isD00File
+:   	jsr isD00File
 		beq :+
 		jsr krn_primm
 		.byte "not a D00 file",$0a,0
 		jmp exit
 
 :
-;		jsr krn_primm
-	;	.byte "edlib player v0.2 (somewhat optimized) by mr.mouse/xentax july 2017@",$0a,0
-		;jsr printMetaData
+		jsr krn_primm
+		.byte "edlib player v0.2 (somewhat optimized) by mr.mouse/xentax july 2017@",$0a,0
+		jsr printMetaData
 
 		jsr krn_textui_crs_onoff
 		jsr jch_fm_init
 
 		sei
-    copypointer user_isr, safe_isr
+    	copypointer user_isr, safe_isr
 		SetVector player_isr, user_isr
 
 		freq=70
@@ -127,7 +123,7 @@ main:
 		cli
 
 exit:
-		jsr opl2_init
+;		jsr opl2_init
 		jsr krn_textui_init
 		jmp (retvec)
 
@@ -194,19 +190,8 @@ d00header:
 		.byte "JCH",$26,$2,$66
 
 loadfile:
-;    lda paramptr
- ;   sta ptr1
-	;	lda paramptr +1
-   ; sta ptr1+1
-;    ldy #0
-;:   lda (paramptr),y
- ;   beq :+
-  ;  jsr char_out
-   ; iny
-    ;bne :-
-;:
 		lda paramptr
-		ldx paramptr +1
+		ldx paramptr+1
 		ldy #O_RDONLY
 		jsr krn_open
 		bne @l_exit
@@ -229,19 +214,10 @@ player_isr:
 ;    jsr reset_irq
     jsr restart_timer
     lda #Medium_Green<<4|Medium_Red
-    nop
-    nop
-    nop
-    ;jsr vdp_bgcolor
+    jsr vdp_bgcolor
     lda player_state
-		bne @vdp
-		jsr jch_fm_play
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
+	 bne @vdp
+	 jsr jch_fm_play
 @vdp:
     bit SYS_IRR
     bpl @exit
@@ -261,5 +237,5 @@ fd:           .res 1
 irq_counter:  .res 0
 fm_master_volume: .res 1,0
 
-.data
+.bss
 d00file:
