@@ -67,15 +67,15 @@ sd_read_multiblock:
 			bne @exit
 			inc read_blkptr+1
 
+			debug16 "sd_rm", blocks
 			dec blocks
 			bne @l1
 
-            ; all blocks read, send cmd12 to end transmission
-            ; jsr sd_param_init
-            lda #cmd12
-            jsr sd_cmd
+         ; all blocks read, send cmd12 to end transmission
+         lda #cmd12
+         jsr sd_cmd
 
 @exit:
             ply
-			plx
+				plx
             jmp sd_deselect_card

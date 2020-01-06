@@ -142,7 +142,7 @@ fat_fread:
 		rts
 
 
-		;	@deprecated - use fat_read_blocks instead, just for backward compatibility
+		;	@deprecated - use fat_fread instead, just for backward compatibility
 		;
 		; read one block, TODO - update seek position within FD
 		;in:
@@ -960,7 +960,7 @@ fat_open:
 		and #O_CREAT | O_WRONLY | O_APPEND
 		beq @l_err_enoent			; nothing set, exit with ENOENT
 
-		;debug "r+"
+		debug "r+"
 		copypointer dirptr, krn_ptr2
 		jsr string_fat_name							; build fat name upon input string (filenameptr)
 		bne @l_exit
@@ -982,7 +982,7 @@ fat_open:
 @l_exit_ok:
 		lda #EOK									; A=0 (EOK)
 @l_exit:
-		;debug "fop"
+		debug "fop"
 		rts
 
 		; open a path to a file or directory starting from current directory
@@ -1151,7 +1151,7 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if f
 @l2:	lda blocks+2
 		ora blocks+1
 		ora blocks+0
-		;debug16 "bl", blocks
+		debug16 "bl", blocks
 		rts
 
 		; in:

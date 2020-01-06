@@ -42,7 +42,7 @@ spi_r_byte:
 		AND #$fe		  ; Takt ausschalten
 		TAX				 ; aufheben
 		;ORA #$01
-        inc
+     	INC
 
 		STA via1portb ; Takt An 1
 		STX via1portb ; Takt aus

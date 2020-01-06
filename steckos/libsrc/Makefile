@@ -3,6 +3,10 @@ TARGET_SYS=none
 
 DEFINES+=-DV9958
 
+# debug fat32
+#DEBUG += -DDEBUG_FAT32
+#DEBUG += -DDEBUG_SDCARD
+
 .PHONY: all mostlyclean clean install zip lib $(TARGET)
 
 .SUFFIXES:
@@ -34,7 +38,7 @@ clean:
 mostlyclean:
 	$(call RMDIR,../libwrk)
 
-CA65FLAGS = --cpu 65c02 --include-dir ../asminc --include-dir ../../asmunit $(DEFINES)
+CA65FLAGS = --cpu 65c02 --include-dir ../asminc --include-dir ../../asmunit $(DEFINES) $(DEBUG)
 CC65FLAGS = -Or -W error
 
 SRCDIR=.
