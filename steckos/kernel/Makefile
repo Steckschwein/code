@@ -12,14 +12,11 @@ DEFINES+=-DV9958
 # DEFINES+=-DCOLS80
 
 # enable debug
-# DEBUG += -DDEBUG_KERNEL
-# DEBUG += -DDEBUG_SDCARD
+#DEBUG += -DDEBUG_KERNEL
 # debug rtc updates by kernel
 #DEBUG += -DDEBUG_RTC
 # debug util
-# DEBUG += -DDEBUG_UTIL
-# debug fat32
-# DEBUG += -DDEBUG_FAT32
+#DEBUG += -DDEBUG_UTIL
 # dump fat blocks on write
 #DEBUG += -DFAT_DUMP_FAT_WRITE
 # do not write anything (metadata)
