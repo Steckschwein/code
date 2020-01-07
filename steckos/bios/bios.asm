@@ -163,7 +163,9 @@ mem_ok:
 			jsr uart_init
          set_ctrlport
 
-			jsr init_sdcard
+			;jsr init_sdcard
+         stz errno
+         
          lda errno
 			beq boot_from_card
 
