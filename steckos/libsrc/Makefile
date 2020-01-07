@@ -51,6 +51,7 @@ SRCDIRS +=  uart/16550
 SRCDIRS +=  spi
 SRCDIRS +=  sdcard
 SRCDIRS +=  fat32
+SRCDIRS +=  via
 SRCDIRS +=  debug
 SRCDIRS +=  util/crc7
 

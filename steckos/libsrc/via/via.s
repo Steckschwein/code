@@ -20,13 +20,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "kernel.inc"
 .code
 .export init_via1
 .include "via.inc"
 
 ;----------------------------------------------------------------------------------------------
-; init VIA1 - set all ports to input
+; init VIA1
 ;----------------------------------------------------------------------------------------------
 init_via1:
 
