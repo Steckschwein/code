@@ -11,7 +11,6 @@ clean:
 	(cd bios; make clean)
 	(cd libsrc; make clean)
 	(cd clib/libsrc; make clean)
-	rm steckos.img
 
 build:
 	(cd libsrc; make )
