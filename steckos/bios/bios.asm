@@ -164,7 +164,7 @@ mem_ok:
          set_ctrlport
 
 			jsr init_sdcard
-         stz errno
+         ;stz errno
 
          lda errno
 			beq boot_from_card
