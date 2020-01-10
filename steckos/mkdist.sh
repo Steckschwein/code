@@ -24,33 +24,13 @@ TOOLS='
     date.prg
 '
 
-rm -fr dist/*
-mkdir -p ${TARGET}
-mkdir -p dist/STECKOS
-cp kernel/loader.bin dist/LOADER.BIN
-cp shell/shell.prg dist/STECKOS/SHELL.PRG
-cp tools/unrclock/unrclock.prg dist/STECKOS/UNRCLOCK.PRG
-
-#for n in `ls tools/*.prg` ; do
-#	filename=`basename ${n}`
-#	un=`echo ${filename} | awk '{print toupper($0)}'`
-#	cp $n dist/STECKOS
-#done
+mkdir -p $TARGET/STECKOS
+cp kernel/loader.bin $TARGET/LOADER.BIN
+cp shell/shell.prg $TARGET/STECKOS/SHELL.PRG
+cp tools/unrclock/unrclock.prg $TARGET/STECKOS/UNRCLOCK.PRG
 
 for n in $TOOLS ; do
 	un=`echo $n | awk '{print toupper($0)}'`
-	cp tools/$n dist/STECKOS/$un
+	cp tools/$n $TARGET/STECKOS/$un
 done
 
-#for n in `ls tools/*/*.prg` ; do
-	#filename=`basename ${n}`
-	#un=`echo ${filename} | awk '{print toupper($0)}'`
-	#cp $n dist/USR/BIN/$un
-#done
-
-#cp tools/xmodem/rx.prg dist/BIN/RX.PRG
-#cp ehbasic/basic.prg dist/USR/BIN/BASIC.PRG
-#cp imfplayer/imf.prg dist/USR/BIN/IMF.PRG
-#cp edlib/edlply.prg dist/USR/BIN/EDLPLY.PRG
-
-cp -a dist/* $TARGET && umount $TARGET

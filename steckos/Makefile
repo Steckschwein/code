@@ -1,7 +1,4 @@
 MAKEFILE=Makefile
-ifndef DIST_TARGET
-    DIST_TARGET=/media/dommas/STCKSCHWN/
-endif
 
 .PHONY: all clean
 all: build
@@ -14,7 +11,7 @@ clean:
 	(cd bios; make clean)
 	(cd libsrc; make clean)
 	(cd clib/libsrc; make clean)
-	rm -rf dist/*
+	rm steckos.img
 
 build:
 	(cd libsrc; make )
@@ -30,5 +27,5 @@ test:
 	(cd kernel; make test)
 	(cd tools; make test)
 
-dist: build
-	./mkdist.sh $(DIST_TARGET)
+img: build
+	./mkimg.sh
