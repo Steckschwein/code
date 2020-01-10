@@ -1,8 +1,16 @@
 .export fat_mount, fat_read, fat_find_first, calc_lba_addr
-.import sd_read_block
+.import read_block
+.import vdp_chrout
+
 .include "bios.inc"
-.include "sdcard.inc"
+.include "zeropage.inc"
 .include "fat32.inc"
+
+; enable debug for this module
+.include "debug.inc"
+.ifdef DEBUG_FAT32
+	debug_enabled=1
+.endif
 
 .code
 ;---------------------------------------------------------------------
@@ -10,30 +18,26 @@
 ;---------------------------------------------------------------------
 fat_mount:
 		save
+      stz errno
 
 		; set lba_addr to $00000000 since we want to read the bootsector
-		; .repeat 4,i
-		; 	stz lba_addr + i	           
-		; .endrep
-
 		ldx #$03
-@l:		stz lba_addr,x
+@l:   stz lba_addr,x
 		dex
 		bpl @l
+      
+		SetVector sd_blktarget, read_blkptr
 
-			
-		SetVector sd_blktarget, sd_blkptr
-
-		jsr sd_read_block
-
+		jsr read_block
+      debug8 "sd_rd1", errno
+      beq @check_signature
+      jmp exit_error
+      
+@check_signature:
 		jsr fat_check_signature
-
-		lda errno
-		beq @l1
-		; jmp @end_mount
-		restore
-		rts
-
+      debug16 "chk1", sd_blktarget+BS_Signature
+      beq @l1
+      jmp exit_error
 @l1:
 		part0 = sd_blktarget + BS_Partition0
 
@@ -42,14 +46,9 @@ fat_mount:
 		beq @l2
 		cmp #$0c
 		beq @l2
-
 		; type code not $0b or $0c
 		lda #fat_invalid_partition_type
-		sta errno
-		; jmp @end_mount
-		restore
-		rts
-
+      jmp exit_error
 @l2:
 		ldx #$00
 
@@ -60,32 +59,33 @@ fat_mount:
 		cpx #$04
 		bne @l3
 
-
 		; Write LBA start address to sd param buffer
 		; +SDBlockAddr fat_begin_lba
 
-		SetVector sd_blktarget, sd_blkptr	
+		SetVector sd_blktarget, read_blkptr
 		; Read FAT Volume ID at LBABegin and Check signature
-		jsr sd_read_block
-
+		jsr read_block
+      beq @check_signature_2
+      jmp exit_error
+      
+@check_signature_2:
 		jsr fat_check_signature
-		lda errno
 		beq @l4
-		; jmp @end_mount
-		restore
-		rts
+      jmp exit_error
 @l4:
 		; Bytes per Sector, must be 512 = $0200
 		lda sd_blktarget + BPB_BytsPerSec
 		bne @l5
 		lda sd_blktarget + BPB_BytsPerSec + 1
 		cmp #$02
-		beq @l6
+		beq l6
 @l5:
 		lda #fat_invalid_sector_size
-		sta errno
-		jmp @end_mount
-@l6:
+exit_error:
+      sta errno
+		restore
+		rts
+l6:
 		; Sectors per Cluster. Valid: 1,2,4,8,16,32,64,128
 		lda sd_blktarget + BPB_SecPerClus
 		sta sectors_per_cluster
@@ -130,7 +130,6 @@ fat_mount:
 		m_memcpy sd_blktarget + BPB_RootClus, root_dir_first_clus, 4
 
 		; now we have the lba address of the first sector of the first cluster
-
 @end_mount:
 		; jsr .sd_deselect_card
 		restore
@@ -197,7 +196,6 @@ fat_check_signature:
 		cmp sd_blktarget + BS_Signature+1
 		beq @l2
 @l1:	lda #fat_bad_block_signature
-		sta errno
 @l2:	rts
 
 inc_lba_address:
@@ -214,15 +212,15 @@ inc_lba_address:
 
 fat_find_first:
 
-		SetVector sd_blktarget, sd_blkptr
+		SetVector sd_blktarget, read_blkptr
 		ldx #$00
 		jsr calc_lba_addr
 
 
 nextblock:	
 		SetVector sd_blktarget, dirptr	
-		jsr sd_read_block
-		dec sd_blkptr+1
+		jsr read_block
+		dec read_blkptr+1
 
 nextentry:
 		lda (dirptr)
@@ -297,8 +295,8 @@ fat_read:
 		jsr calc_lba_addr
 		jsr calc_blocks
 
-@l1:	jsr sd_read_block
-		inc sd_blkptr+1 ; 3 bytes, 6 cycles
+@l1:	jsr read_block
+		inc read_blkptr+1 ; 3 bytes, 6 cycles
 
 		jsr inc_lba_address
 		

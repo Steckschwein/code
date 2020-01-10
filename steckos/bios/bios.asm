@@ -8,10 +8,12 @@
       .import hexout, primm, print_crlf
       .import vdp_init, _vdp_chrout, vdp_detect
       .import init_sdcard
+      .import sdcard_init
       .import fat_mount, fat_read, fat_find_first, calc_lba_addr
       .import read_nvram
 
 		.export vdp_chrout
+      .export krn_chrout=vdp_chrout
 
 .macro set_ctrlport
 			pha
@@ -163,23 +165,15 @@ mem_ok:
 			jsr uart_init
          set_ctrlport
 
-			jsr init_sdcard
-         ;stz errno
-
-         lda errno
-			beq boot_from_card
-
-			; display sd card error message
-			cmp #$0f
-			bne @l1
-			print "Invalid SD card"
-@l1:		cmp #$1f
-			bne @l2
-			print "SD card init failed"
-@l2:		cmp #$ff
-			bne @l3
-			print "No SD card"
-@l3:
+         .import sdcard_detect
+			jsr sdcard_detect
+         beq @sdcard_init
+			println "No SD card"
+         bra do_upload
+@sdcard_init:
+         jsr sdcard_init
+         beq boot_from_card
+			println "SD card init failed"
 do_upload:
          jsr upload
          jmp startup
@@ -190,31 +184,29 @@ boot_from_card:
          lda #>nvram
          sta ptr1h
 
-			print "Boot from SD card.. "
-			jsr fat_mount
-
+			println "Boot from SD card.. "
+         jsr fat_mount
 			lda errno
 			beq @findfile
+			print "Mount error: "
+			lda errno
+         jsr hexout
 			jsr print_crlf
-			print "FAT32 mount error: "
-			jsr hexout
          bra do_upload
-
+         
 @findfile:
 @l4:
 			jsr fat_find_first
 			bcs @loadfile
 
-			jsr print_crlf
-
-			ldy #$00
+			ldy #0
 @loop:
          lda (ptr1),y
 			jsr vdp_chrout
 			iny
 			cpy #$0b
 			bne @loop
-			print " not found."
+			println " not found."
 
 			bra do_upload
 @loadfile:
@@ -239,7 +231,7 @@ boot_from_card:
 			.endrep
 
 			SetVector steckos_start, startaddr
-			SetVector steckos_start, sd_blkptr
+			SetVector steckos_start, read_blkptr
 			jsr fat_read
 
 		; re-init stack pointer

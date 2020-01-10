@@ -9,7 +9,6 @@
 .code
 ;----------------------------------------------------------------------------------------------
 upload:
-		jsr print_crlf
 		print "Serial upload.."
 		; load start address
 		jsr uart_rx

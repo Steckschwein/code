@@ -1,5 +1,5 @@
 LIBS=../lib/steckschwein.a
-OBJS=bios.o charset_8x8.o charset_6x8.o out.o vdp.o sdcard.o fat32.o upload.o
+OBJS=bios.o charset_8x8.o charset_6x8.o out.o vdp.o fat32.o upload.o
 CA65FLAGS=-I ../asminc
 LDFLAGS=-C bios.cfg -m bios.map -Ln bios.lbl
 # 6x8 characters
@@ -8,6 +8,9 @@ DEFINES+=-DCHAR6x8
 DEFINES+=-DV9958
 # enable 80 cols
 # DEFINES+=-DCOLS80
+
+# debug fat32
+#DEFINES += -DDEBUG_FAT32
 
 
 .PHONY: all clean
