@@ -7,7 +7,6 @@
       .import init_via1
       .import hexout, primm, print_crlf
       .import vdp_init, _vdp_chrout, vdp_detect
-      .import init_sdcard
       .import sdcard_init
       .import fat_mount, fat_read, fat_find_first, calc_lba_addr
       .import read_nvram
@@ -193,7 +192,7 @@ boot_from_card:
          jsr hexout
 			jsr print_crlf
          bra do_upload
-         
+
 @findfile:
 @l4:
 			jsr fat_find_first
