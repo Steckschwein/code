@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschein.de
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ opl2_reg_delay_time = 3300 ; ns
 opl2_data_delay 	= (((opl2_data_delay_time - opl2_reg_delay_time) / (1000/clockspeed)) -12) / 2
 opl2_reg_delay 		= ((opl2_reg_delay_time 							/ (1000/clockspeed)) -12) / 2
 
-opl2_s_irq		= 1<<7	; timer irq 
+opl2_s_irq		= 1<<7	; timer irq
 opl2_s_irq_t1	= 1<<6	; ... irq cause of t1
 opl2_s_irq_t2	= 1<<5	; ... irq cause of t2
 
