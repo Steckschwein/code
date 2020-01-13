@@ -1,4 +1,4 @@
-OBJS=snes.o
+OBJS=snes.o drv.o
 TARGET=snes.prg
 CA65FLAGS=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 LIBS=../steckos/tools/lib/toollib.a
