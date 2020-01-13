@@ -1,5 +1,7 @@
 .include "via.inc"
 ;Use SNES controllers connected to the Steckschwein user port:
+; based on "NES and SNES Controllers on a 6502 (like the C64) by Michael Steil
+; https://www.pagetable.com/?p=1365
 ;
 ; /---------------------
 ;| 7  6  5 | 4  3  2  1 |
