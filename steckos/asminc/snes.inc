@@ -1,3 +1,4 @@
+.include "via.inc"
 ;Use SNES controllers connected to the Steckschwein user port:
 ;
 ; /---------------------
