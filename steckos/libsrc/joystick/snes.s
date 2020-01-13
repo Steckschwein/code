@@ -1,4 +1,3 @@
-.include "steckos.inc"
 .include "via.inc"
 .include "snes.inc"
 

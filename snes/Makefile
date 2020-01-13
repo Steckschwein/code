@@ -1,7 +1,9 @@
-OBJS=snes.o drv.o
+OBJS=snes.o
 TARGET=snes.prg
-CA65FLAGS=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
-LIBS=../steckos/tools/lib/toollib.a
+STECKOS=../steckos
+CA65FLAGS=--include-dir $(STECKOS)/asminc --include-dir $(STECKOS)/kernel
+LDFLAGS=--define __LOADADDR__=$(APP_START) --config $(STECKOS)/prg.ld65.cfg --lib $(STECKOS)/lib/steckschwein.a --lib $(STECKOS
+LIBS=$(STECKOS)/lib/steckschwein.a $(STECKOS)/tools/lib/toollib.a
 
 all: $(TARGET)
 
