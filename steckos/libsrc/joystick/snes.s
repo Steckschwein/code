@@ -1,3 +1,6 @@
+; based on "NES and SNES Controllers on a 6502 (like the C64) by Michael Steil
+; https://www.pagetable.com/?p=1365
+
 .include "via.inc"
 .include "snes.inc"
 
