@@ -40,6 +40,7 @@
 .export sd_select_card, sd_deselect_card
 .export sd_read_block, sd_cmd, sd_cmd_lba
 .export fullblock
+.export sd_busy_wait
 
 ; public block api
 .export read_block=sd_read_block
@@ -187,10 +188,10 @@ sdcard_init:
 
 			lda #cmd58
 			jsr sd_cmd
-			debug "CMD58"
+			;debug "CMD58"
 			; read result. we need to check bit 30 of a 32bit result
 			jsr spi_r_byte
-			debug "CMD58_r"
+			;debug "CMD58_r"
 		;	sta krn_tmp
 			;pha
 			; read the other 3 bytes and trash them
@@ -213,10 +214,7 @@ sdcard_init:
 
 			lda #cmd16
 			jsr sd_cmd
-			debug "CMD16"
-
-
-
+			;debug "CMD16"
 @exit_ok:
 @l9:
 	; SD card init successful
@@ -259,18 +257,18 @@ sd_cmd:
 ;---------------------------------------------------------------------
 sd_cmd_response_wait:
 			ldy #sd_cmd_response_retries
-@l:			dey
+@l:		dey
 			beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
-			debug "sd_r_wait"
 			jsr spi_r_byte
-			; bit #$80	; bit 7 clear
-			; bne @l  ; no, next byte
+			debug "sd_cm_wt"
+			;bit #$80	; bit 7 clear
+			;bne @l  ; no, next byte
 			bmi @l
-			debug "sd_r_wait_resp"
 			cmp #$00 ; got cmd response, check if $00 to set z flag accordingly
+			debug "sd_cm_wt_e"
 			rts
 sd_block_cmd_timeout:
-			debug "sd_block_cmd_timeout"
+			debug "sd_cm_wtt"
 			lda #$1f ; make up error code distinct from possible sd card responses to mark timeout
 			rts
 
@@ -352,15 +350,15 @@ halfblock:
 sd_wait:
 			sta sd_tmp
 			ldy #sd_data_token_retries
-            ldx #0
+			ldx #0
 @l1:
-            phx
+			phx
 			jsr spi_r_byte
-            plx
+			plx
 			cmp sd_tmp
 			beq @l2
-            dex
-			bne	@l1
+			dex
+			bne @l1
 			dey
 			bne @l1
 
@@ -398,7 +396,6 @@ sd_busy_wait:
 
 			lda #$00
 			rts
-
 @err:
 			lda #sd_card_error_timeout_busy
 			rts

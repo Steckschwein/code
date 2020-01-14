@@ -6,6 +6,7 @@ DEFINES+=-DV9958
 # debug fat32
 #DEBUG += -DDEBUG_FAT32
 #DEBUG += -DDEBUG_SDCARD
+#DEBUG += -DDEBUG_SDCARD_READ_MULTIBLOCK
 
 .PHONY: all mostlyclean clean install zip lib $(TARGET)
 

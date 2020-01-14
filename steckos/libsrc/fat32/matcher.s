@@ -61,7 +61,7 @@ __dmm_neq:
 		;	C=1 if input was too large (>255 byte), C=0 otherwise
 		;	Z=1 if input was empty string, Z=0 otherwise
 string_fat_mask:
-		jsr string_trim					; trim input
+		jsr string_trim				; trim input
 		bcs __tfm_exit					; C=1, overflow
 		beq __tfm_exit					; Z=1, empty input
 
@@ -76,12 +76,12 @@ string_fat_mask:
 		cmp #'.'
 		bne __tfn_mask_qm
 		ldy krn_tmp2
-		beq __tfn_mask_char_l2			; first position, we capture the "."
+		beq __tfn_mask_char_l2		; first position, we capture the "."
 		cpy #8							; reached from here from first fill (the name) ?
 		beq __tfn_mask_input
 		cpy #1							; 2nd position?
-		bne __tfn_mask_fill_blank		; no, fill section
-		cmp	(krn_ptr2)					; otherwise check whether we already captured a "." as first char
+		bne __tfn_mask_fill_blank	; no, fill section
+		cmp	(krn_ptr2)				; otherwise check whether we already captured a "." as first char
 		beq __tfn_mask_char_l2
 	__tfn_mask_fill_blank:
 		lda #' '

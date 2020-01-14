@@ -33,7 +33,7 @@
 
 .code
 
-.import fat_open, fat_read, fat_close, fat_read_block, sd_read_multiblock, inc_lba_address
+.import fat_open, fat_read, fat_close, fat_read_block, sd_read_multiblock, __inc_lba_address
 
 .export execv
 
@@ -78,7 +78,7 @@ execv:
 
 		  dec krn_ptr1+1
 
-		  jsr inc_lba_address
+		  jsr __inc_lba_address
 
 		  dec blocks
 		  beq @l_exec_run
