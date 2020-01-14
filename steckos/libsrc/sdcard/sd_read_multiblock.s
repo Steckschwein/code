@@ -37,6 +37,7 @@
 .import spi_rw_byte, spi_r_byte, spi_select_device, spi_deselect
 
 .import sd_select_card, sd_deselect_card, sd_cmd, sd_cmd_lba
+.import sd_busy_wait
 .import fullblock
 .export sd_read_multiblock
 
@@ -74,9 +75,8 @@ sd_read_multiblock:
 			; all blocks read, send cmd12 to end transmission
 			lda #cmd12
 			jsr sd_cmd
-			beq @exit
-			.import sd_busy_wait
-			jsr sd_busy_wait
+			beq @exit			; no busy, already done
+			jsr sd_busy_wait	; otherwise do a busy wait
 			
 @exit:
 			ply

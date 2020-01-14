@@ -261,10 +261,7 @@ sd_cmd_response_wait:
 			beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
 			jsr spi_r_byte
 			debug "sd_cm_wt"
-			;bit #$80	; bit 7 clear
-			;bne @l  ; no, next byte
 			bmi @l
-			cmp #$00 ; got cmd response, check if $00 to set z flag accordingly
 			debug "sd_cm_wt_e"
 			rts
 sd_block_cmd_timeout:
@@ -288,12 +285,10 @@ sd_read_block:
 			jsr sd_cmd_lba
 			lda #cmd17
 			jsr sd_cmd
-
-				bne @exit
-@l1:
+			bne @exit
 			jsr fullblock
 
-@exit: 		; fall through to sd_deselect_card
+@exit: 	; fall through to sd_deselect_card
 
 ;---------------------------------------------------------------------
 ; deselect sd card, puSH CS line to HI and generate few clock cycles
