@@ -66,9 +66,8 @@ main:
 		;jsr opl2_delay_register
 		lda #($ff-(1000000 / freq / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
 		sta t2_value
-    jsr set_timer_t2
+		jsr set_timer_t2
 
-;		jsr reset_irq
 		jsr restart_timer
 
 		cli
@@ -97,7 +96,7 @@ main:
     bne @key_esc
     inc t2_value
 @set_timer_t2:
-    jsr set_timer_t2
+		jsr set_timer_t2
 		bra @keyin
 @key_esc:
 		cmp #KEY_ESCAPE
@@ -113,7 +112,7 @@ main:
 		dey
 		bne :-
 		inc fm_master_volume
-    lda fm_master_volume
+		lda fm_master_volume
 		jsr jch_fm_set_volume
 		cmp #$3f
 		bne @fadeout
@@ -123,7 +122,7 @@ main:
 		cli
 
 exit:
-;		jsr opl2_init
+		jsr opl2_init
 		jsr krn_textui_init
 		jmp (retvec)
 
@@ -210,19 +209,18 @@ player_isr:
 		bit SYS_IRR
 		bvc @vdp     ; bit 6 set? (snd)
 		; do write operations on ym3812 within a user isr directly after reading opl_stat here, "is too hard", we have to delay at least register wait ;)
-;		jsr opl2_delay_register
-;    jsr reset_irq
-    jsr restart_timer
-    lda #Medium_Green<<4|Medium_Red
-    jsr vdp_bgcolor
-    lda player_state
-	 bne @vdp
-	 jsr jch_fm_play
+		;jsr opl2_delay_register
+		jsr restart_timer
+		lda #Medium_Green<<4|Medium_Red
+		jsr vdp_bgcolor
+		lda player_state
+		bne @vdp
+		jsr jch_fm_play
 @vdp:
-    bit SYS_IRR
-    bpl @exit
-    lda #Medium_Green<<4|Dark_Yellow
-    jsr vdp_bgcolor
+		bit SYS_IRR
+		bpl @exit
+		lda #Medium_Green<<4|Dark_Yellow
+		jsr vdp_bgcolor
 @exit:
 
 		lda #Medium_Green<<4|Transparent
