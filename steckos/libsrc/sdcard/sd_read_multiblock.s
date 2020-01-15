@@ -22,7 +22,7 @@
 
 
 ; enable debug for this module
-.ifdef DEBUG_SDCARD
+.ifdef DEBUG_SDCARD_READ_MULTIBLOCK
 	debug_enabled=1
 .endif
 
@@ -37,6 +37,7 @@
 .import spi_rw_byte, spi_r_byte, spi_select_device, spi_deselect
 
 .import sd_select_card, sd_deselect_card, sd_cmd, sd_cmd_lba
+.import sd_busy_wait
 .import fullblock
 .export sd_read_multiblock
 
@@ -60,9 +61,9 @@ sd_read_multiblock:
 			jsr sd_cmd_lba
 			lda #cmd18	; Send CMD18 command byte
 			jsr sd_cmd
+			debug "sdm18"
 			bne @exit
 @l1:
-
 			jsr fullblock
 			bne @exit
 			inc read_blkptr+1
@@ -71,11 +72,13 @@ sd_read_multiblock:
 			dec blocks
 			bne @l1
 
-         ; all blocks read, send cmd12 to end transmission
-         lda #cmd12
-         jsr sd_cmd
-
+			; all blocks read, send cmd12 to end transmission
+			lda #cmd12
+			jsr sd_cmd
+			beq @exit			; no busy, already done
+			jsr sd_busy_wait	; otherwise do a busy wait
+			
 @exit:
-            ply
-				plx
-            jmp sd_deselect_card
+			ply
+			plx
+			jmp sd_deselect_card

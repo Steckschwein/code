@@ -36,8 +36,8 @@
 .code
 
 dbg_acc				= $02f9 ; basic uses $0290 - $02f8
-dbg_xreg			= $02fa
-dbg_yreg			= $02fb
+dbg_xreg				= $02fa
+dbg_yreg				= $02fb
 dbg_status			= $02fc
 dbg_bytes			= $02fd
 dbg_savept			= $02fe

@@ -57,14 +57,12 @@ read_nvram:
 	 .byte "NVRAM: CRC error.", KEY_LF, 0
 
 @copy_defaults:
-	 ldy #.sizeof(nvram)
+	 ldy #.sizeof(nvram)-1
 @lp1:
 	 lda nvram_defaults,y
 	 sta (ptr1),y
 	 dey
 	 bpl @lp1
-
-
 
 @exit:
 	restore

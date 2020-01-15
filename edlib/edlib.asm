@@ -12,7 +12,6 @@
 ;/*========================================================= SFX Sound Expander =================================================
 ;  Variables
 ;*/
-;.include "ym3812.inc"
 fm_file_base_address = ptr1 ;$0002		; word
 fm_file_arrdata = ptr4      ;$0008		; word
 
@@ -90,8 +89,8 @@ fm_data_st_offset: .word d00file					;// location of FM file (D00), any caller m
 ;// ----------------------------------------------------------------------------------------------------------
 ;// JCH_FM_PLAY subroutine, this routine is called on IRQ interrupt, each frame (50 Hz)
 ;// ----------------------------------------------------------------------------------------------------------
-jch_fm_play_:				
-		lda #$00			
+jch_fm_play_:
+		lda #$00
 		sta var_bx ;// set the current voice counter to 0
 		sta var_si;// set the word counter of the voice (double), but in the end this will not pass 255, so a single byte is ok
 loc_10180: 

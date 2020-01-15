@@ -56,15 +56,11 @@ opl2_init:
 ;	in:
 ;		 .X - opl2 register select
 ;		 .A - opl2 data
-;
 opl2_reg_write:
 		stx opl_sel
 		jsr opl2_delay_register
 		sta opl_data
 		jmp opl2_delay_data
-	 
-; jsr here: 6 cycles
-; rts back: 6 cycles
 
 opl2_delay_data: ; 23000ns - 3300ns => 8Mhz/125ns => 157cl => 12cl (jsr/rts) + 145cl (73 nop)
 .repeat opl2_data_delay

@@ -25,15 +25,17 @@
 
 .include "system.inc"
 
-opl_stat = $0240		  ; status register
+OPL_CLK = 3580000 ;Hz
+
+opl_stat = $0240			; status register
 opl_sel  = opl_stat		; register select
-opl_data = opl_stat + 1 ; data register (write only)
+opl_data = opl_stat + 1	; data register (write only)
 
 opl2_data_delay_time = 23000 ; ns
 opl2_reg_delay_time = 3300 ; ns
 
-opl2_data_delay 	= (((opl2_data_delay_time - opl2_reg_delay_time) / (1000/clockspeed)) -12) / 2
-opl2_reg_delay 		= ((opl2_reg_delay_time 							/ (1000/clockspeed)) -12) / 2
+opl2_data_delay	= (((opl2_data_delay_time - opl2_reg_delay_time) / (1000/clockspeed)) -12) / 2
+opl2_reg_delay		= 6/clockspeed + ((opl2_reg_delay_time / (1000/clockspeed)) -12) / 2
 
 opl2_s_irq		= 1<<7	; timer irq
 opl2_s_irq_t1	= 1<<6	; ... irq cause of t1

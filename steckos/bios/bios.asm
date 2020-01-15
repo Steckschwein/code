@@ -1,20 +1,32 @@
-      .include "bios.inc"
-      .include "sdcard.inc"
-      .include "fat32.inc"
-      .include "nvram.inc"
+		.include "bios.inc"
+		.include "sdcard.inc"
+		.include "fat32.inc"
+		.include "fcntl.inc"
+		.include "nvram.inc"
 
-      .import uart_init, upload
-      .import init_via1
-      .import hexout, primm, print_crlf
-      .import vdp_init, _vdp_chrout, vdp_detect
-      .import sdcard_init
-      .import fat_mount, fat_read, fat_find_first, calc_lba_addr
-      .import read_nvram
+		.import uart_init, upload
+		.import init_via1
+		.import hexout, primm, print_crlf
+		.import vdp_init, _vdp_chrout, vdp_detect
+		.import sdcard_init
+		.import sdcard_detect
+		.import fat_open
+		.import fat_mount, fat_open, fat_read, fat_close
+		.import read_nvram
 
 		.export vdp_chrout
-      .export krn_chrout=vdp_chrout
+		.export krn_chrout=vdp_chrout
+
+; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
+			.export __fat_write_dir_entry=fat_write_dir_entry
+fat_write_dir_entry:
+			rts
 
 .macro set_ctrlport
+			jsr _set_ctrlport
+.endmacro
+
+_set_ctrlport:
 			pha
 			lda ctrl_port
 			lsr
@@ -23,7 +35,7 @@
 			rol
 			sta ctrl_port
 			pla
-.endmacro
+			rts
 
 .code
 do_reset:
@@ -40,9 +52,9 @@ do_reset:
 			ora #%11111000
 			sta ctrl_port
 
-  			; Check zeropage and Memory
+			; Check zeropage and Memory
 check_zp:
-		    ; Start at $ff
+			; Start at $ff
 			ldy #$ff
 			; Start with pattern $03 : $ff
 @l2:		ldx #num_patterns
@@ -114,7 +126,6 @@ check_memory:
 			lda ptr1l
 			bne mem_broken
 
-
 			bra mem_ok
 
 mem_broken:
@@ -164,90 +175,69 @@ mem_ok:
 			jsr uart_init
          set_ctrlport
 
-         .import sdcard_detect
 			jsr sdcard_detect
          beq @sdcard_init
 			println "No SD card"
-         bra do_upload
+         jmp do_upload
 @sdcard_init:
          jsr sdcard_init
          beq boot_from_card
 			println "SD card init failed"
-do_upload:
-         jsr upload
-         jmp startup
+			jmp do_upload
 
 boot_from_card:
-         lda #(<nvram)+nvram::filename
-         sta ptr1l
-         lda #>nvram
-         sta ptr1h
-
-			println "Boot from SD card.. "
+			print "Boot from SD card."
          jsr fat_mount
-			lda errno
 			beq @findfile
-			print "Mount error: "
-			lda errno
-         jsr hexout
+			pha
+			print " mount error "
+			pla
+			jsr hexout
 			jsr print_crlf
-         bra do_upload
+			bra do_upload
 
 @findfile:
-@l4:
-			jsr fat_find_first
-			bcs @loadfile
+			print_dot
+			lda #(<nvram)+nvram::filename
+			ldx #>nvram
+			ldy #O_RDONLY
+         jsr fat_open
+			beq @loadfile
 
 			ldy #0
-@loop:
-         lda (ptr1),y
+@loop:	lda nvram+nvram::filename,y
+			beq @loop_end
 			jsr vdp_chrout
 			iny
-			cpy #$0b
 			bne @loop
+@loop_end:
 			println " not found."
+			jmp do_upload
 
-			bra do_upload
 @loadfile:
-			ldy #DIR_FstClusHI + 1
-			lda (dirptr),y
-			sta root_dir_first_clus + 3
-			ldy #DIR_FstClusHI
-			lda (dirptr),y
-			sta root_dir_first_clus + 2
-			ldy #DIR_FstClusLO + 1
-			lda (dirptr),y
-			sta root_dir_first_clus + 1
-			ldy #DIR_FstClusLO
-			lda (dirptr),y
-			sta root_dir_first_clus
-			jsr calc_lba_addr
-
-			.repeat 4, i
-				ldy #DIR_FileSize + i
-				lda (dirptr),y
-				sta filesize + i
-			.endrep
-
+			print_dot
 			SetVector steckos_start, startaddr
 			SetVector steckos_start, read_blkptr
 			jsr fat_read
-
-		; re-init stack pointer
+			jsr fat_close
+			bne @load_error
+			println "OK"
+			bra startup
+			
+@load_error:
+			jsr hexout
+			println " read error"
+do_upload:
+         jsr upload
 startup:
+			; re-init stack pointer
 			ldx #$ff
 			txs
-
 			; jump to new code
 			jmp (startaddr)
 
 bios_irq:
-		rti
-;    save
- ;   bit a_vreg
-  ;  bpl @exit
-;@exit:
- ;   restore
+			rti
 
 num_patterns = $02
 pattern:
