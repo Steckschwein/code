@@ -7,8 +7,7 @@
 
 appstart $1000
 
-.exportzp controller1
-.exportzp controller2
+.exportzp controller1, controller2
 
 
 main:
