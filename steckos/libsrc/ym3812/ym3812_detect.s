@@ -47,7 +47,7 @@ loc_1062B:
 		lda #$21							;// this should lead to overflow (255) and setting of bits 7 and 6 in status byte (either timer expired, timer1 expired).
 		jsr opl2_reg_write
 		ldy #(1+(clockspeed*1000000)/OPL_CLK)
-		ldx #$ff							;// wait of loading the status byte - 
+		ldx #$ff							;// wait of loading the status byte -
 loc_1064C:
 		dex
 		bne loc_1064C
@@ -62,13 +62,13 @@ loc_1064C:
 		and #$e0							;// "and" that with e0, ends in zero if no bits are set
 		bne loc_10663					;// was it not zero ? ok, jmp to set carry and leave
 		jsr __opl2_reset_timer		;// ok previous status was no timers set. set timer control byte to #$60 = clear timers T1 T2 and ignore them
+		plp						 		;// restore .P
 		clc								;// clear the carry flag
-		jmp loc_10664					;// leave the subroutine
+		rts
 loc_10663:
 		jsr __opl2_reset_timer
-		sec								;// set the carry flag
-loc_10664:
 		plp						 		;// restore .P
+		sec								;// set the carry flag
 		rts
 
 __opl2_reset_timer:
