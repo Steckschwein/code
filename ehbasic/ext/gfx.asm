@@ -17,13 +17,9 @@
 
 .import	vdp_bgcolor
 
-.export GFX_2_On
-.export GFX_MC_On
-.export GFX_7_On
 .export GFX_7_Plot
 .export GFX_MC_Plot
 .export GFX_2_Plot
-.export GFX_Off
 .export GFX_BgColor
 
 ;
@@ -32,42 +28,58 @@
 ;	PLOT = $xxxx 				- assign the adress of GFX_Plot from label file
 ;	CALL PLOT,X,Y,COLOR		- invoke GFX_Plot with CALL api
 ;
+
+;	in .A - mode 0-7
+gfx_mode:
+		php
+		sei
+		asl ; offset
+		pha
+		jsr krn_textui_disable			;disable textui
+		jsr krn_display_off
+		plx
+		jsr _gfx_set_mode
+		plp
+		rts
+
+;	in .A - mode 0-7
+gfx_plot:
+      asl ; offset
+		tax
+      jmp (gfx_plot_table,x)
+
+_gfx_set_mode:
+		jmp (_gfx_mode_table,x)
+
+		
+_gfx_mode_table:
+      .word GFX_Off  ; 0
+      .word GFX_Off  ; 1
+      .word vdp_gfx2_on ; 2
+      .word vdp_mc_on ; 3
+      .word gfx_dummy; 4
+      .word gfx_dummy; 5
+      .word gfx_dummy; 6
+      .word vdp_gfx7_on ; 7
+gfx_dummy:
+      rts
+
+gfx_plot_table:
+      .word gfx_dummy  ; 0
+      .word gfx_dummy  ; 1
+      .word GFX_2_Plot ; 2
+      .word GFX_MC_Plot; 3
+      .word gfx_dummy; 4
+      .word gfx_dummy; 5
+      .word gfx_dummy; 6
+      .word GFX_7_Plot ; 7
+
 GFX_BgColor:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
 		txa
 		jmp vdp_bgcolor
 
-GFX_Off:
-		jsr	_prepare_gfx
-		jsr	krn_textui_init     ;restore textui
-		cli
-		rts
-
-GFX_MC_On:
-		jsr _prepare_gfx
-    
-		lda #0 ; black/black
-		jsr vdp_mc_blank
-		jsr	vdp_mc_on
-		cli
-		rts
-
-GFX_2_On:
-		jsr _prepare_gfx
-		lda #Gray<<4|Black
-		jsr vdp_gfx2_blank
-		jsr vdp_gfx2_on
-		cli
-		rts
-
-GFX_7_On:
-		jsr _prepare_gfx
-		jsr vdp_gfx7_on
-		lda #0
-		jsr vdp_gfx7_blank
-
-		cli
-		rts
+GFX_Off = krn_textui_init     ;restore textui
 
 GFX_2_Plot:
 		jsr GFX_Plot_Begin
@@ -82,13 +94,7 @@ GFX_MC_Plot:
 GFX_7_Plot:
 		jsr GFX_Plot_Begin
 		jsr vdp_gfx7_set_pixel
-		bra GFX_Plot_End
-
-_prepare_gfx:
-      sei
-      jsr krn_textui_disable			;disable textui
-      jmp krn_display_off
-      
+		bra GFX_Plot_End      
 
 GFX_Plot_Begin:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.

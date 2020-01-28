@@ -98,7 +98,7 @@ colour:
 
 ;	.X - x coordinate [0..ff]
 ;	.Y - y coordinate [0..bf]
-;	.A - color GRB [0..ff] as 332
+;	.A - color [0..ff] as GRB 332 (green bit 7-5, red bit 4-2, blue bit 1-0)
 ; 	VRAM ADDRESS = .X + 256*.Y
 vdp_gfx7_set_pixel:
 		  php

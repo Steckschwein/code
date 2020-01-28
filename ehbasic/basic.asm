@@ -7864,40 +7864,18 @@
         clc
         rts
 
-LAB_TEXT  = GFX_Off
+LAB_TEXT  = GFX_Off ; init with text model - @see RES_vec:
 
 LAB_PLOT:
-      ldx GFX_MODE		; init with text model - @see RES_vec:
-      jmp (gfx_plot_table,x)
-gfx_plot_table:
-      .word gfx_dummy  ; 0
-      .word gfx_dummy  ; 1
-      .word GFX_2_Plot ; 2
-      .word GFX_MC_Plot; 3
-      .word gfx_dummy; 4
-      .word gfx_dummy; 5
-      .word gfx_dummy; 6
-      .word GFX_7_Plot ; 7
+      lda GFX_MODE
+		jmp gfx_plot
 
 LAB_GRAPHIC:
       JSR LAB_GTBY    ; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
       txa
       and #$07
-      asl
-      tax
-      stx GFX_MODE
-      jmp (gfx_table,x)
-gfx_table:
-      .word GFX_Off  ; 0
-      .word GFX_Off  ; 1
-      .word GFX_2_On ; 2
-      .word GFX_MC_On ; 3
-      .word gfx_dummy; 4
-      .word gfx_dummy; 5
-      .word gfx_dummy; 6
-      .word GFX_7_On ; 7
-gfx_dummy:
-      rts
+      sta GFX_MODE
+		jmp gfx_mode
 
 ; system dependant i/o vectors
 ; these are in RAM and are set by the monitor at start-up
