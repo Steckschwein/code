@@ -34,19 +34,17 @@
 ;
 GFX_BgColor:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
-    txa
+		txa
 		jmp vdp_bgcolor
 
 GFX_Off:
-		sei
-		jsr	krn_display_off     ;restore textui
-		jsr	krn_textui_init
-    
+		jsr	_prepare_gfx
+		jsr	krn_textui_init     ;restore textui
 		cli
-    rts
+		rts
 
 GFX_MC_On:
-    jsr _prepare_gfx
+		jsr _prepare_gfx
     
 		lda #0 ; black/black
 		jsr vdp_mc_blank
@@ -55,16 +53,15 @@ GFX_MC_On:
 		rts
 
 GFX_2_On:
-    jsr _prepare_gfx
-    
+		jsr _prepare_gfx
 		lda #Gray<<4|Black
 		jsr vdp_gfx2_blank
-		jsr	vdp_gfx2_on
+		jsr vdp_gfx2_on
 		cli
 		rts
 
 GFX_7_On:
-    jsr _prepare_gfx
+		jsr _prepare_gfx
 		jsr vdp_gfx7_on
 		lda #0
 		jsr vdp_gfx7_blank
@@ -73,22 +70,19 @@ GFX_7_On:
 		rts
 
 GFX_2_Plot:
-		jsr GFX_Plot_Prepare
-		jmp vdp_gfx2_set_pixel
+		jsr GFX_Plot_Begin
+		jsr vdp_gfx2_set_pixel
+		bra GFX_Plot_End
     
 GFX_MC_Plot:
-		jsr GFX_Plot_Prepare
-		jmp vdp_mc_set_pixel
+		jsr GFX_Plot_Begin
+		jsr vdp_mc_set_pixel
+		bra GFX_Plot_End
 
 GFX_7_Plot:
-		jsr GFX_Plot_Prepare
+		jsr GFX_Plot_Begin
 		jsr vdp_gfx7_set_pixel
-
-		sei
-		vdp_wait_l 8
-		vdp_sreg <.HIWORD(ADDRESS_GFX1_SCREEN<<2), v_reg14
-		cli
-		rts
+		bra GFX_Plot_End
 
 _prepare_gfx:
       sei
@@ -96,7 +90,7 @@ _prepare_gfx:
       jmp krn_display_off
       
 
-GFX_Plot_Prepare:
+GFX_Plot_Begin:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
 		stx PLOT_XBYT	; save plot x
 		JSR LAB_SCGB 	; scan for "," and get byte
@@ -107,6 +101,11 @@ GFX_Plot_Prepare:
 		ldy PLOT_YBYT
 		rts
     
+GFX_Plot_End:
+		vdp_wait_l 6
+		vdp_sreg <.HIWORD(ADDRESS_TEXT_SCREEN<<2), v_reg14
+		rts
+
 GFX_MODE:  .res 1, 0
 PLOT_XBYT: .res 1
 PLOT_YBYT: .res 1
