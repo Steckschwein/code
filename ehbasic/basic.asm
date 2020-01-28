@@ -7872,10 +7872,11 @@ LAB_PLOT:
 
 LAB_GRAPHIC:
       JSR LAB_GTBY    ; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
-      txa
-      and #$07
-      sta GFX_MODE
-		jmp gfx_mode
+      TXA
+		AND #$07
+		ASL
+		STA GFX_MODE
+		JMP gfx_mode
 
 ; system dependant i/o vectors
 ; these are in RAM and are set by the monitor at start-up

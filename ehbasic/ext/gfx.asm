@@ -33,7 +33,6 @@
 gfx_mode:
 		php
 		sei
-		asl ; offset
 		pha
 		jsr krn_textui_disable			;disable textui
 		jsr krn_display_off
@@ -44,7 +43,6 @@ gfx_mode:
 
 ;	in .A - mode 0-7
 gfx_plot:
-      asl ; offset
 		tax
       jmp (gfx_plot_table,x)
 
@@ -112,6 +110,6 @@ GFX_Plot_End:
 		vdp_sreg <.HIWORD(ADDRESS_TEXT_SCREEN<<2), v_reg14
 		rts
 
-GFX_MODE:  .res 1, 0
+GFX_MODE:  .res 1, 0 ;mode as power of 2
 PLOT_XBYT: .res 1
 PLOT_YBYT: .res 1
