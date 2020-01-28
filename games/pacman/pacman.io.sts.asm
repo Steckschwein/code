@@ -27,7 +27,7 @@ io_irq:
 		bit	a_vreg
 		rts
 		
-io_irq_on:
+io_irq_on:	; nothing todo here on sts hw
 		rts
 		
 io_detect_joystick:

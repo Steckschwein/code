@@ -51,7 +51,7 @@ main:
 init:
 		ldx #.sizeof(GameState)-1
 		lda #0
-:	  sta game_state,x
+:		sta game_state,x
 		dex
 		bpl :-
 		rts
