@@ -27,10 +27,12 @@
 .include "common.inc"
 .include "zeropage.inc"
 .include "joystick.inc"
+.include "snes.inc"
+
 .include "keyboard.inc"
 .include "appstart.inc"
 
-.import joystick_read
+.import joystick_read, query_controllers
 .import vdp_memcpy, vdp_memcpys
 .import vdp_fill, vdp_fills
 .import vdp_init_reg
@@ -51,6 +53,11 @@ level_bg_cnt=$6
 level_script_ptr=$7
 level_bg_ptr=$8
 sin_tab_ptr=$a
+
+controller1 = $0c
+controller2 = controller1+3
+.exportzp controller1, controller2
+
 
 CHAR_BLANK=210
 CHAR_LAST_FG=198		; last character of foreground (cacti), range 128-198
@@ -88,6 +95,7 @@ dinosaur_cap=56
 sprite_empty=92
 
 .code
+		joy_off
 		jsr krn_textui_disable
 
 		lda	#33
@@ -350,8 +358,42 @@ vdp_print:
 :		 rts
 
 get_joy_status:
-		lda #JOY_PORT
-		jmp joystick_read
+;       lda #JOY_PORT^M
+;       jmp joystick_read^M
+
+        phx
+        phy
+
+        jsr query_controllers
+        ply
+        plx
+
+        lda controller1
+        ror ; ignore right
+        ror ; ignore left
+        ror ; down?
+        bcc down
+        ror ; up?
+        bcc up
+        ror ; start
+        bcc button
+        ror ; ignore select
+        ror ; button Y
+        bcc button
+        ror ; button B
+    	bcc button
+        lda #$ff
+        rts
+down:
+        lda #<(~JOY_DOWN)
+       	rts
+up:
+        lda #<(~JOY_UP)
+        rts
+button:
+        lda #<(~JOY_FIRE)
+        rts
+
 
 animate_dinosaur:
 		lda	dinosaur_state
