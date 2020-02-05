@@ -7,7 +7,7 @@
 
 appstart $1000
 
-.exportzp controller1, controller2
+.exportzp controller1=$00, controller2=$03
 
 
 main:
@@ -86,9 +86,8 @@ foo12:
 
 
 
-.zeropage
-controller1:
-        .res 3
-controller2:
-        .res 3
-
+;.zeropage
+; controller1:
+;         .res 3
+; controller2:
+;         .res 3
