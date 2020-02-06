@@ -32,7 +32,7 @@
 .include "keyboard.inc"
 .include "appstart.inc"
 
-.import joystick_read, query_controllers
+.import joystick_read, query_controllers, joystick_on
 .import vdp_memcpy, vdp_memcpys
 .import vdp_fill, vdp_fills
 .import vdp_init_reg
@@ -95,7 +95,6 @@ dinosaur_cap=56
 sprite_empty=92
 
 .code
-		joy_off
 		jsr krn_textui_disable
 
 		lda	#33
@@ -358,15 +357,20 @@ vdp_print:
 :		 rts
 
 get_joy_status:
-;       lda #JOY_PORT^M
-;       jmp joystick_read^M
 
         phx
         phy
-
+		joy_off
         jsr query_controllers
+		joy_on
         ply
         plx
+		lda controller1+2
+		beq snes
+
+    	lda #JOY_PORT
+		jmp joystick_read
+snes:
 
         lda controller1
         ror ; ignore right
