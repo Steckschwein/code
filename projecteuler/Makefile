@@ -5,7 +5,8 @@ CLIB=../steckos/clib/lib/steckschwein-clib.a
 LDFLAGS=-C ../steckos/prg.ld65.cfg -m $<.map $(LIBS)
 
 
-PRGS=problem1.prg
+PRGS=problem1.prg \
+	problem2.prg
 
 .PHONY: all clean
 
