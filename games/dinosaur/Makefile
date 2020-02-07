@@ -45,5 +45,5 @@ gfx.res: *.res
 %.prg: %.o $(LIBS)
 	ld65 $< $(LDFLAGS) -o $@
 
-transfer: all
+dinosaur: all
 	../../transfer.py dinosaur.prg

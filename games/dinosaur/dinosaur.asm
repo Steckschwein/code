@@ -41,23 +41,25 @@
 appstart $1000
 
 fd_area					= $0380 ; File descriptor area until $0400
-
 JOY_PORT=JOY_PORT1		;port 1
-enemy_state=$0
-seed=$1
-game_state=$2
-dinosaur_state=$3
-score_board_cnt=$4
-sin_tab_offs=$5
-level_bg_cnt=$6
-level_script_ptr=$7
-level_bg_ptr=$8
-sin_tab_ptr=$a
 
-controller1 = $0c
-controller2 = controller1+3
 .exportzp controller1, controller2
 
+.zeropage
+level_bg_ptr:		.res 2
+sin_tab_ptr: 		.res 2
+controller1:		.res 3
+controller2:		.res 3
+
+.bss
+enemy_state:		.res 1
+seed:					.res 1
+game_state:			.res 1
+dinosaur_state:	.res 1
+score_board_cnt:	.res 1
+sin_tab_offs:		.res 1
+level_bg_cnt:		.res 1
+level_script_ptr:	.res 1
 
 CHAR_BLANK=210
 CHAR_LAST_FG=198		; last character of foreground (cacti), range 128-198
@@ -934,6 +936,7 @@ sprite_init_tab:
 	 .byte	DINOSAUR_Y+16	,DINOSAUR_X	,28	, dinosaur_color
 	 .byte	DINOSAUR_Y-10	,DINOSAUR_X+10	, dinosaur_cap, Transparent
 sprite_init_tab_end:
+
 sprite_tab:
 	.res 5*4, 0
 sprite_tab_enemy:
@@ -950,9 +953,6 @@ sprite_tab_sky:
 	.byte	$d0	; end of sprite table
 sprite_tab_end:
 
-sprite_tab_sky_trigger:
-  .res 4, 0
-
 dino_run_1:
 	.byte 0,4,8,12,60
 dino_run_2:
@@ -966,8 +966,6 @@ dino_jump:
 dino_dead:
 	.byte 32,4,8,28,dinosaur_cap
 
-save_isr: .res 2
-
 text_game_label:
   .asciiz " Verbindung zum Internet konnte  nicht hergestellt werden."
 text_game_over:
@@ -979,9 +977,7 @@ text_game_reload_2:
 
 text_score_board:
   .asciiz "HI "
-score_value:
-  .res 3,0
-
+  
 level_bg_1:; cactus
 	 .byte 3
 	.byte 128, 129, 130, 131
@@ -1131,12 +1127,15 @@ game_chars_4px_xmas:
 .include "dinosaur.chars.6.4px.res"
 .include "dinosaur.chars.reload.res"
 
-frame_cnt:
-  .byte 0
-filename:
-  .asciiz "DINOSAUR.HI"
+filename:  .asciiz "DINOSAUR.HI"
 
-score_data: ; it's ok after vram init we can overwrite the charset....
-score_value_high: .byte $00,$00,$00
 charset:
 .include "ati_8x8.h.asm"
+
+.bss
+sprite_tab_sky_trigger: .res 4,0
+save_isr: 					.res 2
+score_value:  				.res 3,0
+frame_cnt:					.res 1,0
+score_data:
+score_value_high: 		.res 3
