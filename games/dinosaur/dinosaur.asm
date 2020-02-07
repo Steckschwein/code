@@ -388,6 +388,11 @@ snes:
         bcc button
         ror ; button B
     	bcc button
+		lda controller1+1
+		rol ; button A
+		bcc button
+		rol ; button X
+		bcc button
         lda #$ff
         rts
 down:
@@ -977,7 +982,7 @@ text_game_reload_2:
 
 text_score_board:
   .asciiz "HI "
-  
+
 level_bg_1:; cactus
 	 .byte 3
 	.byte 128, 129, 130, 131
