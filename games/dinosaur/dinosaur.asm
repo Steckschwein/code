@@ -53,9 +53,9 @@ controller2:		.res 3
 
 .bss
 enemy_state:		.res 1
-seed:					.res 1
+seed:				.res 1
 game_state:			.res 1
-dinosaur_state:	.res 1
+dinosaur_state:		.res 1
 score_board_cnt:	.res 1
 sin_tab_offs:		.res 1
 level_bg_cnt:		.res 1
@@ -123,45 +123,44 @@ sprite_empty=92
 
 		cli
 
-:	  jsr krn_getkey
+:	  	jsr krn_getkey
 		cmp #KEY_ESCAPE
 		bne :-
 
-	 sei
-	 copypointer save_isr, $fffe
-	 cli
-	 jsr	krn_textui_init
-	 jsr krn_textui_enable
-	 jmp (retvec)
-;-	bra -
-
+		sei
+		copypointer save_isr, $fffe
+		cli
+		jsr	krn_textui_init
+		jsr krn_textui_enable
+		jmp (retvec)
 
 
 isXmas: ; only 24.12-26.12. load xmas gfx
-	 lda rtc_systime_t+4
-	 cmp #11
-	 bne :+
-	 lda rtc_systime_t+3 ; day
-	 cmp #24
-	 bcc :++
-	 cmp #27
-	 bcs :+
-	 sec
-	 rts
-:	clc
-:	rts
+		lda rtc_systime_t+4
+		cmp #11
+		bne :+
+		lda rtc_systime_t+3 ; day
+		cmp #24
+		bcc :++
+		cmp #27
+		bcs :+
+		sec
+		rts
+:		clc
+:		rts
 
 vdp_init_gfx:
-	 .byte 0
-	 .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
-	 .byte (A_GX_SCR / $400)	; name table - value * $400					--> characters
-	 .byte (A_GX_COL /  $40)	; color table - value * $40 (gfx1), 7f/ff (gfx2)
-	 .byte (A_GX_PAT_2 / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
-	 .byte (A_SP_ATR / $80)	; sprite attribute table - value * $80 		--> offset in VRAM
-	 .byte (A_SP_PAT / $800)  ; sprite pattern table - value * $800  		--> offset in VRAM
-	 .byte Light_Blue
-	 .byte v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM
-	 .byte 0
+		.byte 0
+		.byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
+		.byte (A_GX_SCR / $400)	; name table - value * $400					--> characters
+		.byte (A_GX_COL /  $40)	; color table - value * $40 (gfx1), 7f/ff (gfx2)
+		.byte (A_GX_PAT_2 / $800) ; pattern table (charset) - value * $800  	--> offset in VRAM
+		.byte (A_SP_ATR / $80)	; sprite attribute table - value * $80 		--> offset in VRAM
+		.byte (A_SP_PAT / $800)  ; sprite pattern table - value * $800  		--> offset in VRAM
+		.byte Light_Blue
+		.byte v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM
+		.byte 0
+
 vdp_init_gfx_end:
 
 init_screen:				;draw desert
@@ -178,7 +177,7 @@ init_screen:				;draw desert
 		cpy	#CHAR_BLANK
 		bne	:+
 		ldy	#206
-:	  inx
+:	  	inx
 		cpx	#32
 		bne @loop
 		rts
@@ -191,27 +190,27 @@ scroll_background:
 		ldy	#v_reg4
 		vdp_sreg
 		rts
-:	  lda	#(A_GX_PAT_2 / $800)
+:		lda	#(A_GX_PAT_2 / $800)
 		ldy	#v_reg4
 		vdp_sreg
 
-	ldx	#$00
-:	lda	screen+1,x
-	sta	screen,x
-	lda	screen+32+1,x
-	sta	screen+32,x
-	lda	screen+32*2+1,x
-	sta	screen+32*2,x
-	lda	screen+32*3+1,x
-	sta	screen+32*3,x
-	inx
-	cpx	#32
-	bne	:-
+		ldx	#$00
+:		lda	screen+1,x
+		sta	screen,x
+		lda	screen+32+1,x
+		sta	screen+32,x
+		lda	screen+32*2+1,x
+		sta	screen+32*2,x
+		lda	screen+32*3+1,x
+		sta	screen+32*3,x
+		inx
+		cpx	#32
+		bne	:-
 
-	 ; level generator
-	lda	level_bg_cnt		;
-	cmp	(level_bg_ptr)
-	beq	@lscript
+		 ; level generator
+		lda	level_bg_cnt		;
+		cmp	(level_bg_ptr)
+		beq	@lscript
 @lgen:
 		asl	; x4, rows
 		asl
@@ -236,7 +235,7 @@ scroll_background:
 		bpl	:+
 		stz	level_script_ptr
 		bra	@lscript
-:	  tax
+:		tax
 		inc level_script_ptr
 		txa
 		beq	@lgen_bg		  ;0 - background desert/hills
@@ -248,7 +247,7 @@ scroll_background:
 		bra @lgen_bg		  ;bg desert/hills
 
 @lgen_cacti:
-		 jsr rnd			;otherwise choose cacti randomly
+		jsr rnd			;otherwise choose cacti randomly
 		and	#$03
 		asl
 		tax
@@ -272,17 +271,17 @@ scroll_background:
 		bra	@lgen
 
 bg_table:
-	.word level_bg_1
-	.word level_bg_2
-	.word level_bg_3
-	.word level_bg_4
+		.word level_bg_1
+		.word level_bg_2
+		.word level_bg_3
+		.word level_bg_4
 
 level_script:
-	 ; 0 - background
-	 ; 1 - cacti
-	 ; 2 - pterodactyl with background
-;	.byte 0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0,0,0,1,$80
-	.byte 0,0,0,0,0,0,1,0,0,0,1,0,2,0,0,0,0,1,0,0,0,2,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,2,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,2,0,1,0,0,0,0,2,0,1,0,0,1,$80
+		 ; 0 - background
+		 ; 1 - cacti
+		 ; 2 - pterodactyl with background
+;	 	.byte 0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0,0,0,1,$80
+		.byte 0,0,0,0,0,0,1,0,0,0,1,0,2,0,0,0,0,1,0,0,0,2,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,2,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,2,0,1,0,0,0,0,2,0,1,0,0,1,$80
 
 ;	detection algorithm - dinosaur is 32*32px, we check only char positions and sprites as follows - cause this best matches the dinosaur shape
 ;	 ##		 -> ##
@@ -290,35 +289,35 @@ level_script:
 ;	##			#
 ;	##
 detect_collision:
-	ldx	#(DINOSAUR_Y-4*8+DINOSAUR_HEIGHT)		; 4x8px height cacti char
-	lda	#CHAR_LAST_FG							; test cacti chars
-	cmp	screen+(DINOSAUR_X/8)+1
-	bcs	:+
-	ldx	#(DINOSAUR_Y-3*8+DINOSAUR_HEIGHT)		; 3x8px height cacti char
-	cmp	screen+(DINOSAUR_X/8)+2
-	bcs	:+
-	ldx	#(DINOSAUR_Y-2*8+DINOSAUR_HEIGHT)		; 2x8px height cacti char
-	cmp	screen+(DINOSAUR_X/8)+1+32*1
-	bcs	:+
-	cmp	screen+(DINOSAUR_X/8)+0+32*2
-	bcs	:+
-	rts
+		ldx	#(DINOSAUR_Y-4*8+DINOSAUR_HEIGHT)		; 4x8px height cacti char
+		lda	#CHAR_LAST_FG							; test cacti chars
+		cmp	screen+(DINOSAUR_X/8)+1
+		bcs	:+
+		ldx	#(DINOSAUR_Y-3*8+DINOSAUR_HEIGHT)		; 3x8px height cacti char
+		cmp	screen+(DINOSAUR_X/8)+2
+		bcs	:+
+		ldx	#(DINOSAUR_Y-2*8+DINOSAUR_HEIGHT)		; 2x8px height cacti char
+		cmp	screen+(DINOSAUR_X/8)+1+32*1
+		bcs	:+
+		cmp	screen+(DINOSAUR_X/8)+0+32*2
+		bcs	:+
+		rts
 :
-	txa											; x was set above
-	cmp	sprite_tab+1*4							; test the y pos of the lower sprites, sufficient for collision - we jump on the cacti
-	bcc	:+
-	beq	:+
-	cmp	sprite_tab+3*4
-	bcc	:+
-	beq	:+
+		txa											; x was set above
+		cmp	sprite_tab+1*4							; test the y pos of the lower sprites, sufficient for collision - we jump on the cacti
+		bcc	:+
+		beq	:+
+		cmp	sprite_tab+3*4
+		bcc	:+
+		beq	:+
 
-	;detect collision - pterodactyl
-	lda	#(DINOSAUR_X)
-	cmp	sprite_tab_enemy
-	rts
+		;detect collision - pterodactyl
+		lda	#(DINOSAUR_X)
+		cmp	sprite_tab_enemy
+		rts
 
-:	lda	#DINOSAUR_DEAD
-	sta dinosaur_state
+:		lda	#DINOSAUR_DEAD
+		sta dinosaur_state
 
 game_over:
 		jsr get_joy_status
@@ -327,9 +326,9 @@ game_over:
 		jsr krn_getkey
 		cmp #$20	 ; space ?
 		bne :++
-:		 lda #STATUS_JOY_PRESSED | STATUS_GAME_OVER
+:		lda #STATUS_JOY_PRESSED | STATUS_GAME_OVER
 		bra set_state
-:	  lda #STATUS_GAME_OVER
+:		lda #STATUS_GAME_OVER
 set_state:
 		sta game_state
 
@@ -350,16 +349,15 @@ set_state:
 vdp_print:
 		vdp_sreg
 		ldy	#0
-:	  lda	(ptr1),y
+:	  	lda	(ptr1),y
 		beq	:+
 		vdp_wait_l
 		sta	a_vram
 		iny
 		bne	:-
-:		 rts
+:		rts
 
 get_joy_status:
-
         phx
         phy
 		joy_off
@@ -369,11 +367,9 @@ get_joy_status:
         plx
 		lda controller1+2
 		beq snes
-
     	lda #JOY_PORT
 		jmp joystick_read
 snes:
-
         lda controller1
         ror ; ignore right
         ror ; ignore left
@@ -432,7 +428,7 @@ animate_dinosaur:
 		lda	#DINOSAUR_RUN
 		sta dinosaur_state
 		ldy	#$00
-:		 sty sin_tab_offs
+:		sty sin_tab_offs
 @l_ad_exit:
 		rts
 @l_ad_dead:
@@ -440,7 +436,7 @@ animate_dinosaur:
 		beq	:+
 		SetVector	dino_dead, ptr1
 		bra	update_sprite_data
-:	  lda	frame_cnt
+:		lda	frame_cnt
 		bit	#03
 		bne	@l_ad_exit
 		lda	dinosaur_state
@@ -451,7 +447,7 @@ animate_dinosaur:
 		beq	:+
 		SetVector	dino_duck_1, ptr1
 		bra update_sprite_data
-:		 SetVector	dino_duck_2, ptr1
+:		SetVector	dino_duck_2, ptr1
 		bra update_sprite_data
 @l_ad_run:
 		lda	frame_cnt
@@ -459,7 +455,7 @@ animate_dinosaur:
 		beq	:+
 		SetVector	dino_run_1, ptr1
 		bra update_sprite_data
-:	  SetVector	dino_run_2, ptr1
+:	  	SetVector	dino_run_2, ptr1
 ;		 bra update_sprite_data
 
 update_sprite_data:
@@ -476,7 +472,7 @@ update_sprite_data:
 		sta	sprite_tab+1+4*4	; cap sprite x
 		lda #(255-10)
 		bra :++
-:	  lda #DINOSAUR_X+16;	 ;DINOSAUR_Y+4, DINOSAUR_X+16
+:		lda #DINOSAUR_X+16;	 ;DINOSAUR_Y+4, DINOSAUR_X+16
 		sta	sprite_tab+1+4*4	; cap sprite x
 		lda #4
 :
@@ -500,7 +496,7 @@ animate_enemy:
 		bne	:+
 		rts
 
-:	  ldx #$0
+:	  	ldx #$0
 @l_ae_loop:
 		lda sprite_tab_enemy+1,x
 		sec
@@ -528,7 +524,7 @@ animate_enemy:
 		ldx #$08
 		bra @l_ae_loop
 
-:	  lda	frame_cnt
+:	  	lda	frame_cnt
 		and	#08
 		beq	:+
 		lda	#PD_PTR
@@ -540,7 +536,7 @@ animate_enemy:
 		lda	#PD_PTR+12
 		sta	sprite_tab_enemy+2+3*4
 		rts
-:	  lda	#PD_PTR+16
+:	  	lda	#PD_PTR+16
 		sta	sprite_tab_enemy+2
 		lda	#PD_PTR+20
 		sta	sprite_tab_enemy+2+1*4
@@ -566,7 +562,7 @@ animate_sky:
 		lda	#32
 		sta sprite_tab_sky+1,x
 		bra	@l_as_move
-:	  tya
+:	  	tya
 		and	#<(~SPRITE_EC)
 		sta	sprite_tab_sky+3,x
 		lda	#$ff
@@ -587,8 +583,8 @@ game_isr:
 
 		save
 
-;	 lda	#Dark_Yellow
-;	 jsr	vdp_bgcolor
+;	 	lda	#Dark_Yellow
+;	 	jsr	vdp_bgcolor
 
 		lda	game_state
 		and	#STATUS_PLAY
@@ -642,7 +638,7 @@ disable_pd:
 enable_pd:
 		inc	enemy_state
 		ldx	#0
-:	  lda	sprite_tab_enemy_init, x
+:	  	lda	sprite_tab_enemy_init, x
 		sta sprite_tab_enemy,x
 		inx
 		cpx	#4*4
@@ -653,7 +649,7 @@ new_game:
 		jsr	init_screen
 
 		ldx	#sprite_init_tab_end-sprite_init_tab
-:	  lda	sprite_init_tab, x
+:	 	lda	sprite_init_tab, x
 		sta sprite_tab,x
 		dex
 		bpl :-
@@ -677,7 +673,7 @@ new_game:
 		SetVector level_bg_3, level_bg_ptr
 
 		ldx	#0
-:	  jsr	rnd
+:	  	jsr	rnd
 		sta	sprite_tab_sky_trigger,x
 		inx
 		cpx	#4
@@ -695,7 +691,7 @@ new_game:
 		cmp	score_value_high+2
 		bcc	@l_ng_reset_score
 		beq	@l_ng_reset_score
-:	  lda score_value+2
+:	  	lda score_value+2
 		sta score_value_high+2
 		lda score_value+1
 		sta score_value_high+1
@@ -729,7 +725,7 @@ score_board:
 		dec	score_board_cnt	;every 5 frames update score, which means 10 digits per second
 		beq	:+
 		rts
-:	  lda	#$05
+:	  	lda	#$05
 		sta	score_board_cnt
 
 		sed						;add in decimal mode
@@ -743,7 +739,7 @@ score_board:
 		bcc	:+
 		adc	score_value
 		sta	score_value
-:	  cld
+:	  	cld
 		rts
 
 
@@ -767,11 +763,11 @@ action_handler:
 		sta dinosaur_state
 		SetVector sin_tab, sin_tab_ptr	;long jump
 		rts
-:	  lda	sin_tab_offs	;no joy/key pressed after 5 frames, switch to short jump
+:	 	lda	sin_tab_offs	;no joy/key pressed after 5 frames, switch to short jump
 		cmp	#8
 		bne :+
 		SetVector sin_tab_short, sin_tab_ptr
-:	  lda	dinosaur_state
+:	  	lda	dinosaur_state
 		and #DINOSAUR_JUMP	;only allow jump, if dinosaur is not already jumping
 		bne	@l_ah_exit
 		jsr get_joy_status
@@ -780,7 +776,7 @@ action_handler:
 		lda	#DINOSAUR_DUCK
 		sta dinosaur_state
 		rts
-:	  lda	#DINOSAUR_RUN
+:	  	lda	#DINOSAUR_RUN
 		sta dinosaur_state
 @l_ah_exit:
 		rts
@@ -794,7 +790,7 @@ load_highscore:
 		SetVector score_data, read_blkptr
 		jsr krn_read
 		jsr krn_close
-:	  rts
+:		rts
 
 init_vram:
 		jsr isXmas
@@ -831,7 +827,7 @@ init_vram:
 		bcc :+
 		lda #<game_chars_xmas ; xmas game charset
 		ldy #>game_chars_xmas
-:	  ldx	#$03
+:	  	ldx	#$03
 		jsr	vdp_memcpy
 
 		vdp_sreg <(A_GX_PAT_2+GAME_CHAR_OFFS), WRITE_ADDRESS + >(A_GX_PAT_2+GAME_CHAR_OFFS)
@@ -841,7 +837,7 @@ init_vram:
 		bcc :+
 		lda #<game_chars_4px_xmas
 		ldy #>game_chars_4px_xmas
-:	  ldx	#$03
+:	  	ldx	#$03
 		jsr	vdp_memcpy
 
 		vdp_sreg <A_SP_PAT, WRITE_ADDRESS + >A_SP_PAT
@@ -867,7 +863,7 @@ update_vram:
 		;score_board
 		vdp_sreg <(A_GX_SCR + (1*32))+17, WRITE_ADDRESS + >(A_GX_SCR+(1*32)+17)
 		ldx	#0
-:	  lda	text_score_board,x
+:	  	lda	text_score_board,x
 		beq	:+
 		vdp_wait_l 8
 		sta a_vram
@@ -916,11 +912,11 @@ digit_out:
 		rts
 
 rnd:
-		 lda seed
-		 beq doEor
-		 asl
-		 beq noEor ;if the input was $80, skip the EOR
-		 bcc noEor
+		lda seed
+		beq doEor
+		asl
+		beq noEor ;if the input was $80, skip the EOR
+		bcc noEor
 doEor:
 		eor #$1d
 noEor:
@@ -930,166 +926,166 @@ noEor:
 .data
 
 sprite_tab_enemy_init:
-	 .byte	PD_Y		,PD_X,		 PD_PTR+0*4, Dark_Red
-	 .byte	PD_Y+16	,PD_X,		 PD_PTR+1*4, Dark_Red
-	 .byte	PD_Y		,PD_X+16,  PD_PTR+2*4, Dark_Red
-	 .byte	PD_Y+16	,PD_X+16,  PD_PTR+3*4, Dark_Red
+		.byte	PD_Y		,PD_X,		 PD_PTR+0*4, Dark_Red
+		.byte	PD_Y+16	,PD_X,		 PD_PTR+1*4, Dark_Red
+		.byte	PD_Y		,PD_X+16,  PD_PTR+2*4, Dark_Red
+		.byte	PD_Y+16	,PD_X+16,  PD_PTR+3*4, Dark_Red
 sprite_init_tab:
-	 .byte	DINOSAUR_Y		,DINOSAUR_X+16	,0	, dinosaur_color
-	 .byte	DINOSAUR_Y+16	,DINOSAUR_X+16	,4	, dinosaur_color
-	 .byte	DINOSAUR_Y		,DINOSAUR_X	,8	, dinosaur_color
-	 .byte	DINOSAUR_Y+16	,DINOSAUR_X	,28	, dinosaur_color
-	 .byte	DINOSAUR_Y-10	,DINOSAUR_X+10	, dinosaur_cap, Transparent
+		.byte	DINOSAUR_Y		,DINOSAUR_X+16	,0	, dinosaur_color
+		.byte	DINOSAUR_Y+16	,DINOSAUR_X+16	,4	, dinosaur_color
+		.byte	DINOSAUR_Y		,DINOSAUR_X	,8	, dinosaur_color
+		.byte	DINOSAUR_Y+16	,DINOSAUR_X	,28	, dinosaur_color
+		.byte	DINOSAUR_Y-10	,DINOSAUR_X+10	, dinosaur_cap, Transparent
 sprite_init_tab_end:
 
 sprite_tab:
-	.res 5*4, 0
+		.res 5*4, 0
 sprite_tab_enemy:
-	.res 4*4, 0
+		.res 4*4, 0
 sprite_tab_sky:
-	.byte	25,100,48, White
-	.byte	25,116,52, White
-	.byte	41,30,48, White
-	.byte	41,46,52, White
-	.byte	57,70,48, White
-	.byte	57,86,52, White
-	.byte	15,200,48, White
-	.byte	15,216,52, White
-	.byte	$d0	; end of sprite table
+		.byte	25,100,48, White
+		.byte	25,116,52, White
+		.byte	41,30,48, White
+		.byte	41,46,52, White
+		.byte	57,70,48, White
+		.byte	57,86,52, White
+		.byte	15,200,48, White
+		.byte	15,216,52, White
+		.byte	$d0	; end of sprite table
 sprite_tab_end:
 
 dino_run_1:
-	.byte 0,4,8,12,60
+		.byte 0,4,8,12,60
 dino_run_2:
-	.byte 0,4,16,20,dinosaur_cap
+		.byte 0,4,16,20,dinosaur_cap
 dino_duck_1:
-	.byte sprite_empty,36,sprite_empty,40,60
+		.byte sprite_empty,36,sprite_empty,40,60
 dino_duck_2:
-	.byte sprite_empty,36,sprite_empty,44,dinosaur_cap
+		.byte sprite_empty,36,sprite_empty,44,dinosaur_cap
 dino_jump:
-	.byte 0,4,8,28,60
+		.byte 0,4,8,28,60
 dino_dead:
-	.byte 32,4,8,28,dinosaur_cap
+		.byte 32,4,8,28,dinosaur_cap
 
 text_game_label:
-  .asciiz " Verbindung zum Internet konnte  nicht hergestellt werden."
+		.asciiz " Verbindung zum Internet konnte  nicht hergestellt werden."
 text_game_over:
-  .asciiz "GAME OVER"
+		.asciiz "GAME OVER"
 text_game_reload_1:
-  .byte 211,213,215,0
+		.byte 211,213,215,0
 text_game_reload_2:
-  .byte 212,214,216,0
+		.byte 212,214,216,0
 
 text_score_board:
-  .asciiz "HI "
+		.asciiz "HI "
 
 level_bg_1:; cactus
-	 .byte 3
-	.byte 128, 129, 130, 131
-	.byte 132, 133, 134, 135
-	.byte 136, 137, 138, 139
+		.byte 3
+		.byte 128, 129, 130, 131
+		.byte 132, 133, 134, 135
+		.byte 136, 137, 138, 139
 level_bg_2: ;3 cacti
-	.byte 5
-	.byte 210, 140, 141, 142
-	.byte 210, 143, 144, 145
-	.byte 210, 146, 147, 148
-	.byte 210, 149, 150, 151
-	.byte 210, 152, 153, 154
+		.byte 5
+		.byte 210, 140, 141, 142
+		.byte 210, 143, 144, 145
+		.byte 210, 146, 147, 148
+		.byte 210, 149, 150, 151
+		.byte 210, 152, 153, 154
 level_bg_3: ;4 cacti
-	.byte 7
-	.byte 128, 129, 130, 131
-	.byte 155, 156, 157, 158
-	.byte 159, 160, 161, 162
-	.byte 163, 164, 165, 166
-	.byte 167, 168, 169, 170
-	.byte 171, 172, 173, 174
-	.byte 175, 176, 177, 178
+		.byte 7
+		.byte 128, 129, 130, 131
+		.byte 155, 156, 157, 158
+		.byte 159, 160, 161, 162
+		.byte 163, 164, 165, 166
+		.byte 167, 168, 169, 170
+		.byte 171, 172, 173, 174
+		.byte 175, 176, 177, 178
 level_bg_4: ;2 cacti
-	.byte 5
-	.byte 179, 180, 181, 182
-	.byte 183, 184, 185, 186
-	.byte 187, 188, 189, 190
-	.byte 191, 192, 193, 194
-	.byte 195, 196, 197, 198
+		.byte 5
+		.byte 179, 180, 181, 182
+		.byte 183, 184, 185, 186
+		.byte 187, 188, 189, 190
+		.byte 191, 192, 193, 194
+		.byte 195, 196, 197, 198
 level_bg_5: ;hills
-	.byte 5
-	.byte 210, 210, 199, 200
-	.byte 210, 210, 201, 202
-	.byte 210, 210, 210, 203
-	.byte 210, 210, 210, 204
-	.byte 210, 210, 210, 205
+		.byte 5
+		.byte 210, 210, 199, 200
+		.byte 210, 210, 201, 202
+		.byte 210, 210, 210, 203
+		.byte 210, 210, 210, 204
+		.byte 210, 210, 210, 205
 level_bg_6: ;desert
-	.byte 4
-	.byte 210, 210, 210, 206
-	.byte 210, 210, 210, 207
-	.byte 210, 210, 210, 208
-	.byte 210, 210, 210, 209
+		.byte 4
+		.byte 210, 210, 210, 206
+		.byte 210, 210, 210, 207
+		.byte 210, 210, 210, 208
+		.byte 210, 210, 210, 209
 
 sin_tab:
-.byte	5
-.byte	10
-.byte	14
-.byte	19
-.byte	24
-.byte	28
-.byte	32
-.byte	36
-.byte	40
-.byte	43
-.byte	46
-.byte	48
-.byte	51
-.byte	53
-.byte	54
-.byte	55
-.byte	56
-.byte	56
-.byte	56
-.byte	55
-.byte	54
-.byte	53
-.byte	51
-.byte	48
-.byte	46
-.byte	43
-.byte	40
-.byte	36
-.byte	32
-.byte	28
-.byte	24
-.byte	19
-.byte	14
-.byte	10
-.byte	5
-;PI = 3.14159265358979323846
-;	.byte sin(float(.i) * 5 * PI/180)*56 + 0.5
-.byte	$ff
+		.byte	5
+		.byte	10
+		.byte	14
+		.byte	19
+		.byte	24
+		.byte	28
+		.byte	32
+		.byte	36
+		.byte	40
+		.byte	43
+		.byte	46
+		.byte	48
+		.byte	51
+		.byte	53
+		.byte	54
+		.byte	55
+		.byte	56
+		.byte	56
+		.byte	56
+		.byte	55
+		.byte	54
+		.byte	53
+		.byte	51
+		.byte	48
+		.byte	46
+		.byte	43
+		.byte	40
+		.byte	36
+		.byte	32
+		.byte	28
+		.byte	24
+		.byte	19
+		.byte	14
+		.byte	10
+		.byte	5
+		;PI = 3.14159265358979323846
+		;	.byte sin(float(.i) * 5 * PI/180)*56 + 0.5
+		.byte	$ff
 sin_tab_short:
-.byte	0
-.byte	6
-.byte	12
-.byte	18
-.byte	24
-.byte	29
-.byte	34
-.byte	38
-.byte	42
-.byte	44
-.byte	46
-.byte	48
-.byte	48
-.byte	48
-.byte	46
-.byte	44
-.byte	42
-.byte	38
-.byte	34
-.byte	29
-.byte	24
-.byte	18
-.byte	12
-.byte	6
-.byte	$ff
+		.byte	0
+		.byte	6
+		.byte	12
+		.byte	18
+		.byte	24
+		.byte	29
+		.byte	34
+		.byte	38
+		.byte	42
+		.byte	44
+		.byte	46
+		.byte	48
+		.byte	48
+		.byte	48
+		.byte	46
+		.byte	44
+		.byte	42
+		.byte	38
+		.byte	34
+		.byte	29
+		.byte	24
+		.byte	18
+		.byte	12
+		.byte	6
+		.byte	$ff
 
 sprites:
 .include "dinosaur.sprites.res"
@@ -1139,8 +1135,8 @@ charset:
 
 .bss
 sprite_tab_sky_trigger: .res 4,0
-save_isr: 					.res 2
-score_value:  				.res 3,0
-frame_cnt:					.res 1,0
+save_isr: 				.res 2
+score_value:  			.res 3,0
+frame_cnt:				.res 1,0
 score_data:
 score_value_high: 		.res 3
