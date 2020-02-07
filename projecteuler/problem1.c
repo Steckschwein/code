@@ -21,44 +21,44 @@
 // SOFTWARE.
 
 /**
+ * sum of all multiples of 3 and 5 < 1000
  * https://projecteuler.net/problem=1
  */
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <sys/utsname.h>
 #include <conio.h>
 // #include <stdio.h>
+unsigned char buf[16];
 
-unsigned long sum3(unsigned long n){
-	if(n < 3){
-		return 0;
-	}
-	if(n < 6){
-		return 3;
-	}
-	return n + sum3(n-3);
-}
-
-unsigned long sum5(unsigned long n){
-	if(n < 5){
-		return 0;
-	}
-	if(n < 10){
-		return 5;
-	}
-	return n + sum5(n-5);
+unsigned char digit(unsigned long n, unsigned char pos){
+	sprintf(buf, "%ld", n);
+	return buf[strlen(buf)-1-pos];
 }
 
 int main (int argc, const char* argv[])
 { 
 	unsigned long e;
-	unsigned long sum;
-
+	unsigned long p;
+	unsigned long i;
+	unsigned long sum=0;
+	
 	cprintf("\n");
 	
 	if(argc > 1){
 		e = atol(argv[1]);
-		sum = sum3((e-1)/3*3) + sum5((e-1)/5*5);
+
+		for(i=0;i<e;i+=3){
+			unsigned char d = digit(i, 0);
+			if(d == '0' || d == '5'){
+				continue; //skip multiples of 3 which are multiples of 5 too
+			}
+			sum += i;
+		}
+		for(i=0;i<e;i+=5){
+			sum += i;
+		}
 		cprintf("%ld\n", sum);
 	}
 	return EXIT_SUCCESS;
