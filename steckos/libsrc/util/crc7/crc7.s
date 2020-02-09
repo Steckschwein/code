@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 		.importzp ptr1
-		.importzp tmp
+		.importzp tmp1
 
 		.import char_out
 
@@ -41,7 +41,7 @@ polynom = $89
 .proc crc7
 			cpx #0
 			beq @rts
-			stx tmp
+			stx tmp1
 
 			sta ptr1
 			sty ptr1+1
@@ -64,7 +64,7 @@ polynom = $89
 			bne @loop_x
 
 			iny
-			cpy tmp
+			cpy tmp1
 			bne @loop
 
 			lsr	; crc >> 1

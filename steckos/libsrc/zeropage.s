@@ -19,7 +19,7 @@ tmp2:			  .res 1
 tmp3:			  .res 1
 tmp4:			  .res 1
 ;spi_sr:           .res 1
-tmp:           .res 1
+;tmp:           .res 1
 
 ;zp_end = *
 
