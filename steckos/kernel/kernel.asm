@@ -66,12 +66,12 @@ nvram = $1000
 
 kern_init:
 		sei
-		
+
 		sta krn_ptr1; test
 		sta krn_tmp; test
 		sta vdp_ptr ; test
 		sta vdp_tmp	 ; test
-		
+
 		; copy trampolin code for ml monitor entry to ram
 		ldx #$00
 @copy:
@@ -97,11 +97,11 @@ kern_init:
 
 .ifndef DEBUG_KERNEL
 		jsr primm
-		.byte $d5,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$b8,$0a
-		.byte $b3," steckOS Kernel "
+		.byte $d5,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$b8,$0a
+		.byte $b3," steckOS kernel "
 		.include "version.inc"
 		.byte $20,$b3,$0a
-		.byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
+		.byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
 		.byte $00
 .endif
 
@@ -290,7 +290,7 @@ upload:
 	; yes? compare y to lsb of endaddr
 	cpy endaddr
 	bne @l1 ; no? read next byte
-	
+
 	cli
 	; yes? send OK
 	jsr upload_ok

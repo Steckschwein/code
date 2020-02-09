@@ -40,7 +40,7 @@ clean:
 	ca65 --cpu $(CPU) --target none $(DEFINES) $(DEBUG) $(OPT) -I $(ASM_INCLUDE) $<
 
 version.inc:
-	echo -n ".byte \"r`hg log -l1 | grep changeset | cut -d ':' -f2 | tr -d ' '`\"" > version.inc
+	echo -n ".byte \"`git rev-parse --short HEAD`\"" > version.inc
 
 kernel.bin: version.inc $(OBJS) $(LIBS)
 	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -m kernel.map -Ln symbols.txt -o kernel.bin
