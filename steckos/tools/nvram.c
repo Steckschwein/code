@@ -35,7 +35,7 @@ unsigned char make_line_byte(unsigned char *);
 struct nvram
 {
     unsigned char version;
-    unsigned char filename[11];
+    unsigned char filename[13];
     unsigned char uart_baudrate;
     unsigned char uart_lsr;
     unsigned char crc7;
@@ -346,4 +346,3 @@ unsigned char lookup_baudrate(unsigned long int baud)
 
 	return 0;
 }
-
