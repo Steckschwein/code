@@ -25,7 +25,7 @@ bios.asm: version.inc
 	ca65 --target none $(CA65FLAGS) $(DEFINES) $<
 
 version.inc:
-	echo -n ".byte \"r`hg log -l1 | grep changeset | cut -d ':' -f2 | tr -d ' '`\"" > version.inc
+	echo -n ".byte \"`git rev-parse --short HEAD`\"" > version.inc
 
 bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -o bios.bin
