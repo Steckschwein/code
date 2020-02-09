@@ -1,4 +1,5 @@
 #include <conio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -83,29 +84,13 @@ int main (int argc, const char* argv[])
 	{
         if (argc == 3)
         {
-            if (strlen(argv[2]) > 12)
+            if (strlen(argv[2]) > 13)
 			{
 				cprintf("\r\nInvalid filename\r\n");
 				return 1;
 			}
 
-
-			x=0;
-			for (i=0;i<10, argv[2][i] != '\0' ;++i)
-			{
-				if (argv[2][i] == '.')
-				{
-					for (j=0;j<8-i;++j)
-					{
-						n.filename[x] = ' ';
-						++x;
-					}
-					continue;
-				}
-
-				n.filename[x] = argv[2][i] & ~0x20;
-				++x;
-			}
+            sprintf(n.filename, "%s\0", argv[2]);
 		    write_nvram();
 
         }
@@ -323,7 +308,7 @@ void init_nvram()
 {
         cprintf("Setting to default values ... ");
 	 	n.version 		= 0;
-	 	memcpy(n.filename, "LOADER  BIN", 11);
+	 	memcpy(n.filename, "loader.bin\0", 11);
 
 	 	n.uart_baudrate = 0x01; // 115200 baud
 	 	n.uart_lsr		= UART_DATA_BITS8|UART_PARITY_NONE|UART_STOP_BITS1; // 8N1
