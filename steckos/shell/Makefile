@@ -12,7 +12,7 @@ clean:
 	rm -f *.o *.prg *.map *.txt version.inc
 
 version.inc:
-	echo -n ".byte \"r`hg log -l1 | grep changeset | cut -d ':' -f2 | tr -d ' '`\"" > version.inc
+	echo -n ".byte \"`git rev-parse --short HEAD`\"" > version.inc
 
 %.o: %.asm
 	ca65 --target none $(DEBUG) $(CAFLAGS) $<
