@@ -2,18 +2,16 @@
 
 		.include "system.inc"
 		.include "zeropage.inc"
-		
+
 		.include "common.inc"
 		.include "keyboard.inc"
 		.include "via.inc"
 		.include "vdp.inc"
 
-ptr1l=ptr1
-ptr1h=ptr1+1
-ptr2l=ptr2
-ptr2h=ptr2+1
-DPL=ptr3
-DPH=ptr3+1
+; ptr1l=ptr1
+; ptr1h=ptr1+1
+; ptr2l=ptr2
+; ptr2h=ptr2+1
 
 BIOS_COLOR=Gray<<4|Black  ; gray text, black backdrop/border
 
@@ -26,7 +24,6 @@ ram_end_h			= ram_end+1
 ; Address pointers for serial upload
 startaddr	= ptr1
 endaddr		= ptr2
-p_addr		= ptr5
 length		= tmp1
 
 nvram		= $1000

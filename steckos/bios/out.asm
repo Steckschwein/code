@@ -1,7 +1,10 @@
 .export hexout, primm, print_crlf
 .import vdp_chrout
 .include "bios.inc"
-
+.zeropage
+ptr_primm:	.res 2
+DPL=ptr_primm
+DPH=ptr_primm+1
 .code
 ;----------------------------------------------------------------------------------------------
 ; Output byte as hex string on active output device
@@ -15,9 +18,9 @@ hexout:
 		lsr
 		lsr
 		lsr
-		lsr				
+		lsr
 		jsr hexdigit
-		txa 
+		txa
 		jsr hexdigit
 		plx
 		pla

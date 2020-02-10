@@ -11,19 +11,22 @@
       .import vdp_bgcolor
       .import vdp_memcpy
       .import vdp_fills
-		.import vdp_chrout
-
+	  .import vdp_chrout
+.zeropage
+ptr3: .res 2
+ptr4: .res 2
+.code
 ROWS=23
 .ifdef CHAR6x8
   .import charset_6x8
   .ifdef COLS80
     .ifndef V9958
       .assert 0, error, "80 COLUMNS ARE SUPPORTED ON V9958 ONLY! MAKE SURE -DV9958 IS ENABLED"
-    .endif 
+    .endif
     COLS=80
   .else
     COLS=40
-  .endif 
+  .endif
 .endif
 .ifndef CHAR6x8
   COLS=32
@@ -62,7 +65,7 @@ vdp_init:
 			ldx #$20
 			jsr vdp_fills
 			jsr vdp_gfx1_blank
-			
+
 			vdp_vram_w ADDRESS_GFX1_PATTERN
 			lda #<charset_8x8
 			ldy #>charset_8x8
@@ -76,7 +79,7 @@ vdp_init:
 			lda #TEXT_MODE_40
 .endif
 			sta max_cols
-      
+
 .ifdef CHAR6x8
 			jsr vdp_text_on
 			lda #BIOS_COLOR
@@ -100,7 +103,7 @@ vdp_detect:
 			jsr primm
 			.byte "Unknown Video",$0a,0
 			rts
-_l_chip:	
+_l_chip:
 			clc
 			adc #'3'        ; add ascii '3' to ID# value, V9938 ID# = "0", V9958 ID# = "2"
 			pha
@@ -109,11 +112,11 @@ _l_chip:
 			pla
 			jsr vdp_chrout
 			jsr primm
-			.byte "8 VRAM: ",0      
+			.byte "8 VRAM: ",0
 			lda #0          ; select sreg #0
 			ldy #v_reg15
 			vdp_sreg
-			
+
 			; VRAM detection
 			jsr _vdp_detect_vram
 
@@ -126,7 +129,7 @@ _vdp_detect_ext_ram:
 			jsr _vdp_detect_ram
 			lda #KEY_LF
 			jmp vdp_chrout
-			
+
 _vdp_detect_vram:
 			ldx #8  ;max 8 16k banks = 128k
 _vdp_detect_ram:
@@ -134,7 +137,7 @@ _vdp_detect_ram:
 			sta tmp1  ; the bank, start at $0, first inc below
 @l_detect:
 			inc tmp1
-			dex 
+			dex
 			bmi @l_end    ; we have to break after given amount of banks, otherwise overflow vram address starts from beginning
 			lda tmp1
 			ldy #v_reg14
@@ -144,7 +147,7 @@ _vdp_detect_ram:
 @l_end:
 			vdp_sreg 0, v_reg14 ;switch back to bank 0 and vram
 			vdp_sreg 0, v_reg45
-			
+
 			ldx #$ff
 			lda tmp1
 			beq @l_nc
@@ -171,7 +174,7 @@ _vdp_detect_ram:
 			jmp vdp_chrout
 _ram:
 			.byte " 16 32 64128"
-      
+
 _vdp_bank_available:
 			phx
 			jsr _vdp_r_vram
@@ -209,7 +212,7 @@ _vdp_vram0:
 			vdp_sreg
 			vnops
 			rts
-      
+
 vdp_scroll_up:
 			SetVector	(ADDRESS_TEXT_SCREEN+COLS), ptr3		        ; +COLS - offset second row
 			SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr4	; offset first row as "write adress"

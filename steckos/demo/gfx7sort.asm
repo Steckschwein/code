@@ -32,11 +32,15 @@
 ;.import hexout
 ;.export char_out=krn_chrout
 
-.importzp ptr1,ptr2,ptr3,ptr4
+.importzp ptr1,ptr2
 .importzp tmp1,tmp2,tmp3
 .globalzp ptr5
 .zeropage
-  ptr5:  .res 2
+    ptr3:  .res 2
+    ptr4:  .res 2
+
+    ptr5:  .res 2
+.code
 pt_x = ptr2;$10
 pt_y = ptr3;$12
 ht_x = ptr4;$14

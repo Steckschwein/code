@@ -4,6 +4,9 @@
 		.include "fcntl.inc"
 		.include "nvram.inc"
 
+
+
+		.code
 		.import uart_init, upload
 		.import init_via1
 		.import hexout, primm, print_crlf
@@ -86,14 +89,14 @@ check_stack:
 
 check_memory:
 			lda #>start_check
-			sta ptr1h
+			sta ptr1+1
 			ldy #<start_check
-			stz ptr1l
+			stz ptr1
 
 @l2:		ldx #num_patterns  ; 2 cycles
 @l1:		lda pattern,x      ; 4 cycles
-	  		sta (ptr1l),y   ; 6 cycles
-			cmp (ptr1l),y   ; 5 cycles
+	  		sta (ptr1),y   ; 6 cycles
+			cmp (ptr1),y   ; 5 cycles
 			bne @l3				  ; 2 cycles, 3 if taken
 
 			dex  				  ; 2 cycles
@@ -103,13 +106,13 @@ check_memory:
 			bne @l2				  ; 2 cycles, 3 if taken
 
 			; Stop at $e000 to prevent overwriting BIOS Code when ROMOFF
-			ldx ptr1h		  ; 3 cycles
+			ldx ptr1+1		  ; 3 cycles
 			inx				  ; 2 cycles
-			stx ptr1h		  ; 3 cycles
+			stx ptr1+1		  ; 3 cycles
 			cpx #$e0			  ; 2 cycles
 
 			bne @l2 			  ; 2 cycles, 3 if taken
-@l3:  	sty ptr1l		  ; 3 cycles
+@l3:  		sty ptr1		  ; 3 cycles
 
 	  					  ; 42 cycles
 
@@ -120,10 +123,10 @@ check_memory:
 	  		; sta ram_end_h
 
 			lda #$e0
-			cmp ptr1h
+			cmp ptr1+1
 			bne mem_broken
 
-			lda ptr1l
+			lda ptr1
 			bne mem_broken
 
 			bra mem_ok
@@ -156,9 +159,9 @@ mem_ok:
 			.byte $0a,0
 
 			print "Memcheck $"
-			lda ptr1h
+			lda ptr1+1
 			jsr hexout
-			lda ptr1l
+			lda ptr1
 			jsr hexout
 			jsr print_crlf
 
@@ -223,7 +226,7 @@ boot_from_card:
 			bne @load_error
 			println "OK"
 			bra startup
-			
+
 @load_error:
 			jsr hexout
 			println " read error"

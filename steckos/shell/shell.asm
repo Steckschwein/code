@@ -32,7 +32,11 @@ prompt  = $af
 .include "appstart.inc"
 
 .importzp tmp1, tmp2
-.importzp ptr1, ptr2, ptr3
+.importzp ptr1, ptr2
+
+.zeropage
+ptr3:   .res 2
+.code
 
 SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 32 ;TODO FIXME too hard

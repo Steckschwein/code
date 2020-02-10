@@ -5,7 +5,8 @@
 
     .include "bios.inc"
     .include "uart.inc"
-
+.zeropage
+ptr_upload_addr:  .res 2
 .code
 ;----------------------------------------------------------------------------------------------
 upload:
@@ -49,24 +50,24 @@ upload:
 		lda #' '
 		jsr vdp_chrout
 
-      lda startaddr
-		sta p_addr
+        lda startaddr
+		sta ptr_upload_addr
 		lda startaddr+1
-		sta p_addr+1
+		sta ptr_upload_addr+1
 
 		jsr upload_ok
 
 		ldy #0
 @l1:
 		jsr uart_rx
-		sta (p_addr),y
+		sta (ptr_upload_addr),y
 
 		iny
 		bne @l2
-		inc p_addr+1
+		inc ptr_upload_addr+1
 @l2:
 		; msb of current address equals msb of end address?
-		lda p_addr+1
+		lda ptr_upload_addr+1
 		cmp endaddr+1
 		bne @l1 ; no? read next byte
 
