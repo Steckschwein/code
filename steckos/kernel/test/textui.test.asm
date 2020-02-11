@@ -29,8 +29,10 @@ l_loop:
 		inc crs_y
 		bra l_loop0
 		
-@l_esc:	cmp #KEY_ESCAPE
-		beq	l_end
+		
+@l_esc:
+		cmp #KEY_ESCAPE
+		beq l_end
 		jsr krn_chrout
 		bra l_loop
 l_end:
