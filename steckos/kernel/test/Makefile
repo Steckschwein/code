@@ -1,17 +1,17 @@
 OUT_ADDRESS=0x200
 DEFINES=-Dasmunit_char_out=0x200
 KERNEL_ADDRESS=0x1000
-CA65FLAGS=-I ../../../asmunit -I ../../asminc -I ../ $(DEFINES) -DTEST
+CA65FLAGS=-I ../../../asmunit -I ../../asminc -I ../ $(DEFINES)
 LIBS=../../../asmunit/asmunit.a ../../lib/steckschwein.a
 LDFLAGS=-C ../../../asmunit/asmunit.cfg $(DEFINES)
 
 # testing purpose of kernel api from client point of view
-LIBS_PRG=../../tools/lib/toollib.a
+LIBS_PRG=../../tools/lib/toollib.a ../../lib/steckschwein.a
 LDFLAGS_PRG=-C ../../prg.ld65.cfg
 
 .PHONY: all clean
 
-all: test.util test.textui
+all: test.util test.textui textui.test.prg
 
 clean:
 	rm -f *.prg *.bin *.o *.dis *.log
@@ -42,4 +42,3 @@ test.%: test.%.bin
 
 ../../../asmunit/asmunit.a:
 	(cd ../../../asmunit ; make)
-

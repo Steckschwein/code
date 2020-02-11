@@ -1,8 +1,6 @@
-.include "kernel_jumptable.inc"
+.include "steckos.inc"
 .include "zeropage.inc"
-.include "common.inc"
 
-.include "appstart.inc"
 appstart $1000
 		ldx #00
 		ldy #00
@@ -36,4 +34,4 @@ l_loop:
 		jsr krn_chrout
 		bra l_loop
 l_end:
-		jmp	(retvec)
+		jmp (retvec)
