@@ -9,22 +9,22 @@ l_loop0:
 		jsr krn_textui_update_crs_ptr
 l_loop:
 		keyin
-		cmp #'1'
+		cmp #KEY_CRSR_LEFT
 		bne @l_1
 		dec crs_x
 		bra l_loop0
 @l_1:
-		cmp #'2'
+		cmp #KEY_CRSR_RIGHT
 		bne @l_2
 		inc crs_x
 		bra l_loop0
 @l_2:
-		cmp #'3'
+		cmp #KEY_CRSR_UP
 		bne @l_3
 		dec crs_y
 		bra l_loop0
 @l_3:
-		cmp #'4'
+		cmp #KEY_CRSR_DOWN
 		bne @l_esc
 		inc crs_y
 		bra l_loop0
