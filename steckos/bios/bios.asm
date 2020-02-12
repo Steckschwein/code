@@ -4,7 +4,10 @@
 		.include "fcntl.inc"
 		.include "nvram.inc"
 
-
+		.zeropage
+		startaddr: .res 2
+		endaddr:   .res 2
+		.exportzp startaddr, endaddr
 
 		.code
 		.import uart_init, upload

@@ -9,7 +9,7 @@
 ; defined by linker upon zp config within used linker config file
 ;
 ptr1:			  .res 2
-ptr2:			  .res 2
+; ptr2:			  .res 2
 ;ptr3:			  .res 2
 ;ptr4:			  .res 2
 ;ptr5:			  .res 2

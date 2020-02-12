@@ -2,7 +2,7 @@
 
     .import uart_rx, uart_tx
     .import vdp_chrout, print_crlf, hexout, primm
-
+    .import startaddr, endaddr
     .include "bios.inc"
     .include "uart.inc"
 .zeropage
