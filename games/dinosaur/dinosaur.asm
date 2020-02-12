@@ -46,6 +46,7 @@ JOY_PORT=JOY_PORT1		;port 1
 .exportzp controller1, controller2
 
 .zeropage
+ptr1:				.res 2
 level_bg_ptr:		.res 2
 sin_tab_ptr: 		.res 2
 controller1:		.res 3
