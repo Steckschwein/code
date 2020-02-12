@@ -7,7 +7,7 @@
 .include "vdp.inc"
 .include "appstart.inc"
 
-.importzp ptr1,ptr2
+;.importzp ptr1,ptr2
 .importzp tmp1,tmp2,tmp3,tmp4
 
 .import vdp_bgcolor
@@ -25,17 +25,22 @@ color_min_h=Medium_Green
 color_hour_l=Light_Blue
 color_hour_h=Medium_Red
 
+.zeropage
+ptr1:   .res 2
+ptr2:   .res 2
+.code
+
 .code
         sei
         jsr krn_textui_disable
         jsr clock_init
         copypointer user_isr, safe_isr
         SetVector clock_isr, user_isr
-        
+
         stz clock_update_trigger
         stz clock_position_trigger
         cli
-        
+
 @main_loop:
         lda clock_update_trigger
         beq @main_loop
@@ -72,7 +77,7 @@ clock_position:
         bpl @l_clr
 @l_end:
         rts
-        
+
 clock_init:
         jsr vdp_mc_blank
         jmp vdp_mc_on
@@ -80,9 +85,9 @@ clock_init:
 clock_update:
         jsr clock_reset
         jsr clock_calc
-        
+
         jsr clock_draw_sec
-        
+
         SetVector color_mask_l, ptr1
         lda #color_min_l<<4 | color_min_l
         sta color      ; color
@@ -93,19 +98,19 @@ clock_update:
         lda #color_hour_h<<4 | color_hour_h
         sta color
         lda #0    ;offset vram
-        
+
         ldx #3-1  ;blocks
-        
+
         ldy #<(tab_hour_h-tab_lights)   ; offset hours high
         jsr clock_draw_3x3_block_n
-        
+
         SetVector color_mask_r, ptr1
         lda #color_min_h<<4 | color_min_h
         sta color
         lda #(9*8) ;offset vram
         ldy #<(tab_min_h-tab_lights)    ; offset min high
         jsr clock_draw_3x3_block
-        
+
         lda #color_hour_l<<4 | color_hour_l
         sta color
         lda #(2*8)
@@ -120,14 +125,14 @@ clock_draw_3x3_block_n:
         sta tmp1      ; block offset
 @loop:  lda tab_lights, y
         beq @l_skip
-        
+
         lda clock_ptr_tab_block_h, x
         sta ptr2+1
-        
+
         lda clock_ptr_tab_block_1_l, x
         jsr clock_draw_row_3x
         inc ptr1
-        
+
         lda clock_ptr_tab_block_2_l, x
         jsr clock_draw_row_3x
         dec ptr1
@@ -135,17 +140,17 @@ clock_draw_3x3_block_n:
         iny
         dex
         bpl @loop
-        
+
         rts
-        
+
 clock_draw_row_3x:
         clc
         adc tmp1
         sta ptr2
-        
+
         lda color    ; color
         and (ptr1)  ; ... and mask
-        
+
         sta (ptr2)
         inc ptr2
         sta (ptr2)
@@ -157,31 +162,31 @@ clock_draw_sec:
         ldx #60-1 ;60 states - 0-59
 :       lda tab_sec, x
         beq :+
-        
+
         lda clock_ptr_tab_l_sec, x
         sta ptr2
         lda clock_ptr_tab_h_sec, x
         sta ptr2+1
         lda #Transparent<<4|color_sec
         sta (ptr2)
-:        
+:
         dex
         bpl :--
-        
+
         rts
 
 clock_calc:
         ldy #0  ; offset into last rtc
-        
+
         lda #60-1 ;sequence max
         sta tmp2
         SetVector tab_sec, ptr1
         lda rtc_systime_t+time_t::tm_sec
         jsr rnd_sequence
-        
+
         lda #9-1 ;sequence max - 9 blocks
         sta tmp2
-        
+
         SetVector tab_min_l, ptr1
         lda rtc_systime_t+time_t::tm_min
         jsr bin2dec
@@ -194,7 +199,7 @@ clock_calc:
         lda rtc_systime_t+time_t::tm_hour
         jsr bin2dec
         jsr rnd_sequence_l_nibble
-        
+
         lda #3-1 ;sequence max - 1-3 blocks
         sta tmp2
         SetVector tab_hour_h, ptr1
@@ -205,31 +210,31 @@ rnd_sequence_l_nibble:
         tax
         and #$0f
         bra rnd_sequence
-        
+
 rnd_sequence_h_nibble:
         txa
         lsr
         lsr
         lsr
         lsr
-        
+
  ; convert number "n" into a random sequence of 0 and 1 with length "n"
 rnd_sequence:
         cmp last_rtc, y ; has changed?
         beq @l_end
         sta last_rtc, y
-        
+
         phx
         phy
         tax             ; "n" as loop counter to x
-        
+
         ldy tmp2        ; erase current tab
         lda #0
 :       sta (ptr1), y
         dey
         bpl :-
-        
-        cpx #0                  ; zero number?     
+
+        cpx #0                  ; zero number?
         beq @l_end_restore      ; skip and leave an empty sequence
 @l_rnd:
         jsr rnd
@@ -265,7 +270,7 @@ bin2dec:
         pha
         lsr
         lsr
-        lsr 
+        lsr
         lsr
         tax
         sed
@@ -278,10 +283,10 @@ bin2dec:
         adc bindecl,x
         cld
         rts
-bindecl: 
+bindecl:
         .byte $00,$01,$02,$03,$04,$05,$06,$07,$08,$09,$10,$11,$12,$13,$14,$15
 bindech:
-        .byte $00,$16,$32,$48,$64,$80,$96 
+        .byte $00,$16,$32,$48,$64,$80,$96
 
 clock_reset:
         lda #Transparent<<4|color_off
@@ -296,16 +301,16 @@ clock_reset:
         jsr clock_reset_row_upper
         ldy #6
         jsr clock_reset_row_upper
-        
+
         lda #Transparent<<4|Transparent
         sta color
         ldy #1
-        jsr clock_reset_row_upper  
+        jsr clock_reset_row_upper
         jsr clock_reset_row_lower
         ldy #5
         jsr clock_reset_row_upper
         rts
-        
+
 clock_reset_row_upper:
         lda #color_off<<4|color_off            ; ## => 1 byte - 2 pixels in mc
         sta clock_data_row1+$00*8,y
@@ -377,18 +382,18 @@ clock_reset_row_lower:
         sta clock_data_row2+$1c*8,y
         sta clock_data_row2+$1d*8,y
         sta clock_data_row2+$1e*8,y
-        sta clock_data_row2+$1f*8,y      
+        sta clock_data_row2+$1f*8,y
         rts
-        
+
 clock_isr:
         lda SYS_IRR
         bpl @l_exit
-        
+
         ;lda #Light_Red<<4 | Light_Red
 ;        jsr vdp_bgcolor
-        
+
         inc clock_update_trigger
-        
+
         lda vaddr
         cmp vaddr_new
         bne @l_erase
@@ -406,7 +411,7 @@ clock_isr:
         lda vaddr
         ldy vaddr+1
         vdp_sreg
-        
+
         ldx #<(32*8)
         jsr copy_vram
         inc ptr1+1
@@ -416,7 +421,7 @@ clock_isr:
         ;lda #Dark_Green<<4| Transparent
         ;jsr vdp_bgcolor
         rts
-        
+
 copy_vram:
         ldy #0
 :
@@ -424,10 +429,10 @@ copy_vram:
         lda (ptr1),y
         sta a_vram
         iny
-        dex 
+        dex
         bne :-
         rts
-        
+
 rnd:
         lda seed
         beq doEor
@@ -439,19 +444,19 @@ doEor:
 noEor:
         sta seed
         rts
-        
+
 safe_isr: .res 2
 seed:     .res 1, 123
 
 clock_update_trigger:    .res 1
 color:                   .res 1
 clock_position_trigger:  .res 1
-        
+
 vaddr:       .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
 vaddr_new:   .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
 
 .data
-clock_data: 
+clock_data:
 clock_data_row1:
         .res 32 * 8,Transparent<<4|Transparent   ; 6 mc pixel rows + 2 spacer
 clock_data_row2:
@@ -463,7 +468,7 @@ clock_ptr_tab_l_sec:
                 .byte <clock_data + ($16+col)*8+((2*row) .mod 8)   ;$16 offset
             .endrepeat
         .endrepeat
-        
+
 clock_ptr_tab_h_sec:
         .repeat 6, row
             .repeat 10, col
@@ -483,7 +488,7 @@ clock_ptr_tab_block_2_l:
             .byte <clock_data+(col)*2*8+12
             .byte <clock_data+(col)*2*8+8
         .endrepeat
-                
+
 clock_ptr_tab_block_h:
         .repeat 3, col
             .byte >clock_data_row1
@@ -493,7 +498,7 @@ clock_ptr_tab_block_h:
             .byte >clock_data_row1
             .byte >clock_data_row2
         .endrepeat
-        
+
 color_mask_r:
         .byte color_bg<<4 | %1111
 color_mask_l:
@@ -506,9 +511,9 @@ tab_min_h:  .res 9
 tab_hour_l: .res 9
 tab_hour_h: .res 3
 
-last_rtc:      
+last_rtc:
         .res 1 ; sec
-        .res 2 ; min 
+        .res 2 ; min
         .res 2 ; hour
 last_rtc_end:
 
