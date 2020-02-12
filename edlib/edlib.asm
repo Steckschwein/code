@@ -65,16 +65,15 @@ fm_file_arrdata = ptr4      ;$0008		; word
 ;;// ----------------------------------------------------------------------------------------------------------
 ;;// JCH_FM_INIT subroutine, this routine needs to be called to initialize the FM music
 ;;// ----------------------------------------------------------------------------------------------------------
-.zeropage
-.globalzp ptr5
-  ptr5:	.res 2
 
-.importzp ptr1,ptr2
 .zeropage
-ptr3: .res 2
-ptr4: .res 2
-
+    ptr1:  .res 2
+    ptr2:  .res 2
+    ptr3:  .res 2
+    ptr4:  .res 2
+    ptr5:  .res 2
 .code
+
 .import opl2_reg_write
 .import hexout
 .import d00file
