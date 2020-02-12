@@ -25,14 +25,14 @@ all: $(TOOLS)
 	(cd unrclock; make )
 	(cd xmodem; make )
 	(cd ppmview; make )
-	(cd clavier; make )
+#	(cd clavier; make )
 
 clean:
 	rm -f *.prg *.s *.o *.map
 	(cd unrclock; make clean)
 	(cd xmodem; make clean)
 	(cd ppmview; make clean)
-	(cd clavier; make clean)
+#	(cd clavier; make clean)
 
 %.prg: %.c $(LIBS) $(CLIB)
 	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
