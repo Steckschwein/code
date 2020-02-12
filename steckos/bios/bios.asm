@@ -5,6 +5,7 @@
 		.include "nvram.inc"
 
 		.zeropage
+		ptr1:	   .res 2
 		startaddr: .res 2
 		endaddr:   .res 2
 		.exportzp startaddr, endaddr
