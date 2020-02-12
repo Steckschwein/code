@@ -27,14 +27,13 @@
 .include "kernel_jumptable.inc"
 .include "appstart.inc"
 
-.importzp ptr1,tmp1,tmp2,tmp3
-
 .import vdp_mc_on
 .import vdp_mc_blank
 .import vdp_mc_set_pixel
 .import	vdp_bgcolor
 .import	read_joystick
-
+.zeropage
+ptr1:	.res 2
 appstart $1000
 
 .define COLOR White
@@ -44,30 +43,30 @@ appstart $1000
 .code
 main:
 		  jsr krn_textui_disable
-		  
+
 		  sei
 		  jsr init_pong
 		  copypointer user_isr, safe_isr
 		  SetVector game_isr, user_isr
-		  cli		  
-		  
+		  cli
+
 		  jsr ResetGame
 
 		keyin
 		  sei
 		  copypointer safe_isr, user_isr
 		  cli
-		  
+
 		  vdp_sreg 0, v_reg9  ; restore screen size
-		  
+
 		jsr	krn_textui_init
 		  jsr krn_textui_enable
-		  
+
 		jmp (retvec)
 
 safe_isr:
 		  .word 0
-		  
+
 init_pong:
 		  jsr vdp_mc_blank
 		  jsr vdp_mc_on
@@ -76,7 +75,7 @@ init_pong:
 		  vdp_sreg $0, v_reg23
 		  vdp_sreg $0, v_reg18
 		  vdp_sreg v_reg25_wait|v_reg25_cmd, v_reg25
-		  
+
 		ldx #63
 @l1:	ldy #0
 		lda #BORDER_COLOR
@@ -94,7 +93,7 @@ init_pong:
 		dey
 		  dey
 		bpl @l2
-		  
+
 		  ; patterns
 		  vdp_sreg <ADDRESS_GFX_MC_SPRITE_PATTERN, WRITE_ADDRESS + >ADDRESS_GFX_MC_SPRITE_PATTERN
 		  ldx #0
@@ -107,13 +106,13 @@ init_pong:
 
 		  lda #>digits
 		  sta ptr1+1
-		  
+
 		rts
 
 
 ;; DECLARE SOME VARIABLES HERE
 ;  .resset $0000  ;;start variables at ram location 0
-  
+
 frame_count:	 .res 1,0
 gamestate:		.res 1  ; .res 1 means reserve one byte of space
 ballx:			 .res 1  ; ball horizontal position
@@ -138,7 +137,7 @@ PADDLE_ACCEL	= $03
 STATETITLE	  = $00  ; displaying title screen
 STATEPLAYING	= $01  ; move paddles/ball, check for collisions
 STATEGAMEOVER  = $02  ; displaying game over screen
-  
+
 RIGHTWALL		= $Fe  ; when ball reaches one of these, do something
 RIGHTWALLOFFS  = PADDLE2X-(2*(3+1)) ; magnified sprite *2, 3 - 3px of '0' in paddle shape and 1px to bring ball exactly on paddle
 
@@ -149,7 +148,7 @@ BOTTOMWALLOFFS = $a2
 
 LEFTWALL		 = $02
 LEFTWALLOFFS	= PADDLE1X+(2*(3+1))
-  
+
 PADDLE1X		 = $08  ; horizontal position for paddles, doesnt move
 PADDLE2X		 = $F0
 
@@ -166,8 +165,8 @@ scoreBackground=10
 ;;;;;;;;;;;;;;;;;;
 
   ;.bank 0
-  ;.org $C000 
-ResetGame:	
+  ;.org $C000
+ResetGame:
 ;;;Set some initial ball stats
   LDA #0
   STA balldown
@@ -175,13 +174,13 @@ ResetGame:
   LDA #1
   STA ballup
   STA ballleft
-  
+
   LDA #BALL_Y_START_POS
   STA bally
-  
+
   LDA #BALL_X_START_POS
   STA ballx
-  
+
   LDA #$02
   STA ballspeedx
   STA ballspeedy
@@ -192,12 +191,12 @@ ResetGame:
 
 		  stz paddle1_velo
 		  stz paddle2_velo
-  
+
 ;;; Set initial paddle state
   LDA #$60
   STA paddle1ytop
   STA paddle2ytop
-  	
+
 ;;:Set starting game state
   LDA #STATEPLAYING
   STA gamestate
@@ -209,14 +208,14 @@ game_isr:
  ;		 jsr vdp_bgcolor
 		lda SYS_IRR
 		bpl l_exit
-		
+
 		  inc frame_count
-	 
+
 		  ;;;all graphics updates done by here, run game engine
 		  JSR ReadController1  ;;get the current button data for player 1
 		  JSR ReadController2  ;;get the current button data for player 2
 
-		  GameEngine:  
+		  GameEngine:
 		  LDA gamestate
 		  CMP #STATETITLE
 		  BEQ EngineTitle	 ;;game is displaying title screen
@@ -240,7 +239,7 @@ GameEngineDone:
 		  sta a_vram
 		  inx
 		  cpx #3*4+1
-		  bne :-	
+		  bne :-
 
 		  JSR DrawScore
 
@@ -249,7 +248,7 @@ GameEngineDone:
 l_exit:
 		  rts
 ;;;;;;;;
- 
+
 EngineTitle:
   ;;if start button pressed
   ;;  turn screen off
@@ -259,8 +258,8 @@ EngineTitle:
   ;;  turn screen on
   JMP GameEngineDone
 
-;;;;;;;;; 
- 
+;;;;;;;;;
+
 EngineGameOver:
   ;;if start button pressed
   ;;  turn screen off
@@ -278,7 +277,7 @@ DrawGameOverLine1:
   INX
   CPX #$09
   BCC DrawGameOverLine1
-		
+
 ;  LDA #%00001110	; disable sprites, enable background, no clipping on left side
  ; STA $2001
 
@@ -296,9 +295,9 @@ Player1StartCheckDone:
 
 Player2StartCheckDone:
   JMP GameEngineDone
- 
+
 ;;;;;;;;;;;
- 
+
 EnginePlaying:
 
 MoveBallRight:
@@ -316,17 +315,17 @@ MoveBallRight:
   LDA score1
   CMP #$0F
   BCC @IncScore
-	
+
   LDA #STATEGAMEOVER
   STA gamestate
 
 @IncScore:
   INC score1 ;; Inc score
-  
+
   ;; Reset ball state
   LDA #BALL_Y_START_POS
   STA bally
-  
+
   LDA #BALL_X_START_POS
   STA ballx
 
@@ -347,22 +346,22 @@ MoveBallLeft:
 
   ;; Give point to player 2, reset ball
   CMP #LEFTWALL
-  BCS MoveBallLeftDone		
+  BCS MoveBallLeftDone
 
   LDA score2
   CMP #$0F
   BCC @IncScore
-	
+
   LDA #STATEGAMEOVER
   STA gamestate
 
 @IncScore:
   INC score2 ;; Inc player 2 score
-  
+
   ;; Reset ball state
   LDA #BALL_Y_START_POS
   STA bally
-  
+
   LDA #BALL_X_START_POS
   STA ballx
 
@@ -415,12 +414,12 @@ MovePaddle1Up:
 		  bne MovePaddle1UpDone ;; not pressed, skip
 
 		  ldx paddle1_velo
-:		  
+:
 		  LDA paddle1ytop
 		  CMP #TOPWALL ;; Check if we have hit top wall
 		  BCC MovePaddle1Reset ;; If so, skip
 
-		  DEC paddle1ytop ;; dec position	
+		  DEC paddle1ytop ;; dec position
 		  dex
 		  bpl :-
 		  bra MovePaddle1IncVelo
@@ -435,14 +434,14 @@ MovePaddle1Down:
 		  bne MovePaddle1Reset  ; not pressed, skip
 
 		  ldx paddle1_velo
-:		 LDA paddle1ytop 
+:		 LDA paddle1ytop
 		  CMP #BOTTOMWALLOFFS ;; Check if we have hit top wall
 		  BCS MovePaddle1Reset ;; If so, skip
-  
+
 		  INC paddle1ytop ;; inc position
 		  dex
 		  bpl :-
- 
+
 MovePaddle1IncVelo:
 		  lda frame_count
 		  and #PADDLE_ACCEL
@@ -450,7 +449,7 @@ MovePaddle1IncVelo:
 		  inc paddle1_velo
 		  bra MovePaddle1Done
 MovePaddle1Reset:
-		  stz paddle1_velo		  
+		  stz paddle1_velo
 MovePaddle1Done:
 
 MovePaddle2Up:
@@ -460,12 +459,12 @@ MovePaddle2Up:
 		  bne MovePaddle2UpDone ;; not pressed, skip
 
 		  ldx paddle2_velo
-:		  
+:
 		  LDA paddle2ytop
 		  CMP #TOPWALL ;; Check if we have hit top wall
 		  BCC MovePaddle2Reset ;; If so, skip
 
-		  DEC paddle2ytop ;; Decrement position	
+		  DEC paddle2ytop ;; Decrement position
 		  dex
 		  bpl :-
 		  bra MovePaddle2IncVelo
@@ -480,14 +479,14 @@ MovePaddle2Down:
 		  bne MovePaddle2Reset ;; not pressed, skip
 
 		  ldx paddle2_velo
-:		 LDA paddle2ytop 
+:		 LDA paddle2ytop
 		  CMP #BOTTOMWALLOFFS ;; Check if we have hit top wall
 		  BCS MovePaddle2Reset ;; If so, skip
-  
+
 		  INC paddle2ytop ;; Decrement position
 		  dex
 		  bpl :-
-		  
+
 MovePaddle2IncVelo:
 		  lda frame_count
 		  and #PADDLE_ACCEL
@@ -495,10 +494,10 @@ MovePaddle2IncVelo:
 		  inc paddle2_velo
 		  bra MovePaddle2Done
 MovePaddle2Reset:
-		  stz paddle2_velo		  
+		  stz paddle2_velo
 MovePaddle2Done:
 
-	
+
 CheckPaddle1Collision:
   ;;if ball x < paddle1x
   ;;  if ball y > paddle y top
@@ -511,7 +510,7 @@ CheckPaddle1Collision:
 
   cmp #LEFTWALLOFFS-PADDLE_WIDTH
   bcc CheckPaddle1CollisionDone
-  
+
   ;; Check if ball is above paddle
   LDA bally
   CMP paddle1ytop
@@ -528,7 +527,7 @@ CheckPaddle1Collision:
   LDA #$01
   STA ballright
   LDA #$00
-  STA ballleft			
+  STA ballleft
 CheckPaddle1CollisionDone:
 
 CheckPaddle2Collision:
@@ -540,10 +539,10 @@ CheckPaddle2Collision:
   LDA ballx
   CMP #RIGHTWALLOFFS
   BCC CheckPaddle2CollisionDone
-  
+
   cmp #RIGHTWALLOFFS+PADDLE_WIDTH
   bcs CheckPaddle2CollisionDone
-  
+
   ;; Check if ball is above paddle
   LDA bally
   CMP paddle2ytop
@@ -560,18 +559,18 @@ CheckPaddle2Collision:
   LDA #$01
   STA ballleft
   LDA #$00
-  STA ballright			
+  STA ballright
 CheckPaddle2CollisionDone:
-	
+
   JMP GameEngineDone
 
 UpdateSprites:
 	 LDA bally  ;; update all ball sprite info
 	 sta sprites_ball+SPRITE_Y
-	
+
 	 LDA ballx
 	 sta sprites_ball+SPRITE_X
-  
+
 	 ;;update paddle 1 sprites
 	 lda paddle1ytop ;; load ball position and add paddle offset
 	 sta sprites_paddle1+SPRITE_Y
@@ -581,7 +580,7 @@ UpdateSprites:
 	 sta sprites_paddle2+SPRITE_Y
 
 	 RTS
-  
+
 draw_digit:
 		  stx tmp1
 		  stx tmp3
@@ -592,7 +591,7 @@ draw_digit:
 		  clc
 		  adc #<digits
 		  sta ptr1
-		  
+
 		  ldy #0
 @score_l0:
 		  ldx #0
@@ -617,7 +616,7 @@ draw_digit:
 		  cpx #6  ; pixels in char
 		  bne @score_l1
 		  inc tmp2
-		  iny 
+		  iny
 		  cpy #8
 		  bne @score_l0
 		  rts
@@ -642,8 +641,8 @@ DrawScore:
 		  ldy #2
 		  jsr draw_digit
 
-  
-		  ;; Draw player 2 score  
+
+		  ;; Draw player 2 score
 		  LDX #scoreBackground
 		  lda score2
 		  ;; Check if score equals or exceeds 10
@@ -661,24 +660,24 @@ DrawScore:
 		  ldx #41
 		  ldy #2
 		  jsr draw_digit
- 
+
 		  RTS
- 
+
 ReadController1:
 	 lda #JOY_PORT1
 	 jsr read_joystick
 	 sta buttons1
 	 rts
-  
+
 ReadController2:
 	 lda #JOY_PORT2
 	 jsr read_joystick
 	 sta buttons2
 	 rts
-			 
-;;;;;;;;;;;;;;  
+
+;;;;;;;;;;;;;;
 sprites:
-	  ;vert horiz tile attr 
+	  ;vert horiz tile attr
 sprites_paddle1:
   .byte $a0, $0a, $0, COLOR	;sprite 0 - paddle
 sprites_paddle2:
@@ -706,7 +705,7 @@ sprite_data:
   .byte %00000000
   .byte 0,0,0,0,0,0,0,0
   .byte 0,0,0,0,0,0,0,0
-  
+
   .byte 0,$18,$18,0,0,0,0,0
   .byte 0,0,0,0,0,0,0,0
   .byte 0,0,0,0,0,0,0,0,0
@@ -827,7 +826,7 @@ digits:
 ;........
 ;........
 ;G A M E O V E R
-.byte 0,0,0,0,0,0,0,0 
+.byte 0,0,0,0,0,0,0,0
 .byte 0,0,0,0,0,0,0,0
 .byte 0,0,0,0,0,0,0,0
 .byte 0,0,0,0,0,0,0,0
