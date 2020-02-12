@@ -19,15 +19,14 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-		.importzp ptr1
-		.importzp tmp1
+		.importzp __volatile_ptr
+		.importzp __volatile_tmp
 
 		.import char_out
 
 		.export crc7
 
 .code
-
 ;crc = tmp2
 polynom = $89
 ;polynom = $91
@@ -41,16 +40,16 @@ polynom = $89
 .proc crc7
 			cpx #0
 			beq @rts
-			stx tmp1
+			stx __volatile_tmp
 
-			sta ptr1
-			sty ptr1+1
+			sta __volatile_ptr
+			sty __volatile_ptr+1
 
 			ldy #0
 			lda #0	;crc = 0
 @loop:
 			ldx #8
-			eor (ptr1),y
+			eor (__volatile_ptr),y
 @loop_x:
 			bit #$80			 ;
 			beq @crc_shift
@@ -64,7 +63,7 @@ polynom = $89
 			bne @loop_x
 
 			iny
-			cpy tmp1
+			cpy __volatile_tmp
 			bne @loop
 
 			lsr	; crc >> 1

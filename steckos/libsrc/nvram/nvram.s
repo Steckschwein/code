@@ -7,7 +7,7 @@
 .include "nvram.inc"
 .include "via.inc"
 .include "keyboard.inc"
-.importzp ptr1
+.importzp __volatile_ptr
 
 .code
 ;---------------------------------------------------------------------
@@ -17,8 +17,8 @@
 ;---------------------------------------------------------------------
 read_nvram:
 	save
- 	sta ptr1
- 	sty ptr1+1
+ 	sta __volatile_ptr
+ 	sty __volatile_ptr+1
 	; select RTC
 	lda #%01110110
 	sta via1portb
@@ -32,7 +32,7 @@ read_nvram:
 	lda #$ff
 	jsr spi_rw_byte
 	ply
-	sta (ptr1),y
+	sta (__volatile_ptr),y
 	iny
 	cpy #nvram_size
 	bne @l1
@@ -41,8 +41,8 @@ read_nvram:
 	lda #%01111110
 	sta via1portb
 
-	 lda ptr1
-	 ldy ptr1+1
+	 lda __volatile_ptr
+	 ldy __volatile_ptr+1
 	 ldx #.sizeof(nvram)-1
 	 jsr crc7
 
@@ -50,7 +50,7 @@ read_nvram:
 	 beq @copy_defaults
 
 	 ldy #nvram::crc7
-	 cmp (ptr1),y
+	 cmp (__volatile_ptr),y
 	 beq @exit
 
 	 jsr primm
@@ -60,7 +60,7 @@ read_nvram:
 	 ldy #.sizeof(nvram)-1
 @lp1:
 	 lda nvram_defaults,y
-	 sta (ptr1),y
+	 sta (__volatile_ptr),y
 	 dey
 	 bpl @lp1
 
