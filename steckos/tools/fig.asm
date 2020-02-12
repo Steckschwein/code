@@ -28,8 +28,8 @@
 .include "kernel_jumptable.inc"
 .include "appstart.inc"
 
-.importzp ptr1, ptr2, ptr3
-.importzp tmp1, tmp3, tmp4
+;.importzp ptr1, ptr2, ptr3
+;.importzp tmp1, tmp3, tmp4
 
 .import vdp_gfx2_on
 .import vdp_gfx2_blank
@@ -38,7 +38,11 @@
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
 
-
+.zeropage
+ptr1:	.res 2
+ptr2:	.res 2
+ptr3:	.res 2
+.code
 appstart $1000
 
 content = $2000
