@@ -32,9 +32,10 @@ prompt  = $af
 .include "appstart.inc"
 
 .importzp tmp1, tmp2
-.importzp ptr1, ptr2
 
 .zeropage
+ptr1:   .res 2
+ptr2:   .res 2
 ptr3:   .res 2
 .code
 
