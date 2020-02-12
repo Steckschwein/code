@@ -32,10 +32,12 @@
 ;.import hexout
 ;.export char_out=krn_chrout
 
-.importzp ptr1,ptr2
+
 .importzp tmp1,tmp2,tmp3
 .globalzp ptr5
 .zeropage
+    ptr1:  .res 2
+    ptr2:  .res 2
     ptr3:  .res 2
     ptr4:  .res 2
 
