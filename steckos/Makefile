@@ -7,10 +7,11 @@ clean:
 	(cd demo; make clean)
 	(cd tools; make clean)
 	(cd shell; make clean)
-	(cd kernel; make clean)
-	(cd bios; make clean)
-	(cd libsrc; make clean)
+	(cd tools/lib; make clean)
 	(cd clib/libsrc; make clean)
+	(cd bios; make clean)
+	(cd kernel; make clean)
+	(cd libsrc; make clean)
 
 build:
 	(cd libsrc; make )
