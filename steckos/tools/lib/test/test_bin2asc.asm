@@ -3,11 +3,15 @@
 .import b2ad2				; uut
 .import b2ad				; uut
 .import dpb2ad				; uut
-
+.zeropage
+tmp1:	.res 1
+tmp2:	.res 1
+tmp3:	.res 1
+.exportzp tmp1, tmp2, tmp3
 .code
-	
+
 		test "b2ad"
-		
+
 		ldx #0
 		ldy #0
 

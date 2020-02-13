@@ -7,7 +7,11 @@
 .import dword2asc
 .import char_out
 .import print_filesize,print_fat_date,print_fat_time, print_filename
-
+.zeropage
+tmp1:	.res 1
+tmp2:	.res 1
+tmp3:	.res 1
+.exportzp tmp1, tmp2, tmp3
 .code
     lda #<direntry
     sta dirptr
