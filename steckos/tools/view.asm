@@ -29,11 +29,13 @@
 .include "appstart.inc"
 
 
-;.importzp ptr1, ptr2, ptr3
-.importzp tmp1, tmp2, tmp3, tmp4
 .zeropage
 ptr1:   .res 2
 ptr2:   .res 2
+tmp1:	.res 1
+tmp2:	.res 1
+tmp3:	.res 1
+tmp4:	.res 1
 .code
 
 .import vdp_gfx2_on

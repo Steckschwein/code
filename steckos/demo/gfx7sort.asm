@@ -33,15 +33,15 @@
 ;.export char_out=krn_chrout
 
 
-.importzp tmp1,tmp2,tmp3
-.globalzp ptr5
 .zeropage
     ptr1:  .res 2
     ptr2:  .res 2
     ptr3:  .res 2
     ptr4:  .res 2
-
     ptr5:  .res 2
+    tmp1:  .res 1
+    tmp2:  .res 1
+    tmp3:  .res 1
 .code
 pt_x = ptr2;$10
 pt_y = ptr3;$12

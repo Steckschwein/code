@@ -66,7 +66,9 @@
 .define MAX_HEIGHT 212
 .define COLOR_DEPTH 255
 .define BLOCK_BUFFER 1 ; as multiple of 3 * 512 byte, so 1 means $600 bytes memory are used
-
+.zeropage
+;tmp1:   .res 1
+tmp2:   .res 1
 .code
 ppmview_main:
         stz fd

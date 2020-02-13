@@ -31,12 +31,12 @@ prompt  = $af
 .include "rtc.inc"
 .include "appstart.inc"
 
-.importzp tmp1, tmp2
-
 .zeropage
 ptr1:   .res 2
 ptr2:   .res 2
 ptr3:   .res 2
+tmp1:   .res 1
+tmp2:   .res 1
 .code
 
 SCREENSAVER_TIMEOUT_MINUTES=2

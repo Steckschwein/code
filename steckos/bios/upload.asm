@@ -6,16 +6,17 @@
     .include "bios.inc"
     .include "uart.inc"
 .zeropage
-ptr_upload_addr:  .res 2
+ptr_upload_addr:    .res 2
+length:             .res 1
 .code
 ;----------------------------------------------------------------------------------------------
 upload:
 		print "Serial upload.."
 		; load start address
 		jsr uart_rx
-      sta startaddr
-      jsr uart_rx
-      sta startaddr+1
+        sta startaddr
+        jsr uart_rx
+        sta startaddr+1
 
 		jsr hexout
 		lda startaddr

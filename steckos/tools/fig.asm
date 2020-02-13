@@ -28,9 +28,6 @@
 .include "kernel_jumptable.inc"
 .include "appstart.inc"
 
-;.importzp ptr1, ptr2, ptr3
-;.importzp tmp1, tmp3, tmp4
-
 .import vdp_gfx2_on
 .import vdp_gfx2_blank
 .import vdp_display_off
@@ -42,6 +39,7 @@
 ptr1:	.res 2
 ptr2:	.res 2
 ptr3:	.res 2
+tmp1:	.res 1
 .code
 appstart $1000
 

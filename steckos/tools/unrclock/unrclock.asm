@@ -8,7 +8,7 @@
 .include "appstart.inc"
 
 ;.importzp ptr1,ptr2
-.importzp tmp1,tmp2,tmp3,tmp4
+;.importzp tmp1,tmp2,tmp3,tmp4
 
 .import vdp_bgcolor
 .import vdp_mc_on
@@ -28,7 +28,8 @@ color_hour_h=Medium_Red
 .zeropage
 ptr1:   .res 2
 ptr2:   .res 2
-.code
+tmp1:   .res 1
+tmp2:   .res 1
 
 .code
         sei
