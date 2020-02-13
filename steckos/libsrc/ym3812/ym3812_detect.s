@@ -22,9 +22,9 @@
 .setcpu "65c02"
 
 .export opl2_detect
-
+.include "zeropage.inc"
+.importzp __volatile_tmp
 .include "ym3812.inc"
-.importzp tmp1
 .import opl2_reg_write
 ;// ----------------------------------------------------------------------------------------------------------
 ;// JCH_DETECT_CHIP ;// CHECK CHIP EXISTENCE ;// NEED REAL HARDWARE TO WORK (NOT EMULATION)
@@ -39,7 +39,7 @@ loc_1062B:
 		lda #$80							;// reset flags for timer 1 & 2, IRQset : all other flags are ignored
 		jsr opl2_reg_write
 		ldy opl_stat;$df60			;// get soundcard/chip status byte
-		sty tmp1							;// store it
+		sty __volatile_tmp							;// store it
 		ldx #opl2_reg_t1				;// Set timer1 to max value
 		lda #$ff
 		jsr opl2_reg_write
@@ -58,7 +58,7 @@ loc_1064C:
 		eor #$c0							;// check if bits 7 and 6 are set (should result in 0)
 		bne loc_10663					;// not zero ? jmp to set carry and leave subroutine
 		tay								;// is was zero, no more a out of the way for a moment
-		lda tmp1							;// read the previous status byte
+		lda __volatile_tmp							;// read the previous status byte
 		and #$e0							;// "and" that with e0, ends in zero if no bits are set
 		bne loc_10663					;// was it not zero ? ok, jmp to set carry and leave
 		jsr __opl2_reset_timer		;// ok previous status was no timers set. set timer control byte to #$60 = clear timers T1 T2 and ignore them
