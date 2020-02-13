@@ -34,6 +34,10 @@
 .import	read_joystick
 .zeropage
 ptr1:	.res 2
+tmp1:	.res 1
+tmp2:	.res 1
+tmp3:	.res 1
+
 appstart $1000
 
 .define COLOR White
