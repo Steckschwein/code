@@ -6,22 +6,7 @@
 ; ------------------------------------------------------------------------
 .zeropage
 
-; defined by linker upon zp config within used linker config file
-;
-;ptr1:			  .res 2
-; ptr2:			  .res 2
-;ptr3:			  .res 2
-;ptr4:			  .res 2
-;ptr5:			  .res 2
-; ptr6:			  .res 2
-;tmp1:			  .res 1
-;tmp2:			  .res 1
-;tmp3:			  .res 1
-;tmp4:			  .res 1
-;spi_sr:           .res 1
-;tmp:           .res 1
 
-;zp_end = *
 
 ; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
 .exportzp cmdptr    = $d6
