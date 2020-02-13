@@ -44,7 +44,7 @@ version.inc:
 
 kernel.bin: version.inc $(OBJS) $(LIBS)
 	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -m kernel.map -Ln symbols.txt -o kernel.bin
-	grep krn symbols.txt | sed "s/al 00//" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > kernel_jumptable.inc
+	grep krn symbols.txt | egrep -v "(krn_tm|krn_ptr)" | sed "s/al 00//" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > kernel_jumptable.inc
 
 loader.bin: kernel.bin loader.o
 	ld65 $(LDFLAGS) loader.o -o loader.bin
