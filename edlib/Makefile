@@ -1,10 +1,9 @@
 TARGET=edlply.prg
 
 STECKOS=../steckos
-APP_START=0x1000
+LIBS:=$(STECKOS)/lib/steckschwein.a $(STECKOS)/tools/lib/toollib.a
 CAFLAGS=--include-dir $(STECKOS)/asminc --include-dir $(STECKOS)/kernel 
-LDFLAGS=--define __LOADADDR__=$(APP_START) --config $(STECKOS)/prg.ld65.cfg --lib $(STECKOS)/lib/steckschwein.a --lib $(STECKOS)/tools/lib/toollib.a
-LIBS=$(STECKOS)/lib/steckschwein.a $(STECKOS)/tools/lib/toollib.a
+LDFLAGS=--config $(STECKOS)/prg.ld65.cfg $(LIBS)
 
 C64LIBS=$(CC65_HOME)/lib/c64.lib
 C64LDFLAGS=--config c64-asm.cfg
@@ -31,4 +30,4 @@ edlply.prg: edlply.o edlib.o $(LIBS)
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 %: %.prg
-	../transfer.py $< -s $(APP_START)
+	../transfer.py $< -s 0x1000
