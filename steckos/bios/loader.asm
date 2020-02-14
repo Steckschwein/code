@@ -3,19 +3,21 @@
       .include "common.inc"
       .include "system.inc"
       
-src=$0
-tgt=$2
+.zeropage
+p_src:		.res 2
+p_tgt:		.res 2
+
 .code
-      SetVector biosdata, src
-      SetVector $e000, tgt
+      SetVector biosdata, p_src
+      SetVector $e000, p_tgt
       ldy #0
 loop:
-      lda (src),y
-      sta (tgt),y
+      lda (p_src),y
+      sta (p_tgt),y
       iny
       bne loop
-      inc src+1
-      inc tgt+1
+      inc p_src+1
+      inc p_tgt+1
       bne loop
       
       ; rom off
