@@ -1,8 +1,8 @@
 CPU=65c02 
 CC65FLAGS=-I ../steckos/clib/include
 CA65FLAGS=-I ../steckos/asminc
-LIB=../steckos/clib/lib/steckschwein-clib.a ../steckos/lib/steckschwein.a
-LDFLAGS=-C ../steckos/prg.ld65.cfg $(LIB)
+LIBS=../steckos/clib/lib/steckschwein-clib.a ../steckos/lib/steckschwein.a ../steckos/tools/lib/toollib.a
+LDFLAGS=-C ../steckos/prg.ld65.cfg $(LIBS)
 
 ADDRESS=0x1000
 
@@ -29,7 +29,7 @@ test.%.bin: test.%.o ppmview.main.o $(TEST_LIBS)
 test.%: test.%.bin
 	../../../asmunit/asmunit_wrapper.sh $@.bin $(ADDRESS)
 
-%.prg: %.o $(LIB)
+%.prg: %.o $(LIBS)
 	ld65 $< $(LDFLAGS) -o $@
 
 %.dis: %.prg

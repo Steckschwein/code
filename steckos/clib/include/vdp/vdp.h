@@ -18,8 +18,11 @@
 #define Color_Gray           0x0e  //204 204 204	"CCCCCC"
 #define Color_White          0x0f  //255 255 255	"white"
 
-#define SCREEN_BUFFER        0xe000 // screen back buffer
+#define SCREEN_BUFFER        0xdf00 // screen back buffer
 
+#define ADDRESS_TEXT_SCREEN	0x1000			// name table
+#define ADDRESS_TEXT_PATTERN	0x0000			// pattern table
+#define ADDRESS_TEXT_COLOR		0x2000			// color table, v9938/58 "blink" color code vram
 
 #define ADDRESS_GFX1_SCREEN             0x0000			// name table
 #define ADDRESS_GFX1_PATTERN            0x3800
@@ -36,7 +39,8 @@
 /*****************************************************************************/
 /*                                   Code                                    */
 /*****************************************************************************/
-void __fastcall__ vdp_memcpy (unsigned int vram_addr, unsigned char bytes, unsigned char *data);
+
+void __fastcall__ vdp_memcpy (unsigned char *data, unsigned int vramaddress, unsigned char pages); 
 
 void __fastcall__ vdp_init (unsigned char mode);
 

@@ -167,6 +167,9 @@ static void makechar (void)
             cputc ('.');
         }
     }
+	#if !defined(__C64__) && !defined(__C128__)
+	vdp_memcpy(CHARSET, ADDRESS_TEXT_PATTERN, 0x08);//copy to vram, 8 pages 
+	#endif
 }
 
 
@@ -206,7 +209,7 @@ int main (void)
     border = Color_Light_Blue;
     background = Color_Black; //bgcolor (COLOR_BLUE);
     text       = Color_Light_Blue; //textcolor (COLOR_BLACK);
-    clrscr ();
+    //clrscr ();
 
 #if defined(__C64__) || defined(__C128__)
     /* Move the VIC 16K block */

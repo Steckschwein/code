@@ -28,7 +28,7 @@
 
 .code
 ;	input:
-;  	.X	 - amount of 256byte blocks (page counter)
+;  	.X	 	- amount of 256byte blocks (page counter)
 ;		.A/.Y - pointer to source data
 vdp_memcpy:
 		sta vdp_ptr
