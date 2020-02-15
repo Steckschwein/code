@@ -24,7 +24,6 @@
 
 .export vdp_display_off
 .export vdp_bgcolor
-.export vdp_set_reg
 .export vdp_nopslide_8m
 .export vdp_nopslide_2m
 
