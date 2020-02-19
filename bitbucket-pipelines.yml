@@ -11,7 +11,6 @@ pipelines:
         script:
           - ca65 --version
           - ( cd asmunit && make clean all )
-          - export CC65_HOME=/cc65
           - ( cd steckos && make clean all )
           - ( cd ehbasic && make clean all )
           - ( cd edlib && make clean all )
