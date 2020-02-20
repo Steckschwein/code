@@ -2,7 +2,6 @@ TARGET=steckschwein-clib
 TARGET_SYS=none
 
 DEFINES+=-DV9958
-DEFINES+=-D_CC65_V2_17_
 
 .PHONY: all mostlyclean clean install zip lib $(TARGET)
 

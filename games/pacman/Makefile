@@ -5,7 +5,7 @@ DEBUG+=-D__NO_BOOT
 DEBUG+=-D__NO_INTRO
 
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
-CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include -D_CC65_V2_17_
+CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include
 
 LIBS=
 CA65FLAGS=-I $(CC65_HOME)/asminc $(DEBUG)

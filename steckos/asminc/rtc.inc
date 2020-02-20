@@ -42,7 +42,7 @@ rtc_systime_t = $0300
 rtc_read = 0
 
 
-.ifdef _CC65_V2_17_
+.if .VERSION = (2*$100+17*$10+0)
 .global				 _clock_gettime
 ;------------------------------------------------------------------------------
 ; Struct timespec - must match the struct defined in time.h

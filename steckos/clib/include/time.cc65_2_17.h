@@ -1,7 +1,7 @@
 /*
  * v2.17 master back port...
  */
-#ifdef _CC65_V2_17_
+#if (__CC65__ == (2*0x100+17*0x10+0))
 struct timespec {
     time_t  tv_sec;
     long    tv_nsec;
