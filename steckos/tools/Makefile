@@ -1,4 +1,4 @@
-CC65FLAGS=-I ../clib
+CC65FLAGS=-I ../clib --standard c99
 CA65FLAGS=-I ../asminc -I ../kernel
 LIBS=../lib/steckschwein.a lib/toollib.a
 CLIB=../clib/lib/steckschwein-clib.a
