@@ -1,9 +1,6 @@
       .include "zeropage.inc"
-;      .smart 
+;      .smart
       .autoimport
-      
-      .importzp ptr1,ptr2,ptr3,ptr4
-      .importzp tmp1,tmp2,tmp3,tmp4
 
         Color_Blinky  = Color_Red
         Color_Inky    = Color_Cyan
@@ -16,22 +13,15 @@
         KEY_EXIT = 27
         MAX_DOTS=226+4  ; food + superfood
 
-p_video=ptr1
-video_tmp=tmp1
-p_sound=ptr2
-sound_tmp=tmp2
-p_text=ptr3
-
-p_game        = ptr4
-p_maze        = ptr4+2
-p_tmp         = ptr4+4
-
-game_tmp      = tmp3
-game_tmp2     = tmp4
-gfx_tmp       = tmp4+1
-text_color    = tmp4+2
+.globalzp p_maze
+.globalzp p_game
+.globalzp p_tmp
+.globalzp p_text
+.globalzp p_sound
 
 
+
+.code
 Char_Food           = $cc   ;1100 1100
                             ;1100 1101
 Char_Superfood      = $ce   ;1100 1110 $cd/$ce
@@ -67,7 +57,7 @@ SPRITE_ADJUST     = $08
 GHOST_CHASE       = 0
 ;In scatter mode, the ghosts give up the chase for a few seconds and head for their respective home corners. It is a welcome but brief rest-soon enough, they will revert to chase mode and be after Pac-Man again.
 GHOST_SCATTER     = 1
-; Ghosts enter frightened mode whenever Pac-Man eats one of the four energizers located in the far corners of the maze. During the early levels, the ghosts will all turn dark blue (meaning they 
+; Ghosts enter frightened mode whenever Pac-Man eats one of the four energizers located in the far corners of the maze. During the early levels, the ghosts will all turn dark blue (meaning they
 ; are vulnerable) and aimlessly wander the maze for a few seconds. They will flash moments before returning to their previous mode of behavior.
 GHOST_FRIGHTENED  = 3;
 
@@ -75,10 +65,10 @@ Sprite_Pattern_Pacman = $18*4     ; pacman shape filled circle (game init)
 
 ACT_MOVE          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2
-ACT_RIGHT         = 0 ;00 
-ACT_LEFT          = 1 ;01 
-ACT_UP            = 2 ;10 
-ACT_DOWN          = 3 ;11 
+ACT_RIGHT         = 0 ;00
+ACT_LEFT          = 1 ;01
+ACT_UP            = 2 ;10
+ACT_DOWN          = 3 ;11
 ACT_MOVE_UP_OR_DOWN    = $02 ; 1x
 ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
 
@@ -166,13 +156,13 @@ ACT_DIR           = 1<<1|1<<0
     xpos_dir  .byte   ; character x pos direction
     ypos      .byte   ; character y pos - 0..25
     ypos_dir  .byte   ; character y pos direction
-    
+
     move      .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
     turn      .byte   ; bit 7 turn, bit 1-0 turn direction
     sprite    .byte   ; sprite number, offset to sprite tab
 
     dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
-;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30,0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
+;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
 
 ACTOR_PACMAN  = 0*.sizeof(actor)

@@ -7,14 +7,14 @@
 		.export sound_init_game_start
 		.export sound_play
 		.export sound_play_state
-		
+
 		;ym3812
 		.import opl2_init
 		.import opl2_reg_write
-		
+
 		.import wait
 		.import game_state
-		
+
 
 NOTE_Cis  =$16B
 NOTE_D	 =$181
@@ -95,20 +95,20 @@ tempo=0
 .macro s_SR _s, _r
   .byte _s<<4 | (_r & $0f)
 .endmacro
- 
+
 .macro initvoice chn, initdata
 		stz chn+voice::ix
 		lda #L64
 		sta chn+voice::cnt
 		ldx #2
-:	  lda initdata,x
+:	  	lda initdata,x
 		sta chn+voice::p_note,x
 		dex
 		bpl :-
 .endmacro
 
 .code
- 
+
 snd_wait:
 		cmp game_state+GameState::frames
 		bne snd_wait
@@ -117,14 +117,14 @@ snd_wait:
 
 sound_init:
 		jmp opl2_init
-		
+
 sound_off:
-		opl_reg $b0,  0	; 
+		opl_reg $b0,  0	;
 		rts
-		
+
 @loop:
 		jmp @loop
-		
+
 @exit:
 		restoreIRQ _save_irq
 
@@ -146,23 +146,30 @@ sound_play:
 		beq @exit
 		ldx #0*.sizeof(voice)
 		jsr sound_play_voice
-		ldx #1*.sizeof(voice)
-		jsr sound_play_voice
+;		ldx #1*.sizeof(voice)
+;		jsr sound_play_voice
 @exit:
 		rts
 
 sound_play_state:
 		.res 1,0
-		
+
 sound_play_voice:
 		dec sound_voices+voice::cnt,x
 		bne @exit
-		
+
 		lda sound_voices+voice::ix,x		; voice data index
 		cmp sound_voices+voice::length,x
 		bne @next_note
+
 		stz sound_voices+voice::ix,x
-		stz sound_play_state
+
+		lda #L64
+		sta sound_voices+voice::cnt,x
+
+		;stz sound_play_state
+
+
 		rts
 @next_note:
 		stx sound_tmp
@@ -171,20 +178,20 @@ sound_play_voice:
 		sta p_sound+0
 		lda sound_voices+voice::p_note+1,x
 		sta p_sound+1
-		
+
 		lda sound_voices+voice::reg_a0,x
 		tax
 		lda (p_sound), y	 ; note F-Number lsb
 		iny
 		jsr opl2_reg_write
-		
+
 		ldx sound_tmp
 		lda sound_voices+voice::reg_b0,x
 		tax
 		lda (p_sound), y	 ; note Key-On / Octave / F-Number msb
 		iny
 		jsr opl2_reg_write
-		
+
 		lda (p_sound), y	 ; delay
 		iny
 		ldx sound_tmp
@@ -209,7 +216,7 @@ sound_init_game_start:
 		opl_reg $23,  1
 		opl_reg $43,  (SCALE_0 | ($3f-59))
 		opl_reg $63,  (13<<4 | (2 & $0f))  ; attack / decay
-		opl_reg $83,  (8<<4 | (12 & $0f))  ; sustain / release		  
+		opl_reg $83,  (8<<4 | (12 & $0f))  ; sustain / release
 		opl_reg $e3,  WS_ABS_SIN;PULSE_SIN
 
 		;channel 2 - rhodes piano
@@ -223,20 +230,22 @@ sound_init_game_start:
 		opl_reg $24,  0
 		opl_reg $44,  (SCALE_0 | ($3f-59))
 		opl_reg $64,  (13<<4 | (2 & $0f))  ; attack / decay
-		opl_reg $84,  (8<<4 | (12 & $0f))  ; sustain / release		  
+		opl_reg $84,  (8<<4 | (12 & $0f))  ; sustain / release
 		opl_reg $e4,  WS_PULSE_SIN
-		
+
 		initvoice voice1, sound_game_start_v1
-		initvoice voice2, sound_game_start_v2
-		
+;		initvoice voice2, sound_game_start_v2
+
 		inc sound_play_state
 		rts
-		
+
 sound_game_start_v1:
-		.word game_start_voice1;	 p_note	 .word
-		.byte game_start_voice1_end-game_start_voice1
+		.word game_sfx_pacman
+		.byte game_sfx_pacman_end-game_sfx_pacman
+;		.word game_start_voice1		;	 p_note	.word
+;		.byte game_start_voice1_end-game_start_voice1
 sound_game_start_v2:
-		.word game_start_voice2;	 p_delay	.word
+		.word game_start_voice2		;	 p_note	.word
 		.byte game_start_voice2_end-game_start_voice2
 
 .data
@@ -248,19 +257,41 @@ voice1:
 	 ;.tag voice
 	 .byte $a0
 	 .byte $b0
-	 .byte L64;				 cnt .byte
+	 .byte L64;				 	cnt .byte
 	 .byte 0;					ix  .byte
-	 .word 0;game_start_voice1;	 p_note	 .word
-	 .byte 0;game_start_voice1_end-game_start_voice1
-	 
-voice2: 
+
+	 .word 0;game_sfx_pacman
+	 .byte 0;game_sfx_pacman_end-game_sfx_pacman
+
+;	 .word 0;game_start_voice1		;	 p_note	 .word
+;	 .byte 0;game_start_voice1_end-game_start_voice1
+
+voice2:
 	 ;.tag voice
 	 .byte $a1
 	 .byte $b1
 	 .byte L64;				  cnt .byte
 	 .byte 0;				  ix		  .byte
-	 .word 0;game_start_voice2;	 p_delay	.word
-	 .byte 0;game_start_voice2_end-game_start_voice2
+
+;	 .word 0;game_start_voice2;	 p_delay	.word
+;	 .byte 0;game_start_voice2_end-game_start_voice2
+
+; game sfx eaten pac
+game_sfx_pacman:
+	note NOTE_B, 	4, L64
+	note NOTE_Gis, 4, L64
+	note NOTE_F,	4, L64
+	note NOTE_Cis, 4, L64
+	note NOTE_Gis, 3, L64
+	pause L64
+	pause L64
+	pause L64
+	note NOTE_E, 	3, L64
+	note NOTE_Gis, 3, L64
+	note NOTE_Dis,	4, L64
+	note NOTE_Fis, 4, L64
+	note NOTE_A, 	4, L64
+game_sfx_pacman_end:
 
 ; game start sound
 game_start_voice1: ; piano
@@ -314,7 +345,7 @@ game_start_voice1_end:
 
 game_start_voice2:
 		note NOTE_C, 2, L8
-		pause L4		
+		pause L4
 		note NOTE_G, 2, L8
 		note NOTE_C, 2, L8
 		pause L4
@@ -326,14 +357,14 @@ game_start_voice2:
 		note NOTE_Cis, 2, L8
 		pause L4
 		note NOTE_Gis, 2, L8
-		; 3nd takt 
+		; 3nd takt
 		note NOTE_C, 2, L8
 		pause L4
 		note NOTE_G, 2, L8
 		note NOTE_C, 2, L8
 		pause L4
 		note NOTE_G, 2, L8
-		; 4nd takt 
+		; 4nd takt
 		note NOTE_G, 2, L8
 		pause L8
 		note NOTE_A, 2, L8
@@ -343,7 +374,7 @@ game_start_voice2:
 		note NOTE_C, 3, L8
 		pause L8
 		soundEnd
-		
+
 game_start_voice2_end:
 
 ; ghost alarm sound
@@ -367,7 +398,7 @@ ghost_alarm:
 		  ;opl_reg $43,  (SCALE_1_5 | ($3f-62))
 		  ;opl_reg $63,  (15<<4 | (0 & $0f))  ; attack / decay
 		  ;opl_reg $83,  (15<<4 | (4 & $0f))  ; sustain / release
-		
+
 		  ; slap bass 1
 		  ; modulator
 		  ;opl_reg $21,  (1<<EG | 1<<KSR |1)
@@ -379,58 +410,58 @@ ghost_alarm:
 		  ;opl_reg $44,  (SCALE_0 | ($3f-63))
 		  ;opl_reg $64,  (13<<4 | (5 & $0f))	; attack / decay
 		  ;opl_reg $84,  (6<<4 | (8 & $0f))	 ; sustain / release
-		  
+
 ;	  .word $181,$1CA,$241,$181,$1CA,$241,$181,$1CA,$241,$181,$1CA,$241,$181,$202,$287,$181,$202,$287,$181,$202,$287,$181,$202,$287,$181,$1CA,$241,$181,$181,$1CA,$241,$181,$1CA,$241,$2AE,$1CA,$241,$2AE
 	  .word 0
-		
+
 		stefan NOTE_D, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0 
-		stefan NOTE_A, 4, 15, 0, 7, 0 
-		stefan NOTE_D, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0 
+		stefan NOTE_F, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_D, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0 
+		stefan NOTE_F, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_D, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0 
+		stefan NOTE_F, 4, 15, 0, 7, 0
+		stefan NOTE_A, 4, 15, 0, 7, 0
+		stefan NOTE_D, 4, 15, 0, 7, 0
+		stefan NOTE_F, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0 
+		stefan NOTE_F, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0 
+		stefan NOTE_F, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0 
+		stefan NOTE_F, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0 
+		stefan NOTE_F, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0 
+		stefan NOTE_E, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0 
+		stefan NOTE_E, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0 
+		stefan NOTE_E, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0 
+		stefan NOTE_E, 4, 15, 0, 7, 0
 		stefan NOTE_A, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0 
+		stefan NOTE_E, 4, 15, 0, 7, 0
 		stefan NOTE_G, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0 
+		stefan NOTE_E, 4, 15, 0, 7, 0
 		stefan NOTE_G, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0 
+		stefan NOTE_E, 4, 15, 0, 7, 0
 		stefan NOTE_G, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0 
+		stefan NOTE_E, 4, 15, 0, 7, 0
 		stefan NOTE_G, 4, 15, 0, 7, 0
 		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0 
+		stefan NOTE_E, 4, 15, 0, 7, 0
 		stefan NOTE_G, 4, 15, 0, 7, 0

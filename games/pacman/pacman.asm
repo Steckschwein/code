@@ -17,6 +17,16 @@
 		.import intro
 		.import game
 
+		.exportzp p_maze, p_video, p_sound, p_text, p_game, p_tmp
+
+.zeropage
+p_video:  .res 2
+p_sound:  .res 2
+p_text:   .res 2
+p_game:   .res 2
+p_maze:   .res 2
+p_tmp:    .res 2
+
 .code
 .proc	_main: near
 main:
@@ -61,3 +71,14 @@ init:
 _save_irq:  .res 2, 0
 game_state:
   .tag GameState
+video_tmp:  .res 1
+.export sound_tmp
+sound_tmp:  .res 1
+.export game_tmp
+game_tmp:   .res 1
+.export game_tmp2
+game_tmp2:  .res 1
+.export gfx_tmp
+gfx_tmp:    .res 1
+.export text_color
+text_color:  .res 1
