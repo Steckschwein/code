@@ -1,5 +1,10 @@
 .FEATURE labels_without_colons
 .include "steckos.inc"
+.include "fcntl.inc"
+.include "fat32.inc"
+.import hexout
+.export char_out=krn_chrout
+
 __APPSTART__ = $b000
 
 appstart __APPSTART__
@@ -766,6 +771,8 @@ LAB_1269
 ; wait for Basic command
 
 LAB_1274
+        lda #'Y'
+        jsr krn_chrout
       LDA   #<LAB_RMSG        ; point to "Ready" message low byte
       LDY   #>LAB_RMSG        ; point to "Ready" message high byte
 
@@ -927,10 +934,12 @@ LAB_1330
       BRA   LAB_1325          ; go do next line, branch always, carry clear
 
 LAB_133E
-      BBS7  OPXMDM, DO_RDY    ; test to see if LOAD was executed
-      JMP   LAB_127D          ; else we just wait for Basic command, no "Ready"
-DO_RDY
-      RMB7  OPXMDM            ; reset flag bit to zero
+;       BBS7  OPXMDM, DO_RDY    ; test to see if LOAD was executed
+;       JMP   LAB_127D          ; else we just wait for Basic command, no "Ready"
+; DO_RDY
+      ; RMB7  OPXMDM            ; reset flag bit to zero
+      lda #'X'
+      jsr krn_chrout
       JMP   LAB_1274          ; print Ready msg and wait for Basic command
 
 ; print "? " and get BASIC input
@@ -7466,6 +7475,57 @@ LAB_2D05
       RTS
 
 LAB_LOAD
+        lda #O_RDONLY
+        jsr openfile
+        bne io_error
+
+        ; debug
+        lda #'o'
+        jsr krn_chrout
+
+        lda Smemh
+        sta read_blkptr + 1
+
+        lda Smeml
+        sta read_blkptr + 0
+
+        jsr krn_read
+        bne io_error
+
+        ; debug
+
+        lda #'r'
+        jsr krn_chrout
+
+
+        phx
+        jsr krn_getfilesize
+        clc
+        adc Smeml
+        sta Svarl
+
+        txa
+        adc Smemh
+        sta Svarh
+        plx
+
+        jsr krn_close
+
+        ; LDA   #<LAB_RMSG   ; "READY"
+        ; LDY   #>LAB_RMSG
+        ; JSR   LAB_18C3
+        SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+        lda #'x'
+        jsr krn_chrout
+        JMP   LAB_1319
+
+
+
+io_error:
+    LDA #'E'
+    jsr krn_chrout
+     ldx #$24
+     jmp LAB_XERR
 ; To Load a program you need to start loading at Smeml/h
 ; then find the end of program (two $00), using Itempl/h,
 ; then clear other variables and call BASIC cleanup
@@ -7475,15 +7535,15 @@ LAB_LOAD
 ;
 ; LOAD command
 
-     LDA     Smeml            ; get start address
-     STA     PTRL             ; put it in XMODEM pointer
-     LDA     Smemh            ;
-     STA     PTRH             ;
-
-     LDA    #$01              ; get count of one
-     STA    BLKNO             ; set Xmodem block count
-     STZ    OPXMDM            ; clear OPXMDM flag
-     JSR    V_LOAD            ; call XMODEM receive vector
+     ; LDA     Smeml            ; get start address
+     ; STA     PTRL             ; put it in XMODEM pointer
+     ; LDA     Smemh            ;
+     ; STA     PTRH             ;
+     ;
+     ; LDA    #$01              ; get count of one
+     ; STA    BLKNO             ; set Xmodem block count
+     ; STZ    OPXMDM            ; clear OPXMDM flag
+     ; JSR    V_LOAD            ; call XMODEM receive vector
 
 ; Program loaded into memory, likely padded with $1A from Xmodem protocol
 ; use get_basmem routine to find the end program memory, then reset the pointers
@@ -7491,17 +7551,17 @@ LAB_LOAD
 ; NOTE: Modified routine using OPXMDM Bit7 to indicate a LOAD was done and
 ; print the Ready message after cleanup.
 
-     JSR     get_basmem       ; find end of program space
-     LDA     Itempl           ; get start of free memory low byte address
-     LDY     Itemph           ; get start of free memory high byte address
-     STA     Svarl            ; and set variables and strings pointers
-     STA     Sarryl           ; to the start of free memory
-     STA     Earryl           ;
-     STY     Svarh            ;
-     STY     Sarryh           ;
-     STY     Earryh           ;
-     SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-     JMP     LAB_1319         ; cleanup and Return to BASIC
+     ; JSR     get_basmem       ; find end of program space
+     ; LDA     Itempl           ; get start of free memory low byte address
+     ; LDY     Itemph           ; get start of free memory high byte address
+     ; STA     Svarl            ; and set variables and strings pointers
+     ; STA     Sarryl           ; to the start of free memory
+     ; STA     Earryl           ;
+     ; STY     Svarh            ;
+     ; STY     Sarryh           ;
+     ; STY     Earryh           ;
+     ; SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+     ; JMP     LAB_1319         ; cleanup and Return to BASIC
 
 LAB_SAVE
 ; To Save a program you need to save start to end of program
@@ -7610,9 +7670,7 @@ openfile:
      ply
 		jmp krn_open
 
-io_error:
-     ldx #$24
-     jmp LAB_XERR
+
 ; system dependant I/O vectors
 ; these are in RAM and are set by the monitor at start-up
 
