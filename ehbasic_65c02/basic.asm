@@ -1,11 +1,8 @@
 .FEATURE labels_without_colons
-.setcpu "65C02"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
-.include "common.inc"
-.include "appstart.inc"
+.include "steckos.inc"
+__APPSTART__ = $b000
 
-appstart $8000
+appstart __APPSTART__
 
 ;
 ; Enhanced BASIC for the C02 Pocket SBC, Version 2.22p5C
@@ -491,7 +488,7 @@ VEC_SV            = VEC_LD+2  ; save vector
 VEC_EXIT          = VEC_SV+2  ; exit vector
 
 Ram_base          = $0800     ; start of user RAM (1st 2KB used/reserved)
-Ram_top           = $8000     ; end of user RAM+1 ($8000 is start of ROM)
+Ram_top           = __APPSTART__     ; end of user RAM+1 ($8000 is start of ROM)
 
 ; The start address can be changed, noting the BIOS/Monitor locations
 
@@ -1014,8 +1011,6 @@ LAB_13AC
       LDA   Ibuffs,X          ; get byte from input buffer
       BEQ   LAB_13EC          ; if null save byte then exit
 
-      toupper                 ; make uppercase
-
       CMP   #'_'              ; compare with "_"
       BCS   LAB_13EC          ; if >= go save byte then continue crunching
 
@@ -1048,11 +1043,7 @@ LAB_13D0
       CMP   (ut2_pl),Y        ; compare with keyword first character table byte
       BEQ   LAB_13D1          ; go do word_table_chr if match
 
-; *** replace
-;     BCC   LAB_13EA          ; if < keyword first character table byte go restore
-; *** with
-      BCC   PATCH_LC2         ; if < keyword first character table byte go restore
-; *** end
+      BCC   LAB_13EA          ; if < keyword first character table byte go restore
                                ; Y and save to crunched
 
       INY                     ; else increment pointer
@@ -1077,7 +1068,6 @@ LAB_13D6
 LAB_13D8
       BMI   LAB_13EA          ; all bytes matched so go save token
       INX                     ; next buffer byte
-      ORA   #$20              ; make lowercase
       CMP   Ibuffs,X          ; compare with byte from input buffer
       BEQ   LAB_13D6          ; go compare next if match
       BRA   LAB_1417          ; branch if >< (not found keyword)
@@ -1135,7 +1125,6 @@ LAB_141B
       LDA   (ut2_pl),Y        ; get byte from keyword table
       BNE   LAB_13D8          ; go test next word if not zero byte (end of table)
 
-PATCH_LC2
                               ; reached end of table with no match
       LDA   Ibuffs,X          ; restore byte from input buffer
       BRA   LAB_13EA          ; branch always (all bytes in buffer are $00-$7F)
@@ -7588,6 +7577,42 @@ inc_line
 skp_ith
      RTS                      ; return to caller
 
+strparam2buf:
+     jsr LAB_EVEX
+     jsr LAB_EVST
+     cmp #$00
+     beq @end
+
+     tay
+     lda #0
+     sta buf,y
+     dey
+@loop:
+     lda (ut1_pl),y
+     beq @out
+     sta buf,y
+     dey
+     bpl @loop
+@out:
+     sec
+     rts
+@end:
+     clc
+     rts
+
+openfile:
+     pha             ; save file open mode
+     jsr strparam2buf
+@open:
+     SetVector buf, filenameptr
+		lda #<buf
+		ldx #>buf
+     ply
+		jmp krn_open
+
+io_error:
+     ldx #$24
+     jmp LAB_XERR
 ; system dependant I/O vectors
 ; these are in RAM and are set by the monitor at start-up
 
@@ -8483,9 +8508,6 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
-
-getkey:
-    jsr krn_getkey
-chrout:
-    jsr krn_chrout
+.bss
+buf:        .res 16
  .END
