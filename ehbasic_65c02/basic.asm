@@ -771,8 +771,6 @@ LAB_1269
 ; wait for Basic command
 
 LAB_1274
-        lda #'Y'
-        jsr krn_chrout
       LDA   #<LAB_RMSG        ; point to "Ready" message low byte
       LDY   #>LAB_RMSG        ; point to "Ready" message high byte
 
@@ -934,12 +932,11 @@ LAB_1330
       BRA   LAB_1325          ; go do next line, branch always, carry clear
 
 LAB_133E
-;       BBS7  OPXMDM, DO_RDY    ; test to see if LOAD was executed
-;       JMP   LAB_127D          ; else we just wait for Basic command, no "Ready"
-; DO_RDY
-      ; RMB7  OPXMDM            ; reset flag bit to zero
-      lda #'X'
-      jsr krn_chrout
+      BBS7  OPXMDM, DO_RDY    ; test to see if LOAD was executed
+      JMP   LAB_127D          ; else we just wait for Basic command, no "Ready"
+DO_RDY
+      RMB7  OPXMDM            ; reset flag bit to zero
+
       JMP   LAB_1274          ; print Ready msg and wait for Basic command
 
 ; print "? " and get BASIC input
@@ -1019,7 +1016,17 @@ LAB_13A6
 LAB_13AC
       LDA   Ibuffs,X          ; get byte from input buffer
       BEQ   LAB_13EC          ; if null save byte then exit
+  ; *** begin patch: lower case token recognition V2 ***
+  ; ***              WARNING! changes documented behavior!
+  ; *** add
+      CMP   #'{'              ; convert lower to upper case
+      BCS   LAB_13EC          ; is above lower case
+      CMP   #'a'
+      BCC   PATCH_LC          ; is below lower case
+      AND   #$DF              ; mask lower case bit
 
+PATCH_LC:
+      ; *** end
       CMP   #'_'              ; compare with "_"
       BCS   LAB_13EC          ; if >= go save byte then continue crunching
 
@@ -1052,8 +1059,14 @@ LAB_13D0
       CMP   (ut2_pl),Y        ; compare with keyword first character table byte
       BEQ   LAB_13D1          ; go do word_table_chr if match
 
-      BCC   LAB_13EA          ; if < keyword first character table byte go restore
+      ;BCC   LAB_13EA          ; if < keyword first character table byte go restore
                                ; Y and save to crunched
+
+   ; *** replace
+   ;      BCC   LAB_13EA          ; if < keyword first character table byte go restore
+   ; *** with
+       BCC   PATCH_LC2         ; if < keyword first character table byte go restore
+   ; *** end
 
       INY                     ; else increment pointer
       BRA   LAB_13D0          ; and loop (branch always)
@@ -1077,7 +1090,17 @@ LAB_13D6
 LAB_13D8
       BMI   LAB_13EA          ; all bytes matched so go save token
       INX                     ; next buffer byte
-      CMP   Ibuffs,X          ; compare with byte from input buffer
+      ;CMP   Ibuffs,X          ; compare with byte from input buffer
+  ; *** replace
+  ;      CMP   Ibuffs,X          ; compare with byte from input buffer
+  ; *** with
+      EOR     Ibuffs,x        ; check bits against table
+      AND     #$DF            ; DF masks the upper/lower case bit
+  ; *** end
+
+
+
+
       BEQ   LAB_13D6          ; go compare next if match
       BRA   LAB_1417          ; branch if >< (not found keyword)
 
@@ -1133,6 +1156,11 @@ LAB_141B
 
       LDA   (ut2_pl),Y        ; get byte from keyword table
       BNE   LAB_13D8          ; go test next word if not zero byte (end of table)
+
+      ; *** add label
+PATCH_LC2:
+      ; *** end
+      ; *** end   patch: lower case token recognition V2 ***
 
                               ; reached end of table with no match
       LDA   Ibuffs,X          ; restore byte from input buffer
