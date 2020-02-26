@@ -7525,27 +7525,50 @@ LAB_LOAD
         lda #'r'
         jsr krn_chrout
 
-
-        phx
-        jsr krn_getfilesize
-        clc
-        adc Smeml
-        sta Svarl
-
-        txa
-        adc Smemh
-        sta Svarh
-        plx
-
         jsr krn_close
+
+        lda #'c'
+        jsr krn_chrout
+
+	JSR     get_basmem       ; find end of program space
+	LDA     Itempl           ; get start of free memory low byte address
+	LDY     Itemph           ; get start of free memory high byte address
+	STA     Svarl            ; and set variables and strings pointers
+	STA     Sarryl           ; to the start of free memory
+	STA     Earryl           ;
+	STY     Svarh            ;
+	STY     Sarryh           ;
+	STY     Earryh           ;
+
+        lda #'x'
+        jsr krn_chrout
+
+	SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+	JMP     LAB_1319         ; cleanup and Return to BASIC
+
+        lda #'y'
+        jsr krn_chrout
+
+
+        ;phx
+        ;jsr krn_getfilesize
+        ;clc
+        ;adc Smeml
+        ;sta Svarl
+
+        ;txa
+        ;adc Smemh
+        ;sta Svarh
+        ;plx
+
 
         ; LDA   #<LAB_RMSG   ; "READY"
         ; LDY   #>LAB_RMSG
         ; JSR   LAB_18C3
-        SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-        lda #'x'
-        jsr krn_chrout
-        JMP   LAB_1319
+        ;SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+        ;lda #'x'
+        ;jsr krn_chrout
+        ;JMP   LAB_1319
 
 
 
