@@ -1430,7 +1430,7 @@ LAB_1540
       BEQ   LAB_1508          ; if last character exit and print
 
       JSR   LAB_PRNA          ; go print the character
-      INY                     ; increment index
+      INY                     ; in crement index
       BNE   LAB_1540          ; loop for next character
 
 ; perform FOR
@@ -7503,57 +7503,55 @@ LAB_2D05
       RTS
 
 LAB_LOAD
-        lda #O_RDONLY
-        jsr openfile
-        bne io_error
+        RTS
 
-        ; debug
-        lda #'o'
-        jsr krn_chrout
+        ; lda #O_RDONLY
+        ; jsr openfile
+        ; bne io_error
+        ;
+        ; ; debug
+        ; lda #'o'
+        ; jsr krn_chrout
+        ;
+        ; lda Smemh
+        ; sta read_blkptr + 1
+        ;
+        ; lda Smeml
+        ; sta read_blkptr + 0
+        ;
+        ; jsr krn_read
+        ; bne io_error
+        ;
+        ; ; debug
+        ;
+        ; lda #'r'
+        ; jsr krn_chrout
+        ;
+        ;
+        ; phx
+        ; jsr krn_getfilesize
+        ; clc
+        ; adc Smeml
+        ; sta Svarl
+        ;
+        ; txa
+        ; adc Smemh
+        ; sta Svarh
+        ; plx
+        ;
+        ; jsr krn_close
+        ;
+        ; ; LDA   #<LAB_RMSG   ; "READY"
+        ; ; LDY   #>LAB_RMSG
+        ; ; JSR   LAB_18C3
+        ; SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+        ; lda #'x'
+        ; jsr krn_chrout
+        ; JMP   LAB_1319
 
-        lda Smemh
-        sta read_blkptr + 1
-
-        lda Smeml
-        sta read_blkptr + 0
-
-        jsr krn_read
-        bne io_error
-
-        ; debug
-
-        lda #'r'
-        jsr krn_chrout
-
-
-        phx
-        jsr krn_getfilesize
-        clc
-        adc Smeml
-        sta Svarl
-
-        txa
-        adc Smemh
-        sta Svarh
-        plx
-
-        jsr krn_close
-
-        ; LDA   #<LAB_RMSG   ; "READY"
-        ; LDY   #>LAB_RMSG
-        ; JSR   LAB_18C3
-        SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-        lda #'x'
-        jsr krn_chrout
-        JMP   LAB_1319
 
 
 
-io_error:
-    LDA #'E'
-    jsr krn_chrout
-     ldx #$24
-     jmp LAB_XERR
 ; To Load a program you need to start loading at Smeml/h
 ; then find the end of program (two $00), using Itempl/h,
 ; then clear other variables and call BASIC cleanup
@@ -7591,7 +7589,71 @@ io_error:
      ; SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
      ; JMP     LAB_1319         ; cleanup and Return to BASIC
 
+openfile:
+        pha             ; save file open mode
+        jsr strparam2buf
+@open:
+        SetVector buf, filenameptr
+		lda #<buf
+		ldx #>buf
+        ply
+		jmp krn_open
+io_error:
+        jsr hexout
+        lda #'E'
+        jsr krn_chrout
+        rts
+        ; ldx #$24
+        ; jmp LAB_XERR
+
 LAB_SAVE
+    ; lda #O_WRONLY
+    ; jsr openfile
+    ; bne io_error
+
+    lda Smemh
+    sta write_blkptr + 1
+    jsr hexout
+    lda Smeml
+    sta write_blkptr + 0
+    jsr hexout
+
+    lda #' '
+    jsr krn_chrout
+
+    lda Svarh
+    jsr hexout
+    lda Svarl
+    jsr hexout
+
+    lda #' '
+    jsr krn_chrout
+
+    sec
+    lda Svarl
+    sbc Smeml
+    sta fd_area + F32_fd::FileSize + 0,x
+    TAX
+
+    lda Svarh
+    sbc Smemh
+    sta fd_area + F32_fd::FileSize + 1,x
+    jsr hexout
+    txa
+    jsr hexout
+    crlf
+
+    ; stz fd_area + F32_fd::FileSize + 2,x
+    ; stz fd_area + F32_fd::FileSize + 3,x
+    ;
+    ; jsr krn_write
+    ; bne io_error
+    ; jsr krn_close
+
+    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+    JMP   LAB_1319
+
+
 ; To Save a program you need to save start to end of program
 ; marked by two consecutive $00.
 ;
@@ -7604,26 +7666,26 @@ LAB_SAVE
 ;
 ; SAVE command
 
-     JSR    get_basmem        ; find end of program space
-     LDX    Smeml             ;
-     LDA    Smemh             ; get start address of BASIC program
-     STX    SRCL              ;
-     STA    SRCH              ; save in xmodem pointer
-
-     LDA    Itempl            ; get end of memory low byte
-     SEC                      ; set carry flag for subtract
-     SBC    Smeml             ; subtract start of memory low byte
-     STA    LENL              ; store to Monitor length low byte
-
-     LDA    Itemph            ; get end of memory high byte
-     SBC    Smemh             ; subtract start of memory high byte
-     STA    LENH              ; save to Monitor length high byte
-
-     LDA    #$01              ; get count of one
-     STA    BLKNO             ; set Xmodem block count
-     STZ    OPXMDM            ; clear OPXMDM flag
-
-     BRA    V_SAVE            ; call Xmodem SAVE vector and return
+     ; JSR    get_basmem        ; find end of program space
+     ; LDX    Smeml             ;
+     ; LDA    Smemh             ; get start address of BASIC program
+     ; STX    SRCL              ;
+     ; STA    SRCH              ; save in xmodem pointer
+     ;
+     ; LDA    Itempl            ; get end of memory low byte
+     ; SEC                      ; set carry flag for subtract
+     ; SBC    Smeml             ; subtract start of memory low byte
+     ; STA    LENL              ; store to Monitor length low byte
+     ;
+     ; LDA    Itemph            ; get end of memory high byte
+     ; SBC    Smemh             ; subtract start of memory high byte
+     ; STA    LENH              ; save to Monitor length high byte
+     ;
+     ; LDA    #$01              ; get count of one
+     ; STA    BLKNO             ; set Xmodem block count
+     ; STZ    OPXMDM            ; clear OPXMDM flag
+     ;
+     ; BRA    V_SAVE            ; call Xmodem SAVE vector and return
 
 ; Basic program code links line numbers via the first two bytes of
 ; the program code starting at (Smeml) pointing to the next line of
@@ -7687,16 +7749,6 @@ strparam2buf:
 @end:
      clc
      rts
-
-openfile:
-     pha             ; save file open mode
-     jsr strparam2buf
-@open:
-     SetVector buf, filenameptr
-		lda #<buf
-		ldx #>buf
-     ply
-		jmp krn_open
 
 
 ; system dependant I/O vectors
