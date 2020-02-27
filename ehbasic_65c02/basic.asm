@@ -5,7 +5,7 @@
 .import hexout
 .export char_out=krn_chrout
 
-__APPSTART__ = $b000
+__APPSTART__ = $a000
 
 appstart __APPSTART__
 
@@ -387,10 +387,12 @@ TK_SWAP           = TK_GET+1        ; SWAP token
 TK_BITSET         = TK_SWAP+1       ; BITSET token
 TK_BITCLR         = TK_BITSET+1     ; BITCLR token
 TK_EXIT           = TK_BITCLR+1     ; EXIT token
+TK_DIR            = TK_EXIT+1
+TK_CD             = TK_DIR+1
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB            = TK_EXIT+1       ; TAB token
+TK_TAB            = TK_CD+1       ; TAB token
 TK_ELSE           = TK_TAB+1        ; ELSE token
 TK_TO             = TK_ELSE+1       ; TO token
 TK_FN             = TK_TO+1         ; FN token
@@ -7678,7 +7680,82 @@ LAB_SAVE
     SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
     JMP   LAB_1319
 
+LAB_DIR:
+    LDA #'D'
+    JSR LAB_PRNA
+    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+    JMP   LAB_1319
 
+    pha
+    phx
+    phy
+
+    BEQ	@end0
+
+    jsr strparam2buf
+    bcc @end0
+
+    SetVector buf, filenameptr
+    lda #<buf
+    ldx #>buf
+    bra @skip
+
+@end0:
+
+    SetVector pattern, filenameptr
+@skip:
+
+    jsr LAB_CRLF
+
+    ldx #FD_INDEX_CURRENT_DIR
+    jsr krn_find_first
+    bcs @l2_1
+    lda #'E'
+    jsr LAB_PRNA
+    bra @end
+@l2_1:
+    bcs @l4
+    bra @l5
+@l3:
+    ldx #FD_INDEX_CURRENT_DIR
+    jsr krn_find_next
+    bcc @l5
+@l4:
+    lda (dirptr)
+    cmp #$e5
+    beq @l3
+
+    ldy #F32DirEntry::Attr
+    lda (dirptr),y
+
+    bit #$0a ; Hidden attribute set, skip
+    bne @l3
+
+    ldy #$00
+@outloop:
+    lda (dirptr),y
+    jsr LAB_PRNA
+    iny
+    cpy #11
+    bne @outloop
+
+    jsr LAB_CRLF
+
+    bra @l3
+@l5:
+@end:
+    ply
+    plx
+    pla
+    rts
+pattern:
+    .asciiz "*.*"
+
+LAB_CD
+    LDA #'C'
+    JSR LAB_PRNA
+    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+    JMP   LAB_1319
 ; To Save a program you need to save start to end of program
 ; marked by two consecutive $00.
 ;
@@ -7961,6 +8038,9 @@ LAB_CTBL
       .word LAB_BITSET-1      ; BITSET new command
       .word LAB_BITCLR-1      ; BITCLR new command
       .word V_EXIT-1          ; EXIT new command (exits to C02 Monitor)
+      .word LAB_DIR-1           ; DIR
+      .word LAB_CD-1           ;CD
+
 
 ; function pre process routine table
 
@@ -8194,6 +8274,8 @@ LBB_BITTST
 TAB_ASCC
 LBB_CALL
       .byte "ALL",TK_CALL     ; CALL
+LBB_CD
+    	.byte	"D",TK_CD	; CD
 LBB_CHRS
       .byte "HR$(",TK_CHRS    ; CHR$(
 LBB_CLEAR
@@ -8214,6 +8296,8 @@ LBB_DEF
       .byte "EF",TK_DEF       ; DEF
 LBB_DIM
       .byte "IM",TK_DIM       ; DIM
+LBB_DIR
+      .byte "IR", TK_DIR     ; DIR
 LBB_DOKE
       .byte "OKE",TK_DOKE     ; DOKE note - "DOKE" must come before "DO"
 LBB_DO
@@ -8482,6 +8566,10 @@ LAB_KEYT
       .word LBB_BITCLR        ; BITCLR
       .byte 4,"E"
       .word LBB_EXIT          ; EXIT
+      .byte 3,"D"
+      .word LBB_DIR
+      .byte 2,"C"
+      .word LBB_CD
 
 ; secondary commands (can't start a statement)
 
