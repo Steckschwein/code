@@ -595,6 +595,11 @@ LAB_2DB6
       lda #>krn_getkey
       sta VEC_IN+1
 
+      lda #<exit
+      sta VEC_EXIT
+      lda #>exit
+      sta VEC_EXIT+1
+
 
       JSR   LAB_CRLF          ; print CR/LF
       JSR   LAB_1463          ; do "NEW" and "CLEAR"
@@ -8666,6 +8671,7 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
+exit:		jmp (retvec)
 .bss
 buf:        .res 16
  .END
