@@ -478,8 +478,8 @@ LAB_SKFF          = LAB_STAK+$FF
 ; the input buffer must not cross a page boundary and must not overlap with
 ; program RAM pages!
 
-Ibuffs            = $0400     ; Start of input buffer
-Ibuffe            = $0400+$7E ; end of input buffer (127 bytes)
+Ibuffs            = $0700     ; Start of input buffer
+Ibuffe            = $0700+$7E ; end of input buffer (127 bytes)
 
 ccflag            = Ibuffe+1  ; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte            = ccflag+1  ; BASIC CTRL-C byte
@@ -7681,11 +7681,6 @@ LAB_SAVE
     JMP   LAB_1319
 
 LAB_DIR:
-    LDA #'D'
-    JSR LAB_PRNA
-    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-    JMP   LAB_1319
-
     pha
     phx
     phy
@@ -7705,10 +7700,12 @@ LAB_DIR:
     SetVector pattern, filenameptr
 @skip:
 
+
     jsr LAB_CRLF
 
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
+
     bcs @l2_1
     lda #'E'
     jsr LAB_PRNA
