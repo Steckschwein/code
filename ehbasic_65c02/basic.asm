@@ -7514,10 +7514,6 @@ LAB_LOAD
         jsr openfile
         bne io_error
 
-        ; debug
-        lda #'o'
-        jsr krn_chrout
-
         lda Smemh
         sta read_blkptr + 1
 
@@ -7527,15 +7523,7 @@ LAB_LOAD
         jsr krn_read
         bne io_error
 
-        ; debug
-
-        lda #'r'
-        jsr krn_chrout
-
         jsr krn_close
-
-        lda #'c'
-        jsr krn_chrout
 
     	JSR     get_basmem       ; find end of program space
     	LDA     Itempl           ; get start of free memory low byte address
@@ -7547,14 +7535,8 @@ LAB_LOAD
     	STY     Sarryh           ;
     	STY     Earryh           ;
 
-        lda #'x'
-        jsr krn_chrout
-
     	SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
     	JMP     LAB_1319         ; cleanup and Return to BASIC
-
-        lda #'y'
-        jsr krn_chrout
 
 
         ;phx
@@ -7634,9 +7616,9 @@ io_error:
         ; jmp LAB_XERR
 
 LAB_SAVE
-    ; lda #O_WRONLY
-    ; jsr openfile
-    ; bne io_error
+    lda #O_WRONLY
+    jsr openfile
+    bne io_error
 
     lda Smemh
     sta write_blkptr + 1
@@ -7670,12 +7652,12 @@ LAB_SAVE
     jsr hexout
     crlf
 
-    ; stz fd_area + F32_fd::FileSize + 2,x
-    ; stz fd_area + F32_fd::FileSize + 3,x
-    ;
-    ; jsr krn_write
-    ; bne io_error
-    ; jsr krn_close
+    stz fd_area + F32_fd::FileSize + 2,x
+    stz fd_area + F32_fd::FileSize + 3,x
+
+    jsr krn_write
+    bne io_error
+    jsr krn_close
 
     SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
     JMP   LAB_1319
@@ -7748,9 +7730,19 @@ LAB_DIR:
 pattern:
     .asciiz "*.*"
 
-LAB_CD
-    LDA #'C'
-    JSR LAB_PRNA
+
+LAB_CD:
+    jsr strparam2buf
+    SetVector buf, filenameptr
+
+    lda #<buf
+    ldx #>buf
+    jsr krn_chdir
+    beq @end
+    ; File not found error
+    ldx #$24
+    jmp LAB_XERR
+@end:
     SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
     JMP   LAB_1319
 ; To Save a program you need to save start to end of program
