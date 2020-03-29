@@ -6,15 +6,10 @@
 	.include "zeropage.inc"
 	.include "fcntl.inc"
 	
-	.import __calc_lba_addr
-	.import __fat_isroot
 	.import __fat_init_fdarea
-	.import __fat_alloc_fd
-	.import fat_fread
 	.import fat_fopen
 	
 	.import asmunit_chrout
-	.export krn_chrout
 	krn_chrout=asmunit_chrout
 	
 .macro setup testname
@@ -23,7 +18,9 @@
 .endmacro
 
 ; mock defines
-.export __rtc_systime_update=mock_not_implemented0
+.export read_block=mock_read_block
+.export write_block=mock_write_block
+.export __rtc_systime_update=mock_rtc
 .export cluster_nr_matcher=mock_not_implemented1
 .export fat_name_string=mock_not_implemented2
 .export path_inverse=mock_not_implemented3
@@ -39,9 +36,10 @@
 		
 		brk
 		
-mock_not_implemented0:
-		fail "mock 0"
+mock_rtc:
 		rts
+mock_read_block:
+mock_write_block:
 mock_not_implemented1:
 		fail "mock 1"
 		rts

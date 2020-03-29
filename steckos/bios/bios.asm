@@ -5,9 +5,9 @@
 		.include "nvram.inc"
 
 		.zeropage
-		ptr1:	   .res 2
+		ptr1: .res 2
 		startaddr: .res 2
-		endaddr:   .res 2
+		endaddr: .res 2
 		.exportzp startaddr, endaddr
 
 		.code
@@ -20,9 +20,11 @@
 		.import fat_open
 		.import fat_mount, fat_open, fat_read, fat_close
 		.import read_nvram
+		.import sd_read_block, sd_write_block
 
 		.export vdp_chrout
 		.export krn_chrout=vdp_chrout
+		.export read_block=sd_read_block
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
 			.export __fat_write_dir_entry=fat_write_dir_entry
@@ -255,7 +257,7 @@ pattern:
 vdp_chrout:
 			jmp _vdp_chrout
 
-.SEGMENT "VECTORS"
+.segment "VECTORS"
 ;----------------------------------------------------------------------------------------------
 ; Interrupt vectors
 ;----------------------------------------------------------------------------------------------

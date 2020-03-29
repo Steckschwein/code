@@ -40,7 +40,7 @@
 .export sd_write_block
 
 ; public bock api
-.export write_block=sd_write_block
+; .export write_block=sd_write_block
 
 
 ;---------------------------------------------------------------------
