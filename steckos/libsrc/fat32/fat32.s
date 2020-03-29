@@ -44,7 +44,6 @@
 
 
 ;lib internal api
-.import __rtc_systime_update
 .import __fat_read_cluster_block_and_select
 .import __fat_isroot
 .import __fat_read_block
@@ -69,8 +68,9 @@
 .import dirname_mask_matcher, cluster_nr_matcher
 .import path_inverse
 
-.export fat_open
-.export fat_read_block, fat_fread ; TODO FIXME update exec, use fat_fread
+.export fat_read_block
+.export fat_open, fat_fopen
+.export fat_fread ; TODO FIXME update exec, use fat_fread
 .export fat_read
 .export fat_fseek
 .export fat_find_first, fat_find_next
@@ -202,6 +202,7 @@ fat_read:
 		; out:
 		;	.X - index into fd_area of the opened file
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+fat_fopen:
 fat_open:
 		sty fat_tmp_mode					; save open flag
 		ldy #FD_INDEX_CURRENT_DIR		; use current dir fd as start directory
@@ -209,35 +210,35 @@ fat_open:
 		bne @l_error
 		lda fd_area + F32_fd::Attr, x
 		and #DIR_Attr_Mask_Dir			; regular file or directory?
-		beq @l_exit_ok					; not dir, ok
+		beq @l_exit_ok						; not dir, ok
 		bra @l_err_dir
 @l_error:
-		cmp #ENOENT					; no such file or directory ?
-		bne @l_exit					; other error, then exit
-		lda fat_tmp_mode			; check if we should create a new file
+		cmp #ENOENT							; no such file or directory ?
+		bne @l_exit							; other error, then exit
+		lda fat_tmp_mode					; check if we should create a new file
 		and #O_CREAT | O_WRONLY | O_APPEND
-		beq @l_err_enoent			; nothing set, exit with ENOENT
+		beq @l_err_enoent					; nothing set, exit with ENOENT
 
 		debug "r+"
 		copypointer dirptr, krn_ptr2
-		jsr string_fat_name							; build fat name upon input string (filenameptr)
+		jsr string_fat_name				; build fat name upon input string (filenameptr)
 		bne @l_exit
-		jsr __fat_alloc_fd							; alloc a fd for the new file we want to create to make sure we get one before
-		bne @l_exit										; we do any sd block writes which may result in various errors
-		jsr __fat_set_fd_direntry					; update dir lba addr and dir entry number within fd
+		jsr __fat_alloc_fd				; alloc a fd for the new file we want to create to make sure we get one before
+		bne @l_exit							; we do any sd block writes which may result in various errors
+		jsr __fat_set_fd_direntry		; update dir lba addr and dir entry number within fd
 
-		lda #DIR_Attr_Mask_Archive					; create as regular file with archive bit set
-		jsr __fat_write_dir_entry					; create dir entry at current dirptr
+		lda #DIR_Attr_Mask_Archive		; create as regular file with archive bit set
+		jsr __fat_write_dir_entry		; create dir entry at current dirptr
 		beq @l_exit_ok
-		jmp fat_close						 			; free the allocated file descriptor regardless of any errors
+		jmp fat_close						; free the allocated file descriptor regardless of any errors
 @l_err_enoent:
 		lda	#ENOENT
 		bra @l_exit
-@l_err_dir:												; was directory, we must not free any fd
-		lda	#EISDIR									; error "Is a directory"
+@l_err_dir:									; was directory, we must not free any fd
+		lda	#EISDIR						; error "Is a directory"
 		bra @l_exit
 @l_exit_ok:
-		lda #EOK									; A=0 (EOK)
+		lda #EOK								; A=0 (EOK)
 @l_exit:
 		debug "fop"
 		rts

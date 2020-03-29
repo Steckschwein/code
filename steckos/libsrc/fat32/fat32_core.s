@@ -63,13 +63,13 @@
 .import string_fat_mask
 
 ; in:
-;	X - file descriptor (index into fd_area) of the directory
+;	.X - file descriptor (index into fd_area) of the directory
 __fat_find_first_mask:
 		SetVector fat_dirname_mask, krn_ptr2	; build fat dir entry mask from user input
 		jsr string_fat_mask
 		SetVector dirname_mask_matcher, fat_vec_matcher
-		; in:
-		;	X - file descriptor (index into fd_area) of the directory
+; in:
+;	.X - file descriptor (index into fd_area) of the directory
 __fat_find_first:
 		SetVector block_data, read_blkptr
 		lda volumeID+VolumeID::BPB + BPB::SecPerClus

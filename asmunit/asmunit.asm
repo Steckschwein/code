@@ -124,7 +124,7 @@ asmunit_assert:
 		cpy tst_bytes
 		bne @_l_assert_leq							; back around			
 
-@_l_assert_end:		
+@_l_assert_end:
 		txa
 		bit #_MODE_TESTNAME	; assertion was ok if we end up here
 		bne l_test_name

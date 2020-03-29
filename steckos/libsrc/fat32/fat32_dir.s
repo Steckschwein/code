@@ -37,9 +37,6 @@
 ; external deps - block layer
 .import read_block
 
-.import __rtc_systime_update
-
-
 ;lib internal api
 .import __fat_read_cluster_block_and_select
 .import __fat_isroot

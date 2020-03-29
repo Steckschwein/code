@@ -8,7 +8,7 @@
 	
 	.import __calc_lba_addr
 	.import __fat_isroot
-  .import __fat_init_fdarea
+	.import __fat_init_fdarea
 	.import __fat_alloc_fd
 	.import fat_fread
 	
@@ -161,7 +161,7 @@
 		assert16 data_read+$0800, read_blkptr ; expect read_ptr was increased 4blocks, means 8*$100
 		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset+0 ; still offset 1, we have a 1 sec/cl fat geometry
 		
-; -------------------		
+; -------------------
 		setup "fat_fread 4 blocks 1/1"
 		SetVector data_read, read_blkptr
 		ldy #1
@@ -244,8 +244,7 @@ setUp:
 
 
 mock:
-		fail "mock was called!"
-
+		fail "mock was called, not implemented yet!"
 		rts
 
 mock_read_block:
@@ -265,9 +264,8 @@ mock_read_block:
 	set32 block_fat+((test_start_cluster+2)<<2 & (sd_blocksize-1)), (test_start_cluster+3)
 	set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), FAT_EOC
 :
-	stz krn_tmp ; mock behaviour, the real sd_read_block clobbers krn_tmp
 	plx
-	inc read_blkptr+1	; same behaviour as real implementation
+	inc read_blkptr+1	; inc read_blkptr+1 => same behaviour as real block read implementation
 	lda #EOK
 	rts
 		

@@ -94,7 +94,12 @@ endef # COMPILE_recipe
 
 define RUNTEST_recipe
 	@$(LD65) $< $(TEST_LDFLAGS) -o $@
-  	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 1000
+  	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 0x1000
+endef
+
+define DISASM_recipe
+	dcc6502 $< -o 0x1000
+  	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 0x1000
 endef
 
 ../libwrk/$(TARGET)/%.o: %.s | ../libwrk/$(TARGET)
@@ -105,6 +110,9 @@ endef
 
 ../libwrk/$(TARGET)/%.bin: ../libwrk/$(TARGET)/%.o | ../libwrk/$(TARGET)
 	$(RUNTEST_recipe)
+	
+../libwrk/$(TARGET)/%.dis: ../libwrk/$(TARGET)/%.bin
+	$(DISASM_recipe)
 
 ../libwrk/$(TARGET) ../lib:
 	@$(call MKDIR,$@)
