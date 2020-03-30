@@ -1,21 +1,11 @@
-	.include "asmunit.inc" 	; test api
-	
-	.include "common.inc"
-	.include "errno.inc"
-	.include "fat32.inc"
-	.include "zeropage.inc"
-	.include "fcntl.inc"
-	
+	.include "test_fat32.inc"
+
 	.import __fat_init_fdarea
 	.import fat_fopen
 	
 	.import asmunit_chrout
 	krn_chrout=asmunit_chrout
 	
-.macro setup testname
-		test testname
-		jsr setUp
-.endmacro
 
 ; mock defines
 .export read_block=mock_read_block
@@ -32,14 +22,6 @@
 .code
 
 ; -------------------
-		setup "fat_fopen O_RDONLY"
-		ldy #O_RDONLY
-		lda #<test_file_name
-		ldx #>test_file_name
-		jsr fat_fopen
-		assertA EOK
-		
-; -------------------
 		setup "fat_fopen O_CREAT"
 		ldy #O_CREAT
 		lda #<test_file_name
@@ -49,37 +31,7 @@
 		
 		brk
 
-.macro load_block address
-		lda #<address
-		sta test_data_ptr
-		lda #>address
-		sta test_data_ptr+1
-		jsr load_data
-.endmacro
-
-.macro fat32_dir_entry_dir _8_3_name, _8_3_ext, cl
-	fat32_dir_entry _8_3_name, _8_3_ext, DIR_Attr_Mask_Dir, cl, 0
-.endmacro
-
-.macro fat32_dir_entry_file _8_3_name, _8_3_ext, cl, fsize
-	fat32_dir_entry _8_3_name, DIR_Attr_Mask_Archive, cl, fsize
-.endmacro
-
-.macro fat32_dir_entry _8_3_name, _8_3_ext, attr, cl, fsize
-	.byte _8_3_name
-	.byte	_8_3_ext
-	.byte attr
-	.byte 0
-	.byte 122
-	.dword $ED037F50 		;created date/time
-	.word $7F50		 		;last access
-	.word cl>>16	 		;cl high
-	.dword $ED037F50 		;modified date/time
-	.word cl & $ffff	 	;cl low
-	.dword fsize
-.endmacro
-
-load_data:
+load_test_data:
 		lda #0
 		ldy #0
 @l0:	lda (test_data_ptr),y
@@ -88,17 +40,13 @@ load_data:
 		bne @l0
 		rts
 
-		
 mock_rtc:
 		rts
 mock_read_block:
-		assert32 $6800, lba_addr
 		cmp32 lba_addr, $6800 ; load root cl block
 		bne @err
 		load_block block_root_cl
 		rts
-		
-		
 @err:
 		fail "mock read_block"
 mock_write_block:
@@ -140,9 +88,9 @@ test_file_name: .asciiz "test01.tst"
 
 block_root_cl:
 	fat32_dir_entry_dir 	"DIR01   ", "   ", 8
-;	fat32_dir_entry_dir 	"DIR02   ", "   ", 9
-;	fat32_dir_entry_file "FILE01  ", "DAT", 0  ; 0 - no cluster reserved
-;	fat32_dir_entry_file "FILE02  ", "TXT", $a ; $a - 1st cluster nr of file
+	fat32_dir_entry_dir 	"DIR02   ", "   ", 9
+	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0		; 0 - no cluster reserved, 0 - size
+	fat32_dir_entry_file "FILE02  ", "TXT", $a, 12	; $a - 1st cluster nr of file, 12 - byte
 
 .bss
 fat_data_read: .res 512, 0
