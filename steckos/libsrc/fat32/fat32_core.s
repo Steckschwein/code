@@ -262,7 +262,7 @@ __fat_open_file:
 @l1:	ldy #F32DirEntry::Attr
 		lda (dirptr),y
 		bit #DIR_Attr_Mask_Dir 		; directory?
-		bne @l2						; yes, do not allocate a new fd, use index (X) which is already set to FD_INDEX_TEMP_DIR and just update the fd data
+		bne @l2							; yes, do not allocate a new fd, use index (X) which is already set to FD_INDEX_TEMP_DIR and just update the fd data
 		jsr __fat_alloc_fd			; no, then regular file and we allocate a new fd for them
 		bne @l_exit
 @l2:
@@ -328,11 +328,11 @@ __fat_alloc_fd:
 		; out:
 		;	x - FD_INDEX_TEMP_DIR offset to fd area
 __fat_open_rootdir:
-		ldx #FD_INDEX_TEMP_DIR					; set temp directory to cluster number 0 - Note: the RootClus offset is compensated within calc_lba_addr
+		ldx #FD_INDEX_TEMP_DIR					; use fd of the temp directory
 		; in:
 		;	.X - with index to fd_area
 __fat_init_fd:
-		stz fd_area+F32_fd::CurrentCluster+3,x	; init start cluster with root dir cluster which is 0 - @see Note in calc_lba_addr
+		stz fd_area+F32_fd::CurrentCluster+3,x	; init start cluster with root cluster nr 0 and not RootClus - the RootClus offset is compensated within calc_lba_addr (@see Note)
 		stz fd_area+F32_fd::CurrentCluster+2,x
 		stz fd_area+F32_fd::CurrentCluster+1,x
 		stz fd_area+F32_fd::CurrentCluster+0,x
@@ -343,7 +343,6 @@ __fat_init_fd:
 		stz fd_area+F32_fd::offset+0,x		; init block offset/block counter
 		lda #EOK
 		rts
-
 
 		; free file descriptor quietly
 		; in:
