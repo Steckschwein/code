@@ -1,26 +1,19 @@
-	.include "asmunit.inc" 	; test api
-	
-	.include "common.inc"
-	.include "errno.inc"
-	.include "fat32.inc"
-	.include "zeropage.inc"
-	
-	
+	.include "test_fat32.inc"
+
 	.import __calc_lba_addr
 	.import __fat_isroot
-  .import __fat_init_fdarea
+	.import __fat_init_fdarea
 	.import __fat_alloc_fd
+	.import fat_fopen
 	.import fat_fread
 	
 	.import asmunit_chrout
 	.export krn_chrout
 	krn_chrout=asmunit_chrout
-	
-.macro setup testname
-		test testname
-		jsr setUp
-.endmacro
-	
+
+.zeropage
+	test_data_ptr: .res 2
+
 .code
 
 ; -------------------		
@@ -106,7 +99,7 @@
 		assert16 data_read, read_blkptr
 
 ; -------------------		
-		setup "fat_fread 0 blocks 1sec/cl"
+		setup "fat_fread 0 blocks 1/1"
 		ldx #(1*FD_Entry_Size)
 		SetVector data_read, read_blkptr
 		ldy #0
@@ -161,7 +154,7 @@
 		assert16 data_read+$0800, read_blkptr ; expect read_ptr was increased 4blocks, means 8*$100
 		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset+0 ; still offset 1, we have a 1 sec/cl fat geometry
 		
-; -------------------		
+; -------------------
 		setup "fat_fread 4 blocks 1/1"
 		SetVector data_read, read_blkptr
 		ldy #1
@@ -208,6 +201,14 @@
 		assertY 0
 		assert32 $16d, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster ; still the last one
 		
+; -------------------
+		setup "fat_fopen O_RDONLY"
+		ldy #O_RDONLY
+		lda #<test_file_name
+		ldx #>test_file_name
+		;jsr fat_fopen
+		;assertA EOK
+		
 		brk
 
 setUp:
@@ -230,22 +231,27 @@ setUp:
 	
 	rts
 
-.export __rtc_systime_update=mock
+.export __rtc_systime_update=mock_not_implemented
 .export read_block=mock_read_block
-.export sd_read_multiblock=mock
-.export write_block=mock
-.export dirname_mask_matcher=mock
-.export cluster_nr_matcher=mock
-.export fat_name_string=mock
-.export path_inverse=mock
-.export put_char=mock
-.export string_fat_mask=mock
-.export string_fat_name=mock
-
+.export sd_read_multiblock=mock_not_implemented
+.export write_block=mock_not_implemented
+.export cluster_nr_matcher=mock_not_implemented
+.export fat_name_string=mock_not_implemented
+.export path_inverse=mock_not_implemented
+.export put_char=mock_not_implemented
 
 mock:
-		fail "mock was called!"
+		rts
+mock_not_implemented:
+		fail "mock was called, not implemented yet!"
 
+load_test_data:
+		lda #0
+		ldy #0
+@l0:	lda (test_data_ptr),y
+		sta (read_blkptr), y
+		iny
+		bne @l0
 		rts
 
 mock_read_block:
@@ -256,19 +262,36 @@ mock_read_block:
     lda #EIO
     rts
 :
-    phx
-    cmp32 lba_addr, $2980	;fat block $2980 read?
-    bne :+
+		phx
+		
+		cmp32 lba_addr, $6800 ; load root cl block
+		bne :+
+		load_block block_root_cl
+		bra @exit
+:
+		cmp32 lba_addr, $2980	;fat block $2980 read?
+		bne :+
 	;simulate fat block read, just fill some values which are reached if the fat32 implementation is correct ;)
 	set32 block_fat+((test_start_cluster+0)<<2 & (sd_blocksize-1)), (test_start_cluster+1) ; build the chain
 	set32 block_fat+((test_start_cluster+1)<<2 & (sd_blocksize-1)), (test_start_cluster+2)
 	set32 block_fat+((test_start_cluster+2)<<2 & (sd_blocksize-1)), (test_start_cluster+3)
 	set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), FAT_EOC
 :
-	stz krn_tmp ; mock behaviour, the real sd_read_block clobbers krn_tmp
+	inc read_blkptr+1	; inc read_blkptr+1 => same behaviour as real block read implementation
+
+@exit:
 	plx
-	inc read_blkptr+1	; same behaviour as real implementation
 	lda #EOK
 	rts
 		
+.data
+test_file_name: .asciiz "file01.dat"
+
+block_root_cl:
+	fat32_dir_entry_dir 	"DIR01   ", "   ", 8
+	fat32_dir_entry_dir 	"DIR02   ", "   ", 9
+	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0		; 0 - no cluster reserved, 0 - size
+	fat32_dir_entry_file "FILE02  ", "TXT", $a, 12	; $a - 1st cluster nr of file, 12 - byte
+
+.bss
 data_read: .res 512, 0

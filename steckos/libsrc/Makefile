@@ -68,7 +68,7 @@ TEST_SRCDIRS := $(foreach dir,$(SRCDIRS),$(dir)/test)
 vpath %.s $(TEST_SRCDIRS)
 TEST_OBJS := $(patsubst %.s,%.o,$(foreach dir,$(TEST_SRCDIRS),$(wildcard $(dir)/*.s)))
 TEST_OBJS := $(addprefix ../libwrk/$(TARGET)/,$(sort $(notdir $(TEST_OBJS))))
-TEST_BINS := $(patsubst %.s,%.bin,$(foreach dir,$(TEST_SRCDIRS),$(wildcard $(dir)/*.s)))# from source names
+TEST_BINS := $(patsubst %.s,%.bin,$(foreach dir,$(TEST_SRCDIRS),$(wildcard $(dir)/*.s)))	# test units derived from source names
 TEST_BINS := $(addprefix ../libwrk/$(TARGET)/,$(sort $(notdir $(TEST_BINS))))
 TEST_LIBS := ../../asmunit/asmunit.a
 TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(TEST_LIBS) ../lib/$(TARGET).a
@@ -94,7 +94,11 @@ endef # COMPILE_recipe
 
 define RUNTEST_recipe
 	@$(LD65) $< $(TEST_LDFLAGS) -o $@
-  	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 1000
+  	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 0x1000
+endef
+
+define DISASM_recipe
+	dcc6502 $@-o 0x1000
 endef
 
 ../libwrk/$(TARGET)/%.o: %.s | ../libwrk/$(TARGET)
@@ -105,15 +109,15 @@ endef
 
 ../libwrk/$(TARGET)/%.bin: ../libwrk/$(TARGET)/%.o | ../libwrk/$(TARGET)
 	$(RUNTEST_recipe)
+	
+../libwrk/$(TARGET)/%.dis: ../libwrk/$(TARGET)/%.bin
+	$(DISASM_recipe)
 
 ../libwrk/$(TARGET) ../lib:
 	@$(call MKDIR,$@)
 
 ../lib/$(TARGET).a: $(OBJS) | ../lib
 	$(AR65) a $@ $?
-
-../../asmunit/asmunit.a:
-	(cd ../../asmunit ; make)
 
 runtests: $(TEST_BINS)
 

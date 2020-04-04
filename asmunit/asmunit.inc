@@ -66,6 +66,11 @@ asmunit_addr_instrument = $0202
 @l_exit:
 .endmacro
 
+.macro set8 address, _8bit
+	lda #<_8bit
+	sta address
+.endmacro
+
 .macro set16 address, _16bit
 	lda #<_16bit
 	sta address+0

@@ -43,7 +43,7 @@
 .export sd_busy_wait
 
 ; public block api
-.export read_block=sd_read_block
+; .export read_block=sd_read_block
 
 .ifdef MULTIBLOCK_WRITE
 .export sd_write_multiblock

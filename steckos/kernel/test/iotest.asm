@@ -23,10 +23,10 @@ main:
 @r_only:
 		jsr krn_primm
 		.asciiz "op ro"	; open newly created file, read only
-    lda paramptr
-    ldx paramptr+1
+		lda paramptr
+		ldx paramptr+1
 		ldy #O_RDONLY
-    jsr krn_open
+		jsr krn_open
 		jsr test_result
 		beq @ro_read
 		jmp exit
@@ -39,9 +39,7 @@ main:
 		jmp exit
 		
 @r_plus:
-;      jmp exit
-
-      jsr krn_primm		
+      jsr krn_primm
       .asciiz "op r+"
       lda paramptr
       ldx paramptr+1

@@ -152,11 +152,14 @@ fat_mount:
 		adc #0				; 0 + C
 		sta fat_fsinfo_lba+2
 
-		; cluster_begin_lba_m2 -> cluster_begin_lba - (VolumeID::RootClus*VolumeID::SecPerClus)
-		; cluster_begin_lba_m2 -> cluster_begin_lba - (2*sec/cluster) => cluster_begin_lba - (sec/cluster << 1)
+		; performance optimization - the RootClus offset is compensated within calc_lba_addr
+		; cluster_begin_lba_m2 = cluster_begin_lba - (VolumeID::RootClus*VolumeID::SecPerClus)
+		; cluster_begin_lba_m2 = cluster_begin_lba - (2 * sec/cluster) = cluster_begin_lba - (sec/cluster << 1)
+		
 		;TODO FIXME we assume 2 here instead of using the value in VolumeID::RootClus
 		lda volumeID+VolumeID::BPB + BPB::SecPerClus ; max sec/cluster can be 128, with 2 (BPB_RootClus) * 128 wie may subtract max 256
 		asl
+		
 		sta lba_addr		  ;	used as tmp
 		stz lba_addr +1	  ;	safe carry
 		rol lba_addr +1
@@ -190,7 +193,7 @@ fat_mount:
       ldx #0
 		jsr __fat_init_fdarea
 
-		; alloc file descriptor for current dir. which is cluster number 0 on fat32 - Note: the RootClus offset is compensated within calc_lba_addr
+		; alloc file descriptor for current dir. which is cluster number 0 on fat32 - !!! Note: the RootClus offset is compensated within calc_lba_addr
 		ldx #FD_INDEX_CURRENT_DIR
 		jsr __fat_init_fd
 @end_mount:
