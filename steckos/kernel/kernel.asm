@@ -168,7 +168,7 @@ do_irq:
 
 		bit SYS_IRR					; was vdp irq?
 		bpl @exit
-		.import vdp_bgcolor
+;		.import vdp_bgcolor
 		;lda #Cyan
 		;jsr vdp_bgcolor
 		jsr	textui_update_screen	 ; update text ui
@@ -182,9 +182,6 @@ do_irq:
 		jsr __automount
 
 @exit:
-		lda #Medium_Green<<4 | Black
-		jsr vdp_bgcolor
-
 		stz SYS_IRR					  ; reset
 		restore
 		rti

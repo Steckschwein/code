@@ -60,7 +60,7 @@ color_buffer=screen_buffer+$0800  ;+80x25
 
 .export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
 
-.import vdp_bgcolor
+;.import vdp_bgcolor
 .import vdp_memcpy
 .import vdp_text_on
 
@@ -68,7 +68,7 @@ _screen_dirty:
 		  lda #STATE_BUFFER_DIRTY
 		  tsb screen_status ;set dirty
 		  rts
-		  
+
 textui_decy:
 		  lda	 crs_y
 		  bne	 @l1
@@ -78,7 +78,7 @@ textui_decy:
 
 textui_incx:
 		  lda	 crs_x
-		  cmp	 max_cols 
+		  cmp	 max_cols
 		  bne @l1
 		  rts						  ;TODO should we move to next row automatically ?!?
 @l1:	 inc	 crs_x
@@ -145,7 +145,7 @@ textui_update_crs_ptr:			 ; updates the 16 bit pointer crs_p upon crs_x, crs_y v
 
 textui_init0:
 		  SetVector screen_buffer, crs_ptr	 ;set crs ptr initial to screen buffer
-		  
+
 .ifdef COLS80
 		  lda #TEXT_MODE_80
 .else
@@ -158,7 +158,7 @@ textui_setmode:
 @setmode:
 		  sta max_cols
 		  jsr textui_blank
-		  
+
 textui_init:
 		  stz screen_write_lock					;reset write lock
 		  jsr textui_enable
@@ -186,7 +186,7 @@ textui_blank:
 		  jsr textui_update_crs_ptr
 
 		  jmp _screen_dirty
-		  
+
 textui_cursor:
 		  lda screen_write_lock
 		  bne @l_exit
@@ -242,23 +242,21 @@ textui_update_screen:
 		  sta screen_status
 
 @l1:
-		  lda #Medium_Green<<4|Black
-		  jsr	 vdp_bgcolor
 		  rts
 
 textui_scroll_up:
 		  phx
-		  
+
 		  ldx #0
 		  bit max_cols
 		  bvc @scroll_40
-		  
+
 @l0:	 lda color_buffer+10,x
 		  sta color_buffer+00,x
 		  inx
 		  cpx #$100-10
 		  bne @l0
-		  
+
 		  ldx #0
 @l1:	 lda	 screen_buffer+$000+80,x
 		  sta	 screen_buffer+$000,x
@@ -311,7 +309,7 @@ textui_scroll_up:
 		  sta screen_buffer+$300,x
 		  inx
 		  cpx #<(40 * ROWS)
-		  bne @l40_e		  
+		  bne @l40_e
 @exit:
 		  plx
 		  rts
