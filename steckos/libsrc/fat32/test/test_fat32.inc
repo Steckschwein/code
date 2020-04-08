@@ -1,5 +1,5 @@
 	.include "asmunit.inc" 	; test api
-	
+
 	.include "common.inc"
 	.include "errno.inc"
 	.include "fcntl.inc"
@@ -19,10 +19,14 @@
 	fat32_dir_entry _8_3_name, _8_3_ext, DIR_Attr_Mask_Archive, cl, fsize
 .endmacro
 
+; fat32 dir entry - $20 byte
 .macro fat32_dir_entry _8_3_name, _8_3_ext, attr, cl, fsize
-	.byte _8_3_name
-	.byte	_8_3_ext
-	.byte attr
+	.assert .strlen(_8_3_name) = 8, error, "file name size"
+	.assert .strlen(_8_3_ext) = 3, error, "ext size"
+
+	.byte _8_3_name		; 8 byte
+	.byte	_8_3_ext			; 3 byte
+	.byte attr				; 1
 	.byte 0
 	.byte 122
 	.dword $ED037F50 		;created date/time

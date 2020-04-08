@@ -190,7 +190,7 @@ DIR_Entry_Deleted            = $e5
 .endstruct
 
 FD_Entry_Size         = .sizeof(F32_fd)
-FD_Entries_Max        = (sd_blktarget - fd_area) / FD_Entry_Size
+FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size
 FD_INDEX_CURRENT_DIR  = 0*FD_Entry_Size    ; current dir always go to fd #0
 FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size   ; temp dir always go to fd #1
 
@@ -217,6 +217,7 @@ fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector
 
 sd_blocksize          = $200
 fd_area               = $0380 ; File descriptor area until $0400
+fd_area_end           = $0400
 sd_blktarget          = $0400
 block_data            = sd_blktarget
 block_fat             = block_data+sd_blocksize

@@ -2,10 +2,10 @@
 
 	.import __fat_init_fdarea
 	.import fat_fopen
-	
+
 	.import asmunit_chrout
 	krn_chrout=asmunit_chrout
-	
+
 
 ; mock defines
 .export read_block=mock_read_block
@@ -26,9 +26,9 @@
 		ldy #O_CREAT
 		lda #<test_file_name
 		ldx #>test_file_name
-		;jsr fat_fopen
+		jsr fat_fopen
 		;assertA EOK
-		
+
 		brk
 
 load_test_data:
@@ -50,6 +50,14 @@ mock_read_block:
 @err:
 		fail "mock read_block"
 mock_write_block:
+		cmp32 lba_addr, $6800
+		bne @err
+		assert16 $0480, dirptr
+		bne @err
+		assertString "TEST01  TST", $0480
+
+		rts
+@err:
 		fail "mock write_block"
 mock_not_implemented1:
 		fail "mock 1"
@@ -73,11 +81,11 @@ setUp:
 	set32 volumeID + VolumeID::EBPB + EBPB::RootClus, ROOT_CL
 	set32 cluster_begin_lba, $67fe	;cl lba to $67fe
 	set32 fat_lba_begin, $297e			;fat lba to
-	
+
 	;setup fd0 as root cluster
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 	set16 fd_area+(0*FD_Entry_Size)+F32_fd::offset, 0
-	
+
 	;setup fd1 as test cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 	set16 fd_area+(1*FD_Entry_Size)+F32_fd::offset, 0
@@ -87,10 +95,11 @@ setUp:
 test_file_name: .asciiz "test01.tst"
 
 block_root_cl:
+
 	fat32_dir_entry_dir 	"DIR01   ", "   ", 8
 	fat32_dir_entry_dir 	"DIR02   ", "   ", 9
 	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0		; 0 - no cluster reserved, 0 - size
 	fat32_dir_entry_file "FILE02  ", "TXT", $a, 12	; $a - 1st cluster nr of file, 12 - byte
 
 .bss
-fat_data_read: .res 512, 0
+;fat_data_read: .res 512, 0
