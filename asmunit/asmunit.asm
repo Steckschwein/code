@@ -18,7 +18,7 @@
 ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-; SOFTWARE. 
+; SOFTWARE.
 
 .include "asmunit.inc"
 
@@ -64,37 +64,37 @@ asmunit_assert:
 		pla
 		sta tst_status
 		cld
-		
+
 		lda _tst_ptr				; save old pointer for later restor
 		sta tst_save_ptr
 		lda _tst_ptr+1
 		sta tst_save_ptr+1
-		
+
 		lda _tst_inp_ptr			; save old pointer for later restor
 		sta tst_return_ptr
 		lda _tst_inp_ptr+1
-		sta tst_return_ptr+1		
-		
+		sta tst_return_ptr+1
+
 		pla							; Get the low part of "return" address,
 		sta _tst_ptr
 		pla							; Get the high part of "return" address
 		sta _tst_ptr+1
-		
+
 		jsr _inc_tst_ptr			; argument 1 - the assertion mode
 		lda (_tst_ptr)
 		tax							; save the mode in X
-		
-		jsr _inc_tst_ptr			; argument 2 - address of test input		
+
+		jsr _inc_tst_ptr			; argument 2 - address of test input
 		lda (_tst_ptr)				; setup test input ptr
 		sta _tst_inp_ptr
 		jsr _inc_tst_ptr
-		lda (_tst_ptr)				
+		lda (_tst_ptr)
 		sta _tst_inp_ptr+1
-		
-		jsr _inc_tst_ptr			; argument 3 - length of expect argument		
+
+		jsr _inc_tst_ptr			; argument 3 - length of expect argument
 		lda (_tst_ptr)
 		sta tst_bytes
-		
+
 		jsr _inc_tst_ptr			; argument 4 - the expectation value
 		lda _tst_ptr
 		pha
@@ -112,7 +112,7 @@ asmunit_assert:
 		jsr _inc_tst_ptr
 		iny
 		cpy tst_bytes
-		bne @_l_assert				; back around	
+		bne @_l_assert				; back around
 		bra @_l_assert_end
 @_l_assert_leq:
 		lda (_tst_inp_ptr),y
@@ -122,17 +122,17 @@ asmunit_assert:
 		jsr _inc_tst_ptr
 		iny
 		cpy tst_bytes
-		bne @_l_assert_leq							; back around			
+		bne @_l_assert_leq		; back around
 
 @_l_assert_end:
 		txa
-		bit #_MODE_TESTNAME	; assertion was ok if we end up here
+		bit #_MODE_TESTNAME		; assertion was ok if we end up here
 		bne l_test_name
 		bit #_MODE_FAIL
 		bne _assert_fail_msg
-l_pass_msg:												; proceed to "PASS"
+l_pass_msg:							; proceed to "PASS"
 ;		ldy #<(_l_msg_pass-_l_messages)
-;		jsr _print		
+;		jsr _print
 l_pass_end:
 		pla
 		pla
@@ -158,7 +158,7 @@ l_return:
       lda tst_cnt             ; count in deciaml
       adc #1
       sta tst_cnt
-        
+
       lda tst_status
       pha
       lda tst_acc
@@ -173,40 +173,40 @@ l_test_name:
 		jsr asmunit_chrout
 		jsr _out_ptr
 		bra l_pass_end
-		
+
 l_pass:
 		jsr _l_adjust_ptr
 		bra l_pass_msg
-		
+
 _l_adjust_ptr:
 		jsr _inc_tst_ptr
 		iny									; adjust the pointer, consume the arguments
 		cpy tst_bytes
 		bne _l_adjust_ptr
 		rts
-		
+
 _assert_fail_msg:
 		ldy #<(_l_msg_fail_prefix-_l_messages)	; ouput "FAIL "
 		bra _assert_fail_expect
 		;assertion fail
 _assert_fail:
 		jsr _l_adjust_ptr
-		
+
 		ldy #<(_l_msg_fail_prefix-_l_messages)	; ouput "FAIL "
 		jsr _print
-        
-        lda #'('
-        jsr asmunit_chrout
-        lda tst_cnt
-        jsr _hexout
-        lda #')'
-        jsr asmunit_chrout
-        
+
+     	lda #'('
+	  	jsr asmunit_chrout
+   	lda tst_cnt
+      jsr _hexout
+      lda #')'
+      jsr asmunit_chrout
+
 		ldy #<(_l_msg_fail_suffix-_l_messages)	; ouput ") - was "
 		jsr _print
-        
+
 		jsr _out_ptr							; argument
-		
+
 		ldy #<(_l_msg_fail_exp-_l_messages)
 _assert_fail_expect:
 		jsr _print								; ouput " expected "
@@ -214,33 +214,39 @@ _assert_fail_expect:
 		sta _tst_inp_ptr+1
 		pla
 		sta _tst_inp_ptr
-		jsr _out_ptr				  ; expected ...
-		
+		jsr _out_ptr				  			; expected ...
+
 		brk										; fail immediately, we will end up in monitor
-        
+
 
 _out_ptr:
 		phx
-		ldy #0
 		txa
 		and #_FORMAT_STRING
-		bne _out_ptr_string
-		lda #'$'									; number in hex with preceeding $
-		jsr asmunit_chrout
-		ldx #0									; output is number
-_out_ptr_loop:									; TODO big endian, for better readability
-		lda (_tst_inp_ptr),y
+		beq _out_ptr_number
+		ldx #2									; output is string
+		ldy #0
+_out_ptr_string:
 		jsr _call_out
 		iny
 		cpy tst_bytes
-		bne _out_ptr_loop
+		bne _out_ptr_string
+		bra _out_end
+_out_ptr_number:
+		lda #'$'									; number in hex with preceeding $
+		jsr asmunit_chrout
+		ldx #0									; .X=0 - output as number
+		ldy tst_bytes
+_out_ptr_loop:									; big endian, for better readability
+		jsr _call_out
+		dey
+		bpl _out_ptr_loop
+_out_end:
 		plx
 		rts
-_out_ptr_string:
-		ldx #2									; output is string
-		bra _out_ptr_loop
-		
+
 _call_out:
+		lda (_tst_inp_ptr),y
 		jmp (_out,x)
 _out:
 		.word _hexout
@@ -265,10 +271,10 @@ _l_out:
 		bra _l_out
 :		plx
 		rts
-        
+
 _decout:
         rts
-        
+
 _hexout:
 		pha
 		lsr
@@ -284,7 +290,7 @@ _hexdigit:
 		bcc asmunit_chrout	;yes! output it
 		adc #$26			;add offset for letter a-f
 		bra asmunit_chrout
-		
+
 asmunit_chrout:
 		sta asmunit_char_out
 		rts
@@ -298,7 +304,7 @@ tst_save_ptr:	.res 2
 tst_return_ptr:	.res 2
 tst_bytes:		.res 1
 
-        
+
 _l_messages:
 _l_msg_pass:	 		.byte _l_msg_fail_prefix -_l_msg_pass-1,	$0a,"PASS"
 _l_msg_fail_prefix:     .byte _l_msg_fail_suffix - _l_msg_fail_prefix-1, $0a, "FAIL "

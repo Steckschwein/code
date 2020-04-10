@@ -30,22 +30,25 @@
 #include <sys/utsname.h>
 #include <conio.h>
 // #include <stdio.h>
-unsigned char buf[16];
+unsigned char buf[16] = "";
 
 unsigned char digit(unsigned long n, unsigned char pos){
-	sprintf(buf, "%ld", n);
+	//TODO FIXME - snprintf() seems broken
+	asm ("stp");
+	snprintf(buf, sizeof buf, "%lld", n);
+	cprintf("%s\n", buf);
 	return buf[strlen(buf)-1-pos];
+	//return n % 10;
 }
 
 int main (int argc, const char* argv[])
-{ 
+{
 	unsigned long e;
-	unsigned long p;
 	unsigned long i;
-	unsigned long sum=0;
-	
+	unsigned long int sum=0;
+
 	cprintf("\n");
-	
+
 	if(argc > 1){
 		e = atol(argv[1]);
 
@@ -59,7 +62,7 @@ int main (int argc, const char* argv[])
 		for(i=0;i<e;i+=5){
 			sum += i;
 		}
-		cprintf("%ld\n", sum);
+		cprintf("%lld\n", sum);
 	}
 	return EXIT_SUCCESS;
-} 
+}

@@ -32,6 +32,9 @@
 
 appstart $1000
 
+	.importzp __volatile_tmp
+	smb7 __volatile_tmp
+
 	jsr krn_primm
 	.byte $d5,$cd,$cd,$cd,$cd,$cd,$b8,$0a
 	.byte $b3,"7",$b3,"8",$b3,"9",$b3,$0a
