@@ -539,7 +539,7 @@ __fat_rtc_high_word:
 		;	.A/.X with time from rtc struct in fat format
 __fat_rtc_time:
 		stz krn_tmp2
-		lda rtc_systime_t+time_t::tm_hour								; hour
+		lda rtc_systime_t+time_t::tm_hour							; hour
 		asl
 		asl
 		asl
@@ -723,7 +723,7 @@ fat_unlink:
 		jmp __fat_free_fd
 @l_exit:
 		rts
-		
+
 __fat_unlink:
 		jsr __fat_isroot							; no clnr assigned yet, file was just touched
 		beq @l_unlink_direntry					; if so, we can skip freeing clusters from fat

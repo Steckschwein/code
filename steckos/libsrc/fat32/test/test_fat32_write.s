@@ -27,7 +27,9 @@
 		lda #<test_file_name
 		ldx #>test_file_name
 		jsr fat_fopen
-		;assertA EOK
+		assertA EOK
+		assertDirEntry $0480
+			fat32_dir_entry_file "TEST01  ", "TST", 0, 0		; 0 - no cluster reserved, file length 0
 
 		brk
 
@@ -41,7 +43,18 @@ load_test_data:
 		rts
 
 mock_rtc:
+		m_memcpy	_rtc_ts, rtc_systime_t, 8
 		rts
+_rtc_ts:
+		.byte 34	; tm_sec	.byte		;0-59
+		.byte 22	; tm_min	.byte		;0-59
+		.byte 11	; tm_hour	.byte		;0-23
+		.byte 10	; m_mday	.byte		;1-31
+		.byte 03	; tm_mon	.byte	1	;0-11 0-jan, 11-dec
+		.byte 120; tm_year	.word  70	;years since 1900
+		.byte 06 ; tm_wday	.byte		;
+		rts
+
 mock_read_block:
 		cmp32 lba_addr, $6800 ; load root cl block
 		bne @err
@@ -54,9 +67,9 @@ mock_write_block:
 		bne @err
 		assert16 $0480, dirptr
 		bne @err
-		assertString "TEST01  TST", $0480
 
 		rts
+
 @err:
 		fail "mock write_block"
 mock_not_implemented1:
@@ -92,14 +105,13 @@ setUp:
 	rts
 
 .data
-test_file_name: .asciiz "test01.tst"
+	test_file_name: .asciiz "test01.tst"
 
 block_root_cl:
-
 	fat32_dir_entry_dir 	"DIR01   ", "   ", 8
 	fat32_dir_entry_dir 	"DIR02   ", "   ", 9
-	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0		; 0 - no cluster reserved, 0 - size
-	fat32_dir_entry_file "FILE02  ", "TXT", $a, 12	; $a - 1st cluster nr of file, 12 - byte
+	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0		; 0 - no cluster reserved, file length 0
+	fat32_dir_entry_file "FILE02  ", "TXT", $a, 12	; $a - 1st cluster nr of file, file length 12 byte
 
 .bss
 ;fat_data_read: .res 512, 0

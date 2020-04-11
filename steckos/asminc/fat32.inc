@@ -129,11 +129,11 @@ PartType_FAT32_LBA    = $0c
 ; FAT32 FSInfo Sector Offsets
 ;--------------------------------------------------------------------------------------
 .struct F32FSInfo
-   Signature1      .byte 4
+   Signature1     .byte 4
    Reserved1      .byte $1e0
-   Signature2      .byte 4
-   FreeClus        .byte 4   ; amount of free clusters
-   LastClus      .byte 4   ; last known cluster number
+   Signature2     .byte 4
+   FreeClus       .byte 4   ; amount of free clusters
+   LastClus       .byte 4   ; last known cluster number
    Reserved2      .byte 11
    Signature      .word
 .endstruct
@@ -142,18 +142,18 @@ PartType_FAT32_LBA    = $0c
 ;--------------------------------------------------------------------------------------
 .struct F32DirEntry      ; https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
    Name            .byte 8
-   Ext            .byte 3
+   Ext             .byte 3
    Attr            .byte
-   Reserved         .byte
-   CrtTimeMillis   .byte
+   Reserved        .byte
+   CrtTimeMillis   .byte   ;
    CrtTime         .word   ; hours as 0-23 bit 15-11, minutes as 0-59 bit 10-5, seconds/2 as 0-29 bit 4-0
    CrtDate         .word   ; year 0-119 (0=1980...127=2107) bit 15-9, month 1-12 bit 8-5, day 1-31 bit 4-0
    LstModDate      .word   ; -""-
-   FstClusHI      .word
+   FstClusHI       .word
    WrtTime         .word   ; hours as 0-23 bit 15-11, minutes as 0-59 bit 10-5, seconds/2 as 0-29 bit 4-0
    WrtDate         .word   ; year 0-119 (0=1980...127=2107) bit 15-9, month 1-12 bit 8-5, day 1-31 bit 4-0
-   FstClusLO      .word
-   FileSize         .dword
+   FstClusLO       .word
+   FileSize        .dword
 .endstruct
 
 DIR_Attr_Mask_ReadOnly  = 1<<0;

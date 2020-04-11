@@ -222,9 +222,14 @@ _assert_fail_expect:
 _out_ptr:
 		phx
 		txa
-		and #_FORMAT_STRING
+		ldx #0 ; .X=0 - output vector _hexout
+		and #_FORMAT_STRING | _FORMAT_MEMORY
 		beq _out_ptr_number
-		ldx #2									; output is string
+		ldx #2 ; .X=2 - output vector _hexout with separator
+		and #_FORMAT_MEMORY
+		bne _out_ptr_memory
+		ldx #4									; output vector to string
+_out_ptr_memory:
 		ldy #0
 _out_ptr_string:
 		jsr _call_out
@@ -235,7 +240,6 @@ _out_ptr_string:
 _out_ptr_number:
 		lda #'$'									; number in hex with preceeding $
 		jsr asmunit_chrout
-		ldx #0									; .X=0 - output as number
 		ldy tst_bytes
 _out_ptr_loop:									; big endian, for better readability
 		jsr _call_out
@@ -250,6 +254,7 @@ _call_out:
 		jmp (_out,x)
 _out:
 		.word _hexout
+		.word _hexout_sep
 		.word asmunit_chrout
 
 _inc_tst_ptr:
@@ -273,8 +278,15 @@ _l_out:
 		rts
 
 _decout:
-        rts
+     	rts
 
+_hexout_sep:
+		cpy #0
+		beq _hexout
+		pha
+		lda #','
+		jsr asmunit_chrout
+		pla
 _hexout:
 		pha
 		lsr
@@ -289,8 +301,6 @@ _hexdigit:
 		cmp #'9'+1		;is it a decimal digit?
 		bcc asmunit_chrout	;yes! output it
 		adc #$26			;add offset for letter a-f
-		bra asmunit_chrout
-
 asmunit_chrout:
 		sta asmunit_char_out
 		rts

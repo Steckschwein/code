@@ -89,7 +89,7 @@
 		.local @l
 		.assert n<$80, error, "n must not >=$80"
 		ldy #n-1
-@l:		lda src,y
+@l:	lda src,y
 		sta (ptr),y
 		dey
 		bpl @l
@@ -100,7 +100,7 @@
 		.assert n<$80, error, "n must not >=$80"
 		ldy #n-1
 		lda #value
-@l:		sta dest,y
+@l:	sta dest,y
 		dey
 		bpl @l
 .endmacro

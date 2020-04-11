@@ -2,6 +2,7 @@
 
 	.include "common.inc"
 	.include "errno.inc"
+	.include "rtc.inc"
 	.include "fcntl.inc"
 	.include "fat32.inc"
 	.include "zeropage.inc"
@@ -19,6 +20,15 @@
 	fat32_dir_entry _8_3_name, _8_3_ext, DIR_Attr_Mask_Archive, cl, fsize
 .endmacro
 
+.macro fat_datetime year, month, day, hour, min, sec
+	.word hour<<11 | min<<5 | sec>>1
+	fat_date year, month, day
+.endmacro
+
+.macro fat_date year, month, day
+	.word (year-1980)<<9 | month<<5 | day
+.endmacro
+
 ; fat32 dir entry - $20 byte
 .macro fat32_dir_entry _8_3_name, _8_3_ext, attr, cl, fsize
 	.assert .strlen(_8_3_name) = 8, error, "file name size"
@@ -27,14 +37,18 @@
 	.byte _8_3_name		; 8 byte
 	.byte	_8_3_ext			; 3 byte
 	.byte attr				; 1
-	.byte 0
-	.byte 122
-	.dword $ED037F50 		;created date/time
-	.word $7F50		 		;last access
-	.word cl>>16	 		;cl high
-	.dword $ED037F50 		;modified date/time
-	.word cl & $ffff	 	;cl low
+	.byte 0					; reserved
+	.byte 0					; create time millis
+	fat_datetime 2020, 4, 10, 11, 22, 34 		; created date/time
+	fat_date 2020, 4, 10	; last modified
+	.word cl>>16	 		; cl high
+	fat_datetime 2020, 4, 10, 11, 22, 34 		; modified date/time
+	.word cl & $ffff	 	; cl low
 	.dword fsize
+.endmacro
+
+.macro assertDirEntry address
+		assertMemory address, 32
 .endmacro
 
 .macro load_block address

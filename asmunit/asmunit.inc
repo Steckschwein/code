@@ -18,7 +18,7 @@
 ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-; SOFTWARE. 
+; SOFTWARE.
 
 .ifndef __ASSERTION_INC
 .define	__ASSERTION_INC "__ASSERTION_INC"
@@ -36,8 +36,9 @@
 .define	_EXPECT_MAX_LENGTH 255
 
 .define _FORMAT_STRING 1<<7 	; bit 7 set output string, number otherwise
+.define _FORMAT_MEMORY 1<<6	; bit 6 set output memory as hex
 
-.define _MODE_ASSERT_EQ 0		; 
+.define _MODE_ASSERT_EQ 0		;
 .define _MODE_ASSERT_LEQ 1<<0 ; assert input with less or equal (<=) the expectation
 .define _MODE_FAIL 1<<1
 .define _MODE_TESTNAME 1<<2
@@ -117,22 +118,22 @@ asmunit_addr_instrument = $0202
 .endmacro
 
 .macro assertX expect
-    .import tst_xreg
+	.import tst_xreg
 	assert8 expect, tst_xreg
 .endmacro
 
 .macro assertY expect
-    .import tst_yreg
+ 	.import tst_yreg
 	assert8 expect, tst_yreg
 .endmacro
 
 .macro assertA expect
-    .import tst_acc
+	.import tst_acc
 	assert8 expect, tst_acc
 .endmacro
 
 .macro assertCPU expect
-    .import tst_status
+	.import tst_status
 	assert8 expect, tst_status
 .endmacro
 
@@ -188,7 +189,7 @@ asmunit_addr_instrument = $0202
 		 asmunit_assertFlag asmunit_l_flag_d0, _FLAG_D1 ; force a fail here
 	.else
 		.import asmunit_l_flag_d1
-		 asmunit_assertFlag asmunit_l_flag_d1, _FLAG_D0	
+		 asmunit_assertFlag asmunit_l_flag_d1, _FLAG_D0
 	.endif
 ;		bra :++
 ;:		_pass
@@ -247,6 +248,16 @@ asmunit_addr_instrument = $0202
 @l_exit:
 .endmacro
 
+.macro assertMemory address, length
+	.import asmunit_assert
+	.assert length <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
+	jsr asmunit_assert
+	.byte _MODE_ASSERT_EQ | _FORMAT_MEMORY
+	.word address
+	.byte length
+;	.word expect	; address of expected value
+.endmacro
+
 .macro assertString expect, address
 	.assert .strlen(expect) <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
 	.import asmunit_assert
@@ -259,11 +270,11 @@ asmunit_addr_instrument = $0202
 
 .macro assertOut expect
 	.assert .strlen(expect) <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit of test output buffer!"
-	
+
 	.import asmunit_assert
 	.import asmunit_char_out_buffer
 	.import asmunit_char_out_ix
-	
+
 	stz asmunit_char_out_ix		; reset asmunit_char_out_buffer	before test - TODO FIXME maybe a dedicated macro?!?
 	jsr asmunit_assert
 	.byte _MODE_ASSERT_EQ | _FORMAT_STRING
@@ -273,7 +284,7 @@ asmunit_addr_instrument = $0202
 .endmacro
 
 ;
-; functional testing 
+; functional testing
 ;
 .macro resetCycles
 	stz asmunit_addr_instrument	; write a #1 to <asmunit_addr_instrument>, it's hooked by the py65 memory observer and will update the internal cycle counter to the current cycle counter
@@ -286,12 +297,12 @@ asmunit_addr_instrument = $0202
 	.byte _MODE_ASSERT_LEQ			; compare cycles less or equal
 	.word asmunit_addr_instrument+1 ; addr of cycle counter
 	.byte 4
-	; cycles are stored in big endian, since we want to compare from MSB down to LSB to achieve "measured cycles <= expected cycles" 
+	; cycles are stored in big endian, since we want to compare from MSB down to LSB to achieve "measured cycles <= expected cycles"
 	.byte >.HIWORD(cycles)
 	.byte <.HIWORD(cycles)
 	.byte >.LOWORD(cycles)
 	.byte <.LOWORD(cycles)
-	
+
 .endmacro
 
 .endif
