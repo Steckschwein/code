@@ -6,7 +6,7 @@
 	.import __fat_alloc_fd
 	.import fat_fopen
 	.import fat_fread
-	
+
 	.import asmunit_chrout
 	.export krn_chrout
 	krn_chrout=asmunit_chrout
@@ -16,19 +16,19 @@
 
 .code
 
-; -------------------		
+; -------------------
 		setup "__fat_init_fdarea / isOpen"	; test init fd area
-    jsr __fat_init_fdarea
+    	jsr __fat_init_fdarea
 		ldx #(2*FD_Entry_Size)
 :		lda fd_area,x
-    assertA $ff
+    	assertA $ff
 		inx
 		cpx #(FD_Entry_Size*FD_Entries_Max)
 		bne :-
 
 ; -------------------
 		setup "__fat_alloc_fd"
-    jsr __fat_init_fdarea
+    	jsr __fat_init_fdarea
 		jsr __fat_alloc_fd
 		assertX (2*FD_Entry_Size); expect x point to first fd entry which is 2*FD_Entry_Size, cause the first 2 entries are reserved
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::CurrentCluster
@@ -36,22 +36,22 @@
 		assert8 0, (2*FD_Entry_Size)+fd_area+F32_fd::offset
 
 ; -------------------
-	setup "fat_alloc_fd with error"
-    jsr __fat_init_fdarea
-    ldy #FD_Entries_Max-2 ; -2 => 2 entries for cd and temp dir
+		setup "__fat_alloc_fd with error"
+    	jsr __fat_init_fdarea
+    	ldy #FD_Entries_Max-2 ; -2 => 2 entries for cd and temp dir
 :
-    jsr __fat_alloc_fd
-    assertZ 1
-    assertA EOK
-    dey
-    bne :-
-    jsr __fat_alloc_fd
-    assertZ 0
-    assertA EMFILE
+		jsr __fat_alloc_fd
+		assertZ 1
+		assertA EOK
+		dey
+		bne :-
+		jsr __fat_alloc_fd
+		assertZ 0
+		assertA EMFILE
 
-; -------------------		
+; -------------------
 		setup "__fat_isroot"
-		
+
 		ldx #(0*FD_Entry_Size)
 		jsr __fat_isroot
 		assertZero 1		; expect fd0 - "is root"
@@ -61,33 +61,33 @@
 		jsr __fat_isroot
 		assertZero 0		; expect fd0 - "is not root"
 		assertX (1*FD_Entry_Size)
-		
-; -------------------		
+
+; -------------------
 		setup "__calc_lba_addr with root"
 		ldx #(0*FD_Entry_Size)
 		jsr __calc_lba_addr
 		assertX (0*FD_Entry_Size)
 		assert32 $00006800, lba_addr ; expect $67fe + $2 => the root dir lba
-		
+
 		setup "__calc_lba_addr with some clnr"
 		ldx #(1*FD_Entry_Size)
 		jsr __calc_lba_addr
 		assertX (1*FD_Entry_Size)
-		assert32 $00006968, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $16a * 1 = $6968		
-		
-; -------------------		
+		assert32 $00006968, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $16a * 1 = $6968
+
+; -------------------
 		setup "__calc_lba_addr 8s/cl +10 blocks"
 		ldx #(1*FD_Entry_Size)
 		lda #8
-		sta volumeID+VolumeID::BPB + BPB::SecPerClus	
+		sta volumeID+VolumeID::BPB + BPB::SecPerClus
 		lda #10 ; 10 blocks offset
 		sta fd_area+F32_fd::offset+0,x
 
 		jsr __calc_lba_addr
 		assertX (1*FD_Entry_Size)
 		assert32 $00007358, lba_addr ; expect $67fe + (clnr * sec/cl) + 10 => $67fe + $16a * 8 + 10 = $7358
-				
-; -------------------		
+
+; -------------------
 		setup "fat_fread with error"
 		ldx #(2*FD_Entry_Size)
 		SetVector data_read, read_blkptr
@@ -98,7 +98,7 @@
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert16 data_read, read_blkptr
 
-; -------------------		
+; -------------------
 		setup "fat_fread 0 blocks 1/1"
 		ldx #(1*FD_Entry_Size)
 		SetVector data_read, read_blkptr
@@ -107,9 +107,9 @@
 		assertZero 1
 		assertA EOK
 		assertX (1*FD_Entry_Size)
-		assertY 0					; nothing read		
-		
-; -------------------		
+		assertY 0					; nothing read
+
+; -------------------
 		setup "fat_fread 1 blocks 1/1"
 		SetVector data_read, read_blkptr
 		ldy #1
@@ -123,8 +123,8 @@
 		assert16 data_read+$0200, read_blkptr
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset within cluster +1
-		
-; -------------------		
+
+; -------------------
 		setup "fat_fread 2 blocks 2/1"
 		SetVector data_read, read_blkptr
 		ldy #2	; 2 blocks
@@ -139,7 +139,7 @@
 		assert16 data_read+$0400, read_blkptr ; expect read_ptr was increased 2blocks, means 4*$100
 		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset+0 ; still offset 1, we have a 1 sec/cl fat geometry
 
-; -------------------		
+; -------------------
 		setup "fat_fread 4 blocks 4/1"
 		SetVector data_read, read_blkptr
 		ldy #4	; 4 blocks at once
@@ -153,7 +153,7 @@
 		assert32 $16d, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 		assert16 data_read+$0800, read_blkptr ; expect read_ptr was increased 4blocks, means 8*$100
 		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset+0 ; still offset 1, we have a 1 sec/cl fat geometry
-		
+
 ; -------------------
 		setup "fat_fread 4 blocks 1/1"
 		SetVector data_read, read_blkptr
@@ -168,7 +168,7 @@
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 		assert16 data_read+$0200, read_blkptr ; expect read_ptr was increased 4blocks, means 8*$100
 		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset+0 ; still offset 1, we have a 1 sec/cl fat geometry
-		
+
 		jsr fat_fread
 		assertZero 1
 		assertA EOK
@@ -176,7 +176,7 @@
 		assertY 1
 		assert32 $00006969, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $016a * 1= $6968 - no new cluster selected
 		assert32 $16b, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		
+
 		jsr fat_fread
 		assertZero 1
 		assertA EOK
@@ -184,7 +184,7 @@
 		assertY 1
 		assert32 $0000696a, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $016a * 1= $6968 - no new cluster selected
 		assert32 $16c, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		
+
 		jsr fat_fread
 		assertZero 1
 		assertA EOK
@@ -192,7 +192,7 @@
 		assertY 1
 		assert32 $0000696b, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $016a * 1= $6968 - no new cluster selected
 		assert32 $16d, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		
+
 		; EOC expected here, 0 blocks read
 		jsr fat_fread
 		assertZero 1
@@ -200,35 +200,53 @@
 		assertX (1*FD_Entry_Size)
 		assertY 0
 		assert32 $16d, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster ; still the last one
-		
+
 ; -------------------
 		setup "fat_fopen O_RDONLY"
+		jsr __fat_init_fdarea
+
 		ldy #O_RDONLY
-		lda #<test_file_name
-		ldx #>test_file_name
-		;jsr fat_fopen
-		;assertA EOK
-		
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_fopen
+		assertA EOK
+		assertX FD_Entry_Size*2
+		assertDirEntry $0440
+			fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+; -------------------
+		setup "fat_fopen O_RWONLY"
+		jsr __fat_init_fdarea
+
+		ldy #O_RDONLY
+		lda #<test_file_name_2
+		ldx #>test_file_name_2
+		jsr fat_fopen
+		assertA EOK
+		assertX FD_Entry_Size*2
+		assertDirEntry $0460
+			fat32_dir_entry_file "FILE02  ", "TXT", $0a, 12
+
 		brk
 
 setUp:
 	.define test_start_cluster	$016a
-	
+
 	lda #1
 	sta volumeID+VolumeID::BPB + BPB::SecPerClus
 
 	set32 volumeID + VolumeID::EBPB + EBPB::RootClus, $02
 	set32 cluster_begin_lba, $67fe	;cl lba to $67fe
-	set32 fat_lba_begin, $297e			;fat lba to 	
-	
+	set32 fat_lba_begin, $297e			;fat lba to
+
 	;setup fd0 as root cluster
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 	set16 fd_area+(0*FD_Entry_Size)+F32_fd::offset, 0
-	
+
 	;setup fd1 as with test cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 	set16 fd_area+(1*FD_Entry_Size)+F32_fd::offset, 0
-	
+
 	rts
 
 .export __rtc_systime_update=mock_not_implemented
@@ -255,15 +273,15 @@ load_test_data:
 		rts
 
 mock_read_block:
-    ;debug32 "m_rd", lba_addr
-    cpx #(2*FD_Entry_Size)
-    bne :+
-    inc read_blkptr+1	; same behaviour as real implementation
-    lda #EIO
-    rts
+		;debug32 "m_rd", lba_addr
+		cpx #(2*FD_Entry_Size)
+		bne :+
+		inc read_blkptr+1	; same behaviour as real implementation
+		lda #EIO
+		rts
 :
 		phx
-		
+
 		cmp32 lba_addr, $6800 ; load root cl block
 		bne :+
 		load_block block_root_cl
@@ -277,15 +295,16 @@ mock_read_block:
 	set32 block_fat+((test_start_cluster+2)<<2 & (sd_blocksize-1)), (test_start_cluster+3)
 	set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), FAT_EOC
 :
-	inc read_blkptr+1	; inc read_blkptr+1 => same behaviour as real block read implementation
+		inc read_blkptr+1	; inc read_blkptr+1 => same behaviour as real block read implementation
 
 @exit:
 	plx
 	lda #EOK
 	rts
-		
+
 .data
-test_file_name: .asciiz "file01.dat"
+test_file_name_1: .asciiz "file01.dat"
+test_file_name_2: .asciiz "file02.txt"
 
 block_root_cl:
 	fat32_dir_entry_dir 	"DIR01   ", "   ", 8

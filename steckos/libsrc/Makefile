@@ -93,7 +93,7 @@ $(if $(QUIET),,@echo $(TARGET) - $<)
 endef # COMPILE_recipe
 
 define RUNTEST_recipe
-	@$(LD65) $< $(TEST_LDFLAGS) -o $@
+	@$(LD65) $< $(TEST_LDFLAGS) -m $@.map -o $@
   	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 0x1000
 endef
 
@@ -109,7 +109,7 @@ endef
 
 ../libwrk/$(TARGET)/%.bin: ../libwrk/$(TARGET)/%.o | ../libwrk/$(TARGET)
 	$(RUNTEST_recipe)
-	
+
 ../libwrk/$(TARGET)/%.dis: ../libwrk/$(TARGET)/%.bin
 	$(DISASM_recipe)
 

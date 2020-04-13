@@ -26,7 +26,13 @@ if [ -z ${ld_address} ]; then
 	ld_address="$1000"
 fi
 binary=$1
-${pythonbin} ${dir}/asmunit.monitor.py -m 65c02 --output $output <<EOUNIT
+#echo ${pythonbin} ${dir}/asmunit.monitor.py -m 65c02 --output $output
+#echo .load "${binary}" ${ld_address} > /tmp/$$.py65
+#echo .add_breakpoint 0x19cf >> /tmp/$$.py65
+#echo .goto ${ld_address} >> /tmp/$$.py65
+
+#.add_breakpoint 0x19cf
+exec ${pythonbin} ${dir}/asmunit.monitor.py -m 65c02 --output $output <<EOF
 .load "${binary}" ${ld_address}
 .goto ${ld_address}
-EOUNIT
+EOF

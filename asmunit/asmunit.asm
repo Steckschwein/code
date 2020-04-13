@@ -225,10 +225,10 @@ _out_ptr:
 		ldx #0 ; .X=0 - output vector _hexout
 		and #_FORMAT_STRING | _FORMAT_MEMORY
 		beq _out_ptr_number
-		ldx #2 ; .X=2 - output vector _hexout with separator
+		ldx #2 									; .X=2 set out vector _hexout with separator
 		and #_FORMAT_MEMORY
 		bne _out_ptr_memory
-		ldx #4									; output vector to string
+		ldx #4									; set out vector to string out
 _out_ptr_memory:
 		ldy #0
 _out_ptr_string:
@@ -241,6 +241,7 @@ _out_ptr_number:
 		lda #'$'									; number in hex with preceeding $
 		jsr asmunit_chrout
 		ldy tst_bytes
+		dey
 _out_ptr_loop:									; big endian, for better readability
 		jsr _call_out
 		dey
@@ -305,13 +306,13 @@ asmunit_chrout:
 		sta asmunit_char_out
 		rts
 
-tst_cnt:        .res 1 ; assert/fail counter, used to be more verbose on output
-tst_acc:        .res 1
+tst_cnt:			.res 1 ; assert/fail counter, used to be more verbose on output
+tst_acc:       .res 1
 tst_xreg:		.res 1
 tst_yreg:		.res 1
 tst_status:		.res 1
 tst_save_ptr:	.res 2
-tst_return_ptr:	.res 2
+tst_return_ptr:.res 2
 tst_bytes:		.res 1
 
 

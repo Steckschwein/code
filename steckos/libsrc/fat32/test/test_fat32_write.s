@@ -2,9 +2,17 @@
 
 	.import __fat_init_fdarea
 	.import fat_fopen
+	.import fat_close
+	.import fat_write
 
 	.import asmunit_chrout
 	krn_chrout=asmunit_chrout
+
+; fat32 geometry
+.define LBA_BEGIN $00006800
+.define FAT_LBA $297e
+.define SEC_PER_CL 1
+.define ROOT_CL $02
 
 
 ; mock defines
@@ -24,12 +32,40 @@
 ; -------------------
 		setup "fat_fopen O_CREAT"
 		ldy #O_CREAT
-		lda #<test_file_name
-		ldx #>test_file_name
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
 		jsr fat_fopen
 		assertA EOK
+		assertX FD_Entry_Size*2
 		assertDirEntry $0480
 			fat32_dir_entry_file "TEST01  ", "TST", 0, 0		; 0 - no cluster reserved, file length 0
+		assertFdEntry fd_area + (FD_Entry_Size*2)
+			fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive
+		jsr fat_close
+
+; -------------------
+		setup "fat_write O_CREAT"
+		ldy #O_CREAT
+		lda #<test_file_name_2
+		ldx #>test_file_name_2
+		jsr fat_fopen
+		assertA EOK
+		assertX FD_Entry_Size*2	; assert FD
+
+		assertDirEntry $0480
+ 			fat32_dir_entry_file "TEST02  ", "TST", 0, 0
+		assertFdEntry fd_area + (FD_Entry_Size*2)
+				fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive
+
+
+;		jsr fat_write
+		assertA EOK
+		assertX FD_Entry_Size*2	; assert FD
+
+;		assertDirEntry $0480
+;			fat32_dir_entry_file "TEST02  ", "TST", 0, 33
+
+		jsr fat_close
 
 		brk
 
@@ -56,22 +92,30 @@ _rtc_ts:
 		rts
 
 mock_read_block:
-		cmp32 lba_addr, $6800 ; load root cl block
-		bne @err
+		cmp32 lba_addr, LBA_BEGIN; load root cl block
+		bne :+
 		load_block block_root_cl
 		rts
-@err:
-		fail "mock read_block"
-mock_write_block:
-		cmp32 lba_addr, $6800
+:
+		cmp32 lba_addr, FAT_LBA
 		bne @err
-		assert16 $0480, dirptr
-		bne @err
-
+		load_block block_fat_01
 		rts
-
 @err:
+		assert32 $22, lba_addr
+		fail "mock read_block"
+
+mock_write_block:
+		cmp32 lba_addr, LBA_BEGIN
+		bne :+
+		rts
+:		cmp32 lba_addr, FAT_LBA
+		bne @err
+		rts
+@err:
+		assert32 $11, lba_addr
 		fail "mock write_block"
+
 mock_not_implemented1:
 		fail "mock 1"
 mock_not_implemented2:
@@ -81,11 +125,6 @@ mock_not_implemented3:
 mock_not_implemented4:
 		fail "mock 4"
 
-; fat32 geometry
-.define LBA_BEGIN $00680000
-.define SEC_PER_CL $01
-.define ROOT_CL $02
-
 setUp:
 	.define test_start_cluster	$016a
 	jsr __fat_init_fdarea
@@ -93,7 +132,7 @@ setUp:
 	set8 volumeID+VolumeID::BPB + BPB::SecPerClus, SEC_PER_CL
 	set32 volumeID + VolumeID::EBPB + EBPB::RootClus, ROOT_CL
 	set32 cluster_begin_lba, $67fe	;cl lba to $67fe
-	set32 fat_lba_begin, $297e			;fat lba to
+	set32 fat_lba_begin, FAT_LBA		;fat lba to
 
 	;setup fd0 as root cluster
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
@@ -105,7 +144,8 @@ setUp:
 	rts
 
 .data
-	test_file_name: .asciiz "test01.tst"
+	test_file_name_1: .asciiz "test01.tst"
+	test_file_name_2: .asciiz "test02.tst"
 
 block_root_cl:
 	fat32_dir_entry_dir 	"DIR01   ", "   ", 8
@@ -114,4 +154,4 @@ block_root_cl:
 	fat32_dir_entry_file "FILE02  ", "TXT", $a, 12	; $a - 1st cluster nr of file, file length 12 byte
 
 .bss
-;fat_data_read: .res 512, 0
+block_fat_01:

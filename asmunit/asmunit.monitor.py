@@ -18,9 +18,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE. 
+# SOFTWARE.
 
-#!/usr/bin/env python -u 
+#!/usr/bin/env python -u
 
 import py65.monitor
 
@@ -31,7 +31,7 @@ class AsmunitMonitor(py65.monitor.Monitor):
         instrument_addr = 0x0202
         def writeCycles(address, cycles):
            #self.stdout.write("\nwriteCycles: %x %x\n" % (self._mpu.processorCycles, cycles))
-           self._mpu.memory[instrument_addr+1] = cycles>>24 & 0xff				
+           self._mpu.memory[instrument_addr+1] = cycles>>24 & 0xff
            self._mpu.memory[instrument_addr+2] = cycles>>16 & 0xff
            self._mpu.memory[instrument_addr+3] = cycles>>8 & 0xff
            self._mpu.memory[instrument_addr+4] = cycles & 0xff
@@ -57,8 +57,7 @@ def main(args=None):
     try:
         mon.cmdloop()
     except KeyboardInterrupt:
-        mon._output('')
-	 
-	 
+        mon._output('key int')
+
 if __name__ == "__main__":
     main()

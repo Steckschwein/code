@@ -54,7 +54,7 @@
 .export __fat_next_cln
 .export __fat_open_path
 .export __fat_read_block
-.export __fat_set_fd_direntry
+.export __fat_set_fd_attr_direntry
 .export __calc_lba_addr
 .export __calc_blocks
 .export __inc_lba_address
@@ -123,7 +123,7 @@ ff_exit:
 		debug "ffex"
 ff_end:
 		rts
-		
+
 
 		; open a path to a file or directory starting from current directory
 		; in:
@@ -215,10 +215,13 @@ __fat_clone_fd:
 
 		; update the dir entry position and dir lba_addr of the given file descriptor
 		; in:
-		;	X - file descriptor
+		;	.A - file attr
+		;	.X - file descriptor
 		; out:
 		;	updated file descriptor, DirEntryLBA and DirEntryPos setup accordingly
-__fat_set_fd_direntry:
+__fat_set_fd_attr_direntry:
+		sta fd_area + F32_fd::Attr, x
+
 	 	lda lba_addr + 3
 		sta fd_area + F32_fd::DirEntryLBA + 3, x
 	 	lda lba_addr + 2
@@ -245,11 +248,11 @@ __fat_set_fd_direntry:
 		sta fd_area + F32_fd::DirEntryPos, x
 		rts
 
-		  ;in:
-		  ;	filenameptr - ptr to the filename
-		  ;out:
-		  ;	X - index into fd_area of the opened file
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;in:
+;	filenameptr - ptr to the filename
+;out:
+;	X - index into fd_area of the opened file
+;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 __fat_open_file:
 		phy
 
@@ -296,9 +299,7 @@ __fat_open_file:
 
 		ldy #F32DirEntry::Attr
 		lda (dirptr),y
-		sta fd_area + F32_fd::Attr, x
-
-		jsr __fat_set_fd_direntry
+		jsr __fat_set_fd_attr_direntry
 
 		lda #EOK ; no error
 @l_exit:
@@ -355,13 +356,12 @@ __fat_free_fd:
 		pla
 		rts
 
-		; check whether cluster of fd is the root cluster number as given in VolumeID::RootClus
+		; check whether cluster of fd is the root cluster number - 0x00000000 (not VolumeID::RootClus due to lba calc optimization)
 		; in:
 		;	X - file descriptor
 		; out:
 		;	Z=1 if it is the root cluster, Z=0 otherwise
 __fat_isroot:
-		;TODO improve performance, do the check only if type is directory
 		lda fd_area+F32_fd::CurrentCluster+3,x				; check whether start cluster is the root dir cluster nr (0x00000000) as initial set by fat_alloc_fd
 		ora fd_area+F32_fd::CurrentCluster+2,x
 		ora fd_area+F32_fd::CurrentCluster+1,x
@@ -572,7 +572,7 @@ __fat_read_cluster_block_and_select:
 @l_exit:
 		debug16 "f_rcbs", read_blkptr
 		rts
-		
+
 		; check whether the EOC (end of cluster chain) cluster number is reached
 		; out:
 		;	C = 1 if clnr is EOC, C=0 otherwise
@@ -597,7 +597,7 @@ __fat_is_cln_eoc:
 @l_eoc:
 		ply
 		rts
-		
+
 __inc_lba_address:
 		_inc32 lba_addr
 		rts

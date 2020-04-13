@@ -110,7 +110,7 @@ asmunit_addr_instrument = $0202
 .macro test label
 	_message .concat("[", label, "]"), _MODE_TESTNAME
     .import tst_cnt ; reset assertion counter
-    stz tst_cnt
+	 stz tst_cnt
 .endmacro
 
 .macro fail message

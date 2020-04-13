@@ -12,12 +12,17 @@
 		jsr setUp
 .endmacro
 
-.macro fat32_dir_entry_dir _8_3_name, _8_3_ext, cl
-	fat32_dir_entry _8_3_name, _8_3_ext, DIR_Attr_Mask_Dir, cl, 0
+.macro fd_entry_file dir_entry, dir_lba, attr
+	.dword 0; CurrentCluster
+	.dword 0; FileSize
+	.byte attr; Attr
+	.dword dir_lba; DirEntryLBA ; LBA of the block where the dir entry of the file is located
+	.byte dir_entry; DirEntryPos .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
+	.byte 0; offset          .byte;  7Bit block number of the CurrentCluster
 .endmacro
 
-.macro fat32_dir_entry_file _8_3_name, _8_3_ext, cl, fsize
-	fat32_dir_entry _8_3_name, _8_3_ext, DIR_Attr_Mask_Archive, cl, fsize
+.macro assertFdEntry address
+		assertMemory address, FD_Entry_Size
 .endmacro
 
 .macro fat_datetime year, month, day, hour, min, sec
@@ -29,6 +34,14 @@
 	.word (year-1980)<<9 | month<<5 | day
 .endmacro
 
+.macro fat32_dir_entry_dir _8_3_name, _8_3_ext, cl
+	fat32_dir_entry _8_3_name, _8_3_ext, DIR_Attr_Mask_Dir, cl, 0
+.endmacro
+
+.macro fat32_dir_entry_file _8_3_name, _8_3_ext, cl, fsize
+	fat32_dir_entry _8_3_name, _8_3_ext, DIR_Attr_Mask_Archive, cl, fsize
+.endmacro
+
 ; fat32 dir entry - $20 byte
 .macro fat32_dir_entry _8_3_name, _8_3_ext, attr, cl, fsize
 	.assert .strlen(_8_3_name) = 8, error, "file name size"
@@ -36,7 +49,7 @@
 
 	.byte _8_3_name		; 8 byte
 	.byte	_8_3_ext			; 3 byte
-	.byte attr				; 1
+	.byte attr				; attr
 	.byte 0					; reserved
 	.byte 0					; create time millis
 	fat_datetime 2020, 4, 10, 11, 22, 34 		; created date/time

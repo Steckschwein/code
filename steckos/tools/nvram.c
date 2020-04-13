@@ -286,7 +286,7 @@ void read_nvram()
 void usage()
 {
 	cprintf(
-        "set/get nvram values\nusage:\nnvram filename|baudrate|line [<value>]\nnvram list|init\n",
+        "set/get nvram values\nusage:\nnvram filename|baudrate|line [<value>]\nnvram list|init\n"
 	);
 }
 

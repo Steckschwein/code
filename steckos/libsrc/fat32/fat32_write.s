@@ -43,13 +43,13 @@
 .import write_block
 
 .import __fat_read_cluster_block_and_select
-.import __fat_set_fd_direntry
+.import __fat_set_fd_attr_direntry
 .import __fat_alloc_fd
 .import __fat_opendir_cd
 .import __fat_free_fd
 .import __fat_read_block
 .import __fat_isroot
-.import __fat_isOpen
+.import __fat_is_open
 .import __fat_find_next
 .import __fat_find_first_mask
 
@@ -69,23 +69,22 @@ fat_write:
 		debug "fws"
 		stx fat_tmp_fd										; save fd
 
-		jsr __fat_isOpen
-		beq @l_not_open
+		jsr __fat_is_open
+		beq @l_exit_einval								; exit, not open
 
-		lda	fd_area + F32_fd::Attr, x
-		bit #DIR_Attr_Mask_Dir								; regular file?
+		lda fd_area + F32_fd::Attr, x
+		bit #DIR_Attr_Mask_Dir							; regular file?
 		beq @l_isfile
-@l_not_open:
+@l_exit_einval:
 		lda #EINVAL
-		bra @l_exit
+		rts
 @l_isfile:
 		jsr __fat_isroot									; check whether the start cluster of the file is the root cluster - @see fat_alloc_fd, fat_open)
 		bne	@l_write										; if not, we can directly update dir entry and write data afterwards
-
 		saveptr write_blkptr								;
-		jsr __fat_reserve_cluster							; otherwise start cluster is root, we try to find a free cluster, fat_tmp_fd has to be set
+		jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster, fat_tmp_fd has to be set
 		bne @l_exit
-		restoreptr write_blkptr								; restore write ptr
+		restoreptr write_blkptr							; restore write ptr
 		;debug "fw1"
 		ldx fat_tmp_fd										; restore fd, go on with writing data
 @l_write:
@@ -266,14 +265,14 @@ fat_mkdir:
 		bne @l_exit
 
 		jsr __fat_alloc_fd							; alloc a fd for the new directory - try to allocate a new fd here, right before any fat writes, cause they may fail
-		bne @l_exit									; and we want to avoid an error in between the different block writes
-		jsr __fat_set_fd_direntry					; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cd from above
+		bne @l_exit										; and we want to avoid an error in between the different block writes
 
+		lda #DIR_Attr_Mask_Dir						; set type directory
+		jsr __fat_set_fd_attr_direntry			; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cd from above
 		jsr __fat_reserve_cluster					; try to find and reserve next free cluster and store them in fd_area at fd (X)
 		bne @l_exit_close
 
 		jsr __fat_set_lba_from_fd_dirlba			; setup lba_addr from fd
-		lda #DIR_Attr_Mask_Dir						; set type directory
 		jsr __fat_write_dir_entry					; create dir entry at current dirptr
 		bne @l_exit_close
 
@@ -432,7 +431,7 @@ __fat_update_fsinfo_exit:
 		;	X - the file descriptor into fd_area of the the new dir entry
 		;	dirptr - set to current dir entry within block_data
 __fat_write_newdir_entry:
-		ldy #F32DirEntry::Attr																			; copy from (dirptr), start with F32DirEntry::Attr, the name is skipped and overwritten below
+		ldy #F32DirEntry::Attr																		; copy from (dirptr), start with F32DirEntry::Attr, the name is skipped and overwritten below
 @l_dir_cp:
 		lda (dirptr), y
 		sta block_data, y																				; 1st dir entry
@@ -570,16 +569,15 @@ __fat_rtc_date:
 		; prepare dir entry, expects cluster number set in fd_area of newly allocated fd given in X
 		; in:
 		;	X - file descriptor
-		;	A - attribute flag for new directory entry
 		;	dirptr of the directory entry to prepare
 __fat_prepare_dir_entry:
+		lda fd_area + F32_fd::Attr, x
 		ldy #F32DirEntry::Attr										; store attribute
 		sta (dirptr), y
 
 		lda #0
 		ldy #F32DirEntry::Reserved									; unused
 		sta (dirptr), y
-
 		ldy #F32DirEntry::CrtTimeMillis
 		sta (dirptr), y												; ms to 0, ms not supported by rtc
 

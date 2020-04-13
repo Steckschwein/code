@@ -178,13 +178,13 @@ DIR_Entry_Deleted            = $e5
 .endstruct
 
 .struct F32_fd
-    CurrentCluster  .dword; (4bt)
-    FileSize        .dword; (4bt)
-    Attr            .byte;  (1bt)
-    DirEntryLBA     .dword; (4bt)	LBA of the block where the dir entry of the file is located
-    DirEntryPos     .byte;  (1bt)	block offset within the block (DirEntryPos * DIR_Entry_Size)
-    offset          .byte;  (1bt) 7Bit block number of the CurrentCluster
-;	TODO FIXME offset          .word;	(2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
+    CurrentCluster  .dword;
+    FileSize        .dword;
+    Attr            .byte;
+    DirEntryLBA     .dword; LBA of the block where the dir entry of the file is located
+    DirEntryPos     .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
+    offset          .byte;  7Bit block number of the CurrentCluster
+;	TODO FIXME offset        .word;	(2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
 ;   SeekPos        .dword;	(4bt) seek position within the opened file
 ;   openFlags     .byte; +1 flags during open
 .endstruct
@@ -210,8 +210,7 @@ fat_fsinfo_lba        = fat2_lba_begin + 2; (4 byte)
 fat_tmp_dw            = fat_fsinfo_lba + 4; (4 byte) internallly used tmp
 fat_tmp_dw2           = fat_tmp_dw + 4; (4 byte) internallly used tmp
 fat_tmp_fd            = fat_tmp_dw2 + 4; (1 byte); internallly used fd
-fat_tmp_mode          = fat_tmp_fd + 1; (1 byte) internallly used file mode
-filename_buf          = fat_tmp_mode + 1 ; (13 byte, 8.3 + \0) file name buffer
+filename_buf          = fat_tmp_fd + 1 ; (13 byte, 8.3 + \0) file name buffer
 fat_dirname_mask      = filename_buf + 13; (11 byte, fat32 name and ext)
 fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector
 

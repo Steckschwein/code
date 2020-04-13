@@ -37,6 +37,8 @@
 
 .include "debug.inc"
 
+.importzp __volatile_tmp
+
 ; external deps - block layer
 .import read_block, write_block
 ; TODO FIXME - encapsulate within sd layer
@@ -50,7 +52,7 @@
 .import __fat_init_fd
 .import __fat_free_fd
 .import __fat_alloc_fd
-.import __fat_set_fd_direntry
+.import __fat_set_fd_attr_direntry
 .import __fat_open_path
 .import __fat_find_first
 .import __fat_find_first_mask
@@ -77,7 +79,7 @@
 .export fat_close_all, fat_close, fat_getfilesize
 
 ;.ifdef TEST_EXPORT TODO FIXME - any ideas?
-.export __fat_isOpen
+.export __fat_is_open
 .export __fat_init_fdarea
 ;.endif
 
@@ -111,7 +113,7 @@ __fat_fseek:
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 		; 	Y - number of blocks which where successfully read
 fat_fread:
-		jsr __fat_isOpen
+		jsr __fat_is_open
 		bne @_l_read_start
 		lda #EINVAL
 		rts
@@ -161,7 +163,7 @@ fat_fread:
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 		;  X	- number of bytes read
 fat_read_block:
-		jsr __fat_isOpen
+		jsr __fat_is_open
 		beq @l_err_exit
 
 		jsr __calc_blocks
@@ -176,7 +178,7 @@ fat_read_block:
 		;out:
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_read:
-		jsr __fat_isOpen
+		jsr __fat_is_open
 		beq @l_err_exit
 
 		jsr __calc_blocks
@@ -204,7 +206,7 @@ fat_read:
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_fopen:
 fat_open:
-		sty fat_tmp_mode					; save open flag
+		sty __volatile_tmp				; save open flag
 		ldy #FD_INDEX_CURRENT_DIR		; use current dir fd as start directory
 		jsr __fat_open_path
 		bne @l_error
@@ -215,7 +217,7 @@ fat_open:
 @l_error:
 		cmp #ENOENT							; no such file or directory ?
 		bne @l_exit							; other error, then exit
-		lda fat_tmp_mode					; check if we should create a new file
+		lda __volatile_tmp				; check if we should create a new file
 		and #O_CREAT | O_WRONLY | O_APPEND
 		beq @l_err_enoent					; nothing set, exit with ENOENT
 
@@ -225,9 +227,9 @@ fat_open:
 		bne @l_exit
 		jsr __fat_alloc_fd				; alloc a fd for the new file we want to create to make sure we get one before
 		bne @l_exit							; we do any sd block writes which may result in various errors
-		jsr __fat_set_fd_direntry		; update dir lba addr and dir entry number within fd
 
 		lda #DIR_Attr_Mask_Archive		; create as regular file with archive bit set
+		jsr __fat_set_fd_attr_direntry; update dir lba addr and dir entry number within fd
 		jsr __fat_write_dir_entry		; create dir entry at current dirptr
 		beq @l_exit_ok
 		jmp fat_close						; free the allocated file descriptor regardless of any errors
@@ -248,7 +250,7 @@ fat_open:
 		;	x - offset to fd_area
 		; out:
 		;	Z=0 if file is open, Z=1 otherwise
-__fat_isOpen:
+__fat_is_open:
 		lda fd_area + F32_fd::CurrentCluster +3, x
 		cmp #$ff		;#$ff means not open
 		rts
@@ -296,5 +298,5 @@ fat_find_first:
 		ldx #FD_INDEX_TEMP_DIR					; we use the temp dir with a copy of given fd, cause F32_fd::CurrentCluster is adjusted if end of cluster is reached
 		jsr __fat_clone_fd
 		jmp __fat_find_first_mask
-		
+
 fat_find_next = __fat_find_next
