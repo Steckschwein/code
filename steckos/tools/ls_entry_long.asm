@@ -44,7 +44,7 @@ dir_show_entry:
 		bit #DIR_Attr_Mask_Dir
 		beq @l
 		jsr krn_primm
-		.byte "  <DIR> ",$00
+		.asciiz "   <DIR> "
 		inc dirs
 		bra @date				; no point displaying directory size as its always zeros
 								; just print some spaces and skip to date display
