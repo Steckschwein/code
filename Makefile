@@ -21,3 +21,8 @@ build:
 #	(cd rom; make)
 
 
+dist: build
+	./mkdist.sh
+
+img: dist
+	./mkimg.sh
