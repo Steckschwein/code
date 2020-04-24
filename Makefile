@@ -8,7 +8,8 @@ clean:
 	(cd edlib; make clean)
 	(cd ehbasic; make clean)
 	(cd firmware; make clean)
-	(cd rom; make clean)
+#	(cd rom; make clean)
+	rm -rf dist/LOADER.BIN dist/STECKOS dist/GAMES dist/DEMO dist/PROGS/EDLPLY.PRG dist/PROGS/BASIC.PRG dist/PROGS/IMF.PRG
 
 build:
 	(cd asmunit; make)
@@ -17,5 +18,6 @@ build:
 	(cd edlib; make )
 	(cd ehbasic; make )
 	(cd firmware; make)
-	(cd rom; make)
+#	(cd rom; make)
+
 
