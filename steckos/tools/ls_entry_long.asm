@@ -26,7 +26,7 @@
 .include "common.inc"
 
 .import print_fat_date, print_fat_time, print_filesize, print_filename
-.import files, dirs
+;.import files, dirs
 .import char_out
 .export dir_show_entry, pagecnt, entries_per_page, dir_attrib_mask
 
@@ -45,7 +45,7 @@ dir_show_entry:
 		beq @l
 		jsr krn_primm
 		.asciiz "   <DIR> "
-		inc dirs
+;		inc dirs
 		bra @date				; no point displaying directory size as its always zeros
 								; just print some spaces and skip to date display
 @l:
@@ -53,7 +53,7 @@ dir_show_entry:
 
 		lda #' '
 		jsr krn_chrout
-		inc files
+;		inc files
 @date:
 		jsr print_fat_date
 

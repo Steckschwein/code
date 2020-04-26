@@ -26,7 +26,7 @@
 .include "fat32.inc"
 .include "appstart.inc"
 
-.export cnt, files, dirs
+.export cnt ;, files, dirs
 .import dir_show_entry, pagecnt, entries_per_page, dir_attrib_mask
 .import b2ad2
 
@@ -38,7 +38,7 @@ main:
 l1:
       crlf
       SetVector pattern, filenameptr
-      
+
       lda (paramptr)
       beq @l2
       copypointer paramptr, filenameptr
@@ -64,7 +64,7 @@ l1:
 
       bit dir_attrib_mask ; Hidden attribute set, skip
       bne @l3
-      
+
       jsr dir_show_entry
 
       dec pagecnt
@@ -88,8 +88,7 @@ l1:
       bra @l3
 @exit:
       jmp (retvec)
-
 pattern:  .byte "*.*",$00
 cnt:      .byte $04
-dirs:     .byte $00
-files:    .byte $00
+;dirs:     .byte $00
+;files:    .byte $00
