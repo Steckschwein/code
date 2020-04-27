@@ -26,8 +26,9 @@
 .include "common.inc"
 
 .import print_fat_date, print_fat_time, print_filesize, print_filename
-;.import files, dirs
+.import files
 .import char_out
+.import hexout
 .export dir_show_entry, pagecnt, entries_per_page, dir_attrib_mask
 
 
@@ -35,8 +36,6 @@
 dir_show_entry:
 		pha
 		jsr print_filename
-
-
 
 		ldy #F32DirEntry::Attr
 		lda (dirptr),y
@@ -53,7 +52,7 @@ dir_show_entry:
 
 		lda #' '
 		jsr krn_chrout
-;		inc files
+		inc files
 @date:
 		jsr print_fat_date
 
