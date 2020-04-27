@@ -27,9 +27,8 @@
 .include "appstart.inc"
 
 .export cnt, files;, dirs
-.import b2ad2
 .import hexout
-.import print_fat_date, print_fat_time, print_filesize, print_filename
+.import print_fat_date, print_fat_time, print_filename
 
 .export char_out=krn_chrout
 .zeropage
@@ -142,6 +141,10 @@ l1:
     jmp (retvec)
 
 show_bytes_decimal:
+    stz decimal + 0
+    stz decimal + 1
+    stz decimal + 2
+    stz decimal + 3
     sed
     ldx #32
 @l1:
@@ -208,7 +211,7 @@ dir_show_entry:
 		bit #DIR_Attr_Mask_Dir
 		beq @l
 		jsr krn_primm
-		.asciiz "   <DIR> "
+		.asciiz "    <DIR> "
 ;		inc dirs
 		bra @date				; no point displaying directory size as its always zeros
 								; just print some spaces and skip to date display
@@ -232,12 +235,92 @@ dir_show_entry:
 		pla
 		rts
 
+print_filesize:
+		lda #' '
+		jsr char_out
+
+        stz decimal + 0
+        stz decimal + 1
+        stz decimal + 2
+        stz decimal + 3
+
+        ldy #F32DirEntry::FileSize +3
+        lda (dirptr),y
+        sta bytes2 + 3
+
+        dey
+        lda (dirptr),y
+        sta bytes2 + 2
+
+        dey
+        lda (dirptr),y
+        sta bytes2 + 1
+
+        dey
+        lda (dirptr),y
+        sta bytes2 + 0
+
+        ldx #32
+        sed
+@l1:
+        asl bytes2 + 0
+        rol bytes2 + 1
+        rol bytes2 + 2
+        rol bytes2 + 3
+
+        lda decimal + 0
+        adc decimal + 0
+        sta decimal + 0
+
+        lda decimal + 1
+        adc decimal + 1
+        sta decimal + 1
+
+        lda decimal + 2
+        adc decimal + 2
+        sta decimal + 2
+
+        lda decimal + 3
+        adc decimal + 3
+        sta decimal + 3
+
+        dex
+        bne @l1
+        cld
+
+        lda decimal + 3
+        bne @show1
+        jsr krn_primm
+        .asciiz "  "
+        bra @next1
+@show1:
+
+        jsr show_digit
+@next1:
+        lda decimal + 2
+        bne @show2
+        jsr krn_primm
+        .asciiz "  "
+        bra @next2
+@show2:
+        jsr show_digit
+@next2:
+        lda decimal + 1
+        jsr show_digit
+        lda decimal + 0
+        jsr show_digit
+
+
+		rts
+
 pattern:  .byte "*.*",$00
 cnt:      .byte $04
 ;dirs:     .byte $00
 files:    .byte $00
 files_dec: .byte $00
 bytes:    .dword $00000000
+bytes2:    .dword $00000000
+
 decimal:  .dword $00000000
 entries = 23
 dir_attrib_mask:  .byte $0a
