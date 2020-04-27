@@ -26,18 +26,25 @@
 .include "fat32.inc"
 .include "appstart.inc"
 
+.export cnt, files;, dirs
+.import b2ad2
 .import hexout
-.import print_filename
+.import print_fat_date, print_fat_time, print_filesize, print_filename
 
 .export char_out=krn_chrout
 .zeropage
 tmp1: .res 1
 tmp2: .res 1
 tmp3: .res 2
+.exportzp tmp1, tmp2
 .code
 appstart $1000
 
 main:
+    stz bytes
+    stz bytes +1
+    stz bytes +2
+    stz bytes +3
 l1:
     crlf
     SetVector pattern, filenameptr
@@ -62,21 +69,33 @@ l1:
     beq @l3
 
 
+    ldy #F32DirEntry::FileSize+3
+    clc
+    lda (dirptr),y
+    adc bytes+3
+    sta bytes+3
+
+    dey
+    lda (dirptr),y
+    adc bytes+2
+    sta bytes+2
+
+    dey
+    lda (dirptr),y
+    adc bytes+1
+    sta bytes+1
+
+    dey
+    lda (dirptr),y
+    adc bytes+0
+    sta bytes+0
+
     ldy #F32DirEntry::Attr
     lda (dirptr),y
     bit dir_attrib_mask ; Hidden attribute set, skip
     bne @l3
 
-
-    dec cnt
-    bne @l1
-    crlf
-    lda #$03
-    sta cnt
-@l1:
-    jsr print_filename
-    lda #' '
-    jsr krn_chrout
+    jsr dir_show_entry
 
     dec pagecnt
     bne @l
@@ -97,13 +116,129 @@ l1:
     cmp #$03 ; CTRL-C?
     beq @exit
     bra @l3
-
 @exit:
+
+    jsr show_bytes_decimal
+
+    jsr krn_primm
+    .asciiz " bytes in "
+
+    stz files_dec
+    ldx #8
+    sed
+@l1:
+    asl files
+    lda files_dec
+    adc files_dec
+    sta files_dec
+    dex
+    bne @l1
+    cld
+    lda files_dec
+    jsr show_digit
+
+    printstring " files"
+
     jmp (retvec)
 
+show_bytes_decimal:
+    sed
+    ldx #32
+@l1:
+    asl bytes + 0
+    rol bytes + 1
+    rol bytes + 2
+    rol bytes + 3
+
+    lda decimal + 0
+    adc decimal + 0
+    sta decimal + 0
+
+    lda decimal + 1
+    adc decimal + 1
+    sta decimal + 1
+
+    lda decimal + 2
+    adc decimal + 2
+    sta decimal + 2
+
+    lda decimal + 3
+    adc decimal + 3
+    sta decimal + 3
+
+    dex
+    bne @l1
+    cld
+
+    lda decimal+3
+    beq @n1
+    jsr show_digit
+@n1:
+    lda decimal+2
+    beq @n2
+    jsr show_digit
+@n2:
+    lda decimal+1
+    beq @n3
+    jsr show_digit
+@n3:
+    lda decimal+0
+
+show_digit:
+    pha
+    lsr
+    lsr
+    lsr
+    lsr
+    ora #$30
+    jsr char_out
+    pla
+    and #$0f
+    ora #$30
+    jsr char_out
+    rts
+
+dir_show_entry:
+		pha
+		jsr print_filename
+
+		ldy #F32DirEntry::Attr
+		lda (dirptr),y
+
+		bit #DIR_Attr_Mask_Dir
+		beq @l
+		jsr krn_primm
+		.asciiz "   <DIR> "
+;		inc dirs
+		bra @date				; no point displaying directory size as its always zeros
+								; just print some spaces and skip to date display
+@l:
+		jsr print_filesize
+
+		lda #' '
+		jsr krn_chrout
+		inc files
+@date:
+		jsr print_fat_date
+
+
+		lda #' '
+		jsr krn_chrout
+
+
+		jsr print_fat_time
+        crlf
+
+		pla
+		rts
 
 pattern:  .byte "*.*",$00
 cnt:      .byte $04
+;dirs:     .byte $00
+files:    .byte $00
+files_dec: .byte $00
+bytes:    .dword $00000000
+decimal:  .dword $00000000
 entries = 23
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
