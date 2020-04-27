@@ -39,7 +39,7 @@ tmp1:   .res 1
 tmp2:   .res 1
 .code
 
-SCREENSAVER_TIMEOUT_MINUTES=2
+; SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 32 ;TODO FIXME too hard
 
 bufptr			= ptr1
@@ -111,9 +111,9 @@ mainloop:
 
 		; put input into buffer until return is pressed
 inputloop:
-        jsr screensaver_settimeout  ;reset timeout
+        ; jsr screensaver_settimeout  ;reset timeout
 @l_input:
-        jsr screensaver_loop
+        ; jsr screensaver_loop
 
         jsr krn_getkey
         bcc @l_input
@@ -631,34 +631,34 @@ dump:
 @l8:	jmp mainloop
 .endif
 
-screensaver_loop:
-        lda rtc_systime_t+time_t::tm_min
-        cmp screensaver_rtc
-        bne l_exit
-        lda #<screensaver_prg
-        ldx #>screensaver_prg
-        phy
-        jsr krn_execv   ;ignore any errors
-        ply
-screensaver_settimeout:
-        lda rtc_systime_t+time_t::tm_min
-        clc
-        adc #SCREENSAVER_TIMEOUT_MINUTES
-        cmp #60
-        bcc :+
-        sbc #60
-:       sta screensaver_rtc
-l_exit:
-        rts
+; screensaver_loop:
+;         lda rtc_systime_t+time_t::tm_min
+;         cmp screensaver_rtc
+;         bne l_exit
+;         lda #<screensaver_prg
+;         ldx #>screensaver_prg
+;         phy
+;         jsr krn_execv   ;ignore any errors
+;         ply
+; screensaver_settimeout:
+;         lda rtc_systime_t+time_t::tm_min
+;         clc
+;         adc #SCREENSAVER_TIMEOUT_MINUTES
+;         cmp #60
+;         bcc :+
+;         sbc #60
+; :       sta screensaver_rtc
+; l_exit:
+;         rts
 
 PATH:             .asciiz "./:/steckos/:/progs/"
 PRGEXT:           .asciiz ".PRG"
-screensaver_prg:  .asciiz "/steckos/unrclock.prg"
-screensaver_rtc:  .res 1
+; screensaver_prg:  .asciiz "/steckos/unrclock.prg"
+; screensaver_rtc:  .res 1
 crs_x_prompt:     .res 1
 tmpbuf:           .res BUF_SIZE
 
-.data
+.bss
 buf:              .res BUF_SIZE, 0
 msgbuf:
 history:
