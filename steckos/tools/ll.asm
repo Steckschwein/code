@@ -126,6 +126,8 @@ l1:
     .asciiz " bytes in "
 
     stz decimal
+    stz decimal+1
+
     ldx #8
     sed
 @l1:
@@ -133,11 +135,20 @@ l1:
     lda decimal
     adc decimal
     sta decimal
+
+    lda decimal+1
+    adc decimal+1
+    sta decimal+1
+
     dex
     bne @l1
     cld
+    lda decimal+1
+    beq :+
     jsr show_digit
-
+:
+    lda decimal
+    jsr show_digit
     printstring " files"
 
 @exit:
@@ -148,6 +159,8 @@ show_bytes_decimal:
     stz decimal + 1
     stz decimal + 2
     stz decimal + 3
+    stz decimal + 4
+
     sed
     ldx #32
 @l1:
@@ -172,10 +185,18 @@ show_bytes_decimal:
     adc decimal + 3
     sta decimal + 3
 
+    lda decimal + 4
+    adc decimal + 4
+    sta decimal + 4
+
     dex
     bne @l1
     cld
 
+    lda decimal+4
+    beq @n0
+    jsr show_digit
+@n0:
     lda decimal+3
     beq @n1
     jsr show_digit
@@ -242,7 +263,7 @@ dir_show_entry:
 	rts
 
 print_filesize:
-    .repeat 4,i
+    .repeat 5,i
         stz decimal + i
     .endrepeat
 
@@ -254,7 +275,7 @@ print_filesize:
     rol fsize + 2
     rol fsize + 3
 
-    .repeat 4,i
+    .repeat 5,i
         lda decimal + i
         adc decimal + i
         sta decimal + i
@@ -263,6 +284,14 @@ print_filesize:
     dex
     bne @l1
     cld
+
+
+    lda decimal + 4
+    bne @show0
+    jsr krn_primm
+    .asciiz "  "
+    bra @next1
+@show0:
 
     lda decimal + 3
     bne @show1
@@ -289,7 +318,7 @@ print_filesize:
 ;	rts
 
 entries = 23
-.data
+; .data
 pattern:        .asciiz "*.*"
 cnt:            .byte $04
 dir_attrib_mask:  .byte $0a
@@ -298,4 +327,4 @@ pagecnt:          .byte entries
 files:          .res 1
 fsize_sum:      .res 4
 fsize:          .res 4
-decimal:        .res 4
+decimal:        .res 5
