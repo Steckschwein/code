@@ -125,18 +125,17 @@ l1:
     jsr krn_primm
     .asciiz " bytes in "
 
-    stz files_dec
+    stz decimal
     ldx #8
     sed
 @l1:
     asl files
-    lda files_dec
-    adc files_dec
-    sta files_dec
+    lda decimal
+    adc decimal
+    sta decimal
     dex
     bne @l1
     cld
-    lda files_dec
     jsr show_digit
 
     printstring " files"
@@ -290,14 +289,13 @@ print_filesize:
 ;	rts
 
 entries = 23
-.bss
+.data
 pattern:        .asciiz "*.*"
 cnt:            .byte $04
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
 files:          .res 1
-files_dec:      .res 1
 fsize_sum:      .res 4
 fsize:          .res 4
 decimal:        .res 4
