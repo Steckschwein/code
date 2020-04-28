@@ -40,10 +40,9 @@ tmp3: .res 2
 appstart $1000
 
 main:
-    stz bytes
-    stz bytes +1
-    stz bytes +2
-    stz bytes +3
+    .repeat 4,i
+        stz fsize_sum + i
+    .endrepeat
 l1:
     crlf
     SetVector pattern, filenameptr
@@ -57,37 +56,41 @@ l1:
     bcs @l4
     jsr hexout
     printstring " i/o error"
-    bra @exit
+    jmp @exit
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcc @exit
+    bcs @l4
+    jmp @summary
 @l4:
     lda (dirptr)
     cmp #$e5
     beq @l3
 
-
     ldy #F32DirEntry::FileSize+3
     clc
     lda (dirptr),y
-    adc bytes+3
-    sta bytes+3
+    sta fsize+3
+    adc fsize_sum+3
+    sta fsize_sum+3
 
     dey
     lda (dirptr),y
-    adc bytes+2
-    sta bytes+2
+    sta fsize+2
+    adc fsize_sum+2
+    sta fsize_sum+2
 
     dey
     lda (dirptr),y
-    adc bytes+1
-    sta bytes+1
+    sta fsize+1
+    adc fsize_sum+1
+    sta fsize_sum+1
 
     dey
     lda (dirptr),y
-    adc bytes+0
-    sta bytes+0
+    sta fsize+0
+    adc fsize_sum+0
+    sta fsize_sum+0
 
     ldy #F32DirEntry::Attr
     lda (dirptr),y
@@ -115,8 +118,8 @@ l1:
     cmp #$03 ; CTRL-C?
     beq @exit
     bra @l3
-@exit:
 
+@summary:
     jsr show_bytes_decimal
 
     jsr krn_primm
@@ -138,6 +141,7 @@ l1:
 
     printstring " files"
 
+@exit:
     jmp (retvec)
 
 show_bytes_decimal:
@@ -148,10 +152,10 @@ show_bytes_decimal:
     sed
     ldx #32
 @l1:
-    asl bytes + 0
-    rol bytes + 1
-    rol bytes + 2
-    rol bytes + 3
+    asl fsize_sum + 0
+    rol fsize_sum + 1
+    rol fsize_sum + 2
+    rol fsize_sum + 3
 
     lda decimal + 0
     adc decimal + 0
@@ -202,127 +206,98 @@ show_digit:
     rts
 
 dir_show_entry:
-		pha
-		jsr print_filename
+	pha
+	jsr print_filename
 
-		ldy #F32DirEntry::Attr
-		lda (dirptr),y
+	ldy #F32DirEntry::Attr
+	lda (dirptr),y
 
-		bit #DIR_Attr_Mask_Dir
-		beq @l
-		jsr krn_primm
-		.asciiz "    <DIR> "
-;		inc dirs
-		bra @date				; no point displaying directory size as its always zeros
-								; just print some spaces and skip to date display
+	bit #DIR_Attr_Mask_Dir
+	beq @l
+	jsr krn_primm
+	.asciiz "    <DIR> "
+	bra @date				; no point displaying directory size as its always zeros
+							; just print some spaces and skip to date display
 @l:
-		jsr print_filesize
 
-		lda #' '
-		jsr krn_chrout
-		inc files
+    lda #' '
+    jsr krn_chrout
+
+	jsr print_filesize
+
+	lda #' '
+	jsr krn_chrout
+	inc files
 @date:
-		jsr print_fat_date
+	jsr print_fat_date
 
 
-		lda #' '
-		jsr krn_chrout
+	lda #' '
+	jsr krn_chrout
 
 
-		jsr print_fat_time
-        crlf
+	jsr print_fat_time
+    crlf
 
-		pla
-		rts
+	pla
+	rts
 
 print_filesize:
-		lda #' '
-		jsr char_out
+    .repeat 4,i
+        stz decimal + i
+    .endrepeat
 
-        stz decimal + 0
-        stz decimal + 1
-        stz decimal + 2
-        stz decimal + 3
-
-        ldy #F32DirEntry::FileSize +3
-        lda (dirptr),y
-        sta bytes2 + 3
-
-        dey
-        lda (dirptr),y
-        sta bytes2 + 2
-
-        dey
-        lda (dirptr),y
-        sta bytes2 + 1
-
-        dey
-        lda (dirptr),y
-        sta bytes2 + 0
-
-        ldx #32
-        sed
+    ldx #32
+    sed
 @l1:
-        asl bytes2 + 0
-        rol bytes2 + 1
-        rol bytes2 + 2
-        rol bytes2 + 3
+    asl fsize + 0
+    rol fsize + 1
+    rol fsize + 2
+    rol fsize + 3
 
-        lda decimal + 0
-        adc decimal + 0
-        sta decimal + 0
+    .repeat 4,i
+        lda decimal + i
+        adc decimal + i
+        sta decimal + i
+    .endrepeat
 
-        lda decimal + 1
-        adc decimal + 1
-        sta decimal + 1
+    dex
+    bne @l1
+    cld
 
-        lda decimal + 2
-        adc decimal + 2
-        sta decimal + 2
-
-        lda decimal + 3
-        adc decimal + 3
-        sta decimal + 3
-
-        dex
-        bne @l1
-        cld
-
-        lda decimal + 3
-        bne @show1
-        jsr krn_primm
-        .asciiz "  "
-        bra @next1
+    lda decimal + 3
+    bne @show1
+    jsr krn_primm
+    .asciiz "  "
+    bra @next1
 @show1:
 
-        jsr show_digit
+    jsr show_digit
 @next1:
-        lda decimal + 2
-        bne @show2
-        jsr krn_primm
-        .asciiz "  "
-        bra @next2
+    lda decimal + 2
+    bne @show2
+    jsr krn_primm
+    .asciiz "  "
+    bra @next2
 @show2:
-        jsr show_digit
+    jsr show_digit
 @next2:
-        lda decimal + 1
-        jsr show_digit
-        lda decimal + 0
-        jsr show_digit
+    lda decimal + 1
+    jsr show_digit
+    lda decimal + 0
+    jmp show_digit
 
+;	rts
 
-		rts
-
-pattern:  .byte "*.*",$00
-cnt:      .byte $04
-;dirs:     .byte $00
-files:    .byte $00
-files_dec: .byte $00
-bytes:    .dword $00000000
-bytes2:    .dword $00000000
-
-decimal:  .dword $00000000
 entries = 23
+.bss
+pattern:        .asciiz "*.*"
+cnt:            .byte $04
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
+files:          .res 1
+files_dec:      .res 1
+fsize_sum:      .res 4
+fsize:          .res 4
+decimal:        .res 4
