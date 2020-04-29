@@ -83,23 +83,6 @@ l1:
     sta fsize_sum,x
     dex
     bpl :-
-    ; dey
-    ; lda (dirptr),y
-    ; sta fsize+2
-    ; adc fsize_sum+2
-    ; sta fsize_sum+2
-    ;
-    ; dey
-    ; lda (dirptr),y
-    ; sta fsize+1
-    ; adc fsize_sum+1
-    ; sta fsize_sum+1
-    ;
-    ; dey
-    ; lda (dirptr),y
-    ; sta fsize+0
-    ; adc fsize_sum+0
-    ; sta fsize_sum+0
 
     ldy #F32DirEntry::Attr
     lda (dirptr),y
@@ -181,46 +164,23 @@ show_bytes_decimal:
     sta decimal + 4 -$100,y
     iny
     bne :-
-    ; lda decimal + 0
-    ; adc decimal + 0
-    ; sta decimal + 0
-    ;
-    ; lda decimal + 1
-    ; adc decimal + 1
-    ; sta decimal + 1
-    ;
-    ; lda decimal + 2
-    ; adc decimal + 2
-    ; sta decimal + 2
-    ;
-    ; lda decimal + 3
-    ; adc decimal + 3
-    ; sta decimal + 3
-    ;
-    ; lda decimal + 4
-    ; adc decimal + 4
-    ; sta decimal + 4
-    ;
     dex
     bne @l1
     cld
 
-    lda decimal+4
-    beq @n0
-    jsr hexout
-@n0:
+
     lda decimal+3
-    beq @n1
+    beq :+
     jsr hexout
-@n1:
+:
     lda decimal+2
-    beq @n2
+    beq :+
     jsr hexout
-@n2:
+:
     lda decimal+1
-    beq @n3
+    beq :+
     jsr hexout
-@n3:
+:
     lda decimal+0
     jmp hexout
 
