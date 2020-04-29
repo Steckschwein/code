@@ -74,23 +74,32 @@ l1:
     adc fsize_sum+3
     sta fsize_sum+3
 
+    ldx #2
+:
     dey
     lda (dirptr),y
-    sta fsize+2
-    adc fsize_sum+2
-    sta fsize_sum+2
-
-    dey
-    lda (dirptr),y
-    sta fsize+1
-    adc fsize_sum+1
-    sta fsize_sum+1
-
-    dey
-    lda (dirptr),y
-    sta fsize+0
-    adc fsize_sum+0
-    sta fsize_sum+0
+    sta fsize,x
+    adc fsize_sum,x
+    sta fsize_sum,x
+    dex
+    bpl :-
+    ; dey
+    ; lda (dirptr),y
+    ; sta fsize+2
+    ; adc fsize_sum+2
+    ; sta fsize_sum+2
+    ;
+    ; dey
+    ; lda (dirptr),y
+    ; sta fsize+1
+    ; adc fsize_sum+1
+    ; sta fsize_sum+1
+    ;
+    ; dey
+    ; lda (dirptr),y
+    ; sta fsize+0
+    ; adc fsize_sum+0
+    ; sta fsize_sum+0
 
     ldy #F32DirEntry::Attr
     lda (dirptr),y
@@ -145,10 +154,10 @@ l1:
     cld
     lda decimal+1
     beq :+
-    jsr show_digit
+    jsr hexout
 :
     lda decimal
-    jsr show_digit
+    jsr hexout
     printstring " files"
 
 @exit:
@@ -198,35 +207,36 @@ show_bytes_decimal:
 
     lda decimal+4
     beq @n0
-    jsr show_digit
+    jsr hexout
 @n0:
     lda decimal+3
     beq @n1
-    jsr show_digit
+    jsr hexout
 @n1:
     lda decimal+2
     beq @n2
-    jsr show_digit
+    jsr hexout
 @n2:
     lda decimal+1
     beq @n3
-    jsr show_digit
+    jsr hexout
 @n3:
     lda decimal+0
+    jmp hexout
 
-show_digit:
-    pha
-    lsr
-    lsr
-    lsr
-    lsr
-    ora #$30
-    jsr char_out
-    pla
-    and #$0f
-    ora #$30
-    jsr char_out
-    rts
+; show_digit:
+;     pha
+;     lsr
+;     lsr
+;     lsr
+;     lsr
+;     ora #$30
+;     jsr char_out
+;     pla
+;     and #$0f
+;     ora #$30
+;     jsr char_out
+;     rts
 
 dir_show_entry:
 	pha
@@ -316,7 +326,7 @@ print_filesize:
     bra @next1
 @show1:
 
-    jsr show_digit
+    jsr hexout
 @next1:
     lda decimal + 2
     bne @show2
@@ -324,12 +334,12 @@ print_filesize:
     .asciiz "  "
     bra @next2
 @show2:
-    jsr show_digit
+    jsr hexout
 @next2:
     lda decimal + 1
-    jsr show_digit
+    jsr hexout
     lda decimal + 0
-    jmp show_digit
+    jmp hexout
 
 ;	rts
 
