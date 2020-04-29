@@ -155,11 +155,7 @@ l1:
     jmp (retvec)
 
 show_bytes_decimal:
-    stz decimal + 0
-    stz decimal + 1
-    stz decimal + 2
-    stz decimal + 3
-    stz decimal + 4
+    jsr zero_decimal_buf
 
     sed
     ldx #32
@@ -169,26 +165,33 @@ show_bytes_decimal:
     rol fsize_sum + 2
     rol fsize_sum + 3
 
-    lda decimal + 0
-    adc decimal + 0
-    sta decimal + 0
-
-    lda decimal + 1
-    adc decimal + 1
-    sta decimal + 1
-
-    lda decimal + 2
-    adc decimal + 2
-    sta decimal + 2
-
-    lda decimal + 3
-    adc decimal + 3
-    sta decimal + 3
-
-    lda decimal + 4
-    adc decimal + 4
-    sta decimal + 4
-
+    ldy #<(-4)
+:
+    lda decimal + 4 -$100,y
+    adc decimal + 4 -$100,y
+    sta decimal + 4 -$100,y
+    iny
+    bne :-
+    ; lda decimal + 0
+    ; adc decimal + 0
+    ; sta decimal + 0
+    ;
+    ; lda decimal + 1
+    ; adc decimal + 1
+    ; sta decimal + 1
+    ;
+    ; lda decimal + 2
+    ; adc decimal + 2
+    ; sta decimal + 2
+    ;
+    ; lda decimal + 3
+    ; adc decimal + 3
+    ; sta decimal + 3
+    ;
+    ; lda decimal + 4
+    ; adc decimal + 4
+    ; sta decimal + 4
+    ;
     dex
     bne @l1
     cld
@@ -262,10 +265,14 @@ dir_show_entry:
 	pla
 	rts
 
-print_filesize:
+zero_decimal_buf:
     .repeat 5,i
         stz decimal + i
     .endrepeat
+    rts
+
+print_filesize:
+    jsr zero_decimal_buf
 
     ldx #32
     sed
@@ -275,11 +282,20 @@ print_filesize:
     rol fsize + 2
     rol fsize + 3
 
-    .repeat 5,i
-        lda decimal + i
-        adc decimal + i
-        sta decimal + i
-    .endrepeat
+    ; phy
+    ldy #<(-4)
+:
+    lda decimal + 4 -$100,y
+    adc decimal + 4 -$100,y
+    sta decimal + 4 -$100,y
+    iny
+    bne :-
+    ; ply
+    ; .repeat 5,i
+    ;     lda decimal + i
+    ;     adc decimal + i
+    ;     sta decimal + i
+    ; .endrepeat
 
     dex
     bne @l1
