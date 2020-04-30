@@ -137,7 +137,6 @@ l1:
     bne @l1
     cld
 
-    stz skip_leading_zero
     lda decimal+1
     jsr hexout
     lda decimal
