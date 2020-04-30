@@ -171,21 +171,14 @@ show_bytes_decimal:
     bne @l1
     cld
 
-    stz skip_leading_zero
+    ldx #5
+:
+    lda decimal,x
+    jsr hexout
+    dex
+    bpl :-
 
-    lda decimal+5
-    jsr hexout
-    lda decimal+4
-    jsr hexout
-    lda decimal+3
-    jsr hexout
-    lda decimal+2
-    jsr hexout
-    lda decimal+1
-    jsr hexout
-    lda decimal+0
-    jmp hexout
-
+    rts
 
 dir_show_entry:
 	pha
@@ -267,6 +260,7 @@ print_filesize:
 :
     jsr hexout
 @next1:
+
     lda decimal + 3
     jsr hexout
     lda decimal + 2
@@ -285,7 +279,6 @@ cnt:            .byte $04
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
-skip_leading_zero: .res 1
 files:          .res 1
 fsize_sum:      .res 4
 fsize:          .res 4
