@@ -35,6 +35,7 @@
 tmp1: .res 1
 tmp2: .res 1
 tmp3: .res 2
+
 .exportzp tmp1, tmp2
 .code
 appstart $1000
@@ -135,12 +136,14 @@ l1:
     dex
     bne @l1
     cld
+
+    stz skip_leading_zero
     lda decimal+1
-    beq :+
     jsr hexout
-:
     lda decimal
     jsr hexout
+
+
     printstring " files"
 
 @exit:
@@ -168,42 +171,21 @@ show_bytes_decimal:
     bne @l1
     cld
 
+    stz skip_leading_zero
+
     lda decimal+5
-    beq :+
     jsr hexout
-:
     lda decimal+4
-    beq :+
     jsr hexout
-:
     lda decimal+3
-    beq :+
     jsr hexout
-:
     lda decimal+2
-    beq :+
     jsr hexout
-:
     lda decimal+1
-    beq :+
     jsr hexout
-:
     lda decimal+0
     jmp hexout
 
-; show_digit:
-;     pha
-;     lsr
-;     lsr
-;     lsr
-;     lsr
-;     ora #$30
-;     jsr char_out
-;     pla
-;     and #$0f
-;     ora #$30
-;     jsr char_out
-;     rts
 
 dir_show_entry:
 	pha
@@ -275,37 +257,20 @@ print_filesize:
 
     lda decimal + 5
     bne :+
-    ; jsr krn_primm
-    ; .asciiz "  "
     bra @next0
 :
     jsr hexout
 @next0:
     lda decimal + 4
     bne :+
-    ; jsr krn_primm
-    ; .asciiz "  "
     bra @next1
 :
     jsr hexout
 @next1:
     lda decimal + 3
-    bne :+
-    jsr krn_primm
-    .asciiz "  "
-    bra @next2
-:
-
     jsr hexout
-@next2:
     lda decimal + 2
-    bne :+
-    jsr krn_primm
-    .asciiz "  "
-    bra @next3
-:
     jsr hexout
-@next3:
     lda decimal + 1
     jsr hexout
     lda decimal + 0
@@ -320,6 +285,7 @@ cnt:            .byte $04
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
+skip_leading_zero: .res 1
 files:          .res 1
 fsize_sum:      .res 4
 fsize:          .res 4
