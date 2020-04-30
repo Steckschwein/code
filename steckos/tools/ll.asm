@@ -157,18 +157,25 @@ show_bytes_decimal:
     rol fsize_sum + 2
     rol fsize_sum + 3
 
-    ldy #<(-4)
+    ldy #<(-5)
 :
-    lda decimal + 4 -$100,y
-    adc decimal + 4 -$100,y
-    sta decimal + 4 -$100,y
+    lda decimal + 5 -$100,y
+    adc decimal + 5 -$100,y
+    sta decimal + 5 -$100,y
     iny
     bne :-
     dex
     bne @l1
     cld
 
-
+    lda decimal+5
+    beq :+
+    jsr hexout
+:
+    lda decimal+4
+    beq :+
+    jsr hexout
+:
     lda decimal+3
     beq :+
     jsr hexout
@@ -236,7 +243,7 @@ dir_show_entry:
 	rts
 
 zero_decimal_buf:
-    .repeat 5,i
+    .repeat 6,i
         stz decimal + i
     .endrepeat
     rts
@@ -253,49 +260,52 @@ print_filesize:
     rol fsize + 3
 
     ; phy
-    ldy #<(-4)
+    ldy #<(-5)
 :
-    lda decimal + 4 -$100,y
-    adc decimal + 4 -$100,y
-    sta decimal + 4 -$100,y
+    lda decimal + 5 -$100,y
+    adc decimal + 5 -$100,y
+    sta decimal + 5 -$100,y
     iny
     bne :-
     ; ply
-    ; .repeat 5,i
-    ;     lda decimal + i
-    ;     adc decimal + i
-    ;     sta decimal + i
-    ; .endrepeat
 
     dex
     bne @l1
     cld
 
-
+    lda decimal + 5
+    bne :+
+    ; jsr krn_primm
+    ; .asciiz "  "
+    bra @next0
+:
+    jsr hexout
+@next0:
     lda decimal + 4
-    bne @show0
-    jsr krn_primm
-    .asciiz "  "
+    bne :+
+    ; jsr krn_primm
+    ; .asciiz "  "
     bra @next1
-@show0:
-
-    lda decimal + 3
-    bne @show1
-    jsr krn_primm
-    .asciiz "  "
-    bra @next1
-@show1:
-
+:
     jsr hexout
 @next1:
-    lda decimal + 2
-    bne @show2
+    lda decimal + 3
+    bne :+
     jsr krn_primm
     .asciiz "  "
     bra @next2
-@show2:
+:
+
     jsr hexout
 @next2:
+    lda decimal + 2
+    bne :+
+    jsr krn_primm
+    .asciiz "  "
+    bra @next3
+:
+    jsr hexout
+@next3:
     lda decimal + 1
     jsr hexout
     lda decimal + 0
@@ -313,4 +323,4 @@ pagecnt:          .byte entries
 files:          .res 1
 fsize_sum:      .res 4
 fsize:          .res 4
-decimal:        .res 5
+decimal:        .res 6
