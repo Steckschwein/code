@@ -35,7 +35,7 @@ RESOURCES=\
 
 .PHONY: all clean
 
-all: pacman.prg pacman64.prg
+all: pacman.prg
 
 clean:
 	rm -f *.bin *.prg *.dis *.s *.o *.res *.map
