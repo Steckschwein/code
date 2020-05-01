@@ -2,13 +2,14 @@ MAKEFILE=Makefile
 all: build
 
 clean:
-	(cd asmunit; make clean)
+	(cd games; make clean)
 	(cd steckos; make clean)
 	(cd imfplayer; make clean)
 	(cd edlib; make clean)
 	(cd ehbasic; make clean)
 	(cd firmware; make clean)
 #	(cd rom; make clean)
+	(cd asmunit; make clean)
 	rm -rf dist/LOADER.BIN dist/STECKOS dist/GAMES dist/DEMO dist/PROGS/EDLPLY.PRG dist/PROGS/BASIC.PRG dist/PROGS/IMF.PRG
 
 build:
@@ -18,6 +19,7 @@ build:
 	(cd edlib; make )
 	(cd ehbasic; make )
 	(cd firmware; make)
+	(cd games; make)
 #	(cd rom; make)
 
 
