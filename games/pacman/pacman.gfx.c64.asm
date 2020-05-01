@@ -27,32 +27,32 @@
 		.export Color_Blue
 		.export Color_Gray
 		.export Color_Dark_Pink
-		
+
 		.import game_state
-		
+
 		.import sys_crs_x,sys_crs_y
-		
+
 		.include "pacman.c64.inc"
 
-		
+
 		;sprite y = 50, 250 off
 		;sprite x = 24
 		;
 .code
 gfx_mode_off:
-		
+
 gfx_mode_on:
 		lda #(VRAM_SCREEN>>6 | VRAM_PATTERN>>10)
 		sta VIC_VIDEO_ADR
-		
+
 		lda #$ff
 		sta VIC_SPR_ENA
 		lda #%01010100
 		sta VIC_SPR_MCOLOR
-		
+
 gfx_rotate_pal:
 		rts
-		
+
 gfx_vblank:
 		lda #254
 :	  cmp VIC_HLINE
@@ -67,7 +67,7 @@ gfx_vblank:
 		sta VIC_BORDERCOLOR
 		sta VIC_BG_COLOR0
 		rts
-		
+
 gfx_init:
 		lda Color_Bg
 		sta VIC_BORDERCOLOR
@@ -87,7 +87,7 @@ gfx_blank_screen:
 		ldx #4
 		ldy #0
 		lda #0
-:	  sta (p_video),y
+:	   sta (p_video),y
 		iny
 		bne :-
 		inc p_video+1
@@ -107,7 +107,7 @@ gfx_update:
 		sta VRAM_SPRITE_POINTER, x
 		lda sprite_tab_attr+SpriteTab::color,y
 		sta VIC_SPR0_COLOR, x
-		
+
 		lda gfx_tmp
 		asl
 		tax
@@ -121,7 +121,7 @@ gfx_update:
 		rts
 gfx_sprites_off:
 		rts
-		
+
 gfx_display_maze:
 _gfx_setcolor:
 		ldx #4
@@ -164,13 +164,13 @@ _gfx_setcolor:
 		lda #0
 		sta sys_crs_x
 @next:
-		iny 
+		iny
 		bne @loop
 		inc p_maze+1
 		dex
 		bne @loop
-		rts 
-		
+		rts
+
 		setPtr game_maze, p_tmp
 		setPtr VRAM_SCREEN, p_video
 		ldx #4
@@ -185,11 +185,11 @@ _gfx_memcpy:
 		dex
 		bne :-
 		rts
-		
+
 gfx_charout:
 		pha
 		sty gfx_tmp
-		
+
 		lda #0
 		sta p_video+1
 		sta p_tmp+1
@@ -223,7 +223,7 @@ l_add:
 		sta (p_tmp),y
 		ldy gfx_tmp
 		rts
-		
+
 gfx_hires_off:  ;?!?
 		rts
 gfx_bordercolor:
@@ -232,7 +232,7 @@ gfx_bordercolor:
 gfx_bgcolor:
 		sta VIC_BG_COLOR0
 		rts
-		
+
 gfx_pause:
 		rts
 
@@ -263,4 +263,3 @@ gfx_Sprite_Adjust_Y:
 		.byte 50+8
 gfx_Sprite_Off:
 		.byte 250
-		

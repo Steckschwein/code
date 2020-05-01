@@ -18,7 +18,7 @@
 .globalzp p_tmp
 .globalzp p_text
 .globalzp p_sound
-
+.globalzp p_video
 
 
 .code
