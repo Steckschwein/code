@@ -256,8 +256,8 @@ fat_rmdir:
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_mkdir:
 		jsr __fat_opendir_cd
-		beq	@err_exists
-		cmp	#ENOENT									; we expect 'no such file or directory' error, otherwise a file with same name already exists
+		beq @err_exists
+		cmp #ENOENT										; we expect 'no such file or directory' error, otherwise a file with same name already exists
 		bne @l_exit
 
 		copypointer dirptr, krn_ptr2
