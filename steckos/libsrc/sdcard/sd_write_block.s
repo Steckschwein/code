@@ -60,7 +60,7 @@ sd_write_block:
 			jsr sd_cmd_lba
 			lda #cmd24
 			jsr sd_cmd
-			 bne @exit
+			bne @exit
 
 			lda #sd_data_token
 			jsr spi_rw_byte
@@ -97,4 +97,3 @@ sd_write_block:
 			ply
 			plx
    	        jmp sd_deselect_card
-
