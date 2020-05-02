@@ -1,6 +1,5 @@
 #!/bin/bash
 size=7831152
-size=1048576
 
 img="steckos.img"
 
