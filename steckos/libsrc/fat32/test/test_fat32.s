@@ -7,13 +7,6 @@
 	.import fat_fopen
 	.import fat_fread
 
-	.import asmunit_chrout
-	.export krn_chrout
-	krn_chrout=asmunit_chrout
-
-.zeropage
-	test_data_ptr: .res 2
-
 .code
 
 ; -------------------
@@ -258,19 +251,10 @@ setUp:
 .export path_inverse=mock_not_implemented
 .export put_char=mock_not_implemented
 
-mock:
-		rts
+data_loader	; define data loader
+
 mock_not_implemented:
 		fail "mock was called, not implemented yet!"
-
-load_test_data:
-		lda #0
-		ldy #0
-@l0:	lda (test_data_ptr),y
-		sta (read_blkptr), y
-		iny
-		bne @l0
-		rts
 
 mock_read_block:
 		;debug32 "m_rd", lba_addr

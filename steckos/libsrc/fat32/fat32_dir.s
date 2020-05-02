@@ -62,7 +62,7 @@
 
 .export fat_chdir
 .export fat_get_root_and_pwd
-.export __fat_opendir_cd
+.export __fat_opendir_cwd
 
 .code
 
@@ -72,29 +72,28 @@
 ;out:
 ;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 ;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
-__fat_opendir_cd:
+__fat_opendir_cwd:
 		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd
 		; open directory by given path starting from directory given as file descriptor
-		;in:
-		  ;	A/X - pointer to string with the file path
+		; in:
+	  	;	A/X - pointer to string with the file path
 		;	Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
-		  ;out:
+	  	; out:
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
-		  ;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
+	  	;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
 __fat_opendir:
 		jsr __fat_open_path
 		bne @l_exit					; exit on error
 		lda fd_area + F32_fd::Attr, x
-		bit #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
-		bne @l_ok
-		jsr __fat_free_fd		; not a directory, so we opened a file. just close them immediately and free the allocated fd
-		lda #ENOTDIR				; error "Not a directory"
-		bra @l_exit
-@l_ok:
+		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
+		beq @l_exit_close
 		lda #EOK						; ok
 @l_exit:
 		debug "fod"
 		rts
+@l_exit_close:
+		lda #ENOTDIR				; error "Not a directory"
+		jmp __fat_free_fd			; not a directory, so we opened a file. just close them immediately and free the allocated fd
 
 		;in:
 		;	A/X - pointer to the result buffer
@@ -144,7 +143,7 @@ l_dot_dot:
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 		  ;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
 fat_chdir:
-		jsr __fat_opendir_cd
+		jsr __fat_opendir_cwd
 		bne	@l_exit
 		ldy #FD_INDEX_TEMP_DIR		  ; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
 		ldx #FD_INDEX_CURRENT_DIR

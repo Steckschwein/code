@@ -1,19 +1,9 @@
-	.include "test_fat32.inc"
+.include "test_fat32.inc"
 
-	.import __fat_init_fdarea
-	.import fat_fopen
-	.import fat_close
-	.import fat_write
-
-	.import asmunit_chrout
-	krn_chrout=asmunit_chrout
-
-; fat32 geometry
-.define LBA_BEGIN $00006800
-.define FAT_LBA $297e
-.define SEC_PER_CL 1
-.define ROOT_CL $02
-
+.import __fat_init_fdarea
+.import fat_fopen
+.import fat_close
+.import fat_write
 
 ; mock defines
 .export read_block=mock_read_block
@@ -23,9 +13,6 @@
 .export fat_name_string=mock_not_implemented2
 .export path_inverse=mock_not_implemented3
 .export put_char=mock_not_implemented4
-
-.zeropage
-	test_data_ptr: .res 2
 
 .code
 
@@ -69,14 +56,7 @@
 
 		brk
 
-load_test_data:
-		lda #0
-		ldy #0
-@l0:	lda (test_data_ptr),y
-		sta (read_blkptr), y
-		iny
-		bne @l0
-		rts
+data_loader	; define data loader
 
 mock_rtc:
 		m_memcpy	_rtc_ts, rtc_systime_t, 8

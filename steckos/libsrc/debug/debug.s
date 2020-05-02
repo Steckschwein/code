@@ -31,7 +31,7 @@
 
 .export _debugdirentry
 
-.import	krn_chrout, krn_primm
+.import	chrout, primm
 
 .code
 
@@ -60,7 +60,7 @@ _debugout_enter:
 		sta 	dbg_savept+1
 
 		stz dbg_bytes
-;		jsr krn_primm
+;		jsr primm
 ;		.asciiz "AXYP "
 		lda dbg_acc
 		jsr _hexout
@@ -71,7 +71,7 @@ _debugout_enter:
 		lda dbg_status
 		jsr _hexout
 		lda	#' '
-		jmp krn_chrout
+		jmp chrout
 
 _debugdirentry:
 		jsr 	_debugout_enter
@@ -80,7 +80,7 @@ _debugdirentry:
 		lda (dirptr),y
 		jsr _hexout
 		lda #' '
-		jsr krn_chrout
+		jsr chrout
 		iny
 		cpy #32
 		bne @l0
@@ -137,15 +137,15 @@ _debugout0:
 		lda		__dbg_ptr
 		jsr 	_hexout
 		lda		#' '
-		jsr 	krn_chrout
+		jsr 	chrout
 @l1:	lda		(__dbg_ptr),y
 		jsr 	_hexout
 		lda 	#' '
-		jsr 	krn_chrout
+		jsr 	chrout
 		dey
 		bpl		@l1
 		lda		#' '
-		jsr 	krn_chrout
+		jsr 	chrout
 
 		clc
 		lda		dbg_return		; restore address for message argument
@@ -163,13 +163,13 @@ _debugout0:
 
 @PSICHO:lda	  (__dbg_ptr)		 ; Get the next string character
 		beq	  @PSIX1			 ; don't print the final NULL
-		jsr	  krn_chrout		; write it out
+		jsr	  chrout		; write it out
 		bra	  @PSINB			 ; back around
 @PSIX1:	inc	  __dbg_ptr  		;
 		bne	  @PSIX2			;
 		inc	  __dbg_ptr+1	  ; account for page crossing
 @PSIX2:	lda		#$0a			; line feed
-		jsr 	krn_chrout
+		jsr 	chrout
 
 		lda		__dbg_ptr		; __dbg_ptr points to instruction after msg, adjust ret vector
 		sta 	dbg_return
@@ -216,4 +216,4 @@ _hexout:
 		bcc	  @l					;yes! output it
 		adc	  #6				  ;add offset for letter a-f
 @l:
-		jmp 	krn_chrout
+		jmp 	chrout

@@ -65,13 +65,11 @@ init:
 exit_from_prg:
       cld
       jsr	krn_textui_init
-    ; cmp #0
-    ; beq mainloop
-    ; pha
-    ; jsr krn_primm
-    ; .byte $0a,"Exit: ",0
-    ; pla
-    ; jsr char_out
+
+      ldx #BUF_SIZE
+:     stz tmpbuf,x
+      dex
+      bpl :-
 
       SetVector exit_from_prg, retvec
       SetVector buf, bufptr
@@ -585,7 +583,7 @@ dump:
 
 		ldy #$00
 @l4:
-    lda (dumpvec_start),y
+      lda (dumpvec_start),y
 		jsr hexout
 		lda #' '
 		jsr char_out
@@ -655,10 +653,10 @@ PATH:             .asciiz "./:/steckos/:/progs/"
 PRGEXT:           .asciiz ".PRG"
 ; screensaver_prg:  .asciiz "/steckos/unrclock.prg"
 ; screensaver_rtc:  .res 1
-crs_x_prompt:     .res 1
-tmpbuf:           .res BUF_SIZE
 
 .bss
-buf:              .res BUF_SIZE, 0
+crs_x_prompt:     .res 1
+tmpbuf:           .res BUF_SIZE
+buf:              .res BUF_SIZE
 msgbuf:
 history:

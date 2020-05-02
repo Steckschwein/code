@@ -96,4 +96,4 @@ sd_write_block:
 @exit:
 			ply
 			plx
-   	        jmp sd_deselect_card
+        	jmp sd_deselect_card

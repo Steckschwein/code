@@ -23,14 +23,14 @@ TOOLS+=\
 all: $(TOOLS)
 	(cd lib; make )
 	(cd unrclock; make )
-	(cd xmodem; make )
+#	(cd xmodem; make )
 	(cd ppmview; make )
 #	(cd clavier; make )
 
 clean:
 	rm -f *.prg *.s *.o *.map
 	(cd unrclock; make clean)
-	(cd xmodem; make clean)
+#	(cd xmodem; make clean)
 	(cd ppmview; make clean)
 #	(cd clavier; make clean)
 

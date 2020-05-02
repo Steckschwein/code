@@ -61,7 +61,6 @@
 .import __fat_clone_cd_td
 .import __fat_next_cln
 .import __fat_write_dir_entry
-.import __fat_opendir_cd
 .import __calc_lba_addr
 .import __calc_blocks
 

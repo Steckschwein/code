@@ -45,7 +45,7 @@
 .import __fat_read_cluster_block_and_select
 .import __fat_set_fd_attr_direntry
 .import __fat_alloc_fd
-.import __fat_opendir_cd
+.import __fat_opendir_cwd
 .import __fat_free_fd
 .import __fat_read_block
 .import __fat_isroot
@@ -232,7 +232,7 @@ __fat_set_direntry_cluster:
 		; out:
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_rmdir:
-		jsr __fat_opendir_cd
+		jsr __fat_opendir_cwd
 		bne @l_exit
 		;debugdirentry
 		jsr __fat_isroot
@@ -255,10 +255,10 @@ fat_rmdir:
 		; out:
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_mkdir:
-		jsr __fat_opendir_cd
-		beq @err_exists
+		jsr __fat_opendir_cwd
+		beq @err_exists								; open success, exists already
 		cmp #ENOENT										; we expect 'no such file or directory' error, otherwise a file with same name already exists
-		bne @l_exit
+		bne @l_exit										; exit on other error
 
 		copypointer dirptr, krn_ptr2
 		jsr string_fat_name							; build fat name upon input string (filenameptr) and store them directly to current dirptr!
@@ -268,7 +268,7 @@ fat_mkdir:
 		bne @l_exit										; and we want to avoid an error in between the different block writes
 
 		lda #DIR_Attr_Mask_Dir						; set type directory
-		jsr __fat_set_fd_attr_direntry			; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cd from above
+		jsr __fat_set_fd_attr_direntry			; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
 		jsr __fat_reserve_cluster					; try to find and reserve next free cluster and store them in fd_area at fd (X)
 		bne @l_exit_close
 
@@ -278,12 +278,10 @@ fat_mkdir:
 
 		jsr __fat_write_newdir_entry				; write the data of the newly created directory with prepared data from dirptr
 @l_exit_close:
-		jsr __fat_free_fd						 		; free the allocated file descriptor
-		bra @l_exit
+		jmp __fat_free_fd						 		; free the allocated file descriptor and return
 @err_exists:
 		lda	#EEXIST
 @l_exit:
-		;debug "mkdir"
 		rts
 
 		; in:
@@ -373,11 +371,11 @@ __fat_write_dir_entry:
 		rts
 
 
-		; free cluster and maintain the fsinfo block
-		; in:
-		;	X - the file descriptor into fd_area (F32_fd::CurrentCluster)
-		; out:
-		;	Z=1 on success, Z=0 otherwise and A=error code
+; free cluster and maintain the fsinfo block
+; in:
+;	X - the file descriptor into fd_area (F32_fd::CurrentCluster)
+; out:
+;	Z=1 on success, Z=0 otherwise and A=error code
 __fat_free_cluster:
 		jsr __fat_read_cluster_block_and_select
 		bne @l_exit								; read error...
@@ -389,11 +387,11 @@ __fat_free_cluster:
 @l_exit:
 		rts
 
-		; find and reserve next free cluster and maintains the fsinfo block
-		; in:
-		;	X - the file descriptor into fd_area where the found cluster should be stored
-		; out:
-		;	Z=1 on success, Z=0 otherwise and A=error code
+; find and reserve next free cluster and maintains the fsinfo block
+; in:
+;	X - the file descriptor into fd_area where the found cluster should be stored
+; out:
+;	Z=1 on success, Z=0 otherwise and A=error code
 __fat_reserve_cluster:
 		jsr __fat_find_free_cluster				; find free cluster, stored in fd_area for the fd given within X
 		bne @l_exit
@@ -426,10 +424,12 @@ __fat_update_fsinfo_exit:
 		rts
 
 
-		; create the "." and ".." entry of the new directory
-		; in:
-		;	X - the file descriptor into fd_area of the the new dir entry
-		;	dirptr - set to current dir entry within block_data
+; create the "." and ".." entry of the new directory
+; in:
+;	.X - the file descriptor into fd_area of the the new dir entry
+;	dirptr - set to current dir entry within block_data
+; out:
+;	Z=1 on success, Z=0 otherwise and A=error code
 __fat_write_newdir_entry:
 		ldy #F32DirEntry::Attr																		; copy from (dirptr), start with F32DirEntry::Attr, the name is skipped and overwritten below
 @l_dir_cp:

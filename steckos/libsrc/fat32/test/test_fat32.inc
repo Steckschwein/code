@@ -1,11 +1,25 @@
-	.include "asmunit.inc" 	; test api
+.include "asmunit.inc" 	; test api
 
-	.include "common.inc"
-	.include "errno.inc"
-	.include "rtc.inc"
-	.include "fcntl.inc"
-	.include "fat32.inc"
-	.include "zeropage.inc"
+.include "common.inc"
+.include "errno.inc"
+.include "rtc.inc"
+.include "fcntl.inc"
+.include "fat32.inc"
+.include "zeropage.inc"
+
+.import asmunit_chrout
+.export chrout=asmunit_chrout
+
+; fat32 geometry
+.define LBA_BEGIN $00006800
+.define FAT_LBA $297e
+.define SEC_PER_CL 1
+.define ROOT_CL $02
+
+.zeropage
+	test_data_ptr: .res 2
+
+.code
 
 .macro setup testname
 		test testname
@@ -70,4 +84,15 @@
 		lda #>address
 		sta test_data_ptr+1
 		jsr load_test_data
+.endmacro
+
+.macro data_loader
+load_test_data:
+		lda #0
+		ldy #0
+@l0:	lda (test_data_ptr),y
+		sta (read_blkptr), y
+		iny
+		bne @l0
+		rts
 .endmacro
