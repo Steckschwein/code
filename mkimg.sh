@@ -1,5 +1,5 @@
 #!/bin/bash
-size=7831152
+size=128
 
 img="steckos.img"
 
@@ -7,7 +7,7 @@ if [ -e $img ] ; then
     echo "Image $img already exists"
 else
     echo "Creating image $img"
-    dd if=/dev/zero of=$img bs=512 count=$size
+    dd if=/dev/zero of=$img bs=1024k count=$size
 fi
 
 printf 'o\nn\np\n1\n\n\nt\nc\nw\n' | fdisk $img
@@ -18,13 +18,10 @@ fi
 
 loopdev="/dev/mapper/"$(echo $foo | cut -d ' ' -f3)
 echo $loopdev
-sudo mkfs -t vfat -s 64 $loopdev
-mkdir image
+sudo mkfs -t vfat -F 32 -s 16 -S 512 $loopdev
+sudo mkdir image
 sudo mount $loopdev image
 sudo rsync -rv dist/ image/
 sudo umount image
 sudo kpartx -dv "$img"
-rmdir image
-
-
-
+sudo rm -fr image
