@@ -25,18 +25,16 @@
 .include "kernel_jumptable.inc"
 .include "fat32.inc"
 .include "appstart.inc"
+.export char_out=krn_chrout
 
-.export cnt, files;, dirs
 .import hexout
 .import print_fat_date, print_fat_time, print_filename
 
-.export char_out=krn_chrout
 .zeropage
 tmp1: .res 1
 tmp2: .res 1
 tmp3: .res 2
 
-.exportzp tmp1, tmp2
 .code
 appstart $1000
 
@@ -138,7 +136,9 @@ l1:
     cld
 
     lda decimal+1
+    beq :+
     jsr hexout
+:
     lda decimal
     jsr hexout
 
@@ -170,7 +170,12 @@ show_bytes_decimal:
     bne @l1
     cld
 
-    ldx #5
+    stz tmp1
+    ldx #6
+:
+    dex
+    lda decimal,x
+    beq :-
 :
     lda decimal,x
     jsr hexout
@@ -223,6 +228,12 @@ zero_decimal_buf:
     rts
 
 print_filesize:
+    lda fsize + 3
+    beq :+
+    jsr krn_primm
+    .asciiz "VERY BIG"
+    rts
+:
     jsr zero_decimal_buf
 
     ldx #32
