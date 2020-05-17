@@ -7,8 +7,13 @@
 
 appstart $1000
 
-.exportzp controller1=$00, controller2=$03
+.exportzp controller1, controller2
 
+.zeropage
+   controller1: .res 3
+   controller2: .res 3
+
+.code
 
 main:
     joy_off ; disable joystick ports
@@ -16,9 +21,9 @@ main:
 loop:
     jsr query_controllers
     ;jsr hexout
-    ;lda controller1+1
+    lda controller1+1
     ;jsr hexout
-    ;lda controller1+2
+    lda controller1+2
     ;jsr hexout
     rol controller1
     bcs foo1
@@ -81,13 +86,4 @@ foo11:
     jsr char_out
 foo12:
 
-;    crlf
     jmp loop
-
-
-
-;.zeropage
-; controller1:
-;         .res 3
-; controller2:
-;         .res 3
