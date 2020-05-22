@@ -8,7 +8,6 @@
 		.export sound_play
 		.export sound_play_state
 
-		;ym3812
 		.import opl2_init
 		.import opl2_reg_write
 
@@ -119,7 +118,7 @@ sound_init:
 		jmp opl2_init
 
 sound_off:
-		opl_reg $b0,  0	;
+		opl_reg $b0,  0;
 		rts
 
 @loop:
@@ -146,8 +145,8 @@ sound_play:
 		beq @exit
 		ldx #0*.sizeof(voice)
 		jsr sound_play_voice
-;		ldx #1*.sizeof(voice)
-;		jsr sound_play_voice
+		ldx #1*.sizeof(voice)
+		jsr sound_play_voice
 @exit:
 		rts
 
@@ -167,7 +166,7 @@ sound_play_voice:
 		lda #L64
 		sta sound_voices+voice::cnt,x
 
-		;stz sound_play_state
+		stz sound_play_state
 
 
 		rts
@@ -234,16 +233,16 @@ sound_init_game_start:
 		opl_reg $e4,  WS_PULSE_SIN
 
 		initvoice voice1, sound_game_start_v1
-;		initvoice voice2, sound_game_start_v2
+		initvoice voice2, sound_game_start_v2
 
 		inc sound_play_state
 		rts
 
 sound_game_start_v1:
-		.word game_sfx_pacman
-		.byte game_sfx_pacman_end-game_sfx_pacman
-;		.word game_start_voice1		;	 p_note	.word
-;		.byte game_start_voice1_end-game_start_voice1
+;		.word game_sfx_pacman
+;		.byte game_sfx_pacman_end-game_sfx_pacman
+		.word game_start_voice1		;	 p_note	.word
+		.byte game_start_voice1_end-game_start_voice1
 sound_game_start_v2:
 		.word game_start_voice2		;	 p_note	.word
 		.byte game_start_voice2_end-game_start_voice2
@@ -374,13 +373,11 @@ game_start_voice2:
 		note NOTE_C, 3, L8
 		pause L8
 		soundEnd
-
 game_start_voice2_end:
 
 ; ghost alarm sound
 ghost_alarm:
 	  .byte 16,32,48,64,80,96,112,128,144,160,176,192,208,224,240
-
 
 		  ;"Recorder"
 		  ;opl_reg $20,  (1<<KSR | 1<<EG | 2)
@@ -411,57 +408,4 @@ ghost_alarm:
 		  ;opl_reg $64,  (13<<4 | (5 & $0f))	; attack / decay
 		  ;opl_reg $84,  (6<<4 | (8 & $0f))	 ; sustain / release
 
-;	  .word $181,$1CA,$241,$181,$1CA,$241,$181,$1CA,$241,$181,$1CA,$241,$181,$202,$287,$181,$202,$287,$181,$202,$287,$181,$202,$287,$181,$1CA,$241,$181,$181,$1CA,$241,$181,$1CA,$241,$2AE,$1CA,$241,$2AE
-	  .word 0
 
-		stefan NOTE_D, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_D, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_D, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_D, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_F, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0
-		stefan NOTE_A, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0
-		stefan NOTE_G, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0
-		stefan NOTE_G, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0
-		stefan NOTE_G, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0
-		stefan NOTE_G, 4, 15, 0, 7, 0
-		stefan NOTE_C, 4, 15, 0, 7, 0
-		stefan NOTE_E, 4, 15, 0, 7, 0
-		stefan NOTE_G, 4, 15, 0, 7, 0
