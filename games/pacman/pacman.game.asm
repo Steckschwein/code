@@ -907,9 +907,9 @@ _text_ready:
 _text_game_over:
 		.byte 18,17, "GAME  OVER",0
 _delete_message_1:
-		.byte 12,17, "			 ",0
+		.byte 12,17, "          ",0
 _delete_message_2:
-		.byte 18,17, "			 ",0
+		.byte 18,17, "          ",0
 
 		.export sprite_tab_attr
 		.export game_maze
