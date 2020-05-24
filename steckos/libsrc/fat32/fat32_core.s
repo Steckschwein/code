@@ -349,7 +349,7 @@ __fat_init_fd:
 		; in:
 		;	X - offset into fd_area
 __fat_free_fd:
-		debug "f_cls"
+		debug "fat_free"
 		pha
 		lda #$ff	 ; otherwise mark as closed
 		sta fd_area + F32_fd::CurrentCluster +3, x
@@ -368,10 +368,13 @@ __fat_isroot:
 		ora fd_area+F32_fd::CurrentCluster+0,x
 		rts
 
-		; internal sd read block
+		; TODO dedicated calls for data and fat, clean code
+		; internal read block
 		; requires: read_blkptr and lba_addr already calculated
 __fat_read_block:
 		phx
+		debug32 "fat_rb", lba_addr
+		debug16 "fat_rb", read_blkptr
 		jsr read_block
 		dec read_blkptr+1		; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
 		plx
@@ -510,7 +513,7 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if f
 @l2:	lda blocks+2
 		ora blocks+1
 		ora blocks+0
-		debug16 "bl", blocks
+		debug16 "__calc_blocks", blocks
 		rts
 
 		; extract next cluster number from the 512 fat block buffer

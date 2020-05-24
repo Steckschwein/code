@@ -67,7 +67,7 @@ fat_mount:
 		bra @l_exit
 @l2:
 		m_memcpy @part0 + PartitionEntry::LBABegin, lba_addr, 4
-		;debug32 "p_lba", lba_addr
+		debug32 "mnt_lba", lba_addr
 
 		SetVector sd_blktarget, read_blkptr
 		; Read FAT Volume ID at LBABegin and Check signature
@@ -139,7 +139,7 @@ fat_mount:
 		adc fat_lba_begin	+1
 		sta fat2_lba_begin	+1
 
-		; calc fs_info lba address
+		; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
 		clc
 		lda lba_addr+0
 		adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+0
@@ -147,6 +147,7 @@ fat_mount:
 		lda lba_addr+1
 		adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+1
 		sta fat_fsinfo_lba+1
+		;TODO FIXME weird
 		lda #0
 		sta fat_fsinfo_lba+3
 		adc #0				; 0 + C
@@ -155,11 +156,11 @@ fat_mount:
 		; performance optimization - the RootClus offset is compensated within calc_lba_addr
 		; cluster_begin_lba_m2 = cluster_begin_lba - (VolumeID::RootClus*VolumeID::SecPerClus)
 		; cluster_begin_lba_m2 = cluster_begin_lba - (2 * sec/cluster) = cluster_begin_lba - (sec/cluster << 1)
-		
+
 		;TODO FIXME we assume 2 here instead of using the value in VolumeID::RootClus
-		lda volumeID+VolumeID::BPB + BPB::SecPerClus ; max sec/cluster can be 128, with 2 (BPB_RootClus) * 128 wie may subtract max 256
+		lda volumeID+VolumeID::BPB + BPB::SecPerClus ; max sec/cluster can be 128, with 2 (BPB_RootClus) * 128 we may subtract max 256
 		asl
-		
+
 		sta lba_addr		  ;	used as tmp
 		stz lba_addr +1	  ;	safe carry
 		rol lba_addr +1
@@ -177,17 +178,17 @@ fat_mount:
 		sbc #0
 		sta cluster_begin_lba +3
 
-		;debug8 "sec/cl", volumeID+VolumeID::BPB + BPB::SecPerClus
-		;debug32 "r_cl", volumeID+VolumeID::EBPB + EBPB::RootClus
-		;debug32 "s_lba", lba_addr
-		;debug16 "r_sc", volumeID + VolumeID::BPB + BPB::RsvdSecCnt
-		;debug16 "f_lba", fat_lba_begin
-		;debug32 "f_sc", volumeID +  VolumeID::EBPB + EBPB::FATSz32
-		;debug16 "f2_lba", fat2_lba_begin
-		;debug16 "fi_sc", volumeID+ VolumeID::EBPB + EBPB::FSInfoSec
-		;debug32 "fi_lba", fat_fsinfo_lba
-		;debug32 "cl_lba", cluster_begin_lba
-		;debug16 "fbuf", filename_buf
+		debug8 "sec/cl", volumeID+VolumeID::BPB + BPB::SecPerClus
+		debug32 "r_cl", volumeID+VolumeID::EBPB + EBPB::RootClus
+		debug32 "s_lba", lba_addr
+		debug16 "r_sc", volumeID + VolumeID::BPB + BPB::RsvdSecCnt
+		debug16 "f_lba", fat_lba_begin
+		debug32 "f_sc", volumeID +  VolumeID::EBPB + EBPB::FATSz32
+		debug16 "f2_lba", fat2_lba_begin
+		debug16 "fi_sc", volumeID+ VolumeID::EBPB + EBPB::FSInfoSec
+		debug32 "fi_lba", fat_fsinfo_lba
+		debug32 "cl_lba", cluster_begin_lba
+		debug16 "fbuf", filename_buf
 
 		; init file descriptor area
       ldx #0
