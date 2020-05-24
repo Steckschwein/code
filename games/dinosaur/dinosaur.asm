@@ -104,15 +104,15 @@ sprite_empty=92
 		sta	seed
 
 		sei
-		jsr	init_vram
+		jsr init_vram
 
 		jsr load_highscore
 
-		jsr	new_game
+		jsr new_game
 		lda #STATUS_GAME_OVER
-		sta	game_state
+		sta game_state
 
-		jsr	update_vram
+		jsr update_vram
 
 		copypointer $fffe, save_isr
 		SetVector	game_isr, $fffe
@@ -1140,4 +1140,4 @@ save_isr: 				.res 2
 score_value:  			.res 3,0
 frame_cnt:				.res 1,0
 score_data:
-score_value_high: 		.res 3
+score_value_high: 	.res 3

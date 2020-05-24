@@ -1,3 +1,5 @@
+      .p02
+
       .include "zeropage.inc"
 ;      .smart
       .autoimport
@@ -25,7 +27,7 @@
 Char_Food           = $cc   ;1100 1100
                             ;1100 1101
 Char_Superfood      = $ce   ;1100 1110 $cd/$ce
-
+;                   = $c6   ;1100 0110
 Char_Blank          = $c7   ;1100 0111
 Char_Bg             = $cf   ;1100 1111
 
@@ -110,8 +112,8 @@ ACT_DIR           = 1<<1|1<<0
 
 .macro draw_text _p, color
       .if .paramcount > 1
-        lda color
-        sta text_color
+         lda color
+         sta text_color
       .endif
       setPtr _p, p_text
       .import out_text

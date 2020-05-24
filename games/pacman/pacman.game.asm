@@ -352,7 +352,7 @@ pacman_collect:
 		bne :+
 		lda #Points_Food
 		jmp erase_and_score
-:	  cmp #Char_Superfood
+:	  	cmp #Char_Superfood
 		beq @collect_superfood
 		cmp #Char_Superfood-1
 		bne @rts
@@ -564,7 +564,7 @@ game_playing:
 		;jsr game_demo
 		jsr actors_move
 		jsr animate_ghosts
-		jsr animate_food
+		jsr animate_screen
 		jsr draw_scores
 
 		lda actors+actor::dots	 ; all dots collected ?
@@ -677,12 +677,20 @@ draw_score:
 		rts
 
 
-animate_food:
-		lda Color_Food
-		sta text_color
+animate_screen:
+		lda game_state+GameState::frames
+		and #$10
+		bne :+
+		draw_text _text_1up_del
+		jmp :++
+:		draw_text _text_1up
+:
 		lda game_state+GameState::frames
 		and #$07
 		bne @rts
+; food
+		lda Color_Food
+		sta text_color
 		ldx #0
 @l1:  lda superfood,x
 		inx
@@ -692,7 +700,7 @@ animate_food:
 		lda (p_maze),y
 		cmp #Char_Blank ; eaten?
 		beq @next
-		eor #$03
+		eor #$08			 ; toggle Char_Superfood / Char_Blank
 		sta (p_maze),y
 		jsr gfx_charout
 @next:
@@ -730,6 +738,10 @@ game_init:
 @init:
 		lda #0
 		sta game_state+GameState::frames
+		sta points+0
+		sta points+1
+		sta points+2
+		sta points+3
 
 		jsr sound_init_game_start
 
@@ -861,11 +873,6 @@ _save_irq:  .res 2
 maze:
   .include "pacman.maze.inc"
 
-input_direction:  .res 1,0
-keyboard_input:	.res 1,0
-
-points:			  .res 4, 0
-
 superfood:
 	 .byte 4,1;,Char_Superfood
 	 .byte 24,1;,Char_Superfood
@@ -895,6 +902,10 @@ ghost_shapes:
 		.byte $04*4,$04*4+4,$0a*4,$0a*4 ;u  10
 		.byte $06*4,$06*4+4,$0b*4,$0b*4 ;d  11
 
+_text_1up:
+		.byte 0, 24, "1UP",0
+_text_1up_del:
+		.byte 0, 24, "   ",0
 _text_pacman:
 		.byte 12,15, "PACMAN",0
 _text_demo:
@@ -914,8 +925,10 @@ _delete_message_2:
 		.export sprite_tab_attr
 		.export game_maze
 		.import __BSS_RUN__,__BSS_SIZE__
-
 .bss
+points:			  .res 4, 0
+input_direction:  .res 1,0
+keyboard_input:	.res 1,0
 actors: .res (5*.sizeof(actor))
 sprite_tab_attr:  .res 5*4*2
 sprite_tab_attr_end:
