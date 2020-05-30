@@ -66,7 +66,6 @@
 		; out:
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_write:
-		debug "fws"
 		stx fat_tmp_fd										; save fd
 
 		jsr __fat_is_open
@@ -80,34 +79,40 @@ fat_write:
 		rts
 @l_isfile:
 		jsr __fat_isroot									; check whether the start cluster of the file is the root cluster - @see fat_alloc_fd, fat_open)
+		debug "fw_isroot"
 		bne	@l_write										; if not, we can directly update dir entry and write data afterwards
 		saveptr write_blkptr								;
 		jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster, fat_tmp_fd has to be set
+		debug "fw_res_cl"
 		bne @l_exit
 		restoreptr write_blkptr							; restore write ptr
-		;debug "fw1"
+		debug "fw1"
 		ldx fat_tmp_fd										; restore fd, go on with writing data
 @l_write:
-		jsr __calc_blocks
-		jsr __calc_lba_addr								; calc lba and blocks of file payload
+		jsr __calc_blocks									; calc blocks
+		beq @l_exit											; Z=1 - no blocks to write
+		jsr __calc_lba_addr								; calc lba file payload
+		debug32 "fat_wb", lba_addr
+		debug16 "fat_wb", write_blkptr
+		debug16 "fat_wb", blocks
 .ifdef MULTIBLOCK_WRITE
-.warning "SD multiblock writes are EXPERIMENTAL"
+		.warning "SD multiblock writes are EXPERIMENTAL"
 		.import sd_write_multiblock
 		jsr sd_write_multiblock
 .else
 @l:
+		debug16 "fat_wb_blocks", blocks
 		jsr write_block
 		bne @l_exit
-		jsr __inc_lba_address							; increment lba address to read next block
+		jsr __inc_lba_address							; increment lba address to write next block
 		dec blocks
 		bne @l
 .endif
 		ldx fat_tmp_fd										; restore fd
-		jsr __fat_read_direntry
-
-		jsr __fat_set_direntry_cluster						; set cluster number of direntry entry via dirptr - TODO FIXME only necessary on first write
-		jsr __fat_set_direntry_filesize						; set filesize of directory entry via dirptr
-		jsr __fat_set_direntry_timedate						; set time and date
+		jsr __fat_read_direntry							; read dir entry, dirptr is set accordingly
+		jsr __fat_set_direntry_cluster				; set cluster number of direntry entry via dirptr - TODO FIXME only necessary on first write
+		jsr __fat_set_direntry_filesize				; set filesize of directory entry via dirptr
+		jsr __fat_set_direntry_timedate				; set time and date
 
 		; set archive bit
 		ldy #F32DirEntry::Attr
@@ -115,9 +120,9 @@ fat_write:
 		ora (dirptr),y
 		sta (dirptr),y
 
-		jsr __fat_write_block_data							; lba_addr is already set from read, see above
+		jsr __fat_write_block_data						; lba_addr is already set from read, see above
 @l_exit:
-		;debug16 "f_w_e", dirptr
+		debug16 "fw_dirptr", dirptr
 		rts
 
 		; read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
@@ -162,7 +167,7 @@ __fat_set_lba_from_fd_dirlba:
 		sta lba_addr+1
 		lda fd_area + F32_fd::DirEntryLBA+0 , x
 		sta lba_addr+0
-		debug32 "f_slba", lba_addr
+		debug32 "fw_slba", lba_addr
 		rts
 
 		; write new timestamp to direntry entry given as dirptr
@@ -234,7 +239,7 @@ __fat_set_direntry_cluster:
 fat_rmdir:
 		jsr __fat_opendir_cwd
 		bne @l_exit
-		;debugdirentry
+		debugdirentry
 		jsr __fat_isroot
 		beq @l_err_root					; cannot delete the root dir ;)
 		jsr __fat_is_dot_dir
@@ -247,7 +252,7 @@ fat_rmdir:
 @l_err_einval:
 		lda #EINVAL
 @l_exit:
-		;debug "rmdir"
+		debug "rmdir"
 		rts
 
 		  ; in:
@@ -280,8 +285,9 @@ fat_mkdir:
 @l_exit_close:
 		jmp __fat_free_fd						 		; free the allocated file descriptor and return
 @err_exists:
-		lda	#EEXIST
+		lda #EEXIST
 @l_exit:
+		debug "fat_mkdir"
 		rts
 
 		; in:
@@ -313,7 +319,7 @@ __fat_count_direntries:
 		bcs	@l_next
 @l_exit:
 		lda krn_tmp3
-		;debug "f_cnt_d"
+		debug "f_cnt_d"
 		rts
 @l_all:
 		.asciiz "*.*"
@@ -327,7 +333,7 @@ __fat_count_direntries:
 		;	Z=1 on success, Z=0 otherwise, A=error code
 __fat_write_dir_entry:
 		jsr __fat_prepare_dir_entry
-		;debug16 "f_w_dp", dirptr
+		debug16 "f_w_dp", dirptr
 
 		;TODO FIXME duplicate code here! - @see __fat_find_next:
 		lda dirptr+1
@@ -355,8 +361,8 @@ __fat_write_dir_entry:
 		dey
 		bpl @l_erase
 		;TODO FIXME test end of cluster, if so reserve a new one, update cluster chain for directory ;)
-		;debug32 "eod_lba", lba_addr
-		;debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
+		debug32 "eod_lba", lba_addr
+		debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
 ;		lda lba_addr+0
 ;		adc #02
 ;		sbc volumeID+VolumeID::BPB + BPB::SecPerClus
@@ -380,7 +386,7 @@ __fat_free_cluster:
 		jsr __fat_read_cluster_block_and_select
 		bne @l_exit								; read error...
 		bcc @l_exit								; TODO FIXME cluster chain during deletion not supported yet - therefore EOC (C=1) expected here !!!
-		;debug "f_fc"
+		debug "f_fc"
 		jsr __fat_mark_cluster				; mark cluster as free (A=0)
 		jsr __fat_write_fat_blocks			; write back fat blocks
 		beq __fat_update_fsinfo_inc		; ok - update fsinfo block
@@ -403,17 +409,17 @@ __fat_reserve_cluster:
 		;TODO check valid fsinfo block
 		;TODO check whether clnr is maintained, test 0xFFFFFFFF ?
 		;TODO improve calc, currently fixed to cluster-=1
-		;TODO A - update amount of free clusters to be reserved/freed [-128...127]
+		;TODO update amount of free clusters to be reserved/freed with A [-128...127]
 __fat_update_fsinfo_inc:
 		jsr __fat_read_fsinfo
 		bne __fat_update_fsinfo_exit
-		;debug32 "fi_fcl+", block_fat+F32FSInfo::FreeClus
+		debug32 "fs_info+", block_fat+F32FSInfo::FreeClus
 		_inc32 block_fat+F32FSInfo::FreeClus
 		jmp __fat_write_block_fat
 __fat_update_fsinfo_dec:
 		jsr __fat_read_fsinfo
 		bne __fat_update_fsinfo_exit
-		;debug32 "fi_fcl-", block_fat+F32FSInfo::FreeClus
+		debug32 "fs_info-", block_fat+F32FSInfo::FreeClus
 		_dec32 block_fat+F32FSInfo::FreeClus
 		jmp __fat_write_block_fat
 __fat_read_fsinfo:
@@ -453,7 +459,7 @@ __fat_write_newdir_entry:
 		sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::Name+1
 
 		ldy #FD_INDEX_TEMP_DIR													; due to fat_opendir/fat_open within fat_mkdir the fd of temp dir (FD_INDEX_TEMP_DIR) represents the last visited directory which must be the parent of this one ("..") - FTW!
-		;debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
+		debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
 		lda fd_area+F32_fd::CurrentCluster+0,y
 		sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusLO+0
 		lda fd_area+F32_fd::CurrentCluster+1,y
@@ -479,7 +485,7 @@ __fat_write_newdir_entry:
 
 		m_memset block_data, 0, 2*.sizeof(F32DirEntry)							; now erase the "." and ".." entries too
 		ldy volumeID+ VolumeID:: BPB + BPB::SecPerClus							; fill up (VolumeID::SecPerClus - 1) reamining blocks of the cluster with empty dir entries
-		;debug32 "er_d", lba_addr
+		debug32 "er_d", lba_addr
 		bra @l_remain_blocks_e
 @l_remain_blocks:
 		jsr __inc_lba_address												; next block within cluster
@@ -502,21 +508,23 @@ __fat_write_fat_blocks:
 		.endrepeat
 		jsr __fat_write_block_fat				; write to fat mirror (fat2)
 @err_exit:
+		debug "fw_fat_blocks"
 		rts
 
 __fat_write_block_fat:
-		;debug32 "wb_lba", lba_addr
 .ifdef FAT_DUMP_FAT_WRITE
-		;debugdump "wbf", block_fat
+		debugdump "fat_wb_dmp", block_fat
 .endif
 		lda #>block_fat
-		bra	__fat_write_block
+		bra __fat_write_block
 __fat_write_block_data:
 		lda #>block_data
 __fat_write_block:
 		sta write_blkptr+1
 		stz write_blkptr	;page aligned
 .ifndef FAT_NOWRITE
+		debug32 "fat_wb", lba_addr
+		debug16 "fat_wb", write_blkptr
 		jmp write_block
 .else
 		lda #EOK
@@ -631,21 +639,20 @@ __fat_mark_cluster:
 		;	Z=0 on error, A=error code
 __fat_find_free_cluster:
 		;TODO improve, use a previously saved lba_addr and/or found cluster number
-		stz lba_addr+3			; init lba_addr with fat_begin lba addr
-		stz lba_addr+2			; TODO FIXME we assume that 16 bit are sufficient for fat lba address
-		lda fat_lba_begin+1
+		stz lba_addr+3			; TODO FIXME we assume that 16 bit are sufficient for fat lba address
+		stz lba_addr+2			;
+		lda fat_lba_begin+1	; init lba_addr with fat_begin lba addr
 		sta lba_addr+1
 		lda fat_lba_begin+0
 		sta lba_addr+0
 
 		SetVector	block_fat, read_blkptr
 @next_block:
-		;debug32 "fr_lba", lba_addr
 		jsr __fat_read_block	; read fat block
 		bne @exit
 
 		ldy #0
-@l1:	lda block_fat+0,y		; 1st page find cluster entry with 00 00 00 00
+@l1:	lda block_fat+0,y			; 1st page find cluster entry with 00 00 00 00
 		ora block_fat+1,y
 		ora block_fat+2,y
 		ora block_fat+3,y
@@ -666,24 +673,24 @@ __fat_find_free_cluster:
 		bne @next_block
 		lda lba_addr+0
 		cmp fat2_lba_begin+0
-		bne @next_block		;
+		bne @next_block
 		lda #ENOSPC				; end reached, answer ENOSPC () - "No space left on device"
 @exit:
-	 ;debug32 "free_cl", fd_area+(2*.sizeof(F32_fd)) + F32_fd::CurrentCluster ; almost the 3rd entry
+	 	debug32 "free_cl", fd_area+(2*.sizeof(F32_fd)) + F32_fd::CurrentCluster ; almost the 3rd entry
 		rts
 @l_found_hb: ; found in "high" block (2nd page of the sd_blocksize)
 		lda #>(block_fat+$100)	; set read_blkptr to begin 2nd page of fat_buffer - @see __fat_mark_free_cluster
 		sta read_blkptr+1
 		lda #$40				; adjust clnr with +$40 (256 / 4 byte/clnr) clusters since it was found in 2nd page
+		debug "fat_ffc_hb"
 @l_found_lb:				; A=0 here, if called from above
-		;debug32 "f_ffc_lba", lba_addr
 		sta fd_area+F32_fd::CurrentCluster+0, x
 		tya
 		lsr						; offset Y>>2 (div 4, 32 bit clnr)
 		lsr
-		adc fd_area+F32_fd::CurrentCluster+0, x	; C=0 always here, y is multiple of 4 and 2 lsr
+		adc fd_area+F32_fd::CurrentCluster+0, x	; C=0 here always, y is multiple of 4 and 2 lsr
 		sta fd_area+F32_fd::CurrentCluster+0, x	; safe clnr
-		;debug32 "fc_tmp2", fd_area+F32_fd::CurrentCluster+.sizeof(F32_fd)*3 ;(new fd is almost the 3rd entry)
+		debug32 "fc_tmp2", fd_area+(2*.sizeof(F32_fd)) + F32_fd::CurrentCluster ; hart debug 3rd entry
 
 		;m_memcpy lba_addr, safe_lba TODO FIXME fat lba address, reuse them at next search
 		; to calc them we have to clnr = (block number * 512) / 4 + (Y / 4) => (lba_addr - fat_lba_begin) << 7 + (Y>>2)
@@ -717,7 +724,7 @@ fat_unlink:
 		jsr fat_open		; try to open as regular file
 		bne @l_exit
 		jsr __fat_unlink
-		;debug "unlnk"
+		debug "unlnk"
 		jmp __fat_free_fd
 @l_exit:
 		rts
@@ -735,7 +742,7 @@ __fat_unlink:
 		sta (dirptr)
 		jsr __fat_write_block_data				; write back dir entry
 @l_exit:
-		;debug "_ulnk"
+		debug "_ulnk"
 		rts
 
 __fat_is_dot_dir:

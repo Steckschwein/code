@@ -11,10 +11,14 @@
 .export chrout=asmunit_chrout
 
 ; fat32 geometry
+.define FAT_LBA 	$297e
+.define FAT2_LBA 	$2b7e
+.define FS_INFO_LBA 1 ; sector 1
 .define LBA_BEGIN $00006800
-.define FAT_LBA $297e
-.define SEC_PER_CL 1
+.define SEC_PER_CL 4
 .define ROOT_CL $02
+
+.define test_start_cluster	$016a
 
 .zeropage
 	test_data_ptr: .res 2
@@ -24,6 +28,11 @@
 .macro setup testname
 		test testname
 		jsr setUp
+.endmacro
+
+.macro set_sec_per_cl sec_per_cl
+	set8 volumeID+VolumeID::BPB + BPB::SecPerClus, sec_per_cl
+	set32 cluster_begin_lba, (LBA_BEGIN - ROOT_CL * sec_per_cl)
 .endmacro
 
 .macro fd_entry_file dir_entry, dir_lba, attr
@@ -78,21 +87,26 @@
 		assertMemory address, 32
 .endmacro
 
-.macro load_block address
+.macro load_block lba, address
+		cmp32 lba_addr, lba
+		bne :+
 		lda #<address
-		sta test_data_ptr
-		lda #>address
-		sta test_data_ptr+1
-		jsr load_test_data
+		ldy #>address
+		jmp load_test_data
+:
 .endmacro
 
 .macro data_loader
 load_test_data:
-		lda #0
+		sta test_data_ptr+0
+		sty test_data_ptr+1
 		ldy #0
-@l0:	lda (test_data_ptr),y
+		jsr @cp
+		inc read_blkptr+1	; => same behaviour as real block read implementation
+		inc test_data_ptr+1
+@cp:	lda (test_data_ptr),y
 		sta (read_blkptr), y
 		iny
-		bne @l0
+		bne @cp
 		rts
 .endmacro

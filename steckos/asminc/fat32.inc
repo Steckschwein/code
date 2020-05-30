@@ -58,52 +58,50 @@ PartType_FAT32_LBA    = $0c
 .endstruct
 
 .struct BootSector
-   Bootcode   .byte 446
-   Partitions   .tag PartTable
+   Bootcode    .byte 446
+   Partitions  .tag PartTable
    Signature   .word
 .endstruct
 
 ;BS_VolLab2      = 71
 
-
-
 .struct EBPB
-   FATSz32      .dword   ; 36-39 ; sectors per FAT
-   MirrorFlags   .word   ; 40-41; Bits 0-3: number of active FAT (if bit 7 is 1)
+   FATSz32     .dword   ; 36-39 ; sectors per FAT
+   MirrorFlags .word   ; 40-41; Bits 0-3: number of active FAT (if bit 7 is 1)
                   ; Bits 4-6: reserved
                   ; Bit 7: one: single active FAT; zero: all FATs are updated at runtime
                   ; Bits 8-15: reserved
                   ; https://www.win.tue.nl/~aeb/linux/fs/fat/fat-1.html
 
-   Version      .word   ; 42-43
-   RootClus   .dword   ; 44-47
+   Version     .word   ; 42-43
+   RootClus    .dword   ; 44-47
    FSInfoSec   .word   ; 48-49
    BootSectCpy .word   ; 50-51
    Reserved3   .byte 12 ; 52-63
-   PhysDrvNum   .byte   ; 64
+   PhysDrvNum  .byte   ; 64
    Reserved4   .byte   ; 65
    ExtBootSig  .byte   ; 66
-   VolumeID   .dword  ; 67-70
+   VolumeID    .dword  ; 67-70
    VolumeLabel .byte 11 ; 71-82
    FSType      .byte 8   ; 83-90
 .endstruct
 
 .struct BPB
-   BytsPerSec   .word ; 11-12   ; 512 usually
-   SecPerClus   .byte ; 13   ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
-   RsvdSecCnt   .word ; 14-15   ; number of reserved sectors
-   NumFATs      .byte ; 16
-   Reserved   .byte 4 ; 17-20 (max root entries, total logical sectors skipped)
-   Media      .byte   ; 21 ; For removable media, 0xF0 is frequently used.
-            ; The legal values for this field are
-            ; 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
+   BytsPerSec  .word ; 11-12  ; 512 usually
+   SecPerClus  .byte ; 13     ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
+   RsvdSecCnt  .word ; 14-15  ; number of reserved sectors
+   NumFATs     .byte ; 16     ; usually 2
+   Reserved    .byte 4 ; 17-20 (max root entries, total logical sectors skipped)
+   Media       .byte   ; 21 ; For removable media, 0xF0 is frequently used.
+               ; The legal values for this field are
+               ; 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
    SectsPerFAT .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
 .endstruct
 
 ; struct VolumeID like we keep in in memory
 .struct VolumeID
-   BPB         .tag BPB
-   EBPB      .tag EBPB
+   BPB      .tag BPB
+   EBPB     .tag EBPB
 .endstruct
 
 ; struct VolumeID like found on FAT-media (bootsector)

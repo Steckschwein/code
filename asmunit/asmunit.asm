@@ -117,7 +117,7 @@ asmunit_assert:
 @_l_assert_leq:
 		lda (_tst_inp_ptr),y
 		cmp (_tst_ptr)
-		bcc l_pass					; < ; can already exit here
+		bcc l_pass					; < - we can already exit here
 		bne _assert_fail			; =
 		jsr _inc_tst_ptr
 		iny
@@ -186,30 +186,22 @@ _l_adjust_ptr:
 		rts
 
 _assert_fail_msg:
-		ldy #<(_l_msg_fail_prefix-_l_messages)	; ouput "FAIL "
-		bra _assert_fail_expect
+		jsr _assert_print_fail_prefix
+		bra _assert_fail_arg3
 		;assertion fail
 _assert_fail:
 		jsr _l_adjust_ptr
 
-		ldy #<(_l_msg_fail_prefix-_l_messages)	; ouput "FAIL "
-		jsr _print
+		jsr _assert_print_fail_prefix
 
-     	lda #'('
-	  	jsr asmunit_chrout
-   	lda tst_cnt
-      jsr _hexout
-      lda #')'
-      jsr asmunit_chrout
-
-		ldy #<(_l_msg_fail_suffix-_l_messages)	; ouput ") - was "
+		ldy #<(_l_msg_fail_suffix-_l_messages)	; output ") - was "
 		jsr _print
 
 		jsr _out_ptr							; argument
 
-		ldy #<(_l_msg_fail_exp-_l_messages)
-_assert_fail_expect:
-		jsr _print								; ouput " expected "
+		ldy #<(_l_msg_fail_exp-_l_messages)	; output " expected "
+		jsr _print
+_assert_fail_arg3:
 		pla										; restore ptr to argument 3 (expected) from above
 		sta _tst_inp_ptr+1
 		pla
@@ -218,6 +210,28 @@ _assert_fail_expect:
 
 		brk										; fail immediately, we will end up in monitor
 
+_assert_print_fail_prefix:
+		lda #$0a
+	  	jsr asmunit_chrout
+		lda #'('
+		jsr asmunit_chrout
+   	lda tst_cnt
+      jsr _hexout
+		ldy #<(_l_msg_fail_prefix-_l_messages)	; ouput ") FAIL "
+		jmp _print
+_print:								; print length prefixed string
+		phx
+		lda _l_messages,y
+		tax
+_l_out:
+		beq :+
+		iny
+		lda _l_messages,y
+		jsr asmunit_chrout
+		dex
+		bra _l_out
+:		plx
+		rts
 
 _out_ptr:
 		phx
@@ -264,19 +278,6 @@ _inc_tst_ptr:
 		inc _tst_ptr+1				; account for page crossing
 _l_exit:
 		rts
-_print:								; print length prefixed string
-		phx
-		lda _l_messages,y
-		tax
-_l_out:
-		beq :+
-		iny
-		lda _l_messages,y
-		jsr asmunit_chrout
-		dex
-		bra _l_out
-:		plx
-		rts
 
 _decout:
      	rts
@@ -317,9 +318,9 @@ tst_bytes:		.res 1
 
 
 _l_messages:
-_l_msg_pass:	 		.byte _l_msg_fail_prefix -_l_msg_pass-1,	$0a,"PASS"
-_l_msg_fail_prefix:     .byte _l_msg_fail_suffix - _l_msg_fail_prefix-1, $0a, "FAIL "
-_l_msg_fail_suffix: 	.byte _l_msg_fail_exp - _l_msg_fail_suffix-1, " - "
+_l_msg_pass:	 		.byte _l_msg_fail_prefix -_l_msg_pass-1, $0a,"PASS"
+_l_msg_fail_prefix:  .byte _l_msg_fail_suffix - _l_msg_fail_prefix-1, ") FAIL "
+_l_msg_fail_suffix: 	.byte _l_msg_fail_exp - _l_msg_fail_suffix-1, "- "
 _l_msg_fail_exp:		.byte asmunit_l_flag_c0 - _l_msg_fail_exp-1, " found, but expected "
 asmunit_l_flag_c0:	.byte _FLAG_C0
 asmunit_l_flag_c1:	.byte _FLAG_C1

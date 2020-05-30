@@ -1,5 +1,5 @@
 		.include "pacman.sts.inc"
-		
+
 		.export gfx_init
 		.export gfx_mode_on
 		.export gfx_mode_off
@@ -29,13 +29,13 @@
 		.export Color_Blue
 		.export Color_Gray
 		.export Color_Dark_Pink
-		
+
 		;vdp
 		.import vdp_bgcolor
 		.import vdp_fill,vdp_fills
 		.import vdp_memcpy,vdp_memcpys
 		.import vdp_init_reg
-		
+
 		.import game_state
 		.import game_maze
 		.import sprite_tab_attr
@@ -49,23 +49,23 @@ gfx_mode_off:
 		vdp_sreg 0, v_reg9	;
 		vdp_sreg 0, v_reg23  ;
 		rts
-		
+
 gfx_mode_on:
 		lda #<vdp_init_bytes
 		ldy #>vdp_init_bytes
 		ldx #(vdp_init_bytes_end-vdp_init_bytes)-1
 		jsr vdp_init_reg
-		
-		vdp_sreg $0, v_reg18  ;x/y screen adjust
-		vdp_sreg <-2, v_reg23  ;y offset
-		
+
+		;vdp_sreg $0, v_reg18  ;x/y screen adjust
+		;vdp_sreg <-2, v_reg23  ;y offset
+
 		rts
 
 .export gfx_rotate_pal
 gfx_pacman_colors_offset:
 .byte VDP_Color_Blue<<1, VDP_Color_Light_Blue<<1, VDP_Color_Gray<<1, VDP_Color_Light_Blue<<1
 gfx_rotate_pal:
-		vdp_sreg VDP_Color_Blue, v_reg16 ; rotate blue 
+		vdp_sreg VDP_Color_Blue, v_reg16 ; rotate blue
 		ldx gfx_pacman_colors_offset,y
 gfx_write_pal:
 		vdp_wait_s
@@ -75,7 +75,7 @@ gfx_write_pal:
 		lda pacman_colors+1, x
 		sta a_vregpal
 		rts
-		
+
 gfx_init:
 gfx_init_pal:
 		vdp_sreg 0, v_reg16
@@ -105,18 +105,18 @@ gfx_init_sprites:
 		ldy #>sprite_patterns
 		ldx #4
 		jsr vdp_memcpy
-		
+
 		vdp_vram_w (VRAM_SPRITE_COLOR+0*16)
 		lda #VDP_Color_Yellow
 		jsr _fills
 		lda #VDP_Color_Bg
 		jsr _fills
-		
+
 		lda #VDP_Color_Blinky
 		jsr _fills
 		lda #(VDP_Color_Blue | $20 | $40)  ; CC | IC | 2nd color
 		jsr _fills
-		
+
 		lda #VDP_Color_Inky
 		jsr _fills
 		lda #(VDP_Color_Blue | $20 | $40)  ; CC | IC | 2nd color
@@ -131,7 +131,7 @@ gfx_init_sprites:
 		jsr _fills
 		lda #(VDP_Color_Blue | $20 | $40)  ; CC | IC | 2nd color
 		jsr _fills
-		
+
 		lda gfx_Sprite_Off
 		sta sprite_tab_attr+SPRITE_Y
 
@@ -167,22 +167,20 @@ gfx_display_maze:
 		vdp_vram_w (VRAM_SCREEN+$400-32)
 		ldx #32
 		lda #Char_Blank
-		jmp vdp_fills		
-		
-		
+		jmp vdp_fills
+
 gfx_pause:
+		lda game_state
+		and #STATE_PAUSE
 		lsr
 		lsr
-		lsr
-		ora #v_reg8_VR
 		ldy #v_reg8
-		vdp_sreg
+		vdp_sreg	; v_reg8_VR | v_reg8_BW | v_reg8_SPD, v_reg8
 		rts
-		
 
 gfx_bordercolor=vdp_bgcolor
 gfx_bgcolor=vdp_bgcolor
-		
+
 ; set the vdp vram address
 ;	in:
 ;	  sys_crs_x - x 0..31
@@ -217,16 +215,15 @@ gfx_charout:
 		rts
 
 gfx_hires_on:
-		
 		vdp_sreg >(VRAM_COLOR<<2)	| $7f, v_reg3 ; need more colors for colored text
 		vdp_sreg >(VRAM_PATTERN>>3) | $03, v_reg4 ; pattern table
 		rts
-		
+
 gfx_hires_off:
-		vdp_sreg >(VRAM_COLOR<<2)	| $1f, v_reg3 ; 
-		vdp_sreg >(VRAM_PATTERN>>3) | $00, v_reg4 ; 
+		vdp_sreg >(VRAM_COLOR<<2)	| $1f, v_reg3 ;
+		vdp_sreg >(VRAM_PATTERN>>3) | $00, v_reg4 ;
 		rts
-		
+
 .data
 vdp_init_bytes:
 			.byte v_reg0_m4
@@ -237,7 +234,7 @@ vdp_init_bytes:
 			.byte	>(VRAM_SPRITE_ATTR<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
 			.byte	>(VRAM_SPRITE_PATTERN>>3)
 			.byte	0
-			.byte v_reg8_VR	; VR - 64k VRAM TODO set per define
+			.byte v_reg8_VR ; VR - 64k VRAM TODO set per define
 			.byte v_reg9_ln ; 212 lines
 			.byte <.hiword(VRAM_SPRITE_COLOR<<2) ; color table high, a16-14
 			.byte <.hiword(VRAM_SPRITE_ATTR<<1); sprite attribute high
@@ -251,17 +248,17 @@ gfx_Sprite_Adjust_Y:
 gfx_Sprite_Off:
 		.byte SPRITE_OFF+$08 ; +8, 212 line mode
 
-Color_Bg:			 .byte VDP_Color_Bg
+Color_Bg:			.byte VDP_Color_Bg
 Color_Red:			.byte VDP_Color_Red
-Color_Pink:		  .byte VDP_Color_Pink
-Color_Cyan:		  .byte VDP_Color_Cyan
-Color_Light_Blue:  .byte VDP_Color_Light_Blue
+Color_Pink:		  	.byte VDP_Color_Pink
+Color_Cyan:		  	.byte VDP_Color_Cyan
+Color_Light_Blue: .byte VDP_Color_Light_Blue
 Color_Orange:		.byte VDP_Color_Orange
 Color_Yellow:		.byte VDP_Color_Yellow
 Color_Dark_Pink:	.byte VDP_Color_Dark_Pink
 Color_Dark_Cyan:	.byte VDP_Color_Dark_Cyan
-Color_Blue:		  .byte VDP_Color_Blue
-Color_Gray:		  .byte VDP_Color_Gray
+Color_Blue:		  	.byte VDP_Color_Blue
+Color_Gray:		  	.byte VDP_Color_Gray
 
 pacman_colors:
   vdp_pal 0,0,0			;0
@@ -269,7 +266,7 @@ pacman_colors:
   vdp_pal $de,$97,$51	;2 "food"
   vdp_pal $ff,$b8,$ff	;3 "speedy", "pinky" pink
   vdp_pal 0,0,0			;4
-  vdp_pal 0,$ff,$ff	  ;5 "bashful", "inky" cyan	  
+  vdp_pal 0,$ff,$ff	  ;5 "bashful", "inky" cyan
   vdp_pal $47,$b8,$ff	;6 "light blue"
   vdp_pal $ff,$b8,$51	;7 "pokey", "Clyde" "orange"
   vdp_pal 0,0,0			;8
@@ -284,7 +281,7 @@ pacman_colors:
 tiles:
 		.include "pacman.tiles.rot.inc"
 tiles_colors:
-		.include "pacman.tiles.colors.inc"		
+		.include "pacman.tiles.colors.inc"
 sprite_patterns:
 		.include "pacman.ghosts.res"
 		.include "pacman.pacman.res"

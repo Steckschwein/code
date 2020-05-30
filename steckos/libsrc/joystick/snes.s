@@ -42,4 +42,3 @@ l1: lda nes_data
     cpx #3
     bne l2
     rts
-

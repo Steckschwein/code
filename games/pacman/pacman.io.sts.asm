@@ -9,27 +9,31 @@
 		.export io_player_direction
 		.export io_irq
 		.export io_irq_on
-		
+
 		.import joystick_on
 		.import joystick_detect
 		.import joystick_read
-		
-appstart $1000
+
+appstart $1000	;
 
 io_init:
 		jsr krn_textui_disable
 
 		jsr joystick_on
+
+:		jsr io_getkey	; flush keyin
+		bne :-
+
 		;TODO ...
 		rts
-		
+
 io_irq:
 		bit	a_vreg
 		rts
-		
+
 io_irq_on:	; nothing todo here on sts hw
 		rts
-		
+
 io_detect_joystick:
 		jsr joystick_detect
 		beq @rts
@@ -41,7 +45,7 @@ io_joystick_read:
 		  jmp joystick_read
 
 io_getkey=krn_getkey
-		  
+
 io_player_direction:
 		beq @joystick
 		cmp #KEY_CRSR_RIGHT
@@ -79,8 +83,7 @@ io_player_direction:
 		rts
 
 io_exit:
-		  jmp (retvec)
+		jmp (retvec)
 
-.data
+.bss
 		joystick_port:  .res 1, JOY_PORT2
-		

@@ -110,7 +110,8 @@ asmunit_addr_instrument = $0202
 .macro test label
 	_message .concat("[", label, "]"), _MODE_TESTNAME
     .import tst_cnt ; reset assertion counter
-	 stz tst_cnt
+	 lda #1
+	 sta tst_cnt
 .endmacro
 
 .macro fail message
@@ -248,16 +249,22 @@ asmunit_addr_instrument = $0202
 @l_exit:
 .endmacro
 
+;
+;	assertMemory <input>, <length>
+;		.byte ... ; <length> expected bytes
+;
 .macro assertMemory address, length
 	.import asmunit_assert
 	.assert length <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
 	jsr asmunit_assert
 	.byte _MODE_ASSERT_EQ | _FORMAT_MEMORY
-	.word address
+	.word address ; address of expected value
 	.byte length
-;	.word expect	; address of expected value
 .endmacro
 
+;
+;	assertString <expect>, <input>
+;
 .macro assertString expect, address
 	.assert .strlen(expect) <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
 	.import asmunit_assert

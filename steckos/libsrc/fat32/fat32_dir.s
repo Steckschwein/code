@@ -137,18 +137,18 @@ fat_get_root_and_pwd:
 l_dot_dot:
 		.asciiz ".."
 
-		;in:
-		  ;	A/X - pointer to string with the file path
-		  ;out:
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
-		  ;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
+;in:
+;	A/X - pointer to string with the file path
+;out:
+;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
 fat_chdir:
 		jsr __fat_opendir_cwd
-		bne	@l_exit
+		bne @l_exit
 		ldy #FD_INDEX_TEMP_DIR		  ; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
 		ldx #FD_INDEX_CURRENT_DIR
 		jsr __fat_clone_fd				; therefore we can simply clone the temp dir to current dir fd - FTW!
 		lda #EOK						; ok
 @l_exit:
-		;debug "fcd"
+		debug "fcd"
 		rts
