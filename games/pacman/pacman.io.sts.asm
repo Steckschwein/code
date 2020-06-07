@@ -21,9 +21,6 @@ io_init:
 
 		jsr joystick_on
 
-:		jsr io_getkey	; flush keyin
-		bne :-
-
 		;TODO ...
 		rts
 
@@ -85,5 +82,5 @@ io_player_direction:
 io_exit:
 		jmp (retvec)
 
-.bss
-		joystick_port:  .res 1, JOY_PORT2
+.data
+		joystick_port:  .res 1, JOY_PORT1

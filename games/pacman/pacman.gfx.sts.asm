@@ -175,7 +175,7 @@ gfx_pause:
 		lsr
 		lsr
 		ldy #v_reg8
-		vdp_sreg	; v_reg8_VR | v_reg8_BW | v_reg8_SPD, v_reg8
+		;vdp_sreg	; v_reg8_VR | v_reg8_BW | v_reg8_SPD, v_reg8
 		rts
 
 gfx_bordercolor=vdp_bgcolor
@@ -243,6 +243,7 @@ vdp_init_bytes:
 vdp_init_bytes_end:
 
 gfx_Sprite_Adjust_X:
+		.byte 8
 gfx_Sprite_Adjust_Y:
 		.byte 8
 gfx_Sprite_Off:

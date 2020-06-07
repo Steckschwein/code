@@ -7,7 +7,6 @@
 		.import wait
 		.import game_state
 
-.code
 sound_init:
 sound_init_game_start:
 sound_play:

@@ -1,4 +1,5 @@
-      .p02
+      ;.p02
+      .setcpu "65c02"
 
       .include "zeropage.inc"
 ;      .smart
@@ -71,11 +72,13 @@ ACT_RIGHT         = 0 ;00
 ACT_LEFT          = 1 ;01
 ACT_UP            = 2 ;10
 ACT_DOWN          = 3 ;11
-ACT_MOVE_UP_OR_DOWN    = $02 ; 1x
+ACT_MOVE_UP_OR_DOWN    = $02 ; 1X
 ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
 
 ACT_TURN          = 1<<7
 ACT_DIR           = 1<<1|1<<0
+
+;CORNERING_
 
 .macro setIRQ irq, irq_save
       copyPtr $fffe, irq_save
@@ -154,14 +157,16 @@ ACT_DIR           = 1<<1|1<<0
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
   ; dot timer 4s, 3s (level5)
 .struct actor ; !!! do not change order of attributes !!!
-    xpos      .byte   ; character x pos - 0..31
-    xpos_dir  .byte   ; character x pos direction
-    ypos      .byte   ; character y pos - 0..25
-    ypos_dir  .byte   ; character y pos direction
+    xpos       .byte    ; character x pos - 0..31
+    xpos_dir   .byte    ; character x pos direction
+    ypos       .byte    ; character y pos - 0..25
+    ypos_dir   .byte    ; character y pos direction
+;    sp_x       .byte    ; sprite x pos
+;    sp_y       .byte    ; sprite y pos
 
-    move      .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
-    turn      .byte   ; bit 7 turn, bit 1-0 turn direction
-    sprite    .byte   ; sprite number, offset to sprite tab
+    move       .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
+    turn       .byte   ; bit 7 turn, bit 1-0 turn direction
+    sprite     .byte   ; sprite number, offset to sprite tab
 
     dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
 ;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
