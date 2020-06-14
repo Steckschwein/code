@@ -241,15 +241,13 @@ actor_move_dir:
 		lda actors+actor::move,x
 		bpl @rts
 		jsr actor_strategy
-@rts: rts
+@rts:
+		jmp pacman_collect
+		rts
 
 pacman_move:
-;		tya
-;		tax
 		jsr actor_center			; center reached?
 		bne actor_move_soft		; no, move soft
-
-		jsr pacman_collect
 
 		lda actors+actor::move,x
 		and #ACT_DIR
@@ -261,12 +259,9 @@ pacman_move:
 		sta actors+actor::move,x
 		and #ACT_NEXT_DIR			;set shape of next direction
 		jmp pacman_update_shape
-;@actor_move_soft:
-;		jmp actor_move_soft
 
 actor_move_soft:
 		jsr pacman_shape_move
-
 		lda actors+actor::move,x
 actor_move_sprite:
 		bpl @rts
@@ -345,9 +340,7 @@ actor_shape_move_direct:
 pacman_collect:
 		lda actors+actor::xpos,x
 		ldy actors+actor::ypos,x
-		jsr calc_maze_ptr_ay
-		ldy #0
-		lda (p_maze),y
+		jsr lda_maze_ptr_ay
 		cmp #Char_Food
 		bne :+
 		lda #Points_Food
@@ -380,10 +373,8 @@ erase_and_score:
 		; in:	.A - direction
 		; out:  .C=0 can move, C=1 can not move to direction
 actor_can_move_to_direction:
-		jsr actor_calc_charpos_direction  ; update dir char pos
-		jsr calc_maze_ptr_ay	; calc ptr to next char at input direction
-		ldy #0
-		lda (p_maze),y
+		jsr lday_actor_charpos_direction  ; update dir char pos
+		jsr lda_maze_ptr_ay	; calc ptr to next char at input direction
 		cmp #Char_Bg								; C=1 if char >= Char_Bg
 		rts
 
@@ -441,14 +432,14 @@ pacman_input:
 		sta actors+actor::move,x
 @rts: rts
 
-actor_calc_charpos_direction:
+; in:	.A - direction
+lday_actor_charpos_direction:
 		asl
 		tay
 		lda actors+actor::xpos,x
 		clc
 		adc _vectors+0,y
-		pha ; save x
-
+		pha ; save x pos
 		lda actors+actor::ypos,x
 		clc
 		adc _vectors+1,y
@@ -513,7 +504,7 @@ debug:
 		pla
 		rts
 
-calc_maze_ptr_ay:
+lda_maze_ptr_ay:
 		sta game_tmp
 		tya
 		asl
@@ -533,6 +524,8 @@ calc_maze_ptr_ay:
 		clc
 		adc #>game_maze
 		sta p_maze+1
+		ldy #0
+		lda (p_maze),y
 		rts
 
 game_demo:
@@ -690,9 +683,7 @@ animate_screen:
 		ldy superfood_y,x
 		sta sys_crs_x
 		sty sys_crs_y
-		jsr calc_maze_ptr_ay
-		ldy #0
-		lda (p_maze),y
+		jsr lda_maze_ptr_ay
 		cmp #Char_Blank ; eaten?
 		beq @next
 		eor #$08			 ; toggle Char_Superfood / Char_Superfood_Blank
@@ -708,11 +699,11 @@ animate_screen:
 animate_ghosts:
 		ldx #ACTOR_BLINKY
 		jsr actor_shape_move
-		ldx #2*.sizeof(actor)
+		ldx #ACTOR_INKY
 		jsr actor_shape_move
-		ldx #3*.sizeof(actor)
+		ldx #ACTOR_PINKY
 		jsr actor_shape_move
-		ldx #4*.sizeof(actor)
+		ldx #ACTOR_CLYDE
 		jsr actor_shape_move
 		rts
 
@@ -811,13 +802,10 @@ game_init_sprites:
 
 sprite_init: ;x,y,init direction,color
 		.byte 188,96,	ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT, ACTOR_PACMAN ;offset y=+4,y=+4  ; pacman
-		.byte 92,95,	 ACT_MOVE|ACT_LEFT, ACTOR_BLINKY
-;		.byte 116,111,  ACT_MOVE|ACT_UP,	ACTOR_INKY
-		 .byte 116,108,  ACT_MOVE|ACT_UP,	ACTOR_INKY
-;		.byte 116,95,	ACT_DOWN, ACTOR_BLINKY
-		.byte 116,92,	ACT_MOVE|ACT_DOWN, ACTOR_PINKY
-;		.byte 116,79,	ACT_UP,	ACTOR_CLYDE
-		.byte 116,76,	ACT_MOVE|ACT_UP,	ACTOR_CLYDE
+		.byte 92,96,	ACT_MOVE|ACT_LEFT, ACTOR_BLINKY
+		.byte 116,112, ACT_MOVE|ACT_UP, ACTOR_INKY
+		.byte 116,96,	ACT_MOVE|ACT_DOWN, ACTOR_PINKY
+		.byte 116,80,	ACT_MOVE|ACT_UP,	ACTOR_CLYDE
 sprite_init_end:
 
 ai_ghost:
@@ -849,7 +837,8 @@ ai_ghost:
 actor_strategy:
 		cpx #ACTOR_PACMAN
 		bne @ghost
-		jmp pacman_move
+		jsr pacman_move
+		rts
 @ghost:
 		rts ; TODO FIXME
 ;		jmp ai_ghost

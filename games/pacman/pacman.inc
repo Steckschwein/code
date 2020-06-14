@@ -168,6 +168,7 @@ ACT_DIR           = 1<<1|1<<0
 ;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
 
+; table offsets
 ACTOR_PACMAN  = 0*.sizeof(actor)
 ACTOR_BLINKY  = 1*.sizeof(actor)
 ACTOR_INKY    = 2*.sizeof(actor)
