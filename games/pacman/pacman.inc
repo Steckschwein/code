@@ -158,11 +158,7 @@ ACT_DIR           = 1<<1|1<<0
   ; dot timer 4s, 3s (level5)
 .struct actor ; !!! do not change order of attributes !!!
     xpos       .byte    ; character x pos - 0..31
-    xpos_dir   .byte    ; character x pos direction
     ypos       .byte    ; character y pos - 0..25
-    ypos_dir   .byte    ; character y pos direction
-;    sp_x       .byte    ; sprite x pos
-;    sp_y       .byte    ; sprite y pos
 
     move       .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
     turn       .byte   ; bit 7 turn, bit 1-0 turn direction

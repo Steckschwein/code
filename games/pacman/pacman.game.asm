@@ -216,6 +216,7 @@ l_compare:
 		cmp #$04	 ; 0100 - center pos, <0100 pre-turn, >0100 post-turn
 		rts
 
+; 		A - bit 0-1 the direction
 actor_center:
 		pha
 		lda #0
@@ -277,9 +278,7 @@ actor_move_sprite:
 		ldy actors+actor::sprite, x
 		clc
 		adc sprite_tab_attr+SpriteTab::xpos,y
-		;adc actors+actor::sp_x,y
 		sta sprite_tab_attr+SpriteTab::xpos,y
-		;sta actors+actor::sp_x,y
 		sta sprite_tab_attr+4+SpriteTab::xpos,y
 		pla
 		tay
@@ -289,7 +288,6 @@ actor_move_sprite:
 @y_add:
 		clc
 		adc sprite_tab_attr+SpriteTab::ypos,y
-		;adc actors+actor::sp_y,y
 		cmp gfx_Sprite_Off
 		bne @y_sta
 		lda game_tmp
@@ -298,7 +296,6 @@ actor_move_sprite:
 @y_sta:
 		sta sprite_tab_attr+SpriteTab::ypos,y
 		sta sprite_tab_attr+4+SpriteTab::ypos,y
-;		sta actors+actor::sp_y,y
 @rts: rts
 
 pacman_shape_move:
@@ -383,8 +380,8 @@ erase_and_score:
 		; in:	.A - direction
 		; out:  .C=0 can move, C=1 can not move to direction
 actor_can_move_to_direction:
-		jsr actor_update_charpos_direction  ; update dir char pos
-		jsr calc_maze_ptr_direction			; calc ptr to next char at input direction
+		jsr actor_calc_charpos_direction  ; update dir char pos
+		jsr calc_maze_ptr_ay	; calc ptr to next char at input direction
 		ldy #0
 		lda (p_maze),y
 		cmp #Char_Bg								; C=1 if char >= Char_Bg
@@ -442,21 +439,21 @@ pacman_input:
 		and #<~ACT_NEXT_DIR
 		ora game_tmp
 		sta actors+actor::move,x
-@rts:
-		rts
+@rts: rts
 
-actor_update_charpos_direction:
+actor_calc_charpos_direction:
 		asl
 		tay
 		lda actors+actor::xpos,x
 		clc
 		adc _vectors+0,y
-		sta actors+actor::xpos_dir,x
+		pha ; save x
 
 		lda actors+actor::ypos,x
 		clc
 		adc _vectors+1,y
-		sta actors+actor::ypos_dir,x
+		tay
+		pla
 		rts
 
 actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
@@ -496,13 +493,9 @@ debug:
 		sta text_color
 		lda actors+actor::xpos
 		jsr out_hex_digits
-		lda actors+actor::xpos_dir
-		jsr out_hex_digits
 		lda sprite_tab_attr+SpriteTab::xpos
 		jsr out_hex_digits
 		lda actors+actor::ypos
-		jsr out_hex_digits
-		lda actors+actor::ypos_dir
 		jsr out_hex_digits
 		lda sprite_tab_attr+SpriteTab::ypos
 		jsr out_hex_digits
@@ -520,24 +513,20 @@ debug:
 		pla
 		rts
 
-calc_maze_ptr_direction:
-		lda actors+actor::xpos_dir,x
-		ldy actors+actor::ypos_dir,x
 calc_maze_ptr_ay:
-		sta sys_crs_x
-		sty sys_crs_y
-@calc_maze_ptr:
-		lda sys_crs_y;actors+actor::ypos, x; ;.Y * 32
+		sta game_tmp
+		tya
 		asl
 		asl
 		asl
 		asl
 		asl
-		ora sys_crs_x;actors+actor::xpos, x
-		;clc
-;		adc #<__RAM_LAST__
+		ora game_tmp; sys_crs_x	;actors+actor::xpos, x
+		; clc
+		; adc #<__RAM_LAST__
 		sta p_maze+0
-		lda sys_crs_y;actors+actor::ypos, x ; .Y * 32
+		;lda sys_crs_y	;actors+actor::ypos, x ; .Y * 32
+		tya
 		lsr ; div 8 -> page offset 0-2
 		lsr
 		lsr
@@ -696,22 +685,22 @@ animate_screen:
 ; food
 		lda Color_Food
 		sta text_color
-		ldx #0
-@l1:  lda superfood,x
-		inx
-		ldy superfood,x
+		ldx #3
+@l1:  lda superfood_x,x
+		ldy superfood_y,x
+		sta sys_crs_x
+		sty sys_crs_y
 		jsr calc_maze_ptr_ay
 		ldy #0
 		lda (p_maze),y
 		cmp #Char_Blank ; eaten?
 		beq @next
-		eor #$08			 ; toggle Char_Superfood / Char_Blank
+		eor #$08			 ; toggle Char_Superfood / Char_Superfood_Blank
 		sta (p_maze),y
 		jsr gfx_charout
 @next:
-		inx
-		cpx #superfood_end-superfood
-		bne @l1
+		dex
+		bpl @l1
 @rts:
 		rts
 
@@ -726,14 +715,6 @@ animate_ghosts:
 		ldx #4*.sizeof(actor)
 		jsr actor_shape_move
 		rts
-
-.macro actor_colors _nr, _color
-		.local _nr,_color
-		;color tab
-		vdp_vram_w (sprite_color+_nr*16)
-		lda #(_color)
-		jsr sprite_tab_color
-.endmacro
 
 game_init:
 		lda game_state+GameState::state
@@ -879,11 +860,11 @@ _save_irq:  .res 2
 maze:
   .include "pacman.maze.inc"
 
-superfood:
-	 .byte 4,1;,Char_Superfood
-	 .byte 24,1;,Char_Superfood
-	 .byte 4,24;,Char_Superfood
-	 .byte 24,24;,Char_Superfood
+superfood:	;Char_Superfood
+superfood_x:
+	 .byte 4,24,4,24;
+superfood_y:
+	 .byte 1,1,24,24;
 superfood_end:
 
 _vectors:	; X, Y adjust

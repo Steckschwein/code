@@ -80,7 +80,7 @@ gfx_init:
 gfx_init_pal:
 		vdp_sreg 0, v_reg16
 		ldx #0
-:	  jsr gfx_write_pal
+:	  	jsr gfx_write_pal
 		inx
 		inx
 		cpx #2*16
