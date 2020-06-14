@@ -239,11 +239,9 @@ actor_move:
 
 actor_move_dir:
 		lda actors+actor::move,x
-		bpl @rts
+		bpl :+
 		jsr actor_strategy
-@rts:
-		jmp pacman_collect
-		rts
+:		jmp pacman_collect
 
 pacman_move:
 		jsr actor_center			; center reached?
@@ -252,7 +250,7 @@ pacman_move:
 		lda actors+actor::move,x
 		and #ACT_DIR
 		jsr actor_can_move_to_direction
-		bcc actor_move_soft  ; C=0, can move to
+		bcc actor_move_soft  ; C=0 - can move to
 
 		lda actors+actor::move,x  ;otherwise stop move
 		and #<~ACT_MOVE
@@ -373,8 +371,8 @@ erase_and_score:
 		; in:	.A - direction
 		; out:  .C=0 can move, C=1 can not move to direction
 actor_can_move_to_direction:
-		jsr lday_actor_charpos_direction  ; update dir char pos
-		jsr lda_maze_ptr_ay	; calc ptr to next char at input direction
+		jsr lday_actor_charpos_direction  	; update dir char pos
+		jsr lda_maze_ptr_ay						; calc ptr to next char at input direction
 		cmp #Char_Bg								; C=1 if char >= Char_Bg
 		rts
 
@@ -382,8 +380,9 @@ pacman_input:
 		jsr get_input
 		bcc @rts										; key/joy input ?
 		sta input_direction
+		;stp
 		jsr actor_can_move_to_direction	  	; C=0 can move
-		bcs @set_input_dir_to_next_dir		; no, only set next dir
+		bcs @set_input_dir_to_next_dir		; no - only set next dir
 
 		lda actors+actor::turn,x
  	  	bmi @rts	;exit if turn is active
@@ -512,11 +511,11 @@ lda_maze_ptr_ay:
 		asl
 		asl
 		asl
-		ora game_tmp; sys_crs_x	;actors+actor::xpos, x
-		; clc
-		; adc #<__RAM_LAST__
+		ora game_tmp
+		;clc
+		;adc #<game_maze
 		sta p_maze+0
-		;lda sys_crs_y	;actors+actor::ypos, x ; .Y * 32
+
 		tya
 		lsr ; div 8 -> page offset 0-2
 		lsr
@@ -687,6 +686,7 @@ animate_screen:
 		cmp #Char_Blank ; eaten?
 		beq @next
 		eor #$08			 ; toggle Char_Superfood / Char_Superfood_Blank
+		ldy #0
 		sta (p_maze),y
 		jsr gfx_charout
 @next:
@@ -698,13 +698,13 @@ animate_screen:
 
 animate_ghosts:
 		ldx #ACTOR_BLINKY
-		jsr actor_shape_move
+		;jsr actor_shape_move
 		ldx #ACTOR_INKY
-		jsr actor_shape_move
+		;jsr actor_shape_move
 		ldx #ACTOR_PINKY
-		jsr actor_shape_move
+		;jsr actor_shape_move
 		ldx #ACTOR_CLYDE
-		jsr actor_shape_move
+		;jsr actor_shape_move
 		rts
 
 game_init:
@@ -737,7 +737,7 @@ game_init:
 		sta game_maze+$200,y
 		iny
 		bne :-
-:	  lda maze+$300,y
+:	  	lda maze+$300,y
 		sta game_maze+$300,y
 		lda #Char_Blank
 		sta game_maze+$300+1*32,y
@@ -849,12 +849,10 @@ _save_irq:  .res 2
 maze:
   .include "pacman.maze.inc"
 
-superfood:	;Char_Superfood
 superfood_x:
 	 .byte 4,24,4,24;
 superfood_y:
 	 .byte 1,1,24,24;
-superfood_end:
 
 _vectors:	; X, Y adjust
 _vec_right:			;00
@@ -905,7 +903,7 @@ _delete_message_2:
 points:			  	.res 4
 input_direction:  .res 1
 keyboard_input:	.res 1
-actors: .res (5*.sizeof(actor))
-sprite_tab_attr:  .res 5*4*2
+actors: 				.res 5*.sizeof(actor)
+sprite_tab_attr:  .res 5*2*4 ;5x2 sprites, 4 byte per entry
 sprite_tab_attr_end:
-game_maze=((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100
+game_maze=((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100	; put at the end which is __BSS_SIZE__ and align $100

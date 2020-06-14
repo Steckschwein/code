@@ -263,18 +263,18 @@ Color_Gray:		  	.byte VDP_Color_Gray
 
 pacman_colors:
   vdp_pal 0,0,0			;0
-  vdp_pal $ff,0,0		 ;1 "shadow", "blinky" red
+  vdp_pal $ff,0,0		 	;1 "shadow", "blinky" red
   vdp_pal $de,$97,$51	;2 "food"
   vdp_pal $ff,$b8,$ff	;3 "speedy", "pinky" pink
   vdp_pal 0,0,0			;4
-  vdp_pal 0,$ff,$ff	  ;5 "bashful", "inky" cyan
+  vdp_pal 0,$ff,$ff	  	;5 "bashful", "inky" cyan
   vdp_pal $47,$b8,$ff	;6 "light blue"
   vdp_pal $ff,$b8,$51	;7 "pokey", "Clyde" "orange"
   vdp_pal 0,0,0			;8
-  vdp_pal $ff,$ff,0	  ;9 "yellow", "pacman"
+  vdp_pal $ff,$ff,0	  	;9 "yellow", "pacman"
   vdp_pal 0,0,0			;a
   vdp_pal $ff,$b8,$ae	;b dark pink "food"
-  vdp_pal 0,$ff,0		 ;c green
+  vdp_pal 0,$ff,0		 	;c green
   vdp_pal $47,$b8,$ae	;d dark cyan
   vdp_pal $21,$21,$ff	;e blue => ghosts "scared", ghost pupil
   vdp_pal $de,$de,$ff	;f gray => ghosts "scared", ghost eyes

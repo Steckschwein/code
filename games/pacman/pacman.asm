@@ -17,7 +17,7 @@
 		.import intro
 		.import game
 
-		.exportzp p_maze, p_video, p_sound, p_text, p_game, p_tmp
+		.exportzp p_maze, p_video, p_sound, p_text, p_game
 
 .zeropage
 p_video:  .res 2
@@ -25,7 +25,6 @@ p_sound:  .res 2
 p_text:   .res 2
 p_game:   .res 2
 p_maze:   .res 2
-p_tmp:    .res 2
 
 .code
 .proc	_main: near
