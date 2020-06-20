@@ -61,9 +61,10 @@ gfx_mode_on:
 
 		rts
 
-.export gfx_rotate_pal
 gfx_pacman_colors_offset:
 .byte VDP_Color_Blue<<1, VDP_Color_Light_Blue<<1, VDP_Color_Gray<<1, VDP_Color_Light_Blue<<1
+
+.export gfx_rotate_pal
 gfx_rotate_pal:
 		vdp_sreg VDP_Color_Blue, v_reg16 ; rotate blue
 		ldx gfx_pacman_colors_offset,y
@@ -106,11 +107,7 @@ gfx_init_sprites:
 		ldx #4
 		jsr vdp_memcpy
 
-		vdp_vram_w (VRAM_SPRITE_COLOR+0*16)
-		lda #VDP_Color_Yellow
-		jsr _fills
-		lda #VDP_Color_Bg
-		jsr _fills
+		vdp_vram_w VRAM_SPRITE_COLOR	; load sprite color address
 
 		lda #VDP_Color_Blinky
 		jsr _fills
@@ -132,8 +129,13 @@ gfx_init_sprites:
 		lda #(VDP_Color_Blue | $20 | $40)  ; CC | IC | 2nd color
 		jsr _fills
 
+		lda #VDP_Color_Yellow
+		jsr _fills
+		lda #VDP_Color_Bg
+		jsr _fills
+
 		lda gfx_Sprite_Off
-		sta sprite_tab_attr+SPRITE_Y
+		sta sprite_tab_attr+SPRITE_Y ; init all sprites "off"
 
 gfx_blank_screen:
 		vdp_vram_w VRAM_SCREEN
@@ -148,14 +150,14 @@ gfx_sprites_off:
 		jmp vdp_fill
 
 _fills:
-		ldx #16	  ;16 colors per line
+		ldx #16	  ;16 color lines per sprite
 		jmp vdp_fills
 
 gfx_update:
 		vdp_vram_w VRAM_SPRITE_ATTR
 		lda #<sprite_tab_attr
 		ldy #>sprite_tab_attr
-		ldx #5*2*4
+		ldx #(5*4*2 + 4)
 		jmp vdp_memcpys
 
 gfx_display_maze:

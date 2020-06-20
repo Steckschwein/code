@@ -52,13 +52,18 @@ STATE_GAME_OVER     = 6
 STATE_PAUSE         = $08
 STATE_EXIT          = $80
 
-SPRITE_NR_PACMAN  = 0*4
-SPRITE_NR_GHOST   = 1*4
+SPRITE_NR_PACMAN  = 8*4
+SPRITE_NR_GHOST   = 0*4
 SPRITE_ADJUST     = $08
 
-;A ghost's objective in chase mode is to find and capture Pac-Man by hunting him down through the maze. Each ghost exhibits unique behavior when chasing Pac-Man, giving them their different personalities: Blinky (red) is very aggressive and hard to shake once he gets behind you, Pinky (pink) tends to get in front of you and cut you off, Inky (light blue) is the least predictable of the bunch, and Clyde (orange) seems to do his own thing and stay out of the way.
+; A ghost's objective in chase mode is to find and capture Pac-Man by hunting him down through the maze.
+; Each ghost exhibits unique behavior when chasing Pac-Man, giving them their different personalities:
+; Blinky (red) is very aggressive and hard to shake once he gets behind you,
+; Pinky (pink) tends to get in front of you and cut you off,
+; Inky (light blue) is the least predictable of the bunch, and
+; Clyde (orange) seems to do his own thing and stay out of the way.
 GHOST_CHASE       = 0
-;In scatter mode, the ghosts give up the chase for a few seconds and head for their respective home corners. It is a welcome but brief rest-soon enough, they will revert to chase mode and be after Pac-Man again.
+; In scatter mode, the ghosts give up the chase for a few seconds and head for their respective home corners. It is a welcome but brief rest-soon enough, they will revert to chase mode and be after Pac-Man again.
 GHOST_SCATTER     = 1
 ; Ghosts enter frightened mode whenever Pac-Man eats one of the four energizers located in the far corners of the maze. During the early levels, the ghosts will all turn dark blue (meaning they
 ; are vulnerable) and aimlessly wander the maze for a few seconds. They will flash moments before returning to their previous mode of behavior.
@@ -156,21 +161,20 @@ ACT_DIR           = 1<<1|1<<0
 
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
   ; dot timer 4s, 3s (level5)
-.struct actor ; !!! do not change order of attributes !!!
+.struct actor ;
     xpos       .byte    ; character x pos - 0..31
     ypos       .byte    ; character y pos - 0..25
-
     move       .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
     turn       .byte   ; bit 7 turn, bit 1-0 turn direction
     sprite     .byte   ; sprite number, offset to sprite tab
-
+    
     dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
 ;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
 
 ; table offsets
-ACTOR_PACMAN  = 0*.sizeof(actor)
-ACTOR_BLINKY  = 1*.sizeof(actor)
-ACTOR_INKY    = 2*.sizeof(actor)
-ACTOR_PINKY   = 3*.sizeof(actor)
-ACTOR_CLYDE   = 4*.sizeof(actor)
+ACTOR_BLINKY  = 0*.sizeof(actor)
+ACTOR_INKY    = 1*.sizeof(actor)
+ACTOR_PINKY   = 2*.sizeof(actor)
+ACTOR_CLYDE   = 3*.sizeof(actor)
+ACTOR_PACMAN  = 4*.sizeof(actor)

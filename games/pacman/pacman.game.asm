@@ -91,11 +91,9 @@ game_isr:
 		bgcolor Color_Cyan
 		inc game_state+GameState::frames
 		jsr gfx_update
-
 game_isr_exit:
 
 .ifdef __DEBUG
-		bgcolor Color_Bg
 		jsr debug
 .endif
 		pop_axy
@@ -229,8 +227,8 @@ actor_move:
 		lda actors+actor::turn,x
 		bpl actor_move_dir			; turning?
 		jsr actor_center
-		bne @actor_turn_soft
-		lda actors+actor::turn,x
+		bne @actor_turn_soft			;
+		lda actors+actor::turn,x	;
 		and #<~ACT_TURN
 		sta actors+actor::turn,x
 @actor_turn_soft:
@@ -267,27 +265,28 @@ actor_move_sprite:
 		asl
 		tay
 		pha
-		lda _vectors+0, y
-		ldy actors+actor::sprite, x
+		lda _vectors+0,y
+		;stp
+		ldy actors+actor::sprite,x
 		clc
-		adc sprite_tab_attr+SpriteTab::xpos,y
-		sta sprite_tab_attr+SpriteTab::xpos,y
+		adc sprite_tab_attr+0+SpriteTab::xpos,y
+		sta sprite_tab_attr+0+SpriteTab::xpos,y
 		sta sprite_tab_attr+4+SpriteTab::xpos,y
 		pla
 		tay
-		lda _vectors+1, y
+		lda _vectors+1,y
 		sta game_tmp
-		ldy actors+actor::sprite, x
-@y_add:
+		ldy actors+actor::sprite,x
+@y_add:	; skip the sprite off position
 		clc
-		adc sprite_tab_attr+SpriteTab::ypos,y
+		adc sprite_tab_attr+0+SpriteTab::ypos,y
 		cmp gfx_Sprite_Off
 		bne @y_sta
 		lda game_tmp
 		eor #$10
 		jmp @y_add
 @y_sta:
-		sta sprite_tab_attr+SpriteTab::ypos,y
+		sta sprite_tab_attr+0+SpriteTab::ypos,y
 		sta sprite_tab_attr+4+SpriteTab::ypos,y
 @rts: rts
 
@@ -315,7 +314,7 @@ actor_shape_move:
 		lsr
 		lsr
 		and #$01
-actor_shape_move_direct:
+actor_update_shape:
 		sta game_tmp
 		lda actors+actor::move,x
 		and #ACT_DIR
@@ -380,7 +379,6 @@ pacman_input:
 		jsr get_input
 		bcc @rts										; key/joy input ?
 		sta input_direction
-		;stp
 		jsr actor_can_move_to_direction	  	; C=0 can move
 		bcs @set_input_dir_to_next_dir		; no - only set next dir
 
@@ -397,7 +395,7 @@ pacman_input:
 		cmp input_direction
 		beq @set_input_dir_to_current_dir
 
-		lda actors+actor::ypos				;is tunnel ?
+		lda actors+actor::ypos,x			;is tunnel ?
 		beq @rts								  	;ypos=0
 		cmp #26									;... or >=26
 		bcs @rts								  	;ignore input
@@ -448,7 +446,6 @@ lday_actor_charpos_direction:
 
 actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
 		ldy actors+actor::sprite,x
-		;lda actors+actor::sp_x,y
 		lda sprite_tab_attr+SpriteTab::xpos,y
 		clc
 		adc gfx_Sprite_Adjust_X  ; x adjust
@@ -456,7 +453,6 @@ actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
 		lsr
 		lsr
 		sta actors+actor::xpos,x
-		;lda actors+actor::sp_y,y
 		lda sprite_tab_attr+SpriteTab::ypos,y
 		clc
 		adc gfx_Sprite_Adjust_Y  ; y adjust
@@ -472,6 +468,7 @@ get_input:
 		jmp io_player_direction		; C=0 if any valid key or joystick input, A=ACT_xxx
 
 debug:
+		bgcolor Color_Bg
 		pha
 		txa
 		pha
@@ -481,19 +478,21 @@ debug:
 		sta sys_crs_y
 		lda Color_Text
 		sta text_color
-		lda actors+actor::xpos
+		ldx #ACTOR_PACMAN
+		lda actors+actor::xpos,x
 		jsr out_hex_digits
-		lda sprite_tab_attr+SpriteTab::xpos
+		ldy actors+actor::sprite,x
+		lda sprite_tab_attr+SpriteTab::xpos,y
 		jsr out_hex_digits
-		lda actors+actor::ypos
+		lda actors+actor::ypos,x
 		jsr out_hex_digits
-		lda sprite_tab_attr+SpriteTab::ypos
+		lda sprite_tab_attr+SpriteTab::ypos,y
 		jsr out_hex_digits
 		lda input_direction
 		jsr out_hex_digits
-		lda actors+actor::move
+		lda actors+actor::move,x
 		jsr out_hex_digits
-		lda actors+actor::turn
+		lda actors+actor::turn,x
 		jsr out_hex_digits
 		lda keyboard_input
 		jsr out_hex_digits
@@ -753,60 +752,67 @@ game_init:
 
 		jmp gfx_display_maze
 
+actor_init: ;x,y,init direction,color
+		; x, y, dir, sprite nr
+		;		.byte 92,96,	ACT_MOVE|ACT_LEFT, 	0*2*.sizeof(SpriteTab) ; TODO impl. detail move to plattform specific
+		;		.byte 116,112, ACT_MOVE|ACT_UP, 		1*2*.sizeof(SpriteTab)
+		;		.byte 116,96,	ACT_MOVE|ACT_DOWN, 	2*2*.sizeof(SpriteTab)
+		;		.byte 116,80,	ACT_MOVE|ACT_UP, 		3*2*.sizeof(SpriteTab)
+
+		.byte 32,$9c,	ACT_MOVE|ACT_LEFT, 	0*2*.sizeof(SpriteTab) ; TODO impl. detail move to plattform specific
+		.byte 64,$9c, ACT_MOVE|ACT_UP, 		1*2*.sizeof(SpriteTab)
+		.byte 96,$9c,	ACT_MOVE|ACT_DOWN, 	2*2*.sizeof(SpriteTab)
+		.byte 122,$9c,	ACT_MOVE|ACT_UP, 		3*2*.sizeof(SpriteTab)
+		.byte 188,96,	ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT, 4*2*.sizeof(SpriteTab)
+actor_init_end:
+
 game_init_sprites:
 		ldy #0
-@sprites:
-		tya
-		pha
-		asl
-		asl
-		tay
-		asl
-		tax
-		lda sprite_init+0,y
-;		sta actors+actor::sp_x,x
-		sta sprite_tab_attr+0+SpriteTab::xpos,x
-		sta sprite_tab_attr+4+SpriteTab::xpos,x
-		lda sprite_init+1,y
-;		sta actors+actor::sp_y,x
-		sta sprite_tab_attr+0+SpriteTab::ypos,x
-		sta sprite_tab_attr+4+SpriteTab::ypos,x
-		lda #0
-		sta sprite_tab_attr+0+SpriteTab::shape,x
-		sta sprite_tab_attr+4+SpriteTab::shape,x
-		lda sprite_init+2,y
-		sta actors+actor::move,x
-		txa
-		sta actors+actor::sprite,x  ; x is sprite number
-		; TODO FIXME ugly code...
-		cpx #SPRITE_NR_PACMAN
-		bne @ghost
-		lda #Sprite_Pattern_Pacman
-		sta sprite_tab_attr+SpriteTab::shape,x
-		jmp @next
-@ghost:
-		lda #0
-		jsr actor_shape_move_direct
-@next:
-		pla
-		tay
-		iny
-		cpy #5
-		bne @sprites
+		ldx #ACTOR_BLINKY
+		jsr game_init_sprite
 
+		ldy #4
+		ldx #ACTOR_INKY
+		jsr game_init_sprite
+
+		ldy #8
+		ldx #ACTOR_PINKY
+		jsr game_init_sprite
+
+		ldy #12
+		ldx #ACTOR_CLYDE
+		jsr game_init_sprite
+
+		ldy #16
+		ldx #ACTOR_PACMAN
+		jsr game_init_sprite
+		ldx #SPRITE_NR_PACMAN
+		lda #Sprite_Pattern_Pacman
+		sta sprite_tab_attr+0*4+SpriteTab::shape,x
 		lda #0 ; 2nd sprite pacman to 0
-		sta sprite_tab_attr+1*4+SpriteTab::xpos
-		sta sprite_tab_attr+1*4+SpriteTab::ypos
-		sta sprite_tab_attr+1*4+SpriteTab::shape
+		sta sprite_tab_attr+1*4+SpriteTab::xpos,x
+		sta sprite_tab_attr+1*4+SpriteTab::ypos,x
+		sta sprite_tab_attr+1*4+SpriteTab::shape,x
 		rts
 
-sprite_init: ;x,y,init direction,color
-		.byte 188,96,	ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT, ACTOR_PACMAN ;offset y=+4,y=+4  ; pacman
-		.byte 92,96,	ACT_MOVE|ACT_LEFT, ACTOR_BLINKY
-		.byte 116,112, ACT_MOVE|ACT_UP, ACTOR_INKY
-		.byte 116,96,	ACT_MOVE|ACT_DOWN, ACTOR_PINKY
-		.byte 116,80,	ACT_MOVE|ACT_UP,	ACTOR_CLYDE
-sprite_init_end:
+
+game_init_sprite:
+		lda actor_init+2,y
+		sta actors+actor::move,x
+		lda actor_init+3,y	; sprite tab index
+		sta actors+actor::sprite,x
+		phx
+		tax
+		lda actor_init+0,y
+		sta sprite_tab_attr+0+SpriteTab::xpos,x
+		sta sprite_tab_attr+4+SpriteTab::xpos,x
+		lda actor_init+1,y
+		sta sprite_tab_attr+0+SpriteTab::ypos,x
+		sta sprite_tab_attr+4+SpriteTab::ypos,x
+		plx
+		lda #0
+		jsr actor_update_shape
+		rts
 
 ai_ghost:
 		tya
