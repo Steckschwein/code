@@ -95,7 +95,36 @@ gfx_blank_screen:
 		bne :-
 		rts
 
+shapes:
+; pacman
+		.byte $10*4+4,$10*4,$18*4,$10*4 ;r  00
+		.byte $12*4+4,$12*4,$18*4,$12*4 ;l  01
+		.byte $14*4+4,$14*4,$18*4,$14*4 ;u  10
+		.byte $16*4+4,$16*4,$18*4,$16*4 ;d  11
+; ghosts
+		.byte $00*4,$00*4+4,$08*4,$08*4 ;r  00
+		.byte $02*4,$02*4+4,$09*4,$09*4 ;l  01
+		.byte $04*4,$04*4+4,$0a*4,$0a*4 ;u  10
+		.byte $06*4,$06*4+4,$0b*4,$0b*4 ;d  11
+
 gfx_update:
+		rts
+
+_gfx_update_sprite_vram:
+		lda #$00
+		jsr :+
+		lda #$02
+:		ldy actors+actor::sp_y,x
+;		sty a_vram
+		ldy actors+actor::sp_x,x
+;		sty a_vram
+		ora actors+actor::shape,x
+		tay
+		lda shapes,y
+;		sta a_vram
+;		stz a_vram	; byte 4 - reserved/unused
+		rts
+
 		lda #7
 		sta gfx_tmp
 :	  lda gfx_tmp
@@ -103,22 +132,23 @@ gfx_update:
 		asl
 		asl
 		tay
-		lda sprite_tab_attr+SpriteTab::shape,y
+;		lda sprite_tab_attr+SpriteTab::shape,y
 		sta VRAM_SPRITE_POINTER, x
-		lda sprite_tab_attr+SpriteTab::color,y
+;		lda sprite_tab_attr+SpriteTab::color,y
 		sta VIC_SPR0_COLOR, x
 
 		lda gfx_tmp
 		asl
 		tax
-		lda sprite_tab_attr+SpriteTab::xpos,y
+;		lda sprite_tab_attr+SpriteTab::xpos,y
 		sta VIC_SPR0_X, x
-		lda sprite_tab_attr+SpriteTab::ypos,y
+;		lda sprite_tab_attr+SpriteTab::ypos,y
 		sta VIC_SPR0_Y, x
 		dec gfx_tmp
 		bpl :-
 
 		rts
+
 gfx_sprites_off:
 		rts
 

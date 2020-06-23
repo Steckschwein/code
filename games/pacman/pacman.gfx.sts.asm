@@ -170,14 +170,8 @@ gfx_update:
 		jsr _gfx_update_sprite_vram
 		ldx #ACTOR_CLYDE
 		jsr _gfx_update_sprite_vram
-
-		stz p_tmp
 		ldx #ACTOR_PACMAN
-		jsr _gfx_update_sprite_vram
-		;		lda pacman_shapes,y
-		;		ldy actors+actor::sprite,x
-
-		rts
+		jmp _gfx_update_sprite_vram
 
 shapes:
 ; pacman
@@ -192,17 +186,15 @@ shapes:
 		.byte $06*4,$06*4+4,$0b*4,$0b*4 ;d  11
 
 _gfx_update_sprite_vram:
-		stz p_tmp
+		lda #$00
 		jsr :+
 		lda #$02
-		sta p_tmp
-:		lda actors+actor::sp_y,x
-		sta a_vram
+:		ldy actors+actor::sp_y,x
+		sty a_vram
 		vdp_wait_l 4
-		lda actors+actor::sp_x,x
-		sta a_vram
-		lda actors+actor::shape,x
-		ora p_tmp
+		ldy actors+actor::sp_x,x
+		sty a_vram
+		ora actors+actor::shape,x
 		tay
 		lda shapes,y
 		vdp_wait_l 8
