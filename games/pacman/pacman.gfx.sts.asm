@@ -38,7 +38,13 @@
 
 		.import game_state
 		.import game_maze
-		.import sprite_tab_attr
+
+.struct SpriteTab
+  ypos    .byte
+  xpos    .byte
+  shape   .byte
+  color   .byte
+.endstruct
 
 .code
 gfx_vblank:
@@ -155,10 +161,55 @@ _fills:
 
 gfx_update:
 		vdp_vram_w VRAM_SPRITE_ATTR
-		lda #<sprite_tab_attr
-		ldy #>sprite_tab_attr
-		ldx #(5*4*2 + 4)
-		jmp vdp_memcpys
+
+		ldx #ACTOR_BLINKY
+		jsr _gfx_update_sprite_vram
+		ldx #ACTOR_INKY
+		jsr _gfx_update_sprite_vram
+		ldx #ACTOR_PINKY
+		jsr _gfx_update_sprite_vram
+		ldx #ACTOR_CLYDE
+		jsr _gfx_update_sprite_vram
+
+		stz p_tmp
+		ldx #ACTOR_PACMAN
+		jsr _gfx_update_sprite_vram
+		;		lda pacman_shapes,y
+		;		ldy actors+actor::sprite,x
+
+		rts
+
+shapes:
+; pacman
+		.byte $10*4+4,$10*4,$18*4,$10*4 ;r  00
+		.byte $12*4+4,$12*4,$18*4,$12*4 ;l  01
+		.byte $14*4+4,$14*4,$18*4,$14*4 ;u  10
+		.byte $16*4+4,$16*4,$18*4,$16*4 ;d  11
+; ghosts
+		.byte $00*4,$00*4+4,$08*4,$08*4 ;r  00
+		.byte $02*4,$02*4+4,$09*4,$09*4 ;l  01
+		.byte $04*4,$04*4+4,$0a*4,$0a*4 ;u  10
+		.byte $06*4,$06*4+4,$0b*4,$0b*4 ;d  11
+
+_gfx_update_sprite_vram:
+		stz p_tmp
+		jsr :+
+		lda #$02
+		sta p_tmp
+:		lda actors+actor::sp_y,x
+		sta a_vram
+		vdp_wait_l 4
+		lda actors+actor::sp_x,x
+		sta a_vram
+		lda actors+actor::shape,x
+		ora p_tmp
+		tay
+		lda shapes,y
+		vdp_wait_l 8
+		sta a_vram
+		vdp_wait_l 2
+		stz a_vram	; byte 4 - reserved/unused
+		rts
 
 gfx_display_maze:
 		vdp_vram_w (VRAM_SCREEN)
@@ -288,3 +339,7 @@ tiles_colors:
 sprite_patterns:
 		.include "pacman.ghosts.res"
 		.include "pacman.pacman.res"
+
+.bss
+		sprite_tab_attr:  .res 5*2*4 ;5x2 sprites, 4 byte per entry
+		sprite_tab_attr_end:

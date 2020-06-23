@@ -144,13 +144,6 @@ ACT_DIR           = 1<<1|1<<0
       pla
 .endmacro
 
-.struct SpriteTab
-  ypos    .byte
-  xpos    .byte
-  shape   .byte
-  color   .byte
-.endstruct
-
 .struct GameState
   state       .byte
   credit      .byte
@@ -164,10 +157,13 @@ ACT_DIR           = 1<<1|1<<0
 .struct actor ;
     xpos       .byte    ; character x pos - 0..31
     ypos       .byte    ; character y pos - 0..25
-    move       .byte   ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
-    turn       .byte   ; bit 7 turn, bit 1-0 turn direction
-    sprite     .byte   ; sprite number, offset to sprite tab
-    
+    sp_x       .byte    ; sprite x
+    sp_y       .byte    ; sprite y
+    shape      .byte    ; shape
+    move       .byte    ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
+    turn       .byte    ; bit 7 turn, bit 1-0 turn direction
+    sprite     .byte    ; sprite number, offset to sprite tab
+
     dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
 ;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
