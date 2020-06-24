@@ -137,11 +137,8 @@ gfx_init_sprites:
 
 		lda #VDP_Color_Yellow
 		jsr _fills
-		lda #VDP_Color_Bg
-		jsr _fills
-
-		lda gfx_Sprite_Off
-		sta sprite_tab_attr+SPRITE_Y ; init all sprites "off"
+;		lda #VDP_Color_Bg
+;		jsr _fills
 
 gfx_blank_screen:
 		vdp_vram_w VRAM_SCREEN
@@ -163,13 +160,13 @@ gfx_update:
 		vdp_vram_w VRAM_SPRITE_ATTR
 
 		ldx #ACTOR_BLINKY
-		jsr _gfx_update_sprite_vram
+		jsr _gfx_update_sprite_vram_2x
 		ldx #ACTOR_INKY
-		jsr _gfx_update_sprite_vram
+		jsr _gfx_update_sprite_vram_2x
 		ldx #ACTOR_PINKY
-		jsr _gfx_update_sprite_vram
+		jsr _gfx_update_sprite_vram_2x
 		ldx #ACTOR_CLYDE
-		jsr _gfx_update_sprite_vram
+		jsr _gfx_update_sprite_vram_2x
 		ldx #ACTOR_PACMAN
 		jmp _gfx_update_sprite_vram
 
@@ -180,15 +177,16 @@ shapes:
 		.byte $14*4+4,$14*4,$18*4,$14*4 ;u  10
 		.byte $16*4+4,$16*4,$18*4,$16*4 ;d  11
 ; ghosts
-		.byte $00*4,$00*4+4,$08*4,$08*4 ;r  00
-		.byte $02*4,$02*4+4,$09*4,$09*4 ;l  01
-		.byte $04*4,$04*4+4,$0a*4,$0a*4 ;u  10
-		.byte $06*4,$06*4+4,$0b*4,$0b*4 ;d  11
+		.byte $08*4,$08*4,$00*4,$00*4+4 ;r  00
+		.byte $09*4,$09*4,$02*4,$02*4+4 ;l  01
+		.byte $0a*4,$0a*4,$04*4,$04*4+4 ;u  10
+		.byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  11
 
+_gfx_update_sprite_vram_2x:
+		lda #$02
+		jsr :+
 _gfx_update_sprite_vram:
 		lda #$00
-		jsr :+
-		lda #$02
 :		ldy actors+actor::sp_y,x
 		sty a_vram
 		vdp_wait_l 4
