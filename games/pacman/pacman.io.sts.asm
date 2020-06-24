@@ -1,6 +1,7 @@
 ;i/o
 		.include "pacman.sts.inc"
 
+		.autoimport
 		.export io_init
 		.export io_detect_joystick
 		.export io_joystick_read
@@ -25,7 +26,7 @@ io_init:
 		rts
 
 io_irq:
-		bit	a_vreg
+		jsr gfx_irq
 		rts
 
 io_irq_on:	; nothing todo here on sts hw
@@ -83,4 +84,4 @@ io_exit:
 		jmp (retvec)
 
 .data
-		joystick_port:  .res 1, JOY_PORT1
+		joystick_port:	.res 1, JOY_PORT1 ; TODO auto detect

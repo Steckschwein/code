@@ -8,7 +8,7 @@
 		.export gfx_bordercolor
 		.export gfx_sprites_off
 		.export gfx_vblank
-
+		.export gfx_irq
 		.export gfx_charout
 		.export gfx_hires_on
 		.export gfx_hires_off
@@ -83,6 +83,11 @@ gfx_write_pal:
 		sta a_vregpal
 		rts
 
+gfx_irq:
+		lda a_vreg
+		sta vdp_sreg_0
+		rts
+
 gfx_init:
 gfx_init_pal:
 		vdp_sreg 0, v_reg16
@@ -137,8 +142,6 @@ gfx_init_sprites:
 
 		lda #VDP_Color_Yellow
 		jsr _fills
-;		lda #VDP_Color_Bg
-;		jsr _fills
 
 gfx_blank_screen:
 		vdp_vram_w VRAM_SCREEN
@@ -168,7 +171,13 @@ gfx_update:
 		ldx #ACTOR_CLYDE
 		jsr _gfx_update_sprite_vram_2x
 		ldx #ACTOR_PACMAN
-		jmp _gfx_update_sprite_vram
+		jsr _gfx_update_sprite_vram
+
+		bit vdp_sreg_0
+		bvc :+
+		stp
+		lda vdp_sreg_0
+:		rts
 
 shapes:
 ; pacman
@@ -268,21 +277,21 @@ gfx_hires_off:
 		rts
 
 .data
-vdp_init_bytes:
+vdp_init_bytes:	; vdp init table - MODE G3
 			.byte v_reg0_m4
 			.byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size |v_reg1_int
-			.byte >(VRAM_SCREEN>>2)		 ; name table (screen)
-			.byte >(VRAM_COLOR<<2)  | $1f;| $1f - color table with $800 values, each pattern with 8 colors (per line)
+			.byte >(VRAM_SCREEN>>2)		 	; name table (screen)
+			.byte >(VRAM_COLOR<<2)  | $1f	; $1f - color table with $800 values, each pattern with 8 colors (per line)
 			.byte	>(VRAM_PATTERN>>3)		; pattern table
 			.byte	>(VRAM_SPRITE_ATTR<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
 			.byte	>(VRAM_SPRITE_PATTERN>>3)
-			.byte	0
+			.byte	VDP_Color_Bg
 			.byte v_reg8_VR ; VR - 64k VRAM TODO set per define
 			.byte v_reg9_ln ; 212 lines
 			.byte <.hiword(VRAM_SPRITE_COLOR<<2) ; color table high, a16-14
 			.byte <.hiword(VRAM_SPRITE_ATTR<<1); sprite attribute high
 			.byte	0
-			.byte	0 ;#R13
+			.byte	0 ;R#13
 vdp_init_bytes_end:
 
 gfx_Sprite_Adjust_X:
@@ -331,5 +340,6 @@ sprite_patterns:
 		.include "pacman.pacman.res"
 
 .bss
+		vdp_sreg_0: 	.res 1	; S#0 of the VDP at v-blank time
 		sprite_tab_attr:  .res 5*2*4 ;5x2 sprites, 4 byte per entry
 		sprite_tab_attr_end:

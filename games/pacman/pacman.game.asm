@@ -92,7 +92,6 @@ game_isr:
 		inc game_state+GameState::frames
 		jsr gfx_update
 game_isr_exit:
-
 .ifdef __DEBUG
 		jsr debug
 .endif
@@ -449,10 +448,10 @@ get_input:
 		jmp io_player_direction		; C=0 if any valid key or joystick input, A=ACT_xxx
 
 debug:
-		bgcolor Color_Bg
 		pha
 		txa
 		pha
+		bgcolor Color_Bg
 		lda #11
 		sta sys_crs_x
 		lda #0
@@ -477,10 +476,10 @@ debug:
 		jsr out_hex_digits
 		lda keyboard_input
 		jsr out_hex_digits
-@ex:
 		pla
 		tax
 		pla
+		jsr out_hex_digits
 		rts
 
 lda_maze_ptr_ay:
