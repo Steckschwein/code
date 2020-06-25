@@ -160,7 +160,21 @@ _fills:
 		jmp vdp_fills
 
 gfx_update:
-		vdp_vram_w VRAM_SPRITE_ATTR
+
+		ldx #ACTOR_CLYDE
+		lda game_state+GameState::frames
+		and #$01
+;		beq :+
+		ldx #ACTOR_PINKY
+:		lda actors+actor::sp_y,x
+		pha
+		phx
+
+		bit vdp_sreg_0
+		bvc :+	; 9th sprite on line?
+		stz actors+actor::sp_y,x		; on top
+
+:		vdp_vram_w VRAM_SPRITE_ATTR
 
 		ldx #ACTOR_BLINKY
 		jsr _gfx_update_sprite_vram_2x
@@ -173,23 +187,12 @@ gfx_update:
 		ldx #ACTOR_PACMAN
 		jsr _gfx_update_sprite_vram
 
-		bit vdp_sreg_0
-		bvc :+
-		stp
+		plx
+		pla
+		sta actors+actor::sp_y,x
+
 		lda vdp_sreg_0
 :		rts
-
-shapes:
-; pacman
-		.byte $10*4+4,$10*4,$18*4,$10*4 ;r  00
-		.byte $12*4+4,$12*4,$18*4,$12*4 ;l  01
-		.byte $14*4+4,$14*4,$18*4,$14*4 ;u  10
-		.byte $16*4+4,$16*4,$18*4,$16*4 ;d  11
-; ghosts
-		.byte $08*4,$08*4,$00*4,$00*4+4 ;r  00
-		.byte $09*4,$09*4,$02*4,$02*4+4 ;l  01
-		.byte $0a*4,$0a*4,$04*4,$04*4+4 ;u  10
-		.byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  11
 
 _gfx_update_sprite_vram_2x:
 		lda #$02
@@ -338,6 +341,19 @@ tiles_colors:
 sprite_patterns:
 		.include "pacman.ghosts.res"
 		.include "pacman.pacman.res"
+
+shapes:
+; pacman
+		.byte $10*4+4,$10*4,$18*4,$10*4 ;r  00
+		.byte $12*4+4,$12*4,$18*4,$12*4 ;l  01
+		.byte $14*4+4,$14*4,$18*4,$14*4 ;u  10
+		.byte $16*4+4,$16*4,$18*4,$16*4 ;d  11
+; ghosts
+		.byte $08*4,$08*4,$00*4,$00*4+4 ;r  00
+		.byte $09*4,$09*4,$02*4,$02*4+4 ;l  01
+		.byte $0a*4,$0a*4,$04*4,$04*4+4 ;u  10
+		.byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  11
+
 
 .bss
 		vdp_sreg_0: 	.res 1	; S#0 of the VDP at v-blank time

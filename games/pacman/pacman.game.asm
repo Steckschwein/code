@@ -778,8 +778,6 @@ game_init_sprite:
 		sta actors+actor::sp_y,x
 		lda actor_init+2,y
 		sta actors+actor::move,x
-;		lda #$10
-;		jsr actor_update_shape
 		rts
 
 ai_ghost:

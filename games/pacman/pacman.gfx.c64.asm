@@ -43,25 +43,28 @@ gfx_mode_off:
 
 gfx_mode_on:
 		lda #(VRAM_SCREEN>>6 | VRAM_PATTERN>>10)
-		sta VIC_VIDEO_ADR
+		sta VIC_VIDEO_ADR	; $d018
 
 		lda #$ff
 		sta VIC_SPR_ENA
-		lda #%01010100
+		lda #%10101010
 		sta VIC_SPR_MCOLOR
+
+		lda #COLOR_YELLOW
+		sta VIC_SPR0_COLOR
 
 gfx_rotate_pal:
 		rts
 
 gfx_vblank:
 		lda #254
-:	  cmp VIC_HLINE
+:	  	cmp VIC_HLINE
 		bne :-
 		lda Color_Blue
 		sta VIC_BORDERCOLOR
 		sta VIC_BG_COLOR0
 		lda #255
-:	  cmp VIC_HLINE
+:	   cmp VIC_HLINE
 		bne :-
 		lda Color_Bg
 		sta VIC_BORDERCOLOR
@@ -78,9 +81,10 @@ gfx_init_chars:
 		setPtr tiles,  p_tmp
 		setPtr VRAM_PATTERN, p_video
 		jsr _gfx_memcpy
-gfx_init_sprites:
-		lda sprite_patterns
-		setPtr VRAM_SCREEN, p_video
+		setPtr sprite_patterns, p_tmp
+		setPtr VRAM_SPRITE_PATTERN, p_video
+		ldx #9
+		jsr _gfx_memcpy
 
 gfx_blank_screen:
 		setPtr VRAM_SCREEN, p_video
@@ -95,34 +99,28 @@ gfx_blank_screen:
 		bne :-
 		rts
 
-shapes:
-; pacman
-		.byte $10*4+4,$10*4,$18*4,$10*4 ;r  00
-		.byte $12*4+4,$12*4,$18*4,$12*4 ;l  01
-		.byte $14*4+4,$14*4,$18*4,$14*4 ;u  10
-		.byte $16*4+4,$16*4,$18*4,$16*4 ;d  11
-; ghosts
-		.byte $00*4,$00*4+4,$08*4,$08*4 ;r  00
-		.byte $02*4,$02*4+4,$09*4,$09*4 ;l  01
-		.byte $04*4,$04*4+4,$0a*4,$0a*4 ;u  10
-		.byte $06*4,$06*4+4,$0b*4,$0b*4 ;d  11
 
 gfx_update:
+		ldx #ACTOR_BLINKY
+;		jsr _gfx_update_sprite_vic_2x
+
+		ldx #ACTOR_PACMAN
+		jsr _gfx_update_sprite_vic
 		rts
 
-_gfx_update_sprite_vram:
+_gfx_update_sprite_vic_2x:
 		lda #$00
 		jsr :+
+_gfx_update_sprite_vic:
 		lda #$02
-:		ldy actors+actor::sp_y,x
-;		sty a_vram
+		ldy actors+actor::sp_y,x
+		sty VIC_SPR0_Y
 		ldy actors+actor::sp_x,x
-;		sty a_vram
+		sty VIC_SPR0_X
 		ora actors+actor::shape,x
 		tay
 		lda shapes,y
-;		sta a_vram
-;		stz a_vram	; byte 4 - reserved/unused
+		sta VRAM_SPRITE_POINTER
 		rts
 
 		lda #7
@@ -206,7 +204,7 @@ _gfx_setcolor:
 		ldx #4
 _gfx_memcpy:
 		ldy #0
-:	  lda (p_tmp),y
+:	  	lda (p_tmp),y
 		sta (p_video),y
 		iny
 		bne :-
@@ -268,10 +266,21 @@ gfx_pause:
 
 
 .data
-.export sprite_patterns
+shapes:
+offs=VRAM_SPRITE_PATTERN / $40
+; pacman			|		<	   O     <
+		.byte offs+17,offs+16,offs+25,offs+16 ;r  00
+		.byte offs+19,offs+18,offs+25,offs+18 ;l  01
+		.byte offs+21,offs+20,offs+25,offs+20 ;u  10
+		.byte offs+23,offs+22,offs+25,offs+22 ;d  11
+; ghosts
+		.byte offs+17,offs+16,offs+25,offs+16 ;r  00
+		.byte offs+19,offs+18,offs+25,offs+18 ;l  01
+		.byte offs+21,offs+20,offs+25,offs+20 ;u  10
+		.byte offs+23,offs+22,offs+25,offs+22 ;d  11
+
 sprite_patterns:
-		.include "pacman.ghosts.res"
-		.include "pacman.pacman.res"
+		.include "res/pacman.c64.res"
 tiles:
 		.include "pacman.tiles.rot.inc"
 

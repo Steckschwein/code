@@ -23,9 +23,6 @@ LIBS_C64=$(CC65_HOME)/lib/c64.lib
 #LDFLAGS_C64=-C c64-asm.cfg -m pacman64.map
 LDFLAGS_C64=-t c64 -m pacman64.map
 
-DEFINES=-Dasmunit_char_out=0x200
-TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(DEFINES)
-
 RESOURCES=\
   pacman.ghosts.res \
   pacman.pacman.res \
