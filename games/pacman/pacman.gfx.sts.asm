@@ -15,7 +15,6 @@
 		.export gfx_update
 		.export gfx_display_maze
 		.export gfx_pause
-		.export gfx_Sprite_Adjust_X,gfx_Sprite_Adjust_Y
 		.export gfx_Sprite_Off
 
 		.export Color_Bg
@@ -202,14 +201,14 @@ gfx_update:
 		ldx #ACTOR_PACMAN
 		jsr _gfx_update_sprite_tab
 
+		jsr _gfx_is_multiplex
+		bcs :++
 		ldx #7*4	;y sprite_tab offset clyde eyes
 		lda game_state+GameState::frames
 		and #$01
 		beq :+
 		ldx #5*4	;y sprite_tab offset pinky eyes
-:		jsr _gfx_is_multiplex
-		bcs :+
-		lda gfx_Sprite_Off-1			; c=0 - must multiplex, sprites scanline conflict +/-16px
+:		lda gfx_Sprite_Off-1			; c=0 - must multiplex, sprites scanline conflict +/-16px
 		sta sprite_tab_attr,x
 :
 		vdp_vram_w VRAM_SPRITE_ATTR
@@ -228,9 +227,13 @@ _gfx_update_sprite_tab:
 		lda #$00
 :		sta game_tmp
 		lda actors+actor::sp_y,x
+		sec
+		sbc #gfx_Sprite_Adjust_Y
 		sta sprite_tab_attr,y
 		iny
 		lda actors+actor::sp_x,x
+		sec
+		sbc #gfx_Sprite_Adjust_X
 		sta sprite_tab_attr,y
 		iny
 		phy
@@ -350,9 +353,9 @@ vdp_init_bytes:	; vdp init table - MODE G3
 			.byte	0 ;R#13
 vdp_init_bytes_end:
 
-gfx_Sprite_Adjust_X:
+gfx_Sprite_Adjust_X=8
 		.byte 8
-gfx_Sprite_Adjust_Y:
+gfx_Sprite_Adjust_Y=8
 		.byte 8
 gfx_Sprite_Off:
 		.byte SPRITE_OFF+$08 ; +8, 212 line mode

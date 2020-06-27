@@ -13,7 +13,6 @@
 		.import gfx_update
 		.import gfx_display_maze
 		.import gfx_pause
-		.import gfx_Sprite_Adjust_X,gfx_Sprite_Adjust_Y
 		.import gfx_Sprite_Off
 
 		.import out_digit,out_digits
@@ -427,15 +426,15 @@ lday_actor_charpos_direction:
 actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
 		ldy actors+actor::sprite,x
 		lda actors+actor::sp_x,x
-		clc
-		adc gfx_Sprite_Adjust_X  ; x adjust
+;		clc
+;		adc gfx_Sprite_Adjust_X  ; x adjust
 		lsr
 		lsr
 		lsr
 		sta actors+actor::xpos,x
 		lda actors+actor::sp_y,x
-		clc
-		adc gfx_Sprite_Adjust_Y  ; y adjust
+;		clc
+;		adc gfx_Sprite_Adjust_Y  ; y adjust
 		lsr
 		lsr
 		lsr
@@ -729,7 +728,8 @@ game_init:
 		bne :-
 
 		lda #MAX_DOTS
-		sta actors+actor::dots
+		ldx #ACTOR_PACMAN
+		sta actors+actor::dots,x
 
 		lda #STATE_READY
 		sta game_state+GameState::state
@@ -742,11 +742,11 @@ actor_init: ;x,y,init direction,color
 		;		.byte 116,112, ACT_MOVE|ACT_UP, 		1*2*.sizeof(SpriteTab)
 		;		.byte 116,96,	ACT_MOVE|ACT_DOWN, 	2*2*.sizeof(SpriteTab)
 		;		.byte 116,80,	ACT_MOVE|ACT_UP, 		3*2*.sizeof(SpriteTab)
-		.byte 32,$9c,	ACT_MOVE|ACT_LEFT
-		.byte 64,$9c, 	ACT_MOVE|ACT_UP
-		.byte 96,$9c,	ACT_MOVE|ACT_DOWN
-		.byte 122,$9c,	ACT_MOVE|ACT_UP
-		.byte 188,96,	ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
+		.byte 32,$a4,	ACT_MOVE|ACT_LEFT
+		.byte 64,$a4, 	ACT_MOVE|ACT_UP
+		.byte 96,$a4,	ACT_MOVE|ACT_DOWN
+		.byte 122,$a4,	ACT_MOVE|ACT_UP
+		.byte 196,104,	ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
 actor_init_end:
 
 game_init_sprites:
