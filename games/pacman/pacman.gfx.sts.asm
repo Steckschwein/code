@@ -89,6 +89,9 @@ gfx_irq:
 		rts
 
 gfx_init:
+		stz sprite_mx
+		lda #SPRITE_OFF+$08
+		sta sprite_tab_attr_end
 gfx_init_pal:
 		vdp_sreg 0, v_reg16
 		ldx #0
@@ -159,40 +162,90 @@ _fills:
 		ldx #16	  ;16 color lines per sprite
 		jmp vdp_fills
 
-gfx_update:
-
+_gfx_is_multiplex:
+		phx
+		ldx #ACTOR_BLINKY
+		jsr _gfx_test_sp_y
+		bcs  @exit ; no further check
+		ldx #ACTOR_INKY
+		jsr _gfx_test_sp_y
+		bcs  @exit ; no further check
+		ldx #ACTOR_PINKY
+		jsr _gfx_test_sp_y
+		bcs  @exit ; no further check
 		ldx #ACTOR_CLYDE
+		jsr _gfx_test_sp_y
+@exit:plx
+		rts
+
+; X ghost y test with pacman y
+_gfx_test_sp_y:	;
+		lda actors+actor::sp_y,x
+		sec
+		ldx #ACTOR_PACMAN
+		sbc actors+actor::sp_y,x
+		bpl :+
+		eor #$ff ; absolute |y1 - y2|
+:		cmp #$10 ; 16px ?
+		rts
+
+gfx_update:
+		ldy #0
+		ldx #ACTOR_BLINKY
+		jsr _gfx_update_sprite_tab_2x
+		ldx #ACTOR_INKY
+		jsr _gfx_update_sprite_tab_2x
+		ldx #ACTOR_PINKY
+		jsr _gfx_update_sprite_tab_2x
+		ldx #ACTOR_CLYDE
+		jsr _gfx_update_sprite_tab_2x
+		ldx #ACTOR_PACMAN
+		jsr _gfx_update_sprite_tab
+
+		ldx #7*4	;y sprite_tab offset clyde eyes
 		lda game_state+GameState::frames
 		and #$01
-;		beq :+
-		ldx #ACTOR_PINKY
-:		lda actors+actor::sp_y,x
-		pha
-		phx
-
-		bit vdp_sreg_0
-		bvc :+	; 9th sprite on line?
-		stz actors+actor::sp_y,x		; on top
-
-:		vdp_vram_w VRAM_SPRITE_ATTR
-
-		ldx #ACTOR_BLINKY
-		jsr _gfx_update_sprite_vram_2x
-		ldx #ACTOR_INKY
-		jsr _gfx_update_sprite_vram_2x
-		ldx #ACTOR_PINKY
-		jsr _gfx_update_sprite_vram_2x
-		ldx #ACTOR_CLYDE
-		jsr _gfx_update_sprite_vram_2x
-		ldx #ACTOR_PACMAN
-		jsr _gfx_update_sprite_vram
-
-		plx
-		pla
-		sta actors+actor::sp_y,x
+		beq :+
+		ldx #5*4	;y sprite_tab offset pinky eyes
+:		jsr _gfx_is_multiplex
+		bcs :+
+		lda gfx_Sprite_Off-1			; c=0 - must multiplex, sprites scanline conflict +/-16px
+		sta sprite_tab_attr,x
+:
+		vdp_vram_w VRAM_SPRITE_ATTR
+		lda #<sprite_tab_attr
+		ldy #>sprite_tab_attr
+		ldx #9*4+1
+		jsr vdp_memcpys
 
 		lda vdp_sreg_0
-:		rts
+		rts
+
+_gfx_update_sprite_tab_2x:
+		lda #$02
+		jsr :+
+_gfx_update_sprite_tab:
+		lda #$00
+:		sta game_tmp
+		lda actors+actor::sp_y,x
+		sta sprite_tab_attr,y
+		iny
+		lda actors+actor::sp_x,x
+		sta sprite_tab_attr,y
+		iny
+		phy
+		lda actors+actor::shape,x
+		ora game_tmp
+		tay
+		lda shapes,y
+		ply
+		sta sprite_tab_attr,y
+		iny
+		lda #0
+		sta sprite_tab_attr,y	; byte 4 - reserved/unused
+		iny
+		rts
+
 
 _gfx_update_sprite_vram_2x:
 		lda #$02
@@ -207,7 +260,7 @@ _gfx_update_sprite_vram:
 		ora actors+actor::shape,x
 		tay
 		lda shapes,y
-		vdp_wait_l 8
+		vdp_wait_l 10
 		sta a_vram
 		vdp_wait_l 2
 		stz a_vram	; byte 4 - reserved/unused
@@ -356,6 +409,7 @@ shapes:
 
 
 .bss
-		vdp_sreg_0: 	.res 1	; S#0 of the VDP at v-blank time
-		sprite_tab_attr:  .res 5*2*4 ;5x2 sprites, 4 byte per entry
+		vdp_sreg_0:		 		.res 1	; S#0 of the VDP at v-blank time
+		sprite_mx:				.res 1
+		sprite_tab_attr:		.res 9*4 ;9 sprites, 4 byte per entry +1 y of sprite 10
 		sprite_tab_attr_end:

@@ -269,10 +269,10 @@ gfx_pause:
 shapes:
 offs=VRAM_SPRITE_PATTERN / $40
 ; pacman			|		<	   O     <
-		.byte offs+17,offs+16,offs+25,offs+16 ;r  00
-		.byte offs+19,offs+18,offs+25,offs+18 ;l  01
-		.byte offs+21,offs+20,offs+25,offs+20 ;u  10
-		.byte offs+23,offs+22,offs+25,offs+22 ;d  11
+		.byte offs+1,offs+0,offs+8,offs+0 ;r  00
+		.byte offs+3,offs+2,offs+8,offs+2 ;l  01
+		.byte offs+5,offs+4,offs+8,offs+4 ;u  10
+		.byte offs+7,offs+6,offs+8,offs+6 ;d  11
 ; ghosts
 		.byte offs+17,offs+16,offs+25,offs+16 ;r  00
 		.byte offs+19,offs+18,offs+25,offs+18 ;l  01

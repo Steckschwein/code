@@ -23,6 +23,10 @@ LIBS_C64=$(CC65_HOME)/lib/c64.lib
 #LDFLAGS_C64=-C c64-asm.cfg -m pacman64.map
 LDFLAGS_C64=-t c64 -m pacman64.map
 
+RESOURCES_C64=\
+	res/pacman.c64.res \
+	pacman.tiles.rot.inc
+
 RESOURCES=\
   pacman.ghosts.res \
   pacman.pacman.res \
@@ -36,11 +40,17 @@ all: pacman.prg
 clean:
 	rm -f *.bin *.prg *.dis *.s *.o *.res *.map
 
+%.res: %.spm
+	#
+
+%.res: %.res.txt
+	grep -v sprite_.*: $< | sed "s/^\/\//;/g" > $@
+
 %.res: %.xpm
 	python3 ../utils/xpm_ca65_16bit.py $< > $@
 
 pacman.gfx.sts.o: $(RESOURCES)
-pacman.gfx.c64.o: $(RESOURCES)
+pacman.gfx.c64.o: $(RESOURCES_C64)
 
 pacman.game.o: pacman.maze.inc
 
