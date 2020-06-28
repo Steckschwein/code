@@ -15,7 +15,6 @@
 		.export gfx_update
 		.export gfx_display_maze
 		.export gfx_pause
-		.export gfx_Sprite_Off
 
 		.export Color_Bg
 		.export Color_Red
@@ -154,7 +153,7 @@ gfx_blank_screen:
 gfx_sprites_off:
 		vdp_vram_w VRAM_SPRITE_ATTR; sprites off
 		ldx #1
-		lda gfx_Sprite_Off
+		lda #gfx_Sprite_Off
 		jmp vdp_fill
 
 _fills:
@@ -180,8 +179,8 @@ _gfx_is_multiplex:
 ; X ghost y test with pacman y
 _gfx_test_sp_y:	;
 		lda actors+actor::sp_y,x
-		sec
 		ldx #ACTOR_PACMAN
+		sec
 		sbc actors+actor::sp_y,x
 		bpl :+
 		eor #$ff ; absolute |y1 - y2|
@@ -202,15 +201,15 @@ gfx_update:
 		jsr _gfx_update_sprite_tab
 
 		jsr _gfx_is_multiplex
-		bcs :++
+		bcs @update_sprites
 		ldx #7*4	;y sprite_tab offset clyde eyes
 		lda game_state+GameState::frames
 		and #$01
 		beq :+
 		ldx #5*4	;y sprite_tab offset pinky eyes
-:		lda gfx_Sprite_Off-1			; c=0 - must multiplex, sprites scanline conflict +/-16px
+:		lda #gfx_Sprite_Off-1			; c=0 - must multiplex, sprites scanline conflict +/-16px
 		sta sprite_tab_attr,x
-:
+@update_sprites:
 		vdp_vram_w VRAM_SPRITE_ATTR
 		lda #<sprite_tab_attr
 		ldy #>sprite_tab_attr
@@ -357,8 +356,7 @@ gfx_Sprite_Adjust_X=8
 		.byte 8
 gfx_Sprite_Adjust_Y=8
 		.byte 8
-gfx_Sprite_Off:
-		.byte SPRITE_OFF+$08 ; +8, 212 line mode
+gfx_Sprite_Off=SPRITE_OFF+$08 ; +8, 212 line mode
 
 Color_Bg:			.byte VDP_Color_Bg
 Color_Red:			.byte VDP_Color_Red

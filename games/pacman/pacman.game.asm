@@ -13,7 +13,6 @@
 		.import gfx_update
 		.import gfx_display_maze
 		.import gfx_pause
-		.import gfx_Sprite_Off
 
 		.import out_digit,out_digits
 		.import out_hex_digits
@@ -195,7 +194,6 @@ pacman_cornering:
 		sta game_tmp2 ;
 		pla
 l_test:
-		ldy actors+actor::sprite,x
 		and #ACT_MOVE_UP_OR_DOWN		; new direction is a turn
 		bne l_up_or_down					; so we have to test with the current direction (orthogonal)
 
@@ -265,21 +263,17 @@ actor_move_sprite:
 		tay
 		pha
 		lda _vectors+0,y
-		;stp
-		ldy actors+actor::sprite,x
 		clc
 		adc actors+actor::sp_x,x
 		sta actors+actor::sp_x,x
-;		sta sprite_tab_attr+4+SpriteTab::xpos,y
 		pla
 		tay
 		lda _vectors+1,y
 		sta game_tmp
-		ldy actors+actor::sprite,x
 @y_add:	; skip the sprite off position
 		clc
 		adc actors+actor::sp_y,x
-		cmp gfx_Sprite_Off
+		cmp #Maze_Tunnel
 		bne @y_sta
 		lda game_tmp
 		eor #$10
@@ -424,17 +418,12 @@ lday_actor_charpos_direction:
 		rts
 
 actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
-		ldy actors+actor::sprite,x
 		lda actors+actor::sp_x,x
-;		clc
-;		adc gfx_Sprite_Adjust_X  ; x adjust
 		lsr
 		lsr
 		lsr
 		sta actors+actor::xpos,x
 		lda actors+actor::sp_y,x
-;		clc
-;		adc gfx_Sprite_Adjust_Y  ; y adjust
 		lsr
 		lsr
 		lsr
@@ -460,7 +449,6 @@ debug:
 		ldx #ACTOR_PACMAN
 		lda actors+actor::xpos,x
 		jsr out_hex_digits
-		ldy actors+actor::sprite,x
 		lda actors+actor::sp_x,x
 		jsr out_hex_digits
 		lda actors+actor::ypos,x
@@ -539,7 +527,7 @@ game_playing:
 		;sta sprite_tab_attr+SPRITE_NR_PACMAN+SpriteTab::shape
 		sta actors+actor::shape,x
 		; TODO sprite off screen gfx_xxx
-		lda gfx_Sprite_Off
+		lda #Maze_Tunnel
 		; sta sprite_tab_attr+SPRITE_NR_GHOST+SpriteTab::ypos
 		; jsr gfx_sprites_off
 
@@ -742,10 +730,10 @@ actor_init: ;x,y,init direction,color
 		;		.byte 116,112, ACT_MOVE|ACT_UP, 		1*2*.sizeof(SpriteTab)
 		;		.byte 116,96,	ACT_MOVE|ACT_DOWN, 	2*2*.sizeof(SpriteTab)
 		;		.byte 116,80,	ACT_MOVE|ACT_UP, 		3*2*.sizeof(SpriteTab)
-		.byte 32,$a4,	ACT_MOVE|ACT_LEFT
-		.byte 64,$a4, 	ACT_MOVE|ACT_UP
-		.byte 96,$a4,	ACT_MOVE|ACT_DOWN
-		.byte 122,$a4,	ACT_MOVE|ACT_UP
+		.byte 32,$14,	ACT_MOVE|ACT_LEFT
+		.byte 64,$14, 	ACT_MOVE|ACT_UP
+		.byte 96,$14,	ACT_MOVE|ACT_DOWN
+		.byte 122,$14,	ACT_MOVE|ACT_UP
 		.byte 196,104,	ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
 actor_init_end:
 
