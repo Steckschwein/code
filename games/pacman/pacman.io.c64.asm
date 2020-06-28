@@ -6,53 +6,52 @@
 		.export io_joystick_read
 		.export io_player_direction
 		.export io_getkey
-		.export io_irq
+		.export io_isr
 		.export io_irq_on
 		.export io_exit
-		
+
 .code
 io_init:
 		rts
 
 io_irq_on:
 		lda #LORAM | IOEN ;disable kernel rom to setup irq
-		sta $01			  ;PLA
-		
-		lda #250		  ;bottom border
-		sta VIC_HLINE	;... Raster-IRQ
-		lda VIC_CTRL1
-		and #%01111111
-		sta VIC_CTRL1
+		sta $01			  	;PLA
+
+		lda #%01111111
+		sta CIA1_ICR
+		and VIC_CTRL1	; clear bit 7 (high byte raster line)
+		sta VIC_CTRL1	; $d011
 		lda #%00000001
 		sta VIC_IMR
-		inc VIC_IRR	  ;ack
+		lda #250			;
+		sta VIC_HLINE	; Raster-IRQ at bottom border
 		rts
-		
+
 io_exit:
 		rts
-		
-io_irq:
-		lda VIC_IRR
+
+io_isr:
+		lda VIC_IRR	; vic irq ?
 		bpl @rts
-		sta VIC_IRR
-		jsr gfx_vblank
-		lda #$80	 ;bit 7 to signal irq
+		inc VIC_IRR
+		lda CIA1_ICR
+		lda #$80	 ;bit 7 to signal video irq
+@rts:
 		rts
-@rts: lda CIA1_ICR
-		rts
-		
+
+
 io_player_direction:
 		rts
-		
+
 io_getkey:
 		;map c64 keys to ascii
-		
+
 		rts
-		
+
 io_detect_joystick:
 		lda #2
 		rts
 
 io_joystick_read:
 		rts
-		

@@ -110,11 +110,19 @@ ACT_DIR           = 1<<1|1<<0
       sta dest+1
 .endmacro
 
+.macro border_color color
+   .ifdef __DEBUG
+     .import gfx_bordercolor
+     lda color
+     jsr gfx_bordercolor
+   .endif
+.endmacro
+
 .macro bgcolor color
   .ifdef __DEBUG
-    .import gfx_bordercolor
+    .import gfx_bgcolor
     lda color
-    jsr gfx_bordercolor
+    jsr gfx_bgcolor
   .endif
 .endmacro
 

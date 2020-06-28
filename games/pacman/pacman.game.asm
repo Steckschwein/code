@@ -59,6 +59,7 @@ game_reset:
 		sta game_state+GameState::state
 		and #STATE_PAUSE
 		jsr gfx_pause
+		lda #0
 @exit:
 		cmp #KEY_EXIT
 		bne @waitkey
@@ -73,26 +74,28 @@ game_reset:
 
 game_isr:
 		push_axy
-		jsr io_irq
+		jsr io_isr
 		bpl game_isr_exit
 
-		bgcolor Color_Gray
+		border_color Color_Gray
 
 		jsr game_init
 		jsr game_ready
 		jsr game_ready_wait
 		jsr game_playing
 		jsr game_level_cleared
-		;jsr game_next_level
+		;TODO jsr game_next_level
 		jsr game_game_over
 
-		bgcolor Color_Cyan
+		border_color Color_Yellow
 		inc game_state+GameState::frames
 		jsr gfx_update
 game_isr_exit:
 .ifdef __DEBUG
+		border_color Color_Cyan
 		jsr debug
 .endif
+		border_color Color_Bg
 		pop_axy
 		rti
 
@@ -109,7 +112,7 @@ game_ready:
 		bne @detect_joystick
 .endif
 		draw_text _delete_message_1
-		jsr game_init_sprites
+		jsr game_init_actors
 		lda #STATE_READY_WAIT
 		sta game_state+GameState::state
 @detect_joystick:
@@ -324,9 +327,10 @@ pacman_collect:
 		jmp erase_and_score
 @rts: rts
 
+;	A - points
 erase_and_score:
-		dec actors+actor::dots,x
 		pha
+		dec actors+actor::dots,x
 		lda actors+actor::xpos,x
 		sta sys_crs_x
 		lda actors+actor::ypos,x
@@ -431,15 +435,15 @@ actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
 		rts
 
 get_input:
+		ldy #0
 		lda keyboard_input
-		stz keyboard_input			; "consume" key pressed
-		jmp io_player_direction		; C=0 if any valid key or joystick input, A=ACT_xxx
+		sty keyboard_input			; "consume" key pressed
+		jmp io_player_direction		; return C=0 if any valid key or joystick input, A=ACT_xxx
 
 debug:
 		pha
 		txa
 		pha
-		bgcolor Color_Bg
 		lda #11
 		sta sys_crs_x
 		lda #0
@@ -513,21 +517,21 @@ game_playing:
 		lda game_state+GameState::state
 		cmp #STATE_PLAYING
 		bne @rts
-		;jsr game_demo
+;		jsr game_demo
 		jsr actors_move
 		jsr animate_ghosts
 		jsr animate_screen
 		jsr draw_scores
 
-		lda actors+actor::dots	 ; all dots collected ?
+		ldx #ACTOR_PACMAN
+		lda actors+actor::dots,x	 ; all dots collected ?
 		bne @rts
 
-		ldx #ACTOR_PACMAN
 		lda #Sprite_Pattern_Pacman
 		;sta sprite_tab_attr+SPRITE_NR_PACMAN+SpriteTab::shape
-		sta actors+actor::shape,x
+		; sta actors+actor::shape,x
 		; TODO sprite off screen gfx_xxx
-		lda #Maze_Tunnel
+		; lda #Maze_Tunnel
 		; sta sprite_tab_attr+SPRITE_NR_GHOST+SpriteTab::ypos
 		; jsr gfx_sprites_off
 
@@ -555,7 +559,6 @@ game_level_cleared:
 		and #$03
 		tay
 		jsr gfx_rotate_pal
-
 @rts: rts
 
 add_scores:
@@ -726,40 +729,36 @@ game_init:
 
 actor_init: ;x,y,init direction,color
 		; x, y, dir
-		;		.byte 92,96,	ACT_MOVE|ACT_LEFT, 	0*2*.sizeof(SpriteTab) ; TODO impl. detail move to plattform specific
-		;		.byte 116,112, ACT_MOVE|ACT_UP, 		1*2*.sizeof(SpriteTab)
-		;		.byte 116,96,	ACT_MOVE|ACT_DOWN, 	2*2*.sizeof(SpriteTab)
-		;		.byte 116,80,	ACT_MOVE|ACT_UP, 		3*2*.sizeof(SpriteTab)
-		.byte 32,$14,	ACT_MOVE|ACT_LEFT
-		.byte 64,$14, 	ACT_MOVE|ACT_UP
-		.byte 96,$14,	ACT_MOVE|ACT_DOWN
-		.byte 122,$14,	ACT_MOVE|ACT_UP
+		.byte 100,104,	ACT_MOVE|ACT_LEFT
+		.byte 124,120, ACT_MOVE|ACT_UP
+		.byte 124,104,	ACT_MOVE|ACT_DOWN
+		.byte 124,88,	ACT_MOVE|ACT_UP
 		.byte 196,104,	ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
 actor_init_end:
 
-game_init_sprites:
+game_init_actors:
 		ldy #0
 		ldx #ACTOR_BLINKY
-		jsr game_init_sprite
+		jsr game_init_actor
 
 		ldy #3
 		ldx #ACTOR_INKY
-		jsr game_init_sprite
+		jsr game_init_actor
 
 		ldy #6
 		ldx #ACTOR_PINKY
-		jsr game_init_sprite
+		jsr game_init_actor
 
 		ldy #9
 		ldx #ACTOR_CLYDE
-		jsr game_init_sprite
+		jsr game_init_actor
 
 		ldy #12
 		ldx #ACTOR_PACMAN
-		jsr game_init_sprite
+		jsr game_init_actor
 		rts
 
-game_init_sprite:
+game_init_actor:
 		lda actor_init+0,y
 		sta actors+actor::sp_x,x
 		lda actor_init+1,y

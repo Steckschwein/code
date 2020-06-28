@@ -1,3 +1,4 @@
+		.setcpu "6502"
 		.export gfx_init
 		.export gfx_mode_on
 		.export gfx_mode_off
@@ -13,7 +14,6 @@
 		.export gfx_display_maze
 		.export gfx_hires_off
 		.export gfx_pause
-		.export gfx_Sprite_Adjust_X,gfx_Sprite_Adjust_Y
 		.export gfx_Sprite_Off
 
 		.export Color_Bg
@@ -37,7 +37,11 @@
 
 		;sprite y = 50, 250 off
 		;sprite x = 24
-		;
+
+gfx_Sprite_Adjust_X=12
+gfx_Sprite_Adjust_Y=39
+gfx_Sprite_Off=250
+
 .code
 gfx_mode_off:
 
@@ -50,25 +54,27 @@ gfx_mode_on:
 		lda #%10101010
 		sta VIC_SPR_MCOLOR
 
-		lda #COLOR_YELLOW
+		lda #COLOR_WHITE
+		sta VIC_SPR_MCOLOR0
+		lda #COLOR_BLUE
+		sta VIC_SPR_MCOLOR1
+
+		lda Color_Blinky
 		sta VIC_SPR0_COLOR
+		lda Color_Inky
+		sta VIC_SPR2_COLOR
+		lda Color_Pinky
+		sta VIC_SPR4_COLOR
+		lda Color_Clyde
+		sta VIC_SPR6_COLOR
 
 gfx_rotate_pal:
 		rts
 
 gfx_vblank:
-		lda #254
-:	  	cmp VIC_HLINE
-		bne :-
-		lda Color_Blue
-		sta VIC_BORDERCOLOR
-		sta VIC_BG_COLOR0
-		lda #255
-:	   cmp VIC_HLINE
-		bne :-
-		lda Color_Bg
-		sta VIC_BORDERCOLOR
-		sta VIC_BG_COLOR0
+;		lda Color_Blue
+;		sta VIC_BORDERCOLOR
+;		sta VIC_BG_COLOR0
 		rts
 
 gfx_init:
@@ -101,50 +107,48 @@ gfx_blank_screen:
 
 
 gfx_update:
+		ldy #0
+		sty game_tmp2
 		ldx #ACTOR_BLINKY
-;		jsr _gfx_update_sprite_vic_2x
-
+		jsr _gfx_update_sprite_tab_2x
+		ldx #ACTOR_INKY
+		jsr _gfx_update_sprite_tab_2x
+		ldx #ACTOR_PINKY
+		jsr _gfx_update_sprite_tab_2x
+		ldx #ACTOR_CLYDE
+		jsr _gfx_update_sprite_tab_2x
 		ldx #ACTOR_PACMAN
-		jsr _gfx_update_sprite_vic
+;		jsr _gfx_update_sprite_tab
 		rts
 
-_gfx_update_sprite_vic_2x:
-		lda #$00
-		jsr :+
-_gfx_update_sprite_vic:
+
+_gfx_update_sprite_tab_2x:
 		lda #$02
-		ldy actors+actor::sp_y,x
-		sty VIC_SPR0_Y
-		ldy actors+actor::sp_x,x
-		sty VIC_SPR0_X
-		ora actors+actor::shape,x
+		jsr :+
+_gfx_update_sprite_tab:
+		lda #$00
+:		sta game_tmp
+		lda actors+actor::sp_x,x
+		clc
+		adc #gfx_Sprite_Adjust_X
+		sta VIC_SPR0_X,y
+		lda actors+actor::sp_y,x
+		clc
+		adc #gfx_Sprite_Adjust_Y
+		sta VIC_SPR0_Y,y
+		tya
+		pha
+		lda actors+actor::shape,x
+		ora game_tmp
 		tay
 		lda shapes,y
-		sta VRAM_SPRITE_POINTER
-		rts
-
-		lda #7
-		sta gfx_tmp
-:	  lda gfx_tmp
-		tax
-		asl
-		asl
+		ldy game_tmp2
+		sta VRAM_SPRITE_POINTER,y
+		inc game_tmp2
+		pla
 		tay
-;		lda sprite_tab_attr+SpriteTab::shape,y
-		sta VRAM_SPRITE_POINTER, x
-;		lda sprite_tab_attr+SpriteTab::color,y
-		sta VIC_SPR0_COLOR, x
-
-		lda gfx_tmp
-		asl
-		tax
-;		lda sprite_tab_attr+SpriteTab::xpos,y
-		sta VIC_SPR0_X, x
-;		lda sprite_tab_attr+SpriteTab::ypos,y
-		sta VIC_SPR0_Y, x
-		dec gfx_tmp
-		bpl :-
-
+		iny
+		iny
 		rts
 
 gfx_sprites_off:
@@ -232,7 +236,7 @@ gfx_charout:
 		rol p_video+1
 		adc p_video
 		bcc l_add
-		inc	p_video+1; overflow inc page count
+		inc p_video+1; overflow inc page count
 		clc
 l_add:
 		adc sys_crs_x
@@ -274,10 +278,10 @@ offs=VRAM_SPRITE_PATTERN / $40
 		.byte offs+5,offs+4,offs+8,offs+4 ;u  10
 		.byte offs+7,offs+6,offs+8,offs+6 ;d  11
 ; ghosts
-		.byte offs+17,offs+16,offs+25,offs+16 ;r  00
-		.byte offs+19,offs+18,offs+25,offs+18 ;l  01
-		.byte offs+21,offs+20,offs+25,offs+20 ;u  10
-		.byte offs+23,offs+22,offs+25,offs+22 ;d  11
+		.byte offs+28,offs+28,offs+20,offs+21 ;r  00
+		.byte offs+29,offs+29,offs+22,offs+23 ;l  01
+		.byte offs+30,offs+30,offs+24,offs+25 ;u  10
+		.byte offs+31,offs+31,offs+26,offs+27 ;d  11
 
 sprite_patterns:
 		.include "res/pacman.c64.res"
@@ -295,10 +299,3 @@ Color_Dark_Cyan:  .byte COLOR_CYAN
 Color_Blue:		 .byte COLOR_BLUE
 Color_Gray:		 .byte COLOR_GRAY3
 Color_Dark_Pink:  .byte COLOR_LIGHTRED
-
-gfx_Sprite_Adjust_X:
-		.byte 24+8
-gfx_Sprite_Adjust_Y:
-		.byte 50+8
-gfx_Sprite_Off:
-		.byte 250

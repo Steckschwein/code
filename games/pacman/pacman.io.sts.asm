@@ -8,7 +8,7 @@
 		.export io_exit
 		.export io_getkey
 		.export io_player_direction
-		.export io_irq
+		.export io_isr
 		.export io_irq_on
 
 		.import joystick_on
@@ -25,8 +25,8 @@ io_init:
 		;TODO ...
 		rts
 
-io_irq:
-		jsr gfx_irq
+io_isr:
+		jsr gfx_isr
 		rts
 
 io_irq_on:	; nothing todo here on sts hw

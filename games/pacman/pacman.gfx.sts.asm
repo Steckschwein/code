@@ -8,7 +8,7 @@
 		.export gfx_bordercolor
 		.export gfx_sprites_off
 		.export gfx_vblank
-		.export gfx_irq
+		.export gfx_isr
 		.export gfx_charout
 		.export gfx_hires_on
 		.export gfx_hires_off
@@ -81,13 +81,12 @@ gfx_write_pal:
 		sta a_vregpal
 		rts
 
-gfx_irq:
+gfx_isr:
 		lda a_vreg
 		sta vdp_sreg_0
 		rts
 
 gfx_init:
-		stz sprite_mx
 		lda #SPRITE_OFF+$08
 		sta sprite_tab_attr_end
 gfx_init_pal:
@@ -411,6 +410,5 @@ shapes:
 
 .bss
 		vdp_sreg_0:		 		.res 1	; S#0 of the VDP at v-blank time
-		sprite_mx:				.res 1
 		sprite_tab_attr:		.res 9*4 ;9 sprites, 4 byte per entry +1 y of sprite 10
 		sprite_tab_attr_end:

@@ -1,27 +1,27 @@
 		.include "pacman.inc"
-		
+
 		.export out_digits,out_digit
 		.export out_hex_digit,out_hex_digits
 		.export out_text
 		.export frame_isr
 		.export sys_crs_x
 		.export sys_crs_y
-		
+
 		.import gfx_charout
 		.import game_state
-		.import io_irq
-		
+		.import io_isr
+
 .code
 frame_isr:
 		push_axy
-		
-		jsr io_irq
+
+		jsr io_isr
 		bpl @exit
-		
+
 		bgcolor Color_Yellow
-		
+
 		dec game_state+GameState::frames
-		
+
 @exit:
 		bgcolor Color_Bg
 		pop_axy
@@ -47,7 +47,7 @@ out_hex_digit:
 		inc sys_crs_x
 		inc sys_crs_y
 		rts
-		
+
 out_digits:
 		pha
 		lsr
@@ -64,7 +64,7 @@ charout:
 		jsr gfx_charout
 		dec sys_crs_y
 		rts
-		
+
 out_text:
 		ldy #0
 		lda (p_text),y
@@ -98,7 +98,7 @@ wait:
 		bne wait
 		dec game_state+GameState::frames
 		rts
-		
+
 .data
 
 .bss
