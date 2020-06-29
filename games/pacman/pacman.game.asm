@@ -298,7 +298,7 @@ actor_shape_move:
 		lsr
 		lsr
 		and #$01
-		ora #$10		;sprite shape table offset
+		ora #$10		;sprite shape table offset ghosts
 actor_update_shape:
 		sta game_tmp
 		lda actors+actor::move,x

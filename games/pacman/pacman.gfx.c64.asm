@@ -106,8 +106,9 @@ gfx_blank_screen:
 
 
 gfx_update:
-		ldy #0
-		sty game_tmp2
+		lda #0
+		sta _i
+		sta _j
 		ldx #ACTOR_BLINKY
 		jsr _gfx_update_sprite_tab_2x
 		ldx #ACTOR_INKY
@@ -115,37 +116,45 @@ gfx_update:
 		ldx #ACTOR_PINKY
 		jsr _gfx_update_sprite_tab_2x
 		ldx #ACTOR_CLYDE
+		lda #$02
 		jsr _gfx_update_sprite_tab
 		ldx #ACTOR_PACMAN
-		jsr _gfx_update_sprite_tab
+		jsr _gfx_update_sprite_tab_1x
 		rts
 
 _gfx_update_sprite_tab_2x:
-		lda #$02
-		jsr :+
-_gfx_update_sprite_tab:
+		lda #$02	;
+		jsr _gfx_update_sprite_tab
+_gfx_update_sprite_tab_1x:
 		lda #$00
-:		sta game_tmp
+_gfx_update_sprite_tab:
+		sta game_tmp
+		ldy _i
 		clc
-		lda actors+actor::sp_x,x
-		adc #gfx_Sprite_Adjust_X
-		sta VIC_SPR0_X,y
 		lda actors+actor::sp_y,x
 		adc #gfx_Sprite_Adjust_Y
 		sta VIC_SPR0_Y,y
-		tya
-		pha
+
+		lda actors+actor::sp_x,x
+		adc #gfx_Sprite_Adjust_X
+		sta VIC_SPR0_X,y
+
 		lda actors+actor::shape,x
 		ora game_tmp
 		tay
 		lda shapes,y
-		ldy game_tmp2
+
+		cmp #offs+30		; eyes up? TODO FIXME performance
+		bne :+
+		ldx _i
+		dec VIC_SPR0_X,x	; adjust 1px left if eyes up
+
+:		ldy _j
 		sta VRAM_SPRITE_POINTER,y
-		inc game_tmp2
-		pla
-		tay
-		iny
-		iny
+		inc _j
+		inc _i
+		inc _i
+
 		rts
 
 gfx_sprites_off:
@@ -279,6 +288,7 @@ offs=VRAM_SPRITE_PATTERN / $40
 		.byte offs+29,offs+29,offs+22,offs+23 ;l  01
 		.byte offs+30,offs+30,offs+24,offs+25 ;u  10
 		.byte offs+31,offs+31,offs+26,offs+27 ;d  11
+;
 
 sprite_patterns:
 		.include "pacman.c64.res"

@@ -23,6 +23,17 @@
 .globalzp p_sound
 .globalzp p_video
 
+.globalzp video_tmp
+.globalzp sound_tmp
+.globalzp game_tmp
+.globalzp game_tmp2
+.globalzp gfx_tmp
+.globalzp text_color
+
+.globalzp _i
+.globalzp _j
+.globalzp _k
+
 
 .code
 Char_Food           = $cc   ;1100 1100
