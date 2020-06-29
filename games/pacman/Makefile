@@ -24,7 +24,7 @@ LIBS_C64=$(CC65_HOME)/lib/c64.lib
 LDFLAGS_C64=-t c64 -m pacman64.map
 
 RESOURCES_C64=\
-	res/pacman.c64.res \
+	pacman.c64.res \
 	pacman.tiles.rot.inc
 
 RESOURCES=\
@@ -40,8 +40,9 @@ all: pacman.prg
 clean:
 	rm -f *.bin *.prg *.dis *.s *.o *.res *.map
 
-%.res: %.spm
-	#
+#%.res: %.spm
+%.res: %.raw
+	egrep -v "(LDA|STA|sprite_.*:)" $< | sed "s/^\/\//;/g" > $@
 
 %.res: %.res.txt
 	grep -v sprite_.*: $< | sed "s/^\/\//;/g" > $@

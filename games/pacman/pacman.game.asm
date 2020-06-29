@@ -438,7 +438,7 @@ get_input:
 		ldy #0
 		lda keyboard_input
 		sty keyboard_input			; "consume" key pressed
-		jmp io_player_direction		; return C=0 if any valid key or joystick input, A=ACT_xxx
+		jmp io_player_direction		; return C=1 if any valid key or joystick input, A=ACT_xxx
 
 debug:
 		pha

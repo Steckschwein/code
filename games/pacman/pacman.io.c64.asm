@@ -40,13 +40,14 @@ io_isr:
 @rts:
 		rts
 
-
+;	out:
+;		one of ACT_LEFT, ACT_RIGHT,... with C=1
 io_player_direction:
+		clc
 		rts
 
 io_getkey:
 		;map c64 keys to ascii
-
 		rts
 
 io_detect_joystick:

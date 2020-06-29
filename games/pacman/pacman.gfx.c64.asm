@@ -51,7 +51,7 @@ gfx_mode_on:
 
 		lda #$ff
 		sta VIC_SPR_ENA
-		lda #%10101010
+		lda #%00101010
 		sta VIC_SPR_MCOLOR
 
 		lda #COLOR_WHITE
@@ -67,14 +67,13 @@ gfx_mode_on:
 		sta VIC_SPR4_COLOR
 		lda Color_Clyde
 		sta VIC_SPR6_COLOR
+		lda Color_Yellow
+		sta VIC_SPR7_COLOR
 
 gfx_rotate_pal:
 		rts
 
 gfx_vblank:
-;		lda Color_Blue
-;		sta VIC_BORDERCOLOR
-;		sta VIC_BG_COLOR0
 		rts
 
 gfx_init:
@@ -116,11 +115,10 @@ gfx_update:
 		ldx #ACTOR_PINKY
 		jsr _gfx_update_sprite_tab_2x
 		ldx #ACTOR_CLYDE
-		jsr _gfx_update_sprite_tab_2x
+		jsr _gfx_update_sprite_tab
 		ldx #ACTOR_PACMAN
-;		jsr _gfx_update_sprite_tab
+		jsr _gfx_update_sprite_tab
 		rts
-
 
 _gfx_update_sprite_tab_2x:
 		lda #$02
@@ -128,12 +126,11 @@ _gfx_update_sprite_tab_2x:
 _gfx_update_sprite_tab:
 		lda #$00
 :		sta game_tmp
-		lda actors+actor::sp_x,x
 		clc
+		lda actors+actor::sp_x,x
 		adc #gfx_Sprite_Adjust_X
 		sta VIC_SPR0_X,y
 		lda actors+actor::sp_y,x
-		clc
 		adc #gfx_Sprite_Adjust_Y
 		sta VIC_SPR0_Y,y
 		tya
@@ -284,7 +281,7 @@ offs=VRAM_SPRITE_PATTERN / $40
 		.byte offs+31,offs+31,offs+26,offs+27 ;d  11
 
 sprite_patterns:
-		.include "res/pacman.c64.res"
+		.include "pacman.c64.res"
 tiles:
 		.include "pacman.tiles.rot.inc"
 
