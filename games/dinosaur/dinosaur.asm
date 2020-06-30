@@ -160,7 +160,7 @@ vdp_init_gfx:
 		.byte (A_SP_PAT / $800)  ; sprite pattern table - value * $800  		--> offset in VRAM
 		.byte Light_Blue
 		.byte v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM
-		.byte 0
+		.byte v_reg9_nt ;#R9 PAL
 
 vdp_init_gfx_end:
 
