@@ -6,7 +6,6 @@
 		.export sound_init
 		.export sound_init_game_start
 		.export sound_play
-		.export sound_play_state
 
 		.import opl2_init
 		.import opl2_reg_write
@@ -28,12 +27,12 @@ NOTE_Ais  =$263
 NOTE_B	 =$287
 NOTE_C	 =$2AE
 
-L2		  =32
-L4		  =16
-L8		  =8
-L16		 =4
-L32		 =2
-L64		 =1
+L2		  	=32
+L4		  	=16
+L8		  	=8
+L16		=4
+L32		=2
+L64		=1
 
 TREM=7
 VIB=6
@@ -64,7 +63,7 @@ SCALE_3=1<<6
 
 tempo=0
 .macro note _note, octave, delay
-	 .if _note = NOTE_C ;adjust octave, ym3812 ends with C ... wired
+	 .if _note = NOTE_C ;adjust octave, ym3812 ends with C ... weird
 		.byte <_note
 		.byte (1<<5) | ((octave-1)<<2) | (>_note & $03)
 		.byte delay>>tempo
@@ -96,7 +95,7 @@ tempo=0
 .endmacro
 
 .macro initvoice chn, initdata
-		stz chn+voice::ix
+		stz chn+voice::ix,x
 		lda #L64
 		sta chn+voice::cnt
 		ldx #2
@@ -121,16 +120,6 @@ sound_off:
 		opl_reg $b0,  0;
 		rts
 
-@loop:
-		jmp @loop
-
-@exit:
-		restoreIRQ _save_irq
-
-		jsr sound_off
-
-		rts
-
 .struct voice
 	 reg_a0	 .byte
 	 reg_b0	 .byte
@@ -150,9 +139,6 @@ sound_play:
 @exit:
 		rts
 
-sound_play_state:
-		.res 1,0
-
 sound_play_voice:
 		dec sound_voices+voice::cnt,x
 		bne @exit
@@ -165,11 +151,9 @@ sound_play_voice:
 
 		lda #L64
 		sta sound_voices+voice::cnt,x
-
 		stz sound_play_state
-
-
 		rts
+
 @next_note:
 		stx sound_tmp
 		tay ; index to y
@@ -235,7 +219,8 @@ sound_init_game_start:
 		initvoice voice1, sound_game_start_v1
 		initvoice voice2, sound_game_start_v2
 
-		inc sound_play_state
+		lda #1
+		sta sound_play_state
 		rts
 
 sound_game_start_v1:
@@ -248,8 +233,6 @@ sound_game_start_v2:
 		.byte game_start_voice2_end-game_start_voice2
 
 .data
-_save_irq:  .res 2, 0
-_freq:		.res 1, 0
 
 sound_voices:
 voice1:
@@ -408,4 +391,6 @@ ghost_alarm:
 		  ;opl_reg $64,  (13<<4 | (5 & $0f))	; attack / decay
 		  ;opl_reg $84,  (6<<4 | (8 & $0f))	 ; sustain / release
 
-
+.bss
+sound_play_state:
+		.res 1

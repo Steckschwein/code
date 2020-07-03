@@ -21,7 +21,6 @@
 		.import sound_init
 		.import sound_init_game_start
 		.import sound_play
-		.import sound_play_state
 
 		.import io_joystick_read
 		.import io_getkey
@@ -93,7 +92,7 @@ game_isr:
 game_isr_exit:
 .ifdef __DEBUG
 		border_color Color_Cyan
-		jsr debug
+;		jsr debug
 .endif
 		border_color Color_Bg
 		pop_axy
@@ -125,7 +124,6 @@ game_ready_wait:
 		bne @rts
 .ifndef __NO_SOUND
 		jsr sound_play
-		lda sound_play_state
 		bne @rts
 .endif
 		draw_text _delete_message_2
