@@ -26,6 +26,8 @@
       COLOR_LIGHTBLUE         = $0E
       COLOR_GRAY3             = $0F
 
+Border_HLine=250
+
 .assert __BSS_RUN__ < VRAM_SPRITE_PATTERN, error, "bss overflow!"
 
 ;just to fulfill the linker contract of the ld65 target -t c64

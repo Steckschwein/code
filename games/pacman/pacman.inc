@@ -9,6 +9,7 @@
         Color_Inky    = Color_Cyan
         Color_Clyde   = Color_Orange
         Color_Pinky   = Color_Pink
+        Color_Pacman  = Color_Yellow
         Color_Food    = Color_Dark_Pink
         Color_Border  = Color_Blue
         Color_Text    = Color_Gray

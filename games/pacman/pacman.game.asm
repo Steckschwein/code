@@ -89,12 +89,12 @@ game_isr:
 		border_color Color_Yellow
 		inc game_state+GameState::frames
 		jsr gfx_update
-game_isr_exit:
 .ifdef __DEBUG
 		border_color Color_Cyan
-;		jsr debug
+		jsr debug
 .endif
 		border_color Color_Bg
+game_isr_exit:
 		pop_axy
 		rti
 
@@ -727,11 +727,16 @@ game_init:
 
 actor_init: ;x,y,init direction,color
 		; x, y, dir
-		.byte 100,104,	ACT_MOVE|ACT_LEFT
-		.byte 124,120, ACT_MOVE|ACT_UP
-		.byte 124,104,	ACT_MOVE|ACT_DOWN
-		.byte 124,88,	ACT_MOVE|ACT_UP
+		.byte 64,$a4,	ACT_MOVE|ACT_LEFT
+		.byte 88,$a4, 	ACT_MOVE|ACT_UP
+		.byte 112,$a4,	ACT_MOVE|ACT_DOWN
+		.byte 136,$a4,	ACT_MOVE|ACT_UP
 		.byte 196,104,	ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
+;		.byte 100,104,	ACT_MOVE|ACT_LEFT
+;		.byte 124,120, ACT_MOVE|ACT_UP
+;		.byte 124,104,	ACT_MOVE|ACT_DOWN
+;		.byte 124,88,	ACT_MOVE|ACT_UP
+;		.byte 196,104,	ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
 actor_init_end:
 
 game_init_actors:

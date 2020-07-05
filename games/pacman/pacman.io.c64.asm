@@ -15,7 +15,7 @@ io_init:
 		rts
 
 io_irq_on:
-		lda #LORAM | IOEN ;disable kernel rom to setup irq
+		lda #LORAM | IOEN ;disable kernel rom to setup irq vector
 		sta $01			  	;PLA
 
 		lda #%01111111
@@ -23,8 +23,8 @@ io_irq_on:
 		and VIC_CTRL1	; clear bit 7 (high byte raster line)
 		sta VIC_CTRL1	; $d011
 		lda #%00000001
-		sta VIC_IMR
-		lda #250			;
+		sta VIC_IMR			; enable raster irq
+		lda #Border_HLine	;
 		sta VIC_HLINE	; Raster-IRQ at bottom border
 		rts
 
@@ -36,7 +36,19 @@ io_isr:
 		bpl @rts
 		inc VIC_IRR
 		lda CIA1_ICR
-		lda #$80	 ;bit 7 to signal video irq
+
+		lda #Border_HLine
+		cmp VIC_HLINE
+		beq :+
+
+		inc VIC_BORDERCOLOR
+		.import gfx_mx
+		jsr gfx_mx
+
+		lda #0
+		rts
+:
+		lda #$80	 ;bit 7 to signal vblank irq
 @rts:
 		rts
 

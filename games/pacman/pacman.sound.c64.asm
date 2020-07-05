@@ -100,10 +100,10 @@ sound_init:
 
 sound_init_game_start:
 		;lda #(15<<4 | (1 & $0f))	; AD
-		lda #97
+		lda #$22;#97
 		sta SID_AD1
 ;		lda #(10<<4 | (0 & $0f))  ; SR
-		lda #200
+		lda #$c0
 		sta SID_SUR1
 
 		lda #$ff
@@ -116,18 +116,18 @@ sound_init_game_start:
 ;		lda #<(SCALE_3 | ($3f-48)) ; key scale / level
 
 ;		lda #(15<<4 | (1 & $0f))	; AD
-		lda #$1a
+		lda #$00
 		sta SID_AD2
 ;		lda #(10<<4 | (0 & $0f))  ; SR
 		lda #$80
 		sta SID_SUR2
+		lda #$17
+		sta SID_Ctl2	; WS_PULSE_SIN
 
 		lda #$f8
-		sta SID_PB1Lo
-		sta SID_PB1Hi
+;		sta SID_PB1Lo
+;		sta SID_PB1Hi
 
-		lda #17
-		sta SID_Ctl2	; WS_PULSE_SIN
 
 		initvoice voice1, sound_game_start_v1
 		initvoice voice2, sound_game_start_v2
