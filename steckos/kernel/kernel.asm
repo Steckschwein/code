@@ -68,12 +68,6 @@ nvram = $1000
 
 kern_init:
 		sei
-
-		sta krn_ptr1; test
-		sta krn_tmp; test
-		sta vdp_ptr ; test
-		sta vdp_tmp	 ; test
-
 		; copy trampolin code for ml monitor entry to ram
 		ldx #$00
 @copy:
@@ -97,7 +91,7 @@ kern_init:
 
 		cli
 
-.ifndef DEBUG_KERNEL
+.ifndef DISABLE_INTRO
 		jsr primm
 		.byte $d5,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$b8,$0a
 		.byte $b3," steckOS kernel "
@@ -115,7 +109,7 @@ kern_init:
 		lda #<filename
 		ldx #>filename
 		jsr execv
-
+		
 do_upload:
 		jsr upload
 

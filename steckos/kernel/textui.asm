@@ -73,7 +73,7 @@ textui_decy:
 		  lda	 crs_y
 		  bne	 @l1
 		  rts
-@l1:	 dec	 crs_y				; go on with textui_update_crs_ptr below
+@l1:	  dec	 crs_y				; go on with textui_update_crs_ptr below
 		  bra	 textui_update_crs_ptr
 
 textui_incx:
@@ -85,12 +85,12 @@ textui_incx:
 		  bra	 textui_update_crs_ptr
 
 textui_decx:
-		  lda	 crs_x
-		  bne	 @l1
-		  rts
-@l1:	 dec	 crs_x				; go on with textui_update_crs_ptr below
+		lda	 crs_x
+		bne	 @l1
+		rts
+@l1:	dec	 crs_x				; go on with textui_update_crs_ptr below
 textui_update_crs_ptr:			 ; updates the 16 bit pointer crs_p upon crs_x, crs_y values
-		  pha
+		pha
 
 		  lda saved_char			 ;restore saved char
 		  sta (crs_ptr)
@@ -162,13 +162,23 @@ textui_setmode:
 textui_init:
 		  stz screen_write_lock					;reset write lock
 		  jsr textui_enable
+
+;		  lda #KEY_LF
+;		  jsr textui_dispatch_char
+		  ldx #0
+		  ldy #0
+		  jsr textui_crsxy
+
+.ifndef DISABLE_VDPINIT
 		  jmp vdp_text_on
+.endif
+		  rts
 
 textui_blank:
 		  ldx #0
 		  lda #CURSOR_BLANK
 		  sta saved_char
-@l1:	 sta screen_buffer+$000,x	 ;4 pages, 40x24
+@l1:	  sta screen_buffer+$000,x	 ;4 pages, 40x24
 		  sta screen_buffer+$100,x
 		  sta screen_buffer+$200,x
 		  sta screen_buffer+$300,x
@@ -180,11 +190,6 @@ textui_blank:
 		  stz color_buffer,x
 		  inx
 		  bne @l1
-
-		  stz crs_x
-		  stz crs_y
-		  jsr textui_update_crs_ptr
-
 		  jmp _screen_dirty
 
 textui_cursor:
@@ -327,7 +332,7 @@ textui_inc_cursor_y:
 		  trb screen_status		 ;reset cursor state
 		  jsr textui_scroll_up	 ; scroll and exit
 		  jmp textui_update_crs_ptr
-@l1:	 inc crs_y
+@l1:	  inc crs_y
 		  jmp textui_update_crs_ptr
 
 textui_enable:

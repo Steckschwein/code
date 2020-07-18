@@ -54,13 +54,13 @@ vdp_text_blank:
 ;
 vdp_text_on:
 .ifdef V9958
-	vdp_sreg <.HIWORD(ADDRESS_TEXT_SCREEN<<2), v_reg14
-	; enable V9958 /WAIT pin
-	vdp_sreg v_reg25_wait, v_reg25
+		vdp_sreg <.HIWORD(ADDRESS_TEXT_SCREEN<<2), v_reg14
+		; enable V9958 /WAIT pin
+		vdp_sreg v_reg25_wait, v_reg25
 .endif
 		SetVector vdp_init_bytes_text, vdp_ptr
 		ldy #0
-		ldx	#v_reg0
+		ldx #v_reg0
 		bit max_cols
 		bvc @l1
 		SetVector vdp_init_bytes_text_80cols, vdp_ptr

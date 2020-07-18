@@ -48,7 +48,7 @@ vdp_init:
 .endif
 			vdp_vram_w ADDRESS_GFX_SPRITE
 			vnops
-			lda #$d0					;sprites off, at least y=$d0 will disable the sprite subsystem
+			lda #SPRITE_OFF					;sprites off, at least y=$d0 will disable the sprite subsystem
 			sta a_vram
 
 			stz crs_x
