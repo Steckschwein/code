@@ -55,9 +55,9 @@ v_reg8_BW			  = 1<<0	; 0/1 grayscale off/on
 v_reg8_SPD			  = 1<<1	; 0/1 sprites enabled/disabled
 v_reg8_VR			  = 1<<3	; 0/1 16k/64k video ram
 
-v_reg9_ln		 = 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
-v_reg9_il		 = 1<<3	; interlace
-v_reg9_nt		 = 1<<1	; ntsc/pal
+v_reg9_ln		 = 1<<7   ; lines - 0 - 192 lines, 1 - 212 lines
+v_reg9_il		 = 1<<3	  ; interlace
+v_reg9_nt		 = 1<<1	  ; ntsc - 0 / pal - 1
 v_reg17_aii			= 1<<7	; auto increment
 
 v_reg25_sp2 		= 1<<0
