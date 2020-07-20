@@ -47,10 +47,11 @@ STATE_TEXTUI_ENABLED=1<<3
 .export textui_primm
 .endif
 
-.export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
+.export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_cursor_onoff, textui_setmode
 
-;.import vdp_bgcolor
+.import vdp_bgcolor
 .import vdp_memcpy
+.import vdp_fill
 .import vdp_text_on
 
 textui_decy:
@@ -152,7 +153,7 @@ vram_crs_ptr_write:
 		rts
 
 textui_init0:
-		;SetVector ADDRESS_TEXT_SCREEN, crs_ptr	 ;set crs ptr initial to screen buffer
+	vdp_sreg v_reg25_cmd, v_reg25			; enable CMD in V9958
 
 .ifdef COLS80
 		  lda #TEXT_MODE_80
@@ -165,7 +166,7 @@ textui_setmode:
 		  lda #TEXT_MODE_40
 @setmode:
 		  sta max_cols
-		  jsr textui_blank
+;		  jsr textui_blank
 
 textui_init:
 		  stz screen_write_lock					;reset write lock
@@ -173,9 +174,6 @@ textui_init:
 
 		  lda #KEY_LF
 		  jsr textui_dispatch_char
-;		  ldx #0
-;		  ldy #0
-;		  jsr textui_crsxy
 
 .ifndef DISABLE_VDPINIT
 		  jmp vdp_text_on
@@ -184,10 +182,15 @@ textui_init:
 
 textui_blank:
 		  ldx #0
+		  vdp_vram_w (ADDRESS_TEXT_SCREEN)
 		  lda #CURSOR_BLANK
 		  sta saved_char
+		  ldx #4
+		  jsr vdp_fill
 
-		  rts
+		  ldx #0
+		  ldy #0
+		  jmp textui_crsxy
 
 textui_cursor:
 		  lda screen_write_lock
@@ -213,9 +216,6 @@ textui_cursor:
 		  rts
 
 textui_update_screen:
-		  ;lda	 #Dark_Green
-		  ;jsr	 vdp_bgcolor
-
 		  lda screen_status
 		  and #STATE_TEXTUI_ENABLED
 		  beq @l1
@@ -226,51 +226,63 @@ textui_update_screen:
 @l1:
 		  rts
 
-COLS=40
-textui_scroll_up:
-		  phx
 
-		  SetVector	(ADDRESS_TEXT_SCREEN+COLS), a_r		        ; +COLS - offset second row
-		  SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), a_w	; offset first row as "write address"
+textui_scroll_up = textui_scroll_up_soft
+
+textui_scroll_up_vdp:
+
+	rts
+
+COLS=40
+textui_scroll_up_soft:
+	phx
+	lda #Dark_Green
+;	jsr vdp_bgcolor
+
+	SetVector	(ADDRESS_TEXT_SCREEN+COLS), a_r		        ; +COLS - offset second row
+	SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), a_w	; offset first row as "write address"
 @l1:
 @l2:
-		  lda	a_r+0	; 3cl
-		  sta	a_vreg
-		  vdp_wait_s 3
-		  lda	a_r+1	; 3cl
-		  sta	a_vreg
-		  vdp_wait_l
-		  ldx	a_vram	;
-		  vdp_wait_l 3
-		  lda	a_w+0	; 3cl
-		  sta	a_vreg
-		  vdp_wait_s 3
-		  lda	a_w+1	; 3cl
-		  sta a_vreg
-		  vdp_wait_l
-		  stx	a_vram
-		  inc	a_r+0	; 5cl
-		  bne	@l3		; 3cl
-		  inc	a_r+1
-		  lda	a_r+1
-		  cmp	#>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))	;screen ram $1800 - $1b00
-		  beq	@l4
+	lda	a_r+0	; 3cl
+	sta	a_vreg
+	vdp_wait_s 3
+	lda	a_r+1	; 3cl
+	sta	a_vreg
+	vdp_wait_l
+	ldx	a_vram	;
+	vdp_wait_l 3
+	lda	a_w+0	; 3cl
+	sta	a_vreg
+	vdp_wait_s 3
+	lda	a_w+1	; 3cl
+	sta a_vreg
+	vdp_wait_l
+	stx	a_vram
+	inc	a_r+0	; 5cl
+	bne	@l3		; 3cl
+	inc	a_r+1
+	lda	a_r+1
+	cmp	#>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))	;screen ram $1800 - $1b00
+	beq	@l4
 @l3:
-		  inc	a_w+0  ; 5cl
-		  bne	@l2		; 3cl
-		  inc	a_w+1
-		  bra	@l1
+	inc	a_w+0  ; 5cl
+	bne	@l2		; 3cl
+	inc	a_w+1
+	bra	@l1
 @l4:
-		  ldx	#COLS	; write address is already setup from loop
-		  lda	#' '
+	ldx	#COLS	; write address is already setup from loop
+	lda	#' '
 @l5:
-		  sta	a_vram
-		  vdp_wait_l 5
-		  dex
-		  bne	@l5
+	sta	a_vram
+	vdp_wait_l 5
+	dex
+	bne	@l5
 
-		  plx
-		  rts
+	lda	 #Medium_Green<<4|Black
+	jsr	 vdp_bgcolor
+
+	plx
+	rts
 
 textui_inc_cursor_y:
 		  lda crs_y
