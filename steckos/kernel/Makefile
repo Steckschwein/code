@@ -1,6 +1,8 @@
 CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
-OBJS=kernel.o textui.o rtc.o out.o key.o exec.o util.o automount.o
+OBJS=kernel.o rtc.o out.o key.o exec.o util.o automount.o
+#OBJS+=textui.o
+OBJS+=textui_vdp.o
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
 LDFLAGS=-C kernel.cfg
@@ -10,8 +12,8 @@ LDFLAGS=-C kernel.cfg
 DEFINES+=-DV9958
 # enable 80 cols
 # DEFINES+=-DCOLS80
-# DEFINES+=-DDISABLE_INTRO
-# DEFINES+=-DDISABLE_VDPINIT
+#DEFINES+=-DDISABLE_INTRO
+#DEFINES+=-DDISABLE_VDPINIT
 
 # enable debug
 #DEBUG += -DDEBUG_KERNEL
