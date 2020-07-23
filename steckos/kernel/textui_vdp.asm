@@ -153,7 +153,7 @@ vram_crs_ptr_write:
 		rts
 
 textui_init0:
-	vdp_sreg v_reg25_cmd, v_reg25			; enable CMD in V9958
+	vdp_sreg v_reg25_wait | v_reg25_cmd, v_reg25			; enable CMD in V9958
 
 .ifdef COLS80
 		  lda #TEXT_MODE_80
@@ -229,9 +229,26 @@ textui_update_screen:
 
 textui_scroll_up = textui_scroll_up_soft
 
+.import vdp_wait_cmd
 textui_scroll_up_vdp:
-
-	rts
+	; sy - #34,#35
+	; stp
+	vdp_sreg 192, v_reg34
+	vdp_sreg 0, v_reg35
+	; dx - #36,#37
+	vdp_sreg 0, v_reg36
+	vdp_sreg 0, v_reg37
+	; dy - #38,#39
+	vdp_sreg 0, v_reg38
+	vdp_sreg 0, v_reg39
+	; ny - #42,#43
+	vdp_sreg 192-8, v_reg42
+	vdp_sreg 0, v_reg43
+	; #45
+	vdp_sreg v_reg45_diy, v_reg45
+	; v_cmd_ymmm
+	vdp_sreg v_cmd_ymmm, v_reg46
+	jmp vdp_wait_cmd
 
 COLS=40
 textui_scroll_up_soft:
@@ -245,16 +262,16 @@ textui_scroll_up_soft:
 @l2:
 	lda	a_r+0	; 3cl
 	sta	a_vreg
-	vdp_wait_s 3
-	lda	a_r+1	; 3cl
+	lda	a_r+1
+	vdp_wait_s 4
 	sta	a_vreg
 	vdp_wait_l
 	ldx	a_vram	;
-	vdp_wait_l 3
 	lda	a_w+0	; 3cl
+	vdp_wait_l 4
 	sta	a_vreg
-	vdp_wait_s 3
 	lda	a_w+1	; 3cl
+	vdp_wait_s 4
 	sta a_vreg
 	vdp_wait_l
 	stx	a_vram

@@ -94,7 +94,7 @@ v_reg15	= $80 + 15
 v_reg16 = $80 + 16  ; color palette index register
 v_reg17	= $80 + 17
 v_reg18	= $80 + 18	; display adjust
-v_reg19 = $80 + 19  ; h-blank irq scanline
+v_reg19 = $80 + 19   ; h-blank irq scanline
 v_reg23	= $80 + 23	; screen ram vertical offset
 
 ; V9958 specific
@@ -102,6 +102,8 @@ v_reg25 = $80 + 25
 v_reg26 = $80 + 26  ; horizonatl scroll register, bit 5-0, scroll 8 dot units (character)
 v_reg27 = $80 + 27  ; horizonatl scroll register bit 2-0, scroll dot units
 
+v_reg34 = $80 + 34  ;
+v_reg35 = $80 + 35  ;
 v_reg36 = $80 + 36
 v_reg37 = $80 + 37
 v_reg38 = $80 + 38
