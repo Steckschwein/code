@@ -5,7 +5,7 @@ LIBS=--config ../steckos/prg.ld65.cfg -m $@.map ../steckos/lib/steckschwein.a ..
 
 all: $(TARGET)
 
-%.prg: $(OBJS) $(LIBS)
+%.prg: $(OBJS)
 	cl65 --target none -o $@ $(OBJS) $(LIBS)
 
 %.o: %.s
