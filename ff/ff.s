@@ -51,53 +51,6 @@ appstart $1000
 .endmacro
 
 .code
-
-    jmp	main
-
-yOffs: .byte 0
-seed: .byte 0
-frame_cnt: .byte 0
-frame_end: .byte 0
-scroll_ctl: .byte 0
-text_color_ix: .byte 0
-seconds: .byte 0
-
-
-line1:
-.byte	"@steckschwein #FollowFriday    ",1
-.byte	"@BreakIntoProg                 ",1
-.byte	"@0xC0DE6502                    ",1
-.byte	"@6502nerd                      ",1
-.byte	"@electron_greg                 ",1
-.byte	"@Roysterini                    ",1
-.byte	"@leelegionsmith                ",1
-.byte	"@_gazmarshall                  ",1
-.byte	"@SyntaxErrorSoft               ",1
-.byte	"@maded2                        ",1
-.byte	"@Annatar34381343               ",1
-.byte	"@drogon                        ",1
-.byte	"@afachat                       ",1
-.byte	"@SarahJaneAvory                ",1
-.byte	"@8bit_era                      ",1
-.byte	"@pagetable                     ",1
-.byte	"@DrWuro                        ",1
-.byte	"@futurewas8bit                 ",1
-.byte	"@ZxSpectROM                    ",1
-.byte	"@thejanbeta                    ",1
-.byte	"@theretrobyte                  ",1
-.byte	"@CommodoreBlog                 ",1
-.byte   "@gigatronTTL                   ",1
-.byte   "@Goetholon                     ",1
-.byte   "@svenpetersen191               ",1
-.byte   "@StefanyAllaire                ",1
-.byte   "@DatassetteUser                ",1
-.byte   "@awsm9000                      ",1
-.byte   "@48kRAM                        ",1
-.byte   "                               ",1
-.byte	0
-
-
-main:
 	sei
 
 	; jsr getkey
@@ -467,5 +420,46 @@ raster_bar_colors:
 	.byte Dark_Red
 	.byte Magenta
 
+line1:
+	.byte	"@steckschwein #FollowFriday    ",1
+	.byte	"@BreakIntoProg                 ",1
+	.byte	"@0xC0DE6502                    ",1
+	.byte	"@6502nerd                      ",1
+	.byte	"@electron_greg                 ",1
+	.byte	"@Roysterini                    ",1
+	.byte	"@leelegionsmith                ",1
+	.byte	"@_gazmarshall                  ",1
+	.byte	"@SyntaxErrorSoft               ",1
+	.byte	"@maded2                        ",1
+	.byte	"@Annatar34381343               ",1
+	.byte	"@drogon                        ",1
+	.byte	"@afachat                       ",1
+	.byte	"@SarahJaneAvory                ",1
+	.byte	"@8bit_era                      ",1
+	.byte	"@pagetable                     ",1
+	.byte	"@DrWuro                        ",1
+	.byte	"@futurewas8bit                 ",1
+	.byte	"@ZxSpectROM                    ",1
+	.byte	"@thejanbeta                    ",1
+	.byte	"@theretrobyte                  ",1
+	.byte	"@CommodoreBlog                 ",1
+	.byte   "@gigatronTTL                   ",1
+	.byte   "@Goetholon                     ",1
+	.byte   "@svenpetersen191               ",1
+	.byte   "@StefanyAllaire                ",1
+	.byte   "@DatassetteUser                ",1
+	.byte   "@awsm9000                      ",1
+	.byte   "@48kRAM                        ",1
+	.byte   "                               ",1
+	.byte	0
+
+
 .bss
+yOffs: .byte 0
+seed: .byte 0
+frame_cnt: .byte 0
+frame_end: .byte 0
+scroll_ctl: .byte 0
+text_color_ix: .byte 0
+seconds: .byte 0
 irqsafe: .res 2
