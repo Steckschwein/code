@@ -430,11 +430,11 @@ line1:
 
 
 .bss
-yOffs: .byte 0
-seed: .byte 0
-frame_cnt: .byte 0
-frame_end: .byte 0
-scroll_ctl: .byte 0
-text_color_ix: .byte 0
-seconds: .byte 0
-irqsafe: .res 2
+yOffs: 			.byte 0
+seed: 			.byte 0
+frame_cnt: 		.byte 0
+frame_end: 		.byte 0
+scroll_ctl: 	.byte 0
+text_color_ix: 	.byte 0
+seconds: 		.byte 0
+irqsafe: 		.res 2
