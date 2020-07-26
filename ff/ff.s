@@ -53,17 +53,10 @@ appstart $1000
 .code
 	sei
 
-	; jsr getkey
-
-;	jsr	vdp_display_off
-
 	lda memctl
    	pha
 	stz memctl
 
-;	SetVector charset, adrl
-;	lda #$00
-;	ldy #$00+$40
 	vdp_vram_w $0000
 	lda #<charset
 	ldy #>charset
@@ -74,9 +67,6 @@ appstart $1000
 	sta memctl
 
    ;ADDRESS_GFX1_SPRITE_PATTERN
-	;SetVector	chars, adrl
-   ;lda	#$00		;setup pattern
-	;ldy	#$00+$40
 	vdp_vram_w $0000
 	lda #<chars
 	ldy #>chars
@@ -84,17 +74,12 @@ appstart $1000
 	jsr vdp_memcpys
 
    ;vdp_vram_w ADDRESS_GFX1_COLOR
-   ; lda	#$00
-   ; ldy	#$20+$40
    	vdp_vram_w $2000
 	lda	#Cyan<<4|Black		;setup screen color gfx1
 	ldx	#$20		; $20 possible colors
 	jsr	vdp_fills
 
    ;vdp_fills ADDRESS_GFX1_SCREEN
-	;sta	adrl
-	;lda	#$00
-	;ldy	#$18+$40
 	vdp_vram_w $1800
 	lda	#$20		;clear screen gfx1
 	ldx	#$03		; $300 chars
@@ -111,10 +96,6 @@ appstart $1000
 	lda #<starfield_vdp_init_tab
 	ldy #>starfield_vdp_init_tab
 	jsr vdp_init_reg
-
-;	lda	#v_reg1_16k|v_reg1_display_on|v_reg1_int
-;	ldy	#v_reg1
-;	vdp_sreg
 
 	lda		#08
 	sta		crs_x
@@ -181,9 +162,6 @@ stars_irq:
 ; 	jsr vdp_bgcolor
 
 	;update sprite tab
-	;SetVector	starfield_spritetab, adrl
-	; lda	#$00
-	;ldy	#$3c+$40
 	vdp_vram_w $3c00
 	lda #<starfield_spritetab
 	ldy #>starfield_spritetab
@@ -191,9 +169,6 @@ stars_irq:
 	jsr vdp_memcpys
 ;
 	;update text
-	;SetVector	text_scroll_buf, adrl
-	;lda	#$80
-	;ldy	#$19+$40
 	vdp_vram_w $1980
 	lda #<text_scroll_buf
 	ldy #>text_scroll_buf
@@ -205,17 +180,17 @@ stars_irq:
 	vdp_vram_w $2001
 	ldx text_color_ix
 	lda intro_label_color,x
-;	sta adrl
+
 	ldx #$1f
 	jsr vdp_fills
-;
+
 	ldx frame_cnt
 	inx
 	cpx	#50
 	bne	:+
 	ldx	#$00
 :	stx	frame_cnt
-;
+
 	inc	frame_end
 
    	restore
