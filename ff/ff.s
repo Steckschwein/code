@@ -43,6 +43,13 @@ appstart $1000
    .endrep
 .endmacro
 
+.macro inc16 _w
+	inc _w
+	bne :+
+	inc _w+1
+	:
+.endmacro
+
 .code
 
     jmp	main
@@ -51,7 +58,6 @@ yOffs: .byte 0
 seed: .byte 0
 frame_cnt: .byte 0
 frame_end: .byte 0
-scrollpos: .byte 0
 scroll_ctl: .byte 0
 text_color_ix: .byte 0
 seconds: .byte 0
@@ -59,7 +65,6 @@ seconds: .byte 0
 
 line1:
 .byte	"@steckschwein #FollowFriday    ",1
-.byte   "follow these people:           ",1
 .byte	"@BreakIntoProg                 ",1
 .byte	"@0xC0DE6502                    ",1
 .byte	"@6502nerd                      ",1
@@ -87,7 +92,8 @@ line1:
 .byte   "@StefanyAllaire                ",1
 .byte   "@DatassetteUser                ",1
 .byte   "@awsm9000                      ",1
-.res	255, $20
+.byte   "@48kRAM                        ",1
+.byte   "                               ",1
 .byte	0
 
 
@@ -161,6 +167,7 @@ main:
 	sta		crs_x
 	lda		#12
 	sta		crs_y
+
 	SetVector line1, adrl
 
 	cli
@@ -169,7 +176,6 @@ main:
 	sta seconds
 	stz frame_cnt
 	stz frame_end
-	stz scrollpos
 	lda #$0a
 	sta text_color_ix
 	stz scroll_ctl
@@ -293,10 +299,17 @@ text_scroll:
 	inx
 	cpx	#$1f
 	bne	:-
-	ldx	scrollpos
-	lda line1,x
+
+	lda (adrl)
+	inc16 adrl
+
+	cmp #0
+	bne :+
+	; reset vector if null was read
+	SetVector line1, adrl
+:
+
 	sta text_scroll_buf+$1f
-	inc scrollpos
 	cmp #$01			;stop marker
 	bne	text_scroll_e
 	dec scroll_ctl
