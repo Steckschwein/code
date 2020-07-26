@@ -109,11 +109,11 @@ main:
 	jsr	vdp_fills
 
    ;vdp_fills ADDRESS_GFX1_SCREEN
-	lda	#$20		;clear screen gfx1
 	;sta	adrl
 	;lda	#$00
 	;ldy	#$18+$40
    vdp_vram_w $1800
+   lda	#$20		;clear screen gfx1
 	ldx	#$03		; $300 chars
 	jsr	vdp_fill
 
