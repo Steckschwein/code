@@ -1,16 +1,44 @@
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 .include "steckos.inc"
 .include "common.inc"
 .include "vdp.inc"
 .include "via.inc"
-appstart $1000
-.export char_out=krn_chrout
+;.export char_out=krn_chrout
 
-.importzp ptr1
 .import vdp_display_off, vdp_init_reg, vdp_fill, vdp_fills, vdp_memcpy, vdp_memcpys
-.zeropage
-adrl:  .res 1
-adrh:  .res 1
+.import vdp_bgcolor
 
+.zeropage
+adrl:  .res 2
+
+appstart $1000
+
+.macro nops _n
+	.repeat _n
+		nop
+   .endrep
+.endmacro
 
 .code
 
@@ -44,38 +72,48 @@ main:
 
 	; jsr getkey
 
-	jsr	vdp_display_off
+;	jsr	vdp_display_off
 
 	lda memctl
-    pha
+   pha
 	stz memctl
 
-	SetVector charset, adrl
-	lda #$00
-	ldy #$00+$40
-	ldx	#$08
-	jsr	vdp_memcpy
+;	SetVector charset, adrl
+;	lda #$00
+;	ldy #$00+$40
+   vdp_vram_w $0000
+   lda #<charset
+   ldy #>charset
+   ldx #$08
+	jsr vdp_memcpy
 
 	pla
 	sta memctl
 
-	SetVector	chars, adrl
-	lda	#$00		;setup pattern
-	ldy	#$00+$40
-	ldx	#$10		;
-	jsr	vdp_memcpys
+   ;ADDRESS_GFX1_SPRITE_PATTERN
+	;SetVector	chars, adrl
+   ;lda	#$00		;setup pattern
+	;ldy	#$00+$40
+   vdp_vram_w $0000
+   lda #<chars
+   ldy #>chars
+	ldx #$10		;
+   jsr vdp_memcpys
 
+   ;vdp_vram_w ADDRESS_GFX1_COLOR
+   ; lda	#$00
+   ; ldy	#$20+$40
+   vdp_vram_w $2000
 	lda	#Cyan<<4|Black		;setup screen color gfx1
-	sta	adrl
-	lda	#$00
-	ldy	#$20+$40
 	ldx	#$20		; $20 possible colors
 	jsr	vdp_fills
 
+   ;vdp_fills ADDRESS_GFX1_SCREEN
 	lda	#$20		;clear screen gfx1
-	sta	adrl
-	lda	#$00
-	ldy	#$18+$40
+	;sta	adrl
+	;lda	#$00
+	;ldy	#$18+$40
+   vdp_vram_w $1800
 	ldx	#$03		; $300 chars
 	jsr	vdp_fill
 
@@ -83,120 +121,125 @@ main:
 
 	jsr	init_sprites
 
-	;SetVector	stars_irq,	irqvec
+   copypointer  $fffe, irqsafe
+	SetVector	stars_irq,	$fffe
 
+   ldx #starfield_vdp_init_tab_end-starfield_vdp_init_tab
+   lda #<starfield_vdp_init_tab
+   ldy #>starfield_vdp_init_tab
+   jsr vdp_init_reg
 
-	SetVector	starfield_tab, adrl
-	jsr	vdp_init_reg
-
-	lda	#v_reg1_16k|v_reg1_display_on|v_reg1_int
-	ldy	#v_reg1
-	vdp_sreg
+;	lda	#v_reg1_16k|v_reg1_display_on|v_reg1_int
+;	ldy	#v_reg1
+;	vdp_sreg
 
 	lda		#08
 	sta		crs_x
 	lda		#12
 	sta		crs_y
-	SetVector	line1, adrl
+	SetVector line1, adrl
 
 	cli
 
-	lda		#$03
-	sta		seconds
-	stz		frame_cnt
-	stz		frame_end
-	stz		scrollpos
-	lda		#$0a
-	sta		text_color_ix
-	stz		scroll_ctl
+	lda #$03
+	sta seconds
+	stz frame_cnt
+	stz frame_end
+	stz scrollpos
+	lda #$0a
+	sta text_color_ix
+	stz scroll_ctl
 
 	; main loop
+@loop:
+	lda frame_end
+	bne @loop
 
-:	lda		frame_end
-	bne		:-
-
-	jsr 	move_stars
-	jsr		text_scroll
-	lda		frame_cnt
-	and		#$01
-	bne		:+
-	jsr		text_color
+	jsr move_stars
+	jsr text_scroll
+	lda frame_cnt
+	and #$01
+	bne :+
+	jsr text_color
 :
 	;jsr		joystick
 
 	dec		frame_end
-
-
 	; jsr getkey
 	; cmp #$0d
 	; beq .out
 	; cmp #$20
 	; beq .out
 
-	jmp	:-
+	jmp @loop
 ;.out
 	jmp $c800
 
 
-; stars_irq:
-	; bit via1ifr		; Interrupt from VIA?
-	; beq +
-	; bit via1t1cl	; acknowledge VIA timer 1 interrupt
-; +
-	; +save
-;
-	; bit	a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
-	; bmi +	   ; VDP IRQ flag set?
-	; rti
-; +
-	; +nops	89
-	; ldx		#$00
-; -	lda		raster_bar_colors,x
-	; jsr		vdp_bgcolor
-	; +nops	$6d
-	; inx
-	; cpx		#$0b
-	; bne		-
-	; lda		#Black
-	; jsr		vdp_bgcolor
-;
-;
-	; ;update sprite tab
-	; SetVector	starfield_spritetab, adrl
+stars_irq:
+	bit via1ifr		; Interrupt from VIA?
+	beq :+
+	bit via1t1cl	; acknowledge VIA timer 1 interrupt
+:
+	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
+	bmi :+	   ; VDP IRQ flag set?
+	rti
+:
+   save
+	nops 89
+	ldx		#$00
+:	lda		raster_bar_colors,x
+	jsr		vdp_bgcolor
+	nops $6d
+	inx
+	cpx #$0b
+	bne :-
+	lda #Black
+	jsr vdp_bgcolor
+
+	;update sprite tab
+	;SetVector	starfield_spritetab, adrl
 	; lda	#$00
-	; ldy	#$3c+$40
-	; ldx	#$20*4
-	; jsr vdp_memcpys
+	;ldy	#$3c+$40
+   vdp_vram_w $3c00
+   lda #<starfield_spritetab
+   ldy #>starfield_spritetab
+   ldx #$20*4
+	jsr vdp_memcpys
 ;
-	; ;update text
-	; SetVector	text_scroll_buf, adrl
-	; lda	#$80
-	; ldy	#$19+$40
-	; ldx	#$20
-	; jsr vdp_memcpys
+	;update text
+	;SetVector	text_scroll_buf, adrl
+	;lda	#$80
+	;ldy	#$19+$40
+   vdp_vram_w $1980
+   lda #<text_scroll_buf
+   ldy #>text_scroll_buf
+	ldx #$20
+	jsr vdp_memcpys
 ;
-	; ldx	text_color_ix
-	; lda	intro_label_color,x
-	; sta	adrl
-	; lda	#$01	;skip first 8 chars
-	; ldy #$20+$40
-	; ldx	#$1f
-	; jsr	vdp_fills
+;	lda #$01	;skip first 8 chars
+;	ldy #$20+$40
+   vdp_vram_w $2001
+   ldx text_color_ix
+	lda intro_label_color,x
+;	sta adrl
+	ldx #$1f
+	jsr vdp_fills
 ;
-	; ldx frame_cnt
-	; inx
-	; cpx	#50
-	; bne	+
-	; ldx	#$00
-; +	stx	frame_cnt
+	ldx frame_cnt
+	inx
+	cpx	#50
+	bne	:+
+	ldx	#$00
+:	stx	frame_cnt
 ;
-	; inc	frame_end
+	inc	frame_end
+
+   restore
+	rti
 ;
-	; +restore
-	; rti
-;
-; joystick:
-	; rts
+joystick:
+	rts
 
 text_color:
 	dec	text_color_ix
@@ -284,15 +327,16 @@ init_sprites:
 	bne :-
 	rts
 
-starfield_tab:
+starfield_vdp_init_tab:
 	.byte	0
-	.byte v_reg1_16k
+	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int
 	.byte ($1800 / $400)	; name table - value * $400
 	.byte	($2000 / $40)	; color table
 	.byte	($0000 / $800) ; pattern table
 	.byte	($3c00 / $80)	; sprite attribute table - value * $80 --> offset in VRAM
 	.byte	($0000 / $800)	; sprite pattern table - value * $800  --> offset in VRAM
 	.byte	Black
+starfield_vdp_init_tab_end:
 
 rnd:
    lda seed
@@ -319,6 +363,14 @@ init_via:
 	rts
 
 chars:
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00010000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
 ;+SpriteLine	%........
 ;+SpriteLine	%........
 ;+SpriteLine	%........
@@ -328,6 +380,14 @@ chars:
 ;+SpriteLine	%........
 ;+SpriteLine	%........
 blank:
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
 ;+SpriteLine	%........
 ;+SpriteLine	%........
 ;+SpriteLine	%........
@@ -338,11 +398,11 @@ blank:
 ;+SpriteLine	%........
 
 starfield_speed_tab:
-;	!fill 32, 0
+	.res 32, 0
 starfield_spritetab:;y,x,pattern,attr
-;	!fill 32*4, 0
+	.res 32*4, 0
 text_scroll_buf:
-;	!fill 32, $20
+	.res 32, $20
 
 intro_label_color:
 	.byte Magenta<<4|Black
@@ -370,3 +430,5 @@ raster_bar_colors:
 	.byte Dark_Red
 	.byte Magenta
 
+.bss
+irqsafe: .res 2
