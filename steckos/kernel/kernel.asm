@@ -109,7 +109,7 @@ kern_init:
 		lda #<filename
 		ldx #>filename
 		jsr execv
-		
+
 do_upload:
 		jsr upload
 

@@ -54,27 +54,6 @@ STATE_TEXTUI_ENABLED=1<<3
 .import vdp_fill
 .import vdp_text_on
 
-textui_decy:
-		  lda	 crs_y
-		  bne	 @l1
-		  rts
-@l1:	  dec	 crs_y				; go on with textui_update_crs_ptr below
-		  bra	 textui_update_crs_ptr
-
-textui_incx:
-		lda crs_x
-		cmp max_cols
-		bne @l1
-		rts						  ;TODO should we move to next row automatically ?!?
-@l1:	inc crs_x
-		bra textui_update_crs_ptr
-
-textui_decx:
-		lda crs_x
-		bne @l1
-		rts
-@l1:	dec crs_x				; go on with textui_update_crs_ptr below
-
 textui_update_crs_ptr:		; updates the 16 bit pointer crs_p upon crs_x, crs_y values
 		pha
 
@@ -113,37 +92,30 @@ textui_update_crs_ptr:		; updates the 16 bit pointer crs_p upon crs_x, crs_y val
 		inc crs_ptr+1
 		clc
 
-@l0:	adc crs_ptr					 ;
+@l0:	adc crs_ptr			;
 		bcc @l1
-		inc crs_ptr+1		  ; overflow inc page count
-		clc					 ;
+		inc crs_ptr+1		; overflow inc page count
+		clc					;
 @l1:	adc crs_x
+		sta a_vreg
 		sta crs_ptr
 
 	  	lda #>ADDRESS_TEXT_SCREEN
 	  	adc crs_ptr+1		  ; add carry and page to address high byte
-	  	sta crs_ptr+1
-		jsr vram_crs_ptr_read		;	  	lda (crs_ptr)
+		sta a_vreg
+		sta crs_ptr+1
+		vdp_wait_l 3
+		lda a_vram
   		sta saved_char		  ;save char at new position
 
 	  	pla
   		rts
 
-vram_crs_ptr_read:
-		lda crs_ptr
-		sta a_vreg
-		vdp_wait_s
-		lda crs_ptr+1
-		sta a_vreg
-		vdp_wait_l
-		lda a_vram
-		rts
-
 vram_crs_ptr_write:
 		pha
 		lda crs_ptr
 		sta a_vreg
-		vdp_wait_s
+		vdp_wait_s 5
 		lda crs_ptr+1
 		ora #WRITE_ADDRESS
 		sta a_vreg
@@ -182,7 +154,7 @@ textui_init:
 
 textui_blank:
 		  ldx #0
-		  vdp_vram_w (ADDRESS_TEXT_SCREEN)
+		  vdp_vram_w ADDRESS_TEXT_SCREEN
 		  lda #CURSOR_BLANK
 		  sta saved_char
 		  ldx #4
@@ -211,108 +183,107 @@ textui_cursor:
 		  bra @l2
 @l1:	  lda saved_char
 @l2:
-			jmp vram_crs_ptr_write	;			sta (crs_ptr)
+		  jmp vram_crs_ptr_write	;			sta (crs_ptr)
 @l_exit:
 		  rts
 
 textui_update_screen:
-		  lda screen_status
-		  and #STATE_TEXTUI_ENABLED
-		  beq @l1
+	lda screen_status
+	and #STATE_TEXTUI_ENABLED
+	beq :+
+	inc screen_frames
+	jsr textui_cursor
+:  rts
 
-		  inc screen_frames
-
-		  jsr textui_cursor
-@l1:
-		  rts
-
-
-textui_scroll_up = textui_scroll_up_soft
-
-.import vdp_wait_cmd
-textui_scroll_up_vdp:
-	; sy - #34,#35
-	; stp
-	vdp_sreg 192, v_reg34
-	vdp_sreg 0, v_reg35
-	; dx - #36,#37
-	vdp_sreg 0, v_reg36
-	vdp_sreg 0, v_reg37
-	; dy - #38,#39
-	vdp_sreg 0, v_reg38
-	vdp_sreg 0, v_reg39
-	; ny - #42,#43
-	vdp_sreg 192-8, v_reg42
-	vdp_sreg 0, v_reg43
-	; #45
-	vdp_sreg v_reg45_diy, v_reg45
-	; v_cmd_ymmm
-	vdp_sreg v_cmd_ymmm, v_reg46
-	jmp vdp_wait_cmd
+_screen_end:
+	lda a_r+1	;4cl
+	cmp #>(ADDRESS_TEXT_SCREEN+(COLS * 24)) ;2cl
+	bne :+ ;3cl
+	lda a_r+0 ;4cl
+	cmp #<(ADDRESS_TEXT_SCREEN+(COLS * 24)) ;2cl
+:	rts
 
 COLS=40
-textui_scroll_up_soft:
-	phx
-	lda #Dark_Green
-;	jsr vdp_bgcolor
-
+textui_scroll_up:
 	SetVector	(ADDRESS_TEXT_SCREEN+COLS), a_r		        ; +COLS - offset second row
 	SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), a_w	; offset first row as "write address"
+
+	phx
+	php
+	sei
+
+BUFFER = $c100 ; TODO FIXME stack
+	tsx
+	dex ;vdp_wait_x needs 2 byte stack for jsr/rts
+	dex
+	stx vdp_ptr
+	cpx #100
+	bcs @l1
+	stp
 @l1:
-@l2:
-	lda	a_r+0	; 3cl
-	sta	a_vreg
-	lda	a_r+1
-	vdp_wait_s 4
-	sta	a_vreg
+	lda a_r+0	; 4cl
+	sta a_vreg
+	ldx vdp_ptr
+	lda a_r+1
+	sta a_vreg
 	vdp_wait_l
-	ldx	a_vram	;
-	lda	a_w+0	; 3cl
-	vdp_wait_l 4
-	sta	a_vreg
-	lda	a_w+1	; 3cl
+@vram_read:
+	vdp_wait_l 34
+	lda a_vram
+	sta BUFFER,x	; 4cl
+	inc a_r+0	; 6cl
+	bne :+		; 3cl
+	inc a_r+1
+:	jsr _screen_end ; 12cl+9cl
+	beq @write		 ; 2/3
+	dex				 ; 2cl
+	bne @vram_read
+@write:
+	stx vdp_ptr+1
+	ldx vdp_ptr
+	lda a_w+0	; 3cl
+	sta a_vreg
+	lda a_w+1	; 3cl
 	vdp_wait_s 4
 	sta a_vreg
 	vdp_wait_l
-	stx	a_vram
-	inc	a_r+0	; 5cl
-	bne	@l3		; 3cl
-	inc	a_r+1
-	lda	a_r+1
-	cmp	#>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))	;screen ram $1800 - $1b00
-	beq	@l4
-@l3:
-	inc	a_w+0  ; 5cl
-	bne	@l2		; 3cl
-	inc	a_w+1
-	bra	@l1
-@l4:
-	ldx	#COLS	; write address is already setup from loop
-	lda	#' '
+@vram_write:
+	vdp_wait_l 20
+	lda BUFFER,x
+	sta a_vram
+	inc a_w+0  ; 6cl
+	bne :+	  ; 3cl
+	inc a_w+1
+:	dex		  ; 2cl
+	cpx vdp_ptr+1 ;2cl
+	bne @vram_write ;3cl
+	jsr _screen_end
+	bne @l1
+
+	ldx #COLS	; write address is already setup from loop
+	lda #' '
 @l5:
-	sta	a_vram
-	vdp_wait_l 5
+	sta a_vram
+	vdp_wait_l 4
 	dex
-	bne	@l5
+	bne @l5
 
-	lda	 #Medium_Green<<4|Black
-	jsr	 vdp_bgcolor
-
+	plp
 	plx
 	rts
 
 textui_inc_cursor_y:
 		  lda crs_y
-		  cmp	 #ROWS-1				;last line
+		  cmp	 #ROWS-1					; last line
 		  bne	 @l1
 
-		  lda saved_char			 ;restore saved char
-		  jsr vram_crs_ptr_write	;sta (crs_ptr)
+		  lda saved_char			 	; restore saved char
+		  jsr vram_crs_ptr_write	; sta (crs_ptr)
 		  lda #CURSOR_BLANK
-		  sta saved_char			 ;reset saved_char to blank, cause we scrolled up
+		  sta saved_char			 	; reset saved_char to blank, cause we scrolled up
 		  lda #STATE_CURSOR_BLINK
-		  trb screen_status		 ;reset cursor state
-		  jsr textui_scroll_up	 ; scroll and exit
+		  trb screen_status		 	; reset cursor state
+		  jsr textui_scroll_up	 	; scroll and exit
 		  jmp textui_update_crs_ptr
 @l1:	  inc crs_y
 		  jmp textui_update_crs_ptr
@@ -385,23 +356,22 @@ PSIX2:
 .endif
 
 textui_put:
-		  pha
-		  inc screen_write_lock	;write lock on
-		  sta saved_char
-		  stz screen_write_lock	;write lock off
-		  pla
-		  rts
+	pha
+	inc screen_write_lock	;write lock on
+	sta saved_char
+	stz screen_write_lock	;write lock off
+	pla
+	rts
 
 textui_chrout:
 	  	cmp #0
-	  	beq @l1	 ; \0 char
-	  	pha		  ; safe char
-	  	inc screen_write_lock	 ;write on
+	  	beq @l1	 						; \0 char
+	  	pha		  						; safe char
+	  	inc screen_write_lock	 	; write on
 	  	jsr textui_dispatch_char
-	  	stz screen_write_lock	 ;write off
-	  	pla						  ; restore a
+	  	stz screen_write_lock	 	; write off
+	  	pla						  		; restore a
 @l1:	rts
-
 
 
 ; set crs x and y position absolutely - 0..32/0..23 or 0..39/0..23 40 char mode
@@ -417,40 +387,40 @@ textui_dispatch_char:
 		  stz	 crs_x
 		  jmp textui_update_crs_ptr
 @lfeed:
-			cmp	 #KEY_LF				;line feed
-			bne	 @l1
+			cmp #KEY_LF				;line feed
+			bne @l1
 			stz crs_x
-			jmp	 textui_inc_cursor_y
-@l1:	 	cmp	 #KEY_BACKSPACE
-			bne	 @l4
-			lda	 crs_x
-			bne	 @l3
-			lda	 crs_y				; cursor y=0, no dec
-			beq	 @lupdate
-			dec	 crs_y
-			lda	 max_cols				; set x to end of line above
-			sta	 crs_x
+			jmp textui_inc_cursor_y
+@l1:	 	cmp #KEY_BACKSPACE
+			bne @l4
+			lda crs_x
+			bne @l3
+			lda crs_y						; cursor y=0, no dec
+			beq @lupdate
+			dec crs_y
+			lda max_cols					; set x to end of line above
+			sta crs_x
 @l2:		jsr textui_update_crs_ptr
-		  	lda	 #CURSOR_BLANK				;blank the saved char
-		  	sta	 saved_char
+		  	lda #CURSOR_BLANK				; blank the saved char
+		  	sta saved_char
 		  	rts
-@l3:	 	dec	 crs_x
+@l3:	 	dec crs_x
 		  	bra @l2	; TODO test
 @l4:
-			sta	 saved_char			; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
-			lda	 crs_x
-			cmp	 max_cols
+			sta saved_char			; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
+			lda crs_x
+			cmp max_cols
 			beq @l5
-			inc	 crs_x
+			inc crs_x
 @lupdate:
-		  	jmp	 textui_update_crs_ptr
-@l5:	 	stz	 crs_x
-		  	jmp	 textui_inc_cursor_y
+		  	jmp textui_update_crs_ptr
+@l5:	 	stz crs_x
+		  	jmp textui_inc_cursor_y
 
 .bss
-screen_status:		.res 1
-screen_write_lock:  .res 1
-screen_frames:		.res 1
-saved_char:			.res 1
+screen_status:			.res 1
+screen_write_lock:	.res 1
+screen_frames:			.res 1
+saved_char:				.res 1
 a_r:	.res 2
 a_w:	.res 2
