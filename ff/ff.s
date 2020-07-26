@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+; Copyright (c) 2020 Thomas Woinke, Marko Lauke, www.steckschwein.de
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,9 @@
 .import vdp_display_off, vdp_init_reg, vdp_fill, vdp_fills, vdp_memcpy, vdp_memcpys
 .import vdp_bgcolor
 
+memctl = $0230
+charset = $e000
+
 .zeropage
 adrl:  .res 2
 
@@ -53,17 +56,38 @@ scroll_ctl: .byte 0
 text_color_ix: .byte 0
 seconds: .byte 0
 
-memctl = $0230
-charset = $e000
 
 line1:
-.byte	"       -+-  VCFe 18.0 -+-       ",1
-.byte	"      -+- Steckschwein -+-      ",1
-.byte	" -+- 8bit Homebrew Computer -+- ",1
-.byte	"    -+- CPU 65c02 / 8 MHz -+-   ",1
-.byte	"     -+- Video TMS9929 -+-      ",1
-.byte	"  -+- www.steckschwein.de -+-   ",1
-;!fill	255, $20
+.byte	"@steckschwein #FollowFriday    ",1
+.byte   "follow these people:           ",1
+.byte	"@BreakIntoProg                 ",1
+.byte	"@0xC0DE6502                    ",1
+.byte	"@6502nerd                      ",1
+.byte	"@electron_greg                 ",1
+.byte	"@Roysterini                    ",1
+.byte	"@leelegionsmith                ",1
+.byte	"@_gazmarshall                  ",1
+.byte	"@SyntaxErrorSoft               ",1
+.byte	"@maded2                        ",1
+.byte	"@Annatar34381343               ",1
+.byte	"@drogon                        ",1
+.byte	"@afachat                       ",1
+.byte	"@SarahJaneAvory                ",1
+.byte	"@8bit_era                      ",1
+.byte	"@pagetable                     ",1
+.byte	"@DrWuro                        ",1
+.byte	"@futurewas8bit                 ",1
+.byte	"@ZxSpectROM                    ",1
+.byte	"@thejanbeta                    ",1
+.byte	"@theretrobyte                  ",1
+.byte	"@CommodoreBlog                 ",1
+.byte   "@gigatronTTL                   ",1
+.byte   "@Goetholon                     ",1
+.byte   "@svenpetersen191               ",1
+.byte   "@StefanyAllaire                ",1
+.byte   "@DatassetteUser                ",1
+.byte   "@awsm9000                      ",1
+.res	255, $20
 .byte	0
 
 
@@ -75,16 +99,16 @@ main:
 ;	jsr	vdp_display_off
 
 	lda memctl
-   pha
+   	pha
 	stz memctl
 
 ;	SetVector charset, adrl
 ;	lda #$00
 ;	ldy #$00+$40
-   vdp_vram_w $0000
-   lda #<charset
-   ldy #>charset
-   ldx #$08
+	vdp_vram_w $0000
+	lda #<charset
+	ldy #>charset
+	ldx #$08
 	jsr vdp_memcpy
 
 	pla
@@ -94,16 +118,16 @@ main:
 	;SetVector	chars, adrl
    ;lda	#$00		;setup pattern
 	;ldy	#$00+$40
-   vdp_vram_w $0000
-   lda #<chars
-   ldy #>chars
+	vdp_vram_w $0000
+	lda #<chars
+	ldy #>chars
 	ldx #$10		;
-   jsr vdp_memcpys
+	jsr vdp_memcpys
 
    ;vdp_vram_w ADDRESS_GFX1_COLOR
    ; lda	#$00
    ; ldy	#$20+$40
-   vdp_vram_w $2000
+   	vdp_vram_w $2000
 	lda	#Cyan<<4|Black		;setup screen color gfx1
 	ldx	#$20		; $20 possible colors
 	jsr	vdp_fills
@@ -112,8 +136,8 @@ main:
 	;sta	adrl
 	;lda	#$00
 	;ldy	#$18+$40
-   vdp_vram_w $1800
-   lda	#$20		;clear screen gfx1
+	vdp_vram_w $1800
+	lda	#$20		;clear screen gfx1
 	ldx	#$03		; $300 chars
 	jsr	vdp_fill
 
@@ -121,13 +145,13 @@ main:
 
 	jsr	init_sprites
 
-   copypointer  $fffe, irqsafe
+   	copypointer  $fffe, irqsafe
 	SetVector	stars_irq,	$fffe
 
-   ldx #starfield_vdp_init_tab_end-starfield_vdp_init_tab
-   lda #<starfield_vdp_init_tab
-   ldy #>starfield_vdp_init_tab
-   jsr vdp_init_reg
+	ldx #starfield_vdp_init_tab_end-starfield_vdp_init_tab
+	lda #<starfield_vdp_init_tab
+	ldy #>starfield_vdp_init_tab
+	jsr vdp_init_reg
 
 ;	lda	#v_reg1_16k|v_reg1_display_on|v_reg1_int
 ;	ldy	#v_reg1
@@ -185,42 +209,42 @@ stars_irq:
 	bmi :+	   ; VDP IRQ flag set?
 	rti
 :
-   save
-	nops 89
-	ldx		#$00
-:	lda		raster_bar_colors,x
-	jsr		vdp_bgcolor
-	nops $6d
-	inx
-	cpx #$0b
-	bne :-
-	lda #Black
-	jsr vdp_bgcolor
+   	save
+; 	nops 89
+; 	ldx		#$00
+; :	lda		raster_bar_colors,x
+; 	jsr		vdp_bgcolor
+; 	nops $6d
+; 	inx
+; 	cpx #$0b
+; 	bne :-
+; 	lda #Black
+; 	jsr vdp_bgcolor
 
 	;update sprite tab
 	;SetVector	starfield_spritetab, adrl
 	; lda	#$00
 	;ldy	#$3c+$40
-   vdp_vram_w $3c00
-   lda #<starfield_spritetab
-   ldy #>starfield_spritetab
-   ldx #$20*4
+	vdp_vram_w $3c00
+	lda #<starfield_spritetab
+	ldy #>starfield_spritetab
+	ldx #$20*4
 	jsr vdp_memcpys
 ;
 	;update text
 	;SetVector	text_scroll_buf, adrl
 	;lda	#$80
 	;ldy	#$19+$40
-   vdp_vram_w $1980
-   lda #<text_scroll_buf
-   ldy #>text_scroll_buf
+	vdp_vram_w $1980
+	lda #<text_scroll_buf
+	ldy #>text_scroll_buf
 	ldx #$20
 	jsr vdp_memcpys
 ;
 ;	lda #$01	;skip first 8 chars
 ;	ldy #$20+$40
-   vdp_vram_w $2001
-   ldx text_color_ix
+	vdp_vram_w $2001
+	ldx text_color_ix
 	lda intro_label_color,x
 ;	sta adrl
 	ldx #$1f
@@ -235,7 +259,7 @@ stars_irq:
 ;
 	inc	frame_end
 
-   restore
+   	restore
 	rti
 ;
 joystick:
@@ -339,11 +363,11 @@ starfield_vdp_init_tab:
 starfield_vdp_init_tab_end:
 
 rnd:
-   lda seed
-   beq doEor
-   asl
-   beq noEor ;if the input was $80, skip the EOR
-   bcc noEor
+	lda seed
+	beq doEor
+	asl
+	beq noEor ;if the input was $80, skip the EOR
+	bcc noEor
 doEor:
 	eor #$1d
 noEor:
