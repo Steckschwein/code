@@ -97,9 +97,9 @@ appstart $1000
 	ldy #>starfield_vdp_init_tab
 	jsr vdp_init_reg
 
-	; write 150 into the interrupt line register #19
-	; to generate an interrupt each time raster line 150 is being scanned
-	vdp_sreg 150, v_reg19
+	; write 193 into the interrupt line register #19
+	; to generate an interrupt each time raster line 193 is being scanned
+	vdp_sreg 193, v_reg19
 
 	lda		#08
 	sta		crs_x
@@ -130,7 +130,6 @@ appstart $1000
 	bne :+
 	jsr text_color
 :
-	;jsr		joystick
 
 	dec		frame_end
 	jsr krn_getkey
@@ -176,7 +175,7 @@ stars_irq:
 	ldx		#$00
 :	lda		raster_bar_colors,x
 	jsr		vdp_bgcolor
-	nops 107
+	; nops 107
 	inx
 	cpx #$0b
 	bne :-
