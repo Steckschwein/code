@@ -30,6 +30,7 @@
 
 memctl = $0230
 charset = $e000
+display_seconds = 1
 
 .zeropage
 adrl:  .res 2
@@ -105,7 +106,7 @@ appstart $1000
 
 	cli
 
-	lda #$03
+	lda #display_seconds
 	sta seconds
 	stz frame_cnt
 	stz frame_end
@@ -221,7 +222,7 @@ text_scroll:
 	dec seconds
 	rts
 @l2:
-    lda	#$03
+    lda	#display_seconds
 	sta	seconds
 	inc	scroll_ctl
 @l1:
