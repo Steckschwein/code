@@ -178,18 +178,25 @@ stars_irq:
 
 @raster:
    	save
-	ldx		#$00
+	ldx		#$0b
 :	lda		raster_bar_colors,x
 	jsr		vdp_bgcolor
-	nops 107
-	inx
-	cpx #$0b
-	bne :-
+	nops 448
+	dex
+	bmi :+
+	jmp :-
+:
 
 	lda #Black
 	jsr vdp_bgcolor
 
 	inc rline
+	lda #200
+	cmp rline
+	bne @set
+	lda #193
+	sta rline
+@set:
 	ldy #v_reg19
 	lda rline
 	vdp_sreg
