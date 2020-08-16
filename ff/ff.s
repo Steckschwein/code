@@ -129,15 +129,19 @@ appstart $1000
 	;jsr		joystick
 
 	dec		frame_end
-	; jsr getkey
-	; cmp #$0d
-	; beq .out
-	; cmp #$20
-	; beq .out
+	jsr krn_getkey
+	cmp #$0d
+	beq out
+	cmp #$20
+	beq out
 
 	jmp @loop
-;.out
-	jmp $c800
+out:
+	sei
+	copypointer	irqsafe,	$fffe
+	cli
+
+	jmp (retvec)
 
 
 stars_irq:
@@ -150,16 +154,16 @@ stars_irq:
 	rti
 :
    	save
-; 	nops 89
-; 	ldx		#$00
-; :	lda		raster_bar_colors,x
-; 	jsr		vdp_bgcolor
-; 	nops $6d
-; 	inx
-; 	cpx #$0b
-; 	bne :-
-; 	lda #Black
-; 	jsr vdp_bgcolor
+	; nops 180
+	ldx		#$00
+:	lda		raster_bar_colors,x
+	jsr		vdp_bgcolor
+	nops $6d
+	inx
+	cpx #$0b
+	bne :-
+	lda #Black
+	jsr vdp_bgcolor
 
 	;update sprite tab
 	vdp_vram_w $3c00
@@ -250,7 +254,8 @@ move_stars:
 	ldy #$00
 :
 	lda starfield_spritetab+1	,y
-	clc
+	;clc
+	sec
 	sbc starfield_speed_tab		,x
 	sta starfield_spritetab+1	,y
 	iny
@@ -331,36 +336,22 @@ chars:
 .byte %00000000
 .byte %00000000
 .byte %00000000
-.byte %00010000
+.byte %00000000
+.byte %00001000
 .byte %00000000
 .byte %00000000
 .byte %00000000
-.byte %00000000
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%...#....
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%........
+
 blank:
-.byte %00000000
-.byte %00000000
-.byte %00000000
-.byte %00000000
-.byte %00000000
-.byte %00000000
-.byte %00000000
-.byte %00000000
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%........
-;+SpriteLine	%........
+; .byte %00000000
+; .byte %00000000
+; .byte %00000000
+; .byte %00000000
+; .byte %00000000
+; .byte %00000000
+; .byte %00000000
+; .byte %00000000
+.res 8,0
 
 starfield_speed_tab:
 	.res 32, 0
@@ -369,6 +360,7 @@ starfield_spritetab:;y,x,pattern,attr
 text_scroll_buf:
 	.res 32, $20
 
+.data
 intro_label_color:
 	.byte Magenta<<4|Black
 	.byte Dark_Red<<4|Black
@@ -396,35 +388,16 @@ raster_bar_colors:
 	.byte Magenta
 
 line1:
-	.byte	"@steckschwein #FollowFriday    ",1
-	.byte	"@BreakIntoProg                 ",1
-	.byte	"@0xC0DE6502                    ",1
-	.byte	"@6502nerd                      ",1
-	.byte	"@electron_greg                 ",1
-	.byte	"@Roysterini                    ",1
-	.byte	"@leelegionsmith                ",1
-	.byte	"@_gazmarshall                  ",1
-	.byte	"@SyntaxErrorSoft               ",1
-	.byte	"@maded2                        ",1
-	.byte	"@Annatar34381343               ",1
-	.byte	"@drogon                        ",1
-	.byte	"@afachat                       ",1
-	.byte	"@SarahJaneAvory                ",1
-	.byte	"@8bit_era                      ",1
-	.byte	"@pagetable                     ",1
-	.byte	"@DrWuro                        ",1
-	.byte	"@futurewas8bit                 ",1
-	.byte	"@ZxSpectROM                    ",1
-	.byte	"@thejanbeta                    ",1
-	.byte	"@theretrobyte                  ",1
-	.byte	"@CommodoreBlog                 ",1
-	.byte   "@gigatronTTL                   ",1
-	.byte   "@Goetholon                     ",1
-	.byte   "@svenpetersen191               ",1
-	.byte   "@StefanyAllaire                ",1
-	.byte   "@DatassetteUser                ",1
-	.byte   "@awsm9000                      ",1
-	.byte   "@48kRAM                        ",1
+	.byte	"Steckschwein                   ",1
+	.byte	"8bit Homebrew Computer         ",1
+	.byte   "CPU: 65c02 @ 8MHz              ",1
+	.byte   "Memory: 64k SRAM / 32k ROM     ",1
+	.byte   "Video: Yamaha V9958            ",1
+	.byte   "RS232 via 16c550 UART          ",1
+	.byte   "Sound: Yamaha YM3812 (OPL2)    ",1
+	.byte   "Storage: SD Card via SPI       ",1
+
+
 	.byte   "                               ",1
 	.byte	0
 
