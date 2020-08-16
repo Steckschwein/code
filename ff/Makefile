@@ -19,3 +19,5 @@ clean:
 
 transfer: $(TARGET)
 	../transfer.py $(TARGET)
+emu: $(TARGET)
+	steckschwein-emu -rom ../steckos/bios/bios.bin -scale 2 -sdcard ../steckos.img -upload $(TARGET)
