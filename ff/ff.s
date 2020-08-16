@@ -21,7 +21,6 @@
 ; SOFTWARE.
 
 .include "steckos.inc"
-.include "common.inc"
 .include "vdp.inc"
 .include "via.inc"
 ;.export char_out=krn_chrout
@@ -139,6 +138,7 @@ appstart $1000
 out:
 	sei
 	copypointer	irqsafe,	$fffe
+
 	cli
 
 	jmp (retvec)
