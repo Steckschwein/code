@@ -34,6 +34,7 @@ display_seconds = 2
 
 .zeropage
 adrl:  .res 2
+rline: .res 1
 
 appstart $1000
 
@@ -51,6 +52,9 @@ appstart $1000
 .endmacro
 
 .code
+	lda #193
+	sta rline
+
 	sei
 
 	lda memctl
@@ -97,9 +101,11 @@ appstart $1000
 	ldy #>starfield_vdp_init_tab
 	jsr vdp_init_reg
 
-	; write 193 into the interrupt line register #19
-	; to generate an interrupt each time raster line 193 is being scanned
-	vdp_sreg 193, v_reg19
+	; write rline into the interrupt line register #19
+	; to generate an interrupt each time raster line is being scanned
+	ldy #v_reg19
+	lda rline
+	vdp_sreg
 
 	lda		#08
 	sta		crs_x
@@ -175,13 +181,18 @@ stars_irq:
 	ldx		#$00
 :	lda		raster_bar_colors,x
 	jsr		vdp_bgcolor
-	; nops 107
+	nops 107
 	inx
 	cpx #$0b
 	bne :-
 
 	lda #Black
 	jsr vdp_bgcolor
+
+	inc rline
+	ldy #v_reg19
+	lda rline
+	vdp_sreg
 
 	;update sprite tab
 	vdp_vram_w $3c00
