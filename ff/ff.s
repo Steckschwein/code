@@ -30,7 +30,7 @@
 
 memctl = $0230
 charset = $e000
-display_seconds = 1
+display_seconds = 2
 
 .zeropage
 adrl:  .res 2
@@ -97,6 +97,10 @@ appstart $1000
 	ldy #>starfield_vdp_init_tab
 	jsr vdp_init_reg
 
+	; write 150 into the interrupt line register #19
+	; to generate an interrupt each time raster line 150 is being scanned
+	vdp_sreg 150, v_reg19
+
 	lda		#08
 	sta		crs_x
 	lda		#12
@@ -150,19 +154,33 @@ stars_irq:
 	beq :+
 	bit via1t1cl	; acknowledge VIA timer 1 interrupt
 :
+
+	; check bit 0 of status register #1
+	;
+	vdp_sreg 1, v_reg15
+	vdp_wait_s 4
+	lda a_vreg
+	ror
+	bcs @raster
+
+	vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
+	rti
+
 	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
 	bmi :+	   ; VDP IRQ flag set?
 	rti
 :
+
+@raster:
    	save
-	; nops 180
 	ldx		#$00
 :	lda		raster_bar_colors,x
 	jsr		vdp_bgcolor
-	nops $6d
+	nops 107
 	inx
 	cpx #$0b
 	bne :-
+
 	lda #Black
 	jsr vdp_bgcolor
 
@@ -201,8 +219,7 @@ stars_irq:
    	restore
 	rti
 ;
-joystick:
-	rts
+
 
 text_color:
 	dec	text_color_ix
@@ -299,7 +316,7 @@ init_sprites:
 	rts
 
 starfield_vdp_init_tab:
-	.byte	0
+	.byte	v_reg0_IE1
 	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int
 	.byte ($1800 / $400)	; name table - value * $400
 	.byte	($2000 / $40)	; color table
@@ -343,16 +360,7 @@ chars:
 .byte %00000000
 .byte %00000000
 
-blank:
-; .byte %00000000
-; .byte %00000000
-; .byte %00000000
-; .byte %00000000
-; .byte %00000000
-; .byte %00000000
-; .byte %00000000
-; .byte %00000000
-.res 8,0
+
 
 starfield_speed_tab:
 	.res 32, 0
