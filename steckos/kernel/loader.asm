@@ -32,8 +32,8 @@
 ; .pages = (.payload_end - .payload) / 256 + 1
 src_ptr  = $0
 dst_ptr  = $2
+    sei ; no irq if we upload from kernel to avoid clash
 		; copy kernel code to $f000
-
 		lda #>payload
 		sta src_ptr+1
 		stz src_ptr
