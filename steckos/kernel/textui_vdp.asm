@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-;| VDP VRAM				  	 |
+;| VDP VRAM              |
 ;|---------------------- |
 
 .include "common.inc"
@@ -32,9 +32,9 @@ ROWS=24
 CURSOR_BLANK=' '
 CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
 
-STATE_CURSOR_OFF	 =1<<1
-STATE_CURSOR_BLINK  =1<<2
-STATE_TEXTUI_ENABLED=1<<3
+STATE_CURSOR_OFF			=1<<1
+STATE_CURSOR_BLINK		=1<<2
+STATE_TEXTUI_ENABLED	=1<<3
 
 .code
 .export textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
@@ -125,8 +125,6 @@ vram_crs_ptr_write:
 		rts
 
 textui_init0:
-	vdp_sreg v_reg25_wait | v_reg25_cmd, v_reg25			; enable CMD in V9958
-
 .ifdef COLS80
 		  lda #TEXT_MODE_80
 .else
@@ -165,9 +163,9 @@ textui_blank:
 		  jmp textui_crsxy
 
 textui_cursor:
-		  lda screen_write_lock
-		  bne @l_exit
-		  lda screen_frames
+			lda screen_write_lock
+			bne @l_exit
+			lda screen_frames
 		  and #$0f
 		  bne @l_exit
 
@@ -203,34 +201,33 @@ _screen_end:
 	cmp #<(ADDRESS_TEXT_SCREEN+(COLS * 24)) ;2cl
 :	rts
 
+BUFFER=$0100	; use the stack as copy buffer
 COLS=40
 textui_scroll_up:
+	php
+	sei	; critical section
+	phx
 	SetVector	(ADDRESS_TEXT_SCREEN+COLS), a_r		        ; +COLS - offset second row
 	SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), a_w	; offset first row as "write address"
 
-	phx
-	php
-	sei
-
-BUFFER = $c100 ; TODO FIXME stack
 	tsx
 	dex ;vdp_wait_x needs 2 byte stack for jsr/rts
 	dex
-	stx vdp_ptr
+	stx scroll_tmp1
 	cpx #100
 	bcs @l1
 	stp
 @l1:
 	lda a_r+0	; 4cl
 	sta a_vreg
-	ldx vdp_ptr
+	ldx scroll_tmp1
 	lda a_r+1
 	sta a_vreg
 	vdp_wait_l
 @vram_read:
 	vdp_wait_l 34
 	lda a_vram
-	sta BUFFER,x	; 4cl
+	sta scroll_buffer,x	; 4cl
 	inc a_r+0	; 6cl
 	bne :+		; 3cl
 	inc a_r+1
@@ -239,8 +236,8 @@ BUFFER = $c100 ; TODO FIXME stack
 	dex				 ; 2cl
 	bne @vram_read
 @write:
-	stx vdp_ptr+1
-	ldx vdp_ptr
+	stx scroll_tmp2
+	ldx scroll_tmp1
 	lda a_w+0	; 3cl
 	sta a_vreg
 	lda a_w+1	; 3cl
@@ -249,13 +246,13 @@ BUFFER = $c100 ; TODO FIXME stack
 	vdp_wait_l
 @vram_write:
 	vdp_wait_l 20
-	lda BUFFER,x
+	lda scroll_buffer,x
 	sta a_vram
 	inc a_w+0  ; 6cl
 	bne :+	  ; 3cl
 	inc a_w+1
 :	dex		  ; 2cl
-	cpx vdp_ptr+1 ;2cl
+	cpx scroll_tmp2 	;3cl
 	bne @vram_write ;3cl
 	jsr _screen_end
 	bne @l1
@@ -268,41 +265,42 @@ BUFFER = $c100 ; TODO FIXME stack
 	dex
 	bne @l5
 
-	plp
 	plx
+	plp
 	rts
 
 textui_inc_cursor_y:
-		  lda crs_y
-		  cmp	 #ROWS-1					; last line
-		  bne	 @l1
+	lda crs_y
+	cmp #ROWS-1					; last line
+	bne @l1
 
-		  lda saved_char			 	; restore saved char
-		  jsr vram_crs_ptr_write	; sta (crs_ptr)
-		  lda #CURSOR_BLANK
-		  sta saved_char			 	; reset saved_char to blank, cause we scrolled up
-		  lda #STATE_CURSOR_BLINK
-		  trb screen_status		 	; reset cursor state
-		  jsr textui_scroll_up	 	; scroll and exit
-		  jmp textui_update_crs_ptr
-@l1:	  inc crs_y
-		  jmp textui_update_crs_ptr
+	lda saved_char			 	; restore saved char
+	jsr vram_crs_ptr_write	; sta (crs_ptr)
+	lda #CURSOR_BLANK
+	sta saved_char			 	; reset saved_char to blank, cause we scrolled up
+	lda #STATE_CURSOR_BLINK
+	trb screen_status		 	; reset cursor state
+	jsr textui_scroll_up	; scroll and exit
+	jmp textui_update_crs_ptr
+@l1:
+	inc crs_y
+	jmp textui_update_crs_ptr
 
 textui_enable:
-		  lda #STATE_TEXTUI_ENABLED
-		  sta screen_status		 ;set enable
-		  rts
+	lda #STATE_TEXTUI_ENABLED
+	sta screen_status		 ;set enable
+	rts
 textui_disable:
-		  stz screen_status
-		  lda saved_char			 ;restore char
-		  jsr vram_crs_ptr_write	;sta (crs_ptr)
-		  rts
+	stz screen_status
+	lda saved_char			 ;restore char
+	jsr vram_crs_ptr_write	;sta (crs_ptr)
+	rts
 
 textui_cursor_onoff:
-		  lda screen_status
-		  eor #STATE_CURSOR_OFF
-		  sta screen_status
-		  rts
+	lda screen_status
+	eor #STATE_CURSOR_OFF
+	sta screen_status
+	rts
 
 .ifdef TEXTUI_STROUT
 ;----------------------------------------------------------------------------------------------
@@ -317,7 +315,7 @@ textui_strout:
 
 		  inc screen_write_lock	 ;write lock on
 		  ldy	 #$00
-@l1:	  lda	 (krn_ptr3),y
+@l1:	lda	 (krn_ptr3),y
 		  beq	 @l2
 		  jsr textui_dispatch_char
 		  iny
@@ -364,63 +362,71 @@ textui_put:
 	rts
 
 textui_chrout:
-	  	cmp #0
-	  	beq @l1	 						; \0 char
-	  	pha		  						; safe char
-	  	inc screen_write_lock	 	; write on
-	  	jsr textui_dispatch_char
-	  	stz screen_write_lock	 	; write off
-	  	pla						  		; restore a
-@l1:	rts
+	cmp #0
+	beq @l1	 						; \0 char
+	pha		  						; safe char
+	inc screen_write_lock	 	; write on
+	jsr textui_dispatch_char
+	stz screen_write_lock	 	; write off
+	pla						  		; restore a
+@l1:
+	rts
 
 
 ; set crs x and y position absolutely - 0..32/0..23 or 0..39/0..23 40 char mode
 ;
 textui_crsxy:
-		  stx crs_x
-		  sty crs_y
-		  jmp textui_update_crs_ptr
+	stx crs_x
+	sty crs_y
+	jmp textui_update_crs_ptr
 
 textui_dispatch_char:
-		  cmp	 #KEY_CR				;carriage return?
-		  bne	 @lfeed
-		  stz	 crs_x
-		  jmp textui_update_crs_ptr
+	cmp	 #KEY_CR				;carriage return?
+	bne	 @lfeed
+	stz	 crs_x
+	jmp textui_update_crs_ptr
 @lfeed:
-			cmp #KEY_LF				;line feed
-			bne @l1
-			stz crs_x
-			jmp textui_inc_cursor_y
-@l1:	 	cmp #KEY_BACKSPACE
-			bne @l4
-			lda crs_x
-			bne @l3
-			lda crs_y						; cursor y=0, no dec
-			beq @lupdate
-			dec crs_y
-			lda max_cols					; set x to end of line above
-			sta crs_x
-@l2:		jsr textui_update_crs_ptr
-		  	lda #CURSOR_BLANK				; blank the saved char
-		  	sta saved_char
-		  	rts
-@l3:	 	dec crs_x
-		  	bra @l2	; TODO test
+	cmp #KEY_LF				;line feed
+	bne @l1
+	stz crs_x
+	jmp textui_inc_cursor_y
+@l1:
+	cmp #KEY_BACKSPACE
+	bne @l4
+	lda crs_x
+	bne @l3
+	lda crs_y						; cursor y=0, no dec
+	beq @lupdate
+	dec crs_y
+	lda max_cols					; set x to end of line above
+	sta crs_x
+@l2:
+	jsr textui_update_crs_ptr
+	lda #CURSOR_BLANK				; blank the saved char
+	sta saved_char
+	rts
+@l3:
+	dec crs_x
+	bra @l2	; TODO test
 @l4:
-			sta saved_char			; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
-			lda crs_x
-			cmp max_cols
-			beq @l5
-			inc crs_x
+	sta saved_char			; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
+	lda crs_x
+	cmp max_cols
+	beq @l5
+	inc crs_x
 @lupdate:
-		  	jmp textui_update_crs_ptr
-@l5:	 	stz crs_x
-		  	jmp textui_inc_cursor_y
+	jmp textui_update_crs_ptr
+@l5:
+	stz crs_x
+	jmp textui_inc_cursor_y
 
 .bss
+scroll_buffer=$0100
+scroll_tmp1:				.res 1
+scroll_tmp2:				.res 1
 screen_status:			.res 1
 screen_write_lock:	.res 1
 screen_frames:			.res 1
-saved_char:				.res 1
-a_r:	.res 2
-a_w:	.res 2
+saved_char:					.res 1
+a_r:								.res 2
+a_w:								.res 2
