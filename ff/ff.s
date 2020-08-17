@@ -160,21 +160,21 @@ stars_irq:
 	bit via1t1cl	; acknowledge VIA timer 1 interrupt
 :
 
-	; check bit 0 of status register #1
-	;
-	vdp_sreg 1, v_reg15
-	vdp_wait_s 4
-	lda a_vreg
-	ror
-	bcs @raster
-
-	vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
-	rti
-
-	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
-	bmi :+	   ; VDP IRQ flag set?
-	rti
-:
+; 	; check bit 0 of status register #1
+; 	;
+; 	vdp_sreg 1, v_reg15
+; 	vdp_wait_s 4
+; 	lda a_vreg
+; 	ror
+; 	bcs @raster
+;
+; 	vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
+; 	rti
+;
+; 	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
+; 	bmi :+	   ; VDP IRQ flag set?
+; 	rti
+; :
 
 @raster:
    	save
@@ -233,6 +233,7 @@ stars_irq:
 
 	inc	frame_end
 
+	; vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
    	restore
 	rti
 ;
