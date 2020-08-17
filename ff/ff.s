@@ -22,7 +22,7 @@
 
 .include "steckos.inc"
 .include "vdp.inc"
-.include "via.inc"
+; .include "via.inc"
 ;.export char_out=krn_chrout
 
 .import vdp_display_off, vdp_init_reg, vdp_fill, vdp_fills, vdp_memcpy, vdp_memcpys
@@ -89,7 +89,7 @@ appstart $1000
 	ldx	#$03		; $300 chars
 	jsr	vdp_fill
 
-	jsr	init_via
+	; jsr	init_via
 
 	jsr	init_sprites
 
@@ -155,10 +155,10 @@ out:
 
 
 stars_irq:
-	bit via1ifr		; Interrupt from VIA?
-	beq :+
-	bit via1t1cl	; acknowledge VIA timer 1 interrupt
-:
+	; bit via1ifr		; Interrupt from VIA?
+; 	beq :+
+; 	bit via1t1cl	; acknowledge VIA timer 1 interrupt
+; :
 
 	; check bit 0 of status register #1
 	;
@@ -181,7 +181,7 @@ stars_irq:
 	ldx		#$0b
 :	lda		raster_bar_colors,x
 	jsr		vdp_bgcolor
-	nops 448
+	nops 252
 	dex
 	bmi :+
 	jmp :-
@@ -334,8 +334,8 @@ init_sprites:
 
 starfield_vdp_init_tab:
 	.byte	v_reg0_IE1
-	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int
-	.byte ($1800 / $400)	; name table - value * $400
+	.byte 	v_reg1_16k|v_reg1_display_on|v_reg1_int
+	.byte 	($1800 / $400)	; name table - value * $400
 	.byte	($2000 / $40)	; color table
 	.byte	($0000 / $800) ; pattern table
 	.byte	($3c00 / $80)	; sprite attribute table - value * $80 --> offset in VRAM
@@ -355,17 +355,17 @@ noEor:
 	sta seed
 	rts
 
-init_via:
-	;via port a
-	lda #$00
-	sta via1ier             ; disable VIA1 T1, T2 interrupts
-	lda #%00000000 			; set latch
-	sta via1acr
-	lda #%11001100 			; set level
-	sta via1pcr
-	lda #%11111000 			; set PA1-3 to input
-	sta via1ddra
-	rts
+; init_via:
+; 	;via port a
+; 	lda #$00
+; 	sta via1ier             ; disable VIA1 T1, T2 interrupts
+; 	lda #%00000000 			; set latch
+; 	sta via1acr
+; 	lda #%11001100 			; set level
+; 	sta via1pcr
+; 	lda #%11111000 			; set PA1-3 to input
+; 	sta via1ddra
+; 	rts
 
 chars:
 .byte %00000000
