@@ -32,7 +32,7 @@ memctl = $0230
 charset = $e000
 display_seconds = 2
 ;rbar_y = 93 ; with text
-rbar_y = 193
+rbar_y = 191
 
 .zeropage
 adrl: .res 2
@@ -76,11 +76,10 @@ appstart $1000
 	vdp_vram_w $0000
 	lda #<chars
 	ldy #>chars
-	ldx #$10		;
+	ldx #16
 	jsr vdp_memcpys
-
    ;vdp_vram_w ADDRESS_GFX1_COLOR
-   	vdp_vram_w $2000
+	vdp_vram_w $2000
 	lda	#Cyan<<4|Black		;setup screen color gfx1
 	ldx	#$20		; $20 possible colors
 	jsr	vdp_fills
@@ -91,9 +90,13 @@ appstart $1000
 	ldx	#$03		; $300 chars
 	jsr	vdp_fill
 
-	jsr	init_via
-
 	jsr	init_sprites
+	
+	ldx #$20
+	lda #$20
+:	sta text_scroll_buf, x
+	dex 
+	bpl :-
 
 	copypointer  $fffe, irqsafe
 	SetVector	stars_irq,	$fffe
@@ -117,7 +120,7 @@ appstart $1000
 	sta crs_y
 
 	SetVector line1, adrl
-
+	
 	cli
 
 	lda #display_seconds
@@ -132,15 +135,24 @@ appstart $1000
 @loop:
 	lda frame_end
 	bne @loop
-	jsr update_vram
 
+	sei
 	jsr move_stars
 	jsr text_scroll
+	jsr update_vram
+	cli
+	
 	lda frame_cnt
 	and #$01
 	bne :+
 	jsr text_color
 :
+	ldx frame_cnt
+	inx
+	cpx	#50
+	bne	:+
+	ldx	#$00
+:	stx	frame_cnt
 
 	dec frame_end
 	jsr krn_getkey
@@ -153,13 +165,13 @@ appstart $1000
 out:
 	sei
 	copypointer	irqsafe,	$fffe
+	vdp_sreg 0, v_reg15 ; reset to S#0
 	cli
 	jmp (retvec)
 
 stars_irq:
-	; check bit 0 of status register #1
 	save
-	lda a_vreg
+	lda a_vreg	; check bit 0 of S#1
 	ror
 	bcc @is_vblank
 	
@@ -176,6 +188,7 @@ stars_irq:
 	inc
 	cmp #(rbar_y+(raster_bar_colors_end-raster_bar_colors))
 	bne @set
+	inc	frame_end ; set flag, raster bar end
 	lda #rbar_y
 @set:
 	sta rline
@@ -188,7 +201,7 @@ stars_irq:
  	vdp_wait_s
 	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
  	bpl @is_vblank_end  ; VDP IRQ flag set?
-	inc	frame_end ; set flag, vblank reached
+	; do nothing beside ack
 @is_vblank_end:
 	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical, we avoid setup status register at isr entry and reset to S#1
 @exit:
@@ -216,17 +229,7 @@ update_vram:
 	ldx text_color_ix
 	lda intro_label_color,x
 	ldx #$1f
-	jsr vdp_fills
-
-	ldx frame_cnt
-	inx
-	cpx	#50
-	bne	:+
-	ldx	#$00
-:	stx	frame_cnt
-
-	rts
-;
+	jmp vdp_fills
 
 
 text_color:
@@ -247,7 +250,7 @@ text_scroll:
 	dec seconds
 	rts
 @l2:
-    lda	#display_seconds
+	lda	#display_seconds
 	sta	seconds
 	inc	scroll_ctl
 @l1:
@@ -359,6 +362,7 @@ init_via:
 	rts
 
 chars:
+; star char, used as sprite
 .byte %00000000
 .byte %00000000
 .byte %00000000
@@ -367,15 +371,16 @@ chars:
 .byte %00000000
 .byte %00000000
 .byte %00000000
+; blank char, used as stop marker
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
+.byte %00000000
 
-
-
-starfield_speed_tab:
-	.res 32, 0
-starfield_spritetab:;y,x,pattern,attr
-	.res 32*4, 0
-text_scroll_buf:
-	.res 32, $20
 
 .data
 intro_label_color:
@@ -416,17 +421,22 @@ line1:
 	.byte   "Sound: Yamaha YM3812 (OPL2)    ",1
 	.byte   "Storage: SD Card via SPI       ",1
 
-
 	.byte   "                               ",1
 	.byte	0
 
 
 .bss
-yOffs: 			.byte 0
-seed: 			.byte 0
-frame_cnt: 		.byte 0
-frame_end: 		.byte 0
-scroll_ctl: 	.byte 0
-text_color_ix: 	.byte 0
-seconds: 		.byte 0
+yOffs: 			.res 1
+seed: 			.res 1
+frame_cnt: 		.res 1
+frame_end: 		.res 1
+scroll_ctl: 	.res 1
+text_color_ix: 	.res 1
+seconds: 		.res 1
 irqsafe: 		.res 2
+starfield_speed_tab:
+	.res 32, 0
+starfield_spritetab:;y,x,pattern,attr
+	.res 32*4, 0
+text_scroll_buf:
+	.res 32

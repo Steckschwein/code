@@ -23,7 +23,7 @@
 .ifndef _SYSTEM_INC_
   _SYSTEM_INC_ = 1
 
-clockspeed  = 8
+clockspeed  = 8	; in Mhz
 
 ctrl_port	= $0230
 
