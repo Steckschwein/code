@@ -160,8 +160,6 @@ out:
 stars_irq:
 	; check bit 0 of status register #1
 	save
-	vdp_sreg 1, v_reg15
-	vdp_wait_s
 	lda a_vreg
 	ror
 	bcc @is_vblank
@@ -183,13 +181,14 @@ stars_irq:
 	bra @exit
 	
 @is_vblank:
- 	vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
+ 	vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
  	vdp_wait_s
 	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
  	bpl @exit  ; VDP IRQ flag set?
 	inc	frame_end ; set flag, vblank reached
 
 @exit:
+	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical, we avoid setup status register at isr entry and select S#1 per default
 	restore
 	rti
 
