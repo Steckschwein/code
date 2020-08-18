@@ -308,11 +308,12 @@ init_sprites:
 	sta yOffs
 	jsr rnd
 	sta starfield_spritetab+1,y		; x offset
+	eor #$1e
+	lsr
 	and	#$07
 	ora	#$01
 	sta starfield_speed_tab,x		; speed
 	; lda	#White
-	and #3
 	phx
 	tax
  	lda star_colors,x
@@ -403,7 +404,7 @@ raster_bar_colors:
 	.byte Black
 raster_bar_colors_end:
 star_colors:
-  .byte 0, Gray, Dark_Yellow, Light_Yellow, Cyan, Light_Red, Light_Green, White
+  .byte 0, Gray, Light_Red, Dark_Yellow, Light_Yellow, Cyan, Light_Green, White
 star_colors_end:
 
 line1:
