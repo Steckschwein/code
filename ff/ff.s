@@ -32,7 +32,7 @@ memctl = $0230
 charset = $e000
 display_seconds = 2
 ;rbar_y = 93 ; with text
-rbar_y = 192
+rbar_y = 193
 
 .zeropage
 adrl:  .res 2
