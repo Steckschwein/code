@@ -31,6 +31,8 @@
 memctl = $0230
 charset = $e000
 display_seconds = 2
+;rbar_y = 93 ; with text
+rbar_y = 192
 
 .zeropage
 adrl:  .res 2
@@ -52,13 +54,13 @@ appstart $1000
 .endmacro
 
 .code
-	lda #193
+	lda #rbar_y
 	sta rline
 
 	sei
 
 	lda memctl
-   	pha
+	pha
 	stz memctl
 
 	vdp_vram_w $0000
@@ -93,7 +95,7 @@ appstart $1000
 
 	jsr	init_sprites
 
-   	copypointer  $fffe, irqsafe
+	copypointer  $fffe, irqsafe
 	SetVector	stars_irq,	$fffe
 
 	ldx #starfield_vdp_init_tab_end-starfield_vdp_init_tab
@@ -128,6 +130,7 @@ appstart $1000
 @loop:
 	lda frame_end
 	bne @loop
+	jsr update_vram
 
 	jsr move_stars
 	jsr text_scroll
@@ -137,7 +140,7 @@ appstart $1000
 	jsr text_color
 :
 
-	dec		frame_end
+	dec frame_end
 	jsr krn_getkey
 	cmp #$0d
 	beq out
@@ -155,52 +158,42 @@ out:
 
 
 stars_irq:
-	bit via1ifr		; Interrupt from VIA?
-	beq :+
-	bit via1t1cl	; acknowledge VIA timer 1 interrupt
-:
-
-; 	; check bit 0 of status register #1
-; 	;
-; 	vdp_sreg 1, v_reg15
-; 	vdp_wait_s 4
-; 	lda a_vreg
-; 	ror
-; 	bcs @raster
-;
-; 	vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
-; 	rti
-;
-; 	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
-; 	bmi :+	   ; VDP IRQ flag set?
-; 	rti
-; :
-
-@raster:
-   	save
-	ldx		#$0b
-:	lda		raster_bar_colors,x
-	jsr		vdp_bgcolor
-	nops 252
-	dex
-	bmi :+
-	jmp :-
-:
-
-	lda #Black
+	; check bit 0 of status register #1
+	save
+	vdp_sreg 1, v_reg15
+	vdp_wait_s
+	lda a_vreg
+	ror
+	bcc @is_vblank
+	lda rline
+	clc 
+	adc #(256-rbar_y)
+	tax
+	lda raster_bar_colors,x
 	jsr vdp_bgcolor
+	inc rline
+	lda rline
+	cmp #(rbar_y+(raster_bar_colors_end-raster_bar_colors))
+	bne @set
+	lda #rbar_y
+	sta rline
+@set:
+	ldy #v_reg19
+	vdp_sreg
+	bra @exit
+	
+@is_vblank:
+ 	vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
+ 	vdp_wait_s
+	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
+ 	bpl @exit  ; VDP IRQ flag set?
+	inc	frame_end ; set flag, vblank reached
 
-; 	inc rline
-; 	lda #200
-; 	cmp rline
-; 	bne @set
-; 	lda #193
-; 	sta rline
-; @set:
-; 	ldy #v_reg19
-; 	lda rline
-; 	vdp_sreg
+@exit:
+	restore
+	rti
 
+update_vram:
 	;update sprite tab
 	vdp_vram_w $3c00
 	lda #<starfield_spritetab
@@ -220,7 +213,6 @@ stars_irq:
 	vdp_vram_w $2001
 	ldx text_color_ix
 	lda intro_label_color,x
-
 	ldx #$1f
 	jsr vdp_fills
 
@@ -231,11 +223,7 @@ stars_irq:
 	ldx	#$00
 :	stx	frame_cnt
 
-	inc	frame_end
-
-	; vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
-   	restore
-	rti
+	rts
 ;
 
 
@@ -262,8 +250,8 @@ text_scroll:
 	inc	scroll_ctl
 @l1:
 	ldx	#$00
-:	lda	text_scroll_buf+1	,x
-	sta	text_scroll_buf		,x
+:	lda	text_scroll_buf+1,x
+	sta	text_scroll_buf,x
 	inx
 	cpx	#$1f
 	bne	:-
@@ -334,14 +322,14 @@ init_sprites:
 	rts
 
 starfield_vdp_init_tab:
-	.byte	v_reg0_IE1
-	.byte 	v_reg1_16k|v_reg1_display_on|v_reg1_int
-	.byte 	($1800 / $400)	; name table - value * $400
-	.byte	($2000 / $40)	; color table
-	.byte	($0000 / $800) ; pattern table
-	.byte	($3c00 / $80)	; sprite attribute table - value * $80 --> offset in VRAM
-	.byte	($0000 / $800)	; sprite pattern table - value * $800  --> offset in VRAM
-	.byte	Black
+	.byte v_reg0_IE1
+	.byte v_reg1_16k|v_reg1_display_on|v_reg1_int
+	.byte ($1800 / $400)	; name table - value * $400
+	.byte ($2000 / $40)	; color table
+	.byte ($0000 / $800) ; pattern table
+	.byte ($3c00 / $80)	; sprite attribute table - value * $80 --> offset in VRAM
+	.byte ($0000 / $800)	; sprite pattern table - value * $800  --> offset in VRAM
+	.byte Black
 starfield_vdp_init_tab_end:
 
 rnd:
@@ -413,6 +401,8 @@ raster_bar_colors:
 	.byte	Medium_Red
 	.byte Dark_Red
 	.byte Magenta
+	.byte Black
+raster_bar_colors_end:
 
 line1:
 	.byte	"Steckschwein                   ",1
