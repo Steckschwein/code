@@ -35,7 +35,7 @@ display_seconds = 2
 rbar_y = 193
 
 .zeropage
-adrl:  .res 2
+adrl: .res 2
 rline: .res 1
 
 appstart $1000
@@ -109,10 +109,12 @@ appstart $1000
 	lda rline
 	vdp_sreg
 
-	lda		#08
-	sta		crs_x
-	lda		#12
-	sta		crs_y
+	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical, we avoid setup status register at isr entry set to S#1 per default
+
+	lda #08
+	sta crs_x
+	lda #12
+	sta crs_y
 
 	SetVector line1, adrl
 
@@ -151,11 +153,8 @@ appstart $1000
 out:
 	sei
 	copypointer	irqsafe,	$fffe
-
 	cli
-
 	jmp (retvec)
-
 
 stars_irq:
 	; check bit 0 of status register #1
@@ -163,32 +162,36 @@ stars_irq:
 	lda a_vreg
 	ror
 	bcc @is_vblank
+	
 	lda rline
-	clc 
+	clc
 	adc #(256-rbar_y)
 	tax
 	lda raster_bar_colors,x
-	jsr vdp_bgcolor
-	inc rline
+	sta	a_vreg
+	lda	#v_reg7
+	vdp_wait_s 2
+	sta	a_vreg
 	lda rline
+	inc
 	cmp #(rbar_y+(raster_bar_colors_end-raster_bar_colors))
 	bne @set
 	lda #rbar_y
-	sta rline
 @set:
+	sta rline
 	ldy #v_reg19
 	vdp_sreg
 	bra @exit
-	
+
 @is_vblank:
  	vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
  	vdp_wait_s
 	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
- 	bpl @exit  ; VDP IRQ flag set?
+ 	bpl @is_vblank_end  ; VDP IRQ flag set?
 	inc	frame_end ; set flag, vblank reached
-
+@is_vblank_end:
+	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical, we avoid setup status register at isr entry and reset to S#1
 @exit:
-	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical, we avoid setup status register at isr entry and select S#1 per default
 	restore
 	rti
 
