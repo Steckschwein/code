@@ -91,11 +91,11 @@ appstart $1000
 	jsr	vdp_fill
 
 	jsr	init_sprites
-	
+
 	ldx #$20
 	lda #$20
 :	sta text_scroll_buf, x
-	dex 
+	dex
 	bpl :-
 
 	copypointer  $fffe, irqsafe
@@ -120,7 +120,7 @@ appstart $1000
 	sta crs_y
 
 	SetVector line1, adrl
-	
+
 	cli
 
 	lda #display_seconds
@@ -141,7 +141,7 @@ appstart $1000
 	jsr text_scroll
 	jsr update_vram
 	cli
-	
+
 	lda frame_cnt
 	and #$01
 	bne :+
@@ -174,7 +174,7 @@ stars_irq:
 	lda a_vreg	; check bit 0 of S#1
 	ror
 	bcc @is_vblank
-	
+
 	lda rline
 	clc
 	adc #(256-rbar_y)
@@ -311,9 +311,12 @@ init_sprites:
 	and	#$07
 	ora	#$01
 	sta starfield_speed_tab,x		; speed
-	and	#$0f
-	lda	#White
-	;and	#$07
+	; lda	#White
+	and #3
+	phx
+	tax
+ 	lda star_colors,x
+	plx
 	sta starfield_spritetab+3,y
 	lda	#$00
 	sta starfield_spritetab+2,y		; pattern
@@ -349,17 +352,6 @@ noEor:
 	sta seed
 	rts
 
-init_via:
-	;via port a
-	lda #$00
-	sta via1ier             ; disable VIA1 T1, T2 interrupts
-	lda #%00000000 			; set latch
-	sta via1acr
-	lda #%11001100 			; set level
-	sta via1pcr
-	lda #%11111000 			; set PA1-3 to input
-	sta via1ddra
-	rts
 
 chars:
 ; star char, used as sprite
@@ -410,6 +402,9 @@ raster_bar_colors:
 	.byte Magenta
 	.byte Black
 raster_bar_colors_end:
+star_colors:
+  .byte 0, Gray, Dark_Yellow, Light_Yellow, Cyan, Light_Red, Light_Green, White
+star_colors_end:
 
 line1:
 	.byte	"Steckschwein                   ",1
