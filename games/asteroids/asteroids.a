@@ -1,0 +1,127 @@
+.setcpu "65C02" 
+*=$1000
+			jmp main
+
+!src "asteroids.inc"
+!src <t9929.h.a>
+
+main:
+
+			sei
+			jsr init_gfx
+			cli
+
+-			lda game_status
+			bit	#1
+			beq	-
+			jsr stars_animate
+			
+			dec	game_status
+			bra	-
+
+init_gfx:
+;			jsr vdp_display_off
+;			jsr vdp_mode_gfx1_blank
+;			jsr	vdp_mode_gfx1
+			rts
+		
+game_status:
+			.byte 0
+game_isr:
+			inc framecnt
+			
+			jsr	update_background
+			
+			inc game_status
+			
+			rti
+	
+update_background:
+			lda	#0
+			ldy	#0
+			rts
+	
+	
+stars_animate:
+			ldx #stars_per_layer+stars_per_layer*0
+			jsr stars_update
+			lda framecnt
+			bit #03
+			beq	step_2
+			ldx #stars_per_layer+stars_per_layer*1
+			jsr stars_update
+			lda framecnt
+step_2:
+			bit #07
+			beq	end
+			ldx #stars_per_layer+stars_per_layer*2
+			bra stars_update
+end:
+			rts
+	
+stars_update:
+			txa
+			sec
+			sbc #stars_per_layer
+			sta tmp0	
+l_loop:	
+			ldy stars_y_tab,x		;y with star y - pos
+			lda stars_mask,x		;bitmask of star
+			
+			eor	stars_backbuffer,y	;erase from position with mask
+			sta stars_backbuffer,y	;save at postion
+			
+			cpy #stars_layer_size-1	;highest y?
+			bne l_ypos
+			stz stars_y_tab,x		;reset y pos
+			ldy #0					;go on with top position	
+l_ypos:
+			lda stars_mask,x		;bitmask of star
+			ora stars_backbuffer,y	;set to y - pos+1 with mask
+			sta stars_backbuffer,y
+			
+			dex 					;next star
+			cpx tmp0
+			bpl	l_loop	
+			rts
+
+.rnd:
+   lda seed
+   beq .doEor
+   asl
+   beq .noEor ;if the input was $80, skip the EOR
+   bcc .noEor
+.doEor:    
+	eor #$1d
+.noEor:  
+	sta seed
+	rts
+	
+!align stars_per_layer,0
+stars_y_tab; TODO pseudo random
+	.byte 3,7,11,16,21,23,28,29,33,37	; layer 1
+	.byte 3,7,11,16,21,23,28,29,33,37	; layer 2
+	.byte 3,7,11,16,21,23,28,29,33,37	; layer 3
+	
+stars_mask
+	.byte $80,$20,$04,$08,$40,$20,$04,$80,$20,$02	;layer 1
+	.byte $80,$20,$04,$08,$40,$20,$04,$80,$20,$02	;layer 2
+	.byte $80,$20,$04,$08,$40,$20,$04,$80,$20,$02	;layer 3
+	
+stars_backbuffer:
+	!fill stars_layer_size, 0
+	
+!align 255,0
+sprites
++SpriteLine16start
+!src "rock001.res"
+!src "rock002.res"
+!src "rock003.res"
+!src "rock004.res"
+!src "rock005.res"
+!src "rock006.res"
+!src "rock007.res"
+!src "rock008.res"
+
+; the empty sprite
+!fill 32,0
