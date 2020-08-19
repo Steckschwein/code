@@ -77,13 +77,19 @@ init_sprites:
 			rts
 
 init_game:
+			ldx #0
+:			stz sprite_tab,x
+			inx
+			cpx #(_game_memory_end-_game_memory)
+			bne :-
+
 			lda #SPEED_ASTEROID
 			sta asteroids_speed
 
 			stz asteroids_scriptptr
 			jsr asteroids_script
 
-			ldx	#32*4
+			ldx #32*4
 @l0:		lda sprite_init_tab,x
 			sta sprite_tab,x
 			dex
@@ -319,7 +325,7 @@ animate_asteroid:
 @ae_y:		sta sprite_tab+SPRITE_X+4*3,x	;asteroid - double sprite
 			sta sprite_tab+SPRITE_X+4*4,x
 			lda #$df					;respawn behind top border
-@ah_m:		clc
+@ah_m:	clc
 			adc asteroids_speed
 @ae_s:		sta sprite_tab+SPRITE_Y+4*3,x
 			sta sprite_tab+SPRITE_Y+4*4,x
@@ -465,16 +471,18 @@ sprite_pattern:
 ;.include "bonus_speed.res"
 
 .bss
+_game_memory:
 sprite_tab:
 	.res  32*4
+sprite_empty:
 ; the empty sprite
 	.res 32
-
 framecnt: 		.res 1
 game_status:	.res 1
 ship_status:	.res 1
 asteroids_speed:		.res 2
 asteroids_count:		.res 1
 asteroids_scriptptr:	.res 1
+_game_memory_end:
 
 .segment "STARTUP"
