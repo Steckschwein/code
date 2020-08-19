@@ -1,4 +1,4 @@
-.setcpu "65C02" 
+.setcpu "65C02"
 .include "asteroids.inc"
 
 .zeropage
@@ -21,7 +21,7 @@ tmp4:   .res 1
 appstart $1000
 
 main:
-			;jmp intro_init
+			jsr intro_init
 			sei
 			jsr init_gfx
 			lda #ROM_OFF				;switch rom off
@@ -29,22 +29,22 @@ main:
 			SetVector	game_isr, $fffe
 
 			jsr init_game
-			
+
 			cli
-			
-			
-@game_loop:	
+
+
+@game_loop:
 	lda game_status
 			bit	#1
 			beq	@game_loop
 			lda #Cyan
 			jsr vdp_bgcolor
-			
+
 			jsr animate_background
 			jsr animate_asteroids
 			jsr asteroids_script
 			jsr animate_shot
-			
+
 			dec	game_status
 			lda #Black
 			jsr vdp_bgcolor
@@ -57,7 +57,7 @@ init_gfx:
 			lda #COLOR_STARS<<4|Black
 			jsr	vdp_gfx1_on
 			rts
-		
+
 init_sprites:
 			lda #<ADDRESS_GFX1_SPRITE_PATTERN
 			ldy #>ADDRESS_GFX1_SPRITE_PATTERN+WRITE_ADDRESS
@@ -71,36 +71,36 @@ init_sprites:
 			iny
 			bne	@l0
 			inc ptr1+1
-			dex 
+			dex
 			bne @l0
 			jsr update_spritetab
 			rts
-			
+
 init_game:
 			lda #SPEED_ASTEROID
 			sta asteroids_speed
-			
+
 			stz asteroids_scriptptr
 			jsr asteroids_script
-			
+
 			ldx	#32*4
 @l0:		lda sprite_init_tab,x
 			sta sprite_tab,x
 			dex
-			bpl @l0		
+			bpl @l0
 
 			jsr scoreboard_init
-			
-			rts
-			
 
-tmp0=$0			
+			rts
+
+
+tmp0=$0
 init_screen:
 			jsr vdp_mode_sprites_off
 			lda #<ADDRESS_GFX1_SCREEN
 			ldy #>ADDRESS_GFX1_SCREEN+WRITE_ADDRESS
 			vdp_sreg
-			
+
 			lda #24
 			sta tmp0
 			lda #0
@@ -116,7 +116,7 @@ init_screen:
 			ldx #0
 			bra	@l0
 @blank:
-			inc	
+			inc
 			cmp	#5
 			bne @blank0
 			lda #0
@@ -125,21 +125,21 @@ init_screen:
 			ldy #' '
 @blank1:	vnops
 			sty a_vram
-			dex 
+			dex
 			bne @blank1
 			dec	tmp0
 			bne @l1
 			rts
-			
+
 game_isr:
 			bit	a_vreg
 			bpl	@game_isr_exit
 
 			save
-			
+
 			lda #Dark_Yellow
 			jsr vdp_bgcolor
-			
+
 			jsr	action_handler
 			jsr	update_vram
 
@@ -150,19 +150,19 @@ game_isr:
 			inc framecnt
 
 			lda #Black
-			jsr vdp_bgcolor			
-			
+			jsr vdp_bgcolor
+
 			restore
-@game_isr_exit:			
+@game_isr_exit:
 			rti
-	
+
 update_vram:
 			lda #<ADDRESS_GFX1_PATTERN
 			ldy #(>ADDRESS_GFX1_PATTERN)+WRITE_ADDRESS
 			vdp_sreg
 			ldx #0
 @l0:		lda stars_backbuffer,x
-			inx 
+			inx
 			sta a_vram
 			cpx #stars_layer_size
 			bne @l0
@@ -175,21 +175,21 @@ update_spritetab:
 @l0:		lda sprite_tab,x
 			vnops
 			sta a_vram
-			inx 
+			inx
 			cpx #4*32
-			bne	@l0			
+			bne	@l0
 update_scoreboard:
 			jsr scoreboard_update
-			
+
 			rts
-	
-	
+
+
 animate_background:
 			ldx	#stars_layer_size-1
 @erase:		stz	stars_backbuffer,x
-			dex 
+			dex
 			bpl @erase
-			
+
 			jsr stars_layer_draw
 layer_1:
 			ldx #stars_per_layer*0					;setup X with offset into stars tab
@@ -211,7 +211,7 @@ layer_3:
 			jmp stars_layer_move
 @end:
 			rts
-	
+
 stars_layer_draw:
 			ldx #(stars_per_layer*stars_nr_layers)-1
 @l0:
@@ -223,7 +223,7 @@ stars_layer_draw:
 			dex 					;next star
 			bpl	@l0
 			rts
-			
+
 stars_layer_move:
 			sta tmp0
 @l0:		lda stars_y_tab,x		;y with star y - pos
@@ -261,8 +261,8 @@ animate_shot:
 @as_m:		sbc #7
 @as_s:		sta sprite_tab+SPRITE_Y+4*SPNR_SHOT
 @as_e:		rts
-			
-			
+
+
 asteroids_scripttab_speed:
 			.byte 2,2,2,2,3, 2, 3,4,4,4,4,5,6,7,8,9,10,0
 asteroids_scripttab_count:
@@ -271,27 +271,27 @@ asteroids_scripttab_count:
 asteroids_script:
 			lda	framecnt
 			bne	@e
-			
+
 			ldx asteroids_scriptptr
 			lda asteroids_scripttab_count,x
 			beq	@e
 			sta asteroids_count
 			lda asteroids_scripttab_speed,x
 			sta asteroids_speed
-			inx 
+			inx
 			stx asteroids_scriptptr
 @e:			rts
-			
+
 animate_asteroids:
 			lda #0
 @aes_0:		sta tmp1
 			jsr animate_asteroid
 			lda tmp1
-			inc 
+			inc
 			cmp asteroids_count
 			bne @aes_0
 			rts
-		
+
 animate_asteroid_tab_ptr:
 	.byte 0,1,2,3,4,5,6,7,0,1,2,3
 animate_asteroid_tab0:
@@ -304,14 +304,14 @@ animate_asteroid:
 			asl
 			asl
 			tax
-			
+
 			lda sprite_tab+SPRITE_Y+4*3,x
 			cmp #SPRITE_OFF-1-1; off -1 is max y ($bf) where sprite is not visible anymore, and 2nd -1 is to be safe if speed is +1 to not run into $d0 which will disable all other sprites
 			bcc @ah_m
 			cmp #$df
 			bcs @ah_m
 			rts
-			
+
 			jsr rnd
 			cmp #MAX_X
 			bcc @ae_y
@@ -342,7 +342,7 @@ animate_asteroid:
 			tya
 			ldy tmp0
 			sta animate_asteroid_tab_ptr,y
-@ah_e:		
+@ah_e:
 			rts
 
 action_handler:
@@ -368,7 +368,7 @@ action_handler:
 			and #JOY_FIRE
 			bne @ah_e
 			jsr setup_shot
-@ah_up:			
+@ah_up:
 			lda via1porta
 			bit #JOY_UP
 			bne @ah_e
@@ -376,7 +376,7 @@ action_handler:
 			dec sprite_tab+SPRITE_Y+4*1
 @ah_e:
 			rts
-			
+
 get_joy_status:
 	lda	#JOY_PORT		;select joy port
 	sta	via1porta
@@ -389,27 +389,27 @@ rnd:
 	asl
 	beq noEor ;if the input was $80, skip the EOR
 	bcc noEor
-doEor:	
+doEor:
 	eor #$1d
-noEor:  
+noEor:
 	sta seed
 	rts
 
 stars_y_tab:							; TODO use pseudo random ?!
-	.byte 3,11,21,33	; layer 
-	.byte 3,11,21,33	; layer 
-	.byte 3,11,21,33	; layer 
+	.byte 3,11,21,33	; layer
+	.byte 3,11,21,33	; layer
+	.byte 3,11,21,33	; layer
 ;	.byte 3,7,11,16,21,29,33,37	; layer 2
 ;	.byte 3,7,11,16,21,29,33,37	; layer 3
-	
+
 stars_mask:
 	.byte $04,$08,$40,$01	;layer 1
 	.byte $04,$80,$10,$20	;layer 2
 	.byte $20,$04,$01,$80	;layer 3
-	
+
 stars_backbuffer:
 	.res stars_layer_size, 0
-	
+
 sprite_init_tab:
 	.byte SHIP_Y,		SHIP_X, 0, COLOR_SHIP
 	.byte SHIP_Y, 		SHIP_X, 4, COLOR_SHIP2
@@ -423,7 +423,7 @@ sprite_init_tab:
 	.byte ROCK_Y*4,	100, 24, COLOR_ROCK2
 	.byte ROCK_Y*10,	100, 20, COLOR_ROCK
 	.byte ROCK_Y*10,	100, 24, COLOR_ROCK2
-	
+
 	.byte ROCK_Y*8,	100, 20, COLOR_ROCK
 	.byte ROCK_Y*8,	100, 24, COLOR_ROCK2
 	.byte ROCK_Y*2,	100, 20, COLOR_ROCK
@@ -433,12 +433,12 @@ sprite_init_tab:
 	.byte ROCK_Y*5,	100, 24, COLOR_ROCK2
 	.byte ROCK_Y*11,	100, 20, COLOR_ROCK
 	.byte ROCK_Y*11,	100, 24, COLOR_ROCK2
-	
+
 	.byte ROCK_Y*3,	100, 20, COLOR_ROCK
 	.byte ROCK_Y*3,	100, 24, COLOR_ROCK2
 	.byte ROCK_Y*9,	100, 20, COLOR_ROCK
 	.byte ROCK_Y*9,	100, 24, COLOR_ROCK2
-	
+
 	.byte ROCK_Y*7,	100, 20, COLOR_ROCK
 	.byte ROCK_Y*7,	100, 24, COLOR_ROCK2
 	.byte ROCK_Y*12,	100, 20, COLOR_ROCK

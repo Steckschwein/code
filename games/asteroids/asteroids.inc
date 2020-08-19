@@ -5,6 +5,8 @@
 .include "via.inc"
 .include "joystick.inc"
 
+.include "kernel_jumptable.inc"
+
 .import vdp_display_off
 .import vdp_gfx1_blank
 .import vdp_gfx1_on
