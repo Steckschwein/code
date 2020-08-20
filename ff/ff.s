@@ -357,13 +357,13 @@ noEor:
 chars:
 ; star char, used as sprite
 .byte %00000000
-.byte %00000000
-.byte %00000000
-.byte %00000000
-.byte %00001000
-.byte %00000000
-.byte %00000000
-.byte %00000000
+.byte %00010000
+.byte %00101000
+.byte %00101000
+.byte %00101000
+.byte %01101010
+.byte %10100101
+.byte %10100101
 ; blank char, used as stop marker
 .byte %00000000
 .byte %00000000
