@@ -106,6 +106,11 @@ __fat_find_next:
 		lda dirptr+1
 		cmp #>(sd_blktarget + sd_blocksize)	; end of block reached?
 		bcc ff_l4			; no, process entry
+		lda dirptr
+      	cmp #<(sd_blktarget + sd_blocksize)
+      	bcc ff_l4
+		.assert <(sd_blktarget + sd_blocksize) = $00, error, "sd_blktarget isn''t aligned on a RAM page boundary"
+
 		dec blocks			;
 		beq @ff_eoc			; end of cluster reached?
 		jsr __inc_lba_address	; increment lba address to read next block
