@@ -29,7 +29,7 @@
 memctl = $0230
 charset = $e000
 display_seconds = 2
-;rbar_y = 93 ; with text
+;rbar_y = 32;93 ; with text
 rbar_y = 191
 
 .zeropage
@@ -74,7 +74,7 @@ appstart $1000
 	vdp_vram_w $0000
 	lda #<chars
 	ldy #>chars
-	ldx #3*8
+	ldx #2*8
 	jsr vdp_memcpys
    ;vdp_vram_w ADDRESS_GFX1_COLOR
 	vdp_vram_w $2000
@@ -391,6 +391,8 @@ raster_bar_colors:
 	.byte	Medium_Red
 	.byte	Light_Red
 	.byte	Dark_Yellow
+	.byte	Light_Yellow
+	.byte	White
 	.byte	Light_Yellow
 	.byte	Dark_Yellow
 	.byte	Light_Red
