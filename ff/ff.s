@@ -26,7 +26,6 @@
 ;.export char_out=krn_chrout
 
 .import vdp_display_off, vdp_init_reg, vdp_fill, vdp_fills, vdp_memcpy, vdp_memcpys
-.import vdp_bgcolor
 
 memctl = $0230
 charset = $e000
@@ -80,13 +79,13 @@ appstart $1000
 	jsr vdp_memcpys
    ;vdp_vram_w ADDRESS_GFX1_COLOR
 	vdp_vram_w $2000
-	lda	#Cyan<<4|Black		;setup screen color gfx1
+	lda	#Transparent<<4|Transparent		;setup screen color gfx1
 	ldx	#$20		; $20 possible colors
 	jsr	vdp_fills
 
    ;vdp_fills ADDRESS_GFX1_SCREEN
 	vdp_vram_w $1800
-	lda	#$20		;clear screen gfx1
+	lda	#' '		;clear screen gfx1
 	ldx	#$03		; $300 chars
 	jsr	vdp_fill
 
@@ -222,9 +221,8 @@ update_vram:
 	ldy #>text_scroll_buf
 	ldx #$20
 	jsr vdp_memcpys
-;
-;	lda #$01	;skip first 8 chars
-;	ldy #$20+$40
+
+  ;skip first 8 chars
 	vdp_vram_w $2001
 	ldx text_color_ix
 	lda intro_label_color,x
@@ -338,7 +336,7 @@ starfield_vdp_init_tab:
 	.byte ($0000 / $800) ; pattern table
 	.byte ($3c00 / $80)	; sprite attribute table - value * $80 --> offset in VRAM
 	.byte ($0000 / $800)	; sprite pattern table - value * $800  --> offset in VRAM
-	.byte Black
+	.byte Transparent
 starfield_vdp_init_tab_end:
 
 rnd:
@@ -377,17 +375,17 @@ chars:
 
 .data
 intro_label_color:
-	.byte Magenta<<4|Black
-	.byte Dark_Red<<4|Black
-	.byte	Medium_Red<<4|Black
-	.byte	Light_Red<<4|Black
-	.byte	Dark_Yellow<<4|Black
-	.byte	Light_Yellow<<4|Black
-	.byte	Dark_Yellow<<4|Black
-	.byte	Light_Red<<4|Black
-	.byte	Medium_Red<<4|Black
-	.byte Dark_Red<<4|Black
-	.byte Magenta<<4|Black
+	.byte Magenta<<4|Transparent
+	.byte Dark_Red<<4|Transparent
+	.byte	Medium_Red<<4|Transparent
+	.byte	Light_Red<<4|Transparent
+	.byte	Dark_Yellow<<4|Transparent
+	.byte	Light_Yellow<<4|Transparent
+	.byte	Dark_Yellow<<4|Transparent
+	.byte	Light_Red<<4|Transparent
+	.byte	Medium_Red<<4|Transparent
+	.byte Dark_Red<<4|Transparent
+	.byte Magenta<<4|Transparent
 	.byte White
 raster_bar_colors:
 	.byte Magenta
