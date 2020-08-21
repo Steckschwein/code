@@ -25,6 +25,8 @@
 .include "via.inc"
 
 .import vdp_init_reg, vdp_fill, vdp_fills, vdp_memcpy, vdp_memcpys
+.export char_out=krn_chrout
+.import hexout
 
 memctl = $0230
 charset = $e000
@@ -38,19 +40,33 @@ rline: .res 1
 
 appstart $1000
 
-.macro nops _n
-	.repeat _n
-		nop
-	.endrep
-.endmacro
 
-.macro inc16 _w
-	inc _w
-	bne :+
-	inc _w+1
-	:
-.endmacro
 
+
+
+.bss
+res:     .res 4
+
+.code
+
+main:
+	add32 val1, val2, val2
+
+
+    lda val2+3
+    jsr hexout
+    lda val2+2
+    jsr hexout
+    lda val2+1
+    jsr hexout
+    lda val2+1
+    jsr hexout
+
+    jmp (retvec)
+
+.data
+val1:    .dword $deadbeef
+val2:    .dword $00000001
 .code
 	lda #rbar_y
 	sta rline

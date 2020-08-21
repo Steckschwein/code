@@ -29,7 +29,7 @@
 			sta addr+1
 .endmacro
 
-.macro _add32 a32, a16
+.macro add16to32 a32, a16
 		clc
 		lda a32+0
 		adc a16+0
@@ -44,6 +44,34 @@
 		adc #0
 		sta a32+3
 .endmacro
+
+.macro nops _n
+	.repeat _n
+		nop
+	.endrep
+.endmacro
+
+.macro inc16 _w
+	inc _w
+	bne :+
+	inc _w+1
+	:
+.endmacro
+
+.macro add32 _val1, _val2, _res
+	phx
+	ldx #0
+    clc
+@l:
+    lda _val1,x
+    adc _val2,x
+    sta _res,x
+	inx
+	cpx #4
+	bne @l
+	plx
+.endmacro
+
 
 .macro _inc32 val
 		.local @l1
