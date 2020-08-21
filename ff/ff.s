@@ -23,9 +23,8 @@
 .include "steckos.inc"
 .include "vdp.inc"
 .include "via.inc"
-;.export char_out=krn_chrout
 
-.import vdp_display_off, vdp_init_reg, vdp_fill, vdp_fills, vdp_memcpy, vdp_memcpys
+.import vdp_init_reg, vdp_fill, vdp_fills, vdp_memcpy, vdp_memcpys
 
 memctl = $0230
 charset = $e000
@@ -42,7 +41,7 @@ appstart $1000
 .macro nops _n
 	.repeat _n
 		nop
-   .endrep
+	.endrep
 .endmacro
 
 .macro inc16 _w
@@ -75,7 +74,7 @@ appstart $1000
 	vdp_vram_w $0000
 	lda #<chars
 	ldy #>chars
-	ldx #16
+	ldx #3*8
 	jsr vdp_memcpys
    ;vdp_vram_w ADDRESS_GFX1_COLOR
 	vdp_vram_w $2000
@@ -85,7 +84,7 @@ appstart $1000
 
    ;vdp_fills ADDRESS_GFX1_SCREEN
 	vdp_vram_w $1800
-	lda	#' '		;clear screen gfx1
+	lda	#' '		;fill screen
 	ldx	#$03		; $300 chars
 	jsr	vdp_fill
 
@@ -371,7 +370,6 @@ chars:
 .byte %00000000
 .byte %00000000
 .byte %00000000
-
 
 .data
 intro_label_color:
