@@ -31,39 +31,38 @@
 
 src_ptr  = $0
 dst_ptr  = $2
-    sei ; no irq if we upload from kernel to avoid clash
-		; copy kernel code to kernel_start
-		lda #>payload
-		sta src_ptr+1
-		stz src_ptr
+   sei ; no irq if we upload from kernel to avoid clash
+   ; copy kernel code to kernel_start
+   lda #>payload
+   sta src_ptr+1
+   stz src_ptr
 
-		lda #>kernel_start
-		sta dst_ptr+1
-		stz dst_ptr
+   lda #>kernel_start
+   sta dst_ptr+1
+   stz dst_ptr
 
-		ldy #0
+   ldy #0
 loop:
-		lda (src_ptr),y
-		sta (dst_ptr),y
-		iny
-		bne loop
-		lda src_ptr+1
-		cmp #>payload_end
-		bne @skip
-
-		cpy #<payload_end
-		beq end
-
+   lda (src_ptr),y
+   sta (dst_ptr),y
+   iny
+   bne loop
+   lda src_ptr+1
+   cmp #>payload_end
+   bne @skip
+   stp
+   cpy #<payload_end
+   beq end
 @skip:
-		inc src_ptr+1
-		inc dst_ptr+1
-		bne loop
+   inc src_ptr+1
+   inc dst_ptr+1
+   bne loop
 end:
-		lda #$01
-		sta ctrl_port
+   lda #$01
+   sta ctrl_port
 
-		; jump to reset vector
-		jmp ($fffc)
+   ; jump to reset vector
+   jmp ($fffc)
 
 .data
 payload:
