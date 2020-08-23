@@ -55,74 +55,75 @@ STATE_TEXTUI_ENABLED	=1<<3
 .import vdp_text_on
 
 textui_update_crs_ptr:		; updates the 16 bit pointer crs_p upon crs_x, crs_y values
-		pha
+	pha
 
-		lda saved_char			;restore saved char
-		jsr vram_crs_ptr_write		;		sta (crs_ptr)
-		lda #STATE_CURSOR_BLINK
-		trb screen_status		 ;reset cursor state
+	lda saved_char			;restore saved char
+	jsr vram_crs_ptr_write		;		sta (crs_ptr)
+	lda #STATE_CURSOR_BLINK
+	trb screen_status		 ;reset cursor state
 
-		;use the crs_ptr as tmp variable
-		stz crs_ptr+1
-		lda crs_y
-		asl							; y*2
-		asl							; y*4
-		asl							; y*8
+	;use the crs_ptr as tmp variable
+	stz crs_ptr+1
+	lda crs_y
+	asl							; y*2
+	asl							; y*4
+	asl							; y*8
 
-		bit max_cols
-		bvc @l40
-										; crs_y*64 + crs_y*16 (crs_ptr) => y*80
-		asl							; y*16
-		sta crs_ptr
-		php							; save carry
-		rol crs_ptr+1				; save carry if overflow
-		bra @lae
+	bit max_cols
+	bvc @l40
+									; crs_y*64 + crs_y*16 (crs_ptr) => y*80
+	asl							; y*16
+	sta crs_ptr
+	php							; save carry
+	rol crs_ptr+1		; save carry if overflow
+	bra @lae
 @l40:
-		; crs_y*32 + crs_y*8  (crs_ptr) => y*40
-		sta crs_ptr					; save
-		php							; save carry
+	; crs_y*32 + crs_y*8  (crs_ptr) => y*40
+	sta crs_ptr					; save
+	php							; save carry
 @lae:
-		asl
-		rol crs_ptr+1			  	; save carry if overflow
-		asl
-		rol crs_ptr+1				; save carry if overflow
+	asl
+	rol crs_ptr+1			  	; save carry if overflow
+	asl
+	rol crs_ptr+1				; save carry if overflow
 
-		plp							; restore carry from overflow above
-		bcc @l0
-		inc crs_ptr+1
-		clc
+	plp							; restore carry from overflow above
+	bcc @l0
+	inc crs_ptr+1
+	clc
+@l0:
+	adc crs_ptr			;
+	bcc @l1
+	inc crs_ptr+1		; overflow inc page count
+	clc					;
+@l1:
+	adc crs_x
+	sta a_vreg
+	sta crs_ptr
 
-@l0:	adc crs_ptr			;
-		bcc @l1
-		inc crs_ptr+1		; overflow inc page count
-		clc					;
-@l1:	adc crs_x
-		sta a_vreg
-		sta crs_ptr
+	lda #>ADDRESS_TEXT_SCREEN
+	adc crs_ptr+1		  ; add carry and page to address high byte
+	sta a_vreg
+	sta crs_ptr+1
+	vdp_wait_l 3
+	lda a_vram
+	sta saved_char		  ;save char at new position
 
-	  	lda #>ADDRESS_TEXT_SCREEN
-	  	adc crs_ptr+1		  ; add carry and page to address high byte
-		sta a_vreg
-		sta crs_ptr+1
-		vdp_wait_l 3
-		lda a_vram
-  		sta saved_char		  ;save char at new position
-
-	  	pla
-  		rts
+	pla
+	rts
 
 vram_crs_ptr_write:
-		pha
-		lda crs_ptr
-		sta a_vreg
-		vdp_wait_s 5
-		lda crs_ptr+1
-		ora #WRITE_ADDRESS
-		sta a_vreg
-		pla
-		vdp_wait_l 3
-		sta a_vram
-		rts
+	pha
+	lda crs_ptr
+	sta a_vreg
+	vdp_wait_s 5
+	lda crs_ptr+1
+	ora #WRITE_ADDRESS
+	sta a_vreg
+	pla
+	vdp_wait_l 3
+	sta a_vram
+	rts
 
 textui_init0:
 .ifdef COLS80
@@ -130,14 +131,16 @@ textui_init0:
 .else
 		  lda #TEXT_MODE_40
 .endif
+		  sta max_cols
+			bra textui_init
+
 textui_setmode:
 		  cmp #TEXT_MODE_80
 		  beq @setmode
 		  lda #TEXT_MODE_40
 @setmode:
 		  sta max_cols
-;		  jsr textui_blank
-
+		  jsr textui_blank
 textui_init:
 		  stz screen_write_lock					;reset write lock
 		  jsr textui_enable
@@ -151,11 +154,16 @@ textui_init:
 		  rts
 
 textui_blank:
-		  ldx #0
+	stp
+	lda max_cols
+	lsr
+	lsr
+	lsr
+	and #$0c
+	tax	; calc pages to clear
 		  vdp_vram_w ADDRESS_TEXT_SCREEN
 		  lda #CURSOR_BLANK
 		  sta saved_char
-		  ldx #4
 		  jsr vdp_fill
 
 		  ldx #0
@@ -179,7 +187,8 @@ textui_cursor:
 		  trb screen_status
 		  lda #CURSOR_CHAR
 		  bra @l2
-@l1:	  lda saved_char
+@l1:
+			lda saved_char
 @l2:
 		  jmp vram_crs_ptr_write	;			sta (crs_ptr)
 @l_exit:
@@ -190,101 +199,82 @@ textui_update_screen:
 	and #STATE_TEXTUI_ENABLED
 	beq :+
 	inc screen_frames
-	jsr textui_cursor
-:  rts
-
-_screen_end:
-	lda a_r+1	;4cl
-	cmp #>(ADDRESS_TEXT_SCREEN+(COLS * 24)) ;2cl
-	bne :+ ;3cl
-	lda a_r+0 ;4cl
-	cmp #<(ADDRESS_TEXT_SCREEN+(COLS * 24)) ;2cl
+	jmp textui_cursor
 :	rts
 
-BUFFER=$0100	; use the stack as copy buffer
-COLS=40
 textui_scroll_up:
 	php
-	sei	; critical section
+	sei	; critical section, since we use the stack and vdp regs
 	phx
-	SetVector	(ADDRESS_TEXT_SCREEN+COLS), a_r		        ; +COLS - offset second row
+	phy
+	lda #<ADDRESS_TEXT_SCREEN
+	clc
+	adc max_cols
+	sta a_r
+	lda #>ADDRESS_TEXT_SCREEN
+	sta a_r+1
 	SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), a_w	; offset first row as "write address"
 
-	tsx
-	dex ;vdp_wait_x needs 2 byte stack for jsr/rts
-	dex
-	stx scroll_tmp1
-	cpx #100
-	bcs @l1
-	stp
+	;stp
+	lda max_cols
+	lsr
+	lsr
+	lsr
+	and #$0c
+	tay	; calc pages to copy
 @l1:
 	lda a_r+0	; 4cl
 	sta a_vreg
-	ldx scroll_tmp1
+	ldx #scroll_buffer_size
 	lda a_r+1
 	sta a_vreg
 	vdp_wait_l
 @vram_read:
-	vdp_wait_l 34
+	vdp_wait_l 18
 	lda a_vram
 	sta scroll_buffer,x	; 4cl
+	sta scroll_buffer_cmp,x
 	inc a_r+0	; 6cl
 	bne :+		; 3cl
 	inc a_r+1
-:	jsr _screen_end ; 12cl+9cl
-	beq @write		 ; 2/3
-	dex				 ; 2cl
-	bne @vram_read
+	dex					; 2cl
+	bpl @vram_read ;3cl
 @write:
-	stx scroll_tmp2
-	ldx scroll_tmp1
+	ldx #scroll_buffer_size
 	lda a_w+0	; 3cl
 	sta a_vreg
-	lda a_w+1	; 3cl
+	lda a_w+1
 	vdp_wait_s 4
 	sta a_vreg
 	vdp_wait_l
 @vram_write:
-	vdp_wait_l 20
-	lda scroll_buffer,x
+	vdp_wait_l 18
+	lda scroll_buffer,x	;4
+	cmp scroll_buffer_cmp,x
+	beq :+
+	;stp
+:
 	sta a_vram
-	inc a_w+0  ; 6cl
+	inc a_w+0  ;6cl
 	bne :+	  ; 3cl
 	inc a_w+1
-:	dex		  ; 2cl
-	cpx scroll_tmp2 	;3cl
-	bne @vram_write ;3cl
-	jsr _screen_end
+:	dex ; 2cl
+	bpl @vram_write ;3cl
+	dey
 	bne @l1
 
-	ldx #COLS	; write address is already setup from loop
+	ldx max_cols ; write address is already setup from loop above
 	lda #' '
 @l5:
 	sta a_vram
-	vdp_wait_l 4
+	vdp_wait_l 5
 	dex
 	bne @l5
 
+	ply
 	plx
 	plp
 	rts
-
-textui_inc_cursor_y:
-	lda crs_y
-	cmp #ROWS-1					; last line
-	bne @l1
-
-	lda saved_char			 	; restore saved char
-	jsr vram_crs_ptr_write	; sta (crs_ptr)
-	lda #CURSOR_BLANK
-	sta saved_char			 	; reset saved_char to blank, cause we scrolled up
-	lda #STATE_CURSOR_BLINK
-	trb screen_status		 	; reset cursor state
-	jsr textui_scroll_up	; scroll and exit
-	jmp textui_update_crs_ptr
-@l1:
-	inc crs_y
-	jmp textui_update_crs_ptr
 
 textui_enable:
 	lda #STATE_TEXTUI_ENABLED
@@ -381,49 +371,62 @@ textui_crsxy:
 	jmp textui_update_crs_ptr
 
 textui_dispatch_char:
-	cmp	 #KEY_CR				;carriage return?
-	bne	 @lfeed
-	stz	 crs_x
+	cmp #KEY_CR	;carriage return?
+	bne @lfeed
+	stz crs_x
 	jmp textui_update_crs_ptr
 @lfeed:
-	cmp #KEY_LF				;line feed
-	bne @l1
-	stz crs_x
-	jmp textui_inc_cursor_y
-@l1:
+	cmp #KEY_LF	;line feed
+	beq @l5
 	cmp #KEY_BACKSPACE
 	bne @l4
 	lda crs_x
 	bne @l3
 	lda crs_y						; cursor y=0, no dec
-	beq @lupdate
+	beq @exit
 	dec crs_y
-	lda max_cols					; set x to end of line above
+	lda max_cols				; set x to max-cols -1
+@l3:
+	dec 								; which is end of the line
 	sta crs_x
 @l2:
 	jsr textui_update_crs_ptr
 	lda #CURSOR_BLANK				; blank the saved char
 	sta saved_char
+@exit:
 	rts
-@l3:
-	dec crs_x
-	bra @l2	; TODO test
 @l4:
 	sta saved_char			; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
 	lda crs_x
+	inc
 	cmp max_cols
 	beq @l5
-	inc crs_x
-@lupdate:
+	sta crs_x
 	jmp textui_update_crs_ptr
 @l5:
 	stz crs_x
-	jmp textui_inc_cursor_y
+	
+	lda crs_y
+	cmp #ROWS-1					; last line
+	bne @l6
+
+	lda saved_char			 	; restore saved char
+	jsr vram_crs_ptr_write	; sta (crs_ptr)
+	lda #CURSOR_BLANK
+	sta saved_char			 	; reset saved_char to blank, cause we scrolled up
+	lda #STATE_CURSOR_BLINK
+	trb screen_status		 	; reset cursor state
+	jsr textui_scroll_up	; scroll and exit
+	jmp textui_update_crs_ptr
+@l6:
+	inc crs_y
+	jmp textui_update_crs_ptr
+
 
 .bss
-scroll_buffer=$0100
-scroll_tmp1:				.res 1
-scroll_tmp2:				.res 1
+scroll_buffer_size = $80
+scroll_buffer: 			.res scroll_buffer_size
+scroll_buffer_cmp: 	.res scroll_buffer_size
 screen_status:			.res 1
 screen_write_lock:	.res 1
 screen_frames:			.res 1

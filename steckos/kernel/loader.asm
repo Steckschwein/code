@@ -29,11 +29,10 @@
 
 ; system attribute has to be set on file system
 
-; .pages = (.payload_end - .payload) / 256 + 1
 src_ptr  = $0
 dst_ptr  = $2
     sei ; no irq if we upload from kernel to avoid clash
-		; copy kernel code to $f000
+		; copy kernel code to kernel_start
 		lda #>payload
 		sta src_ptr+1
 		stz src_ptr
@@ -42,7 +41,7 @@ dst_ptr  = $2
 		sta dst_ptr+1
 		stz dst_ptr
 
-		ldy #$00
+		ldy #0
 loop:
 		lda (src_ptr),y
 		sta (dst_ptr),y
@@ -53,7 +52,7 @@ loop:
 		bne @skip
 
 		cpy #<payload_end
-		bne @skip
+		beq end
 
 @skip:
 		inc src_ptr+1

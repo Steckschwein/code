@@ -163,15 +163,15 @@ do_irq:
 		bit SYS_IRR					; was vdp irq?
 		bpl @exit
 ;		.import vdp_bgcolor
-		;lda #Cyan
-		;jsr vdp_bgcolor
+;		lda #Cyan
+;		jsr vdp_bgcolor
 		jsr	textui_update_screen	 ; update text ui
 		dec frame
 		lda frame
 		and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution
 		bne @exit
-		;lda #White
-		;jsr vdp_bgcolor
+;		lda #White
+	;	jsr vdp_bgcolor
 		jsr __rtc_systime_update	 ; update system time, read date time store to rtc_systime_t (see rtc.inc)
 		jsr __automount
 

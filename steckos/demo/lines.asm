@@ -34,7 +34,6 @@
 .import vdp_gfx7_blank
 .import vdp_memcpy
 .import vdp_bgcolor
-.import vdp_wait_cmd
 
 appstart $1000
 
@@ -56,7 +55,7 @@ main:
 
 draw_vertices:
 	vdp_sreg 2, v_reg15
-	ldy vertices_size	
+	ldy vertices_size
 @l:
 	jsr vdp_gfx7_line
 	dey
@@ -77,18 +76,16 @@ vdp_isr:
 	
 	vdp_sreg 0, 15	; status register index
 	vdp_wait_s
-   bit a_vreg
-   bpl @0
+	bit a_vreg
+	bpl @0
 
 	lda #%11100000
 	jsr vdp_bgcolor
 		
 	lda #bg_color
 	sta color
-	jsr draw_vertices
-
-  jsr animate_vertices	
-	
+;	jsr draw_vertices
+;  jsr animate_vertices
 	lda #$ff
 	sta color
 	jsr draw_vertices
@@ -104,7 +101,7 @@ vdp_isr:
 	rti
 
 vdp_gfx7_line:
-	lda #%000111000
+	lda #%000111000 ; GRB color code
 	jsr vdp_bgcolor
 	
 	vdp_sreg 36, v_reg17
@@ -146,9 +143,16 @@ vdp_gfx7_line:
 	lda #v_cmd_line
 	sta a_vregi
 
-	lda #%11111100
+	lda #%11111100 ; GRB color code
 	jsr vdp_bgcolor
-  jmp vdp_wait_cmd
+@wait:
+	vdp_wait_s 4
+	lda a_vreg
+	ror
+	bcs @wait
+	
+	lda #0
+	jmp vdp_bgcolor
 
 gfxui_on:
 	sei
@@ -164,12 +168,12 @@ gfxui_on:
 	rts
 
 gfxui_off:
-    sei
+	sei
 
-    copypointer  irqsafe, $fffe
+	copypointer  irqsafe, $fffe
 
-    cli
-    rts
+	cli
+	rts
 
 color: .res 1,$ff
 irqsafe: .res 2, 0
