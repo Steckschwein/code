@@ -154,21 +154,19 @@ textui_init:
 		  rts
 
 textui_blank:
-	stp
+	ldx #4
 	lda max_cols
-	lsr
-	lsr
-	lsr
-	and #$0c
-	tax	; calc pages to clear
-		  vdp_vram_w ADDRESS_TEXT_SCREEN
-		  lda #CURSOR_BLANK
-		  sta saved_char
-		  jsr vdp_fill
+	cmp #TEXT_MODE_80
+	bne :+
+	ldx #8
+:	vdp_vram_w ADDRESS_TEXT_SCREEN
+	lda #CURSOR_BLANK
+	sta saved_char
+	jsr vdp_fill
 
-		  ldx #0
-		  ldy #0
-		  jmp textui_crsxy
+	ldx #0
+	ldy #0
+	jmp textui_crsxy
 
 textui_cursor:
 			lda screen_write_lock
@@ -213,19 +211,16 @@ textui_scroll_up:
 	sta a_r
 	lda #>ADDRESS_TEXT_SCREEN
 	sta a_r+1
-	SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), a_w	; offset first row as "write address"
+	SetVector (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), a_w	; offset first row as "write address"
 
-	;stp
 	lda max_cols
 	lsr
 	lsr
-	lsr
-	and #$0c
-	tay	; calc pages to copy
+	tay ; 40/80 col mode, 10/20 * 100 calc pages to copy
 @l1:
 	lda a_r+0	; 4cl
 	sta a_vreg
-	ldx #scroll_buffer_size
+	ldx #scroll_buffer_size-1
 	lda a_r+1
 	sta a_vreg
 	vdp_wait_l
@@ -233,14 +228,13 @@ textui_scroll_up:
 	vdp_wait_l 18
 	lda a_vram
 	sta scroll_buffer,x	; 4cl
-	sta scroll_buffer_cmp,x
 	inc a_r+0	; 6cl
 	bne :+		; 3cl
 	inc a_r+1
-	dex					; 2cl
+:	dex					; 2cl
 	bpl @vram_read ;3cl
 @write:
-	ldx #scroll_buffer_size
+	ldx #scroll_buffer_size-1
 	lda a_w+0	; 3cl
 	sta a_vreg
 	lda a_w+1
@@ -250,10 +244,6 @@ textui_scroll_up:
 @vram_write:
 	vdp_wait_l 18
 	lda scroll_buffer,x	;4
-	cmp scroll_buffer_cmp,x
-	beq :+
-	;stp
-:
 	sta a_vram
 	inc a_w+0  ;6cl
 	bne :+	  ; 3cl
@@ -405,7 +395,7 @@ textui_dispatch_char:
 	jmp textui_update_crs_ptr
 @l5:
 	stz crs_x
-	
+
 	lda crs_y
 	cmp #ROWS-1					; last line
 	bne @l6
@@ -424,9 +414,8 @@ textui_dispatch_char:
 
 
 .bss
-scroll_buffer_size = $80
-scroll_buffer: 			.res scroll_buffer_size
-scroll_buffer_cmp: 	.res scroll_buffer_size
+scroll_buffer_size = 100 ; 40/80 col mode => 1000/2000 chars to copy
+scroll_buffer:			.res scroll_buffer_size
 screen_status:			.res 1
 screen_write_lock:	.res 1
 screen_frames:			.res 1

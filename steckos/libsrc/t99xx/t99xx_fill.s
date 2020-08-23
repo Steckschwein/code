@@ -37,12 +37,12 @@ vdp_fill:
 		  dex
 		  bne @1
 		  rts
-	
+
 vdp_fills:
 ;	in:
-;	.A - value to write
+;		.A - value to write
 ;		.X - amount of bytes
-@0:	  vdp_wait_l 6	;3 + 2 + 1 opcode fetch
+@0:	vdp_wait_l 6	;3 + 2 + 1 opcode fetch
 		dex				;2
 		sta a_vram	  ;4
 		bne	@0			;3
