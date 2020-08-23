@@ -1,5 +1,4 @@
 .include "steckos.inc"
-.include "zeropage.inc"
 
 appstart $1000
 		ldx #00
@@ -28,8 +27,8 @@ l_loop:
 		bne @l_esc
 		inc crs_y
 		bra l_loop0
-		
-		
+
+
 @l_esc:
 		cmp #KEY_ESCAPE
 		beq l_end
