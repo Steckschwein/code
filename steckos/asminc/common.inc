@@ -58,28 +58,40 @@
 	:
 .endmacro
 
-.macro add32 _val1, _val2, _res
-    .local @l1
+.macro _add_n _val1, _val2, _res, _bytes
     clc
-    .repeat 4, i
+    .repeat _bytes, i
         lda _val1+i
         adc _val2+i
         sta _res+i
     .endrepeat
-
 .endmacro
 
-.macro sub32 _val1, _val2, _res
-    .local @l1
+.macro add32 _val1, _val2, _res
+    _add_n _val1, _val2, _res, 4
+.endmacro
 
+.macro add16 _val1, _val2, _res
+    _add_n _val1, _val2, _res, 2
+.endmacro
+
+.macro _sub_n _val1, _val2, _res, _bytes
     sec
-    .repeat 4, i
+    .repeat _bytes, i
         lda _val1+i
         sbc _val2+i
         sta _res+i
     .endrepeat
 
 .endmacro
+
+.macro sub32 _val1, _val2, _res
+    _sub_n _val1, _val2, _res, 4
+.endmacro
+.macro sub16 _val1, _val2, _res
+    _sub_n _val1, _val2, _res, 2
+.endmacro
+
 
 .macro _inc32 val
 		.local @l1
