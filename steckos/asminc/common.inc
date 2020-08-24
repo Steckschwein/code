@@ -59,19 +59,27 @@
 .endmacro
 
 .macro add32 _val1, _val2, _res
-	phx
-	ldx #0
+    .local @l1
     clc
-@l:
-    lda _val1,x
-    adc _val2,x
-    sta _res,x
-	inx
-	cpx #4
-	bne @l
-	plx
+    .repeat 4, i
+        lda _val1+i
+        adc _val2+i
+        sta _res+i
+    .endrepeat
+
 .endmacro
 
+.macro sub32 _val1, _val2, _res
+    .local @l1
+
+    sec
+    .repeat 4, i
+        lda _val1+i
+        sbc _val2+i
+        sta _res+i
+    .endrepeat
+
+.endmacro
 
 .macro _inc32 val
 		.local @l1
