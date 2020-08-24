@@ -40,33 +40,6 @@ rline: .res 1
 
 appstart $1000
 
-
-
-
-
-.bss
-res:     .res 4
-
-.code
-
-main:
-	add32 val1, val2, val2
-
-
-    lda val2+3
-    jsr hexout
-    lda val2+2
-    jsr hexout
-    lda val2+1
-    jsr hexout
-    lda val2+1
-    jsr hexout
-
-    jmp (retvec)
-
-.data
-val1:    .dword $deadbeef
-val2:    .dword $00000001
 .code
 	lda #rbar_y
 	sta rline
