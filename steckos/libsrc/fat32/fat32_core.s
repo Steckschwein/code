@@ -431,12 +431,14 @@ __calc_lba_addr:
 @lme:
 		plx												; restore X - the fd
 
-		clc												; add cluster_begin_lba and lba_addr => TODO may be an optimization
-		.repeat 4, i
-			lda cluster_begin_lba+i
-			adc lba_addr+i
-			sta lba_addr+i
-		.endrepeat
+		; add cluster_begin_lba and lba_addr => TODO may be an optimization
+		add32 cluster_begin_lba, lba_addr, lba_addr
+		; clc
+		; .repeat 4, i
+		; 	lda cluster_begin_lba+i
+		; 	adc lba_addr+i
+		; 	sta lba_addr+i
+		; .endrepeat
 
 		lda fd_area+F32_fd::offset+0,x			; load the current block counter
 		adc lba_addr+0									; add to lba_addr
@@ -474,23 +476,27 @@ __calc_fat_lba_addr:
 		lda #0									;$0f (see EOC) highest value for cluster MSB, due to >>7 the $0f from the MSB is erased completely
 		rol
 		sta lba_addr+3
-		clc										; add fat_lba_begin and lba_addr
-		lda fat_lba_begin+0
-		adc lba_addr +0
-		sta lba_addr +0
-		lda fat_lba_begin+1
-		adc lba_addr +1
-		sta lba_addr +1
 
-		stz lba_addr +2							; TODO FIXME only 16 Bit Blocks Fat-Sizes supported
-		stz lba_addr +3
-;		lda fat_lba_begin+2
-;		adc lba_addr +2
-;		sta lba_addr +2
-;		lda fat_lba_begin+3
-;		adc lba_addr +3
-;		sta lba_addr +3
-		;debug32 "f_flba", lba_addr
+		; add fat_lba_begin and lba_addr
+		add32 fat_lba_begin, lba_addr, lba_addr
+
+; 		clc
+; 		lda fat_lba_begin+0
+; 		adc lba_addr +0
+; 		sta lba_addr +0
+; 		lda fat_lba_begin+1
+; 		adc lba_addr +1
+; 		sta lba_addr +1
+;
+; 		stz lba_addr +2							; TODO FIXME only 16 Bit Blocks Fat-Sizes supported
+; 		stz lba_addr +3
+; ;		lda fat_lba_begin+2
+; ;		adc lba_addr +2
+; ;		sta lba_addr +2
+; ;		lda fat_lba_begin+3
+; ;		adc lba_addr +3
+; ;		sta lba_addr +3
+; 		;debug32 "f_flba", lba_addr
 		rts
 
 		; in:
