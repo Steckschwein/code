@@ -66,24 +66,24 @@ PartType_FAT32_LBA    = $0c
 ;BS_VolLab2      = 71
 
 .struct EBPB
-   FATSz32     .dword   ; 36-39 ; sectors per FAT
+   FATSz32     .dword  ; 36-39 ; sectors per FAT
    MirrorFlags .word   ; 40-41; Bits 0-3: number of active FAT (if bit 7 is 1)
                   ; Bits 4-6: reserved
                   ; Bit 7: one: single active FAT; zero: all FATs are updated at runtime
                   ; Bits 8-15: reserved
                   ; https://www.win.tue.nl/~aeb/linux/fs/fat/fat-1.html
 
-   Version     .word   ; 42-43
+   Version     .word    ; 42-43
    RootClus    .dword   ; 44-47
-   FSInfoSec   .word   ; 48-49
-   BootSectCpy .word   ; 50-51
+   FSInfoSec   .word    ; 48-49
+   BootSectCpy .word    ; 50-51
    Reserved3   .byte 12 ; 52-63
-   PhysDrvNum  .byte   ; 64
-   Reserved4   .byte   ; 65
-   ExtBootSig  .byte   ; 66
-   VolumeID    .dword  ; 67-70
+   PhysDrvNum  .byte    ; 64
+   Reserved4   .byte    ; 65 - bit 7-2 0, bit 0 "dirty flag"
+   ExtBootSig  .byte    ; 66
+   VolumeID    .dword   ; 67-70
    VolumeLabel .byte 11 ; 71-82
-   FSType      .byte 8   ; 83-90
+   FSType      .byte 8  ; 83-90
 .endstruct
 
 .struct BPB

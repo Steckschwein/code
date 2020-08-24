@@ -415,6 +415,7 @@ __fat_update_fsinfo_inc:
 		bne __fat_update_fsinfo_exit
 		debug32 "fs_info+", block_fat+F32FSInfo::FreeClus
 		_inc32 block_fat+F32FSInfo::FreeClus
+		;stz block_fat+F32FSInfo::
 		jmp __fat_write_block_fat
 __fat_update_fsinfo_dec:
 		jsr __fat_read_fsinfo
@@ -441,7 +442,7 @@ __fat_write_newdir_entry:
 @l_dir_cp:
 		lda (dirptr), y
 		sta block_data, y																				; 1st dir entry
-		sta block_data+1*.sizeof(F32DirEntry), y														; 2nd dir entry
+		sta block_data+1*.sizeof(F32DirEntry), y												; 2nd dir entry
 		iny
 		cpy #.sizeof(F32DirEntry)
 		bne @l_dir_cp

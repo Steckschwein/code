@@ -55,7 +55,7 @@ p_history   = ptr3
 
 .import hexout
 
-appstart $d800
+appstart $e400
 
 init:
       jsr krn_primm

@@ -1,6 +1,6 @@
-START_ADDR=0xd800
+LIBS=../tools/lib/toollib.a ../lib/steckschwein.a
 CAFLAGS=-I ../asminc -I ../kernel
-LDFLAGS=-S $(START_ADDR) --lib ../tools/lib/toollib.a --lib ../lib/steckschwein.a -C ../prg.ld65.cfg
+LDFLAGS=-C ../prg.ld65.cfg
 
 #DEBUG=-DDEBUG FIXME
 
@@ -17,8 +17,8 @@ version.inc:
 %.o: %.asm
 	ca65 --target none $(DEBUG) $(CAFLAGS) $<
 
-shell.prg: version.inc shell.o
-	ld65 shell.o $(LDFLAGS) -o shell.prg
+shell.prg: version.inc shell.o $(LIBS)
+	ld65 $(LDFLAGS) -o shell.prg shell.o $(LIBS)
 
 shell: shell.prg
 	../../transfer.py shell.prg
