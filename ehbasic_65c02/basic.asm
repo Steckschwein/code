@@ -7521,7 +7521,7 @@ LAB_LOAD
         sta read_blkptr + 0
 
         jsr krn_read
-        bne io_error
+        bne io_error_close
 
         jsr krn_close
 
@@ -7599,21 +7599,24 @@ LAB_LOAD
      ; JMP     LAB_1319         ; cleanup and Return to BASIC
 
 openfile:
-        pha             ; save file open mode
-        jsr strparam2buf
+   pha             ; save file open mode
+   jsr strparam2buf
 @open:
-        SetVector buf, filenameptr
-		lda #<buf
-		ldx #>buf
-        ply
-		jmp krn_open
+   SetVector buf, filenameptr
+   lda #<buf
+   ldx #>buf
+   ply
+   jmp krn_open
+
+io_error_close:
+   jsr krn_close
 io_error:
-        jsr hexout
-        lda #'E'
-        jsr krn_chrout
-        rts
-        ; ldx #$24
-        ; jmp LAB_XERR
+   jsr hexout
+   lda #'E'
+   jsr krn_chrout
+   rts
+   ; ldx #$24
+   ; jmp LAB_XERR
 
 LAB_SAVE
     lda #O_WRONLY
@@ -7642,25 +7645,26 @@ LAB_SAVE
     lda Svarl
     sbc Smeml
     sta fd_area + F32_fd::FileSize + 0,x
-    TAX
 
     lda Svarh
     sbc Smemh
     sta fd_area + F32_fd::FileSize + 1,x
+
     jsr hexout
-    txa
+    lda fd_area + F32_fd::FileSize + 0,x
     jsr hexout
     crlf
 
     stz fd_area + F32_fd::FileSize + 2,x
     stz fd_area + F32_fd::FileSize + 3,x
 
+    stp
     jsr krn_write
-    bne io_error
+    bne io_error_close
     jsr krn_close
 
-    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-    JMP   LAB_1319
+    SMB7 OPXMDM           ; set upper bit in flag (print Ready msg)
+    JMP LAB_1319
 
 LAB_DIR:
     pha
@@ -7734,7 +7738,6 @@ pattern:
 LAB_CD:
     jsr strparam2buf
     SetVector buf, filenameptr
-
     lda #<buf
     ldx #>buf
     jsr krn_chdir
@@ -7823,7 +7826,6 @@ strparam2buf:
      jsr LAB_EVST
      cmp #$00
      beq @end
-
      tay
      lda #0
      sta buf,y
