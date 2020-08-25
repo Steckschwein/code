@@ -121,16 +121,15 @@
 @l0:	dec val+0
 .endmacro
 
-
 .macro m_memcpy src, dest, n
-		.local @l
-		.assert n<$80, error, "n must not >=$80"
-		ldy #n-1
+   .local @l
+   .assert n<$80, error, "n must not >=$80"
+   ldy #n-1
 @l:
-		lda src,y
-		sta dest,y
-		dey
-		bpl @l
+   lda src,y
+   sta dest,y
+   dey
+   bpl @l
 .endmacro
 
 .macro m_memcpy2ptr src, ptr, n

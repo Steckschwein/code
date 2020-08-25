@@ -47,48 +47,54 @@
 ; Mount FAT32 on Partition 0
 ;---------------------------------------------------------------------
 fat_mount:
-		; set lba_addr to $00000000 since we want to read the bootsector
-		.repeat 4, i
-			stz lba_addr + i
-		.endrepeat
+	; set lba_addr to $00000000 since we want to read the bootsector
+	.repeat 4, i
+		stz lba_addr + i
+	.endrepeat
 
-		SetVector sd_blktarget, read_blkptr
-		jsr read_block
-
-		jsr fat_check_signature
-		bne @l_exit
+	SetVector sd_blktarget, read_blkptr
+	jsr read_block
+	beq @l0
+	rts
+@l0:
+	jsr fat_check_signature
+	beq @l1
+	rts
 @l1:
-		@part0 = sd_blktarget + BootSector::Partitions + PartTable::Partition_0
+	@part0 = sd_blktarget + BootSector::Partitions + PartTable::Partition_0
 
-		lda @part0 + PartitionEntry::TypeCode
-		cmp #PartType_FAT32_LBA
-		beq @l2
-		lda #fat_invalid_partition_type	; type code not  PartType_FAT32_LBA ($0C)
-		bra @l_exit
+	lda @part0 + PartitionEntry::TypeCode
+	cmp #PartType_FAT32_LBA
+	beq @l2
+	lda #fat_invalid_partition_type	; type code not  PartType_FAT32_LBA ($0C)
+	rts
 @l2:
-		m_memcpy @part0 + PartitionEntry::LBABegin, lba_addr, 4
-		debug32 "mnt_lba", lba_addr
+	m_memcpy @part0 + PartitionEntry::LBABegin, lba_addr, 4
+	debug32 "mnt_lba", lba_addr
 
-		SetVector sd_blktarget, read_blkptr
-		; Read FAT Volume ID at LBABegin and Check signature
-		jsr read_block
-		bne @l_exit
-		jsr fat_check_signature
-		bne @l_exit
+	SetVector sd_blktarget, read_blkptr
+	; Read FAT Volume ID at LBABegin and Check signature
+	jsr read_block
+	beq :+
+	rts
+
+:	jsr fat_check_signature
+	beq @l4
+	rts
 @l4:
-		;m_memcpy	sd_blktarget+11, volumeID, .sizeof(VolumeID) ; +11 skip first 11 bytes, we are not interested in
+		;m_memcpy sd_blktarget+11, volumeID, .sizeof(VolumeID) ; +11 skip first 11 bytes, we are not interested in
 		m_memcpy	sd_blktarget + F32_VolumeID::BPB, volumeID + VolumeID::BPB, .sizeof(BPB) ; +11 skip first 11 bytes, we are not interested in
 		m_memcpy	sd_blktarget + F32_VolumeID::EBPB, volumeID + VolumeID::EBPB, .sizeof(EBPB) ; +11 skip first 11 bytes, we are not interested in
 
 		; Bytes per Sector, must be 512 = $0200
-		lda	volumeID + VolumeID::BPB + BPB::BytsPerSec+0
-		bne @l_exit
-		lda	volumeID + VolumeID::BPB + BPB::BytsPerSec+1
+		lda volumeID + VolumeID::BPB + BPB::BytsPerSec+0
+		bne @invalid
+		lda volumeID + VolumeID::BPB + BPB::BytsPerSec+1
 		cmp #$02
 		beq @l6
+@invalid:
 		lda #fat_invalid_sector_size
-@l_exit:
-		jmp @end_mount
+		rts
 @l6:
 		; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
 		; fat_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors

@@ -383,16 +383,15 @@ __fat_write_dir_entry:
 ; out:
 ;	Z=1 on success, Z=0 otherwise and A=error code
 __fat_free_cluster:
-		stp
-		jsr __fat_read_cluster_block_and_select
-		bne @l_exit								; read error...
-		bcc @l_exit								; TODO FIXME cluster chain during deletion not supported yet - therefore EOC (C=1) expected here !!!
-		debug "f_fc"
-		jsr __fat_mark_cluster				; mark cluster as free (A=0)
-		jsr __fat_write_fat_blocks			; write back fat blocks
-		beq __fat_update_fsinfo_inc		; ok - update fsinfo block
+	jsr __fat_read_cluster_block_and_select
+	bne @l_exit								; read error...
+	bcc @l_exit								; TODO FIXME cluster chain during deletion not supported yet - therefore EOC (C=1) expected here !!!
+	debug "f_fc"
+	jsr __fat_mark_cluster				; mark cluster as free (A=0)
+	jsr __fat_write_fat_blocks			; write back fat blocks
+	beq __fat_update_fsinfo_inc		; ok - update fsinfo block
 @l_exit:
-		rts
+	rts
 
 ; find and reserve next free cluster and maintains the fsinfo block
 ; in:
@@ -421,7 +420,15 @@ __fat_update_fsinfo_dec:
 		jsr __fat_read_fsinfo
 		bne __fat_update_fsinfo_exit
 		debug32 "fs_info-", block_fat+F32FSInfo::FreeClus
-		_dec32 block_fat+F32FSInfo::FreeClus
+ 		_dec32 block_fat+F32FSInfo::FreeClus
+		lda fd_area+F32_fd::CurrentCluster+0,x
+	 	sta block_fat+F32FSInfo::LastClus+0
+		lda fd_area+F32_fd::CurrentCluster+1,x
+	 	sta block_fat+F32FSInfo::LastClus+1
+		lda fd_area+F32_fd::CurrentCluster+2,x
+	 	sta block_fat+F32FSInfo::LastClus+2
+		lda fd_area+F32_fd::CurrentCluster+3,x
+	 	sta block_fat+F32FSInfo::LastClus+3
 		jmp __fat_write_block_fat
 __fat_read_fsinfo:
 		m_memcpy fat_fsinfo_lba, lba_addr, 4
