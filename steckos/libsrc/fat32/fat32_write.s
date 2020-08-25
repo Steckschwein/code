@@ -383,6 +383,7 @@ __fat_write_dir_entry:
 ; out:
 ;	Z=1 on success, Z=0 otherwise and A=error code
 __fat_free_cluster:
+		stp
 		jsr __fat_read_cluster_block_and_select
 		bne @l_exit								; read error...
 		bcc @l_exit								; TODO FIXME cluster chain during deletion not supported yet - therefore EOC (C=1) expected here !!!
@@ -415,7 +416,6 @@ __fat_update_fsinfo_inc:
 		bne __fat_update_fsinfo_exit
 		debug32 "fs_info+", block_fat+F32FSInfo::FreeClus
 		_inc32 block_fat+F32FSInfo::FreeClus
-		;stz block_fat+F32FSInfo::
 		jmp __fat_write_block_fat
 __fat_update_fsinfo_dec:
 		jsr __fat_read_fsinfo
@@ -715,11 +715,11 @@ __fat_find_free_cluster:
 		sta fd_area+F32_fd::CurrentCluster+3, x
 		bra @exit
 
-		; unlink a file denoted by given path in A/X
-		  ; in:
-		  ;	A/X - pointer to string with the file path
-		; out:
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+; unlink a file denoted by given path in A/X
+; in:
+;	A/X - pointer to string with the file path
+; out:
+;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_unlink:
 		ldy #O_RDONLY
 		jsr fat_open		; try to open as regular file

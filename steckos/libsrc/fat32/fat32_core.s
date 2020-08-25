@@ -477,27 +477,14 @@ __calc_fat_lba_addr:
 		rol
 		sta lba_addr+3
 
-		; add fat_lba_begin and lba_addr
-		add32 fat_lba_begin, lba_addr, lba_addr
+	; add fat_lba_begin and lba_addr
+	add16 fat_lba_begin, lba_addr, lba_addr
+	; TODO FIXME currently only 16 Bit LBA Fat-Sizes supported
+	stz lba_addr +2
+	stz lba_addr +3
 
-; 		clc
-; 		lda fat_lba_begin+0
-; 		adc lba_addr +0
-; 		sta lba_addr +0
-; 		lda fat_lba_begin+1
-; 		adc lba_addr +1
-; 		sta lba_addr +1
-;
-; 		stz lba_addr +2							; TODO FIXME only 16 Bit Blocks Fat-Sizes supported
-; 		stz lba_addr +3
-; ;		lda fat_lba_begin+2
-; ;		adc lba_addr +2
-; ;		sta lba_addr +2
-; ;		lda fat_lba_begin+3
-; ;		adc lba_addr +3
-; ;		sta lba_addr +3
-; 		;debug32 "f_flba", lba_addr
-		rts
+	;debug32 "f_flba", lba_addr
+	rts
 
 		; in:
 		;	X - file descriptor

@@ -20,7 +20,6 @@ main:
 		lda #EINVAL
 		jmp errmsg
 
-@r_plus:
       jsr krn_primm
       .asciiz "op r+"
       lda paramptr
