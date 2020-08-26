@@ -1,5 +1,6 @@
 OBJ=basic.prg
 ASM_INCLUDE=-I ../steckos/asminc -I ../steckos/kernel
+#LIBS=../steckos/lib/steckschwein.a ../steckos/tools/lib/toollib.a
 LIBS=../steckos/lib/steckschwein.a ../steckos/tools/lib/toollib.a
 AR65 := $(if $(wildcard ../bin/ar65*),../bin/ar65,ar65)
 CA65 := $(if $(wildcard ../bin/ca65*),../bin/ca65,ca65)

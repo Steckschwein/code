@@ -5,8 +5,7 @@
 .import hexout
 .export char_out=krn_chrout
 
-__APPSTART__ = $a000
-
+__APPSTART__ = $bb00
 appstart __APPSTART__
 
 ;
@@ -478,8 +477,8 @@ LAB_SKFF          = LAB_STAK+$FF
 ; the input buffer must not cross a page boundary and must not overlap with
 ; program RAM pages!
 
-Ibuffs            = $0700     ; Start of input buffer
-Ibuffe            = $0700+$7E ; end of input buffer (127 bytes)
+Ibuffs            = $0800     ; Start of input buffer
+Ibuffe            = $0800+$7E ; end of input buffer (127 bytes)
 
 ccflag            = Ibuffe+1  ; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte            = ccflag+1  ; BASIC CTRL-C byte
@@ -494,7 +493,7 @@ VEC_LD            = VEC_OUT+2 ; load vector
 VEC_SV            = VEC_LD+2  ; save vector
 VEC_EXIT          = VEC_SV+2  ; exit vector
 
-Ram_base          = $0800     ; start of user RAM (1st 2KB used/reserved)
+Ram_base          = $0900     ; start of user RAM (1st 2KB used/reserved)
 Ram_top           = __APPSTART__     ; end of user RAM+1 ($8000 is start of ROM)
 
 ; The start address can be changed, noting the BIOS/Monitor locations
@@ -7658,8 +7657,8 @@ LAB_SAVE
     stz fd_area + F32_fd::FileSize + 2,x
     stz fd_area + F32_fd::FileSize + 3,x
 
-    stp
     jsr krn_write
+;    stp
     bne io_error_close
     jsr krn_close
 

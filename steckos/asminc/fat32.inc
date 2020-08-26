@@ -216,5 +216,5 @@ sd_blocksize          = $200
 fd_area               = $0380 ; File descriptor area until $0400
 fd_area_end           = $0400
 sd_blktarget          = $0400
-block_data            = sd_blktarget
-block_fat             = block_data+sd_blocksize
+block_data            = sd_blktarget ; $0400-$5ff
+block_fat             = block_data+sd_blocksize ; $0600-$07ff
