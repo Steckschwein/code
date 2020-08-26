@@ -440,6 +440,7 @@ __calc_lba_addr:
 		; 	sta lba_addr+i
 		; .endrepeat
 
+		clc
 		lda fd_area+F32_fd::offset+0,x			; load the current block counter
 		adc lba_addr+0									; add to lba_addr
 		sta lba_addr+0
