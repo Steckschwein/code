@@ -413,24 +413,21 @@ __prepare_calc_lba_addr:
 ;			X - file descriptor index
 __calc_lba_addr:
 		pha
-		phx
 
 		jsr __prepare_calc_lba_addr
-
+		
 		;SecPerClus is a power of 2 value, therefore cluster << n, where n is the number of bit set in VolumeID::SecPerClus
 		lda volumeID+VolumeID::BPB + BPB::SecPerClus
-@lm:	lsr
+		sta krn_tmp
+@lm:
+		lsr krn_tmp
 		beq @lme	 ; until 1 sector/cluster
-		tax
 		asl lba_addr +0
 		rol lba_addr +1
 		rol lba_addr +2
 		rol lba_addr +3
-		txa
 		bra @lm
 @lme:
-		plx												; restore X - the fd
-
 		; add cluster_begin_lba and lba_addr => TODO may be an optimization
 		add32 cluster_begin_lba, lba_addr, lba_addr
 		; clc
