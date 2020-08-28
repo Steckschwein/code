@@ -61,6 +61,7 @@ fat_mount:
 		beq @l1
 		rts
 @l1:
+		; Check partition table entry 0 for valid FAT32 signature
 		@part0 = sd_blktarget + BootSector::Partitions + PartTable::Partition_0
 
 		lda @part0 + PartitionEntry::TypeCode
@@ -96,44 +97,8 @@ fat_mount:
 		lda #fat_invalid_sector_size
 		rts
 @l6:
-		; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
-		; fat_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors
-		; fat2_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors + Sectors_Per_FAT
-
-		; add number of reserved sectors to calculate fat_lba_begin. also store in cluster_begin_lba for further calculation
-		clc
-		lda lba_addr + 0
-		adc volumeID + VolumeID::BPB + BPB::RsvdSecCnt + 0
-		sta cluster_begin_lba + 0
-		sta fat_lba_begin + 0
-		lda lba_addr + 1
-		adc volumeID + VolumeID::BPB + BPB::RsvdSecCnt + 1
-		sta cluster_begin_lba + 1
-		sta fat_lba_begin + 1
-		lda lba_addr + 2
-		adc #$00
-		sta cluster_begin_lba + 2
-		sta fat_lba_begin + 2
-		lda lba_addr + 3
-		adc #$00
-		sta cluster_begin_lba + 3
-		sta fat_lba_begin + 3
-
-		; Number of FATs. Must be 2
-		; cluster_begin_lba = fat_lba_begin + (sectors_per_fat * VolumeID::NumFATs (2))
-		ldy volumeID + VolumeID::BPB + BPB::NumFATs
-@l7:	clc
-		ldx #$00
-@l8:	ror ; get carry flag back
-		lda volumeID + VolumeID::EBPB + EBPB::FATSz32,x ; sectors per fat
-		adc cluster_begin_lba,x
-		sta cluster_begin_lba,x
-		inx
-		rol ; save status register before cpx to save carry
-		cpx #$04 ; 32Bit
-		bne @l8
-		dey
-		bne @l7
+		jsr __calc_fat_lba_begin
+		jsr __calc_cluster_begin_lba
 
 		; calc begin of 2nd fat (end of 1st fat)
 		; TODO FIXME - we assume 16bit are sufficient for now since fat is placed at the beginning of the device
@@ -221,3 +186,47 @@ fat_check_signature:
 		beq @l2
 @l1:	lda #fat_bad_block_signature
 @l2:	rts
+
+__calc_fat_lba_begin:
+		; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
+		; fat_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors
+		; fat2_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors + Sectors_Per_FAT
+
+		; add number of reserved sectors to calculate fat_lba_begin. also store in cluster_begin_lba for further calculation
+		clc
+		lda lba_addr + 0
+		adc volumeID + VolumeID::BPB + BPB::RsvdSecCnt + 0
+		sta cluster_begin_lba + 0
+		sta fat_lba_begin + 0
+		lda lba_addr + 1
+		adc volumeID + VolumeID::BPB + BPB::RsvdSecCnt + 1
+		sta cluster_begin_lba + 1
+		sta fat_lba_begin + 1
+		lda lba_addr + 2
+		adc #$00
+		sta cluster_begin_lba + 2
+		sta fat_lba_begin + 2
+		lda lba_addr + 3
+		adc #$00
+		sta cluster_begin_lba + 3
+		sta fat_lba_begin + 3
+
+		rts
+
+__calc_cluster_begin_lba:
+		; Number of FATs. Must be 2
+		; cluster_begin_lba = fat_lba_begin + (sectors_per_fat * VolumeID::NumFATs (2))
+		ldy volumeID + VolumeID::BPB + BPB::NumFATs
+@l7:	clc
+		ldx #$00
+@l8:	ror ; get carry flag back
+		lda volumeID + VolumeID::EBPB + EBPB::FATSz32,x ; sectors per fat
+		adc cluster_begin_lba,x
+		sta cluster_begin_lba,x
+		inx
+		rol ; save status register before cpx to save carry
+		cpx #$04 ; 32Bit
+		bne @l8
+		dey
+		bne @l7
+		rts
