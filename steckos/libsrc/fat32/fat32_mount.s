@@ -137,22 +137,27 @@ fat_mount:
 
 		; calc begin of 2nd fat (end of 1st fat)
 		; TODO FIXME - we assume 16bit are sufficient for now since fat is placed at the beginning of the device
-		clc
-		lda volumeID +  VolumeID::EBPB + EBPB::FATSz32+0 ; sectors/blocks per fat
-		adc fat_lba_begin	+0
-		sta fat2_lba_begin	+0
-		lda volumeID +  VolumeID::EBPB + EBPB::FATSz32+1
-		adc fat_lba_begin	+1
-		sta fat2_lba_begin	+1
+		; clc
+		; lda volumeID +  VolumeID::EBPB + EBPB::FATSz32+0 ; sectors/blocks per fat
+		; adc fat_lba_begin	+0
+		; sta fat2_lba_begin	+0
+		; lda volumeID +  VolumeID::EBPB + EBPB::FATSz32+1
+		; adc fat_lba_begin	+1
+		; sta fat2_lba_begin	+1
+
+		add16 volumeID +  VolumeID::EBPB + EBPB::FATSz32, fat_lba_begin, fat2_lba_begin
 
 		; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
-		clc
-		lda lba_addr+0
-		adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+0
-		sta fat_fsinfo_lba+0
-		lda lba_addr+1
-		adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+1
-		sta fat_fsinfo_lba+1
+		; clc
+		; lda lba_addr+0
+		; adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+0
+		; sta fat_fsinfo_lba+0
+		; lda lba_addr+1
+		; adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+1
+		; sta fat_fsinfo_lba+1
+
+		add16 lba_addr, volumeID+ VolumeID::EBPB + EBPB::FSInfoSec, fat_fsinfo_lba
+
 		;TODO FIXME weird
 		lda #0
 		sta fat_fsinfo_lba+3
