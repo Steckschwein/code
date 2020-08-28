@@ -47,40 +47,40 @@
 ; Mount FAT32 on Partition 0
 ;---------------------------------------------------------------------
 fat_mount:
-	; set lba_addr to $00000000 since we want to read the bootsector
-	.repeat 4, i
-		stz lba_addr + i
-	.endrepeat
+		; set lba_addr to $00000000 since we want to read the bootsector
+		.repeat 4, i
+			stz lba_addr + i
+		.endrepeat
 
-	SetVector sd_blktarget, read_blkptr
-	jsr read_block
-	beq @l0
-	rts
+		SetVector sd_blktarget, read_blkptr
+		jsr read_block
+		beq @l0
+		rts
 @l0:
-	jsr fat_check_signature
-	beq @l1
-	rts
+		jsr fat_check_signature
+		beq @l1
+		rts
 @l1:
-	@part0 = sd_blktarget + BootSector::Partitions + PartTable::Partition_0
+		@part0 = sd_blktarget + BootSector::Partitions + PartTable::Partition_0
 
-	lda @part0 + PartitionEntry::TypeCode
-	cmp #PartType_FAT32_LBA
-	beq @l2
-	lda #fat_invalid_partition_type	; type code not  PartType_FAT32_LBA ($0C)
-	rts
+		lda @part0 + PartitionEntry::TypeCode
+		cmp #PartType_FAT32_LBA
+		beq @l2
+		lda #fat_invalid_partition_type	; type code not  PartType_FAT32_LBA ($0C)
+		rts
 @l2:
-	m_memcpy @part0 + PartitionEntry::LBABegin, lba_addr, 4
-	debug32 "mnt_lba", lba_addr
+		m_memcpy @part0 + PartitionEntry::LBABegin, lba_addr, 4
+		debug32 "mnt_lba", lba_addr
 
-	SetVector sd_blktarget, read_blkptr
-	; Read FAT Volume ID at LBABegin and Check signature
-	jsr read_block
-	beq :+
-	rts
+		SetVector sd_blktarget, read_blkptr
+		; Read FAT Volume ID at LBABegin and Check signature
+		jsr read_block
+		beq :+
+		rts
 
-:	jsr fat_check_signature
-	beq @l4
-	rts
+:		jsr fat_check_signature
+		beq @l4
+		rts
 @l4:
 		;m_memcpy sd_blktarget+11, volumeID, .sizeof(VolumeID) ; +11 skip first 11 bytes, we are not interested in
 		m_memcpy	sd_blktarget + F32_VolumeID::BPB, volumeID + VolumeID::BPB, .sizeof(BPB) ; +11 skip first 11 bytes, we are not interested in
