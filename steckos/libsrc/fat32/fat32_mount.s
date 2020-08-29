@@ -99,35 +99,8 @@ fat_mount:
 @l6:
 		jsr __calc_fat_lba_begin
 		jsr __calc_cluster_begin_lba
+		jsr __calc_fat_fsinfo_lba
 
-		; calc begin of 2nd fat (end of 1st fat)
-		; TODO FIXME - we assume 16bit are sufficient for now since fat is placed at the beginning of the device
-		; clc
-		; lda volumeID +  VolumeID::EBPB + EBPB::FATSz32+0 ; sectors/blocks per fat
-		; adc fat_lba_begin	+0
-		; sta fat2_lba_begin	+0
-		; lda volumeID +  VolumeID::EBPB + EBPB::FATSz32+1
-		; adc fat_lba_begin	+1
-		; sta fat2_lba_begin	+1
-
-		add16 volumeID +  VolumeID::EBPB + EBPB::FATSz32, fat_lba_begin, fat2_lba_begin
-
-		; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
-		; clc
-		; lda lba_addr+0
-		; adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+0
-		; sta fat_fsinfo_lba+0
-		; lda lba_addr+1
-		; adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+1
-		; sta fat_fsinfo_lba+1
-
-		add16 lba_addr, volumeID+ VolumeID::EBPB + EBPB::FSInfoSec, fat_fsinfo_lba
-
-		;TODO FIXME weird
-		lda #0
-		sta fat_fsinfo_lba+3
-		adc #0				; 0 + C
-		sta fat_fsinfo_lba+2
 
 		; performance optimization - the RootClus offset is compensated within calc_lba_addr
 		; cluster_begin_lba_m2 = cluster_begin_lba - (VolumeID::RootClus*VolumeID::SecPerClus)
@@ -211,6 +184,18 @@ __calc_fat_lba_begin:
 		sta cluster_begin_lba + 3
 		sta fat_lba_begin + 3
 
+		; calc begin of 2nd fat (end of 1st fat)
+		; TODO FIXME - we assume 16bit are sufficient for now since fat is placed at the beginning of the device
+		; clc
+		; lda volumeID +  VolumeID::EBPB + EBPB::FATSz32+0 ; sectors/blocks per fat
+		; adc fat_lba_begin	+0
+		; sta fat2_lba_begin	+0
+		; lda volumeID +  VolumeID::EBPB + EBPB::FATSz32+1
+		; adc fat_lba_begin	+1
+		; sta fat2_lba_begin	+1
+
+		add16 volumeID +  VolumeID::EBPB + EBPB::FATSz32, fat_lba_begin, fat2_lba_begin
+
 		rts
 
 __calc_cluster_begin_lba:
@@ -229,4 +214,23 @@ __calc_cluster_begin_lba:
 		bne @l8
 		dey
 		bne @l7
+		rts
+
+__calc_fat_fsinfo_lba:
+		; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
+		; clc
+		; lda lba_addr+0
+		; adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+0
+		; sta fat_fsinfo_lba+0
+		; lda lba_addr+1
+		; adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+1
+		; sta fat_fsinfo_lba+1
+
+		add16 lba_addr, volumeID+ VolumeID::EBPB + EBPB::FSInfoSec, fat_fsinfo_lba
+
+		;TODO FIXME weird
+		lda #0
+		sta fat_fsinfo_lba+3
+		adc #0				; 0 + C
+		sta fat_fsinfo_lba+2
 		rts
