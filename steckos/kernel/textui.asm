@@ -53,9 +53,6 @@ STATE_TEXTUI_ENABLED	=1<<3
 .import vdp_text_on
 
 textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y values
-	php
-	sei
-	pha
 
 	jsr _vram_crs_ptr_write_saved ; restore saved char
 	lda #STATE_CURSOR_BLINK
@@ -96,6 +93,8 @@ textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y
 	inc crs_ptr+1		; overflow inc page count
 	clc					;
 @l1:
+	php
+	sei
 	adc crs_x
 	sta a_vreg
 	sta crs_ptr
@@ -107,7 +106,6 @@ textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y
 	vdp_wait_l 3
 	lda a_vram
 	sta saved_char		  ; save char at new position
-	pla
 	plp
 	rts
 
@@ -116,7 +114,6 @@ _vram_crs_ptr_write_saved:
 _vram_crs_ptr_write:
 	php
 	sei
-;	vdp_wait_l
 	pha
 	lda crs_ptr
 	sta a_vreg
@@ -127,7 +124,6 @@ _vram_crs_ptr_write:
 	pla
 	vdp_wait_l 3
 	sta a_vram
-;	vdp_wait_l
 	plp
 	rts
 
@@ -152,7 +148,7 @@ textui_init:
 	jsr textui_enable
 
 	lda #CODE_LF
-	jsr textui_dispatch_char
+	jsr __textui_dispatch_char
 
 .ifndef DISABLE_VDPINIT
 	jmp vdp_text_on
@@ -287,7 +283,7 @@ textui_strout:
 @l1:
 	lda	 (krn_ptr3),y
 	beq	 @l2
-	jsr textui_dispatch_char
+	jsr __textui_dispatch_char
 	iny
 	bne	 @l1
 @l2:
@@ -314,7 +310,7 @@ PSINB:  inc	  krn_ptr3				 ; update the pointer
 		  inc	  krn_ptr3+1				 ; account for page crossing
 PSICHO: lda	  (krn_ptr3)				; Get the next string character
 		  beq	  PSIX1			  ; don't print the final NULL
-		  jsr	  textui_dispatch_char		  ; write it out
+		  jsr	  __textui_dispatch_char		  ; write it out
 		  bra	  PSINB			  ; back around
 PSIX1:  inc	  krn_ptr3				 ;
 		  bne	  PSIX2			  ;
@@ -337,7 +333,7 @@ textui_chrout:
 	sei
 	pha		  						; save char
 	inc screen_write_lock	 	; write on
-	jsr textui_dispatch_char
+	jsr __textui_dispatch_char
 	stz screen_write_lock	 	; write off
 	pla						  		; restore a
 	plp
@@ -366,7 +362,7 @@ textui_crsxy:
 	sty crs_y
 	jmp textui_update_crs_ptr
 
-textui_dispatch_char:
+__textui_dispatch_char:
 	cmp #KEY_CR	;carriage return?
 	bne @lfeed
 	stz crs_x

@@ -1,3 +1,6 @@
+
+TRANSFER=../../../transfer.py
+
 CC65FLAGS=-I .. --target none --cpu 65c02 --standard c99
 CA65FLAGS=-I ../../asminc -I ../../kernel
 CLIB=../lib/steckschwein-clib.a
@@ -14,17 +17,5 @@ clean:
 %.prg: %.c $(LIBS) $(CLIB)
 	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LIBS) $(LDFLAGS) -o $@
 
-coniotst: coniotst.prg
-	../../transfer.py coniotst.prg -s 0x1000
-
-mainarg: mainarg.prg
-	../../transfer.py mainarg.prg -s 0x1000
-
-stdio_test: stdio_test.prg
-	../../transfer.py stdio_test.prg -s 0x1000
-
-time-test: time-test.prg
-	../../transfer.py time-test.prg -s 0x1000
-
 %: %.prg
-	../../transfer.py $<
+	$(TRANSFER) $<
