@@ -102,30 +102,7 @@ fat_mount:
 		jsr __calc_fat_fsinfo_lba
 
 
-		; performance optimization - the RootClus offset is compensated within calc_lba_addr
-		; cluster_begin_lba_m2 = cluster_begin_lba - (VolumeID::RootClus*VolumeID::SecPerClus)
-		; cluster_begin_lba_m2 = cluster_begin_lba - (2 * sec/cluster) = cluster_begin_lba - (sec/cluster << 1)
 
-		;TODO FIXME we assume 2 here instead of using the value in VolumeID::RootClus
-		lda volumeID+VolumeID::BPB + BPB::SecPerClus ; max sec/cluster can be 128, with 2 (BPB_RootClus) * 128 we may subtract max 256
-		asl
-
-		sta lba_addr		  ;	used as tmp
-		stz lba_addr +1	  ;	safe carry
-		rol lba_addr +1
-		sec						 ;	subtract from cluster_begin_lba
-		lda cluster_begin_lba
-		sbc lba_addr
-		sta cluster_begin_lba
-		lda cluster_begin_lba +1
-		sbc lba_addr +1
-		sta cluster_begin_lba +1
-		lda cluster_begin_lba +2
-		sbc #0
-		sta cluster_begin_lba +2
-		lda cluster_begin_lba +3
-		sbc #0
-		sta cluster_begin_lba +3
 
 		debug8 "sec/cl", volumeID+VolumeID::BPB + BPB::SecPerClus
 		debug32 "r_cl", volumeID+VolumeID::EBPB + EBPB::RootClus
@@ -214,6 +191,31 @@ __calc_cluster_begin_lba:
 		bne @l8
 		dey
 		bne @l7
+
+		; performance optimization - the RootClus offset is compensated within calc_lba_addr
+		; cluster_begin_lba_m2 = cluster_begin_lba - (VolumeID::RootClus*VolumeID::SecPerClus)
+		; cluster_begin_lba_m2 = cluster_begin_lba - (2 * sec/cluster) = cluster_begin_lba - (sec/cluster << 1)
+
+		;TODO FIXME we assume 2 here instead of using the value in VolumeID::RootClus
+		lda volumeID+VolumeID::BPB + BPB::SecPerClus ; max sec/cluster can be 128, with 2 (BPB_RootClus) * 128 we may subtract max 256
+		asl
+
+		sta lba_addr		  ;	used as tmp
+		stz lba_addr +1	  ;	safe carry
+		rol lba_addr +1
+		sec						 ;	subtract from cluster_begin_lba
+		lda cluster_begin_lba
+		sbc lba_addr
+		sta cluster_begin_lba
+		lda cluster_begin_lba +1
+		sbc lba_addr +1
+		sta cluster_begin_lba +1
+		lda cluster_begin_lba +2
+		sbc #0
+		sta cluster_begin_lba +2
+		lda cluster_begin_lba +3
+		sbc #0
+		sta cluster_begin_lba +3
 		rts
 
 __calc_fat_fsinfo_lba:
