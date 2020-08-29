@@ -7,8 +7,9 @@
 		  .export			newline, plot
 		  .import			popa, _gotoxy
 
-		  .include		"kernel/kernel_jumptable.inc"
-		  
+		  .include "system.inc"
+		  .include "kernel/kernel_jumptable.inc"
+
 _cputcxy:
 		  pha							; Save C
 		  jsr	  popa				; Get Y
@@ -20,8 +21,8 @@ cputdirect:
 
 ; Advance cursor position
 newline:
-		  lda	  #$0d
-		  jmp	  krn_chrout
+	lda	  #CODE_LF
+	jmp	  krn_chrout
 
 
 ; Set cursor position, calculate RAM pointers.
@@ -30,6 +31,6 @@ plot:
 ; Write one character to the screen without doing anything else, return X
 ; position in Y
 putchar = krn_chrout
-		  
+
 ; Plot a character - also used as internal function
 _cputc = krn_chrout

@@ -165,7 +165,7 @@ do_irq:
 ;		.import vdp_bgcolor
 ;		lda #Cyan
 ;		jsr vdp_bgcolor
-		jsr	textui_update_screen	 ; update text ui
+;		jsr textui_update_screen	 ; update text ui
 		dec frame
 		lda frame
 		and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution

@@ -49,16 +49,15 @@ STATE_TEXTUI_ENABLED	=1<<3
 
 .export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_cursor_onoff, textui_setmode
 
-.import vdp_bgcolor
-.import vdp_memcpy
 .import vdp_fill
 .import vdp_text_on
 
-textui_update_crs_ptr:		; updates the 16 bit pointer crs_p upon crs_x, crs_y values
+textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y values
+	php
+	sei
 	pha
 
-	lda saved_char			;restore saved char
-	jsr _vram_crs_ptr_write
+	jsr _vram_crs_ptr_write_saved ; restore saved char
 	lda #STATE_CURSOR_BLINK
 	trb screen_status		 ;reset cursor state
 
@@ -107,12 +106,17 @@ textui_update_crs_ptr:		; updates the 16 bit pointer crs_p upon crs_x, crs_y val
 	sta crs_ptr+1
 	vdp_wait_l 3
 	lda a_vram
-	sta saved_char		  ;save char at new position
-
+	sta saved_char		  ; save char at new position
 	pla
+	plp
 	rts
 
+_vram_crs_ptr_write_saved:
+	lda saved_char
 _vram_crs_ptr_write:
+	php
+	sei
+;	vdp_wait_l
 	pha
 	lda crs_ptr
 	sta a_vreg
@@ -123,6 +127,8 @@ _vram_crs_ptr_write:
 	pla
 	vdp_wait_l 3
 	sta a_vram
+;	vdp_wait_l
+	plp
 	rts
 
 textui_init0:
@@ -145,7 +151,7 @@ textui_init:
 	stz screen_write_lock					;reset write lock
 	jsr textui_enable
 
-	lda #KEY_LF
+	lda #CODE_LF
 	jsr textui_dispatch_char
 
 .ifndef DISABLE_VDPINIT
@@ -169,11 +175,9 @@ textui_cursor:
 	beq @l1
 	trb screen_status
 	lda #CURSOR_CHAR
-	bra @l2
-@l1:
-	lda saved_char
-@l2:
 	jmp _vram_crs_ptr_write
+@l1:
+	jmp _vram_crs_ptr_write_saved
 @l_exit:
 	rts
 
@@ -190,6 +194,7 @@ textui_scroll_up:
 	sei	; critical section, since we use the stack and vdp regs
 	phx
 	phy
+
 	lda #<ADDRESS_TEXT_SCREEN
 	clc
 	adc max_cols
@@ -207,6 +212,7 @@ textui_scroll_up:
 	sta a_vreg
 	ldx #scroll_buffer_size-1
 	lda a_r+1
+	vdp_wait_s
 	sta a_vreg
 	vdp_wait_l
 @vram_read:
@@ -241,8 +247,8 @@ textui_scroll_up:
 	ldx max_cols ; write address is already setup from loop above
 	lda #' '
 @l5:
-	sta a_vram
 	vdp_wait_l 5
+	sta a_vram
 	dex
 	bne @l5
 
@@ -257,8 +263,7 @@ textui_enable:
 	rts
 textui_disable:
 	stz screen_status
-	lda saved_char			 ;restore char
-	jmp _vram_crs_ptr_write
+	jmp _vram_crs_ptr_write_saved ;restore char
 
 textui_cursor_onoff:
 	lda screen_status
@@ -286,7 +291,7 @@ textui_strout:
 	iny
 	bne	 @l1
 @l2:
-	stz	 screen_write_lock	 ;write lock off
+	stz screen_write_lock	 ;write lock off
 	rts
 .endif
 
@@ -320,21 +325,22 @@ PSIX2:
 .endif
 
 textui_put:
-	pha
-	inc screen_write_lock	;write lock on
+	inc screen_write_lock	 	; write on
 	sta saved_char
-	stz screen_write_lock	;write lock off
-	pla
+	stz screen_write_lock	 	; write off
 	rts
 
 textui_chrout:
 	cmp #0
 	beq @l1	 						; \0 char
-	pha		  						; safe char
+	php
+	sei
+	pha		  						; save char
 	inc screen_write_lock	 	; write on
 	jsr textui_dispatch_char
 	stz screen_write_lock	 	; write off
 	pla						  		; restore a
+	plp
 @l1:
 	rts
 
@@ -344,16 +350,17 @@ textui_blank:
 	cmp #TEXT_MODE_80
 	bne :+
 	ldx #8
-:	vdp_vram_w ADDRESS_TEXT_SCREEN
+:	php
+	sei
+	vdp_vram_w ADDRESS_TEXT_SCREEN
 	lda #CURSOR_BLANK
 	sta saved_char
 	jsr vdp_fill
+	plp
 
 	ldx #0
 	ldy #0
-
-; set crs x and y position absolutely - 0..32/0..23 or 0..39/0..23 40 char mode
-;
+	; set crs x and y position absolutely - 0..32/0..23 or 0..39/0..23 40 char mode
 textui_crsxy:
 	stx crs_x
 	sty crs_y
@@ -374,7 +381,7 @@ textui_dispatch_char:
 	lda crs_y						; cursor y=0, no dec
 	beq @exit
 	dec crs_y
-	lda max_cols				; set x to max-cols -1
+	lda max_cols					; set x to max-cols -1
 @l3:
 	dec 								; which is end of the line
 	sta crs_x
@@ -399,10 +406,9 @@ textui_dispatch_char:
 	cmp #ROWS-1					; last line
 	bne @l6
 
-	lda saved_char			 	; restore saved char
-	jsr _vram_crs_ptr_write
+	jsr _vram_crs_ptr_write_saved	; restore saved char
 	lda #CURSOR_BLANK
-	sta saved_char			 	; reset saved_char to blank, cause we scrolled up
+	sta saved_char			 	; reset saved_char to blank, cause we scroll up
 	lda #STATE_CURSOR_BLINK
 	trb screen_status		 	; reset cursor state
 	jsr textui_scroll_up	; scroll and exit

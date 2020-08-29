@@ -26,12 +26,12 @@
 .exportzp krn_tmp3	= krn_tmp+2	; single byte
 
 ; have to use fixed zp locations to avoid ehbasic clashes
-.exportzp vdp_ptr   :=$ec
-.exportzp vdp_tmp   :=$ee
+.exportzp vdp_ptr   =$ec
+.exportzp vdp_tmp   =$ee
 
 ; FAT32
 .exportzp filenameptr   = $f0	; 2 byte
-.exportzp dirptr		= $f2	; 2 byte
+.exportzp dirptr        = $f2	; 2 byte
 
 ; SDCARD/storage block pointer
 .exportzp read_blkptr  	= $f4
