@@ -117,7 +117,7 @@ fat_mount:
 		debug16 "fbuf", filename_buf
 
 		; init file descriptor area
-      ldx #0
+      	ldx #0
 		jsr __fat_init_fdarea
 
 		; alloc file descriptor for current dir. which is cluster number 0 on fat32 - !!! Note: the RootClus offset is compensated within calc_lba_addr
