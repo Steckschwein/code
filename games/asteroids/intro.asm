@@ -11,7 +11,6 @@ intro_init:
 @wait_key:
 			jsr krn_getkey
 			bcc @wait_key
-
 			jsr gfxui_blend_off
 l1:		rts
 

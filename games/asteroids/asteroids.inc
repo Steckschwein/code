@@ -1,3 +1,4 @@
+.setcpu "65C02"
 .include "zeropage.inc"
 .include "common.inc"
 .include "system.inc"
@@ -8,11 +9,11 @@
 .include "kernel_jumptable.inc"
 
 .import vdp_display_off
-.import vdp_gfx1_blank
-.import vdp_gfx1_on
+.import vdp_init_reg
 .import vdp_bgcolor
 .import vdp_memcpy
 .import vdp_memcpys
+.import vdp_fill, vdp_fills
 .import vdp_mode_sprites_off
 .import vdp_gfx2_on
 .import vdp_gfx2_blank
@@ -23,7 +24,7 @@
 seed=123
 stars_layer_size=40
 stars_per_layer=3
-stars_nr_layers=3
+stars_nr_layers=4
 
 JOY_PORT=JOY_PORT1		;port 1
 

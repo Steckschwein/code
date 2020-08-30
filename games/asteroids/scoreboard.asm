@@ -11,20 +11,20 @@
 score:
 	.res 6,0
 
-; the nop slide macro			
+; the nop slide macro
 m_vdp_nopslide
 
 text_score_board:
 	.asciiz	"Score:"
-	
+
 scoreboard_init:
 			stz	score
 			stz	score+1
 			stz	score+2
 			stz	score+3
 			rts
-			lda #<(ADDRESS_GFX1_SCREEN+22*32+25)
-			ldy #>(ADDRESS_GFX1_SCREEN+22*32) | WRITE_ADDRESS
+			lda #<(ADDRESS_GFX3_SCREEN+22*32+25)
+			ldy #>(ADDRESS_GFX3_SCREEN+22*32) | WRITE_ADDRESS
 			vdp_sreg
 			ldx	#0
 @l0:		lda	text_score_board,x
@@ -34,10 +34,10 @@ scoreboard_init:
 			inx
 			bne	@l0
 @e:			rts
-	
+
 scoreboard_update:
-			lda #<(ADDRESS_GFX1_SCREEN+23*32+26)
-			ldy #>(ADDRESS_GFX1_SCREEN+23*32+26) | WRITE_ADDRESS
+			lda #<(ADDRESS_GFX3_SCREEN+23*32+26)
+			ldy #>(ADDRESS_GFX3_SCREEN+23*32+26) | WRITE_ADDRESS
 			vdp_sreg
 @l0:		lda score
 			jsr digits_out
@@ -45,7 +45,7 @@ scoreboard_update:
 			jsr digits_out
 			lda score+2
 			jsr digits_out
-			
+
 			rts
 
 digits_out:

@@ -1,4 +1,3 @@
-.setcpu "65C02"
 .include "asteroids.inc"
 
 .zeropage
@@ -21,7 +20,7 @@ tmp4:   .res 1
 appstart $1000
 
 main:
-			jsr intro_init
+;			jsr intro_init
 			sei
 			jsr init_gfx
 			lda #ROM_OFF				;switch rom off
@@ -45,22 +44,24 @@ main:
 			jsr asteroids_script
 			jsr animate_shot
 
-			dec	game_status
+			dec game_status
 			lda #Black
 			jsr vdp_bgcolor
-			bra	@game_loop
+			bra @game_loop
 
 init_gfx:
-			jsr vdp_display_off
+			lda #<vdp_init_bytes_gfx
+			ldy #>vdp_init_bytes_gfx
+			ldx #<(vdp_init_bytes_gfx_end-vdp_init_bytes_gfx)-1
+			jsr vdp_init_reg
 			jsr init_screen
 			jsr init_sprites
 			lda #COLOR_STARS<<4|Black
-			jsr	vdp_gfx1_on
 			rts
 
 init_sprites:
-			lda #<ADDRESS_GFX1_SPRITE_PATTERN
-			ldy #>ADDRESS_GFX1_SPRITE_PATTERN+WRITE_ADDRESS
+			lda #<ADDRESS_GFX3_SPRITE_PATTERN
+			ldy #>ADDRESS_GFX3_SPRITE_PATTERN+WRITE_ADDRESS
 			vdp_sreg
 			SetVector	sprite_pattern, ptr1
 			ldx #4
@@ -103,38 +104,42 @@ init_game:
 tmp0=$0
 init_screen:
 			jsr vdp_mode_sprites_off
-			lda #<ADDRESS_GFX1_SCREEN
-			ldy #>ADDRESS_GFX1_SCREEN+WRITE_ADDRESS
-			vdp_sreg
 
+			vdp_vram_w ADDRESS_GFX3_SCREEN
 			lda #24
 			sta tmp0
 			lda #0
 @l1:		tax
 			ldy #25
-@l0:		vnops
+@l0:		vdp_wait_l
 			stx a_vram
 			dey
-			beq	@blank
+			beq @blank
 			inx
-			cpx	#stars_layer_size>>3	; div 8
+			cpx #stars_layer_size>>3	; div 8
 			bne @l0
 			ldx #0
-			bra	@l0
+			bra @l0
 @blank:
 			inc
-			cmp	#5
+			cmp #5
 			bne @blank0
 			lda #0
 @blank0:
 			ldx #7
 			ldy #' '
-@blank1:	vnops
+@blank1:	vdp_wait_l
 			sty a_vram
 			dex
 			bne @blank1
-			dec	tmp0
+			dec tmp0
 			bne @l1
+
+			vdp_vram_w ADDRESS_GFX3_COLOR
+			lda #Light_Yellow<<4|Transparent
+			ldx #24
+			jsr vdp_fill
+
 			rts
 
 game_isr:
@@ -156,34 +161,35 @@ game_isr:
 			inc framecnt
 
 			lda #Black
-			jsr vdp_bgcolor
+;			jsr vdp_bgcolor
 
 			restore
 @game_isr_exit:
 			rti
 
 update_vram:
-			lda #<ADDRESS_GFX1_PATTERN
-			ldy #(>ADDRESS_GFX1_PATTERN)+WRITE_ADDRESS
+			lda #<ADDRESS_GFX3_PATTERN
+			ldy #(>ADDRESS_GFX3_PATTERN)+WRITE_ADDRESS
 			vdp_sreg
 			ldx #0
 @l0:		lda stars_backbuffer,x
 			inx
+			vdp_wait_l 8
 			sta a_vram
 			cpx #stars_layer_size
 			bne @l0
 update_spritetab:
-			vnops
-			lda #<ADDRESS_GFX1_SPRITE
-			ldy #>ADDRESS_GFX1_SPRITE+WRITE_ADDRESS
+			vdp_wait_l
+			lda #<ADDRESS_GFX3_SPRITE
+			ldy #>ADDRESS_GFX3_SPRITE+WRITE_ADDRESS
 			vdp_sreg
 			ldx #0
 @l0:		lda sprite_tab,x
-			vnops
-			sta a_vram
 			inx
+			vdp_wait_l 8
+			sta a_vram
 			cpx #4*32
-			bne	@l0
+			bne @l0
 update_scoreboard:
 			jsr scoreboard_update
 
@@ -191,8 +197,8 @@ update_scoreboard:
 
 
 animate_background:
-			ldx	#stars_layer_size-1
-@erase:		stz	stars_backbuffer,x
+			ldx #stars_layer_size-1
+@erase:	stz stars_backbuffer,x
 			dex
 			bpl @erase
 
@@ -412,6 +418,8 @@ stars_mask:
 	.byte $04,$08,$40,$01	;layer 1
 	.byte $04,$80,$10,$20	;layer 2
 	.byte $20,$04,$01,$80	;layer 3
+	.byte $04,$80,$10,$20	;layer 4
+	.byte $04,$80,$10,$20	;layer 5
 
 stars_backbuffer:
 	.res stars_layer_size, 0
@@ -452,6 +460,21 @@ sprite_init_tab:
 	.byte $d0
 
 .data
+vdp_init_bytes_gfx:
+			.byte v_reg0_m3		;
+			.byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size |v_reg1_int
+			.byte (ADDRESS_GFX2_SCREEN / $400)  ; name table - value * $400
+			.byte	$ff	  ; color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
+			.byte	$00	  ; pattern table - either at vram $0000 (Bit 2 = 0) or at vram $2000 (Bit 2=1), Bit 0,1 are AND to select the pattern array
+			.byte	(ADDRESS_GFX2_SPRITE / $80)	; sprite attribute table - value * $80 --> offset in VRAM
+			.byte	(ADDRESS_GFX2_SPRITE_PATTERN / $800)	; sprite pattern table - value * $800  --> offset in VRAM
+			.byte	Black
+	.ifdef V9958
+			.byte v_reg8_VR	; VR - 64k VRAM TODO set per define
+			.byte v_reg9_nt ; #R9, set bit 1 to 1 for PAL
+	.endif
+vdp_init_bytes_gfx_end:
+
 sprite_pattern:
 ;.include "ship.res"
 ;.include "shot.res"
