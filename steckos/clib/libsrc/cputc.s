@@ -7,7 +7,7 @@
 		  .export			newline, plot
 		  .import			popa, _gotoxy
 
-		  .include "system.inc"
+		  .include "asminc/system.inc"
 		  .include "kernel/kernel_jumptable.inc"
 
 _cputcxy:

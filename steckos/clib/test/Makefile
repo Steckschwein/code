@@ -1,7 +1,7 @@
 
 TRANSFER=../../../transfer.py
 
-CC65FLAGS=-I .. --target none --cpu 65c02 --standard c99
+CC65FLAGS=--target none --cpu 65c02 --standard c99 -I ..
 CA65FLAGS=-I ../../asminc -I ../../kernel
 CLIB=../lib/steckschwein-clib.a
 LIBS=../../lib/steckschwein.a ../../tools/lib/toollib.a
@@ -15,7 +15,7 @@ clean:
 	rm -f *.prg *.s *.o
 
 %.prg: %.c $(LIBS) $(CLIB)
-	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LIBS) $(LDFLAGS) -o $@
+	cl65 $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LIBS) $(LDFLAGS) -o $@
 
 %: %.prg
 	$(TRANSFER) $<

@@ -2,6 +2,7 @@
 #include <time.h>
 #include "../include/spi.h"
 #include "../include/rtc.h"
+#include "include/time.cc65_2_17.h"
 
 void set_clock()
 {
@@ -13,9 +14,9 @@ void set_clock()
     spi_write(7); //sunday
     spi_write(0x21);
     spi_write(0x2); //
-    spi_write(0x16); // 
+    spi_write(0x16); //
     spi_deselect();
-} 
+}
 int main (void)
 {
     struct tm tm;
@@ -25,7 +26,7 @@ int main (void)
     char c;
 
 //    set_clock();
-    
+
     tm.tm_sec   = 9;
     tm.tm_min   = 34;
     tm.tm_hour  = 21;
@@ -54,6 +55,6 @@ int main (void)
         if(c=='c')
             break;
     }
-   
+
     return 0;
 }
