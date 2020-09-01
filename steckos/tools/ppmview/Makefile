@@ -29,3 +29,6 @@ test.%: test.%.bin
 
 %: %.prg
 	../../../transfer.py $< -s $(ADDRESS)
+
+emu: ppmview.prg
+	steckschwein-emu -rom ../../bios/bios.bin -sdcard ../../../steckos.img -upload $^

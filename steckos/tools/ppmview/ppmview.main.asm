@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschein.de
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,6 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
 ;
 ; use imagemagick $convert <image> -geometry 256 -color 256 <image.ppm>
 ; convert <file>.pdf[page] -resize 256x212^ -gravity center -crop x212+0+0 +repage pic.ppm
@@ -32,6 +31,7 @@
 .include "via.inc"
 .include "fat32.inc"; TODO FIXME get rid of
 .include "fcntl.inc"
+.include "errno.inc"
 .include "zeropage.inc"
 
 .import hexout
@@ -55,21 +55,22 @@
 
 .import read_joystick
 
-
 .export ppmview_main
 
 ; for TEST purpose
 .export parse_header
-.export byte_to_grb
+.export rgb_bytes_to_grb
 
 .define MAX_WIDTH 256
 .define MAX_HEIGHT 212
 .define COLOR_DEPTH 255
-.define BLOCK_BUFFER 1 ; as multiple of 3 * 512 byte, so 1 means $600 bytes memory are used
+.define BLOCK_BUFFER 4
 
 .zeropage
-;tmp1:   .res 1
-tmp2:   .res 1
+tmp2:   	.res 1
+_error:	.res 1
+_pages:	.res 1
+
 .code
 ppmview_main:
 		stz fd
@@ -81,52 +82,48 @@ ppmview_main:
 
 		ldy #O_RDONLY
 		jsr krn_open
-		bne @io_error
+		bne io_error
 		stx fd
 
-		;512byte/block * 3 => 1536byte => div 256 => 6 pixel lines => height / 6 => height / (2*2 + 1*2) => height / 2 * (2+1)
-		jsr __calc_blocks
-
 		jsr read_blocks
-		bne @io_error
+		bne io_error
 
 		jsr parse_header					; .Y - return with offset to first data byte
 		bne @invalid_ppm
-		stp
 		sty data_offset
 
 		jsr gfxui_on
 
 		jsr load_image
-		bne @gfx_io_error
+		bne gfx_io_error
 
 		jsr wait_key
 
 		jsr gfxui_off
 
-		bra @close_exit
+		bra close_exit
 
 @invalid_ppm:
 		jsr krn_primm
 		.byte $0a,"Not a valid ppm file! Must be type P6 with max. ", .string(MAX_WIDTH), "x", .string(MAX_HEIGHT), "px and 8bpp colors.",0
-		bra @close_exit
+		bra close_exit
 
-@gfx_io_error:
+gfx_io_error:
 		pha
 		jsr gfxui_off
 		pla
-@io_error:
+io_error:
 		pha
 		jsr krn_primm
 		.byte $0a,"i/o error, code: ",0
 		pla
 		jsr hexout
-@close_exit:
+close_exit:
 		ldx fd
 		beq @l_exit
 		jsr krn_close
 @l_exit:
-		jmp (retvec)
+		rts
 
 filename:
 ;	.asciiz "pic22.ppm"
@@ -134,9 +131,21 @@ filename:
 
 read_blocks:
 		SetVector ppmdata, read_blkptr
+		stz _error
 		ldx fd
-		ldy #(3*BLOCK_BUFFER) ; multiples of 3 blocks at once, cause of the ppm header and alignment
-		jmp krn_fread
+		ldy #BLOCK_BUFFER
+		jsr krn_fread
+		bne @l_error
+		tya
+		asl
+		sta _pages
+		SetVector ppmdata, read_blkptr ; reset ptr to begin of buffer we read data from to vram
+		lda #EOK
+		rts
+@l_error:
+		sta _error	; save error
+		stz _pages
+		rts
 
 load_image:
 		stz cols
@@ -145,67 +154,42 @@ load_image:
 		jsr set_screen_addr	; initial vram address
 
 		ldy data_offset ; .Y - data offset
-@loop:
-		SetVector ppmdata, read_blkptr ; reset ptr to begin of buffer
 		jsr blocks_to_vram
-
-		jsr read_blocks
-		bne @l_exit
-		phy
-		tya
-		; jsr hexout
-		ply
-		cpy #0	; no blocks where read
-		beq @l_exit
-		jsr adjust_blocks
-		bra @loop
-@l_exit:
 		rts
 
-adjust_blocks:
-@l:
-		jsr dec_blocks
-		beq @l_exit ; zero blocks reached
-		dey
-		bne @l
+
+next_byte:
+		lda (read_blkptr),y
+		iny
+		bne @l_exit
+		inc read_blkptr+1
+		dec _pages
+		bne @l_exit
+		pha	;save last byte from above
+		jsr read_blocks
+		bne @l_exit_restore
+		ldy #0
+@l_exit_restore:
+		pla
 @l_exit:
 		rts
 
 blocks_to_vram:
-		jsr byte_to_grb
+		jsr rgb_bytes_to_grb
 		sta a_vram
 ;		jsr hexout
 		inc cols
 		lda cols
 		cmp ppm_width
-		bne @l1
+		bne blocks_to_vram
 		stz cols
 		inc rows
 		lda rows
 		cmp ppm_height
-		beq @l_exit_d
-		jsr set_screen_addr
-@l1:
-		lda read_blkptr+1
-		cmp #>(ppmdata+(BLOCK_BUFFER*3*sd_blocksize))	;end of 3 blocks reached?
 		bne blocks_to_vram
-@l_exit:
-		rts
-@l_exit_d:
-		rts
-        ;jsr hexout
-        ;jmp _dbg_blocks
-
-next_byte:
-		lda (read_blkptr),y
-		iny
-		beq @l_inc
-		rts
-@l_inc:
-		inc read_blkptr+1
 		rts
 
-byte_to_grb:	; GRB 332 format
+rgb_bytes_to_grb:	; GRB 332 format
 		jsr next_byte	;R
 		and #$e0
 		lsr
@@ -234,7 +218,7 @@ wait_key:
         ; lda scroll_on
         ; eor #$ff
         ; sta scroll_on
-:		rts
+		rts
 
 set_screen_addr:
 		php
@@ -259,19 +243,6 @@ set_screen_addr:
 		lda #v_reg14
 		sta a_vreg
 		plp
-		rts
-
-dec_blocks:
-		lda blocks+0
-		bne @l0
-		lda blocks+1
-		bne @l1
-		dec blocks+2
-@l1:	dec blocks+1
-@l0:	dec blocks+0
-		lda blocks+2
-		ora blocks+1
-		ora blocks+0	;Z=1 if zero
 		rts
 
 parse_header:
@@ -458,44 +429,11 @@ gfxui_off:
 
       rts
 
-	; TODO FIXME => lib
-__calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if filesize LSB is not 0
-        lda fd_area + F32_fd::FileSize + 3,x
-        lsr
-        sta blocks + 2
-        lda fd_area + F32_fd::FileSize + 2,x
-        ror
-        sta blocks + 1
-        lda fd_area + F32_fd::FileSize + 1,x
-        ror
-        sta blocks + 0
-        bcs @l1
-        lda fd_area + F32_fd::FileSize + 0,x
-        beq @l2
-@l1:    inc blocks
-        bne @l2
-        inc blocks+1
-        bne @l2
-        inc blocks+2
-@l2:
-        lda blocks+2
-        ora blocks+1
-        ora blocks+0
-
-        rts
-_dbg_blocks:
-        lda blocks+2
-        jsr hexout
-        lda blocks+1
-        jsr hexout
-        lda blocks+0
-        jmp hexout
-
-cols: .res 1, 0
-rows: .res 1, 0
-fd:   .res 1, 0
-data_offset: .res 1, 0
-;tmp: .res 1, 0
-scroll_on: .res 1, 0
-scroll_x: .res 1, 0
-irqsafe: .res 2, 0
+.bss
+cols: .res 1
+rows: .res 1
+fd:   .res 1
+data_offset: .res 1
+scroll_on: .res 1
+scroll_x: .res 1
+irqsafe: .res 2

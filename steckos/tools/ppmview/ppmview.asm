@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschein.de
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -50,6 +50,6 @@ appstart $1000
 
 ppm_width:  .res 1, 0
 ppm_height: .res 1, 0
-		
+
 .bss
-ppmdata: .res 1 * 3 * $200
+ppmdata: .res 4 * $200
