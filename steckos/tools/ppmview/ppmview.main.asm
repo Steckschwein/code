@@ -92,6 +92,7 @@ ppmview_main:
 
 		jsr parse_header					; .Y - return with offset to first data byte
 		bne @invalid_ppm
+		stp
 		sty data_offset
 
 		jsr gfxui_on
@@ -180,7 +181,7 @@ blocks_to_vram:
 		bne @l1
 		stz cols
 		inc rows
-        lda rows
+		lda rows
 		cmp ppm_height
 		beq @l_exit_d
 		jsr set_screen_addr
@@ -191,6 +192,7 @@ blocks_to_vram:
 @l_exit:
 		rts
 @l_exit_d:
+		rts
         ;jsr hexout
         ;jmp _dbg_blocks
 
