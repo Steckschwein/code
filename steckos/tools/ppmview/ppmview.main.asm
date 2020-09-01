@@ -125,10 +125,6 @@ close_exit:
 @l_exit:
 		rts
 
-filename:
-;	.asciiz "pic22.ppm"
-;	.asciiz "felix.ppm"
-
 read_blocks:
 		SetVector ppmdata, read_blkptr
 		stz _error
@@ -141,10 +137,12 @@ read_blocks:
 		sta _pages
 		SetVector ppmdata, read_blkptr ; reset ptr to begin of buffer we read data from to vram
 		lda #EOK
+;		clc ; cleared by asl
 		rts
 @l_error:
 		sta _error	; save error
 		stz _pages
+		sec
 		rts
 
 load_image:
@@ -155,17 +153,18 @@ load_image:
 
 		ldy data_offset ; .Y - data offset
 		jsr blocks_to_vram
+		lda _error ; on any error
 		rts
 
-
 next_byte:
+		clc ; no error
 		lda (read_blkptr),y
 		iny
 		bne @l_exit
 		inc read_blkptr+1
 		dec _pages
 		bne @l_exit
-		pha	;save last byte from above
+		pha ;save last byte from above
 		jsr read_blocks
 		bne @l_exit_restore
 		ldy #0
@@ -176,6 +175,7 @@ next_byte:
 
 blocks_to_vram:
 		jsr rgb_bytes_to_grb
+		bcs @exit
 		sta a_vram
 ;		jsr hexout
 		inc cols
@@ -187,25 +187,31 @@ blocks_to_vram:
 		lda rows
 		cmp ppm_height
 		bne blocks_to_vram
+@exit:
 		rts
 
 rgb_bytes_to_grb:	; GRB 332 format
 		jsr next_byte	;R
+		bcs @exit
 		and #$e0
 		lsr
 		lsr
 		lsr
 		sta tmp
 		jsr next_byte	;G
+		bcs @exit
 		and #$e0
 		ora tmp
 		sta tmp
 		jsr next_byte	;B
+		bcs @exit
 		rol
 		rol
 		rol
 		and #$03		;blue - bit 1,0
 		ora tmp
+		clc ; no error
+@exit:
 		rts
 
 wait_key:
