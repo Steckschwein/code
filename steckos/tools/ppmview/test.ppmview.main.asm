@@ -1,17 +1,17 @@
 	.include "asmunit.inc" 	; test api
-	
+
 	.include "common.inc"
 	.include "errno.inc"
 	.include "zeropage.inc"
 
 	.importzp ptr2
 
-	.import parse_header	
-	.import byte_to_grb
-	
+	.import parse_header
+	.import rgb_bytes_to_grb
+
 	.import asmunit_chrout
 
-; from ppmview	
+; from ppmview
 .export ppmdata
 .export ppm_width
 .export ppm_height
@@ -24,7 +24,7 @@
 
 .code
 
-;-------------	
+;-------------
 	setup "parse_header valid"
 	m_memcpy test_ppm_header_valid, ppmdata, 16
 	jsr parse_header
@@ -33,57 +33,57 @@
 	assert8 <256, ppm_width
 	assert8 212, ppm_height
 
-;-------------	
-	setup "parse_header not ppm"	
+;-------------
+	setup "parse_header not ppm"
 	m_memcpy test_ppm_header_notppm, ppmdata, 16
 	jsr parse_header
 	assertZero 0		;error
 	assertA $ff
-	
-;-------------	
+
+;-------------
 	setup "parse_header wrong height"
 	m_memcpy test_ppm_header_wrong_height, ppmdata, 16
 	jsr parse_header
 	assertZero 0		;error
 	assertA $ff
 
-;-------------	
+;-------------
 	setup "parse_header wrong depth"
 	m_memcpy test_ppm_header_wrong_depth, ppmdata, 16
-	jsr parse_header	
+	jsr parse_header
 	assertZero 0		;error
 	assertA $ff
-	
-;-------------	
+
+;-------------
 	setup "parse_header with comment"
 	m_memcpy test_ppm_header_comment, ppmdata, 127
 	jsr parse_header
 	assertZero 1		;
 	assertA 0
 	assert8 <256, ppm_width
-	assert8 192, ppm_height	
-	
-	setup "byte_to_grb"
+	assert8 192, ppm_height
+
+	setup "rgb_bytes_to_grb"
  	SetVector ppmdata, read_blkptr
 	m_memcpy test_ppm_data, ppmdata, 32
-	
+
 	ldy #0
-	jsr byte_to_grb
+	jsr rgb_bytes_to_grb
 	assertA 0
 
-	jsr byte_to_grb
+	jsr rgb_bytes_to_grb
 	assertA $ff
-	
-	jsr byte_to_grb
+
+	jsr rgb_bytes_to_grb
 	assertA $ff
-	
-	jsr byte_to_grb
+
+	jsr rgb_bytes_to_grb
 	assertA $49
 
-	jsr byte_to_grb
+	jsr rgb_bytes_to_grb
 	assertA $51
-	
-	jsr byte_to_grb
+
+	jsr rgb_bytes_to_grb
 	assertA $ba
 
 	brk
@@ -119,8 +119,8 @@ test_ppm_data:	; ppm RGB => GRB 3,3,2
 	.byte $80, $40, $40	;$51
 	.byte $d6, $b5, $81	;$ba
 
-	
+
 ppm_width: .res 1, 0
-ppm_height: .res 1, 0 
+ppm_height: .res 1, 0
 ppmdata: .res 32,0
 .segment "ASMUNIT"
