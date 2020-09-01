@@ -51,5 +51,5 @@ appstart $1000
 ppm_width:  .res 1, 0
 ppm_height: .res 1, 0
 		
-.data
-ppmdata:
+.bss
+ppmdata: .res 1 * 3 * $200

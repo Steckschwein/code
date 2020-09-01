@@ -66,12 +66,13 @@
 .define MAX_HEIGHT 212
 .define COLOR_DEPTH 255
 .define BLOCK_BUFFER 1 ; as multiple of 3 * 512 byte, so 1 means $600 bytes memory are used
+
 .zeropage
 ;tmp1:   .res 1
 tmp2:   .res 1
 .code
 ppmview_main:
-        stz fd
+		stz fd
 
 		lda paramptr
 		ldx paramptr+1
@@ -149,10 +150,10 @@ load_image:
 
 		jsr read_blocks
 		bne @l_exit
-        phy
-        tya
-        ; jsr hexout
-        ply
+		phy
+		tya
+		; jsr hexout
+		ply
 		cpy #0	; no blocks where read
 		beq @l_exit
 		jsr adjust_blocks
@@ -161,7 +162,8 @@ load_image:
 		rts
 
 adjust_blocks:
-@l:	    jsr dec_blocks
+@l:
+		jsr dec_blocks
 		beq @l_exit ; zero blocks reached
 		dey
 		bne @l
@@ -192,7 +194,6 @@ blocks_to_vram:
         ;jsr hexout
         ;jmp _dbg_blocks
 
-
 next_byte:
 		lda (read_blkptr),y
 		iny
@@ -202,7 +203,7 @@ next_byte:
 		inc read_blkptr+1
 		rts
 
-byte_to_grb:
+byte_to_grb:	; GRB 332 format
 		jsr next_byte	;R
 		and #$e0
 		lsr
@@ -213,7 +214,7 @@ byte_to_grb:
 		and #$e0
 		ora tmp
 		sta tmp
-		jsr next_byte	;G
+		jsr next_byte	;B
 		rol
 		rol
 		rol
@@ -234,8 +235,9 @@ wait_key:
 :		rts
 
 set_screen_addr:
+		php
 		sei	;critical section, avoid vdp irq here
-        vdp_wait_s
+		vdp_wait_s
 		lda cols
 		sta a_vreg                 ; A7-A0 vram address low byte
 		lda rows
@@ -254,7 +256,7 @@ set_screen_addr:
 		vdp_wait_s 2
 		lda #v_reg14
 		sta a_vreg
-		cli
+		plp
 		rts
 
 dec_blocks:
