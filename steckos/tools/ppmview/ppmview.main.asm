@@ -183,6 +183,7 @@ blocks_to_vram:
 		cmp ppm_width
 		bne blocks_to_vram
 		stz cols
+		jsr set_screen_addr	; adjust vram address to cols/rows
 		inc rows
 		lda rows
 		cmp ppm_height
@@ -405,13 +406,13 @@ gfxui_on:
 		lda #%00000000
 		jsr vdp_gfx7_blank
 
-        ;vdp_sreg v_reg25_wait | v_reg25_msk, v_reg25
+		;vdp_sreg v_reg25_wait | v_reg25_msk, v_reg25
 
 
-        lda #$ff
-        sta scroll_on
-        stz scroll_x
-        ; jsr scroll
+		lda #$ff
+		sta scroll_on
+		stz scroll_x
+		; jsr scroll
 
 		copypointer  $fffe, irqsafe
 		SetVector  blend_isr, $fffe
