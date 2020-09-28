@@ -23,7 +23,6 @@
 	debug_enabled=1
 .endif
 
-;.include "kernel.inc"
 .include "via.inc"
 .include "spi.inc"
 .include "errno.inc"
@@ -40,9 +39,8 @@
 spi_r_byte:
 		lda via1portb	; Port laden
 		AND #$fe		  ; Takt ausschalten
-		TAX				 ; aufheben
-		;ORA #$01
-     	INC
+		TAX				 		; aufheben
+		INC
 
 		STA via1portb ; Takt An 1
 		STX via1portb ; Takt aus
