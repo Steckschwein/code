@@ -33,12 +33,9 @@
 unsigned char buf[16] = "";
 
 unsigned char digit(unsigned long n, unsigned char pos){
-	//TODO FIXME - snprintf() seems broken
-	asm ("stp");
 	snprintf(buf, sizeof buf, "%lld", n);
 	cprintf("%s\n", buf);
 	return buf[strlen(buf)-1-pos];
-	//return n % 10;
 }
 
 int main (int argc, const char* argv[])
