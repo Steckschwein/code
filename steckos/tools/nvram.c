@@ -32,6 +32,8 @@ unsigned char get_databits(unsigned char);
 unsigned char get_parity(unsigned char);
 unsigned char get_stopbits(unsigned char);
 unsigned char make_line_byte(unsigned char *);
+int get_kbrd_repeat(unsigned char);
+int get_kbrd_delay(unsigned char);
 
 struct nvram
 {
@@ -39,6 +41,7 @@ struct nvram
     unsigned char filename[13];
     unsigned char uart_baudrate;
     unsigned char uart_lsr;
+    unsigned char keyboard_tm;
     unsigned char crc7;
 };
 
@@ -135,13 +138,16 @@ int main (int argc, const char* argv[])
 	}
 	else if (strcmp(argv[1], "list") == 0)
 	{
-		cprintf("OS filename     : %.11s\nUART baud rate  : %ld\nUART line conf  : %c%c%c\nCRC             : $%02x\n",
+		cprintf("OS filename     : %.11s\nUART baud rate  : %ld\nUART line conf  : %c%c%c\nKeyboard ($%x)  : %dHz/%dms\nCRC             : $%02x\n",
 			n.filename,
 			lookup_divisor(n.uart_baudrate),
 			get_databits(n.uart_lsr),
 			get_parity(n.uart_lsr),
 			get_stopbits(n.uart_lsr),
-            n.crc7
+         n.keyboard_tm,
+         get_kbrd_repeat(n.keyboard_tm),
+         get_kbrd_delay(n.keyboard_tm),
+         n.crc7
 		);
 	}
 	else if (strcmp(argv[1], "init") == 0)
@@ -255,9 +261,9 @@ unsigned char make_line_byte(unsigned char * line)
 void write_nvram()
 {
 	p = (unsigned char *)&n;
-    n.crc7 = crc7((unsigned char *)&n, sizeof(struct nvram)-1);
+   n.crc7 = crc7((unsigned char *)&n, sizeof(struct nvram)-1);
 
-    spi_select_rtc();
+   spi_select(RTC);
 
 	spi_write(0x20|0x80);
 
@@ -272,7 +278,7 @@ void write_nvram()
 void read_nvram()
 {
 	p = (unsigned char *)&n;
-    spi_select_rtc();
+    spi_select(RTC);
     spi_write(0x20);
 
 	for(i = 0; i<sizeof(n); i++)
@@ -306,12 +312,14 @@ unsigned long int lookup_divisor(unsigned char div)
 }
 void init_nvram()
 {
-        cprintf("Setting to default values ... ");
+      cprintf("Setting to default values ... ");
 	 	n.version 		= 0;
 	 	memcpy(n.filename, "loader.bin\0", 11);
 
 	 	n.uart_baudrate = 0x01; // 115200 baud
 	 	n.uart_lsr		= UART_DATA_BITS8|UART_PARITY_NONE|UART_STOP_BITS1; // 8N1
+
+      n.keyboard_tm = 0x20 ; // 30 Zeichen / 500ms
 
 	 	write_nvram();
 	 	cprintf("done.\r\n");
@@ -330,4 +338,14 @@ unsigned char lookup_baudrate(unsigned long int baud)
 	}
 
 	return 0;
+}
+
+// Repeat rate (00000b = 30 Hz, ..., 11111b = 2 Hz)
+int get_kbrd_repeat(unsigned char typematic){
+   return 30 - (typematic & 0x1c);
+}
+
+//00b = 250 ms, 01b = 500 ms, 10b = 750 ms, 11b = 1000 ms
+int get_kbrd_delay(unsigned char typematic){
+   return ((typematic>>5) + 1) * 250;
 }

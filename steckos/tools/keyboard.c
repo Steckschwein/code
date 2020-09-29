@@ -26,6 +26,7 @@ void assertParam(int argc, char **argv) {
       usage();
    }
 }
+
 void send(unsigned char command, unsigned char value){
 
    unsigned char r;

@@ -48,7 +48,6 @@ device_n:
 	.byte spi_device_keyboard
 	.byte spi_device_rtc
 spi_select_device_n:
-		stp
 		phx
 		and #$03
 		cmp #2

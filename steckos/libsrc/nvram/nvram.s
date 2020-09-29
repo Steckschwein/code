@@ -4,6 +4,7 @@
 .import crc7
 .include "system.inc"
 .include "common.inc"
+.include "spi.inc"
 .include "nvram.inc"
 .include "via.inc"
 .include "keyboard.inc"
@@ -20,7 +21,7 @@ read_nvram:
  	sta __volatile_ptr
  	sty __volatile_ptr+1
 	; select RTC
-	lda #%01110110
+	lda #spi_device_rtc
 	sta via1portb
 
 	lda #nvram_start
