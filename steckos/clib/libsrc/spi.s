@@ -1,19 +1,12 @@
 
-.import popa
 .import spi_select_device
+.import spi_select_device_n
 
 ;
 ; extern unsigned char __fastcall__ spi_select(SpiDevice d);
 ;
-_spi_select:
-;	stp
-	lda #%00011010
-	;0001 110 0
-	;0001 101 0
-	;0001 011 0
-	jmp spi_select_device
+_spi_select=spi_select_device_n
 
-;
 _spi_deselect = krn_spi_deselect
 
 ;

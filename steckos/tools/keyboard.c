@@ -27,10 +27,15 @@ void assertParam(int argc, char **argv) {
    }
 }
 void send(unsigned char command, unsigned char value){
-   cprintf("send %x %x\n", command, value);
+
+   unsigned char r;
+
+   cprintf("send %x %x => ", command, value);
    spi_select(KEYBOARD);
-   spi_write(command);
+   r = spi_write(command);
+   cprintf("%x ", r);
    spi_write(value);
+   cprintf("%x\n", r);
    spi_deselect();
 }
 
