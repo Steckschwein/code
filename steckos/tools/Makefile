@@ -10,6 +10,7 @@ TOOLS=ls.prg ll.prg stat.prg fsinfo.prg attrib.prg rename.prg help.prg view.prg 
 TOOLS+=\
   clear.prg\
   echo.prg\
+  keyboard.prg \
   nvram.prg\
   od.prg\
   uname.prg\
