@@ -47,7 +47,7 @@ read_nvram:
 	 ldx #.sizeof(nvram)-1
 	 jsr crc7
 
-	 cmp#0
+	 cmp #0
 	 beq @copy_defaults
 
 	 ldy #nvram::crc7

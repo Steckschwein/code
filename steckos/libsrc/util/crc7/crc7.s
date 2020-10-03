@@ -38,20 +38,21 @@ polynom = $89
 ;  out:
 ;	  .A calculated crc7
 .proc crc7
+			sta __volatile_ptr
+			sty __volatile_ptr+1
+
+			lda #0	;crc = 0
+
 			cpx #0
 			beq @rts
 			stx __volatile_tmp
 
-			sta __volatile_ptr
-			sty __volatile_ptr+1
-
 			ldy #0
-			lda #0	;crc = 0
 @loop:
 			ldx #8
 			eor (__volatile_ptr),y
 @loop_x:
-			bit #$80			 ;
+			bit #$80			 	;
 			beq @crc_shift
 			asl					;
 			eor #<(polynom<<1); crc<<1 ^ polynome<<1

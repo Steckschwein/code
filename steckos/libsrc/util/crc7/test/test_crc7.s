@@ -13,19 +13,19 @@
 .endmacro
 
 .code
-		;testcase "crc7_d1", d1, 0, 0, 10
-		testcase "crc7_d2", d2, 1, 0, 2200
-		;testcase "crc7_d3", d3, 0, 2000
-		testcase "crc7_d4", d4, 1,$32, 2200
+		testcase "crc7_d1", d1, 0, 0, 2000
+		testcase "crc7_d2", d2, 1, 0, 2100
+		testcase "crc7_d3", d3, 0, 0, 4000
+		testcase "crc7_d4", d4, 1, $32, 4200
 
-		testcase "crc7_d5", d5, 1, $6d, 4500
-		testcase "crc7_d6", d6, 1, $76, 4500
-		testcase "crc7_d7", d7, 2, $10, 6000
-		testcase "crc7_d8", d8, 4, $6c, 7000
-		
-		testcase "crc7_d9", d9, 12, 0, 10000
+		testcase "crc7_d5", d5, 1, $6d, 5600
+		testcase "crc7_d6", d6, 1, $76, 6500
+		testcase "crc7_d7", d7, 2, $10, 8000
+		testcase "crc7_d8", d8, 4, $6c, 9000
 
-		testcase "crc7_nvram", d10, 14, $2e, 20000
+		testcase "crc7_d9", d9, 12, 0, 12000
+
+		testcase "crc7_nvram", d10, 14, $2e, 12800
 		brk
 
 d1: .byte 0

@@ -138,7 +138,7 @@ int main (int argc, const char* argv[])
 	}
 	else if (strcmp(argv[1], "list") == 0)
 	{
-		cprintf("OS filename     : %.11s\nUART baud rate  : %ld\nUART line conf  : %c%c%c\nKeyboard ($%x)  : %dHz/%dms\nCRC             : $%02x\n",
+		cprintf("OS filename     : %.11s\nUART baud rate  : %ld\nUART line conf  : %c%c%c\nKeyboard ($%02x)  : %dHz/%dms\nCRC             : $%02x\n",
 			n.filename,
 			lookup_divisor(n.uart_baudrate),
 			get_databits(n.uart_lsr),
