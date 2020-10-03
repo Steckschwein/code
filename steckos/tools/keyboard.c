@@ -19,6 +19,8 @@
 #define UART_PARITY_MARK 40
 #define UART_PARITY_SPACE 56
 
+#define KBD_STATUS 0xe0
+
 void usage(void);
 
 void assertParam(int argc, char **argv) {
@@ -48,7 +50,17 @@ int main (int argc, char** argv)
    argc--;
    argv++;
    while(argc>0){
-      if (!strcmp(argv[0], "-r"))
+    if (!strcmp(argv[0], "-s"))
+   	{
+			 unsigned char r = 0;
+			 cprintf("\nstatus:");
+			 spi_select(KEYBOARD);
+			 while((r = spi_write(KBD_STATUS)) != 0xaa){ //0xaa end of status bytes
+					cprintf(" %x", spi_write(KBD_STATUS));
+			 }
+			 spi_deselect();
+		}
+    else if (!strcmp(argv[0], "-r"))
    	{
          argc--;
          argv++;
