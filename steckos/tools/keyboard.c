@@ -5,7 +5,7 @@
 #include <ctype.h>
 #include "include/spi.h"
 
-#define KBD_STATUS 0xe0
+#define KBD_CMD_STATUS 0xe0
 
 void usage(void);
 
@@ -22,9 +22,9 @@ void send(unsigned char command, unsigned char value){
 	cprintf("send %x %x => ", command, value);
 	spi_select(KEYBOARD);
 	r = spi_write(command);
-	cprintf("%x ", r);
-	spi_write(value);
-	cprintf("%x\n", r);
+	cprintf("0x%.2x ", r);
+	r = spi_write(value);
+	cprintf("0x%.2x\n", r);
 	spi_deselect();
 }
 
@@ -41,12 +41,17 @@ int main (int argc, char** argv)
 			{
 				unsigned char r = 0;
 				cprintf("\nstatus:");
+				__asm__("sei");
 				spi_select(KEYBOARD);
-				while((r = spi_write(KBD_STATUS)) != 0xaa)
-				{ //0xaa end of status bytes
-					cprintf(" %x", spi_write(KBD_STATUS));
+				while(1) //0xaa end of status bytes
+				{
+					r = spi_write(KBD_CMD_STATUS);
+					while(r == 0) r = spi_read();
+					cprintf(" %x", r);
+					if(r == 0xaa) break;
 				}
 				spi_deselect();
+				__asm__("cli");
 			}
 			else if (!strcmp(argv[0], "-r"))
 			{
