@@ -29,6 +29,8 @@
 .exportzp vdp_ptr   =$ec
 .exportzp vdp_tmp   =$ee
 
+.exportzp key       = $ef
+
 ; FAT32
 .exportzp filenameptr   = $f0	; 2 byte
 .exportzp dirptr        = $f2	; 2 byte
@@ -42,6 +44,7 @@
 .exportzp spi_sr        = $f9
 .exportzp __volatile_ptr = $fa
 .exportzp __volatile_tmp = $fc
+
 
 ;.exportzp ansi_state			 = $f9
 ;.exportzp ansi_index			 = $fa

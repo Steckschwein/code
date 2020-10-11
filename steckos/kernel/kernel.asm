@@ -58,6 +58,7 @@
 .import strout, primm
 ;.import ansi_chrout
 .importzp krn_ptr1
+.importzp key
 
 ; internal kernel api stuff
 .import __automount
