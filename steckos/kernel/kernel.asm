@@ -122,20 +122,20 @@ do_upload:
 ; IO_IRQ Routine. Handle IRQ
 ;----------------------------------------------------------------------------------------------
 do_irq:
-	PHX							;
-	PHA							;
-	TSX							; get stack pointer
-	LDA	$0103,X			  ; load INT-P Reg off stack
-	AND	#$10				  ; mask BRK
-	BNE	@BrkCmd			  ; BRK CMD
-	PLA							;
-	PLX							;
-	;jmp	(INTvector)		 ; let user routine have it
-	bra @irq
-@BrkCmd:
-	pla							;
-	plx							;
-	jmp	do_nmi
+; 	PHX							;
+; 	PHA							;
+; 	TSX							; get stack pointer
+; 	LDA	$0103,X			  ; load INT-P Reg off stack
+; 	AND	#$10				  ; mask BRK
+; 	BNE	@BrkCmd			  ; BRK CMD
+; 	PLA							;
+; 	PLX							;
+; 	;jmp	(INTvector)		 ; let user routine have it
+; 	bra @irq
+; @BrkCmd:
+; 	pla							;
+; 	plx							;
+; 	jmp	do_nmi
 ; system interrupt handler
 ; handle keyboard input and text screen refresh
 @irq:
