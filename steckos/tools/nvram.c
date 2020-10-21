@@ -66,7 +66,6 @@ const struct baudrate baudrates[] = {
 
 unsigned char i,j,x;
 struct nvram n;
-unsigned char * p;
 unsigned long l;
 
 int main (int argc, const char* argv[])
@@ -127,7 +126,7 @@ int main (int argc, const char* argv[])
                 return EXIT_FAILURE;
             }
             n.uart_lsr = lsr;
-		    write_nvram();
+            write_nvram();
         }
 
 		cprintf("%c%c%c\n",
@@ -136,6 +135,20 @@ int main (int argc, const char* argv[])
             get_stopbits(n.uart_lsr)
         );
 	}
+   else if (!strcmp(argv[1], "keyboard"))
+	{
+      if (argc == 3)
+      {
+         n.keyboard_tm = atoi(argv[2]) & 0xff;
+         write_nvram();
+         read_nvram();
+      }
+      cprintf("Keyboard ($%02x)  : %dHz/%dms\n",
+         n.keyboard_tm,
+         get_kbrd_repeat(n.keyboard_tm),
+         get_kbrd_delay(n.keyboard_tm)
+		);
+   }
 	else if (strcmp(argv[1], "list") == 0)
 	{
 		cprintf("OS filename     : %.11s\nUART baud rate  : %ld\nUART line conf  : %c%c%c\nKeyboard ($%02x)  : %dHz/%dms\nCRC             : $%02x\n",
@@ -260,7 +273,7 @@ unsigned char make_line_byte(unsigned char * line)
 
 void write_nvram()
 {
-	p = (unsigned char *)&n;
+   unsigned char *p = (unsigned char *)&n;
    n.crc7 = crc7((unsigned char *)&n, sizeof(struct nvram)-1);
 
    spi_select(RTC);
@@ -277,9 +290,9 @@ void write_nvram()
 
 void read_nvram()
 {
-	p = (unsigned char *)&n;
-    spi_select(RTC);
-    spi_write(0x20);
+   unsigned char *p = (unsigned char *)&n;
+   spi_select(RTC);
+   spi_write(0x20);
 
 	for(i = 0; i<sizeof(n); i++)
 	{
@@ -292,7 +305,7 @@ void read_nvram()
 void usage()
 {
 	cprintf(
-        "set/get nvram values\nusage:\nnvram filename|baudrate|line [<value>]\nnvram list|init\n"
+        "set/get nvram values\nusage:\nnvram filename|baudrate|line|keyboard [<value>]\nnvram list|init\n"
 	);
 }
 
@@ -340,12 +353,12 @@ unsigned char lookup_baudrate(unsigned long int baud)
 	return 0;
 }
 
-// Repeat rate (00000b = 30 Hz, ..., 11111b = 2 Hz)
+//bit 4-0 - Repeat rate (00000b = 30 Hz, ..., 11111b = 2 Hz)
 int get_kbrd_repeat(unsigned char typematic){
    return 30 - (typematic & 0x1c);
 }
 
-//00b = 250 ms, 01b = 500 ms, 10b = 750 ms, 11b = 1000 ms
+//bit 6,5 - 00b = 250 ms, 01b = 500 ms, 10b = 750 ms, 11b = 1000 ms
 int get_kbrd_delay(unsigned char typematic){
    return ((typematic>>5) + 1) * 250;
 }
