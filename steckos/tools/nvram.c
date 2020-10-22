@@ -139,7 +139,7 @@ int main (int argc, const char* argv[])
 	{
       if (argc == 3)
       {
-         n.keyboard_tm = atoi(argv[2]) & 0xff;
+         n.keyboard_tm = atoi(argv[2]) & 0x7f;
          write_nvram();
          read_nvram();
       }
@@ -360,5 +360,5 @@ int get_kbrd_repeat(unsigned char typematic){
 
 //bit 6,5 - 00b = 250 ms, 01b = 500 ms, 10b = 750 ms, 11b = 1000 ms
 int get_kbrd_delay(unsigned char typematic){
-   return ((typematic>>5) + 1) * 250;
+   return (((typematic>>5) & 0x3) + 1) * 250;
 }

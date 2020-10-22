@@ -29,8 +29,7 @@ ROWS=23
   .else
     COLS=40
   .endif
-.endif
-.ifndef CHAR6x8
+.else
   COLS=32
   .import charset_8x8
 .endif

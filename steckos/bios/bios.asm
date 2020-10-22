@@ -3,14 +3,8 @@
 		.include "fat32.inc"
 		.include "fcntl.inc"
 		.include "nvram.inc"
+		.include "spi.inc"
 
-		.zeropage
-		ptr1: .res 2
-		startaddr: .res 2
-		endaddr: .res 2
-		.exportzp startaddr, endaddr
-
-		.code
 		.import uart_init, upload
 		.import init_via1
 		.import hexout, primm, print_crlf
@@ -21,10 +15,21 @@
 		.import fat_mount, fat_open, fat_read, fat_close
 		.import read_nvram
 		.import sd_read_block, sd_write_block
+		.import spi_select_device
+		.import spi_deselect
+		.import spi_rw_byte
 
 		.export vdp_chrout
 		.export krn_chrout=vdp_chrout
 		.export read_block=sd_read_block
+
+.zeropage
+	ptr1: .res 2
+	startaddr: .res 2
+	endaddr: .res 2
+.exportzp startaddr, endaddr
+
+.code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
 			.export __fat_write_dir_entry=fat_write_dir_entry
@@ -46,7 +51,32 @@ _set_ctrlport:
 			pla
 			rts
 
-.code
+;	requires nvram init beforehand
+init_keyboard:
+	jsr primm
+	.byte "Keyboard init ", 0
+	lda #spi_device_keyboard
+	jsr spi_select_device
+	beq @l1
+	jmp _fail
+@l1:
+	lda #KBD_CMD_TYPEMATIC
+	jsr spi_rw_byte
+	cmp #KBD_RET_ACK
+	bne _fail
+	lda nvram+nvram::keyboard_tm ; typematic settings
+	jsr spi_rw_byte
+	cmp #KBD_RET_ACK
+	bne _fail
+_ok:
+	jsr primm
+	.byte "OK", CODE_LF, 0
+	jmp spi_deselect
+_fail:
+	jsr primm
+	.byte "FAIL", CODE_LF, 0
+	jmp spi_deselect
+
 do_reset:
 			; disable interrupt
 			sei
@@ -149,8 +179,7 @@ stack_broken:
 			lda #$20
 stop:
 			sta ctrl_port
-@loop:		bra @loop
-
+@loop:	bra @loop
 
 mem_ok:
 			set_ctrlport
@@ -183,6 +212,8 @@ mem_ok:
 
 			jsr uart_init
          set_ctrlport
+
+			jsr init_keyboard
 
 			jsr sdcard_detect
          beq @sdcard_init
@@ -251,13 +282,10 @@ bios_irq:
 num_patterns = $02
 pattern:
 	.byte $aa,$55,$00
-.segment "JUMPTABLE"
-; TODO can be removed if the steckschwein emu is finished one day and no chrout hook is required anymore
-; jump table - required for fixed adressing within steckschwein-emu to hook some calls
-vdp_chrout:
-			jmp _vdp_chrout
 
 .segment "VECTORS"
+vdp_chrout:
+	jmp _vdp_chrout
 ;----------------------------------------------------------------------------------------------
 ; Interrupt vectors
 ;----------------------------------------------------------------------------------------------
