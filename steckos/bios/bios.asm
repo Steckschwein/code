@@ -57,13 +57,13 @@ init_keyboard:
 	.byte "Keyboard init ", 0
 	lda #spi_device_keyboard
 	jsr spi_select_device
-	beq @l1
-	jmp _fail
-@l1:
+	bne _fail
+
 	lda #KBD_CMD_TYPEMATIC
 	jsr spi_rw_byte
 	cmp #KBD_RET_ACK
 	bne _fail
+
 	lda nvram+nvram::keyboard_tm ; typematic settings
 	jsr spi_rw_byte
 	cmp #KBD_RET_ACK
