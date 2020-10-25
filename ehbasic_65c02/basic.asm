@@ -7658,6 +7658,7 @@ LAB_SAVE
     stz fd_area + F32_fd::FileSize + 3,x
 
     jsr krn_write
+;    stp
     bne io_error_close
     jsr krn_close
 
@@ -8750,11 +8751,7 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
-exit:
-   stp
-   jmp (retvec)
-
+exit:		jmp (retvec)
 .bss
 buf:        .res 16
-
-.END
+ .END
