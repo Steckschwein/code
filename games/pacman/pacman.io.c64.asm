@@ -32,8 +32,12 @@ io_exit:
 		rts
 
 io_isr:
+		lda #$13
+		sta $D011
+
 		lda VIC_IRR	; vic irq ?
 		bpl @rts
+
 		inc VIC_IRR
 		lda CIA1_ICR
 

@@ -60,6 +60,7 @@ SRCDIRS +=  sdcard
 SRCDIRS +=  fat32
 SRCDIRS +=  via
 SRCDIRS +=  debug
+SRCDIRS +=  util
 SRCDIRS +=  util/crc7
 
 vpath %.s $(SRCDIRS)

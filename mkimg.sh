@@ -5,6 +5,7 @@ img="steckos.img"
 
 if [ -e $img ] ; then
     echo "Image $img already exists"
+    exit 1
 else
     echo "Creating image $img"
     dd if=/dev/zero of=$img bs=1024k count=$size
@@ -18,7 +19,7 @@ fi
 
 loopdev="/dev/mapper/"$(echo $foo | cut -d ' ' -f3)
 echo $loopdev
-sudo mkfs -t vfat -F 32 -s 16 -S 512 $loopdev
+sudo mkfs -t fat -F 32 -s 16 -S 512 $loopdev
 sudo mkdir image
 sudo mount $loopdev image
 sudo rsync -rv dist/ image/

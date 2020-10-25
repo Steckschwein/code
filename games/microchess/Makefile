@@ -1,5 +1,5 @@
 OBJ=mchess.prg
-LIBS=../../steckos/tools/lib/toollib.a
+LIBS=../../steckos/lib/steckschwein.a
 INCLUDES=-I ../../steckos/asminc -I ../../steckos/kernel
 LDFLAGS=-C ../../steckos/prg.ld65.cfg $(LIBS)
 

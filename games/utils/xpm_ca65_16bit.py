@@ -28,7 +28,10 @@ def main():
 
   if len(xpmLines) < 3:
     sys.exit(1)
-  colors=int(xpmLines[2].split(" ")[2])
+  header = xpmLines[2].split(" ")
+#  width=int(header[0])
+  height=int(header[1])
+  colors=int(header[2])
   offset = colors+3
 
 #  print ("%s %s" % (colors, offset))

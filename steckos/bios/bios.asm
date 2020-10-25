@@ -255,29 +255,30 @@ boot_from_card:
 			jmp do_upload
 
 @loadfile:
-			print_dot
-			SetVector steckos_start, startaddr
-			SetVector steckos_start, read_blkptr
-			jsr fat_read
-			jsr fat_close
-			bne @load_error
-			println "OK"
-			bra startup
+	print_dot
+	SetVector steckos_start, startaddr
+	SetVector steckos_start, read_blkptr
+	jsr fat_read
+	jsr fat_close
+	bne @load_error
+	println "OK"
+	bra startup
 
 @load_error:
-			jsr hexout
-			println " read error"
+	jsr hexout
+	println " read error"
 do_upload:
-         jsr upload
+	jsr upload
 startup:
-			; re-init stack pointer
-			ldx #$ff
-			txs
-			; jump to new code
-			jmp (startaddr)
+	; re-init stack pointer
+	ldx #$ff
+	txs
+	; jump to new code
+	jmp (startaddr)
 
 bios_irq:
-			rti
+	stp
+	rti
 
 num_patterns = $02
 pattern:
