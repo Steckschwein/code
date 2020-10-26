@@ -11,7 +11,7 @@
       .import vdp_bgcolor
       .import vdp_memcpy
       .import vdp_fills
-	  .import vdp_chrout
+      .import vdp_chrout
 .zeropage
 ptr3: .res 2
 ptr4: .res 2
@@ -354,14 +354,14 @@ vdp_set_addr:			; set the vdp vram adress, write A to vram
 		sta v_l			; save
 .endif
 
-		asl		   		;
-		rol v_h		   	; save carry if overflow
+		asl
+		rol v_h		   ; save carry if overflow
 		asl				;
 		rol v_h			; save carry if overflow
 		adc v_l
 
 		bcc @l1
-		inc	v_h			; overflow inc page count
+		inc v_h			; overflow inc page count
 		clc				;
 @l1:
 		adc crs_x		; add x to address

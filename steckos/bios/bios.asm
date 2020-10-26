@@ -7,7 +7,7 @@
 
 		.import uart_init, upload
 		.import init_via1
-		.import hexout, primm, print_crlf
+		.import hexout, primm
 		.import vdp_init, _vdp_chrout, vdp_detect
 		.import sdcard_init
 		.import sdcard_detect
@@ -28,6 +28,8 @@
 	startaddr: .res 2
 	endaddr: .res 2
 .exportzp startaddr, endaddr
+
+		.export char_out=_vdp_chrout
 
 .code
 
@@ -198,7 +200,7 @@ mem_ok:
 			jsr hexout
 			lda ptr1
 			jsr hexout
-			jsr print_crlf
+			println ""
 
 			jsr vdp_detect
 
@@ -233,7 +235,7 @@ boot_from_card:
 			print " mount error "
 			pla
 			jsr hexout
-			jsr print_crlf
+			println ""
 			bra do_upload
 
 @findfile:

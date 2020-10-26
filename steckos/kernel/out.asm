@@ -23,9 +23,7 @@
 .include "kernel.inc"
 
 .code
-.export chrout, strout, primm
-.import textui_chrout
-.import krn_chrout
+.export strout, primm
 
 .ifdef TEXTUI_STROUT
 .import textui_strout
@@ -34,15 +32,6 @@
 .ifdef TEXTUI_PRIMM
 .import textui_primm
 .endif
-
-;----------------------------------------------------------------------------------------------
-; Output char on active output device
-; in:
-;  A - char to output
-;----------------------------------------------------------------------------------------------
-;chrout:	  jmp textui_chrout
-;chrout = textui_chrout
-chrout = krn_chrout
 
 ;----------------------------------------------------------------------------------------------
 ; Output string on active output device
@@ -62,7 +51,7 @@ strout:
 		ldy #$00
 @l1:	lda (krn_ptr3),y
 		beq @l2
-		jsr chrout
+		jsr char_out
 		iny
 		bne @l1
 
@@ -83,22 +72,20 @@ primm = textui_primm
 .else
 primm:
 		pla						; Get the low part of "return" address
-										  ; (data start address)
 		sta	  krn_ptr3
 		pla
 		sta	  krn_ptr3+1				 ; Get the high part of "return" address
-										  ; (data start address)
 		; Note: actually we're pointing one short
 PSINB:	inc	  krn_ptr3				 ; update the pointer
 		bne	  PSICHO			 ; if not, we're pointing to next character
 		inc	  krn_ptr3+1				 ; account for page crossing
 PSICHO:	lda	  (krn_ptr3)			  ; Get the next string character
 		beq	  PSIX1			  ; don't print the final NULL
-		jsr	  chrout		; write it out
+		jsr	  char_out		; write it out
 		bra	  PSINB			  ; back around
 PSIX1:	inc	  krn_ptr3				 ;
 		bne	  PSIX2			  ;
-		inc	  krn_ptr3+1				 ; account for page crossing
+		inc	  krn_ptr3+1.export char_out=krn_chrout				 ; account for page crossing
 PSIX2:
 		jmp	  (krn_ptr3)			  ; return to byte following final NULL
 .endif
