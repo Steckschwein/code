@@ -2,12 +2,15 @@
 
     .import uart_rx, uart_tx
     .import vdp_chrout, print_crlf, hexout, primm
-    .import startaddr, endaddr
+
+    .importzp startaddr, endaddr
+
     .include "bios.inc"
     .include "uart.inc"
 .zeropage
-ptr_upload_addr:    .res 2
-length:             .res 1
+   ptr_upload_addr:    .res 2
+   length:             .res 1
+
 .code
 ;----------------------------------------------------------------------------------------------
 upload:

@@ -27,24 +27,24 @@
 .importzp vdp_ptr
 
 .code
-; setup video registers upon given table
+; setup video registers upon given table starting from register #R.X down to #R0
 ;	in:
-;		.X - length of init table
+;		.X - length of init table, corresponds to start register R#.X
 ;		.A/.Y - pointer to vdp init table
 vdp_init_reg:
-		sta vdp_ptr
-		sty vdp_ptr+1
-		txa			; x length of init table
-		tay
-			ora #$80		; bit 7 = 1 => register write
-			tax
-@l:		vdp_wait_s 4
-			lda (vdp_ptr),y ; 5c
-			sta a_vreg
-			vdp_wait_s
-			stx a_vreg
-			dex				;2c
-			dey				;2c
-			bpl @l 		;3c
-			rts
-		
+	sta vdp_ptr
+	sty vdp_ptr+1
+	txa			; x length of init table
+	tay
+	ora #$80		; bit 7 = 1 => register write
+	tax
+@l:
+	vdp_wait_s 4
+	lda (vdp_ptr),y ; 5c
+	sta a_vreg
+	vdp_wait_s
+	stx a_vreg
+	dex				;2c
+	dey				;2c
+	bpl @l 		;3c
+	rts

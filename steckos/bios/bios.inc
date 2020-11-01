@@ -21,11 +21,6 @@ ram_end 				= $0288
 ram_end_l			= ram_end
 ram_end_h			= ram_end+1
 
-; Address pointers for serial upload
-;startaddr	= ptr1
-;endaddr		= ptr2
-;length		= tmp1
-
 nvram		= $1000
 
 steckos_start		= $1000

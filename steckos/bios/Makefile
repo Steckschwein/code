@@ -9,8 +9,11 @@ DEFINES+=-DV9958
 # enable 80 cols
 # DEFINES+=-DCOLS80
 
+# VDP irq enabled
+DEFINES+=-DDISABLE_VDP_IRQ
+
 # debug fat32
-#DEFINES += -DDEBUG_FAT32
+# DEFINES += -DDEBUG_FAT32
 
 .PHONY: all clean
 all: version.inc bios.bin

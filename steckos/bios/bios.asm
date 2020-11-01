@@ -22,14 +22,14 @@
 		.export vdp_chrout
 		.export krn_chrout=vdp_chrout
 		.export read_block=sd_read_block
+		.export char_out=_vdp_chrout
+
+		.exportzp startaddr, endaddr
 
 .zeropage
 	ptr1: .res 2
 	startaddr: .res 2
 	endaddr: .res 2
-.exportzp startaddr, endaddr
-
-		.export char_out=_vdp_chrout
 
 .code
 
@@ -220,7 +220,9 @@ mem_ok:
 			jsr sdcard_detect
          beq @sdcard_init
 			println "No SD card"
-         jmp do_upload
+			cli
+
+			jmp do_upload
 @sdcard_init:
          jsr sdcard_init
          beq boot_from_card
@@ -279,7 +281,6 @@ startup:
 	jmp (startaddr)
 
 bios_irq:
-	stp
 	rti
 
 num_patterns = $02

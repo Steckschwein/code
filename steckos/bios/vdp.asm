@@ -9,6 +9,8 @@
       .import vdp_text_blank
       .import vdp_gfx1_blank
       .import vdp_bgcolor
+      .import vdp_set_reg
+      .import vdp_text_init_bytes
       .import vdp_memcpy
       .import vdp_fills
       .import vdp_chrout
@@ -81,15 +83,20 @@ vdp_init:
 .endif
 			sta max_cols
 
+         lda #BIOS_COLOR
 .ifdef CHAR6x8
 			jsr vdp_text_on
-			lda #BIOS_COLOR
-			jmp vdp_bgcolor
 .else
-			lda #BIOS_COLOR
-			jmp vdp_gfx1_on
+			jsr vdp_gfx1_on
 .endif
-
+.ifdef DISABLE_VDP_IRQ
+         lda vdp_text_init_bytes+1
+         and #<~(v_reg1_int)
+         ldy #v_reg1
+         jsr vdp_set_reg
+.endif
+         rts
+         
 .export vdp_detect
 vdp_detect:
 			lda #1          ; select sreg #1
