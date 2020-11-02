@@ -89,13 +89,10 @@ vdp_init:
 .else
 			jsr vdp_gfx1_on
 .endif
-.ifdef DISABLE_VDP_IRQ
          lda vdp_text_init_bytes+1
          and #<~(v_reg1_int)
          ldy #v_reg1
-         jsr vdp_set_reg
-.endif
-         rts
+         jmp vdp_set_reg
          
 .export vdp_detect
 vdp_detect:
