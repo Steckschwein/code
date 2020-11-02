@@ -143,22 +143,21 @@ do_irq:
 		save
 		cld	;clear decimal flag, maybe an app has modified it during execution
 
+		lda #0			; irr status
 		bit a_vreg					; VDP IRQ flag set?
 		bpl @is_irq_snd
-		lda #IRQ_VDP
-		bra @sta_irr
+		ora #IRQ_VDP
 @is_irq_snd:
 		bit opl_stat
 		bpl @is_irq_via
-		lda #IRQ_SND
-		bra @sta_irr
+		ora #IRQ_SND
 @is_irq_via:
 		bit via1ifr		; Interrupt from VIA?
-		bpl @user_isr
-		lda #IRQ_VIA
+		bpl @sta_irr
+		ora #IRQ_VIA
 @sta_irr:
 		sta SYS_IRR
-@user_isr:
+		
 		jsr call_user_isr			; user isr first, maybe there are timing critical things
 
 		bit SYS_IRR					; was vdp irq?
