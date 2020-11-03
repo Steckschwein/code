@@ -1,5 +1,6 @@
-ASM_INCLUDE=../../asminc
-LIBS=../../lib/steckschwein-kernel.lib
+LIBS=../../lib/steckschwein.a
+INCLUDES=-I ../../asminc -I ../../kernel
+LDFLAGS=-C ../../prg.ld65.cfg $(LIBS)
 
 all: nixie.prg
 
@@ -7,10 +8,10 @@ clean:
 	rm -f *.prg *.s *.o
 	
 %.o: %.asm
-	ca65 --cpu 65c02 --target none --include-dir $(ASM_INCLUDE) $(@:.o=.asm)
+	ca65 $(INCLUDES) $(@:.o=.asm)
 
 %.prg: %.o $(LIBS)
-	ld65 --config ../../steckos-c-app.cfg $< $(LIBS) -o $@
+	ld65 $< $(LDFLAGS) -o $@
 
 nixie: nixie.prg
 	../../../transfer.py nixie.prg -s 0x1000

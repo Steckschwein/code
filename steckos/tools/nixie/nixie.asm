@@ -1,8 +1,9 @@
-.include	"common.inc"
-.include	"vdp.inc"
-.include	"zeropage.inc"
-.include	"../../kernel/zeropage.inc"
-.include	"../../kernel/kernel_jumptable.inc"
+.setcpu "65c02"
+.include "common.inc"
+.include "vdp.inc"
+.include "zeropage.inc"
+.include "keyboard.inc"
+.include "kernel_jumptable.inc"
 
 .import		vdp_bgcolor
 .import		vdp_gfx2_on
@@ -14,6 +15,13 @@ appstart $1000
 
 CHAR_BLANK=$ff
 
+.zeropage
+	ptr1: 	.res 2
+	datetime_ix: .res 1
+	screen_x: .res 1
+	digit_pos: .res 1
+	display_datetime: .res 1
+	
 .code
 main:
 			sei
@@ -187,11 +195,6 @@ init_screen:
 			bne @0
 			rts
 			
-datetime_ix=tmp1
-screen_x=tmp2
-digit_pos=tmp3
-display_datetime=tmp4
-
 draw_digits:
 			stz datetime_ix
 			stz screen_x
