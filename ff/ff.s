@@ -31,7 +31,7 @@
 memctl = $0230
 charset = $e000
 display_seconds = 2
-;rbar_y = 32;93 ; with text
+;rbar_y = 93 ; with text
 rbar_y = 191
 
 .zeropage
@@ -59,20 +59,18 @@ appstart $1000
 	pla
 	sta memctl
 
-   ;ADDRESS_GFX1_SPRITE_PATTERN
-	vdp_vram_w $0000
+	vdp_vram_w ADDRESS_GFX1_PATTERN
 	lda #<chars
 	ldy #>chars
 	ldx #2*8
 	jsr vdp_memcpys
-   ;vdp_vram_w ADDRESS_GFX1_COLOR
-	vdp_vram_w $2000
+	
+	vdp_vram_w ADDRESS_GFX1_COLOR
 	lda	#Transparent<<4|Transparent		;setup screen color gfx1
 	ldx	#$20		; $20 possible colors
 	jsr	vdp_fills
 
-   ;vdp_fills ADDRESS_GFX1_SCREEN
-	vdp_vram_w $1800
+	vdp_vram_w ADDRESS_GFX1_SCREEN
 	lda	#' '		;fill screen
 	ldx	#$03		; $300 chars
 	jsr	vdp_fill
@@ -210,8 +208,8 @@ update_vram:
 	ldx #$20
 	jsr vdp_memcpys
 
-  ;skip first 8 chars
-	vdp_vram_w $2001
+  ;skip colors for first 8 chars, +1
+	vdp_vram_w (ADDRESS_GFX1_COLOR + 1)
 	ldx text_color_ix
 	lda intro_label_color,x
 	ldx #$1f
@@ -373,7 +371,7 @@ intro_label_color:
 	.byte	Medium_Red<<4|Transparent
 	.byte Dark_Red<<4|Transparent
 	.byte Magenta<<4|Transparent
-	.byte White
+	.byte White<<4|Transparent
 raster_bar_colors:
 	.byte Magenta
 	.byte Dark_Red

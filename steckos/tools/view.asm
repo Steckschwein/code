@@ -38,8 +38,8 @@ tmp3:	.res 1
 tmp4:	.res 1
 .code
 
-.import vdp_gfx2_on
-.import vdp_gfx2_blank
+.import vdp_mode2_on
+.import vdp_mode2_blank
 .import vdp_display_off
 .import vdp_memcpy
 .import vdp_mode_sprites_off
@@ -206,7 +206,7 @@ gfxui_on:
 	jsr vdp_mode_sprites_off	;sprites off
 
 	lda #Black<<4|Black
-	jsr vdp_gfx2_blank
+	jsr vdp_mode2_blank
 
 	vdp_sreg	<ADDRESS_GFX2_PATTERN, WRITE_ADDRESS + >ADDRESS_GFX2_PATTERN
 	ldx #$18	;6k bitmap - $1800
@@ -216,7 +216,7 @@ gfxui_on:
 
 	copypointer  $fffe, irqsafe
 	SetVector  blend_isr, $fffe
-	jsr vdp_gfx2_on			    ;enable gfx2 mode
+	jsr vdp_mode2_on			    ;enable gfx2 mode
 	cli
 	rts
 
