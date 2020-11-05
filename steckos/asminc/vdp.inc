@@ -34,7 +34,7 @@ s_reg0_C	   = 1<<5   ; sprite collision bit
 
 
 v_reg0_extV		= 1<<0
-v_reg0_DG		 = 1<<6  ; Digitize mode: sets the color bus to the input or output mode
+v_reg0_DG      = 1<<6  ; Digitize mode: sets the color bus to the input or output mode
 v_reg0_IE2		= 1<<5  ; light pen interrupt
 v_reg0_IE1		= 1<<4  ; h-blank interrupt
 v_reg0_m5		= 1<<3
@@ -44,16 +44,16 @@ v_reg0_m3		= 1<<1
 
 v_reg1_16k			= 1<<7
 v_reg1_display_on	= 1<<6
-v_reg1_int			  = 1<<5
+v_reg1_int        = 1<<5
 
 v_reg1_m1			= 1<<4
 v_reg1_m2			= 1<<3
-v_reg1_spr_size		= 1<<1
+v_reg1_spr_size   = 1<<1
 v_reg1_spr_mag		= 1<<0
 
-v_reg8_BW			  = 1<<0	; 0/1 grayscale off/on
-v_reg8_SPD			  = 1<<1	; 0/1 sprites enabled/disabled
-v_reg8_VR			  = 1<<3	; 0/1 16k/64k video ram
+v_reg8_BW			= 1<<0	; 0/1 grayscale off/on
+v_reg8_SPD		   = 1<<1	; 0/1 sprites enabled/disabled
+v_reg8_VR			= 1<<3	; 0/1 16k/64k video ram
 
 v_reg9_ln		 = 1<<7   ; lines - 0 - 192 lines, 1 - 212 lines
 v_reg9_il		 = 1<<3	  ; interlace
@@ -189,7 +189,7 @@ ADDRESS_TEXT_PATTERN          =$0000			; pattern table
 ADDRESS_TEXT_COLOR			   =$2000			; color table, v9938/58 "blink" color code vram
 
 ADDRESS_GFX1_SCREEN  			=$1800	 ; name table
-ADDRESS_GFX1_PATTERN	     =$0000
+ADDRESS_GFX1_PATTERN          =$0000
 ADDRESS_GFX1_COLOR			   =$2000
 ADDRESS_GFX1_SPRITE           =ADDRESS_GFX_SPRITE
 ADDRESS_GFX1_SPRITE_PATTERN   =$1800;
