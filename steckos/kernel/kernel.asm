@@ -37,7 +37,7 @@
 .import spi_r_byte, spi_rw_byte, spi_deselect, spi_select_rtc
 .import uart_init, uart_tx, uart_rx, uart_rx_nowait
 .import textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
-.import getkey
+.import getkey,fetchkey
 .import textui_enable, textui_disable, vdp_display_off,  textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
 
 .import sdcard_init
@@ -90,6 +90,11 @@ kern_init:
 
 		jsr uart_init
 
+@loop:
+        jsr fetchkey
+        cmp #0
+        bne @loop
+        stz key
 		cli
 
 .ifndef DISABLE_INTRO
@@ -143,43 +148,86 @@ do_irq:
 		save
 		cld	;clear decimal flag, maybe an app has modified it during execution
 
-		lda #0			; irr status
-		bit a_vreg					; VDP IRQ flag set?
-		bpl @is_irq_snd
-		ora #IRQ_VDP
-@is_irq_snd:
-		bit opl_stat
-		bpl @is_irq_via
-		ora #IRQ_SND
-@is_irq_via:
-		bit via1ifr		; Interrupt from VIA?
-		bpl @sta_irr
-		ora #IRQ_VIA
-@sta_irr:
-		sta SYS_IRR
-		
-		jsr call_user_isr			; user isr first, maybe there are timing critical things
+  		jsr call_user_isr			; user isr first, maybe there are timing critical things
 
-		bit SYS_IRR					; was vdp irq?
-		bpl @exit
-;		.import vdp_bgcolor
-;		lda #Cyan
-;		jsr vdp_bgcolor
+@check_vdp:
+        bit a_vreg ; vdp irq ?
+        bpl @check_via
+
+        ; vdp irq handling code
+
 		jsr textui_update_screen	 ; update text ui
 		dec frame
 		lda frame
 		and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution
 		bne @exit
-;		lda #White
-	;	jsr vdp_bgcolor
+
 		jsr __rtc_systime_update	 ; update system time, read date time store to rtc_systime_t (see rtc.inc)
 		jsr __automount
 
+@check_via:
+  		bit via1ifr		; Interrupt from VIA?
+        bpl @check_opl
+
+        ; via irq handling code
+
+@check_opl:
+        bit opl_stat
+        bpl @exit
+
+        ; opl irq handling code
 @exit:
-		stz SYS_IRR					  ; reset
+        ; irq not handled above - can only be keyboard at the moment
+        lda key
+        bne @out
+        jsr fetchkey
+        sta key
+
+@out:
 		restore
 		rti
 
+;  		lda #0			; irr status
+;  		bit a_vreg					; VDP IRQ flag set?
+;  		bpl @is_irq_snd
+;  		ora #IRQ_VDP
+;  @is_irq_snd:
+;  		bit opl_stat
+;  		bpl @is_irq_via
+;  		ora #IRQ_SND
+;  @is_irq_via:
+;  		bit via1ifr		; Interrupt from VIA?
+;  		bpl @sta_irr
+;  		ora #IRQ_VIA
+;  @sta_irr:
+;  		sta SYS_IRR
+;
+;          jsr fetchkey
+;
+;
+;
+;  		jsr call_user_isr			; user isr first, maybe there are timing critical things
+;
+;  		bit SYS_IRR					; was vdp irq?
+;  		bpl @exit
+;  ;		.import vdp_bgcolor
+;  ;		lda #Cyan
+;  ;		jsr vdp_bgcolor
+;  		jsr textui_update_screen	 ; update text ui
+;  		dec frame
+;  		lda frame
+;  		and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution
+;  		bne @exit
+;  ;		lda #White
+;  	;	jsr vdp_bgcolor
+;  		jsr __rtc_systime_update	 ; update system time, read date time store to rtc_systime_t (see rtc.inc)
+;  		jsr __automount
+;
+;  @exit:
+;  		stz SYS_IRR					  ; reset
+;  		restore
+;  		rti
+;
 call_user_isr:
 	jmp (user_isr)
 user_isr_default:

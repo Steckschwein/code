@@ -23,7 +23,7 @@
 .include "kernel.inc"
 .include "via.inc"
 .import spi_r_byte, spi_deselect, spi_select_device
-.export getkey
+.export getkey, fetchkey
 .code
 
 spi_device_keyboard=%00011010
@@ -32,7 +32,7 @@ spi_device_keyboard=%00011010
 ;	in:	-
 ;	out:
 ;		C=1 key was pressed and A= <key code>, C=0 otherwise
-getkey:
+fetchkey:
 		lda #spi_device_keyboard
 		jsr spi_select_device
 		bne @l1
@@ -45,10 +45,17 @@ getkey:
 
 		plx
 
-		cmp #$00
-		beq @l1
-		sec
-		rts
 @l1:
-		clc
 		rts
+
+getkey:
+        lda key
+        beq @l1
+        stz key
+        sec
+        rts
+@l1:
+        lda #0
+        clc
+        rts
+
