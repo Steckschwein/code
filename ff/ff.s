@@ -22,7 +22,6 @@
 
 .include "steckos.inc"
 .include "vdp.inc"
-.include "via.inc"
 
 .import vdp_init_reg, vdp_fill, vdp_fills, vdp_memcpy, vdp_memcpys
 .export char_out=krn_chrout
@@ -50,7 +49,7 @@ appstart $1000
 	pha
 	stz memctl
 
-	vdp_vram_w $0000
+	vdp_vram_w ADDRESS_GFX1_PATTERN
 	lda #<charset
 	ldy #>charset
 	ldx #$08
@@ -64,7 +63,7 @@ appstart $1000
 	ldy #>chars
 	ldx #2*8
 	jsr vdp_memcpys
-	
+
 	vdp_vram_w ADDRESS_GFX1_COLOR
 	lda	#Transparent<<4|Transparent		;setup screen color gfx1
 	ldx	#$20		; $20 possible colors
@@ -202,7 +201,7 @@ update_vram:
 	jsr vdp_memcpys
 ;
 	;update text
-	vdp_vram_w $1980
+	vdp_vram_w (ADDRESS_GFX1_SCREEN + (12*32))
 	lda #<text_scroll_buf
 	ldy #>text_scroll_buf
 	ldx #$20
