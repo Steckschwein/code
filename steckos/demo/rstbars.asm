@@ -24,7 +24,13 @@
 .include "vdp.inc"
 
       .import vdp_bgcolor
-      .importzp tmp1,tmp2
+
+      appstart $1000
+
+.zeropage
+   tmp1: .res 1
+   tmp2: .res 1
+   tmp3: .res 1
 
 .code
 
@@ -34,7 +40,7 @@ ypos=tmp3
 
 .proc	_main: near
         jsr	krn_textui_disable
-        
+
         sei
         set_irq isr, save_irq
         vdp_sreg v_reg0_IE1, v_reg0   ; enable hblank irq
@@ -42,13 +48,13 @@ ypos=tmp3
 @loop:
         keyin
         bcc @loop
-        
+
         sei
         vdp_sreg 0, v_reg15
         vdp_sreg 0, v_reg0
         restore_irq save_irq
         cli
-        
+
         jsr	krn_textui_init
         bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts
         jmp (retvec)

@@ -4,12 +4,14 @@ ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 
 .PHONY: all clean
 
-all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg
+all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
+		rstbars.prg \
+		stsdemo.prg
 
 clean:
 	rm -f *.prg *.s *.o *.map
 
-%.o: %.c
+ %.o: %.c
 	cc65 -t none -O $<
 	ca65 $(CA65FLAGS) $(@:.o=.s)
 
