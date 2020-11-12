@@ -1,3 +1,4 @@
+
 .setcpu "65c02"
 
 .include "common.inc"
@@ -206,8 +207,8 @@ loadfile:
 		rts
 
 player_isr:
-		bit SYS_IRR
-		bvc @vdp     ; bit 6 set? (snd)
+		bit opl_stat
+		bpl @vdp     ; bit 6 set? (snd)
 		; do write operations on ym3812 within a user isr directly after reading opl_stat here, "is too hard", we have to delay at least register wait ;)
 		;jsr opl2_delay_register
 		jsr restart_timer
@@ -217,7 +218,7 @@ player_isr:
 		bne @vdp
 		jsr jch_fm_play
 @vdp:
-		bit SYS_IRR
+		bit a_vreg
 		bpl @exit
 		lda #Medium_Green<<4|Dark_Yellow
 		jsr vdp_bgcolor
