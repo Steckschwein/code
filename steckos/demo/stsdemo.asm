@@ -131,7 +131,7 @@ pause_cnt: .res 1
 	bpl :-
 	and #$7f
 	sta script_state
-	jsr krn_getkey
+	jsr fetchkey
 	cmp #KEY_ESCAPE
 	bne :-
 

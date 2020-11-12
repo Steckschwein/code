@@ -20,10 +20,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "kernel.inc"
-.include "via.inc"
+.include "zeropage.inc"
 .import spi_r_byte, spi_deselect, spi_select_device
 .export getkey, fetchkey
+
 .code
 
 spi_device_keyboard=%00011010

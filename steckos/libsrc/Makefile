@@ -59,9 +59,10 @@ SRCDIRS +=  spi
 SRCDIRS +=  sdcard
 SRCDIRS +=  fat32
 SRCDIRS +=  via
-SRCDIRS +=  debug
 SRCDIRS +=  util
 SRCDIRS +=  util/crc7
+SRCDIRS +=  keyboard
+SRCDIRS +=  debug
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS)

@@ -142,93 +142,49 @@ do_irq:
 ; 	pla							;
 ; 	plx							;
 ; 	jmp	do_nmi
+
 ; system interrupt handler
 ; handle keyboard input and text screen refresh
 @irq:
-		save
-		cld	;clear decimal flag, maybe an app has modified it during execution
+	save
 
-  		jsr call_user_isr			; user isr first, maybe there are timing critical things
+	cld	;clear decimal flag, maybe an app has modified it during execution
+	jsr call_user_isr			; user isr first, maybe there are timing critical things
 
 @check_vdp:
-        bit a_vreg ; vdp irq ?
-        bpl @check_via
+	bit a_vreg ; vdp irq ?
+	bpl @check_via
 
-        ; vdp irq handling code
+	jsr textui_update_screen	 ; update text ui
+	dec frame
+	lda frame
+	and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution
+	bne @check_via
 
-		jsr textui_update_screen	 ; update text ui
-		dec frame
-		lda frame
-		and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution
-		bne @exit
-
-		jsr __rtc_systime_update	 ; update system time, read date time store to rtc_systime_t (see rtc.inc)
-		jsr __automount
+	jsr __rtc_systime_update	 ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
+	jsr __automount
 
 @check_via:
-  		bit via1ifr		; Interrupt from VIA?
-        bpl @check_opl
-
-        ; via irq handling code
+	bit via1ifr		; Interrupt from VIA?
+	bpl @check_opl
+  	; via irq handling code - can only be keyboard at the moment
 
 @check_opl:
-        bit opl_stat
-        bpl @exit
+	bit opl_stat
+	bpl @check_spi
+	; opl irq handling code
 
-        ; opl irq handling code
+@check_spi:
+	lda key
+	bne @exit
+	jsr fetchkey
+	bcc @exit
+	sta key
+
 @exit:
-        ; irq not handled above - can only be keyboard at the moment
-        lda key
-        bne @out
-        jsr fetchkey
-		  bcc @out
-        sta key
+	restore
+	rti
 
-@out:
-		restore
-		rti
-
-;  		lda #0			; irr status
-;  		bit a_vreg					; VDP IRQ flag set?
-;  		bpl @is_irq_snd
-;  		ora #IRQ_VDP
-;  @is_irq_snd:
-;  		bit opl_stat
-;  		bpl @is_irq_via
-;  		ora #IRQ_SND
-;  @is_irq_via:
-;  		bit via1ifr		; Interrupt from VIA?
-;  		bpl @sta_irr
-;  		ora #IRQ_VIA
-;  @sta_irr:
-;  		sta SYS_IRR
-;
-;          jsr fetchkey
-;
-;
-;
-;  		jsr call_user_isr			; user isr first, maybe there are timing critical things
-;
-;  		bit SYS_IRR					; was vdp irq?
-;  		bpl @exit
-;  ;		.import vdp_bgcolor
-;  ;		lda #Cyan
-;  ;		jsr vdp_bgcolor
-;  		jsr textui_update_screen	 ; update text ui
-;  		dec frame
-;  		lda frame
-;  		and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution
-;  		bne @exit
-;  ;		lda #White
-;  	;	jsr vdp_bgcolor
-;  		jsr __rtc_systime_update	 ; update system time, read date time store to rtc_systime_t (see rtc.inc)
-;  		jsr __automount
-;
-;  @exit:
-;  		stz SYS_IRR					  ; reset
-;  		restore
-;  		rti
-;
 call_user_isr:
 	jmp (user_isr)
 user_isr_default:
