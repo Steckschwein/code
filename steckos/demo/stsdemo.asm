@@ -445,12 +445,12 @@ script:
 	;.byte SCRIPT_TEXT_COLOR, Transparent<<4|Black, SCRIPT_SCROLL_SINE
 
 .ifndef DEBUG
-	.byte	SCRIPT_TEXT, " STECKSCHWEIN   ", SCRIPT_PAUSE, _3s
+	.byte	SCRIPT_TEXT, "  STECKSCHWEIN  ", SCRIPT_PAUSE, _3s
 	.byte SCRIPT_TEXT, "... OH, NICE    ", SCRIPT_PAUSE, _2s
 	.byte SCRIPT_TEXT, "A 2X2 CHAR FONT ", SCRIPT_PAUSE, _2s
 	.byte SCRIPT_TEXT, "BORING...       ", SCRIPT_PAUSE, _2s
 	.byte SCRIPT_TEXT, "LET'S SCROLL IT!", SCRIPT_PAUSE, _1s, SCRIPT_SCROLL, 1, " "
-	.byte "        NICE... BUT YOU MAY RECOGNIZE A LITTLE FLICKER ON THE LEFT BORDER. LOOKS A LITTLE ODD! "
+	.byte "        NICE... BUT YOU MAY RECOGNIZE A LITTLE FLICKER AT THE LEFT BORDER. LOOKS A LITTLE ODD! "
 	.byte "SORRY, BUT THIS IS THE DEFAULT SOFT SCROLL BEHAVIOR OF THE V9938 CHIP. "
 	.byte "BUT HEY, WE HAVE A V9958 HERE, SO LET'S SET THE MSK BIT IN THE VDP R#25"
 	.byte SCRIPT_R25, "        ...MUCH BETTER NOW!           "
@@ -493,6 +493,7 @@ vdp_init_bytes:	; vdp init table - MODE G3
 			.byte	>(ADDRESS_GFX3_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
 			.byte	>(ADDRESS_GFX3_SPRITE_PATTERN>>3)
 			.byte	Black
+			.byte v_reg8_VR | v_reg8_SPD	; VR - 64k VRAM TODO set per define
 vdp_init_bytes_end:
 
 raster_bar_colors_init:
