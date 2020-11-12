@@ -52,10 +52,11 @@
 .endmacro
 
 .macro inc16 _w
-	inc _w
-	bne :+
+   .local @exit
+   inc _w
+	bne @exit
 	inc _w+1
-	:
+@exit:
 .endmacro
 
 .macro _add_n _val1, _val2, _res, _bytes

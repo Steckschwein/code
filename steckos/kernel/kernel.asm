@@ -181,6 +181,7 @@ do_irq:
         lda key
         bne @out
         jsr fetchkey
+		  bcc @out
         sta key
 
 @out:

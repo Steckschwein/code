@@ -65,7 +65,6 @@ v_reg25_msk 		= 1<<1
 v_reg25_wait 		= 1<<2
 v_reg25_cmd 		= 1<<6
 
-
 v_reg45_mxc = 1<<6
 v_reg45_mxd = 1<<5
 v_reg45_mxs = 1<<4
@@ -98,9 +97,9 @@ v_reg19 = $80 + 19   ; h-blank irq scanline
 v_reg23	= $80 + 23	; screen ram vertical offset
 
 ; V9958 specific
-v_reg25 = $80 + 25
-v_reg26 = $80 + 26  ; horizonatl scroll register, bit 5-0, scroll 8 dot units (character)
-v_reg27 = $80 + 27  ; horizonatl scroll register bit 2-0, scroll dot units
+v_reg25 = $80 + 25  ; bit 0 - 0/1 - 1/2 page per screen, bit 1 - 8px border
+v_reg26 = $80 + 26  ; horizontal scroll register, bit 5-0, scroll 8 dot units (character)
+v_reg27 = $80 + 27  ; horizontal scroll register bit 2-0, scroll dot units
 
 v_reg34 = $80 + 34  ;
 v_reg35 = $80 + 35  ;

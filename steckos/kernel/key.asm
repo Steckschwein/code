@@ -28,34 +28,36 @@
 
 spi_device_keyboard=%00011010
 
-; Select Keyboard controller on SPI, get byte from buffer
+; Select Keyboard controller on SPI, read one byte
 ;	in:	-
 ;	out:
-;		C=1 key was pressed and A= <key code>, C=0 otherwise
+;		C=1 key was fetched and A= <key code>, C=0 otherwise
 fetchkey:
 		lda #spi_device_keyboard
 		jsr spi_select_device
-		bne @l1
+		bne none
 
 		phx
 
 		jsr spi_r_byte
-
 		jsr spi_deselect
 
 		plx
 
-@l1:
+		sec
 		rts
 
+; get byte from keyboard buffer
+;	in:	-
+;	out:
+;		C=1 key was pressed and A= <key code>, C=0 otherwise
 getkey:
         lda key
-        beq @l1
+        beq none
         stz key
         sec
         rts
-@l1:
+none:
         lda #0
         clc
         rts
-
