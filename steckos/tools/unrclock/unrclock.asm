@@ -7,9 +7,7 @@
 .include "vdp.inc"
 .include "appstart.inc"
 
-;.importzp ptr1,ptr2
-;.importzp tmp1,tmp2,tmp3,tmp4
-
+.import system_irr
 .import vdp_bgcolor
 .import vdp_mc_on
 .import vdp_mc_blank
@@ -49,6 +47,7 @@ tmp2:   .res 1
         jsr clock_position
         stz clock_update_trigger
         jsr	krn_getkey
+        stp
         bcc @main_loop
 exit:
         sei
@@ -387,7 +386,7 @@ clock_reset_row_lower:
         rts
 
 clock_isr:
-        lda SYS_IRR
+        jsr system_irr
         bpl @l_exit
 
         ;lda #Light_Red<<4 | Light_Red

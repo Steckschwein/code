@@ -27,6 +27,7 @@
 .include "kernel_jumptable.inc"
 .include "appstart.inc"
 
+.import system_irr
 .import vdp_mc_on
 .import vdp_mc_blank
 .import vdp_mc_set_pixel
@@ -56,7 +57,8 @@ main:
 
 		  jsr ResetGame
 
-		keyin
+		  stp
+		  keyin
 		  sei
 		  copypointer safe_isr, user_isr
 		  cli
@@ -210,7 +212,7 @@ ResetGame:
 game_isr:
 ;		  lda #Dark_Yellow
  ;		 jsr vdp_bgcolor
-		lda SYS_IRR
+		jsr system_irr
 		bpl l_exit
 
 		  inc frame_count

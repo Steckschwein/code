@@ -23,6 +23,13 @@
 .ifndef _SYSTEM_INC_
   _SYSTEM_INC_ = 1
 
+; @see system.s
+IRQ_VDP			= 1<<7		; irq from video chip
+IRQ_SND			= 1<<6		; irq from sound card (ym3812)
+IRQ_VIA			= 1<<5		; irq from VIA (6522)
+IRQ_IO0			= 1<<4		; i/o port 0
+;...
+
 clockspeed  = 8	; in Mhz
 
 ctrl_port	= $0230
