@@ -42,7 +42,6 @@ rline:			.res 1
 frame_cnt: 		.res 1
 script_state:	.res 1
 save_isr:		.res 2
-seed:				.res 1
 sin_tab_offs:		.res 1
 rbar_y: .res 1
 rbar_colors: .res 16
@@ -58,15 +57,30 @@ pause_cnt: .res 1
 	sei
 	jsr krn_textui_disable
 
-	lda	#33
-	sta	seed
-
-	stz frame_cnt
-	stz pause_cnt
-
 	copypointer $fffe, save_isr
 	SetVector isr, $fffe
 
+	jsr init
+
+	cli
+
+:	lda script_state
+	bpl :-
+	jsr krn_getkey
+	cmp #KEY_ESCAPE
+	bne :-
+
+	sei
+	copypointer save_isr, $fffe
+	cli
+
+	vdp_sreg v_reg25_wait, v_reg25
+	jsr krn_textui_init
+	jsr krn_textui_enable
+	jmp (retvec)
+
+
+init:
 	; write rline into the interrupt line register #19
 	; to generate an interrupt each time raster line is being scanned
 	lda #176
@@ -81,11 +95,6 @@ pause_cnt: .res 1
 	ldy #>font
 	jsr vdp_memcpy
 
-	vdp_vram_w ADDRESS_GFX3_COLOR
-	lda #Gray<<4|Transparent
-	ldx #$8		;$800 byte color map sufficient
-	jsr vdp_fill
-
 	vdp_vram_w ADDRESS_GFX3_SCREEN
 	lda #$20
 	ldx #4
@@ -97,11 +106,7 @@ pause_cnt: .res 1
 	jsr vdp_init_reg
 
 	vdp_sreg 0, v_reg23
-
-	bit a_vreg
-	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical, we avoid setup status register at isr entry set to S#1 per default
-	vdp_wait_s
-	bit a_vreg
+	vdp_sreg v_reg25_wait, v_reg25
 
 	lda #.sizeof(rbar_colors)>>1
 	sta blend_rbar_offset
@@ -124,38 +129,17 @@ pause_cnt: .res 1
 	stz char_ix
 	stz script_state
 	SetVector script, p_script
+	
+	bit a_vreg ; ack pending int if any
+	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical, we avoid setup status register at isr entry set to S#1 per default
+	vdp_wait_s
+	bit a_vreg
+	
+	stz frame_cnt
+	stz pause_cnt
 
-	cli
-
-:	lda script_state
-	bpl :-
-	and #$7f
-	sta script_state
-	jsr fetchkey
-	cmp #KEY_ESCAPE
-	bne :-
-
-	sei
-	copypointer save_isr, $fffe
-	cli
-
-	vdp_sreg v_reg25_wait, v_reg25
-	jsr krn_textui_init
-	jsr krn_textui_enable
-	jmp (retvec)
-
-_row:
-	ldx #16
-:	sta a_vram
-	pha
-	adc #$40
-	sta a_vram
-	pla
-	inc a
-	dex
-	bne :-
 	rts
-
+	
 isr:
 	save
 
@@ -249,6 +233,13 @@ script_step:
 	jsr blend_rbar
 	dec blend_rbar_offset
 	rts
+: 	cmp #SCRIPT_RBAR_OFF
+	bne :+
+	lda blend_rbar_offset
+	cmp #.sizeof(rbar_colors)>>1-1
+	beq @next
+	inc blend_rbar_offset
+	jmp blend_rbar_off
 : 	cmp #SCRIPT_RBAR_SINE
 	bne :+
 	jsr script_rbar_sine
@@ -262,11 +253,7 @@ script_step:
 	bra @next
 :	cmp #SCRIPT_RESET
 	bne :+
-	lda blend_rbar_offset
-	cmp #.sizeof(rbar_colors)>>1-1
-	beq @loop
-	inc blend_rbar_offset
-	jmp blend_rbar_off
+	jmp init
 :	cmp #SCRIPT_SCROLL_SINE
 	bne :+
 	lda script_state
@@ -410,14 +397,11 @@ blend_rbar:
 	rts
 
 .data
-font: ;.incbin "2x2_font.bin"
+font:
 	.include "2x2_font.inc"
 
 .repeat 32, n
 	.charmap $40+n, n
-.endrep
-.repeat 32, n
-;	.charmap $20+n, 32+n
 .endrep
 
 SCRIPT_RESET = $80
@@ -427,9 +411,10 @@ SCRIPT_SCROLL = $83
 SCRIPT_SCROLL_SINE = $84
 SCRIPT_R25 = $85
 SCRIPT_RBAR_ON = $86
-SCRIPT_RBAR_MOVE = $87
-SCRIPT_RBAR_SINE = $88
-SCRIPT_TEXT_COLOR = $89
+SCRIPT_RBAR_OFF = $87
+SCRIPT_RBAR_MOVE = $88
+SCRIPT_RBAR_SINE = $89
+SCRIPT_TEXT_COLOR = $8a
 
 TEXT_Y_OFFSET=87
 
@@ -441,9 +426,9 @@ _4s = 4*fps
 _5s = 5*fps
 
 script:
-	;.byte SCRIPT_TEXT_COLOR, Gray<<4|Transparent, SCRIPT_RBAR_ON, SCRIPT_RBAR_MOVE, SCRIPT_SCROLL, 4
+	.byte SCRIPT_TEXT_COLOR, Gray<<4|Transparent
+	;.byte SCRIPT_RBAR_ON, SCRIPT_RBAR_MOVE, SCRIPT_SCROLL, 4
 	;.byte SCRIPT_TEXT_COLOR, Transparent<<4|Black, SCRIPT_SCROLL_SINE
-
 .ifndef DEBUG
 	.byte	SCRIPT_TEXT, "  STECKSCHWEIN  ", SCRIPT_PAUSE, _3s
 	.byte SCRIPT_TEXT, "... OH, NICE    ", SCRIPT_PAUSE, _2s
@@ -463,7 +448,7 @@ script:
 	.byte "OHO... GOOD OLD RASTER BAR ;)  ", SCRIPT_PAUSE, _5s
 	.byte "WE USE THE VDP R#19 HLINE INTERRUPT REGISTER HERE...             "
 	.byte "I THINK WE SHOULD MOVE THEM A LITTLE HIGHER.           "
-	.byte "SAME HEIGHT AS THE TEXT WOULD BE NICE!                 ", SCRIPT_RBAR_MOVE, SCRIPT_TEXT_COLOR, Black<<4|Transparent
+	.byte "SAME HEIGHT AS THE TEXT ", SCRIPT_SCROLL, 2, WOULD BE NICE!                 ", SCRIPT_RBAR_MOVE, SCRIPT_TEXT_COLOR, Black<<4|Transparent, SCRIPT_SCROLL, 1
 	.byte "THX!       ", SCRIPT_PAUSE, _3s
 	.byte "WE JUST CHANGED THE VDP COLOR RAM TO BLACK FOR BETTER READABILITY.                "
 	.byte "HEY, LET'S TRY TO INVERT THE COLORS. WE CAN SET THE CHAR COLOR TO TRANSPARENT."
@@ -481,8 +466,8 @@ script:
 	.byte "SO FAR.                 ", SCRIPT_SCROLL_SINE, SCRIPT_SCROLL, 1, "+!+BYE+!+"
 	.byte SCRIPT_SCROLL, 2, "  ", SCRIPT_SCROLL, 4, "                ", SCRIPT_SCROLL, 1, "TO BE CONTINUED...                "
 	.byte $1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f
-	.byte SCRIPT_PAUSE, _3s
-	.byte SCRIPT_RESET, SCRIPT_SCROLL, 0
+	.byte SCRIPT_PAUSE, _3s, SCRIPT_RBAR_OFF
+	.byte SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_RESET
 
 vdp_init_bytes:	; vdp init table - MODE G3
 			.byte v_reg0_m4 | v_reg0_IE1

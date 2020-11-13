@@ -1,3 +1,9 @@
+;
+; Snalphabet 2x2 hires font - https://csdb.dk/release/?id=150062
+; Released by : Snabel 
+; Release Date : 22 August 2016 
+; Type : C64 Graphics 
+; Credits : Snabel of Hokuto Force
 .byte $0f, $3f, $3f, $78, $70, $71, $73, $73, $0f, $3f, $3f, $78, $70, $70, $7f, $7f
 .byte $7f, $7f, $7f, $70, $70, $70, $7f, $7f, $0f, $3f, $3f, $78, $70, $70, $70, $70
 .byte $7f, $7f, $7f, $70, $70, $70, $70, $70, $7f, $7f, $7f, $70, $70, $70, $7f, $7f
