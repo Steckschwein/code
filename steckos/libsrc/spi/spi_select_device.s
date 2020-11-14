@@ -70,7 +70,7 @@ spi_select_device:
 		pha
 
 		;check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
-		;	Z=1 not busy, Z=0 spi is busy
+		;	Z=1 not busy, Z=0 spi is busy and A=#EBUSY
 spi_isbusy:
 		lda via1portb
 		and #%00011110
@@ -79,6 +79,7 @@ spi_isbusy:
 
 		pla
 		sta via1portb
+
 		plp
 		lda #0			;exit ok
 		rts
