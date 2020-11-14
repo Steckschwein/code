@@ -41,17 +41,18 @@ int main (int argc, char** argv)
 			{
 				unsigned char r = 0;
 				cprintf("\nstatus:");
-				__asm__("sei");
+//				__asm__("sei");
 				spi_select(KEYBOARD);
 				while(1) //0xaa end of status bytes
 				{
 					r = spi_write(KBD_CMD_STATUS);
 					while(r == 0) r = spi_read();
-					cprintf(" %x", r);
+					cprintf(" 0x%02x", r);
 					if(r == 0xaa) break;
 				}
 				spi_deselect();
-				__asm__("cli");
+//				__asm__("cli");
+				cprintf("\n");
 			}
 			else if (!strcmp(argv[0], "-r"))
 			{
@@ -89,7 +90,7 @@ int main (int argc, char** argv)
 void usage()
 {
 	cprintf(
-		"Usage: keyboard [OPTIONS]...\n\n   -r rate\n   -d delay\n   -led leds\n"
+		"Usage: keyboard [OPTIONS]...\n\n   -s status (default)\n   -r rate\n   -d delay\n   -led leds\n"
 	);
 	exit(EXIT_FAILURE);
 }
