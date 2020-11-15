@@ -29,8 +29,6 @@
 .exportzp vdp_ptr   =$ec
 .exportzp vdp_tmp   =$ee
 
-.exportzp key       = $ef
-
 ; FAT32
 .exportzp filenameptr   = $f0	; 2 byte
 .exportzp dirptr        = $f2	; 2 byte

@@ -42,14 +42,14 @@
 .globalzp paramptr
 .globalzp retvec
 
-.globalzp key
-
 ; custom isr, aligned with v-blank, called by kernel on each frame
 user_isr	  = $028a
 
 ; TEXTUI
 crs_x	= $028c
 crs_y	= $028d
+
+key = $0287 ; 1 byte keyboard char
 
 lba_addr 			= $0280		; 4 bytes
 blocks				= $0284		; 3 bytes blocks to read, 3 bytes sufficient to address 4GB -> 4294967296 >> 9 = 8388608 ($800000) max blocks/file

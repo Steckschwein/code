@@ -47,6 +47,7 @@
 .import krn_textui_init
 .import krn_display_off
 .import krn_getkey
+.import fetchkey
 .import char_out
 
 .import ppmdata
@@ -216,16 +217,17 @@ rgb_bytes_to_grb:	; GRB 332 format
 		rts
 
 wait_key:
-		keyin
-        ; cmp #'q'
-        ; beq wait_key
-        ; beq :+
-        ; cmp #'s'
-        ; bne wait_key
-        ; lda scroll_on
-        ; eor #$ff
-        ; sta scroll_on
-		rts
+	jsr fetchkey
+	bcc wait_key
+	; cmp #'q'
+	; beq wait_key
+	; beq :+
+	; cmp #'s'
+	; bne wait_key
+	; lda scroll_on
+	; eor #$ff
+	; sta scroll_on
+	rts
 
 set_screen_addr:
 		php
@@ -339,60 +341,21 @@ parse_string:
 		rts
 
 blend_isr:
-        vdp_wait_s
-        bit a_vreg
-        bpl @0
-        save
+	save
 
-        lda #%01001010
-        jsr vdp_bgcolor
+	vdp_wait_s
+	bit a_vreg
+	bpl @0
 
-        bit scroll_on
-        bpl :+
-        ; jsr scroll
-:
-        lda #Black
-        jsr vdp_bgcolor
+	lda #%01001010
+	jsr vdp_bgcolor
 
-		restore
+	lda #Black
+	jsr vdp_bgcolor
+
 @0:
-		rti
-
-scroll:
-        lda scroll_x
-        and #7
-        ldy #v_reg27
-        vdp_sreg
-        lda scroll_x
-        bit #7
-        bne :+
-        sec
-        sbc #8
-        tay
-        sbc #8
-        sta scroll_x
-        dey
-        tya
-
-:       lsr
-        lsr
-        lsr
-
-        ldy #v_reg26
-        vdp_sreg
-
-        lda #JOY_PORT2
-        jsr read_joystick
-        bit #JOY_LEFT
-        bne :+
-        dec scroll_x
-        bra @l_exit
-:       bit #JOY_RIGHT
-        bne @l_exit
-        inc scroll_x
-
-@l_exit:
-        rts
+	restore
+	rti
 
 gfxui_on:
 		jsr krn_textui_disable			;disable textui
@@ -407,12 +370,6 @@ gfxui_on:
 		jsr vdp_gfx7_blank
 
 		;vdp_sreg v_reg25_wait | v_reg25_msk, v_reg25
-
-
-		lda #$ff
-		sta scroll_on
-		stz scroll_x
-		; jsr scroll
 
 		copypointer  $fffe, irqsafe
 		SetVector  blend_isr, $fffe
@@ -441,6 +398,4 @@ cols: .res 1
 rows: .res 1
 fd:   .res 1
 data_offset: .res 1
-scroll_on: .res 1
-scroll_x: .res 1
 irqsafe: .res 2

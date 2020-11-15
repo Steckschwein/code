@@ -41,7 +41,7 @@ int main (int argc, char** argv)
 			{
 				unsigned char r = 0;
 				cprintf("\nstatus:");
-//				__asm__("sei");
+				__asm__("sei");
 				spi_select(KEYBOARD);
 				while(1) //0xaa end of status bytes
 				{
@@ -51,7 +51,7 @@ int main (int argc, char** argv)
 					if(r == 0xaa) break;
 				}
 				spi_deselect();
-//				__asm__("cli");
+				__asm__("cli");
 				cprintf("\n");
 			}
 			else if (!strcmp(argv[0], "-r"))

@@ -58,7 +58,6 @@
 .import strout, primm
 ;.import ansi_chrout
 .importzp krn_ptr1
-.importzp key
 
 ; internal kernel api stuff
 .import __automount
@@ -90,12 +89,9 @@ kern_init:
 
 		jsr uart_init
 
-@loop:
-        jsr fetchkey
-        cmp #0
-        bne @loop
-        stz key
-		cli
+		stz key
+
+	cli
 
 .ifndef DISABLE_INTRO
 		jsr primm
