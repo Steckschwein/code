@@ -91,6 +91,7 @@ kern_init:
 		jsr uart_init
 
 		stz key
+		stz flags
 
 	cli
 
@@ -177,16 +178,14 @@ do_irq:
 	jsr fetchkey
 	bcc @exit       ; nothing after all? exit
 
+	sta key
+
     cmp #KEY_CTRL_C ; was it ctrl c?
-    bne @store      ; no, just store it in key
+    bne @exit      ; no
 
     lda flags       ; it is ctrl c. set bit 7 of flags
     ora #$80
     sta flags
-    bra @exit
-
-@store:
-	sta key
 
 @exit:
 	restore
