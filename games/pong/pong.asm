@@ -57,7 +57,6 @@ main:
 
 		  jsr ResetGame
 
-		  stp
 		  keyin
 		  sei
 		  copypointer safe_isr, user_isr
@@ -74,13 +73,13 @@ safe_isr:
 		  .word 0
 
 init_pong:
-		  jsr vdp_mc_blank
-		  jsr vdp_mc_on
-		  vdp_sreg v_reg1_16k|v_reg1_display_on|v_reg1_m2|v_reg1_spr_size|v_reg1_spr_mag|v_reg1_int, v_reg1 ; big sprites
-		  vdp_sreg v_reg8_VR, v_reg8; make sure sprites are enabled
-		  vdp_sreg $0, v_reg23
-		  vdp_sreg $0, v_reg18
-		  vdp_sreg v_reg25_wait|v_reg25_cmd, v_reg25
+	jsr vdp_mc_blank
+	jsr vdp_mc_on
+	vdp_sreg v_reg1_16k|v_reg1_display_on|v_reg1_m2|v_reg1_spr_size|v_reg1_spr_mag|v_reg1_int, v_reg1 ; big sprites
+	vdp_sreg v_reg8_VR, v_reg8; make sure sprites are enabled
+	vdp_sreg $0, v_reg23
+	vdp_sreg $0, v_reg18
+	vdp_sreg v_reg25_wait|v_reg25_cmd, v_reg25
 
 		ldx #63
 @l1:	ldy #0

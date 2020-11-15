@@ -29,13 +29,13 @@
 spi_device_keyboard=%00011010
 
 ; Select Keyboard controller on SPI, read one byte
-;	in:	-
+;	in: -
 ;	out:
-;		C=1 key was fetched and A= <key code>, C=0 otherwise
+;		C=1 key was fetched and A= <key code>, C=0 otherwise and A=<error / status code> e.g. #EBUSY
 fetchkey:
 		lda #spi_device_keyboard
 		jsr spi_select_device
-		bne none
+		bne exit
 
 		phx
 
@@ -43,21 +43,21 @@ fetchkey:
 		jsr spi_deselect
 
 		plx
-
-		sec
+		
+		cmp #0
+		beq exit
 		rts
 
 ; get byte from keyboard buffer
-;	in:	-
+;	in: -
 ;	out:
 ;		C=1 key was pressed and A= <key code>, C=0 otherwise
 getkey:
         lda key
-        beq none
+        beq exit
         stz key
         sec
         rts
-none:
-        lda #0
+exit:
         clc
         rts

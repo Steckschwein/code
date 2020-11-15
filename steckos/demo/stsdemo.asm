@@ -66,7 +66,9 @@ pause_cnt: .res 1
 
 :	lda script_state
 	bpl :-
-	jsr krn_getkey
+	and #$7f
+	sta script_state
+	jsr fetchkey
 	cmp #KEY_ESCAPE
 	bne :-
 
@@ -129,17 +131,17 @@ init:
 	stz char_ix
 	stz script_state
 	SetVector script, p_script
-	
+
 	bit a_vreg ; ack pending int if any
 	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical, we avoid setup status register at isr entry set to S#1 per default
 	vdp_wait_s
 	bit a_vreg
-	
+
 	stz frame_cnt
 	stz pause_cnt
 
 	rts
-	
+
 isr:
 	save
 
@@ -426,10 +428,11 @@ _4s = 4*fps
 _5s = 5*fps
 
 script:
-	.byte SCRIPT_TEXT_COLOR, Gray<<4|Transparent
 	;.byte SCRIPT_RBAR_ON, SCRIPT_RBAR_MOVE, SCRIPT_SCROLL, 4
 	;.byte SCRIPT_TEXT_COLOR, Transparent<<4|Black, SCRIPT_SCROLL_SINE
+
 .ifndef DEBUG
+	.byte SCRIPT_TEXT_COLOR, Gray<<4|Transparent
 	.byte	SCRIPT_TEXT, "  STECKSCHWEIN  ", SCRIPT_PAUSE, _3s
 	.byte SCRIPT_TEXT, "... OH, NICE    ", SCRIPT_PAUSE, _2s
 	.byte SCRIPT_TEXT, "A 2X2 CHAR FONT ", SCRIPT_PAUSE, _2s
@@ -448,9 +451,9 @@ script:
 	.byte "OHO... GOOD OLD RASTER BAR ;)  ", SCRIPT_PAUSE, _5s
 	.byte "WE USE THE VDP R#19 HLINE INTERRUPT REGISTER HERE...             "
 	.byte "I THINK WE SHOULD MOVE THEM A LITTLE HIGHER.           "
-	.byte "SAME HEIGHT AS THE TEXT ", SCRIPT_SCROLL, 2, "WOULD BE NICE!                 ", SCRIPT_RBAR_MOVE, SCRIPT_TEXT_COLOR, Black<<4|Transparent, SCRIPT_SCROLL, 1
-	.byte "THX!       ", SCRIPT_PAUSE, _3s
-	.byte "WE JUST CHANGED THE VDP COLOR RAM TO BLACK FOR BETTER READABILITY.                "
+	.byte "SAME HEIGHT AS THE TEXT ", SCRIPT_SCROLL, 2, "WOULD BE NICE!                 ", SCRIPT_RBAR_MOVE, SCRIPT_TEXT_COLOR, Black<<4|Transparent, SCRIPT_SCROLL, 4
+	.byte "THX!       ", SCRIPT_PAUSE, _3s, SCRIPT_SCROLL, 2
+	.byte "WE JUST CHANGED THE VDP COLOR RAM TO BLACK FOR BETTER READABILITY.                ", SCRIPT_SCROLL, 1
 	.byte "HEY, LET'S TRY TO INVERT THE COLORS. WE CAN SET THE CHAR COLOR TO TRANSPARENT."
 	.byte SCRIPT_TEXT_COLOR, Transparent<<4|Black, " "
 	.byte " NOW WE WILL SEE THE BACKGROUND COLORS SET BY THE RASTER BAR AS CHAR COLOR :)  ", SCRIPT_PAUSE, _3s

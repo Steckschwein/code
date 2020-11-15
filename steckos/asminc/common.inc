@@ -220,9 +220,10 @@
 .endmacro
 
 .macro keyin
-	.local @l
-@l:	  jsr krn_getkey
-		  bcc @l
+   .local @l
+@l:
+   jsr krn_getkey
+   bcc @l
 .endmacro
 
 ; swap nibbles of byte in A

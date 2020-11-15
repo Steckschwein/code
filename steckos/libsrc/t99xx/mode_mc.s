@@ -44,7 +44,7 @@ vdp_mc_on:
 			ldx #<(vdp_init_bytes_mc_end-vdp_init_bytes_mc)-1
 			jmp vdp_init_reg
 ;
-; init mc screen to provide
+; init mc screen
 ;
 vdp_mc_init_screen:
 			vdp_sreg <ADDRESS_GFX_MC_SCREEN, WRITE_ADDRESS+>ADDRESS_GFX_MC_SCREEN

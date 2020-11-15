@@ -1,3 +1,4 @@
+
 ;
 ; zeropage usage
 
@@ -28,9 +29,6 @@
 ; have to use fixed zp locations to avoid ehbasic clashes
 .exportzp vdp_ptr   =$ec
 .exportzp vdp_tmp   =$ee
-
-; keyboard "buffer" byte
-.exportzp key       = $ef
 
 ; FAT32
 .exportzp filenameptr   = $f0	; 2 byte
