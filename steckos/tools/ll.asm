@@ -95,8 +95,12 @@ l1:
     keyin
     cmp #13 ; enter pages line by line
     beq @lx
-    cmp #$03 ; CTRL-C
-    beq @exit
+   ; cmp #$03 ; CTRL-C
+   ; beq @exit
+
+    ; check for ctrl c
+    bit flags
+    bmi @exit
 
     lda entries_per_page
     sta pagecnt
@@ -105,9 +109,13 @@ l1:
     lda #1
     sta pagecnt
 @l:
-    jsr krn_getkey
-    cmp #$03 ; CTRL-C?
-    beq @exit
+    ;jsr krn_getkey
+    ;cmp #$03 ; CTRL-C?
+    ;beq @exit
+
+    ; check for ctrl c
+    bit flags
+    bmi @exit
     bra @l3
 
 @summary:
