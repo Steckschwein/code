@@ -41,6 +41,7 @@
 .globalzp cmdptr
 .globalzp paramptr
 .globalzp retvec
+.globalzp flags
 
 .globalzp flags
 
