@@ -31,8 +31,9 @@
 .import vdp_mc_on
 .import vdp_mc_blank
 .import vdp_mc_set_pixel
-.import	vdp_bgcolor
-.import	read_joystick
+.import vdp_bgcolor
+.import read_joystick
+
 .zeropage
 ptr1:	.res 2
 tmp1:	.res 1
@@ -69,8 +70,6 @@ main:
 
 		jmp (retvec)
 
-safe_isr:
-		  .word 0
 
 init_pong:
 	jsr vdp_mc_blank
@@ -79,7 +78,7 @@ init_pong:
 	vdp_sreg v_reg8_VR, v_reg8; make sure sprites are enabled
 	vdp_sreg $0, v_reg23
 	vdp_sreg $0, v_reg18
-	vdp_sreg v_reg25_wait|v_reg25_cmd, v_reg25
+	vdp_sreg v_reg25_wait, v_reg25
 
 		ldx #63
 @l1:	ldy #0
@@ -100,7 +99,7 @@ init_pong:
 		bpl @l2
 
 		  ; patterns
-		  vdp_sreg <ADDRESS_GFX_MC_SPRITE_PATTERN, WRITE_ADDRESS + >ADDRESS_GFX_MC_SPRITE_PATTERN
+		  vdp_vram_w ADDRESS_GFX_MC_SPRITE_PATTERN
 		  ldx #0
 :		 lda sprite_data, x
 		  inx
@@ -114,28 +113,6 @@ init_pong:
 
 		rts
 
-
-;; DECLARE SOME VARIABLES HERE
-;  .resset $0000  ;;start variables at ram location 0
-
-frame_count:	 .res 1,0
-gamestate:		.res 1  ; .res 1 means reserve one byte of space
-ballx:			 .res 1  ; ball horizontal position
-bally:			 .res 1  ; ball vertical position
-ballup:			.res 1  ; 1 = ball moving up
-balldown:		 .res 1  ; 1 = ball moving down
-ballleft:		 .res 1  ; 1 = ball moving left
-ballright:		.res 1  ; 1 = ball moving right
-ballspeedx:	  .res 1  ; ball horizontal speed per frame
-ballspeedy:	  .res 1  ; ball vertical speed per frame
-paddle1ytop:	 .res 1  ; player 1 paddle top vertical position
-paddle1_velo:	.res 1
-paddle2ytop:	 .res 1  ; player 2 paddle bottom vertical position
-paddle2_velo:	.res 1
-buttons1:		 .res 1  ; player 1 gamepad buttons, one bit per button
-buttons2:	.res 1  ; player 2 gamepad buttons, one bit per button
-score1:	  .res 1  ; player 1 score, 0-15
-score2:	  .res 1  ; player 2 score, 0-15
 
 ;; DECLARE SOME CONSTANTS HERE
 PADDLE_ACCEL	= $03
@@ -209,10 +186,11 @@ ResetGame:
   rts
 
 game_isr:
-;		  lda #Dark_Yellow
- ;		 jsr vdp_bgcolor
-		jsr system_irr
+		bit a_vreg
 		bpl l_exit
+
+;		lda #Dark_Yellow
+;  	 	jsr vdp_bgcolor
 
 		  inc frame_count
 
@@ -239,7 +217,7 @@ GameEngineDone:
 
 		  vdp_sreg <ADDRESS_GFX1_SPRITE, WRITE_ADDRESS + >ADDRESS_GFX1_SPRITE
 		  ldx #0
-:		 vdp_wait_l 10
+:	 	  vdp_wait_l 10
 		  lda sprites, x
 		  sta a_vram
 		  inx
@@ -251,7 +229,7 @@ GameEngineDone:
 		  lda #Medium_Green<<4|Black
 		  jsr vdp_bgcolor
 l_exit:
-		  rts
+ 			rts
 ;;;;;;;;
 
 EngineTitle:
@@ -263,7 +241,7 @@ EngineTitle:
   ;;  turn screen on
   JMP GameEngineDone
 
-;;;;;;;;;
+;;;;;;;;
 
 EngineGameOver:
   ;;if start button pressed
@@ -680,6 +658,30 @@ ReadController2:
 	 sta buttons2
 	 rts
 
+.bss
+;; DECLARE SOME VARIABLES HERE
+;  .reset $0000  ;;start variables at ram location 0
+frame_count:	 .res 1
+gamestate:		.res 1  ; .res 1 means reserve one byte of space
+ballx:			 .res 1  ; ball horizontal position
+bally:			 .res 1  ; ball vertical position
+ballup:			.res 1  ; 1 = ball moving up
+balldown:		 .res 1  ; 1 = ball moving down
+ballleft:		 .res 1  ; 1 = ball moving left
+ballright:		.res 1  ; 1 = ball moving right
+ballspeedx:	  .res 1  ; ball horizontal speed per frame
+ballspeedy:	  .res 1  ; ball vertical speed per frame
+paddle1ytop:	 .res 1  ; player 1 paddle top vertical position
+paddle1_velo:	.res 1
+paddle2ytop:	 .res 1  ; player 2 paddle bottom vertical position
+paddle2_velo:	.res 1
+buttons1:		 .res 1  ; player 1 gamepad buttons, one bit per button
+buttons2:	.res 1  ; player 2 gamepad buttons, one bit per button
+score1:	  .res 1  ; player 1 score, 0-15
+score2:	  .res 1  ; player 2 score, 0-15
+safe_isr: .word 0
+
+.data
 ;;;;;;;;;;;;;;
 sprites:
 	  ;vert horiz tile attr
@@ -728,7 +730,6 @@ bitmask:
 	 .endrepeat
 .endmacro
 
-.data
 digits:
 ;pixel8 "####...."
 ;.byte $f8, $88, $88, $88, $88, $88, $88, $f8;
@@ -836,5 +837,3 @@ digits:
 .byte 0,0,0,0,0,0,0,0
 .byte 0,0,0,0,0,0,0,0
 .byte 0,0,0,0,0,0,0,0
-
-.segment "STARTUP"
