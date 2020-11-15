@@ -5,6 +5,8 @@ KEY_CR				= $0d
 KEY_RETURN			= $0d
 KEY_BACKSPACE		= $08
 
+KEY_CTRL_C          = $03
+
 KEY_CRSR_UP			= $1E	;1 11 10
 KEY_CRSR_DOWN		= $1F	;1 11 11
 KEY_CRSR_RIGHT		= $10	;1 00 00

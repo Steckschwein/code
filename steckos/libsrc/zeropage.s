@@ -29,6 +29,7 @@
 .exportzp vdp_ptr   =$ec
 .exportzp vdp_tmp   =$ee
 
+; keyboard "buffer" byte
 .exportzp key       = $ef
 
 ; FAT32
@@ -44,6 +45,9 @@
 .exportzp spi_sr        = $f9
 .exportzp __volatile_ptr = $fa
 .exportzp __volatile_tmp = $fc
+
+; flags/signals (like ctrl-c, etc)
+.exportzp flags         = $fd
 
 
 ;.exportzp ansi_state			 = $f9

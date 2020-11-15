@@ -28,6 +28,7 @@
 .include "vdp.inc"
 .include "via.inc"
 .include "ym3812.inc"
+.include "keyboard.inc"
 
 .code
 
@@ -176,9 +177,19 @@ do_irq:
 
 @check_spi:
 	lda key
-	bne @exit
+	bne @exit       ; key is not $00? no fetch, exit
 	jsr fetchkey
-	bcc @exit
+	bcc @exit       ; nothing after all? exit
+
+    cmp #KEY_CTRL_C ; was it ctrl c?
+    bne @store      ; no, just store it in key
+
+    lda flags       ; it is ctrl c. set bit 7 of flags
+    ora #$80
+    sta flags
+    bra @exit
+
+@store:
 	sta key
 
 @exit:
