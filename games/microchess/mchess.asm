@@ -49,7 +49,7 @@
 
 appstart
 
-key = $09
+;key = $09
 
 ;
 ; page zero variables
