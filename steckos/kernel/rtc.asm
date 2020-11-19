@@ -40,7 +40,7 @@ init_rtc:
 	; Select SPI SS for RTC
 	lda #spi_device_rtc
 	sta via1portb
-	lda #$(rtc_write | rtc_ctrlreg)
+	lda #rtc_write | rtc_ctrlreg
 	jsr spi_rw_byte
 	lda #$00 ; disable INT0, INT1, WP (Write Protect)
 	jsr spi_rw_byte
