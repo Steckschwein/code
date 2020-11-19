@@ -8,6 +8,7 @@
 .include "appstart.inc"
 
 .import system_irr
+.import rtc_systime_update
 .import vdp_bgcolor
 .import vdp_mc_on
 .import vdp_mc_blank
@@ -46,8 +47,7 @@ tmp2:   .res 1
         jsr clock_update
         jsr clock_position
         stz clock_update_trigger
-        jsr	krn_getkey
-        stp
+        jsr krn_getkey
         bcc @main_loop
 exit:
         sei
@@ -387,11 +387,13 @@ clock_reset_row_lower:
 
 clock_isr:
         jsr system_irr
-        bpl @l_exit
+        and #IRQ_VDP
+        beq @l_exit
 
-        ;lda #Light_Red<<4 | Light_Red
+;        lda #Light_Red<<4 | Light_Red
 ;        jsr vdp_bgcolor
 
+        jsr rtc_systime_update
         inc clock_update_trigger
 
         lda vaddr
@@ -418,8 +420,8 @@ clock_isr:
         ldx #<(32*8)
         jsr copy_vram
 @l_exit:
-        ;lda #Dark_Green<<4| Transparent
-        ;jsr vdp_bgcolor
+;        lda #Dark_Green<<4| Transparent
+;        jsr vdp_bgcolor
         rts
 
 copy_vram:
@@ -445,15 +447,11 @@ noEor:
         sta seed
         rts
 
+        vaddr:       .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
+        vaddr_new:   .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
+
+.bss
 safe_isr: .res 2
-seed:     .res 1, 123
-
-clock_update_trigger:    .res 1
-color:                   .res 1
-clock_position_trigger:  .res 1
-
-vaddr:       .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
-vaddr_new:   .byte <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS + >(ADDRESS_GFX_MC_PATTERN)
 
 .data
 clock_data:
@@ -504,6 +502,11 @@ color_mask_r:
 color_mask_l:
         .byte %11111111, %1111<<4 | color_bg
 
+seed:     .res 1
+clock_update_trigger:    .res 1
+color:                   .res 1
+clock_position_trigger:  .res 1
+
 tab_lights:
 tab_sec:    .res 60
 tab_min_l:  .res 9
@@ -512,9 +515,7 @@ tab_hour_l: .res 9
 tab_hour_h: .res 3
 
 last_rtc:
-        .res 1 ; sec
-        .res 2 ; min
-        .res 2 ; hour
+       .res 1 ; sec
+       .res 2 ; min
+       .res 2 ; hour
 last_rtc_end:
-
-.segment "STARTUP"

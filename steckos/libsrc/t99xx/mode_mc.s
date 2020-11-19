@@ -47,7 +47,7 @@ vdp_mc_on:
 ; init mc screen
 ;
 vdp_mc_init_screen:
-			vdp_sreg <ADDRESS_GFX_MC_SCREEN, WRITE_ADDRESS+>ADDRESS_GFX_MC_SCREEN
+			vdp_vram_w ADDRESS_GFX_MC_SCREEN
 			stz vdp_tmp
 			lda #32
 			sta vdp_tmp+1

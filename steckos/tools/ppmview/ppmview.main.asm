@@ -364,12 +364,10 @@ gfxui_on:
 		jsr vdp_display_off			;display off
 		jsr vdp_gfx7_on			   ;enable gfx7 mode
 
-		vdp_sreg v_reg9_ln | v_reg9  ; 212px
+;		vdp_sreg v_reg9_ln | v_reg9  ; 212px
 
 		lda #%00000000
 		jsr vdp_gfx7_blank
-
-		;vdp_sreg v_reg25_wait | v_reg25_msk, v_reg25
 
 		copypointer  $fffe, irqsafe
 		SetVector  blend_isr, $fffe

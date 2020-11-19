@@ -9,7 +9,7 @@
 ; mock defines
 .export read_block=mock_read_block
 .export write_block=mock_write_block
-.export __rtc_systime_update=mock_rtc
+.export rtc_systime_update=mock_rtc
 .export cluster_nr_matcher=mock_not_implemented1
 .export fat_name_string=mock_not_implemented2
 .export path_inverse=mock_not_implemented3
@@ -82,7 +82,7 @@
 		; size to 4 blocks + 1 block, new cluster must be reserved, assert cl chain build
 		set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 4 * 512 + 3
 
-;		TODO 
+;		TODO
 ;		jsr fat_write
 ;		assertA EOK
 ;		assertX FD_Entry_Size*2	; assert FD
@@ -121,7 +121,7 @@ mock_read_block:
 
 :		load_block FS_INFO_LBA, block_fsinfo
 
-:		assert32 $ffffffff, lba_addr
+		assert32 $ffffffff, lba_addr
 		fail "mock read_block"
 
 mock_write_block:

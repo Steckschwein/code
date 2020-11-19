@@ -57,13 +57,13 @@
 
 .import execv
 .import strout, primm
+.import rtc_systime_update
 ;.import ansi_chrout
 .importzp krn_ptr1
 
 ; internal kernel api stuff
 .import __automount
 .import __automount_init
-.import __rtc_systime_update
 
 nvram = $1000
 
@@ -146,7 +146,7 @@ do_irq:
 @irq:
 	save
 
-	cld	;clear decimal flag, maybe an app has modified it during execution
+	cld ;clear decimal flag, maybe an app has modified it during execution
 	jsr call_user_isr			; user isr first, maybe there are timing critical things
 
 @check_vdp:
@@ -159,7 +159,7 @@ do_irq:
 	and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution
 	bne @check_via
 
-	jsr __rtc_systime_update	 ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
+	jsr rtc_systime_update	 ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
 	jsr __automount
 
 @check_via:

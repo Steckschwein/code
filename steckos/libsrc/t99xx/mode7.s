@@ -68,9 +68,11 @@ vdp_init_bytes_gfx7_end:
 ;
 vdp_gfx7_blank:
 	phx
+	php
+	sei
 	sta colour
-  vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
-;	vdp_sreg <.LOWORD(ADDRESS_GFX7_SCREEN), (WRITE_ADDRESS + >.LOWORD(ADDRESS_GFX7_SCREEN))
+	vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
+	;vdp_sreg <.LOWORD(ADDRESS_GFX7_SCREEN), (WRITE_ADDRESS + >.LOWORD(ADDRESS_GFX7_SCREEN))
 	vdp_sreg 36, v_reg17 ; set reg index to #36
 	ldx #0
 @loop:
@@ -80,16 +82,16 @@ vdp_gfx7_blank:
 	inx
 	cpx #12
 	bne @loop
-
 	jsr vdp_wait_cmd
 
+	plp
 	plx
 	rts
 
 data:
 	.word 0 ;x
-	.word (ADDRESS_GFX7_SCREEN / $0100) ;y - from page offset
-	.word 256 ; len x
+	.word (ADDRESS_GFX7_SCREEN>>8) ;y - from page offset
+	.word 255 ; len x
 	.word 212 ; len y
 colour:
 	.byte %00011100 ; colour
@@ -155,8 +157,6 @@ vdp_gfx7_set_pixel_direct:
 		  rts
 
 vdp_wait_cmd:
-	 php
-	 sei
 	 vdp_sreg 2, v_reg15			; 2 - to select status register S#2
 @wait:
 	 vdp_wait_s 4
@@ -164,7 +164,6 @@ vdp_wait_cmd:
 	 ror
 	 bcs @wait
 	 vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
-	 plp								 ; restore, irq flag
 	 rts
 
 ;	set pixel to gfx7 using v9958 command engine

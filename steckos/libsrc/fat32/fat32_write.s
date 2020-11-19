@@ -41,6 +41,7 @@
 
 .import string_fat_name
 .import write_block
+.import rtc_systime_update
 
 .import __fat_read_cluster_block_and_select
 .import __fat_set_fd_attr_direntry
@@ -56,7 +57,6 @@
 .import __calc_lba_addr
 .import __calc_blocks
 .import __inc_lba_address
-.import __rtc_systime_update
 
 .import fat_open
 
@@ -175,7 +175,8 @@ __fat_set_lba_from_fd_dirlba:
 		;	dirptr
 __fat_set_direntry_timedate:
 		phx
-		jsr __rtc_systime_update									; update systime struct
+		jsr rtc_systime_update									; update systime struct
+		;TODO FIXME carry check, may be #EBUSY
 		jsr __fat_rtc_time
 
 		ldy #F32DirEntry::WrtTime
