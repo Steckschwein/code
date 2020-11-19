@@ -40,7 +40,9 @@ rtc_systime_t = $0300
 
 ; read rtc
 rtc_read = 0
+rtc_write = $80
 
+rtc_ctrlreg = $0f
 
 .if .VERSION = (2*$100+17*$10+0)
 .global				 _clock_gettime

@@ -44,4 +44,21 @@ BANK3 = BANK_SEL1 | BANK_SEL0
 
 CODE_LF  = $0a ; line feed
 
+.macro sys_delay_us micros
+		phx 
+		phy
+		ldx #>( ((micros * clockspeed) - (3+3+3+3)) / 256) 
+		ldy #<( ((micros * clockspeed) - (3+3+3+3)) / 5) ; inner loop
+:		dey
+		bne :-
+		dex
+		bne :-
+		ply
+		plx	
+.endmacro
+
+.macro sys_delay_ms millis
+	sys_delay_us millis * 1000
+.endmacro
+
 .endif

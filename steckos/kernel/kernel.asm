@@ -82,7 +82,6 @@ kern_init:
 		jsr textui_init0
 
 		jsr init_via1
-;		jsr init_rtc					 ;init, rtc is loaded initial
 
 		lda #<nvram
 		ldy #>nvram

@@ -4,6 +4,7 @@
 		.include "fcntl.inc"
 		.include "nvram.inc"
 		.include "spi.inc"
+		.include "system.inc"
 
 		.import uart_init, upload
 		.import init_via1
@@ -57,6 +58,9 @@ _set_ctrlport:
 init_keyboard:
 	jsr primm
 	.byte "Keyboard init ", 0
+	
+	sys_delay_ms 500 ; wait at least 500ms until keyboard reset sequence has finished
+	
 	lda #spi_device_keyboard
 	jsr spi_select_device
 	bne _fail
