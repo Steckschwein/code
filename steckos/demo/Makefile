@@ -6,7 +6,8 @@ ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 
 all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		rstbars.prg \
-		stsdemo.prg
+		stsdemo.prg \
+		gradient.prg
 
 clean:
 	rm -f *.prg *.s *.o *.map
