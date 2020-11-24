@@ -45,20 +45,30 @@ BANK3 = BANK_SEL1 | BANK_SEL0
 CODE_LF  = $0a ; line feed
 
 .macro sys_delay_us micros
+      .local @0,@1,@2
+      cnt=((micros * clockspeed) - (3+3+3+3+2)) / 6
+      .assert cnt >= 0, error, "micros to small!"
+      .assert (>.HIWORD(cnt)) = 0, error, "micros to large!"
+      pha
 		phx
 		phy
-		ldx #1+<( ((micros * clockspeed) - (3+3+3+3+2)) / (256*5+5))
-		ldy #1+<( ((micros * clockspeed) - (3+3+3+3+2)) / 5) ; 5cl inner loop
-:		dey
-		bne :-
+      lda #1+<.HIWORD(cnt)
+@0:	ldx #1+>(cnt)
+@1:   ldy #1+<(cnt) ; ~6cl inner loop
+@2:	dey
+      nop
+		bne @2
 		dex
-		bne :-
+		bne @1
+      dec a
+      bne @0
 		ply
 		plx
+      pla
 .endmacro
 
 .macro sys_delay_ms millis
-	sys_delay_us millis * 1000
+	sys_delay_us (millis * 1000)
 .endmacro
 
 .endif

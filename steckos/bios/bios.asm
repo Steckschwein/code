@@ -59,7 +59,7 @@ init_keyboard:
 	jsr primm
 	.byte "Keyboard init ", 0
 
-	sys_delay_ms 500 ; wait at least 500ms until keyboard reset sequence has finished
+	sys_delay_ms 750 ; wait at least 500ms until keyboard reset sequence has finished
 
 	lda #spi_device_keyboard
 	jsr spi_select_device
