@@ -27,6 +27,9 @@
 .import vdp_nopslide_8m
 .import vdp_fill
 
+.export vdp_mode7_on
+.export vdp_mode7_blank
+.export vdp_mode7_set_pixel
 .export vdp_gfx7_on
 .export vdp_gfx7_blank
 .export vdp_gfx7_set_pixel
@@ -39,6 +42,7 @@
 ;
 ;	gfx 7 - each pixel can be addressed - e.g. for image
 ;
+vdp_mode7_on:
 vdp_gfx7_on:
 			vdp_sreg 0, v_reg23	; reset vertical scroll
 			lda #<vdp_init_bytes_gfx7
@@ -66,6 +70,7 @@ vdp_init_bytes_gfx7_end:
 ; blank gfx mode 7 with
 ; 	A - color to fill in GRB (3+3+2)
 ;
+vdp_mode7_blank:
 vdp_gfx7_blank:
 	phx
 	php
@@ -102,6 +107,7 @@ colour:
 ;	.Y - y coordinate [0..bf]
 ;	.A - color [0..ff] as GRB 332 (green bit 7-5, red bit 4-2, blue bit 1-0)
 ; 	VRAM ADDRESS = .X + 256*.Y
+vdp_mode7_set_pixel:
 vdp_gfx7_set_pixel:
 		  php
 		  sei
