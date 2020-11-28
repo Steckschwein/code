@@ -1,4 +1,6 @@
 .setcpu "65c02"
+.include "vdp.inc"
+.include "common.inc"
 .include "appstart.inc"
 .include "kernel_jumptable.inc"
 
@@ -23,7 +25,7 @@ color0 = 0              ;color of mandelbrot points and side empty areas
 bmpscreen = 8192	;bmpscreen start
 
 dummy	= $0
-
+      vdp_rgb $40,$20,$40
       sei
       jsr krn_textui_disable
 
@@ -47,9 +49,8 @@ dummy	= $0
 ;		sty	$d018		;bitmap base 8192
 
 
+      jsr     clear_screen
 
-      jsr vdp_gfx7_blank
-      ;jsr     clear_screen
 ;		ldx	#$00
 ;		lda	#(16*color1+color2)       ;sets multicolor 01 and 10
 ;loopcol:
@@ -333,7 +334,7 @@ no_mandelbrot_set:
 
                 clc
                 lda xp+1
-                adc #34         ;must be even
+;                adc #34         ;must be even
                 sta xp+1
                 bcc skip_inc_hi_xp
                                 ;instead of "adc #$00"
@@ -360,32 +361,33 @@ skip_inc_hi_xp:
 
 no_adjust:      ldx k
                 lda color_table1,x
-                beq skip_plot1
+;                beq skip_plot1
 
                 jsr plot        ;no mandelbrot set = plot first bit of multicolor point
 
                 lda yp_mirrored ;mirroring of first plot
                 sta yp
 
+                ldx k
+                lda color_table1,x
                 jsr plot        ;plots mirrored point
                 lda yp_copy
                 sta yp          ;restores old value of y
 
+;skip_plot1:     ldx k
 
-skip_plot1:     ldx k
+;                lda color_table2,x
+;                beq skip_plot2
 
-                lda color_table2,x
-                beq skip_plot2
-
-                inc xp+1        ;only low byte is enough, since steps are 0 > 1... 254> 255
+;                inc xp+1        ;only low byte is enough, since steps are 0 > 1... 254> 255
                                 ;255 + 1 does not take place
 
-                jsr plot        ;no mandelbrot set = plot second bit of multicolor point
+;                jsr plot        ;no mandelbrot set = plot second bit of multicolor point
 
-                lda yp_mirrored ;mirroring of second point (same mirroring as the first one)
-                sta yp
+;                lda yp_mirrored ;mirroring of second point (same mirroring as the first one)
+;                sta yp
 
-                jsr plot        ;plots mirrored point
+;                jsr plot        ;plots mirrored point
 
                 ;no need to restore old value of yp here, as yp value is determined before each plot
 skip_plot2:
@@ -497,9 +499,7 @@ skip_slow_multiply:
                 adc r0
                 sta real                ; R = R + r0 = R2-I2 +r0
 
-
                 inc k
-
 
                 lda k
                 cmp #21               ; number of iterations
@@ -534,6 +534,7 @@ continue:       lda x_real
 
 ;end:            jmp end
 
+               keyin
                jsr krn_textui_init
                cli
                jmp (retvec)
@@ -773,7 +774,6 @@ plot:
                 ;bmpscreen = start of bitmap screen
                 ;byteaddr = address of the byte where the point to plot lies
 
-                lda k
                 ldx xp+1
                 ldy yp
                 jmp vdp_mode7_set_pixel
@@ -820,6 +820,10 @@ XTBmdf:
 ; clear bitmap screen
 
 clear_screen:
+      lda #%00011100
+      jsr vdp_gfx7_blank
+
+      rts
 
 		ldy	#32
 
@@ -926,8 +930,12 @@ yp_mirrored:     .byte    0
                 ; 11 = 7
 
 
-color_table1:    .byte 0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0  ;first value unused (k starts from 1)
-color_table2:    .byte 0,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1  ;first value unused (k starts from 1)
+color_table1:    .byte 0
+   .repeat 2,i
+      vdp_rgb 255-(i*5),255-(i*5),255-(i*5)
+   .endrep
+;color_table1:    .byte 0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0  ;first value unused (k starts from 1)
+;color_table2:    .byte 0,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1  ;first value unused (k starts from 1)
 
 
                 ; fractal input values tables should be 16 bit in two's complement form - they are 8 bit complement instead

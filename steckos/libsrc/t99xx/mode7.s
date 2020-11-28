@@ -76,8 +76,9 @@ vdp_gfx7_blank:
 	php
 	sei
 	sta colour
+;	vdp_vram_w ADDRESS_GFX7_SCREEN
 	vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
-	;vdp_sreg <.LOWORD(ADDRESS_GFX7_SCREEN), (WRITE_ADDRESS + >.LOWORD(ADDRESS_GFX7_SCREEN))
+;	vdp_sreg <.LOWORD(ADDRESS_GFX7_SCREEN), (WRITE_ADDRESS + >.LOWORD(ADDRESS_GFX7_SCREEN))
 	vdp_sreg 36, v_reg17 ; set reg index to #36
 	ldx #0
 @loop:

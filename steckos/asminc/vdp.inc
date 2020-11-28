@@ -312,6 +312,10 @@ vdp_nopslide_2m:
 	 vdp_sreg <.LOWORD(_24bit), (>.LOWORD(_24bit) & $3f)
 .endmacro
 
+.macro vdp_rgb _r, _g, _b
+   .byte _g & $e0 | (_r & $e0)>>3 | _b>>6
+.endmacro
+
 .macro vdp_pal _r, _g, _b
   .byte ((_r>>1) & $70) | _b>>5
   .byte _g>>5
