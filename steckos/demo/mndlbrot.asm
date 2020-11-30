@@ -26,7 +26,7 @@ MAX_ITER=60
       lda a_vreg
       jsr vdp_mode7_on
 
-      vdp_sreg v_reg9_nt | v_reg9_ln | v_reg9  ; 212px
+      vdp_sreg v_reg9_nt | v_reg9_ln, v_reg9  ; 212px
 
       lda a_vreg
 
