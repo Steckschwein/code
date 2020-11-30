@@ -76,8 +76,9 @@ vdp_gfx7_blank:
 	php
 	sei
 	sta colour
+	jsr vdp_wait_cmd
 ;	vdp_vram_w ADDRESS_GFX7_SCREEN
-	vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
+;	vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
 ;	vdp_sreg <.LOWORD(ADDRESS_GFX7_SCREEN), (WRITE_ADDRESS + >.LOWORD(ADDRESS_GFX7_SCREEN))
 	vdp_sreg 36, v_reg17 ; set reg index to #36
 	ldx #0
@@ -98,7 +99,7 @@ data:
 	.word 0 ;x
 	.word (ADDRESS_GFX7_SCREEN>>8) ;y - from page offset
 	.word 255 ; len x
-	.word 212 ; len y
+	.word 192 ; len y
 colour:
 	.byte %00011100 ; colour
 	.byte $00 ; destination memory, x direction, y direction, yada yada

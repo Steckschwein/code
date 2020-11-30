@@ -15,64 +15,22 @@ appstart $1000
 
 ; Program: Fast Approximate Mandelbrot Set with Integer Math - Marcello of Retro64 Blog 2018
 
-; time: 1 min 36 sec - with mirroring
+SCREEN_X=256
+SCREEN_Y=200
+MAX_ITER=60
 
-color3 = 7
-color1 = 8
-color2 = 9              ;colors of non-mandelbrot set points
-color0 = 0              ;color of mandelbrot points and side empty areas
-
-bmpscreen = 8192	;bmpscreen start
-
-dummy	= $0
       vdp_rgb $40,$20,$40
       sei
       jsr krn_textui_disable
 
-		lda	#>bmpscreen	;initialize self-mod code
-		sta	mod3+2
-		lda	#<bmpscreen
-		sta	mod3+1
-
-;		lda	#0
-;		sta	$d020
-;      lda     #color0         ;sets background color
-;		sta	$d021
-
+      lda a_vreg
       jsr vdp_mode7_on
-;		ldy	#187-16
-;		sty	$d011		;bitmap mode - blanks screen
 
-;       ldy     #24
-;       sty     $d016           ;enables multicolor mode
-;		ldy	#28
-;		sty	$d018		;bitmap base 8192
+      vdp_sreg v_reg9_nt | v_reg9_ln | v_reg9  ; 212px
 
+      lda a_vreg
 
       jsr     clear_screen
-
-;		ldx	#$00
-;		lda	#(16*color1+color2)       ;sets multicolor 01 and 10
-;loopcol:
-;		sta	$400, x
-;		sta	$500, x
-;		sta	$600, x
-;		sta	$700, x
-;		inx
-;		bne	loopcol
-
-;      ldx	#$00
-;		lda	#color3                 ;sets multicolor 11
-;loopcol2:
-;	   sta	55296, x
-;		sta	55296+$100, x
-;		sta	55296+$200, x
-;		sta	55296+$300, x
-;		inx
-;		bne	loopcol2
-
-;       ldy     #187            ;re-enables screen
-;       sty     $d011
 
                 lda #00
                 sta xp          ;initializes high ..byte of x coordinate (unused)
@@ -109,7 +67,6 @@ no_16bit_complement_i0:
 skip_no_16bit_complement_i0:
 
 x_loop:         lda #$01
-
                 sta k                   ;initializes counter for iterations
 
                 ldx x_real              ;loads real part of starting value
@@ -122,8 +79,6 @@ x_loop:         lda #$01
 
                 lda #$ff
                 sta r0
-
-
 
                 jmp skip_no16bit_complement_r0
 
@@ -149,7 +104,6 @@ iter_start:
 
                 ;jmp skip_fast_real_square
 
-
                 lda real
                 beq fast_real_square
                 lda real
@@ -172,7 +126,6 @@ take_complement_real_1:
 fast_real_square:
                 lda real+1
                 sta real_module_low
-
 
 skip_real_1_module:
 
@@ -326,27 +279,26 @@ skip_slow_square_im:
 no_mandelbrot_set:
 
                 lda x_real
-                asl
+                ;asl
                 sta xp+1
 
                 lda #$00
                 sta xp
 
                 clc
-                lda xp+1
+;                lda xp+1
 ;                adc #34         ;must be even
-                sta xp+1
-                bcc skip_inc_hi_xp
+;                sta xp+1
+;                bcc skip_inc_hi_xp
                                 ;instead of "adc #$00"
-                inc xp
+;                inc xp
 
 skip_inc_hi_xp:
                 lda y_im
                 sta yp
-                sta yp_copy
 
                 sec
-                lda #199
+                lda #(SCREEN_Y-1); 199
                 sbc yp
                 sta yp_mirrored ;computes mirrored y coordinate for plotting
 
@@ -362,19 +314,19 @@ skip_inc_hi_xp:
 no_adjust:      ldx k
                 lda color_table1,x
 ;                beq skip_plot1
+                pha
 
-                jsr plot        ;no mandelbrot set = plot first bit of multicolor point
+                ldx xp+1
+                ldy yp
+                jsr vdp_mode7_set_pixel        ;no mandelbrot set = plot first bit of multicolor point
 
-                lda yp_mirrored ;mirroring of first plot
-                sta yp
+                pla
+                ldx xp+1
+                ldy yp_mirrored
+                jsr vdp_mode7_set_pixel        ;plots mirrored point
 
-                ldx k
-                lda color_table1,x
-                jsr plot        ;plots mirrored point
-                lda yp_copy
-                sta yp          ;restores old value of y
-
-;skip_plot1:     ldx k
+skip_plot1:
+;                ldx k
 
 ;                lda color_table2,x
 ;                beq skip_plot2
@@ -382,6 +334,8 @@ no_adjust:      ldx k
 ;                inc xp+1        ;only low byte is enough, since steps are 0 > 1... 254> 255
                                 ;255 + 1 does not take place
 
+;                ldx k
+;                lda color_table2,x
 ;                jsr plot        ;no mandelbrot set = plot second bit of multicolor point
 
 ;                lda yp_mirrored ;mirroring of second point (same mirroring as the first one)
@@ -502,7 +456,7 @@ skip_slow_multiply:
                 inc k
 
                 lda k
-                cmp #21               ; number of iterations
+                cmp #MAX_ITER               ; number of iterations
                 bne jump_iter_start
 
 
@@ -520,7 +474,7 @@ next_loop:
                 inc x_real
 
 continue:       lda x_real
-                cmp #125
+                cmp #(SCREEN_X-1)
                 bne x_loop_jump              ;next x loop (x has been already incremented). replaced bne with bcc!
 
                 lda #$00
@@ -529,19 +483,19 @@ continue:       lda x_real
                 inc y_im
 
                 lda y_im
-                cmp #100                     ;y is halved for mirroring!
+                cmp #(SCREEN_Y>>1)                     ;y is halved for mirroring!
                 bne y_loop_jump              ;next y loop
 
-;end:            jmp end
+;end:           jmp end
 
                keyin
                jsr krn_textui_init
                cli
                jmp (retvec)
 
-x_loop_jump:     jmp x_loop
+x_loop_jump:   jmp x_loop
 
-y_loop_jump:    jmp y_loop
+y_loop_jump:   jmp y_loop
 
 
                 ; routine: signed 16 bit multiply - "16 bit" result (lower bytes of result discarded)
@@ -778,82 +732,12 @@ plot:
                 ldy yp
                 jmp vdp_mode7_set_pixel
 
-                ldy yp
-                ldx xp+1
-                lda #>xtablehigh
-                sta XTBmdf+2
-                lda xp
-                beq skipadj
-
-                lda #>(xtablehigh + $ff)		;added brackets, otherwise it won't work
-                sta XTBmdf+2
-skipadj:
-
-                lda ytablelow,y
-                clc
-                adc xtablelow,x
-                sta byteaddr
-
-                lda ytablehigh,y
-XTBmdf:
-                adc xtablehigh,x
-                sta byteaddr+1
-
-                lda byteaddr
-                clc
-                adc #<bmpscreen
-                sta byteaddr
-
-                lda byteaddr+1
-                adc #>bmpscreen
-                sta byteaddr+1
-
-                ldy #$00
-                lda (byteaddr),y
-                ora bitable,x
-                sta (byteaddr),y
-
-
-		rts
-
-
 ; clear bitmap screen
-
 clear_screen:
-      lda #%00011100
-      jsr vdp_gfx7_blank
+      lda #0
+      jsr vdp_mode7_blank
 
       rts
-
-		ldy	#32
-
-loopbmp: ldx	#$00
-		   lda	#$00
-
-mod3:	sta	bmpscreen,x
-		inx
-		cpx	#250
-		bne	mod3
-
-		clc
-		lda	mod3+1
-		adc	#250
-		sta	mod3+1
-		lda	mod3+2
-		adc	#00
-		sta	mod3+2
-
-		dey
-		bne	loopbmp
-
-                lda     #<bmpscreen
-                sta     mod3+1
-                lda     #>bmpscreen
-                sta     mod3+2
-
-
-		rts
-
 
                 ;storage locations for plot routine
 
@@ -871,8 +755,8 @@ mod3:	sta	bmpscreen,x
                 ;storage locations for 16 bit multiply
 
 multiplicand:	.byte	0,0
-multiplier:	.byte	0,0             ;high bytes of product ?
-sum:		.byte	0,0             ;low bytes of product (unused)?
+multiplier:	   .byte	0,0             ;high bytes of product ?
+sum:		      .byte	0,0             ;low bytes of product (unused)?
 multiplicand_sign:
                 .byte    0
 multiplier_sign: .byte    0
@@ -929,19 +813,20 @@ yp_mirrored:     .byte    0
                 ; 10 = 9
                 ; 11 = 7
 
+_r=2
+_g=4
+_b=3
 
-color_table1:    .byte 0
-   .repeat 2,i
-      vdp_rgb 255-(i*5),255-(i*5),255-(i*5)
+color_table1:
+    .byte 0
+   .repeat MAX_ITER,i
+      vdp_rgb (_r*2+(i*_r)),_g*2+(40+(i*_g)),_b*2+(40+(i*_b))
    .endrep
-;color_table1:    .byte 0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0  ;first value unused (k starts from 1)
-;color_table2:    .byte 0,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1  ;first value unused (k starts from 1)
-
 
                 ; fractal input values tables should be 16 bit in two's complement form - they are 8 bit complement instead
                 ; so, 8 bit 2's complement numbers are converted to 16 bit 2's complement on the code
 
-i0_tab:          .byte  185 , 186 , 187 , 187 , 188
+i0_tab:         .byte  185 , 186 , 187 , 187 , 188
                 .byte  189 , 189 , 190 , 191 , 191
                 .byte  192 , 193 , 194 , 194 , 195
                 .byte  196 , 196 , 197 , 198 , 198
@@ -967,7 +852,12 @@ i0_tab:          .byte  185 , 186 , 187 , 187 , 188
 
 
 r0_tab:
-
+               .repeat (SCREEN_X>>1)+60,i
+                  .byte (255-(SCREEN_X>>1+60))+i
+               .endrep
+               .repeat (SCREEN_X>>2),i
+                  .byte 0+i
+               .endrep
 
                 .byte  129 , 131 , 132 , 133 , 134
                 .byte  136 , 137 , 138 , 140 , 141
@@ -990,7 +880,6 @@ r0_tab:
                 .byte  243 , 245 , 246 , 247 , 248
                 .byte  250 , 251 , 252 , 253 , 255
                 ;***************************
-
                 .byte  0 , 1 , 2 , 4 , 5
                 .byte  6 , 7 , 9 , 10 , 11
                 .byte  13 , 14 , 15 , 16 , 18
@@ -998,205 +887,9 @@ r0_tab:
                 .byte  25 , 26 , 28 , 29 , 30
 
 
-
-
-
-
-
-;******************** PLOT TABLE *********************
-
-ytablelow:
-.byte 0,1,2,3,4,5,6,7
-.byte 64,65,66,67,68,69,70,71
-.byte 128,129,130,131,132,133,134,135
-.byte 192,193,194,195,196,197,198,199
-.byte 0,1,2,3,4,5,6,7
-.byte 64,65,66,67,68,69,70,71
-.byte 128,129,130,131,132,133,134,135
-.byte 192,193,194,195,196,197,198,199
-.byte 0,1,2,3,4,5,6,7
-.byte 64,65,66,67,68,69,70,71
-.byte 128,129,130,131,132,133,134,135
-.byte 192,193,194,195,196,197,198,199
-.byte 0,1,2,3,4,5,6,7
-.byte 64,65,66,67,68,69,70,71
-.byte 128,129,130,131,132,133,134,135
-.byte 192,193,194,195,196,197,198,199
-.byte 0,1,2,3,4,5,6,7
-.byte 64,65,66,67,68,69,70,71
-.byte 128,129,130,131,132,133,134,135
-.byte 192,193,194,195,196,197,198,199
-.byte 0,1,2,3,4,5,6,7
-.byte 64,65,66,67,68,69,70,71
-.byte 128,129,130,131,132,133,134,135
-;*********************
-.byte 192,193,194,195,196,197,198,199
-.byte 0,1,2,3,4,5,6,7
-
-ytablehigh:
-.byte 0,0,0,0,0,0,0,0
-.byte 1,1,1,1,1,1,1,1
-.byte 2,2,2,2,2,2,2,2
-.byte 3,3,3,3,3,3,3,3
-.byte 5,5,5,5,5,5,5,5
-.byte 6,6,6,6,6,6,6,6
-.byte 7,7,7,7,7,7,7,7
-.byte 8,8,8,8,8,8,8,8
-.byte 10,10,10,10,10,10,10,10
-.byte 11,11,11,11,11,11,11,11
-.byte 12,12,12,12,12,12,12,12
-.byte 13,13,13,13,13,13,13,13
-.byte 15,15,15,15,15,15,15,15
-.byte 16,16,16,16,16,16,16,16
-.byte 17,17,17,17,17,17,17,17
-.byte 18,18,18,18,18,18,18,18
-.byte 20,20,20,20,20,20,20,20
-.byte 21,21,21,21,21,21,21,21
-.byte 22,22,22,22,22,22,22,22
-;*********************
-.byte 23,23,23,23,23,23,23,23
-.byte 25,25,25,25,25,25,25,25
-.byte 26,26,26,26,26,26,26,26
-.byte 27,27,27,27,27,27,27,27
-.byte 28,28,28,28,28,28,28,28
-.byte 30,30,30,30,30,30,30,30
-
-xtablelow:
-.byte 0,0,0,0,0,0,0,0
-.byte 8,8,8,8,8,8,8,8
-.byte 16,16,16,16,16,16,16,16
-.byte 24,24,24,24,24,24,24,24
-.byte 32,32,32,32,32,32,32,32
-.byte 40,40,40,40,40,40,40,40
-.byte 48,48,48,48,48,48,48,48
-.byte 56,56,56,56,56,56,56,56
-.byte 64,64,64,64,64,64,64,64
-.byte 72,72,72,72,72,72,72,72
-.byte 80,80,80,80,80,80,80,80
-.byte 88,88,88,88,88,88,88,88
-.byte 96,96,96,96,96,96,96,96
-.byte 104,104,104,104,104,104,104,104
-.byte 112,112,112,112,112,112,112,112
-;*********************
-.byte 120,120,120,120,120,120,120,120
-.byte 128,128,128,128,128,128,128,128
-.byte 136,136,136,136,136,136,136,136
-.byte 144,144,144,144,144,144,144,144
-.byte 152,152,152,152,152,152,152,152
-.byte 160,160,160,160,160,160,160,160
-.byte 168,168,168,168,168,168,168,168
-.byte 176,176,176,176,176,176,176,176
-.byte 184,184,184,184,184,184,184,184
-.byte 192,192,192,192,192,192,192,192
-.byte 200,200,200,200,200,200,200,200
-.byte 208,208,208,208,208,208,208,208
-.byte 216,216,216,216,216,216,216,216
-.byte 224,224,224,224,224,224,224,224
-.byte 232,232,232,232,232,232,232,232
-.byte 240,240,240,240,240,240,240,240
-.byte 248,248,248,248,248,248,248,248
-.byte 0,0,0,0,0,0,0,0
-.byte 8,8,8,8,8,8,8,8
-.byte 16,16,16,16,16,16,16,16
-.byte 24,24,24,24,24,24,24,24
-.byte 32,32,32,32,32,32,32,32
-.byte 40,40,40,40,40,40,40,40
-;*********************
-.byte 48,48,48,48,48,48,48,48
-.byte 56,56,56,56,56,56,56,56
-
-xtablehigh:
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-;*********************
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0
-.byte 1,1,1,1,1,1,1,1
-.byte 1,1,1,1,1,1,1,1
-.byte 1,1,1,1,1,1,1,1
-.byte 1,1,1,1,1,1,1,1
-.byte 1,1,1,1,1,1,1,1
-.byte 1,1,1,1,1,1,1,1
-.byte 1,1,1,1,1,1,1,1
-.byte 1,1,1,1,1,1,1,1
-
-bitable:
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-;*********************
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-
-.byte 128,64,32,16,8,4,2,1	;those values from here should not be necessary, but leaved in place for safety
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-.byte 128,64,32,16,8,4,2,1
-
-
 ;squares 0...255 high bytes
 
 squares_high:
-
 .byte  0 , 0 , 0 , 0 , 0
 .byte  0 , 0 , 0 , 0 , 0
 .byte  0 , 0 , 0 , 0 , 0
