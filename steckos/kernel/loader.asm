@@ -50,7 +50,6 @@ loop:
    lda src_ptr+1
    cmp #>payload_end
    bne @skip
-   stp
    cpy #<payload_end
    beq end
 @skip:
