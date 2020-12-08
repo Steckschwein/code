@@ -28,8 +28,6 @@
 .include "spi.inc"
 .include "errno.inc"
 
-.zeropage
-.importzp tmp1
 .code
 
 .export spi_select_device
