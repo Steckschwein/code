@@ -16,7 +16,8 @@ TOOLS+=\
   uname.prg\
   date.prg\
   setdate.prg \
-  crc7.prg
+  crc7.prg \
+  banner.prg
 
 
 .PHONY: all clean
