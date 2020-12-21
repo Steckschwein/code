@@ -127,8 +127,8 @@ char *glyphs[] =
 
 int main(int argc, char **argv)
 {
-  unsigned char line[80];
 	unsigned char a, b, c, len,ind;
+  unsigned char line[81];
 
   for (argv++; --argc; argv++) {
     len = strlen(*argv);
