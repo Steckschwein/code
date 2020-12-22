@@ -47,7 +47,7 @@ mostlyclean:
 	$(call RMDIR,../libwrk)
 
 CA65FLAGS = --cpu 65c02 --include-dir ../asminc --include-dir ../../asmunit $(DEFINES) $(DEBUG)
-CC65FLAGS = -Or -W error
+CC65FLAGS = -W error #-Or
 
 SRCDIR=.
 SRCDIRS = $(SRCDIR)

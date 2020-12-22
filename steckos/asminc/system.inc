@@ -46,7 +46,8 @@ CODE_LF  = $0a ; line feed
 
 .macro sys_delay_us micros
       .local @0,@1,@2
-      cnt=((micros * clockspeed) - (3+3+3+3+2)) / 6
+      .local cnt
+			cnt=((micros * clockspeed) - (3+3+3+3+2)) / 6
       .assert cnt >= 0, error, "micros to small!"
       .assert (>.HIWORD(cnt)) = 0, error, "micros to large!"
       pha

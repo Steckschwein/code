@@ -1,5 +1,5 @@
-CC65FLAGS=-I ../clib --standard c99
-CA65FLAGS=-I ../asminc -I ../kernel
+CC65FLAGS=-I ../clib --cpu 65c02 # --standard c89 #-Or
+CA65FLAGS=-I ../asminc -I ../kernel --cpu 65c02
 LIBS=../lib/steckschwein.a lib/toollib.a
 CLIB=../clib/lib/steckschwein-clib.a
 LDFLAGS=-C ../prg.ld65.cfg -m $<.map $(LIBS)

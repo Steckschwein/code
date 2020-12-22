@@ -22,7 +22,7 @@ initmainargs:
 
 		  ldy	  #0				  ;defense copy to not corrupt shell history
 		  ldx	  #0
-L0:	  lda	  (cmdptr),y
+L0:	      lda	  (cmdptr),y
 		  sta	  INPUT_BUF,y
 		  beq	  L1
 ;		  jsr	  krn_chrout
@@ -71,13 +71,13 @@ argloop:
 		  beq	  done
 		  cmp	  #' '				; read until ' ' or \0
 		  bne	  argloop
-		  lda	  #0				  ; 0 terminate the arg
+		  lda	  #0				; 0 terminate the arg
 		  sta	  INPUT_BUF,x
 
 ; Check if the maximum number of command line arguments is reached. If not,
 ; parse the next one.
 
-		  lda	  __argc			 ; Get low byte of argument count
+		  lda	  __argc		  ; Get low byte of argument count
 		  cmp	  #MAXARGS		  ; Maximum number of arguments reached?
 		  bcc	  next				; Parse next one if not
 
@@ -89,16 +89,16 @@ done:	lda	  #<argv
 		  stx	  __argv + 1
 		  rts
 
-;.segment		  "INIT"
-
-name:	.res	 NAME_LEN + 1
-
-.data
-; char* argv[MAXARGS+1]={name};
-argv:	.addr	name
-		  .res	 MAXARGS * 2
+.segment		  "INIT"
 
 INPUT_BUF:
 	 .res	 255
 ;	.byte "test", 0
 ;	 .byte "mainarg 1 2 3 +baz blub -bla", 0
+
+name:	.res	 NAME_LEN + 1
+
+.data
+; char* argv[MAXARGS+1]={name};
+argv:	.addr name
+        .res MAXARGS * 2

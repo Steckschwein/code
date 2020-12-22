@@ -24,7 +24,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <conio.h>
+/* #include <conio.h>
+*/
 
 char *glyphs[] =
 {
@@ -125,9 +126,10 @@ char *glyphs[] =
   " #    #    #   ######  ###     #     ###         # # # #"};
 
 
+#include <stdio.h>
 int main(int argc, char **argv)
 {
-	unsigned char a, b, c, len,ind;
+  unsigned int a, b, c, len,ind;
   unsigned char line[80];
 
   for (argv++; --argc; argv++) {
@@ -143,17 +145,14 @@ int main(int argc, char **argv)
 	}
 	line[b * 8 + 7] = ' ';
       }
-      for (b = len * 8 - 1; b > 0; b--) {
+      for (b = len * 8-1; b > 0; b--) {
 	if (line[b] != ' ')
 	  break;
 	line[b] = '\0';
       }
-      //puts(line);
-      cprintf("%s\n", line);
+      puts(line);
     }
-    //puts("");
-    cprintf("\n");
+    puts(" "); // TODO FIXME 
   }
-	
   return 0;
 }
