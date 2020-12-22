@@ -195,7 +195,7 @@ mem_ok:
 			set_ctrlport
 
 			jsr primm
-			.byte "BIOS "
+			.byte "steckOS BIOS   "
 			.include "version.inc"
 			.byte $0a,0
 
