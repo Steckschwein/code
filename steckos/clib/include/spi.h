@@ -1,11 +1,13 @@
 #ifndef _SPI_H
 #define _SPI_H
 
-typedef enum SpiDevice{
-	SDCARD,
+enum spi_devices {
+	SDCARD = 0,
 	KEYBOARD,
-	RTC,
-} SpiDevice;
+	RTC
+};
+
+typedef enum spi_devices SpiDevice;
 
 extern unsigned char __fastcall__ spi_select(SpiDevice device);
 extern void __fastcall__ spi_deselect(void);
