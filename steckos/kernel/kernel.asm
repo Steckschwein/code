@@ -102,6 +102,11 @@ kern_init:
 		.byte $20,$b3,$0a
 		.byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
 		.byte $00
+.else
+        jsr primm
+        .byte "steckOS kernel "
+		.include "version.inc"
+        .byte $0a,0
 .endif
 
 		SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely

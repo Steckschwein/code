@@ -59,7 +59,7 @@ appstart $e400
 
 init:
       jsr krn_primm
-      .byte $0a, "steckOS Shell "
+      .byte "steckOS shell  "
       .include "version.inc"
       .byte $0a,0
 exit_from_prg:
