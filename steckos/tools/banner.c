@@ -24,8 +24,7 @@
 
 #include <stdio.h>
 #include <string.h>
-/* #include <conio.h>
-*/
+#include <stdio.h>
 
 char *glyphs[] =
 {
@@ -125,8 +124,6 @@ char *glyphs[] =
   "  #  #     #    #     #        #        #         # # # ",
   " #    #    #   ######  ###     #     ###         # # # #"};
 
-
-#include <stdio.h>
 int main(int argc, char **argv)
 {
   unsigned int a, b, c, len,ind;
