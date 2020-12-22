@@ -7,7 +7,7 @@ DEFINES+=-DCHAR6x8
 # if 9958 is used
 DEFINES+=-DV9958
 # enable 80 cols
-# DEFINES+=-DCOLS80
+DEFINES+=-DCOLS80
 
 # debug fat32
 # DEFINES += -DDEBUG_FAT32
