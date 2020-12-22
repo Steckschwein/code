@@ -6,9 +6,9 @@ RUN svn checkout https://svn.code.sf.net/p/acme-crossass/code-0/trunk acme \
 	&& cd acme/src \
 	&& make \
 	&& make install
+
 RUN git clone https://github.com/cc65/cc65.git \
 	&& cd cc65 \
- 	&& git reset --hard V2.17 \	# 8e759067 => V2.17
-	&& PREFIX=/usr/local/ make  TARGETS=none\
+ 	&& git reset --hard V2.19 \
+	&& PREFIX=/usr/local/ make TARGETS=none\
 	&& PREFIX=/usr/local/ make install
-
