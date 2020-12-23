@@ -9,7 +9,7 @@
       .import vdp_text_blank
       .import vdp_gfx1_blank
       .import vdp_bgcolor
-      .import vdp_set_reg
+      .import vdp_set_sreg
       .import vdp_text_init_bytes
       .import vdp_memcpy
       .import vdp_fills
@@ -41,17 +41,30 @@ ROWS=23
 ; init tms99xx with gfx1 mode
 ;----------------------------------------------------------------------------------------------
 vdp_init:
-			vdp_sreg v_reg1_16k, v_reg1;enable 16K/64k ram, disable screen
-
-.ifdef V9958
-			vdp_sreg v_reg8_VR, v_reg8			; VR - 64k VRAM
-			vdp_sreg v_reg25_wait, v_reg25	; enable V9958 wait state generator
+.ifdef COLS80
+			lda #TEXT_MODE_80
+.else
+			lda #TEXT_MODE_40
 .endif
+			sta max_cols
+
+            lda #BIOS_COLOR
+.ifdef CHAR6x8
+			jsr vdp_text_on
+.else
+			jsr vdp_gfx1_on
+.endif
+         lda vdp_text_init_bytes+1
+         and #<~(v_reg1_int)
+         ldy #v_reg1
+         jsr vdp_set_sreg
+
+.ifndef V9958
 			vdp_vram_w ADDRESS_GFX_SPRITE
 			vnops
 			lda #SPRITE_OFF					;sprites off, at least y=$d0 will disable the sprite subsystem
 			sta a_vram
-
+.endif
 			stz crs_x
 			stz crs_y
 
@@ -74,26 +87,8 @@ vdp_init:
 			ldy #>charset_8x8
 .endif
 			ldx #$08                    ;load charset
-			jsr vdp_memcpy
+			jmp vdp_memcpy
 
-.ifdef COLS80
-			lda #TEXT_MODE_80
-.else
-			lda #TEXT_MODE_40
-.endif
-			sta max_cols
-
-         lda #BIOS_COLOR
-.ifdef CHAR6x8
-			jsr vdp_text_on
-.else
-			jsr vdp_gfx1_on
-.endif
-         lda vdp_text_init_bytes+1
-         and #<~(v_reg1_int)
-         ldy #v_reg1
-         jmp vdp_set_reg
-         
 .export vdp_detect
 vdp_detect:
 			lda #1          ; select sreg #1
@@ -136,6 +131,7 @@ _vdp_detect_ext_ram:
 			jmp vdp_chrout
 
 _vdp_detect_vram:
+            ;stp
 			ldx #8  ;max 8 16k banks = 128k
 _vdp_detect_ram:
 			lda #$ff
@@ -146,7 +142,7 @@ _vdp_detect_ram:
 			bmi @l_end    ; we have to break after given amount of banks, otherwise overflow vram address starts from beginning
 			lda tmp1
 			ldy #v_reg14
-			vdp_sreg
+			jsr vdp_set_sreg
 			jsr _vdp_bank_available
 			beq @l_detect
 @l_end:
@@ -206,7 +202,7 @@ _vdp_bank_available:
 			lda #$ff
 			rts
 
-bank_end = $3fff
+bank_end = $3ffe ; read the even address, to be also compatible in 80 col mode
 _vdp_w_vram:
 			ldy #(WRITE_ADDRESS | >bank_end)
 			bra _vdp_vram0
@@ -214,7 +210,7 @@ _vdp_r_vram:
 			ldy #>bank_end
 _vdp_vram0:
 			lda #<bank_end
-			vdp_sreg
+			jsr vdp_set_sreg
 			vnops
 			rts
 
