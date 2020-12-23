@@ -1,0 +1,16 @@
+FROM alpine
+USER root
+RUN apk update \
+    && apk add gcc make musl-dev git python3 py3-pip bash \
+    && pip install -U py65 \
+    && git clone https://github.com/cc65/cc65.git \
+	&& cd cc65 \
+ 	&& git reset --hard V2.19 \
+	&& PREFIX=/usr/local/ make TARGETS=none\
+	&& PREFIX=/usr/local/ make install \
+    && apk del gcc musl-dev
+
+RUN addgroup -S schwein && adduser -S schwein -G schwein
+USER schwein
+WORKDIR /home/schwein
+
