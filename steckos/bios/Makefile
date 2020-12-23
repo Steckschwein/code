@@ -24,7 +24,8 @@ bios.asm: version.inc
 	ca65 --target none $(CA65FLAGS) $(DEFINES) $<
 
 version.inc:
-	echo -n ".byte \"`git rev-parse --short HEAD`\"" > version.inc
+	#echo -n ".byte \"`git rev-parse --short HEAD`\"" > version.inc
+	echo -n ".byte \"`git log -1 --format="%t (%cd)" --date=format-local:%Y/%m/%d\ %H:%M:%S`\"" > version.inc
 
 bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -o bios.bin
