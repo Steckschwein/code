@@ -46,22 +46,25 @@ device_n:
 	.byte spi_device_keyboard
 	.byte spi_device_rtc
 spi_select_device_n:
-		phx
+        stp
 		and #$03
-		cmp #2
-		bcc :+
-		lda #2
-:		tax
+		cmp #3
+		bne :+
+        lda #EINVAL
+        rts
+:		phx
+		tax
 		lda device_n,x
 		plx
-		; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
-		; in:
-		;	A = spi device - one of
-		;		spi_device_sdcard	=    %00011100 ;spi device number 1110??? (SPI_SS1)
-		;		spi_device_keyboard =  %00011010 ;spi device number 1101??? (SPI_SS2)
-		;		spi_device_rtc		=    %00010110 ;spi device number 1011??? (SPI_SS3)
-		; out:
-		;	Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
+
+; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
+; in:
+;	A = spi device - one of
+;		spi_device_sdcard	=    %00011100 ;spi device number 1110??? (SPI_SS1)
+;		spi_device_keyboard =  %00011010 ;spi device number 1101??? (SPI_SS2)
+;		spi_device_rtc		=    %00010110 ;spi device number 1011??? (SPI_SS3)
+; out:
+;	Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
 spi_select_device:
 		php
 		sei ;critical section start

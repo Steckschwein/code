@@ -19,6 +19,7 @@
 		.import spi_select_device
 		.import spi_deselect
 		.import spi_rw_byte
+		.import spi_r_byte
 
 		.export vdp_chrout
 		.export krn_chrout=vdp_chrout
@@ -55,23 +56,27 @@ _set_ctrlport:
 			rts
 
 ;	requires nvram init beforehand
-init_keyboard:
+keyboard_init:
 	jsr primm
 	.byte "Keyboard init ", 0
 
-	sys_delay_ms 750 ; wait at least 500ms until keyboard reset sequence has finished
+	sys_delay_ms 750 ; wait until keyboard reset sequence has finished
 
 	lda #spi_device_keyboard
 	jsr spi_select_device
 	bne _fail
 
+	sys_delay_us 75
 	lda #KBD_CMD_TYPEMATIC
 	jsr spi_rw_byte
 	cmp #KBD_RET_ACK
 	bne _fail
 
+	sys_delay_us 75
 	lda nvram+nvram::keyboard_tm ; typematic settings
+;	lda #$ff
 	jsr spi_rw_byte
+;	jsr spi_r_byte
 	cmp #KBD_RET_ACK
 	bne _fail
 _ok:
@@ -219,7 +224,7 @@ mem_ok:
 			jsr uart_init
          set_ctrlport
 
-			jsr init_keyboard
+			jsr keyboard_init
 
 			jsr sdcard_detect
          beq @sdcard_init

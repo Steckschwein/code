@@ -91,7 +91,7 @@ vdp_text_init_bytes:
 	.byte	0	; not used
 	.byte 0	; not used
 	.byte	Medium_Green<<4|Black ; #R07
-	.byte v_reg8_VR	; VR - 64k VRAM TODO FIXME aware of max vram (bios) - #R08
+	.byte v_reg8_VR	| v_reg8_SPD ; VR - 64k VRAM TODO FIXME aware of max vram (bios) - #R08
 	.byte v_reg9_nt 	; #R9, set bit 1 to 1 for PAL
 	.byte <.HIWORD(ADDRESS_TEXT_COLOR<<2)	;#R10
 	.byte 0

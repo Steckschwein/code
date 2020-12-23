@@ -6,7 +6,6 @@
 ; extern unsigned char __fastcall__ spi_select(SpiDevice d);
 ;
 _spi_select=spi_select_device_n
-
 _spi_deselect = krn_spi_deselect
 
 ;
@@ -22,16 +21,10 @@ _spi_deselect = krn_spi_deselect
 
 _spi_read:
 		  jsr krn_spi_r_byte
-		  ;pha
- ;		 jsr krn_hexout
- ;		 pla
 		  ldx #$00
 		  rts
 
 _spi_write:
 		  jsr krn_spi_rw_byte
 		  ldx #$00				  ; low byte in A, clean high byte
-		  pha
-;		  jsr krn_hexout
-		  pla
 		  rts
