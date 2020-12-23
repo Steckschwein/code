@@ -20,6 +20,7 @@ void send(unsigned char command, unsigned char value){
 	unsigned char r;
 
 	cprintf("send %x %x => ", command, value);
+    __asm__("stp");
 	spi_select(KEYBOARD);
 	r = spi_write(command);
 	cprintf("0x%.2x ", r);

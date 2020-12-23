@@ -2,9 +2,9 @@
 #define _SPI_H
 
 enum spi_devices {
-	SDCARD = 0,
-	KEYBOARD,
-	RTC
+	SDCARD   = 0b00011100,
+	KEYBOARD = 0b00011010,
+	RTC      = 0b00010110
 };
 
 typedef enum spi_devices SpiDevice;
