@@ -1,4 +1,4 @@
-FROM debian:stretch-slim
+FROM debian:buster-slim
 USER root
 RUN apt-get update && apt-get -y install build-essential git python3 python3-pip subversion
 RUN pip3 install -U py65
