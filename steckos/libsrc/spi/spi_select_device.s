@@ -31,6 +31,31 @@
 .code
 
 .export spi_select_device
+.export spi_select_device_n
+
+; select spi device upon ordinal number given in A
+;	in:
+;		A = [0..2]
+;		 0 - SDCARD
+;		 1 - KEYBOARD
+;		 2 - RTC
+;	out:
+;		@see spi_select_device below
+device_n:
+	.byte spi_device_sdcard
+	.byte spi_device_keyboard
+	.byte spi_device_rtc
+spi_select_device_n:
+        stp
+		and #$03
+		cmp #3
+		bne :+
+        lda #EINVAL
+        rts
+:		phx
+		tax
+		lda device_n,x
+		plx
 
 ; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
 ; in:
@@ -41,7 +66,7 @@
 ; out:
 ;	Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
 spi_select_device:
-        php
+		php
 		sei ;critical section start
 		pha
 

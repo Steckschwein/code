@@ -19,13 +19,13 @@ void send(unsigned char command, unsigned char value){
 
 	unsigned char r;
 
-	cprintf("send %x %x => ", command, value);
+	printf("send %x %x => ", command, value);
     __asm__("stp");
 	spi_select(KEYBOARD);
 	r = spi_write(command);
-	cprintf("0x%.2x ", r);
+	printf("0x%.2x ", r);
 	r = spi_write(value);
-	cprintf("0x%.2x\n", r);
+	printf("0x%.2x\n", r);
 	spi_deselect();
 }
 
@@ -41,19 +41,19 @@ int main (int argc, char** argv)
 			if (!strcmp(argv[0], "-s"))
 			{
 				unsigned char r = 0;
-				cprintf("\nstatus:");
+				printf("\nstatus:");
 				__asm__("sei");
 				spi_select(KEYBOARD);
 				while(1) //0xaa end of status bytes
 				{
 					r = spi_write(KBD_CMD_STATUS);
 					while(r == 0) r = spi_read();
-					cprintf(" 0x%02x", r);
+					printf(" 0x%02x", r);
 					if(r == 0xaa) break;
 				}
 				spi_deselect();
 				__asm__("cli");
-				cprintf("\n");
+				printf("\n");
 			}
 			else if (!strcmp(argv[0], "-r"))
 			{
@@ -90,7 +90,7 @@ int main (int argc, char** argv)
 
 void usage()
 {
-	cprintf(
+	printf(
 		"Usage: keyboard [OPTIONS]...\n\n   -s status (default)\n   -r rate\n   -d delay\n   -led leds\n"
 	);
 	exit(EXIT_FAILURE);

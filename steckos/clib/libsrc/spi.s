@@ -1,10 +1,11 @@
 
 .import spi_select_device
+.import spi_select_device_n
 
 ;
 ; extern unsigned char __fastcall__ spi_select(SpiDevice d);
 ;
-_spi_select=spi_select_device
+_spi_select=spi_select_device_n
 _spi_deselect = krn_spi_deselect
 
 ;
