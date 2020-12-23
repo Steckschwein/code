@@ -54,7 +54,7 @@ vdp_init:
 .else
 			jsr vdp_gfx1_on
 .endif
-         lda vdp_text_init_bytes+1
+         lda vdp_text_init_bytes+1 ; disable vdp irq
          and #<~(v_reg1_int)
          ldy #v_reg1
          jsr vdp_set_sreg
