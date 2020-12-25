@@ -59,48 +59,41 @@ textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y
 	trb screen_status		 ;reset cursor state
 
 	;use the crs_ptr as tmp variable
+	php
+	sei
 	stz crs_ptr+1
 	lda crs_y
+	cmp #16
+	bcc :+
+	;stp
+:
 	asl							; y*2
 	asl							; y*4
 	asl							; y*8
+	sta crs_ptr					;
 
-	bit max_cols
-	bvc @l40
-									; crs_y*64 + crs_y*16 (crs_ptr) => y*80
 	asl							; y*16
-	sta crs_ptr
-	php							; save carry
-	rol crs_ptr+1		; save carry if overflow
-	bra @lae
-@l40:
-	; crs_y*32 + crs_y*8  (crs_ptr) => y*40
-	sta crs_ptr					; save
-	php							; save carry
-@lae:
-	asl
-	rol crs_ptr+1			  	; save carry if overflow
-	asl
-	rol crs_ptr+1				; save carry if overflow
+	rol crs_ptr+1				; save if overflow
 
-	plp							; restore carry from overflow above
-	bcc @l0
-	inc crs_ptr+1
+	asl							; y*32
+	rol crs_ptr+1			  	; save carry if overflow
+
+	adc crs_ptr					; y*40 = y*8+y*32
+	bcc :+
+	inc crs_ptr+1				; overflow inc page count
 	clc
-@l0:
-	adc crs_ptr			;
-	bcc @l1
-	inc crs_ptr+1		; overflow inc page count
-	clc					;
-@l1:
-	php
-	sei
-	adc crs_x
+:
+	bit max_cols
+	bvc :+
+	asl 							; y*80 => y*40*2
+	rol crs_ptr+1
+:
+	adc crs_x					; +x
 	sta a_vreg
 	sta crs_ptr
 
 	lda #>ADDRESS_TEXT_SCREEN
-	adc crs_ptr+1		  ; add carry and page to address high byte
+	adc crs_ptr+1		  		; add carry and page to address high byte
 	sta a_vreg
 	sta crs_ptr+1
 	vdp_wait_l 3
