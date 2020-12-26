@@ -12,8 +12,8 @@
 ;/*========================================================= SFX Sound Expander =================================================
 ;  Variables
 ;*/
-fm_file_base_address = ptr1 ;$0002		; word
-fm_file_arrdata = ptr4      ;$0008		; word
+fm_file_base_address = ptr6
+fm_file_arrdata = ptr7
 
 ;/*--------------------------------------------------------------------------------------------------------------------------
 ;	Summary
@@ -72,6 +72,8 @@ fm_file_arrdata = ptr4      ;$0008		; word
     ptr3:  .res 2
     ptr4:  .res 2
     ptr5:  .res 2
+    ptr6:  .res 2
+    ptr7:  .res 2
 .code
 
 .import opl2_reg_write
@@ -80,6 +82,8 @@ fm_file_arrdata = ptr4      ;$0008		; word
 
 .export jch_fm_init, jch_fm_play
 .export jch_fm_set_volume
+
+.code
 
 ;.pc = $1000 "INIT"
 jch_fm_init:

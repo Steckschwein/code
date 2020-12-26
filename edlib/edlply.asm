@@ -13,11 +13,7 @@
 
 appstart
 
-.segment "STARTUP"
-
 .code
-.importzp ptr1
-
 .import vdp_bgcolor
 .import hexout
 .import jch_fm_init, jch_fm_play
