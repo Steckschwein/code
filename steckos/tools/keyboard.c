@@ -1,4 +1,3 @@
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,72 +18,73 @@ void send(unsigned char command, unsigned char value){
 
 	unsigned char r;
 
-	printf("send %x %x => ", command, value);
-    __asm__("stp");
+	printf("send 0x%.2x 0x%.2x => ", command, value);
+	__asm__("sei");
 	spi_select(KEYBOARD);
 	r = spi_write(command);
 	printf("0x%.2x ", r);
 	r = spi_write(value);
 	printf("0x%.2x\n", r);
 	spi_deselect();
+	__asm__("cli");
 }
 
 int main (int argc, char** argv)
 {
-		unsigned char delay = 0;
-		unsigned char rate = 0;
+	unsigned char delay = 0;
+	unsigned char rate = 0;
 
+	while(argc>0)
+	{
 		argc--;
 		argv++;
-		while(argc>0)
+		if (!strcmp(argv[0], "-s"))
 		{
-			if (!strcmp(argv[0], "-s"))
+			unsigned char r = 0;
+			printf("\nstatus:");
+			__asm__("sei");
+			spi_select(KEYBOARD);
+			while(1) //0xaa end of status bytes
 			{
-				unsigned char r = 0;
-				printf("\nstatus:");
-				__asm__("sei");
-				spi_select(KEYBOARD);
-				while(1) //0xaa end of status bytes
-				{
-					r = spi_write(KBD_CMD_STATUS);
-					while(r == 0) r = spi_read();
-					printf(" 0x%02x", r);
-					if(r == 0xaa) break;
-				}
-				spi_deselect();
-				__asm__("cli");
-				printf("\n");
+				r = spi_write(KBD_CMD_STATUS);
+				while(r == 0) r = spi_read();
+				printf(" 0x%02x", r);
+				if(r == 0xaa) break;
 			}
-			else if (!strcmp(argv[0], "-r"))
-			{
-					argc--;
-					argv++;
-					assertParam(argc, argv);
-					rate = atoi(argv[0]);
-					send(0xf3, rate);
-			}
-			else if (!strcmp(argv[0], "-d"))
-			{
-					argc--;
-					argv++;
-					assertParam(argc, argv);
-					delay = atoi(argv[0]);
-					send(0xf3, delay);
-			}
-			else if (!strcmp(argv[0], "-led"))
-			{
-					argc--;
-					argv++;
-					assertParam(argc, argv);
-					send(0xed, (atoi(argv[0]) & 0x07));
-			}
-			else
-			{
-				usage();
-			}
-			argc--;
-			argv++;
+			spi_deselect();
+			__asm__("cli");
+			printf("\n");
 		}
+		else if (!strcmp(argv[0], "-r"))
+		{
+				argc--;
+				argv++;
+				assertParam(argc, argv);
+				rate = atoi(argv[0]);
+				send(0xf3, rate);
+		}
+		else if (!strcmp(argv[0], "-d"))
+		{
+				argc--;
+				argv++;
+				assertParam(argc, argv);
+				delay = atoi(argv[0]);
+				send(0xf3, delay);
+		}
+		else if (!strcmp(argv[0], "-led"))
+		{
+				argc--;
+				argv++;
+				assertParam(argc, argv);
+				send(0xed, (atoi(argv[0]) & 0x07));
+		}
+		else
+		{
+			usage();
+		}
+		argc--;
+		argv++;
+	}
 	return EXIT_SUCCESS;
 }
 

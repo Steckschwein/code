@@ -46,12 +46,11 @@ device_n:
 	.byte spi_device_keyboard
 	.byte spi_device_rtc
 spi_select_device_n:
-        stp
 		and #$03
 		cmp #3
 		bne :+
-        lda #EINVAL
-        rts
+		lda #EINVAL
+		rts
 :		phx
 		tax
 		lda device_n,x

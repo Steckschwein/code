@@ -55,6 +55,12 @@ _set_ctrlport:
 			pla
 			rts
 
+_keyboard_write:
+	sys_delay_us 75
+	jsr spi_rw_byte
+	cmp #KBD_RET_ACK
+	rts
+
 ;	requires nvram init beforehand
 keyboard_init:
 	jsr primm
@@ -66,18 +72,12 @@ keyboard_init:
 	jsr spi_select_device
 	bne _fail
 
-	sys_delay_us 75
 	lda #KBD_CMD_TYPEMATIC
-	jsr spi_rw_byte
-	cmp #KBD_RET_ACK
+	jsr _keyboard_write
 	bne _fail
 
-	sys_delay_us 75
 	lda nvram+nvram::keyboard_tm ; typematic settings
-;	lda #$ff
-	jsr spi_rw_byte
-;	jsr spi_r_byte
-	cmp #KBD_RET_ACK
+	jsr _keyboard_write
 	bne _fail
 _ok:
 	jsr primm
