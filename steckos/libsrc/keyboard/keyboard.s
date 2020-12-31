@@ -51,7 +51,7 @@ fetchkey:
 ; get byte from keyboard buffer
 ;	in: -
 ;	out:
-;		C=1 key was pressed and A= <key code>, C=0 otherwise
+;		C=1 key was pressed and A=<key code>, C=0 otherwise
 getkey:
         lda key
         beq exit

@@ -129,36 +129,32 @@ textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y
 	sei
 	stz crs_ptr+1
 	lda crs_y
-	cmp #16
-	bcc :+
-	;stp
-:
-	asl							; y*2
+    asl							; y*2
 	asl							; y*4
 	asl							; y*8
 	sta crs_ptr					; save for add below
 
 	asl							; y*16
-	rol crs_ptr+1				; save if overflow
+	rol crs_ptr+1				; shift carry to address high byte
 	asl							; y*32
-	rol crs_ptr+1			  	; save carry if overflow
+	rol crs_ptr+1			  	; shift carry to address high byte
 
 	adc crs_ptr					; y*40 = y*8+y*32
 	bcc :+
 	inc crs_ptr+1				; overflow inc page count
 	clc
-:
-	bit max_cols
+
+:	bit max_cols
 	bvc :+
-	asl 							; y*80 => y*40*2
-	rol crs_ptr+1
-:
-	adc crs_x					; +x
+	asl 						; y*80 => y*40*2
+	rol crs_ptr+1               ; shift carry to address high byte
+
+:	adc crs_x					; add cursor x
 	sta a_vreg
 	sta crs_ptr
 
 	lda #>ADDRESS_TEXT_SCREEN
-	adc crs_ptr+1		  		; add carry and page to address high byte
+	adc crs_ptr+1		  		; add carry (above) and page to address high byte
 	sta a_vreg
 	sta crs_ptr+1
 	vdp_wait_l 3
@@ -407,8 +403,8 @@ __textui_dispatch_char:
 scroll_buffer_size = 100 ; 40/80 col mode => 1000/2000 chars to copy
 scroll_buffer:			.res scroll_buffer_size
 screen_status:			.res 1
-screen_write_lock:	.res 1
+screen_write_lock:	    .res 1
 screen_frames:			.res 1
 saved_char:				.res 1
-a_r:						.res 2
-a_w:						.res 2
+a_r:					.res 2
+a_w:					.res 2

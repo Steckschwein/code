@@ -20,6 +20,7 @@
 		.import spi_deselect
 		.import spi_rw_byte
 		.import spi_r_byte
+        .import fetchkey
 
 		.export vdp_chrout
 		.export krn_chrout=vdp_chrout
@@ -56,21 +57,31 @@ _set_ctrlport:
 			rts
 
 _keyboard_write:
-	sys_delay_us 75
+    ldy #100 ; try 100ms
 	jsr spi_rw_byte
-	cmp #KBD_RET_ACK
-	rts
+:	cmp #KBD_RET_ACK
+    beq :+
+    jsr hexout
+    sys_delay_ms 1
+_keyboard_read:
+    jsr spi_r_byte
+    dey 
+    bpl :-
+:	rts
 
 ;	requires nvram init beforehand
 keyboard_init:
 	jsr primm
 	.byte "Keyboard init ", 0
 
-	sys_delay_ms 750 ; wait until keyboard reset sequence has finished
-
 	lda #spi_device_keyboard
 	jsr spi_select_device
 	bne _fail
+
+	lda #KBD_CMD_RESET
+	jsr _keyboard_write
+    bne _fail
+	sys_delay_ms 500 ; wait until keyboard reset sequence has finished
 
 	lda #KBD_CMD_TYPEMATIC
 	jsr _keyboard_write
@@ -80,13 +91,15 @@ keyboard_init:
 	jsr _keyboard_write
 	bne _fail
 _ok:
+	jsr spi_deselect
 	jsr primm
 	.byte "OK", CODE_LF, 0
-	jmp spi_deselect
+    rts
 _fail:
+	jsr spi_deselect
 	jsr primm
 	.byte "FAIL", CODE_LF, 0
-	jmp spi_deselect
+    rts
 
 do_reset:
 			; disable interrupt
@@ -290,6 +303,9 @@ startup:
 	jmp (startaddr)
 
 bios_irq:
+    save
+    jsr fetchkey ; read and forget
+    restore
 	rti
 
 num_patterns = $02

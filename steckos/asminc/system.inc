@@ -44,28 +44,32 @@ BANK3 = BANK_SEL1 | BANK_SEL0
 
 CODE_LF  = $0a ; line feed
 
+SYS_VECTOR_NMI = $fffa
+SYS_VECTOR_RESET = $fffc
+SYS_VECTOR_IRQ = $fffe
+
 .macro sys_delay_us micros
-      .local @0,@1,@2
-      .local cnt
-			cnt=((micros * clockspeed) - (3+3+3+3+2)) / 6
-      .assert cnt >= 0, error, "micros to small!"
-      .assert (>.HIWORD(cnt)) = 0, error, "micros to large!"
-      pha
-		phx
-		phy
-      lda #1+<.HIWORD(cnt)
+    .local @0,@1,@2
+    .local cnt
+        cnt=((micros * clockspeed) - (3+3+3+3+2)) / 6
+    .assert cnt >= 0, error, "micros to small!"
+    .assert (>.HIWORD(cnt)) = 0, error, "micros to large!"
+    pha
+    phx
+    phy
+    lda #1+<.HIWORD(cnt)
 @0:	ldx #1+>(cnt)
-@1:   ldy #1+<(cnt) ; ~6cl inner loop
-@2:	dey
-      nop
-		bne @2
-		dex
-		bne @1
-      dec a
-      bne @0
-		ply
-		plx
-      pla
+@1: ldy #1+<(cnt) ; ~6cl inner loop
+@2: dey
+    nop
+	bne @2
+    dex
+    bne @1
+    dec a
+    bne @0
+    ply
+    plx
+    pla
 .endmacro
 
 .macro sys_delay_ms millis

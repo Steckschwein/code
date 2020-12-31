@@ -37,7 +37,6 @@ ptr2:   .res 2
 ptr3:   .res 2
 tmp1:   .res 1
 tmp2:   .res 1
-.code
 
 ; SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 32 ;TODO FIXME too hard
@@ -56,7 +55,7 @@ p_history   = ptr3
 .import hexout
 
 appstart $e400
-
+.code
 init:
       jsr krn_primm
       .byte "steckOS shell  "
@@ -74,20 +73,19 @@ exit_from_prg:
       SetVector exit_from_prg, retvec
       SetVector buf, bufptr
       SetVector buf, paramptr ; set param to empty buffer
-      ;SetVector msgbuf, msgptr
       SetVector PATH, pathptr
 mainloop:
       jsr krn_primm
       .byte $0a, '[', 0
       ; output current path
-      lda	#<msgbuf
-      ldx #>msgbuf
-      ldy	#$ff
+      lda #<cwdbuf
+      ldx #>cwdbuf
+      ldy #cwdbuf_size
       jsr krn_getcwd
       bne @nocwd
 
-      lda #<msgbuf
-      ldx #>msgbuf
+      lda #<cwdbuf
+      ldx #>cwdbuf
       jsr krn_strout
       bra @prompt
 @nocwd:
@@ -142,7 +140,6 @@ inputloop:
         iny
 line_end:
         jsr char_out
-;        jsr hexout
         jsr terminate
 
         bra inputloop
@@ -570,7 +567,6 @@ dump:
 
 		bra @l8
 @l3:
-
 		crlf
 		lda dumpvec_start+1
 		jsr hexout
@@ -658,5 +654,6 @@ PRGEXT:           .asciiz ".PRG"
 crs_x_prompt:     .res 1
 tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
-msgbuf:
+cwdbuf_size=64
+cwdbuf:           .res cwdbuf_size
 history:

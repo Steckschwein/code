@@ -21,20 +21,24 @@
 ; SOFTWARE.
 .setcpu "65c02"
 
-.export opl2_detect
 .include "zeropage.inc"
-.importzp __volatile_tmp
 .include "ym3812.inc"
-.import opl2_reg_write
+.export opl2_detect
+.importzp __volatile_tmp
+.import opl2_reg_write, opl2_delay_register
+.import char_out
 ;// ----------------------------------------------------------------------------------------------------------
 ;// JCH_DETECT_CHIP ;// CHECK CHIP EXISTENCE ;// NEED REAL HARDWARE TO WORK (NOT EMULATION)
 ;// returns carry set if fail
 ;// ----------------------------------------------------------------------------------------------------------
+.code
 opl2_detect:
 loc_1062B:
 		php
-		sei								;// sure? disable interrupts
-		jsr __opl2_reset_timer
+		sei							;// sure? disable interrupts
+        lda opl_stat                ;reset / ack status
+        jsr opl2_delay_register
+
 		ldx #opl2_reg_ctrl			;// set timer control byte to #$80 = clear timers T1 T2 and ignore them
 		lda #$80							;// reset flags for timer 1 & 2, IRQset : all other flags are ignored
 		jsr opl2_reg_write
@@ -46,14 +50,16 @@ loc_1062B:
 		ldx #opl2_reg_ctrl					;// set timer control byte to #$21 = mask timer2 (ignore bit1) and enable bit0 (load timer1 value and begin increment)
 		lda #$21							;// this should lead to overflow (255) and setting of bits 7 and 6 in status byte (either timer expired, timer1 expired).
 		jsr opl2_reg_write
-		ldy #(1+(clockspeed*1000000)/OPL_CLK)
-		ldx #$ff							;// wait of loading the status byte -
+		ldy #<(8<<clockspeed)
+		ldx #0							;// wait of loading the status byte -
 loc_1064C:
 		dex
 		bne loc_1064C
 		dey
 		bne loc_1064C
-		lda opl_stat;$df60			;// status byte is df60 according to discussions
+		lda opl_stat ;$df60			;// status byte is df60 according to discussions
+;        .import hexout
+ ;       jsr hexout
 		and #$e0							;// and the value there with e0 (11100000, bits 7, 6 and 5) to make sure all others are 0.
 		eor #$c0							;// check if bits 7 and 6 are set (should result in 0)
 		bne loc_10663					;// not zero ? jmp to set carry and leave subroutine
