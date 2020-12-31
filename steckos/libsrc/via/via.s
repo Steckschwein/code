@@ -23,6 +23,7 @@
 .code
 .export init_via1
 .include "via.inc"
+.include "spi.inc"
 
 ;----------------------------------------------------------------------------------------------
 ; init VIA1
@@ -47,7 +48,7 @@ init_via1:
 		sta via1ddrb
 
 		; SPICLK low, MOSI low, SPI_SS HI
-		lda #%01111110
+		lda #spi_device_deselect
 		sta via1portb
 
 		rts

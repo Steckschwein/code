@@ -59,9 +59,9 @@ spi_select_device_n:
 ; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
 ; in:
 ;	A = spi device - one of
-;		spi_device_sdcard	=    %00011100 ;spi device number 1110??? (SPI_SS1)
-;		spi_device_keyboard =  %00011010 ;spi device number 1101??? (SPI_SS2)
-;		spi_device_rtc		=    %00010110 ;spi device number 1011??? (SPI_SS3)
+;		spi_device_sdcard	=   %00011100 ;spi device number 1110??? (SPI_SS1)
+;		spi_device_keyboard =   %00011010 ;spi device number 1101??? (SPI_SS2)
+;		spi_device_rtc		=   %00010110 ;spi device number 1011??? (SPI_SS3)
 ; out:
 ;	Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
 spi_select_device:
@@ -73,15 +73,15 @@ spi_select_device:
 		;	Z=1 not busy, Z=0 spi is busy and A=#EBUSY
 spi_isbusy:
 		lda via1portb
-		and #%00011110
-		cmp #%00011110
+        and #%00001110
+        eor #%00001110
 		bne @l_exit		;busy, leave section, device could not be selected
 
 		pla
 		sta via1portb
 
 		plp
-		lda #0			;exit ok
+		lda #EOK			;exit ok
 		rts
 @l_exit:
 		pla

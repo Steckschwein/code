@@ -23,8 +23,8 @@
         .import fetchkey
 
 		.export vdp_chrout
-		.export krn_chrout=vdp_chrout
 		.export read_block=sd_read_block
+;		.export krn_chrout=vdp_chrout
 		.export char_out=_vdp_chrout
 
 		.exportzp startaddr, endaddr
@@ -33,6 +33,7 @@
 	ptr1: .res 2
 	startaddr: .res 2
 	endaddr: .res 2
+    init_step: .res 1
 
 .code
 
@@ -56,14 +57,23 @@ _set_ctrlport:
 			pla
 			rts
 
+_delay_100ms:
+:   sys_delay_ms 100
+    dey
+    bne :-
+    rts
+
 _keyboard_write:
-    ldy #100 ; try 100ms
+;    lda #CODE_LF
+ ;   jsr char_out
+  ;  lda init_step
+   ; jsr hexout
+
 	jsr spi_rw_byte
+    ldy #100 ; try 100ms
 :	cmp #KBD_RET_ACK
     beq :+
-    jsr hexout
-    sys_delay_ms 1
-_keyboard_read:
+    sys_delay_ms 10
     jsr spi_r_byte
     dey 
     bpl :-
@@ -74,32 +84,49 @@ keyboard_init:
 	jsr primm
 	.byte "Keyboard init ", 0
 
+	ldy #5
+    jsr _delay_100ms ; wait until keyboard reset sequence has finished
+
+    stz init_step
+
 	lda #spi_device_keyboard
 	jsr spi_select_device
 	bne _fail
 
+    inc init_step
 	lda #KBD_CMD_RESET
 	jsr _keyboard_write
     bne _fail
-	sys_delay_ms 500 ; wait until keyboard reset sequence has finished
 
+	ldy #7
+	jsr _delay_100ms ; wait until keyboard reset sequence has finished
+
+    inc init_step
 	lda #KBD_CMD_TYPEMATIC
 	jsr _keyboard_write
 	bne _fail
 
+    inc init_step
 	lda nvram+nvram::keyboard_tm ; typematic settings
 	jsr _keyboard_write
 	bne _fail
 _ok:
-	jsr spi_deselect
 	jsr primm
 	.byte "OK", CODE_LF, 0
-    rts
+	jmp spi_deselect
 _fail:
-	jsr spi_deselect
+    pha
 	jsr primm
-	.byte "FAIL", CODE_LF, 0
-    rts
+	.byte "FAIL (",0
+    lda init_step
+    jsr hexout
+    lda #'/'
+    jsr char_out
+    pla
+    jsr hexout
+    jsr primm
+	.byte ")", CODE_LF, 0
+	jmp spi_deselect
 
 do_reset:
 			; disable interrupt

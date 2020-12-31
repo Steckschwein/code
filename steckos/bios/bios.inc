@@ -8,16 +8,11 @@
 		.include "via.inc"
 		.include "vdp.inc"
 
-; ptr1l=ptr1
-; ptr1h=ptr1+1
-; ptr2l=ptr2
-; ptr2h=ptr2+1
-
 BIOS_COLOR=Gray<<4|Black  ; gray text, black backdrop/border
 
 ; start memcheck here
 start_check		 	= $0300
-ram_end 				= $0288
+ram_end 			= $0288
 ram_end_l			= ram_end
 ram_end_h			= ram_end+1
 
