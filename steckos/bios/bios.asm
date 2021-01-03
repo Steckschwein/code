@@ -63,6 +63,7 @@ _delay_10ms:
     rts
 
 _keyboard_cmd_status:
+    print_dot
     ldy #50
 :   dey
     bmi :+
@@ -79,7 +80,7 @@ _keyboard_cmd_status:
 ;	requires nvram init beforehand
 keyboard_init:
 	jsr primm
-	.byte "Keyboard init ", 0
+	.byte "Keyboard init.", 0
 
     ldy #50
     jsr _delay_10ms
