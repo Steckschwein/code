@@ -31,6 +31,7 @@
 		.export __APP_START__=$1000	  ; app start address defaults to $1000
 		.addr *+2
   .endif
+  .code
 .endmacro
 
 .endif ; _APPSTART_INC_
