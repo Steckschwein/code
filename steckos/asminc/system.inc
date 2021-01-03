@@ -51,25 +51,27 @@ SYS_VECTOR_IRQ = $fffe
 .macro sys_delay_us micros
     .local @0,@1,@2
     .local cnt
-        cnt=((micros * clockspeed) - (3+3+3+3+2)) / 6
+    cnt = (micros * clockspeed)
     .assert cnt >= 0, error, "micros to small!"
     .assert (>.HIWORD(cnt)) = 0, error, "micros to large!"
+    php
     pha
     phx
     phy
-    lda #1+<.HIWORD(cnt)
-@0:	ldx #1+>(cnt)
-@1: ldy #1+<(cnt) ; ~6cl inner loop
+    lda #<.HIWORD(cnt)
+@0:	ldx #>cnt
+@1: ldy #<cnt ; ~6cl inner loop
 @2: dey
     nop
 	bne @2
     dex
     bne @1
-    dec a
+    dec
     bne @0
     ply
     plx
     pla
+    plp
 .endmacro
 
 .macro sys_delay_ms millis

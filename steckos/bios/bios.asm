@@ -24,7 +24,6 @@
 
 		.export vdp_chrout
 		.export read_block=sd_read_block
-;		.export krn_chrout=vdp_chrout
 		.export char_out=_vdp_chrout
 
 		.exportzp startaddr, endaddr
@@ -57,26 +56,24 @@ _set_ctrlport:
 			pla
 			rts
 
-_delay_100ms:
-:   sys_delay_ms 100
+_delay_10ms:
+:   sys_delay_ms 10
     dey
     bne :-
     rts
 
-_keyboard_write:
-;    lda #CODE_LF
- ;   jsr char_out
-  ;  lda init_step
-   ; jsr hexout
-
-	jsr spi_rw_byte
-    ldy #100 ; try 100ms
-:	cmp #KBD_RET_ACK
-    beq :+
-    sys_delay_ms 10
-    jsr spi_r_byte
-    dey 
-    bpl :-
+_keyboard_cmd_status:
+    ldy #50
+:   dey
+    bmi :+
+    phy
+    ldy #5
+    jsr _delay_10ms
+    lda #KBD_HOST_CMD_CMD_STATUS
+    jsr spi_rw_byte
+    ply
+    cmp #KBD_HOST_CMD_STATUS_EOT
+    bne :-
 :	rts
 
 ;	requires nvram init beforehand
@@ -84,8 +81,8 @@ keyboard_init:
 	jsr primm
 	.byte "Keyboard init ", 0
 
-	ldy #5
-    jsr _delay_100ms ; wait until keyboard reset sequence has finished
+    ldy #50
+    jsr _delay_10ms
 
     stz init_step
 
@@ -95,21 +92,18 @@ keyboard_init:
 
     inc init_step
 	lda #KBD_CMD_RESET
-	jsr _keyboard_write
+    jsr spi_rw_byte
+	jsr _keyboard_cmd_status
     bne _fail
-
-	ldy #7
-	jsr _delay_100ms ; wait until keyboard reset sequence has finished
 
     inc init_step
 	lda #KBD_CMD_TYPEMATIC
-	jsr _keyboard_write
+    jsr spi_rw_byte
+	lda nvram+nvram::keyboard_tm ; typematic settings
+    jsr spi_rw_byte
+    jsr _keyboard_cmd_status
 	bne _fail
 
-    inc init_step
-	lda nvram+nvram::keyboard_tm ; typematic settings
-	jsr _keyboard_write
-	bne _fail
 _ok:
 	jsr primm
 	.byte "OK", CODE_LF, 0
