@@ -387,10 +387,10 @@ __textui_dispatch_char:
 	lda crs_x
 	inc
     bit video_mode
-    bvc :+
-    cmp #80
+    bvs :+
+    cmp #40
     beq @l5
-:   cmp #40
+:   cmp #80
 	beq @l5
 	sta crs_x
 	jmp textui_update_crs_ptr
