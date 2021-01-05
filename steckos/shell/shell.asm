@@ -31,13 +31,6 @@ prompt  = $af
 .include "rtc.inc"
 .include "appstart.inc"
 
-.zeropage
-ptr1:   .res 2
-ptr2:   .res 2
-ptr3:   .res 2
-tmp1:   .res 1
-tmp2:   .res 1
-
 ; SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 32 ;TODO FIXME too hard
 
@@ -51,8 +44,14 @@ p_history   = ptr3
 ;---------------------------------------------------------------------------------------------------------
 
 .export char_out=krn_chrout
-
 .import hexout
+
+.zeropage
+ptr1:   .res 2
+ptr2:   .res 2
+ptr3:   .res 2
+tmp1:   .res 1
+tmp2:   .res 1
 
 appstart $e400
 .code

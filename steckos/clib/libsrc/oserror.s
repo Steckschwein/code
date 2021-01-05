@@ -31,6 +31,6 @@ inverr: lda	  #<EUNKNOWN
 .rodata
 
 maptable:
-;		  .byte	EINTR	;BRKABT = 128			  ;($80) BREAK key abort
+		  .byte	EINTR	;BRKABT = 128			  ;($80) BREAK key abort
 
 MAX_OSERR_VAL = (* - maptable)

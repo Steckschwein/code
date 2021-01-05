@@ -5,7 +5,7 @@
 .import hexout
 .export char_out=krn_chrout
 
-__APPSTART__ = $bb00
+__APPSTART__ = $ba00
 appstart __APPSTART__
 
 ;

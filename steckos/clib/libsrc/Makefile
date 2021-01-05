@@ -37,7 +37,10 @@ mostlyclean:
 
 
 CA65FLAGS = --cpu 65c02 -I ../../ $(DEFINES)
-CC65FLAGS = -W error -I ../include -Os
+# several bugs exists for static locals
+# https://github.com/cc65/cc65/issues/263
+# https://github.com/cc65/cc65/issues/632
+CC65FLAGS = --cpu 65c02 -W error -I ../include -Os
 
 SRCDIR=.
 SRCDIRS = $(SRCDIR)

@@ -126,7 +126,7 @@ char *glyphs[] =
 
 int main(int argc, char **argv)
 {
-  unsigned int a, b, c, len,ind;
+  unsigned char a, b, c, len,ind;
   unsigned char line[80];
 
   for (argv++; --argc; argv++) {
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
       }
       puts(line);
     }
-    puts(""); // TODO FIXME memory clash
+    puts("");
   }
   return 0;
 }

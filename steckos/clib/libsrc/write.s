@@ -44,28 +44,39 @@
 
 ;--------------------------------------------------------------------------
 .proc   _write 
+
+    pha
+    phx
 	; count
-	cmp #0 ; shortcut, zero length?
-    bne :+
-    cpx #0
-    beq @exit
-:	sta tmp1 ; 8bit length string only - TODO
+	sta tmp1 ; 8bit length string only - TODO
 	; *buf
-	jsr popptr1
-    
+	jsr popax
+    sta ptr1
+    stx ptr1+1    
 	; fd
 	jsr popax ; assume stdout, ignore fd
-	
-	ldy #0
+
+    plx
+    pla
+	cmp #0 ; shortcut, zero length?
+    bne @li
+    cpx #0
+    beq @exit
+@li:
+    ldy #0
 @l0:
 	lda (ptr1),y
     beq @exit
+    phy
     jsr _cputc
+    ply
 	iny
 	cpy tmp1
 	bne @l0
+@lex:
     tya
-	ldx #0
+    ldx #0
 @exit:
+    clc
     rts
 .endproc

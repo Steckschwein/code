@@ -22,7 +22,7 @@ cputdirect:
 ; Advance cursor position
 newline:
 	lda	  #CODE_LF
-	jmp	  krn_chrout
+	jmp	  _cputc
 
 
 ; Set cursor position, calculate RAM pointers.
