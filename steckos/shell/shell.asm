@@ -379,12 +379,6 @@ cmdlist:
 		.byte "up",0
 		.word krn_upload
 
-		.byte "mode40",0
-		.word mode_40
-
-		.byte "mode80",0
-		.word mode_80
-
 .ifdef DEBUG
 		.byte "dump",0
 		.word dump
@@ -431,18 +425,11 @@ errmsg:
 		jmp mainloop
 
 mode_toggle:
-    lda #TEXT_MODE_40
-    cmp max_cols
-    beq mode_80
-mode_40:
-    lda #TEXT_MODE_40
-    bra setmode
-mode_80:
-    lda #TEXT_MODE_80
-setmode:
-    jsr krn_textui_setmode
-    jmp mainloop
-
+        lda video_mode
+        eor #VIDEO_MODE_80_COLS
+        jsr hexout
+        jsr krn_textui_setmode
+        jmp mainloop
 cd:
       lda paramptr
       ldx paramptr+1

@@ -66,7 +66,7 @@ vdp_init_bytes_gfx2:
 			.byte	Black
 	.ifdef V9958
 			.byte v_reg8_VR	; VR - 64k VRAM TODO set per define
-			.byte v_reg9_nt ; #R9, set bit 1 to 1 for PAL
+			.byte v_reg9_nt ; #R9, set bit to 1 for PAL
 	.endif
 vdp_init_bytes_gfx2_end:
 

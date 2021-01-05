@@ -60,16 +60,20 @@ textui_scroll_up:
 
 	lda #<ADDRESS_TEXT_SCREEN
 	clc
-	adc max_cols
+    bit video_mode
+    bvc :+
+    adc #40
+:	adc #40
 	sta a_r
 	lda #>ADDRESS_TEXT_SCREEN
 	sta a_r+1
 	SetVector (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), a_w	; offset first row as "write address"
 
-	lda max_cols
-	lsr
-	lsr
-	tay ; 40/80 col mode, 10/20 * 100 calc pages to copy
+	; 40/80 col mode, 10/20 * 100 calc pages to copy
+    ldy #10
+	bit video_mode
+    bvc @l1
+	ldy #20
 @l1:
 	lda a_r+0	; 4cl
 	sta a_vreg
@@ -107,7 +111,7 @@ textui_scroll_up:
 	dey
 	bne @l1
 
-	ldx max_cols ; write address is already setup from loop above
+	ldx #80 ; write address is already setup from loop above
 	lda #' '
 @l5:
 	vdp_wait_l 5
@@ -144,7 +148,7 @@ textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y
 	inc crs_ptr+1				; overflow inc page count
 	clc
 
-:	bit max_cols
+:	bit video_mode
 	bvc :+
 	asl 						; y*80 => y*40*2
 	rol crs_ptr+1               ; shift carry to address high byte
@@ -182,21 +186,24 @@ _vram_crs_ptr_write:
 	rts
 
 textui_init0:
+    lda #VIDEO_MODE_80_COLS
 .ifdef COLS80
-	lda #TEXT_MODE_80
+    tsb video_mode
 .else
-	lda #TEXT_MODE_40
+    trb video_mode
 .endif
-	sta max_cols
-	bra textui_init
+    bra textui_init
 
 textui_setmode:
-	cmp #TEXT_MODE_80
-	beq @setmode
-	lda #TEXT_MODE_40
-@setmode:
-	sta max_cols
-	jsr textui_blank
+    and #VIDEO_MODE_80_COLS
+    bne :+
+    lda #VIDEO_MODE_80_COLS
+    trb video_mode
+    bra @blank
+:   tsb video_mode
+@blank:
+    jsr textui_blank
+
 textui_init:
 	stz screen_write_lock					;reset write lock
 	jsr textui_enable
@@ -328,9 +335,8 @@ textui_chrout:
 
 textui_blank:
 	ldx #4
-	lda max_cols
-	cmp #TEXT_MODE_80
-	bne :+
+	bit video_mode
+	bvc :+
 	ldx #8
 :	php
 	sei
@@ -363,9 +369,12 @@ __textui_dispatch_char:
 	lda crs_y						; cursor y=0, no dec
 	beq @exit
 	dec crs_y
-	lda max_cols					; set x to max-cols -1
+	lda #40
+    bit video_mode					; set x to max-cols -1
+    bvc @l3
+    lda #80
 @l3:
-	dec 								; which is end of the line
+	dec 							; which is end of the line
 	sta crs_x
 @l2:
 	jsr textui_update_crs_ptr
@@ -377,7 +386,11 @@ __textui_dispatch_char:
 	sta saved_char			; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
 	lda crs_x
 	inc
-	cmp max_cols
+    bit video_mode
+    bvc :+
+    cmp #80
+    beq @l5
+:   cmp #40
 	beq @l5
 	sta crs_x
 	jmp textui_update_crs_ptr

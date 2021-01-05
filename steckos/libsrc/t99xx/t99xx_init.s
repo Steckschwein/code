@@ -32,6 +32,8 @@
 ;		.X - length of init table, corresponds to start register R#.X
 ;		.A/.Y - pointer to vdp init table
 vdp_init_reg:
+    php
+    sei
 	sta vdp_ptr
 	sty vdp_ptr+1
 	txa			; x length of init table
@@ -47,4 +49,5 @@ vdp_init_reg:
 	dex				;2c
 	dey				;2c
 	bpl @l 		;3c
+    plp
 	rts

@@ -22,6 +22,8 @@
 .ifndef _VDP_INC_
   _VDP_INC_ = 1
 
+.include "system.inc"
+
 a_vdp	  = $0220
 a_vram	 = a_vdp
 a_vreg	 = a_vdp+1
@@ -220,15 +222,10 @@ ADDRESS_GFX7_SCREEN					=$10000							; 2nd 64 RAM
 ADDRESS_GFX7_SPRITE					=ADDRESS_GFX_SPRITE
 ADDRESS_GFX7_SPRITE_PATTERN	=ADDRESS_GFX1_SPRITE_PATTERN
 
-TEXT_MODE_40=40
-TEXT_MODE_80=80
-
-.define CLOCK_SPEED_MHZ 8
-
 ; long delay with 6+2 2µs wait
-MAX_NOPS_8M = (6 * 1000 / (1000 / CLOCK_SPEED_MHZ)) / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
+MAX_NOPS_8M = (6 * 1000 / (1000 / clockspeed)) / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
 ; short delay with 2µs wait
-MAX_NOPS_2M = (2 * 1000 / (1000 / CLOCK_SPEED_MHZ) - 12) / 2 ; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
+MAX_NOPS_2M = (2 * 1000 / (1000 / clockspeed) - 12) / 2 ; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
 
 .macro m_vdp_nopslide
 ; NOTE!!!

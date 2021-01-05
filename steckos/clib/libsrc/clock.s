@@ -1,11 +1,13 @@
+
 ;
 ; clock_t clock (void);
 ;
 
-			.include "asminc/rtc.inc"
+		.include "asminc/rtc.inc"
+        .include "asminc/zeropage.inc"
 
-		  .export			_clock
-		  .importzp		 sreg
+        .export         _clock, __clocks_per_sec
+        .importzp		sreg
 
 .proc	_clock
 
@@ -17,3 +19,17 @@
 		  rts
 
 .endproc
+
+; unsigned _clocks_per_sec(void);
+;
+.proc   __clocks_per_sec
+
+        ldx     #0            ; Clear high byte of return value
+        lda     video_mode      
+        bpl     @NTSC
+        lda     #50
+        rts
+@NTSC:  lda     #60
+        rts
+
+.endproc 

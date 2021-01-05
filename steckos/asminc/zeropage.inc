@@ -52,11 +52,24 @@ crs_y	= $028d
 
 key = $0287 ; 1 byte keyboard char
 
-lba_addr 			= $0280		; 4 bytes
-blocks				= $0284		; 3 bytes blocks to read, 3 bytes sufficient to address 4GB -> 4294967296 >> 9 = 8388608 ($800000) max blocks/file
+lba_addr 		= $0280		; 4 bytes
+blocks			= $0284		; 3 bytes blocks to read, 3 bytes sufficient to address 4GB -> 4294967296 >> 9 = 8388608 ($800000) max blocks/file
 
-max_cols		= $0288	; 80 columns mode, 40 columns otherwise
+VIDEO_MODE_PAL      = 1<<7
+VIDEO_MODE_80_COLS  = 1<<6
 
-trampolin	  = $0010
+video_mode 		= $0288 ; video mode register
+                ; TODO not implemented/used yet - bit 0-4 - video mode bits - m1-m5 refer to msx spec. - e.g. 
+                ;   TEXT1 - 00001
+                ;   TEXT2 - 01001
+                ;   MC    - 00010
+                ;   G1    - 00000
+                ;   G2    - 00100
+                ;   G3    - 01000
+                ; bit 6 - text mode with 0 - 40 / 1 - 80 columns
+                ; bit 7 - 0 - NTSC / 1 - PAL
+
+
+trampolin	    = $0010
 
 .endif

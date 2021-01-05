@@ -29,7 +29,7 @@
 		  .export			_write
 		  .constructor	 initstdout
 
-			.import popax
+			.import popax,popptr1
 			.import	_cputc
 			.importzp ptr1
 			.importzp tmp1
@@ -51,9 +51,7 @@
     beq @exit
 :	sta tmp1 ; 8bit length string only - TODO
 	; *buf
-	jsr popax
-    sta ptr1
-    stx ptr1+1
+	jsr popptr1
     
 	; fd
 	jsr popax ; assume stdout, ignore fd

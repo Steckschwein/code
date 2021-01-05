@@ -68,9 +68,8 @@ vdp_text_on:
 	ldx #(vdp_text_init_bytes_end-vdp_text_init_bytes-1)
 	jsr vdp_init_reg
 
-	lda max_cols
-	cmp #TEXT_MODE_40
-	beq @_mode_40
+	bit video_mode
+	bvc @_mode_40
 @_mode_80:
 	lda #v_reg0_m4 ; text mode 2, 80 cols ; R#00
 	ldy #v_reg0
@@ -79,6 +78,8 @@ vdp_text_on:
 	ldy #v_reg2
 	jsr vdp_set_reg
 @_mode_40:
+    lda #VIDEO_MODE_PAL
+    tsb video_mode
 	pla
 	jmp vdp_bgcolor
 
@@ -92,7 +93,7 @@ vdp_text_init_bytes:
 	.byte 0	; not used
 	.byte	Medium_Green<<4|Black ; #R07
 	.byte v_reg8_VR	| v_reg8_SPD ; VR - 64k VRAM TODO FIXME aware of max vram (bios) - #R08
-	.byte v_reg9_nt 	; #R9, set bit 1 to 1 for PAL
+	.byte v_reg9_nt 	; #R9, set bit to 1 for PAL
 	.byte <.HIWORD(ADDRESS_TEXT_COLOR<<2)	;#R10
 	.byte 0
 	.byte Black<<4|Medium_Green ; blink color to inverse text	#R12

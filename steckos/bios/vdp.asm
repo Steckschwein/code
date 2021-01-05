@@ -42,12 +42,12 @@ ROWS=23
 ;----------------------------------------------------------------------------------------------
 vdp_init:
 .ifdef COLS80
-			lda #TEXT_MODE_80
+			lda #VIDEO_MODE_80_COLS
+            tsb video_mode
 .else
-			lda #TEXT_MODE_40
+			lda #VIDEO_MODE_80_COLS
+			trb video_mode
 .endif
-			sta max_cols
-
             lda #BIOS_COLOR
 .ifdef CHAR6x8
 			jsr vdp_text_on

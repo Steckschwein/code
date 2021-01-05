@@ -33,7 +33,7 @@
 tmp1: .res 1
 tmp2: .res 1
 tmp3: .res 2
-.code
+
 appstart $1000
 
 main:

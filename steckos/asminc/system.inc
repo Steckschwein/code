@@ -58,7 +58,7 @@ SYS_VECTOR_IRQ = $fffe
     pha
     phx
     phy
-    lda #<.HIWORD(cnt)
+    lda #1+<.HIWORD(cnt)
 @0:	ldx #>cnt
 @1: ldy #<cnt ; ~6cl inner loop
 @2: dey
@@ -66,7 +66,7 @@ SYS_VECTOR_IRQ = $fffe
 	bne @2
     dex
     bne @1
-    dec
+    dec a
     bne @0
     ply
     plx

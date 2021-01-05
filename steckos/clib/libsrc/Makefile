@@ -37,10 +37,11 @@ mostlyclean:
 
 
 CA65FLAGS = --cpu 65c02 -I ../../ $(DEFINES)
-CC65FLAGS = -W error # -Or
+CC65FLAGS = -W error -I ../include -Os
 
 SRCDIR=.
 SRCDIRS = $(SRCDIR)
+SRCDIRS += common
 SRCDIRS += t99xx
 SRCDIRS += joystick
 SRCDIRS += ym3812
@@ -50,7 +51,8 @@ SRCDIRS += util
 SRCDIRS +=  $(CC65_HOME)/libsrc/conio     	\
 			$(CC65_HOME)/libsrc/runtime	 	\
 			$(CC65_HOME)/libsrc/zlib		\
-			$(CC65_HOME)/libsrc/common
+			$(CC65_HOME)/libsrc/common \
+   	        $(CC65_HOME)/libsrc/zlib
 	#		$(CC65_HOME)/libsrc/serial   \
 	#		$(CC65_HOME)/libsrc/tgi      \
 #            $(CC65_HOME)/libsrc/dbg      \

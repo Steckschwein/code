@@ -46,8 +46,8 @@ vdp_init_bytes_gfx1:
 		.byte (ADDRESS_GFX1_SPRITE / $80)	; sprite attribute table - value * $80 		--> offset in VRAM
 		.byte (ADDRESS_GFX1_SPRITE_PATTERN / $800)  ; sprite pattern table - value * $800  		--> offset in VRAM
 		.byte Black
-		.byte v_reg8_VR	; VR - 64k VRAM  - R#8
-		.byte 0
+        .byte v_reg8_VR	| v_reg8_SPD ; VR - 64k VRAM TODO FIXME aware of max vram (bios) - #R08
+        .byte v_reg9_nt 	; #R9, set bit to 1 for PAL
 		.byte 0;  #R10
 		.byte 0;  #R11
 		.byte 0;  #R12
