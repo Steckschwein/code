@@ -42,7 +42,7 @@ loc_1062B:
 		ldx #opl2_reg_ctrl			;// set timer control byte to #$80 = clear timers T1 T2 and ignore them
 		lda #$80							;// reset flags for timer 1 & 2, IRQset : all other flags are ignored
 		jsr opl2_reg_write
-		ldy opl_stat;$df60			;// get soundcard/chip status byte
+		ldy opl_stat ;$df60			;// get soundcard/chip status byte
 		sty __volatile_tmp							;// store it
 		ldx #opl2_reg_t1				;// Set timer1 to max value
 		lda #$ff

@@ -58,7 +58,7 @@ vdp_init_bytes_gfx7:
 			.byte $0
 			.byte $ff
 			.byte $3f
-			.byte Black ; border color
+			.byte %00000000 ; border color
 			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
 			.byte v_reg9_nt ; #R9, set bit to 1 for PAL
 			.byte 0;  #R10

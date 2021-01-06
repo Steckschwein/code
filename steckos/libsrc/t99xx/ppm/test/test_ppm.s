@@ -6,15 +6,15 @@
 
 	.importzp ptr2
 
-	.import parse_header
+	.import ppm_parse_header
 	.import rgb_bytes_to_grb
 
 	.import asmunit_chrout
 
 ; from ppmview
 .import ppmdata
-.export ppm_width
-.export ppm_height
+.import ppm_width
+.import ppm_height
 
 .macro setup label
 	test_name label
@@ -25,9 +25,9 @@
 .code
 
 ;-------------
-	setup "parse_header valid"
+	setup "ppm_parse_header valid"
 	m_memcpy test_ppm_header_valid, ppmdata, 16
-	jsr parse_header
+	jsr ppm_parse_header
 	assertZero 1		;
 	assertA 0
 	assert8 <256, ppm_width
@@ -36,28 +36,28 @@
 ;-------------
 	setup "parse_header not ppm"
 	m_memcpy test_ppm_header_notppm, ppmdata, 16
-	jsr parse_header
-	assertZero 0		;error
+	jsr ppm_parse_header
+	assertCarry 1		;error
 	assertA $ff
 
 ;-------------
-	setup "parse_header wrong height"
+	setup "ppm_parse_header wrong height"
 	m_memcpy test_ppm_header_wrong_height, ppmdata, 16
-	jsr parse_header
+	jsr ppm_parse_header
 	assertZero 0		;error
 	assertA $ff
 
 ;-------------
-	setup "parse_header wrong depth"
+	setup "ppm_parse_header wrong depth"
 	m_memcpy test_ppm_header_wrong_depth, ppmdata, 16
-	jsr parse_header
+	jsr ppm_parse_header
 	assertZero 0		;error
 	assertA $ff
 
 ;-------------
-	setup "parse_header with comment"
+	setup "ppm_parse_header with comment"
 	m_memcpy test_ppm_header_comment, ppmdata, 127
-	jsr parse_header
+	jsr ppm_parse_header
 	assertZero 1		;
 	assertA 0
 	assert8 <256, ppm_width
@@ -90,7 +90,7 @@
 
 .export krn_primm=mock
 .export hexout=mock
-.export krn_open=mock, krn_fread=mock, krn_close=mock
+.export fopen=mock, fread=mock, fclose=mock
 .export krn_textui_enable=mock
 .export krn_textui_disable=mock
 .export krn_textui_init=mock
@@ -120,6 +120,4 @@ test_ppm_data:	; ppm RGB => GRB 3,3,2
 	.byte $d6, $b5, $81	;$ba
 
 
-ppm_width: .res 1
-ppm_height: .res 1
 .segment "ASMUNIT"

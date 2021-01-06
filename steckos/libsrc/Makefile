@@ -53,6 +53,7 @@ SRCDIR=.
 SRCDIRS = $(SRCDIR)
 SRCDIRS +=  ds1306
 SRCDIRS +=  t99xx
+SRCDIRS +=  t99xx/ppm
 SRCDIRS +=  joystick
 SRCDIRS +=  ym3812
 SRCDIRS +=  nvram
