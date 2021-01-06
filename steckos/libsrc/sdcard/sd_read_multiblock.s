@@ -33,12 +33,12 @@
 .include "spi.inc"
 .include "via.inc"
 .include "debug.inc"
-.code
-.import spi_rw_byte, spi_r_byte, spi_select_device, spi_deselect
 
+.import spi_rw_byte, spi_r_byte, spi_select_device, spi_deselect
 .import sd_select_card, sd_deselect_card, sd_cmd, sd_cmd_lba
 .import sd_busy_wait
 .import fullblock
+
 .export sd_read_multiblock
 
 
@@ -52,6 +52,7 @@
 ;out:
 ;	A - A = 0 on success, error code otherwise
 ;---------------------------------------------------------------------
+.code
 sd_read_multiblock:
 			phx
 			phy

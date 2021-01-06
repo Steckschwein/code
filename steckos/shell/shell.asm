@@ -32,7 +32,7 @@ prompt  = $af
 .include "appstart.inc"
 
 ; SCREENSAVER_TIMEOUT_MINUTES=2
-BUF_SIZE		= 32 ;TODO FIXME too hard
+BUF_SIZE		= 80 ;TODO maybe too small?
 
 bufptr			= ptr1
 pathptr			= ptr2
@@ -640,6 +640,6 @@ PRGEXT:           .asciiz ".PRG"
 crs_x_prompt:     .res 1
 tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
-cwdbuf_size=64
+cwdbuf_size=80
 cwdbuf:           .res cwdbuf_size
 history:

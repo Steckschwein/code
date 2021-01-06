@@ -29,7 +29,6 @@
 .include "vdp.inc"
 .include "joystick.inc"
 .include "via.inc"
-.include "fat32.inc"; TODO FIXME get rid of
 .include "fcntl.inc"
 .include "errno.inc"
 .include "zeropage.inc"
@@ -50,7 +49,7 @@
 .import fetchkey
 .import char_out
 
-.import ppmdata
+.export ppmdata
 .import ppm_width
 .import ppm_height
 
@@ -65,7 +64,7 @@
 .define MAX_WIDTH 256
 .define MAX_HEIGHT 212
 .define COLOR_DEPTH 255
-.define BLOCK_BUFFER 4
+.define BLOCK_BUFFER 8
 
 .zeropage
 tmp2:   	.res 1
@@ -397,3 +396,4 @@ rows: .res 1
 fd:   .res 1
 data_offset: .res 1
 irqsafe: .res 2
+ppmdata: .res BLOCK_BUFFER * $200

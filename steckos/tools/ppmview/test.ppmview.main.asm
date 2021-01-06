@@ -12,7 +12,7 @@
 	.import asmunit_chrout
 
 ; from ppmview
-.export ppmdata
+.import ppmdata
 .export ppm_width
 .export ppm_height
 
@@ -120,7 +120,7 @@ test_ppm_data:	; ppm RGB => GRB 3,3,2
 	.byte $d6, $b5, $81	;$ba
 
 
-ppm_width: .res 1, 0
-ppm_height: .res 1, 0
-ppmdata: .res 32,0
+ppm_width: .res 1
+ppm_height: .res 1
+;ppmdata: .res 32
 .segment "ASMUNIT"

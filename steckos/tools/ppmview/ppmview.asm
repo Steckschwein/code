@@ -38,7 +38,6 @@ appstart $1000
 .export krn_getkey
 .export char_out=krn_chrout
 
-.export ppmdata
 .export ppm_width
 .export ppm_height
 
@@ -50,6 +49,3 @@ appstart $1000
 
 ppm_width:  .res 1, 0
 ppm_height: .res 1, 0
-
-.bss
-ppmdata: .res 4 * $200

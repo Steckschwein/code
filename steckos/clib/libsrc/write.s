@@ -55,7 +55,6 @@
     stx ptr1+1    
 	; fd
 	jsr popax ; assume stdout, ignore fd
-
     plx
     pla
 	cmp #0 ; shortcut, zero length?
@@ -67,9 +66,7 @@
 @l0:
 	lda (ptr1),y
     beq @exit
-    phy
     jsr _cputc
-    ply
 	iny
 	cpy tmp1
 	bne @l0
@@ -77,6 +74,5 @@
     tya
     ldx #0
 @exit:
-    clc
     rts
 .endproc

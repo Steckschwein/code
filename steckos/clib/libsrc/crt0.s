@@ -37,7 +37,7 @@ _init:
 		LDA	  #<(__RAM_START__ + __RAM_SIZE__)
 		STA	  sp
 		LDA	  #>(__RAM_START__ + __RAM_SIZE__)
-		STA	  sp+1
+		STA	  sp+1            
 		
 ; Set up the stack.
 ;			lda	  #<(__MAIN_START__ + __MAIN_SIZE__ + __STACKSIZE__)
@@ -47,9 +47,9 @@ _init:
 
 ; ---------------------------------------------------------------------------
 ; Initialize memory storage
-			JSR	  zerobss				  ; Clear BSS segment
-			JSR	  copydata				 ; Initialize DATA segment
-			JSR	  initlib				  ; Run constructors
+			JSR	  zerobss	            ; Clear BSS segment
+			JSR	  copydata				; Initialize DATA segment
+			JSR	  initlib				; Run constructors
 
 ; ---------------------------------------------------------------------------
 ; Call main()
