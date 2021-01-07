@@ -177,13 +177,14 @@ do_irq:
 	; opl irq handling code
 
 @check_spi:
-	lda key
-	bne @exit       ; key is not $00? no fetch, exit
+;   TODO FIXME - we fetch always, to satisfy the IRQ of the avr. tradeoff here is that we override a possible previously stored key anyway
+;	lda key
+;	bne @exit       ; key is not $00? no fetch, exit
 	jsr fetchkey
 	bcc @exit       ; nothing after all? exit
 
 	sta key
-
+    
     cmp #KEY_CTRL_C ; was it ctrl c?
     bne @exit      ; no
 
