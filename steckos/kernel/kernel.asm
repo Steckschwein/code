@@ -104,9 +104,9 @@ kern_init:
 		.byte $00
 .else
         jsr primm
-        .byte "steckOS kernel "
+        .byte CODE_LF, "steckOS kernel "
 		.include "version.inc"
-        .byte $0a,0
+        .byte CODE_LF, 0
 .endif
 
 		SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
@@ -184,7 +184,7 @@ do_irq:
 	bcc @exit       ; nothing after all? exit
 
 	sta key
-    
+
     cmp #KEY_CTRL_C ; was it ctrl c?
     bne @exit      ; no
 

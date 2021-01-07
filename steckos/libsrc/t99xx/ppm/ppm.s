@@ -215,8 +215,6 @@ rgb_bytes_to_grb:	; GRB 332 format
 		rts
 
 set_screen_addr:
-;		php
-;		sei	;critical section, avoid vdp irq here
 		vdp_wait_s 5
 		lda cols
 		sta a_vreg                 ; A7-A0 vram address low byte
@@ -236,7 +234,6 @@ set_screen_addr:
 		vdp_wait_s 2
 		lda #v_reg14
 		sta a_vreg
-;		plp
 		rts
 
 ppm_parse_header:

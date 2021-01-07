@@ -49,8 +49,9 @@ appstart $1000
         bcs io_error
 
 		keyin
-exit:
+
 		jsr gfxui_off
+exit:
         jmp (retvec)
 
 io_error:
@@ -60,16 +61,11 @@ io_error:
         jsr primm
 		.byte $0a,"Not a valid ppm file! Must be type P6 with 256x192px and 8bpp colors.",0
         jmp exit
-:       phx
-        jsr primm
+:       jsr primm
         .byte $0a,"i/o error, code: ",0
-        pla
+        txa
         jsr hexout
         jmp exit        
-
-blend_isr:
-        bit a_vreg
-        rti
 
 gfxui_on:
 		jsr krn_textui_disable			;disable textui
@@ -78,7 +74,7 @@ gfxui_on:
 		vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
 
 		lda #%00000000
-		jsr vdp_gfx7_blank
+		jsr vdp_mode7_blank
 
 		rts
 

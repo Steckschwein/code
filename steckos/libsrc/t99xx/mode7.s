@@ -64,6 +64,7 @@ vdp_init_bytes_gfx7:
 			.byte 0;  #R11
 			.byte 0;  #R12
 			.byte 0;  #R13
+            .byte <.HIWORD(ADDRESS_GFX7_SCREEN<<2) ; #R14
 vdp_init_bytes_gfx7_end:
 ;
 ; blank gfx mode 7 with
@@ -71,9 +72,9 @@ vdp_init_bytes_gfx7_end:
 ;
 vdp_mode7_blank:
 vdp_gfx7_blank:
-	phx
 	php
 	sei
+	phx
 	sta colour
 	jsr vdp_wait_cmd
 ;	vdp_vram_w ADDRESS_GFX7_SCREEN
@@ -90,8 +91,8 @@ vdp_gfx7_blank:
 	bne @loop
 	jsr vdp_wait_cmd
 
-	plp
 	plx
+	plp
 	rts
 
 data:

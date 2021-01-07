@@ -28,6 +28,7 @@
 .include "keyboard.inc"
 .include "vdp.inc"
 
+TEXTUI_COLOR=Medium_Green<<4|Black
 ROWS=24
 CURSOR_BLANK=' '
 CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
@@ -208,13 +209,13 @@ textui_init:
 	stz screen_write_lock					;reset write lock
 	jsr textui_enable
 
-	lda #CODE_LF
-	jsr __textui_dispatch_char
-
 .ifndef DISABLE_VDPINIT
-	jmp vdp_text_on
+	lda #TEXTUI_COLOR
+    jmp vdp_text_on
 .endif
-	rts
+    rts
+;	lda #CODE_LF
+;	jmp __textui_dispatch_char
 
 textui_cursor:
 	lda screen_write_lock

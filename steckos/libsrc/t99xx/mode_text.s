@@ -35,7 +35,7 @@
 		  .import vdp_bgcolor
 
 .ifdef COLS80
-	.ifndef V9938 || V9958
+	.ifndef V9958
 		.assert 0, error, "80 COLUMNS ARE SUPPORTED ON V9958 ONLY! MAKE SURE -DV9958 IS ENABLED"
 	.endif
 .endif
@@ -56,11 +56,11 @@ vdp_text_blank:
 ;	text mode - 40x24/80x24 character mode, 2 colors
 ;	.A - color settings (#R07)
 vdp_text_on:
-	pha ; push color    
+    
+    php
+    sei
 
-.ifdef V9938 || V9958
-	vdp_sreg <.HIWORD(ADDRESS_TEXT_SCREEN<<2), v_reg14
-.endif
+	pha ; push color
 	
     lda #<vdp_text_init_bytes
 	ldy #>vdp_text_init_bytes
@@ -79,8 +79,12 @@ vdp_text_on:
 @_mode_40:
     lda #VIDEO_MODE_PAL
     tsb video_mode
+
 	pla
-	jmp vdp_bgcolor
+	jsr vdp_bgcolor
+
+    plp
+    rts
 
 vdp_text_init_bytes:
 	.byte 0 ; R#0
@@ -88,13 +92,14 @@ vdp_text_init_bytes:
 	.byte >(ADDRESS_TEXT_SCREEN>>2) ; name table - value * $1000 (v9958)		#R02
 	.byte >(ADDRESS_TEXT_COLOR<<2) | $07	; color table - value * $1000 (v9958)
 	.byte >(ADDRESS_TEXT_PATTERN>>3) ; pattern table (charset) - value * $800  	--> offset in VRAM
-	.byte	0	; not used
 	.byte 0	; not used
-	.byte	Medium_Green<<4|Black ; #R07
+	.byte 0	; not used
+	.byte Medium_Green<<4|Black ; #R07
 	.byte v_reg8_VR	| v_reg8_SPD ; VR - 64k VRAM TODO FIXME aware of max vram (bios) - #R08
 	.byte v_reg9_nt 	; #R9, set bit to 1 for PAL
 	.byte <.HIWORD(ADDRESS_TEXT_COLOR<<2)	;#R10
 	.byte 0
 	.byte Black<<4|Medium_Green ; blink color to inverse text	#R12
 	.byte $f0 ; "on time" to max value, per default, means no off time and therefore no blink at all  #R13
+    .byte <.HIWORD(ADDRESS_TEXT_SCREEN<<2)
 vdp_text_init_bytes_end:

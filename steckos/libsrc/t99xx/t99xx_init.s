@@ -34,6 +34,7 @@
 vdp_init_reg:
     php
     sei
+
 	sta vdp_ptr
 	sty vdp_ptr+1
 	txa			; x length of init table
@@ -51,9 +52,8 @@ vdp_init_reg:
 	bpl @l 		;3c
 
 .ifdef V9958
-	; enable V9958 /WAIT pin
     vdp_sreg 0, v_reg23	; reset vertical scroll
-	vdp_sreg v_reg25_wait, v_reg25
+	vdp_sreg v_reg25_wait, v_reg25	; enable V9958 /WAIT pin
 .endif
 
     plp
