@@ -104,9 +104,9 @@ textui_scroll_up:
 	lda scroll_buffer,x	;4
 	sta a_vram
 	inc a_w+0  ; 6cl
-	bne :+	  ; 3cl
-	inc a_w+1
-:	dex ; 2cl
+	bne :+	   ; 3cl
+	inc a_w+1  ;
+:	dex ; 2cl  
 	bpl @vram_write ;3cl
 	dey
 	bne @l1
@@ -114,7 +114,7 @@ textui_scroll_up:
 	ldx #80 ; write address is already setup from loop above
 	lda #' '
 @l5:
-	vdp_wait_l 5
+	vdp_wait_l 4
 	sta a_vram
 	dex
 	bne @l5

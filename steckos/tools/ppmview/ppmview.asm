@@ -58,7 +58,7 @@ io_error:
         cmp #0
         beq :+
         jsr primm
-		.byte $0a,"Not a valid ppm file! Must be type P6 with max. ", .string(MAX_WIDTH), "x", .string(MAX_HEIGHT), "px and 8bpp colors.",0
+		.byte $0a,"Not a valid ppm file! Must be type P6 with 256x192px and 8bpp colors.",0
         jmp exit
 :       phx
         jsr primm
