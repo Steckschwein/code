@@ -7,7 +7,7 @@ TEST_LDFLAGS=-C ../../../asmunit/asmunit.cfg -Dasmunit_char_out=0x200
 ADDRESS=0x1000
 
 .PHONY: all clean
-all: test.ppmview.main ppmview.prg
+all: ppmview.prg
 
 clean:
 	rm -f *.bin *.prg *.o *.log
@@ -15,14 +15,14 @@ clean:
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
-test.%.bin: test.%.o ppmview.main.o $(TEST_LIBS)
+test.%.bin: test.%.o $(TEST_LIBS)
 	ld65 $(TEST_LDFLAGS) $< $(<:test.%=%) $(TEST_LIBS) -o $@
 
 test.%: test.%.bin
 	../../../asmunit/asmunit_wrapper.sh $@.bin $(ADDRESS)
 
-%.prg: %.main.o %.o $(LIBS)
-	ld65 $(LDFLAGS) ppmview.o ppmview.main.o $(LIBS) -o $@
+%.prg: %.o $(LIBS)
+	ld65 $(LDFLAGS) ppmview.o $(LIBS) -o $@
 
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@

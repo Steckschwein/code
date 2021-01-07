@@ -12,7 +12,7 @@
 	.import asmunit_chrout
 
 ; from ppmview
-.import ppmdata
+.import ppm_data
 .import ppm_width
 .import ppm_height
 
@@ -26,7 +26,7 @@
 
 ;-------------
 	setup "ppm_parse_header valid"
-	m_memcpy test_ppm_header_valid, ppmdata, 16
+	m_memcpy test_ppm_header_valid, ppm_data, 16
 	jsr ppm_parse_header
 	assertZero 1		;
 	assertA 0
@@ -35,28 +35,28 @@
 
 ;-------------
 	setup "parse_header not ppm"
-	m_memcpy test_ppm_header_notppm, ppmdata, 16
+	m_memcpy test_ppm_header_notppm, ppm_data, 16
 	jsr ppm_parse_header
 	assertCarry 1		;error
 	assertA $ff
 
 ;-------------
 	setup "ppm_parse_header wrong height"
-	m_memcpy test_ppm_header_wrong_height, ppmdata, 16
+	m_memcpy test_ppm_header_wrong_height, ppm_data, 16
 	jsr ppm_parse_header
 	assertZero 0		;error
 	assertA $ff
 
 ;-------------
 	setup "ppm_parse_header wrong depth"
-	m_memcpy test_ppm_header_wrong_depth, ppmdata, 16
+	m_memcpy test_ppm_header_wrong_depth, ppm_data, 16
 	jsr ppm_parse_header
 	assertZero 0		;error
 	assertA $ff
 
 ;-------------
 	setup "ppm_parse_header with comment"
-	m_memcpy test_ppm_header_comment, ppmdata, 127
+	m_memcpy test_ppm_header_comment, ppm_data, 127
 	jsr ppm_parse_header
 	assertZero 1		;
 	assertA 0
@@ -64,8 +64,8 @@
 	assert8 192, ppm_height
 
 	setup "rgb_bytes_to_grb"
- 	SetVector ppmdata, read_blkptr
-	m_memcpy test_ppm_data, ppmdata, 32
+ 	SetVector ppm_data, read_blkptr
+	m_memcpy test_ppm_data, ppm_data, 32
 
 	ldy #0
 	jsr rgb_bytes_to_grb

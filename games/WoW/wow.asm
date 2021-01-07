@@ -7,7 +7,6 @@
 .export fread=krn_fread
 .export fclose=krn_close
 
-
 appstart
 .code
 main:

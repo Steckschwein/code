@@ -5,25 +5,34 @@
 .code
 intro_main:
     jsr	krn_textui_disable			;disable textui
+
     jsr	gfxui_on
 
 	lda #<INTROGFX
 	ldx #>INTROGFX
 	jsr ppm_load_image
-	bne error
+	bcs error
     jsr	gfxui_blend_on
 @l:		
     keyin
     beq @l
     jsr	gfxui_blend_off
-    jsr	gfxui_off
-    
-	jsr	krn_textui_enable
-    rts
+    bra exit
 
 error:
-	jsr primm
-	.asciiz "load error file "
+    phx
+    pha
+    jsr	gfxui_off
+	jsr	krn_textui_enable
+    jsr primm
+	.byte CODE_LF, "ppm error (",0
+    pla
+    jsr hexout
+    pla 
+    jsr hexout
+    jsr primm
+    .byte ")!",0
+exit: 
     rts
 
 blend_isr:
@@ -69,7 +78,7 @@ gfxui_off:
       rts
 
 .data
-INTROGFX: .asciiz "wowintro.ppm"
+INTROGFX: .asciiz "wowinto.ppm"
 ;INTROGFX: .asciiz "INTRO.GFX"
 
 .bss

@@ -43,7 +43,7 @@
 .import fread
 .import fclose
 
-.export ppmdata
+.export ppm_data
 .export ppm_width
 .export ppm_height
 
@@ -58,54 +58,70 @@
 .define BLOCK_BUFFER 8
 
 .zeropage
-tmp:   	.res 1
-tmp2:  	.res 1
-_error:	.res 1
-_pages:	.res 1
+_i:     .res 1
 
 .code
-ppm_load_image:
+
+;
+; in:
+;   A/X file name to load
+; out:
+;   C=0 success and image loaded to vram (mode 7), C=1 otherwise with A/X error code - A ppm specific error, X i/o specific error
+.proc ppm_load_image
 		stz fd
 
 		ldy #O_RDONLY
 		jsr fopen
-		bne io_error
+		bne @io_error
 		stx fd
 
 		jsr read_blocks
-		bne io_error
+		bne @io_error
 
 		jsr ppm_parse_header					; .Y - return with offset to first data byte
-		bne @invalid_ppm
-		sty data_offset
+		bne @ppm_error
+		sty _offs
 
 		jsr load_image
-		bne io_error
+		bne @io_error
 
-		bra close_exit
+        clc
+		bra @close_exit
 
-@invalid_ppm:
-		jsr primm
-		.byte CODE_LF, "Not a valid ppm file! Must be type P6 with max. ", .string(MAX_WIDTH), "x", .string(MAX_HEIGHT), "px and 8bpp colors.",CODE_LF, 0
-		bra close_exit
+;		jsr primm
+;		.byte CODE_LF, "Not a valid ppm file! Must be type P6 with max. ", .string(MAX_WIDTH), "x", .string(MAX_HEIGHT), "px and 8bpp colors.",CODE_LF, 0
 
-io_error:
-		pha
-		jsr primm
-		.byte $0a,"i/o error, code: ",0
-		pla
-		jsr hexout
-close_exit:
+;		bra close_exit
+;io_error:
+;		pha
+;		jsr primm
+;		.byte $0a,"i/o error, code: ",0
+;		pla
+;		jsr hexout
+@ppm_error:
+        ldx #0
+        bra @error
+@io_error:
+        tax
+        lda #0
+@error:
+        sec
+@close_exit:
+        php
+        phx
+        pha
 		ldx fd
 		beq @l_exit
 		jsr fclose
 @l_exit:
-        lda _error
-        sec
+        pla
+        plx
+        plp
 		rts
+.endproc
 
 read_blocks:
-		SetVector ppmdata, read_blkptr
+		SetVector ppm_data, read_blkptr
 		stz _error
 		ldx fd
 		ldy #BLOCK_BUFFER
@@ -114,7 +130,7 @@ read_blocks:
 		tya
 		asl
 		sta _pages
-		SetVector ppmdata, read_blkptr ; reset ptr to begin of buffer
+		SetVector ppm_data, read_blkptr ; reset ptr to begin of buffer
 		lda #EOK
 ;		clc ; cleared by asl above
 		rts
@@ -130,7 +146,7 @@ load_image:
 
 		jsr set_screen_addr	; initial vram address
 
-		ldy data_offset ; .Y - data offset
+		ldy _offs ; .Y - data offset
 		jsr blocks_to_vram
 		lda _error ; on any error
 		rts
@@ -177,19 +193,19 @@ rgb_bytes_to_grb:	; GRB 332 format
 		lsr
 		lsr
 		lsr
-		sta tmp
+		sta _i
 		jsr next_byte	;G
 		bcs @exit
 		and #$e0
-		ora tmp
-		sta tmp
+		ora _i
+		sta _i
 		jsr next_byte	;B
 		bcs @exit
 		rol
 		rol
 		rol
 		and #$03		;blue - bit 1,0
-		ora tmp
+		ora _i
 		clc ; no error
 @exit:
 		rts
@@ -221,10 +237,10 @@ set_screen_addr:
 
 ppm_parse_header:
 		lda #'P'
-		cmp ppmdata
+		cmp ppm_data
 		bne @l_invalid_ppm
 		lda #'6'
-		cmp ppmdata+1
+		cmp ppm_data+1
 		bne @l_invalid_ppm
 
 		ldy #0
@@ -240,14 +256,14 @@ ppm_parse_header:
 		cmp #MAX_HEIGHT+1
 		bcs @l_invalid_ppm
         sta ppm_height
-		sty tmp2 ;safe y offset, to check how many chars are consumed during parse
+		sty _offs ;safe y offset, to check how many chars are consumed during parse
 		
         jsr parse_int	;depth
 		cmp #COLOR_DEPTH
 		bne @l_invalid_ppm
 		tya
 		sec
-		sbc tmp2
+		sbc _offs
 		cmp #4+1 ; check that 3 digits + 1 delimiter was parsed, so number is <=3 digits
 		bcs @l_invalid_ppm
 		lda #0
@@ -258,7 +274,7 @@ ppm_parse_header:
 		rts
 
 parse_until_size:
-		lda ppmdata, y
+		lda ppm_data, y
 		cmp #'#'				; skip comments
 		bne @l
 		jsr parse_string
@@ -267,37 +283,37 @@ parse_until_size:
 		rts
 
 parse_int:
-		stz tmp
+		stz _i
 @l_toi:
-		lda ppmdata, y
+		lda ppm_data, y
 		cmp #'0'
 		bcc @l_end
 		cmp #'9'+1
 		bcs @l_end
 		pha		;n*10 => n*2 + n*8
-		lda tmp
+		lda _i
 		asl
-		sta tmp
+		sta _i
 		asl
 		asl
-		adc tmp
-		sta tmp
+		adc _i
+		sta _i
 		pla
 		sec
 		sbc #'0'
 		clc
-		adc tmp
-		sta tmp
+		adc _i
+		sta _i
 		iny
 		bne @l_toi
 @l_end:
 		iny
-		lda tmp
+		lda _i
 		rts
 
 parse_string:
 		ldx #0
-@l0:	lda ppmdata, y
+@l0:	lda ppm_data, y
 		cmp #$20		; < $20 - control characters are treat as whitespace
 		bcc @le
 		iny
@@ -306,11 +322,12 @@ parse_string:
 		rts
 
 .bss
-cols: .res 1
-rows: .res 1
-fd:   .res 1
-data_offset: .res 1
-irqsafe: .res 2
+_offs: 	.res 1
+_error:	.res 1
+_pages:	.res 1
+cols:   .res 1
+rows:   .res 1
+fd:     .res 1
 ppm_width:  .res 1
 ppm_height: .res 1
-ppmdata:    .res BLOCK_BUFFER * $200
+ppm_data:    .res BLOCK_BUFFER * $200

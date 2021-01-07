@@ -49,12 +49,5 @@ clean:
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
-#ls.prg: ls.o ls_entry_short.o
-#	cl65 ls.o $(CA65FLAGS) --target none  ls_entry_short.o $(LDFLAGS) -o ls.prg
-#ll.prg: ls.o ls_entry_long.o
-#	cl65 ls.o ls_entry_long.o $(CA65FLAGS) --target none $(LDFLAGS) -o ll.prg
-#stat.prg: ls.o ls_entry_stat.o
-#	cl65 ls.o ls_entry_stat.o $(CA65FLAGS) --target none $(LDFLAGS) -o stat.prg
-
 %: %.prg
 	../../transfer.py $< -s 0x1000
