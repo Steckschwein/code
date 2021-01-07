@@ -78,11 +78,10 @@ gfxui_off:
       rts
 
 .data
-INTROGFX: .asciiz "wowinto.ppm"
+INTROGFX: .asciiz "wowintro.ppm"
 ;INTROGFX: .asciiz "INTRO.GFX"
 
 .bss
-irqsafe: .res 2, 0
+irqsafe: .res 2
 tmp0:	.res 1
 tmp5:	.res 1 
-

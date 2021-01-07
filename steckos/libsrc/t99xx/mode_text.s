@@ -35,7 +35,7 @@
 		  .import vdp_bgcolor
 
 .ifdef COLS80
-	.ifndef V9958
+	.ifndef V9938 || V9958
 		.assert 0, error, "80 COLUMNS ARE SUPPORTED ON V9958 ONLY! MAKE SURE -DV9958 IS ENABLED"
 	.endif
 .endif
@@ -56,14 +56,13 @@ vdp_text_blank:
 ;	text mode - 40x24/80x24 character mode, 2 colors
 ;	.A - color settings (#R07)
 vdp_text_on:
-	pha ; push color
-.ifdef V9958
+	pha ; push color    
+
+.ifdef V9938 || V9958
 	vdp_sreg <.HIWORD(ADDRESS_TEXT_SCREEN<<2), v_reg14
-	; enable V9958 /WAIT pin
-	vdp_sreg v_reg25_wait, v_reg25
 .endif
-    
-	lda #<vdp_text_init_bytes
+	
+    lda #<vdp_text_init_bytes
 	ldy #>vdp_text_init_bytes
 	ldx #(vdp_text_init_bytes_end-vdp_text_init_bytes-1)
 	jsr vdp_init_reg

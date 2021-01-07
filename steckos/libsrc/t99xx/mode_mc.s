@@ -47,6 +47,9 @@ vdp_mc_on:
 ; init mc screen
 ;
 vdp_mc_init_screen:
+            php
+            sei ; critical section vdp access
+
 			vdp_vram_w ADDRESS_GFX_MC_SCREEN
 			stz vdp_tmp
 			lda #32
@@ -69,7 +72,9 @@ vdp_mc_init_screen:
 			adc #32
 			sta vdp_tmp+1
 			bra @l1
-@le:		rts
+@le:		
+            plp
+            rts
 
 ;
 ; blank multi color mode, set all pixel to black

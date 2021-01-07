@@ -82,7 +82,7 @@ _i:     .res 1
 		bne @ppm_error
 		sty _offs
 
-		jsr load_image
+		jsr load_image ; timing critical
 		bne @io_error
 
         clc
@@ -144,10 +144,14 @@ load_image:
 		stz cols
 		stz rows
 
-		jsr set_screen_addr	; initial vram address
+        php
+        sei ;critical section, avoid vdp irq here
 
+		jsr set_screen_addr	; initial vram address
 		ldy _offs ; .Y - data offset
 		jsr blocks_to_vram
+        
+        plp
 		lda _error ; on any error
 		rts
 
@@ -211,8 +215,8 @@ rgb_bytes_to_grb:	; GRB 332 format
 		rts
 
 set_screen_addr:
-		php
-		sei	;critical section, avoid vdp irq here
+;		php
+;		sei	;critical section, avoid vdp irq here
 		vdp_wait_s 5
 		lda cols
 		sta a_vreg                 ; A7-A0 vram address low byte
@@ -232,7 +236,7 @@ set_screen_addr:
 		vdp_wait_s 2
 		lda #v_reg14
 		sta a_vreg
-		plp
+;		plp
 		rts
 
 ppm_parse_header:

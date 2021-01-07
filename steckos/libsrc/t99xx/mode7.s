@@ -44,7 +44,6 @@
 ;
 vdp_mode7_on:
 vdp_gfx7_on:
-			vdp_sreg 0, v_reg23	; reset vertical scroll
 			lda #<vdp_init_bytes_gfx7
 			ldy #>vdp_init_bytes_gfx7
 			ldx #<(vdp_init_bytes_gfx7_end-vdp_init_bytes_gfx7)-1

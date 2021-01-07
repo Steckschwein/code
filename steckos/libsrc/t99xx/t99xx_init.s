@@ -49,5 +49,12 @@ vdp_init_reg:
 	dex				;2c
 	dey				;2c
 	bpl @l 		;3c
+
+.ifdef V9958
+	; enable V9958 /WAIT pin
+    vdp_sreg 0, v_reg23	; reset vertical scroll
+	vdp_sreg v_reg25_wait, v_reg25
+.endif
+
     plp
 	rts

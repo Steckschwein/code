@@ -67,26 +67,33 @@ io_error:
         jsr hexout
         jmp exit        
 
+blend_isr:
+        bit a_vreg
+        rti
+
 gfxui_on:
 		jsr krn_textui_disable			;disable textui
 
-		sei
-		jsr vdp_gfx7_on			   ;enable gfx7 mode
+		jsr vdp_mode7_on			   ;enable gfx7 mode
 		vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
 
 		lda #%00000000
 		jsr vdp_gfx7_blank
-;		copypointer  $fffe, irqsafe
-;		SetVector  blend_isr, $fffe
 
-		cli
 		rts
 
 gfxui_off:
+      sei
+      
       pha
       phx
       vdp_sreg v_reg9_nt, v_reg9  ; 192px
-      jsr	krn_textui_init
+      jsr krn_textui_init
       plx
       pla
+      
+      cli
+      
       rts
+.bss
+irqsafe: .res 2
