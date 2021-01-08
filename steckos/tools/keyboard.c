@@ -65,6 +65,8 @@ void send(unsigned char command, unsigned char value)
     }
 }
 
+#include <unistd.h>
+
 int main(int argc, unsigned char **argv)
 {
     while (argc > 0)

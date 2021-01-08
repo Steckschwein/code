@@ -5,8 +5,6 @@
 extern unsigned _clocks_per_sec(void);
 
 #include <time.h>
-#include <unistd.h>
-
 
 /* We cannot implement this function without a working clock function */
 #if defined(CLOCKS_PER_SEC)

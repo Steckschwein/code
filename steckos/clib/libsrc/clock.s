@@ -8,15 +8,26 @@
 
         .export         _clock, __clocks_per_sec
         .importzp		sreg
+        .importzp mulax6,mulax5,mulax10
+
+_CPS_PAL=50
+_CPS_NTSC=60
 
 .proc	_clock
 
-		  lda	  #0
-		  sta	  sreg+1
-		  sta	  sreg
-		  ldx	  #0
-		  lda	  rtc_systime_t+time_t::tm_sec ; TODO FIXME just seconds
-		  rts
+        jsr __clocks_per_sec
+        stx sreg
+        stx sreg+1
+
+        cmp #_CPS_NTSC
+        lda rtc_systime_t+time_t::tm_sec ; seconds * __clocks_per_sec
+        bcs @NTSC  ; >=60 NTSC
+        jsr mulax5
+        bra :+
+@NTSC:
+        jsr mulax6
+:       jsr mulax10
+        rts
 
 .endproc
 
@@ -27,9 +38,9 @@
         ldx     #0            ; Clear high byte of return value
         lda     video_mode      
         bpl     @NTSC
-        lda     #50
+        lda     #_CPS_PAL
         rts
-@NTSC:  lda     #60
+@NTSC:  lda     #_CPS_NTSC
         rts
 
-.endproc 
+.endproc
