@@ -107,7 +107,7 @@ textui_scroll_up:
 	inc a_w+0  ; 6cl
 	bne :+	   ; 3cl
 	inc a_w+1  ;
-:	dex ; 2cl  
+:	dex ; 2cl
 	bpl @vram_write ;3cl
 	dey
 	bne @l1
@@ -134,7 +134,7 @@ textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y
 	sei
 	stz crs_ptr+1
 	lda crs_y
-    asl							; y*2
+	asl							; y*2
 	asl							; y*4
 	asl							; y*8
 	sta crs_ptr					; save for add below
@@ -211,11 +211,10 @@ textui_init:
 
 .ifndef DISABLE_VDPINIT
 	lda #TEXTUI_COLOR
-    jmp vdp_text_on
+	jmp vdp_text_on
+.else
+	rts
 .endif
-    rts
-;	lda #CODE_LF
-;	jmp __textui_dispatch_char
 
 textui_cursor:
 	lda screen_write_lock
@@ -405,19 +404,16 @@ __textui_dispatch_char:
 	jsr _vram_crs_ptr_write_saved	; restore saved char
 	lda #CURSOR_BLANK
 	sta saved_char			 	; reset saved_char to blank, cause we scroll up
-	;lda #STATE_CURSOR_BLINK
-	;trb screen_status		 	; reset cursor state
 	jmp textui_scroll_up	; scroll and exit
 @l6:
 	inc crs_y
 	jmp textui_update_crs_ptr
 
-
 .bss
 scroll_buffer_size = 100 ; 40/80 col mode => 1000/2000 chars to copy
 scroll_buffer:			.res scroll_buffer_size
 screen_status:			.res 1
-screen_write_lock:	    .res 1
+screen_write_lock:   .res 1
 screen_frames:			.res 1
 saved_char:				.res 1
 a_r:					.res 2
