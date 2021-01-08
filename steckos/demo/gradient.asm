@@ -30,27 +30,20 @@
 
 .autoimport
 
-appstart $1000
+appstart
 
 .zeropage
-p_script: .res 2
-sin_tab_ptr: 		.res 2
 
 .bss
 rline:			.res 1
 frame_cnt: 		.res 1
 script_state:	.res 1
 save_isr:		.res 2
-sin_tab_offs:		.res 1
 rbar_y: .res 1
 rbar_colors: .res 16
 rbar_colors_ix:	.res 1
 rbar_sintab_ix:	.res 1
-blend_rbar_offset: .res 1
 scroll_x:			.res 1
-text_scroll_buf:	.res 2*32
-char_ix:	.res 1
-pause_cnt: .res 1
 
 .code
 	sei
@@ -75,35 +68,26 @@ pause_cnt: .res 1
 	copypointer save_isr, $fffe
 	cli
 
-	vdp_sreg v_reg25_wait, v_reg25
 	jsr krn_textui_init
-	jsr krn_textui_enable
 	jmp (retvec)
-
 
 init:
 	; write rline into the interrupt line register #19
 	; to generate an interrupt each time raster line is being scanned
-	lda #176
+	lda #100
 	sta rbar_y
 	sta rline
 	ldy #v_reg19
-	vdp_sreg
+	jsr vdp_set_sreg
 
 	lda #<vdp_init_bytes
 	ldy #>vdp_init_bytes
 	ldx #(vdp_init_bytes_end-vdp_init_bytes)-1
 	jsr vdp_init_reg
 
-	vdp_sreg 0, v_reg23
-	vdp_sreg v_reg25_wait, v_reg25
-
-	lda #.sizeof(rbar_colors)>>1
-	sta blend_rbar_offset
-
 	ldx #.sizeof(rbar_colors)-1
-	lda #Black
-:	sta rbar_colors,x
+:	lda raster_bar_colors_init,x
+	sta rbar_colors,x
 	dex
 	bpl :-
 
@@ -113,6 +97,8 @@ init:
 	bit a_vreg
 
 	stz frame_cnt
+	stz rbar_colors_ix
+	stz script_state
 
 	rts
 
@@ -134,15 +120,13 @@ isr:
 	inx
 	cpx #<.sizeof(rbar_colors)
 	bne @set_hline
-	lda #$80
-	tsb script_state ; set flag, raster bar end
 	ldx #0 ; reset color ix
 	lda rbar_y ; init
 @set_hline:
 	stx rbar_colors_ix
 	sta rline
 	ldy #v_reg19
-	vdp_sreg
+	jsr vdp_set_sreg
 	bra @exit
 
 @is_vblank:
@@ -154,20 +138,15 @@ isr:
 	inc frame_cnt
 
 @is_vblank_end:
-	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 already
+	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
 
 @exit:
+	lda #$80
+	sta script_state
 	restore
 	rti
 
 .data
-
-fps=50
-_1s = 1*fps
-_2s = 2*fps
-_3s = 3*fps
-_4s = 4*fps
-_5s = 5*fps
 
 vdp_init_bytes:	; vdp init table - MODE G3
 			.byte v_reg0_m4 | v_reg0_IE1
