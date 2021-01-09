@@ -229,7 +229,7 @@ MAX_NOPS_2M = (2 * 1000 / (1000 / clockspeed) - 12) / 2 ; - 12 => jsr/rts = 2*6c
 
 .macro m_vdp_nopslide
 ; NOTE!!!
-; - TMS9929 and V9938/V9958 wait 2µs between 2 byte writes and 8µs for the 3rd and n'th byte write and wait 8µs before 3rd byte and all n'th byte writes
+; - TMS9929 and V9938/V9958 wait 2µs between 2 byte writes and 8µs for the 3rd and n'th byte read/write
 vdp_nopslide_8m:
 			; long delay with 6+2 2µs wait
 			.repeat MAX_NOPS_8M
@@ -239,6 +239,7 @@ vdp_nopslide_2m:
 			.repeat MAX_NOPS_2M
 			nop
 			.endrepeat
+vdp_nopslide_end:
 			rts
 .endmacro
 
@@ -250,22 +251,27 @@ vdp_nopslide_2m:
 		.local _wasted_cycles
 		.ifndef vdp_nopslide_2m
 			.import vdp_nopslide_2m
+            .import vdp_nopslide_end
 		.endif
 		.if(.paramcount > 0)
-			.assert _wasted_cycles >= 0 && (_wasted_cycles / 2) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<= ", .string(_wasted_cycles/2), " <= ", .string(MAX_NOPS_2M))
-			jsr vdp_nopslide_2m + (_wasted_cycles / 2) ; add number of wasted clycle, we calculate the jsr offset to remaining nops
+			.if(_wasted_cycles >= MAX_NOPS_2M << 1)
+                jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
+            .else
+    			.assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>1), "<=", .string(MAX_NOPS_2M))
+                jsr vdp_nopslide_2m + (_wasted_cycles >> 1) ; add number of wasted clycle, we calculate the jsr offset to remaining nops
+            .endif
 		.else
 			jsr vdp_nopslide_2m
 		.endif
 .endmacro
 
-.macro vdp_wait_l _wasted_cycles	; amount of cycles already wasted in rang [-n..0]
+.macro vdp_wait_l _wasted_cycles	; amount of cycles already wasted in rang [0..n]
 		.local _wasted_cycles
 		.ifndef vdp_nopslide_8m
 			.import vdp_nopslide_8m
 		.endif
 		.if(.paramcount > 0)
-			.assert _wasted_cycles >= 0 && (_wasted_cycles / 2) <= MAX_NOPS_8M, error, .concat("parameter <wasted cycles> must be 0<= ", .string(_wasted_cycles/2), " <= ")
+			.assert _wasted_cycles >= 0 && (_wasted_cycles / 2) <= MAX_NOPS_8M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles/2), "<=")
 			jsr vdp_nopslide_8m + (_wasted_cycles / 2) ; add number of wasted clycle, we calculate the jsr offset to remaining nops
 		.else
 			jsr vdp_nopslide_8m

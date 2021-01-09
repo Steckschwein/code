@@ -44,7 +44,8 @@ vdp_mode2_on:
 
 vdp_fill_name_table:
 		;set 768 different patterns --> name table
-		vdp_sreg <ADDRESS_GFX2_SCREEN, WRITE_ADDRESS+ >ADDRESS_GFX2_SCREEN
+		vdp_vram_w ADDRESS_GFX2_SCREEN
+;        vdp_sreg <ADDRESS_GFX2_SCREEN, WRITE_ADDRESS+ >ADDRESS_GFX2_SCREEN
 		ldy #$03
 		ldx #$00
 @0:	vdp_wait_l 6	;

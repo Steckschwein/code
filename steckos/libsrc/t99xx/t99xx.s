@@ -26,6 +26,7 @@
 .export vdp_bgcolor
 .export vdp_nopslide_8m
 .export vdp_nopslide_2m
+.export vdp_nopslide_end
 .export vdp_set_reg, vdp_set_sreg
 
 .code
@@ -44,7 +45,7 @@ vdp_bgcolor:
 ; .A/.Y - value / register
 vdp_set_sreg:
 vdp_set_reg:
-	vdp_wait_s 5 ; 6cl from jsr
+	vdp_wait_s 6 ; 6cl already wasted by jsr
 	sta a_vreg
 	vdp_wait_s
 	sty a_vreg

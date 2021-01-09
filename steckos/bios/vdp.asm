@@ -101,7 +101,7 @@ vdp_detect:
 			cmp #3
 			bcc _l_chip
 			jsr primm
-			.byte "Unknown Video",$0a,0
+			.byte "Unknown Video",CODE_LF,0
 			rts
 _l_chip:
 			clc
@@ -118,21 +118,20 @@ _l_chip:
 			vdp_sreg
 
 			; VRAM detection
-			jsr _vdp_detect_vram
+			ldx #8  ;max 8 16k banks = 128k
+			jsr _vdp_detect_ram
 
 			; Ext RAM detection
 _vdp_detect_ext_ram:
 			jsr primm
-			.asciiz " ExtRAM: "
+			.byte " ExtRAM: ",0
 			vdp_sreg v_reg45_mxc, v_reg45 ; enable ext ram
-			ldx #4  ;max 4 16k banks = 64k
+			ldx #4  ;max 4 16k banks = 64k Ext. RAM possible
 			jsr _vdp_detect_ram
-			lda #KEY_LF
+
+			lda #CODE_LF
 			jmp vdp_chrout
 
-_vdp_detect_vram:
-            ;stp
-			ldx #8  ;max 8 16k banks = 128k
 _vdp_detect_ram:
 			lda #$ff
 			sta tmp1  ; the bank, start at $0, first inc below
@@ -140,14 +139,16 @@ _vdp_detect_ram:
 			inc tmp1
 			dex
 			bmi @l_end    ; we have to break after given amount of banks, otherwise overflow vram address starts from beginning
-			lda tmp1
+			
+            lda tmp1      ; select bank
 			ldy #v_reg14
 			jsr vdp_set_sreg
-			jsr _vdp_bank_available
+			
+            jsr _vdp_bank_available
 			beq @l_detect
 @l_end:
 			vdp_sreg 0, v_reg14 ;switch back to bank 0 and vram
-			vdp_sreg 0, v_reg45
+			vdp_sreg 0, v_reg45 ;disable Ext.Ram
 
 			ldx #$ff
 			lda tmp1
@@ -176,24 +177,25 @@ _vdp_detect_ram:
 _ram:
 			.byte " 16 32 64128"
 
+PATTERN=$a9
+
 _vdp_bank_available:
 			phx
 			jsr _vdp_r_vram
-			ldx a_vram
+			ldx a_vram  ;save to x
 
 			jsr _vdp_w_vram
-			lda tmp1
+			lda #PATTERN
 			sta a_vram
 			pha
-			vnops
+			vdp_wait_l
 			jsr _vdp_r_vram ; ... read back again
 			pla
-			lda tmp1
-			cmp a_vram
+			lda a_vram
+            cmp #PATTERN
 			bne @invalid
 			jsr _vdp_w_vram
-			txa
-			sta a_vram
+			stx a_vram      ;restore
 			plx
 			lda #0
 			rts
@@ -210,8 +212,9 @@ _vdp_r_vram:
 			ldy #>bank_end
 _vdp_vram0:
 			lda #<bank_end
+            vdp_wait_l
 			jsr vdp_set_sreg
-			vnops
+			vdp_wait_l
 			rts
 
 vdp_scroll_up:
