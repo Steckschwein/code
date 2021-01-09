@@ -15,6 +15,7 @@ _CPS_NTSC=60
 
 .proc	_clock
 
+        ; TODO FIXME gives wrong results on overflow of tm_sec
         jsr __clocks_per_sec
         stx sreg
         stx sreg+1
@@ -25,9 +26,8 @@ _CPS_NTSC=60
         jsr mulax5
         bra :+
 @NTSC:
-        jsr mulax6
-:       jsr mulax10
-        rts
+@mul60: jsr mulax6
+:       jmp mulax10
 
 .endproc
 
