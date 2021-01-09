@@ -254,12 +254,12 @@ vdp_nopslide_end:
             .import vdp_nopslide_end
 		.endif
 		.if(.paramcount > 0)
-			.if(_wasted_cycles >= MAX_NOPS_2M << 1)
-                jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
-            .else
+;			.if (_wasted_cycles >> 1 >= MAX_NOPS_2M)
+ ;               jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
+  ;          .else
     			.assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>1), "<=", .string(MAX_NOPS_2M))
                 jsr vdp_nopslide_2m + (_wasted_cycles >> 1) ; add number of wasted clycle, we calculate the jsr offset to remaining nops
-            .endif
+   ;         .endif
 		.else
 			jsr vdp_nopslide_2m
 		.endif
