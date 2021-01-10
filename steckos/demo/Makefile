@@ -8,7 +8,8 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		rstbars.prg \
 		stsdemo.prg \
 		gradient.prg \
-		mndlbrot.prg
+		mndlbrot.prg # \
+		mndlbrt2.prg
 
 clean:
 	rm -f *.prg *.s *.o *.map

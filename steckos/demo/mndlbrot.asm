@@ -17,7 +17,7 @@ appstart $1000
 
 SCREEN_X=256
 SCREEN_Y=200
-MAX_ITER=60
+MAX_ITER=110
 
       vdp_rgb $40,$20,$40
       sei
@@ -813,14 +813,13 @@ yp_mirrored:     .byte    0
                 ; 10 = 9
                 ; 11 = 7
 
-_r=2
-_g=4
-_b=3
+_r=1
+_g=3
+_b=2
 
 color_table1:
-    .byte 0
    .repeat MAX_ITER,i
-      vdp_rgb (_r*2+(i*_r)),_g*2+(40+(i*_g)),_b*2+(40+(i*_b))
+      vdp_rgb <(_r+(10+i*_r)),<(_g+(10+i*_g)),<(_b+(10+i*_b))
    .endrep
 
                 ; fractal input values tables should be 16 bit in two's complement form - they are 8 bit complement instead
