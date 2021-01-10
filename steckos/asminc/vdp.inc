@@ -319,9 +319,15 @@ vdp_nopslide_end:
    .byte _g & $e0 | (_r & $e0)>>3 | _b>>6
 .endmacro
 
+; creates a 2 byte vdp compatible color palette value from 3 single r, g, b bytes
 .macro vdp_pal _r, _g, _b
   .byte ((_r>>1) & $70) | _b>>5
   .byte _g>>5
+.endmacro
+
+; creates a 2 byte vdp compatible color palette value from 3 byte rgb value
+.macro vdp_pal_rgb _rgb ; _rgb 3 byte tupel rgb
+   vdp_pal _rgb>>16, (_rgb>>8 & $ff), (_rgb & $ff)
 .endmacro
 
 .macro	SyncBlank
