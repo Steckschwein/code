@@ -103,6 +103,8 @@ mock:
 test_ppm_header_valid:
 	.byte "P6",$0a,"256 212",$0a,"255",$0a
 test_ppm_header_notppm:
+	.byte "PNG",$0a,"256 171",$0a,"255",$0a
+test_ppm_p3_header_valid:
 	.byte "P3",$0a,"256 171",$0a,"255",$0a
 test_ppm_header_wrong_height:
 	.byte "P6",$0a,"256 213",$0a,"255",$0a

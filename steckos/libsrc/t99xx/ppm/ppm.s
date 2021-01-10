@@ -85,19 +85,9 @@ _i:     .res 1
 		jsr load_image ; timing critical
 		bne @io_error
 
-        clc
+		clc
 		bra @close_exit
 
-;		jsr primm
-;		.byte CODE_LF, "Not a valid ppm file! Must be type P6 with max. ", .string(MAX_WIDTH), "x", .string(MAX_HEIGHT), "px and 8bpp colors.",CODE_LF, 0
-
-;		bra close_exit
-;io_error:
-;		pha
-;		jsr primm
-;		.byte $0a,"i/o error, code: ",0
-;		pla
-;		jsr hexout
 @ppm_error:
         ldx #0
         bra @error
@@ -150,7 +140,7 @@ load_image:
 		jsr set_screen_addr	; initial vram address
 		ldy _offs ; .Y - data offset
 		jsr blocks_to_vram
-        
+
         plp
 		lda _error ; on any error
 		rts
@@ -240,14 +230,16 @@ ppm_parse_header:
 		lda #'P'
 		cmp ppm_data
 		bne @l_invalid_ppm
-		lda #'6'
-		cmp ppm_data+1
+		lda ppm_data+1
+		cmp #'3'
+		beq :+
+		cmp #'6'
 		bne @l_invalid_ppm
 
-		ldy #0
-		jsr parse_string		;skip "P6"
+:		ldy #2 ;skip "P3/P6"
+		jsr parse_string
 
-        jsr parse_until_size	;skip until <width> <height>
+		jsr parse_until_size	;skip until <width> <height>
 		jsr parse_int	;width
 		cmp #<MAX_WIDTH
 		bcc @l_invalid_ppm ;
@@ -258,8 +250,8 @@ ppm_parse_header:
 		bcs @l_invalid_ppm
         sta ppm_height
 		sty _offs ;safe y offset, to check how many chars are consumed during parse
-		
-        jsr parse_int	;depth
+
+		jsr parse_int	;depth
 		cmp #COLOR_DEPTH
 		bne @l_invalid_ppm
 		tya
@@ -313,7 +305,7 @@ parse_int:
 		rts
 
 parse_string:
-		ldx #0
+;		ldx #0
 @l0:	lda ppm_data, y
 		cmp #$20		; < $20 - control characters are treat as whitespace
 		bcc @le
