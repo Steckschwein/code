@@ -39,18 +39,25 @@ hexout:
 		lsr
 		lsr
 		lsr
-		jsr hexdigit
+
+        ; https://twitter.com/adumont/status/1381857942467702785
+        ;
+        sed
+        clc
+        adc #$90
+        adc #$40
+        cld
+
+
+        jsr char_out
 		txa
-		jsr hexdigit
+        sed
+        clc
+        adc #$90
+        adc #$40
+        cld
+        jsr char_out
+
 		plx
 		pla
 		rts
-
-hexdigit:
-		and #$0f      	;mask lsd for hex print
-		ora #'0'			;add "0"
-		cmp #'9'+1		;is it a decimal digit?
-		bcc _out			;yes! output it
-		adc #6			;add offset for letter a-f
-_out:
-		jmp char_out
