@@ -45,6 +45,7 @@ echo "</testsuite>" >> ${TARGET_DIR}/${1}.xml
 echo "Tests run: "${tests}", Failures: ${test_fail}"
 if [ -n "`grep FAIL $logfile`" ] ; then
 	cat $logfile
+    exit 1
 fi
 
 exit 0

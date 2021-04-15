@@ -32,7 +32,7 @@ binary=$1
 #echo .goto ${ld_address} >> /tmp/$$.py65
 
 #.add_breakpoint 0x19cf
-exec ${pythonbin} ${dir}/asmunit.monitor.py -m 65c02 --output $output <<EOF
+exec ${pythonbin} ${dir}/asmunit.monitor.py --mpu 65C02 --output $output <<EOF
 .load "${binary}" ${ld_address}
 .goto ${ld_address}
 EOF
