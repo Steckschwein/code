@@ -32,9 +32,8 @@
 ;		-
 hexout:
 		pha
-		phx
+		pha
 
-		tax
 		lsr
 		lsr
 		lsr
@@ -50,7 +49,8 @@ hexout:
 
 
         jsr char_out
-		txa
+        pla
+
         sed
         clc
         adc #$90
@@ -58,6 +58,5 @@ hexout:
         cld
         jsr char_out
 
-		plx
 		pla
 		rts
