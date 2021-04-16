@@ -51,6 +51,8 @@ hexout:
         jsr char_out
         pla
 
+        and #$0f       ;mask lsd for hex print
+
         sed
         clc
         adc #$90
