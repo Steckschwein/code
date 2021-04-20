@@ -30,35 +30,26 @@
 ;		A - the byte to convert
 ;	out:
 ;		-
-hexout:
+hexout: ;
+        pha
 		pha
-		pha
 
+		lsr     ; msb first
 		lsr
 		lsr
 		lsr
-		lsr
+        jsr :+
 
-        ; https://twitter.com/adumont/status/1381857942467702785
-        ;
-        sed
-        clc
-        adc #$90
-        adc #$40
-        cld
-
-
-        jsr char_out
         pla
+        and #$0f    ;mask lsd for hex print
+        jsr :+
 
-        and #$0f       ;mask lsd for hex print
-
-        sed
-        clc
-        adc #$90
-        adc #$40
-        cld
-        jsr char_out
-
-		pla
+        pla
 		rts
+
+:       ; https://twitter.com/adumont/status/1381857942467702785
+        sed
+        cmp #$0a
+        adc #$30
+        cld
+        jmp char_out

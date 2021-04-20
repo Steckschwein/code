@@ -85,7 +85,8 @@ TEST_LIBS := ../../asmunit/asmunit.a
 TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(TEST_LIBS) ../lib/$(TARGET).a
 
 DEPS = $(OBJS:.o=.d)
-DEPS_TEST = $(OBJS_TEST:.o=.d)
+DEPS_TEST = $(DEPS) # depend on impl. and test code
+DEPS_TEST += $(TEST_OBJS:.o=.d)
 
 AR65 := $(if $(wildcard ../bin/ar65*),../bin/ar65,ar65)
 CA65 := $(if $(wildcard ../bin/ca65*),../bin/ca65,ca65)
