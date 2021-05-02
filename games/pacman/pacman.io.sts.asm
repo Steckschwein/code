@@ -27,7 +27,13 @@ io_init:
 
 io_isr:
 		jsr gfx_isr
-		rts
+        bpl @check_kbd
+        rts
+@check_kbd:
+        jsr fetchkey
+        bcc @exit       ; nothing after all? exit
+	    sta key
+@exit:  rts
 
 io_irq_on:	; nothing todo here on sts hw
 		rts
@@ -42,7 +48,7 @@ io_joystick_read:
 		  lda joystick_port
 		  jmp joystick_read
 
-io_getkey=krn_getkey
+io_getkey=getkey
 
 io_player_direction:
 		beq @joystick
