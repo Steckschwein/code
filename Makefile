@@ -8,6 +8,7 @@ clean:
 	(cd edlib; make clean)
 	(cd ehbasic_65c02; make clean)
 	(cd asmunit; make clean)
+	rm steckos.img
 
 distclean:
 	rm -rf dist/LOADER.BIN dist/STECKOS dist/GAMES dist/DEMO dist/PROGS/EDLPLY.PRG dist/PROGS/BASIC.PRG dist/PROGS/IMF.PRG
