@@ -2,6 +2,7 @@ MAKEFILE=Makefile
 all: build
 
 clean:
+	(cd fortune; make clean)
 	(cd games; make clean)
 	(cd steckos; make clean)
 	(cd imfplayer; make clean)
@@ -21,6 +22,7 @@ build:
 	(cd edlib; make )
 	(cd ehbasic_65c02; make )
 	(cd games; make)
+	(cd fortune; make)
 
 
 dist: build

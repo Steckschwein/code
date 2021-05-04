@@ -38,18 +38,21 @@ hexout: ;
 		lsr
 		lsr
 		lsr
-        jsr :+
-
-        pla
-        and #$0f    ;mask lsd for hex print
-        jsr :+
-
-        pla
-		rts
-
-:       ; https://twitter.com/adumont/status/1381857942467702785
+        ; https://twitter.com/adumont/status/1381857942467702785
         sed
         cmp #$0a
         adc #$30
         cld
-        jmp char_out
+        jsr char_out
+
+        pla
+        and #$0f    ;mask lsd for hex print
+
+        sed
+        cmp #$0a
+        adc #$30
+        cld
+        jsr char_out
+
+        pla
+		rts

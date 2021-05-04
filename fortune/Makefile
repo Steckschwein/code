@@ -1,7 +1,7 @@
 OBJS=fortune.o
 TARGET=fortune.prg
 CA65FLAGS=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
-LIBS=../steckos/tools/lib/toollib.a
+LIBS=../steckos/tools/lib/toollib.a ../steckos/lib/steckschwein.a
 
 all: $(TARGET)
 
