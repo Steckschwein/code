@@ -68,7 +68,7 @@ pause_cnt: .res 1
 	bpl :-
 	and #$7f
 	sta script_state
-	jsr fetchkey
+	jsr getkey
 	cmp #KEY_ESCAPE
 	bne :-
 
@@ -188,6 +188,8 @@ isr:
 
 @is_vblank_end:
 	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 already
+
+	jsr fetchkey
 
 @exit:
 	restore
@@ -461,7 +463,7 @@ script:
 	.byte "WE SHOULD ADD A SINE TABLE AND MODIFY THE RASTER BAR'S Y OFFSET ON EACH FRAME.                 "
 	.byte SCRIPT_RBAR_SINE, "OK, COOL, LOOKS VERY NICE... LIKE AN INTRO BACK FROM THE 80'S                "
 	.byte "OK, LET'S STOP HERE...        ", SCRIPT_RBAR_SINE
-	.byte "MAYBE WE CAN SCROLL THE COMPLETE SCREEN BY USING THE VERTICAL OFFSET REGISTER R#23, "
+	.byte "MAYBE WE CAN SCROLL THE ENTIRE SCREEN BY USING THE VERTICAL OFFSET REGISTER R#23, "
 	.byte "AVAILABLE IN THE V9938 ALREADY.                "
 	.byte "        ", SCRIPT_SCROLL_SINE
 	.byte "SEEMS TO WORK...", SCRIPT_SCROLL, 1, "        ", SCRIPT_SCROLL, 2, "        "
