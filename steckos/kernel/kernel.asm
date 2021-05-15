@@ -68,7 +68,6 @@
 nvram = $1000
 
 kern_init:
-		sei
 		; copy trampolin code for ml monitor entry to ram
 		ldx #$00
 @copy:

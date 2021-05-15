@@ -211,10 +211,9 @@ textui_init:
 
 .ifndef DISABLE_VDPINIT
 	lda #TEXTUI_COLOR
-	jmp vdp_text_on
-.else
-	rts
+	jsr vdp_text_on
 .endif
+	rts
 
 textui_cursor:
 	lda screen_write_lock

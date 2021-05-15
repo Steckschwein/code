@@ -25,8 +25,6 @@
 .include "zeropage.inc"
 .include "debug.inc"
 
-;kernel_start = $e800
-
 .macro printstring text
     jsr krn_primm
     .byte text
