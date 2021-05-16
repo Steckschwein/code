@@ -192,7 +192,7 @@ _vdp_bank_available:
 			jsr _vdp_r_vram ; ... read back again
 			pla
 			lda a_vram
-            cmp #PATTERN
+         cmp #PATTERN
 			bne @invalid
 			jsr _vdp_w_vram
 			stx a_vram      ;restore
@@ -212,7 +212,7 @@ _vdp_r_vram:
 			ldy #>bank_end
 _vdp_vram0:
 			lda #<bank_end
-            vdp_wait_l
+         vdp_wait_l
 			jsr vdp_set_sreg
 			vdp_wait_l
 			rts

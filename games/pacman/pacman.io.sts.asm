@@ -18,8 +18,6 @@
 appstart $1000	;
 
 io_init:
-		jsr krn_textui_disable
-
 		jsr joystick_on
 
 		;TODO ...

@@ -454,7 +454,6 @@ krn_sd_read_block:	 	jmp sd_read_block
 ; Interrupt vectors
 ; ----------------------------------------------------------------------------------------------
 ; $FFFA/$FFFB NMI Vector
-
 .word do_nmi
 ; $FFFC/$FFFD reset vector
 ;*= $fffc

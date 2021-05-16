@@ -81,6 +81,9 @@ test.%: test.%.bin
 pacman.prg: $(OBJS_STS) $(LIBS)
 	ld65 -o $@ $(LDFLAGS_STS) $(OBJS_STS) $(LIBS_STS)
 
+pacman: pacman.prg
+	steckschwein-emu -rom ../../steckos/kernel/kernel.bin,0xe800 -upload $<
+
 pacman64.prg: $(OBJS_C64) $(LIBS_C64)
 	ld65 -o $@ $(LDFLAGS_C64) $(OBJS_C64) $(LIBS_C64)
 

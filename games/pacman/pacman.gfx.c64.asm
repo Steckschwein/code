@@ -66,6 +66,8 @@ gfx_vblank:
 		rts
 
 gfx_init:
+		lda #$61		; pattern open border
+		sta $3fff	; last byte bank 0 - we open the border
 		lda Color_Bg
 		sta VIC_BORDERCOLOR
 		sta VIC_BG_COLOR0
@@ -97,7 +99,6 @@ gfx_blank_screen:
 		dex
 		bne :-
 		rts
-
 
 _gfx_is_sp_collision:
 		ldy #ACTOR_PACMAN
@@ -198,19 +199,78 @@ gfx_mx:
 		rts
 
 _gfx_update_sprite_tab:
+		sta _i
 
+		lda actors+actor::sp_x,y
+		clc
+		adc #gfx_Sprite_Adjust_X
+		sta sprite_tab_x,x
+		sta sprite_tab_x2,x
+		bcs :+
+		lda #0
+:		sta sprite_tab_xe,x	; <>0 to indicate ext x
+
+		lda sprite_tab_xe,x
+		bne :+
+		;ora spr_mx_ora, x
+
+
+		lda actors+actor::sp_y,y
+		;clc assume no overflow
+		adc #gfx_Sprite_Adjust_Y
+		sta sprite_tab_y,x
+
+		lda actors+actor::shape,y
+		tay
+		lda shapes+0,y
+		cmp #offs+30		; eyes up? TODO FIXME performance avoid cmp
+		bne :+
+		dec sprite_tab_x2,x	; adjust 1px left if eyes up on 2nd sprite
+:
+		ldx _i
+		sta sprite_tab_s,x
+		lda shapes+2,y
+		sta sprite_tab_s2,x
+		;lda ?
+		sta sprite_tab_c,x
 		rts
+
+_mx_code:
+		;sta y ;4
+		;sta y2 ;4
+
+		;sta x ;4
+		;stx s ; 4
+		;stx c ; 4
+		lda #2 ; 2
+		;sta xe ; 4
+
+		lda sprite_tab_y,x	;4	/ 2
+		sta VIC_SPR0_Y,y		;5 / 4
+		sta VIC_SPR1_Y,y		;5 / 4
+
+		lda sprite_tab_s,x	;4 / 2
+		sta VRAM_SPRITE_POINTER,x	;5 / 4
+		lda sprite_tab_x,x			;4 / 2
+		sta VIC_SPR0_X,y				;5 / 4
+		lda sprite_tab_c,x			;4 / 2
+		sta VIC_SPR0_COLOR,y			;5 / 4
+		;36 / 24
+		lda VIC_SPR_HI_X
+		;bit
+		sta VIC_SPR_HI_X
+
 
 _gfx_update_sprites:
 		sta _i
-		lda actors+actor::sp_y,y
-		clc ; TODO assume, we never overflow above
+ 		lda actors+actor::sp_y,y
+		clc
 		adc #gfx_Sprite_Adjust_Y
 		sta VIC_SPR0_Y,x
 		sta VIC_SPR1_Y,x
 
+		;clc - assume, we never overflow above
 		lda actors+actor::sp_x,y
-		clc
 		adc #gfx_Sprite_Adjust_X
 		sta VIC_SPR0_X,x
 		sta VIC_SPR1_X,x
@@ -382,9 +442,14 @@ Color_Gray:       .byte COLOR_GRAY3
 Color_Dark_Pink:  .byte COLOR_LIGHTRED
 
 .bss
-sprite_tab_x:		.res 2*5;
-sprite_tab_y:		.res 2*5;
-sprite_tab_s:		.res 2*5;
+sprite_tab_x:		.res 5;
+sprite_tab_xe:		.res 5;
+sprite_tab_x2:		.res 5;
+sprite_tab_y:		.res 5;
+sprite_tab_s:		.res 5;
+sprite_tab_s2:		.res 5;
+sprite_tab_c:		.res 5;
+sprite_tab_c2:		.res 5;
 
 mx:		.res 2
 mx_ix:	.res 1
