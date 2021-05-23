@@ -1,6 +1,7 @@
       .p02
       .include "c64.inc"
       .include "pacman.inc"
+      .autoimport
 
       VRAM_SCREEN         = $0400
       VRAM_PATTERN        = $3800
@@ -26,7 +27,8 @@
       COLOR_LIGHTBLUE         = $0E
       COLOR_GRAY3             = $0F
 
-Border_HLine=$F9
+HLine_Border=$f9
+HLine_Last=$ff
 
 .assert __BSS_RUN__ < VRAM_SPRITE_PATTERN, error, "bss overflow!"
 

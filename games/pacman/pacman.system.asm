@@ -19,7 +19,6 @@ frame_isr:
 		bpl @exit
 
 		bgcolor Color_Yellow
-
 		dec game_state+GameState::frames
 
 @exit:
