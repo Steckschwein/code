@@ -18,8 +18,6 @@
 appstart $1000	;
 
 io_init:
-		jsr krn_textui_disable
-
 		jsr joystick_on
 
 		;TODO ...
@@ -27,13 +25,10 @@ io_init:
 
 io_isr:
 		jsr gfx_isr
-        bpl @check_kbd
-        rts
+     	bpl @check_kbd
+     	rts
 @check_kbd:
-        jsr fetchkey
-        bcc @exit       ; nothing after all? exit
-	    sta key
-@exit:  rts
+		jmp fetchkey
 
 io_irq_on:	; nothing todo here on sts hw
 		rts

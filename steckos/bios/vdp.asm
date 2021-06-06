@@ -43,12 +43,12 @@ ROWS=23
 vdp_init:
 .ifdef COLS80
 			lda #VIDEO_MODE_80_COLS
-            tsb video_mode
+         tsb video_mode
 .else
 			lda #VIDEO_MODE_80_COLS
 			trb video_mode
 .endif
-            lda #BIOS_COLOR
+         lda #BIOS_COLOR
 .ifdef CHAR6x8
 			jsr vdp_text_on
 .else
@@ -139,11 +139,11 @@ _vdp_detect_ram:
 			inc tmp1
 			dex
 			bmi @l_end    ; we have to break after given amount of banks, otherwise overflow vram address starts from beginning
-			
+
             lda tmp1      ; select bank
 			ldy #v_reg14
 			jsr vdp_set_sreg
-			
+
             jsr _vdp_bank_available
 			beq @l_detect
 @l_end:
@@ -192,7 +192,7 @@ _vdp_bank_available:
 			jsr _vdp_r_vram ; ... read back again
 			pla
 			lda a_vram
-            cmp #PATTERN
+         cmp #PATTERN
 			bne @invalid
 			jsr _vdp_w_vram
 			stx a_vram      ;restore
@@ -212,7 +212,7 @@ _vdp_r_vram:
 			ldy #>bank_end
 _vdp_vram0:
 			lda #<bank_end
-            vdp_wait_l
+         vdp_wait_l
 			jsr vdp_set_sreg
 			vdp_wait_l
 			rts

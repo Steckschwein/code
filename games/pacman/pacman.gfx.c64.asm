@@ -38,9 +38,22 @@
 		;sprite y = 50, 250 off
 		;sprite x = 24
 
+VIC_SPR_MCOLOR_DEFAULT = %00101010 ; 3 ghost eyes as multic color, sprite 7 is multiplexed either ghost eyes or pacman
+VIC_SPR_MCOLOR_MX = %10101010 ; 4 ghost exes if multiplexed
+
+SPRITE_SIZE_Y=21
+SPRITE_SIZE_X=24
+
 gfx_Sprite_Adjust_X=12
 gfx_Sprite_Adjust_Y=39
 gfx_Sprite_Off=250
+
+.struct mx_sprite
+	xp	.byte
+	yp	.byte
+	pp	.byte	; pattern
+	mc	.byte ; multi color  bitmask
+.endstruct
 
 .code
 gfx_mode_off:
@@ -51,9 +64,8 @@ gfx_mode_on:
 
 		lda #$ff
 		sta VIC_SPR_ENA
-		lda #%10101010
+		lda #VIC_SPR_MCOLOR_DEFAULT
 		sta VIC_SPR_MCOLOR
-
 		lda Color_Gray
 		sta VIC_SPR_MCOLOR0
 		lda Color_Blue
@@ -66,6 +78,8 @@ gfx_vblank:
 		rts
 
 gfx_init:
+		lda #$61		; pattern open border
+		sta $3fff	; last byte bank 0 - we open the border
 		lda Color_Bg
 		sta VIC_BORDERCOLOR
 		sta VIC_BG_COLOR0
@@ -74,6 +88,17 @@ gfx_init:
 :		sta VIC_SPR0_X,x
 		dex
 		bpl :-
+		lda Color_Blinky
+		sta VIC_SPR0_COLOR
+		lda Color_Pinky
+		sta VIC_SPR2_COLOR
+		lda Color_Inky
+		sta VIC_SPR4_COLOR
+		lda Color_Clyde
+		sta VIC_SPR6_COLOR
+		lda Color_Pacman
+		sta VIC_SPR7_COLOR
+
 gfx_init_pal:
 gfx_init_chars:
 		ldx #8
@@ -98,134 +123,133 @@ gfx_blank_screen:
 		bne :-
 		rts
 
-
 _gfx_is_sp_collision:
 		ldy #ACTOR_PACMAN
 		ldx #ACTOR_BLINKY
-		jsr _gfx_test_sp_y
-		bcs  @exit ; no further check
+		jsr @gfx_test_sp_y
+		bcs @exit ; no further check
 		ldx #ACTOR_INKY
-		jsr _gfx_test_sp_y
-		bcs  @exit ; no further check
+		jsr @gfx_test_sp_y
+		bcs @exit ; no further check
 		ldx #ACTOR_PINKY
-		jsr _gfx_test_sp_y
-		bcs  @exit ; no further check
+		jsr @gfx_test_sp_y
+		bcs @exit ; no further check
 		ldx #ACTOR_CLYDE
-		jsr _gfx_test_sp_y
-@exit:
-		rts
-
+		;fall through
 ; test ghost y with pacman y
 ; X - ghost index
-;
-_gfx_test_sp_y:	;
+@gfx_test_sp_y:	;
 		lda actors+actor::sp_y,x
 		sec
 		sbc actors+actor::sp_y,y
 		bpl :+
 		eor #$ff ; absolute |y1 - y2|
-:		cmp #21 ; >=21px size distance
+:		cmp #SPRITE_SIZE_Y ; >=21px size distance
+@exit:
 		rts
+
+.macro _gfx_update_ghost _a, _mx
+	.local _n
+	_n = _a / .sizeof(actor); _n => actor number 0..3
+	lda actors+actor::sp_y+_a
+	clc
+	adc #gfx_Sprite_Adjust_Y
+	sta VIC_SPR0_Y+_n*4 ; *4 => 2 x 2 sprites vic registers
+.if _mx = 0
+	sta VIC_SPR1_Y+_n*4
+.else
+	sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::yp
+.endif
+	;clc - assume, we never overflow above
+	lda actors+actor::sp_x+_a
+	adc #gfx_Sprite_Adjust_X
+	sta VIC_SPR0_X+_n*4
+.if _mx = 0
+	sta VIC_SPR1_X+_n*4
+.else
+	sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::xp
+.endif
+	ldy actors+actor::shape+_a
+	lda shapes+0,y
+	sta VRAM_SPRITE_POINTER+0+_n*2
+	lda shapes+2,y
+	cmp #offs+30            ; eyes up? TODO FIXME performance avoid cmp
+	bne :+
+.if _mx = 0
+	dec VIC_SPR1_X+_n*4     ; adjust 1px left if eyes up on 2nd sprite
+:	sta VRAM_SPRITE_POINTER+1+_n*2
+.else
+	dec mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::xp     ; adjust 1px left if eyes up on 2nd sprite
+:	sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::pp
+	lda #VIC_SPR_MCOLOR_MX
+	sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::mc
+.endif
+.endmacro
+
+.macro _gfx_update_pacman
+		.local _a, _mx
+		_mx=0
+		_a = ACTOR_PACMAN
+		lda actors+actor::sp_y+_a
+		clc
+		adc #gfx_Sprite_Adjust_Y
+		sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::yp
+		;clc - assume, we never overflow above
+		lda actors+actor::sp_x+_a
+		adc #gfx_Sprite_Adjust_X
+		sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::xp
+		ldy actors+actor::shape+_a
+		lda shapes,y
+		sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::pp
+		lda #VIC_SPR_MCOLOR_DEFAULT
+		sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::mc
+.endmacro
 
 gfx_update:
-		lda #1
-		sta mx_ix
-		lda #0
-		ldy #ACTOR_BLINKY
-		ldx #0
-		jsr _gfx_update_sprites
-		ldy #ACTOR_INKY
-		lda #2
-		ldx #4
-		jsr _gfx_update_sprites
-		ldy #ACTOR_PINKY
-		lda #4
-		ldx #8
-		jsr _gfx_update_sprites
-		ldy #ACTOR_CLYDE
-		lda #6
-		ldx #12
-		jsr _gfx_update_sprites
-		lda #COLOR_RED
-		sta VIC_SPR0_COLOR
-		lda #COLOR_CYAN
-		sta VIC_SPR2_COLOR
-		lda #COLOR_PURPLE
-		sta VIC_SPR4_COLOR
-		lda #COLOR_ORANGE
-		sta VIC_SPR6_COLOR
+		_gfx_update_ghost ACTOR_BLINKY, 0
+		_gfx_update_ghost ACTOR_INKY, 0
+		_gfx_update_ghost ACTOR_PINKY, 0
+		_gfx_update_ghost ACTOR_CLYDE, 1 ; 1 - mx sprite, eyes of clyde are multiplexed with pacman
+		_gfx_update_pacman
 
-		jsr _gfx_is_sp_collision
-		bcs @set_hline	; C=1 no collision, X ghost, Y pacman
-		lda #COLOR_WHITE
+		lda #COLOR_YELLOW
 		sta VIC_BORDERCOLOR
-		rts
-@set_hline:
-		lda actors+actor::sp_y,y
-		cmp actors+actor::sp_y,x
-		bcs :+
-		adc #(gfx_Sprite_Adjust_Y-2)
-		sta VIC_HLINE
-		stx mx+0
-		sty mx+1
-		rts
-:		lda actors+actor::sp_y,x
-		clc
-		adc #(gfx_Sprite_Adjust_Y-2)
-		sta VIC_HLINE
-		stx mx+1
-		sty mx+0
+
+		jsr _gfx_is_sp_collision	; 9th sprite collision ?
+		bcs @set_hline	; C=1 no collision, otherwise X ghost, Y pacman with collision
+		;TODO share eyes inky / clyde
+		;TODO disable mx
 		rts
 
+@set_hline:
+		ldx #ACTOR_CLYDE
+		lda actors+actor::sp_y,y
+      cmp actors+actor::sp_y,x
+		ldy #0*.sizeof(mx_sprite)
+      bcc :+
+		ldy #1*.sizeof(mx_sprite)
+:		sty mx_tab_ix
+		lda mx_tab+mx_sprite::yp,y
+		clc
+		adc #SPRITE_SIZE_Y	; hline irq after current sprite - 21 scanline
+		cmp #HLine_Border
+		bcs gfx_mx				; skip if below border
+		sta VIC_HLINE
 .export gfx_mx
 gfx_mx:
-		ldx mx_ix
-		ldy mx,x	; actor
-		lda #0
-		ldx #0
-		jsr _gfx_update_sprites
-		dec mx_ix
-		bmi :+
-		ldx mx_ix
-		ldy mx,x
-		lda actors+actor::sp_y,y
-		clc
-		adc #(gfx_Sprite_Adjust_Y-2)
-		sta VIC_HLINE
-		rts
-:		lda #Border_HLine
-		sta VIC_HLINE
-		rts
+		ldy mx_tab_ix
+		lda mx_tab+mx_sprite::yp,y
+		sta VIC_SPR7_Y
+		lda mx_tab+mx_sprite::xp,y
+		sta VIC_SPR7_X
+		lda mx_tab+mx_sprite::pp,y
+		sta VRAM_SPRITE_POINTER+7
+		lda mx_tab+mx_sprite::mc,y
+		sta VIC_SPR_MCOLOR
 
-_gfx_update_sprite_tab:
-
-		rts
-
-_gfx_update_sprites:
-		sta _i
-		lda actors+actor::sp_y,y
-		clc ; TODO assume, we never overflow above
-		adc #gfx_Sprite_Adjust_Y
-		sta VIC_SPR0_Y,x
-		sta VIC_SPR1_Y,x
-
-		lda actors+actor::sp_x,y
-		clc
-		adc #gfx_Sprite_Adjust_X
-		sta VIC_SPR0_X,x
-		sta VIC_SPR1_X,x
-
-		lda actors+actor::shape,y
-		tay
-		lda shapes+0,y
-		cmp #offs+30		; eyes up? TODO FIXME performance avoid cmp
-		bne :+
-		dec VIC_SPR1_X,x	; adjust 1px left if eyes up on 2nd sprite
-:
-		ldx _i
-		sta VRAM_SPRITE_POINTER+1,x
-		lda shapes+2,y
-		sta VRAM_SPRITE_POINTER+0,x
+		tya
+		eor #.sizeof(mx_sprite)
+		sta mx_tab_ix
 		rts
 
 gfx_sprites_off:
@@ -358,6 +382,11 @@ offs=VRAM_SPRITE_PATTERN / $40
 		.byte offs+5,offs+4,offs+8,offs+4 ;u  10
 		.byte offs+7,offs+6,offs+8,offs+6 ;d  11
 ; ghosts eyes | body
+	.byte offs+20,offs+21,offs+28,offs+28 ;r  00
+	.byte offs+22,offs+23,offs+29,offs+29 ;l  01
+	.byte offs+24,offs+25,offs+30,offs+30 ;u  10
+	.byte offs+26,offs+27,offs+31,offs+31 ;d  11
+
 		.byte offs+28,offs+28,offs+20,offs+21 ;r  00
 		.byte offs+29,offs+29,offs+22,offs+23 ;l  01
 		.byte offs+30,offs+30,offs+24,offs+25 ;u  10
@@ -382,9 +411,8 @@ Color_Gray:       .byte COLOR_GRAY3
 Color_Dark_Pink:  .byte COLOR_LIGHTRED
 
 .bss
-sprite_tab_x:		.res 2*5;
-sprite_tab_y:		.res 2*5;
-sprite_tab_s:		.res 2*5;
-
-mx:		.res 2
-mx_ix:	.res 1
+mx_tab_ct: .res 1 ; multiplex counter
+mx_tab_ix: .res 1
+mx_tab:
+	.tag mx_sprite
+	.tag mx_sprite

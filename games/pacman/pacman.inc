@@ -95,7 +95,7 @@ ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
 ACT_TURN          = 1<<7
 ACT_DIR           = 1<<1|1<<0
 
-;CORNERING_
+;CORNERING
 
 .macro setIRQ irq, irq_save
       copyPtr $fffe, irq_save

@@ -68,7 +68,6 @@
 nvram = $1000
 
 kern_init:
-		sei
 		; copy trampolin code for ml monitor entry to ram
 		ldx #$00
 @copy:
@@ -177,20 +176,15 @@ do_irq:
 	; opl irq handling code
 
 @check_spi:
-;   TODO FIXME - we fetch always, to satisfy the IRQ of the avr. tradeoff here is that we override a possible previously stored key anyway
-;	lda key
-;	bne @exit       ; key is not $00? no fetch, exit
+;  TODO FIXME - we must fetch always, to satisfy the IRQ of the avr.
 	jsr fetchkey
-	bcc @exit       ; nothing after all? exit
 
-	sta key
+ 	cmp #KEY_CTRL_C ; was it ctrl c?
+ 	bne @exit      ; no
 
-    cmp #KEY_CTRL_C ; was it ctrl c?
-    bne @exit      ; no
-
-    lda flags       ; it is ctrl c. set bit 7 of flags
-    ora #$80
-    sta flags
+ 	lda flags       ; it is ctrl c. set bit 7 of flags
+ 	ora #$80
+ 	sta flags
 
 @exit:
 	restore
@@ -460,7 +454,6 @@ krn_sd_read_block:	 	jmp sd_read_block
 ; Interrupt vectors
 ; ----------------------------------------------------------------------------------------------
 ; $FFFA/$FFFB NMI Vector
-
 .word do_nmi
 ; $FFFC/$FFFD reset vector
 ;*= $fffc

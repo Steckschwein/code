@@ -59,7 +59,7 @@ PAL_COLOR = 0;
 	bpl :-
 	and #$7f
 	sta script_state
-	jsr fetchkey
+	jsr getkey
 	cmp #KEY_ESCAPE
 	bne :-
 
@@ -114,10 +114,6 @@ isr:
 	lda rline
 	inc
 	inc
-	inc
-	inc
-	inc
-	inc
 	inx
 	inx
 	cpx #(_gradient_end-_gradient)
@@ -152,6 +148,7 @@ isr:
 @is_vblank_end:
 	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
 
+	jsr fetchkey
 @exit:
 
 	lda #$80
@@ -175,20 +172,36 @@ vdp_init_bytes:	; vdp init table - MODE G3
 vdp_init_bytes_end:
 
 _gradient:
-vdp_pal_rgb $0500ff
-vdp_pal_rgb $1508fe
-vdp_pal_rgb $2611fd
-vdp_pal_rgb $371afd
-vdp_pal_rgb $4723fc
-vdp_pal_rgb $582cfb
-vdp_pal_rgb $6934fb
-vdp_pal_rgb $793dfa
-vdp_pal_rgb $8a46f9
-vdp_pal_rgb $9b4ff9
-vdp_pal_rgb $ab58f8
-vdp_pal_rgb $bc60f7
-vdp_pal_rgb $cd69f7
-vdp_pal_rgb $dd72f6
-vdp_pal_rgb $ee7bf5
-vdp_pal_rgb $ff84f5
+vdp_pal_rgb $0000ff
+vdp_pal_rgb $0804ff
+vdp_pal_rgb $1008ff
+vdp_pal_rgb $180cff
+vdp_pal_rgb $2010ff
+vdp_pal_rgb $2914ff
+vdp_pal_rgb $3118fe
+vdp_pal_rgb $391cff
+vdp_pal_rgb $4121ff
+vdp_pal_rgb $4a25ff
+vdp_pal_rgb $5229ff
+vdp_pal_rgb $5a2dff
+vdp_pal_rgb $6231ff
+vdp_pal_rgb $6a35ff
+vdp_pal_rgb $7339fe
+vdp_pal_rgb $7b3dff
+vdp_pal_rgb $8342ff
+vdp_pal_rgb $8b46ff
+vdp_pal_rgb $944aff
+vdp_pal_rgb $9c4eff
+vdp_pal_rgb $a452ff
+vdp_pal_rgb $ac56ff
+vdp_pal_rgb $b45aff
+vdp_pal_rgb $bd5eff
+vdp_pal_rgb $c563ff
+vdp_pal_rgb $cd67ff
+vdp_pal_rgb $d56bff
+vdp_pal_rgb $de6fff
+vdp_pal_rgb $e673ff
+vdp_pal_rgb $ee77ff
+vdp_pal_rgb $f67bff
+vdp_pal_rgb $ff80ff
 _gradient_end:

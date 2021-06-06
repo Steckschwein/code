@@ -43,9 +43,11 @@ fetchkey:
 		jsr spi_deselect
 
 		plx
-		
+
 		cmp #0
 		beq exit
+		;  TODO FIXME - tradeoff here is that we override a possible previously stored key anyway
+		sta key
 		rts
 
 ; get byte from keyboard buffer

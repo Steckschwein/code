@@ -18,37 +18,61 @@ io_irq_on:
 		lda #LORAM | IOEN ;disable kernel rom to setup irq vector
 		sta $01			  	;PLA
 
-		lda #%01111111
+		lda #%01111111	; disable interrupts from CIA1
 		sta CIA1_ICR
+
 		and VIC_CTRL1	; clear bit 7 (high byte raster line)
 		sta VIC_CTRL1	; $d011
+		lda #HLine_Border	;
+		sta VIC_HLINE	; Raster-IRQ at bottom border ($d012)
+
 		lda #%00000001
 		sta VIC_IMR			; enable raster irq
-		lda #Border_HLine	;
-		sta VIC_HLINE	; Raster-IRQ at bottom border
+
+		lda CIA1_ICR
+		lda CIA2_ICR
 		rts
 
 io_exit:
 		rts
 
 io_isr:
-		lda VIC_IRR	; vic irq ?
+		lda VIC_IRR	; vic irq ? ($d019)
 		bpl @rts
+
 		inc VIC_IRR
-		lda CIA1_ICR
 
-		lda #Border_HLine
-		cmp VIC_HLINE
-		beq :+
+		lda VIC_HLINE
+		cmp #HLine_Border
+		beq @io_isr_border
+		cmp #HLine_Last
+		beq @io_isr_lastline
 
-		inc VIC_BORDERCOLOR
-		.import gfx_mx
-		jsr gfx_mx
-
+		lda #COLOR_WHITE
+		sta VIC_BORDERCOLOR
+		jsr gfx_mx ; sprite mx
+		lda #HLine_Border
+		sta VIC_HLINE
 		lda #0
 		rts
-:
+
+@io_isr_lastline:
+		lda VIC_CTRL1
+		ora #$08
+		sta VIC_CTRL1
 		lda #$80	 ;bit 7 to signal vblank irq
+		rts
+
+@io_isr_border:
+		lda VIC_CTRL1
+		and #$f7			;vic trick to open border - clean 24/25 rows bit
+		sta VIC_CTRL1
+
+		lda #HLine_Last		; next irq last line
+		sta VIC_HLINE
+		lda #COLOR_BLUE
+		sta VIC_BORDERCOLOR
+		lda #0
 @rts:
 		rts
 
