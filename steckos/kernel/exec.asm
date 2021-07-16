@@ -49,45 +49,21 @@ execv:
         SetVector block_data, read_blkptr
         phx ; save fd in x register for fat_close
         jsr fat_read_block
-        plx
-        jsr fat_close			; close after read to free fd, regardless of error
 
         lda block_data
         sta krn_ptr1
-        clc
-        adc #$fe
         sta read_blkptr
-
         lda block_data+1
-        sta krn_ptr1+1
-        adc #$01
         sta read_blkptr+1
-
-        ldy #0
-@l:
-        lda block_data+2,y
-        sta (krn_ptr1),y
-        iny
-        bne @l
-
-        inc krn_ptr1+1
-@l2:
-        lda block_data+$100+2,y
-        sta (krn_ptr1),y
-        iny
-        cpy #$fe
-        bne @l2
-
-        dec krn_ptr1+1
-
-        jsr __inc_lba_address
-
-        dec blocks
-        beq @l_exec_run
-
+        sta krn_ptr1+1
+        
         jsr sd_read_multiblock
 
 @l_exec_run:
+
+        plx
+        jsr fat_close			; close after read to free fd, regardless of error
+
         ; we came here using jsr, but will not rts.
         ; get return address from stack to prevent stack corruption
         pla

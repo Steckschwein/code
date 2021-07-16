@@ -101,15 +101,26 @@ __fat_fseek:
 		;SetVector block_data, read_blkptr
 		rts
 
-	 ; TODO FIXME currently until end of cluster is read
-	 ;
+		;in:
+		;	X - offset into fd_area
+		;out:
+		;	C=1 on success and A=<byte>, C=0 on error and global errno set
+fat_fread_byte:
+		jsr __fat_is_open
+		bne :+
+		lda #EINVAL
+        rts
+:       
+
+	    ;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. so file size and blocks must be checked
+	    ;
 		;	read n blocks from file denoted by the given FD and maintains FD.offset
 		;in:
 		;	X - offset into fd_area
 		;	Y - number of blocks to read at once - !!!NOTE!!! it's currently limited to $ff
 		;	read_blkptr - address where the data of the read blocks should be stored
 		;out:
-		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
+		;	Z=1 on success and A=0 (EOK), Z=0 and A=error code otherwise
 		; 	Y - number of blocks which where successfully read
 fat_fread:
 		jsr __fat_is_open
@@ -125,14 +136,14 @@ fat_fread:
 		beq @l_exit_ok
 
 		lda fd_area+F32_fd::offset+0,x
-		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  ; last block of cluster reached?
-		bne @_l_read															 ; no, go on reading...
+		cmp volumeID+VolumeID::BPB + BPB::SecPerClus    ; last block of cluster reached?
+		bne @_l_read							        ; no, go on reading...
 
 		copypointer read_blkptr, krn_ptr1			; backup read_blkptr
-		jsr __fat_read_cluster_block_and_select	; read fat block of the current cluster
-		bne @l_exit_err									; read error...
-		bcs @l_exit											; EOC reached?	return ok, and block counter
-		jsr __fat_next_cln								; select next cluster
+		jsr __fat_read_cluster_block_and_select	    ; read fat block of the current cluster
+		bne @l_exit_err								; read error...
+		bcs @l_exit									; EOC reached?	return ok, and block counter
+		jsr __fat_next_cln							; select next cluster
 		stz fd_area+F32_fd::offset+0,x				; and reset offset within cluster
 		copypointer krn_ptr1, read_blkptr			; restore read_blkptr
 
@@ -142,7 +153,7 @@ fat_fread:
 		bne @l_exit_err
 		inc read_blkptr+1							; read address + $0200 (block size)
 		inc read_blkptr+1
-		inc fd_area+F32_fd::offset+0,x		  ; inc block counter
+		inc fd_area+F32_fd::offset+0,x		        ; inc block counter
 		inc krn_tmp2
 		bra @_l_read_loop
 @l_exit:

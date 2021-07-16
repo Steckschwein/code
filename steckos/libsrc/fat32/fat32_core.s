@@ -115,7 +115,7 @@ __fat_find_next:
 ;      	bcc ff_l4
 
 		dec blocks
-		beq @ff_eoc			; end of cluster reached?
+		beq @ff_eoc			    ; end of cluster reached?
 		jsr __inc_lba_address	; increment lba address to read next block
 		bra ff_l3
 @ff_eoc:
