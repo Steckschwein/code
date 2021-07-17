@@ -70,7 +70,7 @@
 .import path_inverse
 
 .export fat_read_block
-.export fat_open, fat_fopen
+.export fat_fopen
 .export fat_fread ; TODO FIXME update exec, use fat_fread
 .export fat_read
 .export fat_fseek
@@ -78,7 +78,6 @@
 .export fat_close_all, fat_close, fat_getfilesize
 
 ;.ifdef TEST_EXPORT TODO FIXME - any ideas?
-;.export __fat_is_open
 .export __fat_init_fdarea
 ;.endif
 
@@ -107,14 +106,17 @@ __fat_fseek:
 		;	C=1 on success and A=<byte>, C=0 on error and global errno set
 fat_fread_byte:
 		bit fd_area + F32_fd::CurrentCluster+3, x
-		bpl :+
+		bmi @l_err_exit
+
+		
+
+		sec
+		rts
+
+@l_err_exit:
 		lda #EINVAL
-@l_exit:
 		clc
      	rts
-:
-
-
 
 
     	;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. the file size and blocks must be checked
@@ -180,8 +182,6 @@ fat_fread:
 fat_read_block:
 		bit fd_area + F32_fd::CurrentCluster+3, x
 		bmi @l_err_exit
-		;jsr __fat_is_open
-		;bne @l_err_exit
 
 		jsr __calc_blocks
 		jsr __calc_lba_addr
@@ -210,19 +210,18 @@ fat_read:
 
 		; in:
 		;	A/X - pointer to zero terminated string with the file path
-		;	  Y - file mode constant
-		;		O_RDONLY		  = $01
-		;		O_WRONLY		  = $02
-		;		O_RDWR			 = $03
-		;		O_CREAT			= $10
-		;		O_TRUNC			= $20
-		;		O_APPEND		  = $40
-		;		O_EXCL			 = $80
+		;	  Y - file mode constants
+		;		O_RDONLY		= $01
+		;		O_WRONLY		= $02
+		;		O_RDWR		= $03
+		;		O_CREAT		= $10
+		;		O_TRUNC		= $20
+		;		O_APPEND		= $40
+		;		O_EXCL		= $80
 		; out:
 		;	.X - index into fd_area of the opened file
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_fopen:
-fat_open:
 		sty __volatile_tmp				; save open flag
 		ldy #FD_INDEX_CURRENT_DIR		; use current dir fd as start directory
 		jsr __fat_open_path
@@ -261,16 +260,6 @@ fat_open:
 @l_exit:
 		debug "fop"
 		rts
-
-
-		; in:
-		;	x - offset to fd_area
-		; out:
-		;	C=1 if file is open, C=0 otherwise
-;__fat_is_open:
-;		lda fd_area + F32_fd::CurrentCluster+3, x
-;		cmp #$ff		;#$ff means not open
-;		rts
 
 fat_close_all:
 		ldx #(2*FD_Entry_Size)	; skip first 2 entries, they're reserved for current and temp dir

@@ -57,7 +57,7 @@
 .import __calc_blocks
 .import __inc_lba_address
 
-.import fat_open
+.import fat_fopen
 
 		; in:
 		;	X - offset into fd_area
@@ -729,7 +729,7 @@ __fat_find_free_cluster:
 ;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_unlink:
 		ldy #O_RDONLY
-		jsr fat_open		; try to open as regular file
+		jsr fat_fopen		; try to open as regular file
 		bne @l_exit
 		jsr __fat_unlink
 		debug "unlnk"

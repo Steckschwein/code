@@ -33,7 +33,7 @@
 
 .code
 
-.import fat_open, fat_read, fat_close, fat_read_block, sd_read_multiblock, __inc_lba_address
+.import fat_fopen, fat_read, fat_close, fat_read_block, sd_read_multiblock, __inc_lba_address
 
 .export execv
 
@@ -43,7 +43,7 @@
 ;   Z=1 on success, Z=0 and A=<error code> otherwise
 execv:
         ldy #O_RDONLY
-        jsr fat_open					; A/X - pointer to filename
+        jsr fat_fopen					; A/X - pointer to filename
         bne @l_err_exit
 
 		  SetVector block_data, read_blkptr
