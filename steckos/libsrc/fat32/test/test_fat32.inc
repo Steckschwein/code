@@ -42,6 +42,7 @@
 	.dword dir_lba; DirEntryLBA ; LBA of the block where the dir entry of the file is located
 	.byte dir_entry; DirEntryPos .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
 	.byte 0; offset          .byte;  7Bit block number of the CurrentCluster
+	.dword 0; seek_pos
 .endmacro
 
 .macro assertFdEntry address
@@ -84,7 +85,7 @@
 .endmacro
 
 .macro assertDirEntry address
-		assertMemory address, 32
+		assertMemory address, .sizeof(F32DirEntry)
 .endmacro
 
 .macro load_block lba, address

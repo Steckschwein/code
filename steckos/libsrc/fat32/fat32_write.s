@@ -50,7 +50,6 @@
 .import __fat_free_fd
 .import __fat_read_block
 .import __fat_isroot
-.import __fat_is_open
 .import __fat_find_next
 .import __fat_find_first_mask
 
@@ -68,8 +67,8 @@
 fat_write:
 		stx fat_tmp_fd										; save fd
 
-		jsr __fat_is_open
-		beq @l_exit_einval								; exit, not open
+		bit fd_area + F32_fd::CurrentCluster+3, x
+		bmi @l_exit_einval								; exit, not open
 
 		lda fd_area + F32_fd::Attr, x
 		bit #DIR_Attr_Mask_Dir							; regular file?

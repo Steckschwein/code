@@ -78,7 +78,7 @@
 .export fat_close_all, fat_close, fat_getfilesize
 
 ;.ifdef TEST_EXPORT TODO FIXME - any ideas?
-.export __fat_is_open
+;.export __fat_is_open
 .export __fat_init_fdarea
 ;.endif
 
@@ -106,14 +106,19 @@ __fat_fseek:
 		;out:
 		;	C=1 on success and A=<byte>, C=0 on error and global errno set
 fat_fread_byte:
-		jsr __fat_is_open
-		bne :+
+		bit fd_area + F32_fd::CurrentCluster+3, x
+		bpl :+
 		lda #EINVAL
-        rts
-:       
+@l_exit:
+		clc
+     	rts
+:
 
-	    ;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. so file size and blocks must be checked
-	    ;
+
+
+
+    	;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. the file size and blocks must be checked
+    	;
 		;	read n blocks from file denoted by the given FD and maintains FD.offset
 		;in:
 		;	X - offset into fd_area
@@ -123,8 +128,8 @@ fat_fread_byte:
 		;	Z=1 on success and A=0 (EOK), Z=0 and A=error code otherwise
 		; 	Y - number of blocks which where successfully read
 fat_fread:
-		jsr __fat_is_open
-		bne @_l_read_start
+		bit fd_area + F32_fd::CurrentCluster+3, x
+		bpl @_l_read_start
 		lda #EINVAL
 		rts
 @_l_read_start:
@@ -136,8 +141,8 @@ fat_fread:
 		beq @l_exit_ok
 
 		lda fd_area+F32_fd::offset+0,x
-		cmp volumeID+VolumeID::BPB + BPB::SecPerClus    ; last block of cluster reached?
-		bne @_l_read							        ; no, go on reading...
+		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  ; last block of cluster reached?
+		bne @_l_read											 ; no, go on reading...
 
 		copypointer read_blkptr, krn_ptr1			; backup read_blkptr
 		jsr __fat_read_cluster_block_and_select	    ; read fat block of the current cluster
@@ -153,7 +158,7 @@ fat_fread:
 		bne @l_exit_err
 		inc read_blkptr+1							; read address + $0200 (block size)
 		inc read_blkptr+1
-		inc fd_area+F32_fd::offset+0,x		        ; inc block counter
+		inc fd_area+F32_fd::offset+0,x		; inc block counter
 		inc krn_tmp2
 		bra @_l_read_loop
 @l_exit:
@@ -173,8 +178,10 @@ fat_fread:
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 		;  X	- number of bytes read
 fat_read_block:
-		jsr __fat_is_open
-		beq @l_err_exit
+		bit fd_area + F32_fd::CurrentCluster+3, x
+		bmi @l_err_exit
+		;jsr __fat_is_open
+		;bne @l_err_exit
 
 		jsr __calc_blocks
 		jsr __calc_lba_addr
@@ -188,8 +195,8 @@ fat_read_block:
 		;out:
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_read:
-		jsr __fat_is_open
-		beq @l_err_exit
+		bit fd_area + F32_fd::CurrentCluster+3, x
+		bmi @l_err_exit
 
 		jsr __calc_blocks
 		beq @l_exit					; if Z=0, no blocks to read. we return with "EOK", 0 bytes read
@@ -259,14 +266,14 @@ fat_open:
 		; in:
 		;	x - offset to fd_area
 		; out:
-		;	Z=0 if file is open, Z=1 otherwise
-__fat_is_open:
-		lda fd_area + F32_fd::CurrentCluster +3, x
-		cmp #$ff		;#$ff means not open
-		rts
+		;	C=1 if file is open, C=0 otherwise
+;__fat_is_open:
+;		lda fd_area + F32_fd::CurrentCluster+3, x
+;		cmp #$ff		;#$ff means not open
+;		rts
 
 fat_close_all:
-		ldx #(2*FD_Entry_Size)	; skip first 2 entries, they're reserverd for current and temp dir
+		ldx #(2*FD_Entry_Size)	; skip first 2 entries, they're reserved for current and temp dir
 __fat_init_fdarea:
 		lda #$ff
 @l1:

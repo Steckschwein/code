@@ -57,7 +57,7 @@
 		assertX FD_Entry_Size*2	; assert FD reserved
 
 		assertDirEntry block_data + 4 * $20 ;expect 4th entry created
- 			fat32_dir_entry_file "TST_01CL", "TST", 0, 0	; no cluster reserved yet
+			fat32_dir_entry_file "TST_01CL", "TST", 0, 0	; no cluster reserved yet
 		assertFdEntry fd_area + (FD_Entry_Size*2)
 				fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive
 		set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 3 * 512 + 3 ; 4 blocks

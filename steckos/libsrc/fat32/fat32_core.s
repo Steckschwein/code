@@ -350,6 +350,10 @@ __fat_init_fd:
 		stz fd_area+F32_fd::FileSize+1,x
 		stz fd_area+F32_fd::FileSize+0,x
 		stz fd_area+F32_fd::offset+0,x		; init block offset/block counter
+		stz fd_area+F32_fd::seek_pos+3,x
+		stz fd_area+F32_fd::seek_pos+2,x
+		stz fd_area+F32_fd::seek_pos+1,x
+		stz fd_area+F32_fd::seek_pos+0,x
 		lda #EOK
 		rts
 
