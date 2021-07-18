@@ -109,8 +109,7 @@ _rtc_ts:
 
 mock_read_block:
 		load_block LBA_BEGIN, block_root_cl ; load root cl block
-		cmp32 lba_addr, FAT_LBA
-		bne :+
+		cmp32 lba_addr, FAT_LBA, :+
 		;simulate fat block read
 		m_memset block_fat+$000, $ff, $40	; simulate reserved
 		m_memset block_fat+$100, $ff, $40	;
@@ -125,29 +124,21 @@ mock_read_block:
 		fail "mock read_block"
 
 mock_write_block:
-		cmp32 lba_addr, LBA_BEGIN
-		bne :+
+		cmp32 lba_addr, LBA_BEGIN, :+
 		rts
-:		cmp32 lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+0)
-		bne :+
+:		cmp32 lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+0), :+
 		rts
-:		cmp32 lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+1)
-		bne :+
+:		cmp32 lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+1), :+
 		rts
-:		cmp32 lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+2)
-		bne :+
+:		cmp32 lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+2), :+
 		rts
-:		cmp32 lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+3)
-		bne :+
+:		cmp32 lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+3), :+
 		rts
-:		cmp32 lba_addr, FAT_LBA
-		bne :+
+:		cmp32 lba_addr, FAT_LBA, :+
 		rts
-:		cmp32 lba_addr, FAT2_LBA
-		bne :+
+:		cmp32 lba_addr, FAT2_LBA, :+
 		rts
-:		cmp32 lba_addr, FS_INFO_LBA
-		bne :+
+:		cmp32 lba_addr, FS_INFO_LBA, :+
 		rts
 :		assert32 $ffffffff, lba_addr ; fail
 

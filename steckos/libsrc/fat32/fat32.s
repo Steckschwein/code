@@ -105,11 +105,22 @@ __fat_fseek:
 		;out:
 		;	C=1 on success and A=<byte>, C=0 on error and global errno set
 fat_fread_byte:
-		bit fd_area + F32_fd::CurrentCluster+3, x
-		bmi @l_err_exit
+		_is_file_open @l_err_exit
 
+		lda fd_area+F32_fd::seek_pos+3, x
+		cmp fd_area+F32_fd::FileSize+3, x
+		bne :+
+		lda fd_area+F32_fd::seek_pos+2, x
+		cmp fd_area+F32_fd::FileSize+2, x
+		bne :+
+		lda fd_area+F32_fd::seek_pos+1, x
+		cmp fd_area+F32_fd::FileSize+1, x
+		bne :+
+		lda fd_area+F32_fd::seek_pos+0, x
+		cmp fd_area+F32_fd::FileSize+0, x
+		beq @l_err_exit
+:
 		
-
 		sec
 		rts
 

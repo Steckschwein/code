@@ -37,17 +37,17 @@
 			EACCES						; Permission denied
 			ENODEV						; No such device
 			EMFILE						; Too many open files
-			EBUSY					 	; Device or resource busy
+			EBUSY					 		; Device or resource busy
 			EINVAL						; Invalid argument
 			ENOSPC						; No space left on device
 			EEXIST						; File exists
 			EAGAIN						; Try again (10)
 			EIO							; I/O error
-			EINTR					 	; Interrupted system call
+			EINTR					 		; Interrupted system call
 			ENOSYS						; Function not implemented
 			ESPIPE						; Illegal seek
 			ERANGE						; Range error
-			EBADF						; Bad file number
+			EBADF							; Bad file number
 			ENOEXEC					  	; Exec format error
 
 			EISDIR						; Is a directory		; 0x12

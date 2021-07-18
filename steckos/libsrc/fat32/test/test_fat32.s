@@ -275,8 +275,7 @@ mock_read_block:
 		rts
 :
 		load_block LBA_BEGIN, block_root_cl ; load root cl block
-		cmp32 lba_addr, $2980	;fat block $2980 read?
-		bne :+
+		cmp32 lba_addr, $2980, :+	;fat block $2980 read?
 ;simulate fat block read, just fill some values which are reached if the fat32 implementation is correct ;)
 		set32 block_fat+((test_start_cluster+0)<<2 & (sd_blocksize-1)), (test_start_cluster+1) ; build the chain
 		set32 block_fat+((test_start_cluster+1)<<2 & (sd_blocksize-1)), (test_start_cluster+2)

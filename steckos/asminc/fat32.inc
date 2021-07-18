@@ -175,6 +175,11 @@ DIR_Entry_Deleted            = $e5
 			Offset	.dword
 .endstruct
 
+.macro _is_file_open _label
+   bit fd_area + F32_fd::CurrentCluster+3, x ; is open
+   bmi _label
+.endmacro
+
 .struct F32_fd
     CurrentCluster   .dword ;
     FileSize         .dword ;

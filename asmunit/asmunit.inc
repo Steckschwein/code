@@ -49,22 +49,18 @@ _tst_inp_ptr=$2
 
 asmunit_addr_instrument = $0202
 
-.macro cmp16 address, _16Bit
-	.local @l_exit
+.macro cmp16 address, _16Bit, _label
 	lda address+0
 	cmp #<_16Bit
-	bne @l_exit
+	bne _label
 	lda address+1
 	cmp #>_16Bit
-@l_exit:
+	bne _label
 .endmacro
 
-.macro cmp32 address, _32Bit
-	.local @l_exit
-	cmp16 address+0, (_32Bit & $ffff)
-	bne @l_exit
-	cmp16 address+2, (_32Bit>>16)
-@l_exit:
+.macro cmp32 address, _32Bit, _label
+	cmp16 address+0, (_32Bit & $ffff), _label
+	cmp16 address+2, (_32Bit>>16), _label
 .endmacro
 
 .macro set8 address, _8bit
