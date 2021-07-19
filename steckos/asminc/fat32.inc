@@ -169,10 +169,10 @@ DIR_Entry_Deleted            = $e5
 ;--------------------------------------------------------------------------------------
 
 .struct Seek
-			Whence	.byte		; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
-									; SEEK_CUR - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
-									; SEEK_END - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
-			Offset	.dword
+    Whence	.byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
+                    ; SEEK_CUR - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
+                    ; SEEK_END - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
+    Offset	.dword
 .endstruct
 
 .macro _is_file_open _label

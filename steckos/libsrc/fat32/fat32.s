@@ -120,7 +120,20 @@ fat_fread_byte:
 		cmp fd_area+F32_fd::FileSize+0, x
 		beq @l_err_exit
 :
-		
+        
+		jsr __calc_lba_addr
+        jsr __fat_read_block
+
+        inc fd_area+F32_fd::seek_pos+0, x
+		bne :+
+        inc fd_area+F32_fd::seek_pos+1, x
+		bne :+
+        inc fd_area+F32_fd::seek_pos+2, x
+		bne :+
+        inc fd_area+F32_fd::seek_pos+3, x
+:
+
+        lda read_blkptr
 		sec
 		rts
 
