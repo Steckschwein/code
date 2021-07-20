@@ -161,16 +161,16 @@ fat_fread:
 		beq @l_exit_ok
 
 		lda fd_area+F32_fd::offset+0,x
-		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  ; last block of cluster reached?
-		bne @_l_read											 ; no, go on reading...
+		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
+		bne @_l_read											 	; no, go on reading...
 
-		copypointer read_blkptr, krn_ptr1			; backup read_blkptr
+		copypointer read_blkptr, krn_ptr1					; backup read_blkptr
 		jsr __fat_read_cluster_block_and_select	    ; read fat block of the current cluster
-		bne @l_exit_err								; read error...
+		bne @l_exit_err							; read error...
 		bcs @l_exit									; EOC reached?	return ok, and block counter
-		jsr __fat_next_cln							; select next cluster
-		stz fd_area+F32_fd::offset+0,x				; and reset offset within cluster
-		copypointer krn_ptr1, read_blkptr			; restore read_blkptr
+		jsr __fat_next_cln						; select next cluster
+		stz fd_area+F32_fd::offset+0,x		; and reset offset within cluster
+		copypointer krn_ptr1, read_blkptr	; restore read_blkptr
 
 @_l_read:
 		jsr __calc_lba_addr

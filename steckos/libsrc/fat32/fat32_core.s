@@ -543,6 +543,7 @@ __fat_next_cln:
 		;debug "nc3"
 		sta fd_area + F32_fd::CurrentCluster+3, x
 		;TODO stz offset here?!?
+		; stz fd_area + F32_fd::offset, x
 		lda #EOK
 		rts
 

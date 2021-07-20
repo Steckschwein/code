@@ -89,7 +89,7 @@
 .endmacro
 
 .macro load_block lba, address
-		cmp32 lba_addr, lba, :+
+		cmp32_ne lba_addr, lba, :+
 		lda #<address
 		ldy #>address
 		jmp load_test_data

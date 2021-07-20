@@ -81,9 +81,10 @@
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 8 + test_start_cluster * 8 + 10, lba_addr ; expect $68f0 + (clnr * sec/cl) => $67f0 + $16a *8 + 10 = $734a
 
+
 ; -------------------
 		setup "fat_fread with error"
-		ldx #(2*FD_Entry_Size)
+		ldx #(2*FD_Entry_Size) ; use fd(2) - i/o error
 		SetVector data_read, read_blkptr
 		ldy #2
 		jsr fat_fread
@@ -109,7 +110,6 @@
 		ldy #1
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread
-
 		assertZero 1
 		assertA EOK
 		assertX (1*FD_Entry_Size)
@@ -238,6 +238,7 @@
 		fat32_dir_entry_file "FILE02  ", "TXT", $0a, 12
 
 ; -------------------
+		brk
 		setup "fat_fread_byte 4 blocks 2s/cl"
 		set_sec_per_cl 2
 
@@ -268,9 +269,10 @@ setUp:
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 	set16 fd_area+(0*FD_Entry_Size)+F32_fd::offset, 0
 
-	;setup fd1 as with test cluster
+	;setup fd1 with test cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 	set16 fd_area+(1*FD_Entry_Size)+F32_fd::offset, 0
+	set16 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
 
 	rts
 
@@ -292,21 +294,20 @@ mock_read_block:
 		;debug32 "m_rd", lba_addr
 		cpx #(2*FD_Entry_Size)
 		bne :+
-		inc read_blkptr+1	; same behaviour as real implementation
+		inc read_blkptr+1	; same behavior as real implementation
 		lda #EIO
 		rts
 :
 		load_block LBA_BEGIN, block_root_cl ; load root cl block
-		cmp32 lba_addr, $2980, :+	;fat block $2980 read?
+		cmp32_ne lba_addr, $2980, @exit	;fat block $2980 read?
+
 ;simulate fat block read, just fill some values which are reached if the fat32 implementation is correct ;)
 		set32 block_fat+((test_start_cluster+0)<<2 & (sd_blocksize-1)), (test_start_cluster+1) ; build the chain
 		set32 block_fat+((test_start_cluster+1)<<2 & (sd_blocksize-1)), (test_start_cluster+2)
 		set32 block_fat+((test_start_cluster+2)<<2 & (sd_blocksize-1)), (test_start_cluster+3)
 		set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), FAT_EOC
-:
 @exit:
 		inc read_blkptr+1	; inc read_blkptr+1 => same behaviour as real block read implementation
-		plx
 		lda #EOK
 		rts
 
