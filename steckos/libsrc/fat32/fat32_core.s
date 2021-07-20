@@ -320,7 +320,7 @@ __fat_open_file:
 	 ;	.X - with index to fd_area
 	 ;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 __fat_alloc_fd:
-		ldx #(2*FD_Entry_Size)							; skip 2 entries, they're reserverd for current and temp dir
+		ldx #(2*FD_Entry_Size)							; skip 2 entries, they're reserved for current and temp dir
 @l1:	lda fd_area + F32_fd::CurrentCluster +3, x
 		cmp #$ff	;#$ff means unused, return current x as offset
 		beq __fat_init_fd

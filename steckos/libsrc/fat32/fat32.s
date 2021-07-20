@@ -71,7 +71,8 @@
 
 .export fat_read_block
 .export fat_fopen
-.export fat_fread ; TODO FIXME update exec, use fat_fread
+.export fat_fread ; TODO FIXME update exec, use fat_fread / fat_fread_byte
+.export fat_fread_byte
 .export fat_read
 .export fat_fseek
 .export fat_find_first, fat_find_next
@@ -120,20 +121,17 @@ fat_fread_byte:
 		cmp fd_area+F32_fd::FileSize+0, x
 		beq @l_err_exit
 :
-        
 		jsr __calc_lba_addr
-        jsr __fat_read_block
-
-        inc fd_area+F32_fd::seek_pos+0, x
+		jsr __fat_read_block
+		inc fd_area+F32_fd::seek_pos+0, x
 		bne :+
-        inc fd_area+F32_fd::seek_pos+1, x
+		inc fd_area+F32_fd::seek_pos+1, x
 		bne :+
-        inc fd_area+F32_fd::seek_pos+2, x
+		inc fd_area+F32_fd::seek_pos+2, x
 		bne :+
-        inc fd_area+F32_fd::seek_pos+3, x
+     	inc fd_area+F32_fd::seek_pos+3, x
 :
-
-        lda read_blkptr
+		lda read_blkptr
 		sec
 		rts
 
@@ -154,11 +152,7 @@ fat_fread_byte:
 		;	Z=1 on success and A=0 (EOK), Z=0 and A=error code otherwise
 		; 	Y - number of blocks which where successfully read
 fat_fread:
-		bit fd_area + F32_fd::CurrentCluster+3, x
-		bpl @_l_read_start
-		lda #EINVAL
-		rts
-@_l_read_start:
+		_is_file_open @l_exit_einval
 		sty krn_tmp3										; safe requested block number
 		stz krn_tmp2										; init counter
 @_l_read_loop:
@@ -187,6 +181,9 @@ fat_fread:
 		inc fd_area+F32_fd::offset+0,x		; inc block counter
 		inc krn_tmp2
 		bra @_l_read_loop
+@l_exit_einval:
+		lda #EINVAL
+		rts
 @l_exit:
 		ldy krn_tmp2
 @l_exit_ok:
@@ -253,14 +250,17 @@ fat_fopen:
 		lda fd_area + F32_fd::Attr, x
 		and #DIR_Attr_Mask_Dir			; regular file or directory?
 		beq @l_exit_ok						; not dir, ok
-		bra @l_err_dir
+		lda #EISDIR							; was directory, we must not free any fd
+		rts									; exit with error "Is a directory"
 @l_error:
 		cmp #ENOENT							; no such file or directory ?
 		bne @l_exit							; other error, then exit
 		lda __volatile_tmp				; check if we should create a new file
 		and #O_CREAT | O_WRONLY | O_APPEND
-		beq @l_err_enoent					; nothing set, exit with ENOENT
-
+		bne :+
+		lda #ENOENT							; nothing set, exit with ENOENT
+		rts
+:
 		debug "r+"
 		copypointer dirptr, krn_ptr2
 		jsr string_fat_name				; build fat name upon input string (filenameptr)
@@ -273,12 +273,6 @@ fat_fopen:
 		jsr __fat_write_dir_entry		; create dir entry at current dirptr
 		beq @l_exit_ok
 		jmp fat_close						; free the allocated file descriptor regardless of any errors
-@l_err_enoent:
-		lda	#ENOENT
-		bra @l_exit
-@l_err_dir:									; was directory, we must not free any fd
-		lda	#EISDIR						; error "Is a directory"
-		bra @l_exit
 @l_exit_ok:
 		lda #EOK								; A=0 (EOK)
 @l_exit:

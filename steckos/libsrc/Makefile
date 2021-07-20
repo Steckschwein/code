@@ -3,6 +3,8 @@ TARGET_SYS=none
 
 DEFINES+=-DV9958
 
+ASMUNIT_VERBOSE=true
+
 # debug fat32
 #DEBUG += -DDEBUG_FAT32
 #DEBUG += -DDEBUG_FAT32_DIR
@@ -106,7 +108,7 @@ endef # COMPILE_recipe
 
 define RUNTEST_recipe
 	@$(LD65) $< $(TEST_LDFLAGS) -m $@.map -o $@
-  	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 0x1000
+  	ASMUNIT_VERBOSE=true TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 0x1000
 endef
 
 define DISASM_recipe

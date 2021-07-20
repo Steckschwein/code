@@ -43,7 +43,6 @@
 .export asmunit_l_flag_z0
 .export asmunit_l_flag_z1
 
-;.segment "ASMUNIT"
 .code
 asmunit_char_out_buffer:  .res _EXPECT_MAX_LENGTH,0
 asmunit_char_out_ix:      .res 1,0
@@ -65,12 +64,12 @@ asmunit_assert:
 		sta tst_status
 		cld
 
-		lda _tst_ptr				; save old pointer for later restor
+		lda _tst_ptr				; save old pointer for later restore
 		sta tst_save_ptr
 		lda _tst_ptr+1
 		sta tst_save_ptr+1
 
-		lda _tst_inp_ptr			; save old pointer for later restor
+		lda _tst_inp_ptr			; save old pointer for later restore
 		sta tst_return_ptr
 		lda _tst_inp_ptr+1
 		sta tst_return_ptr+1
@@ -298,11 +297,10 @@ _hexout:
 		jsr _hexdigit
 		pla
 _hexdigit:
-		and #$0f      	;mask lsd for hex print
-		ora #'0'			;add "0"
-		cmp #'9'+1		;is it a decimal digit?
-		bcc asmunit_chrout	;yes! output it
-		adc #$26			;add offset for letter a-f
+		sed
+		cmp #$0a
+		adc #$30
+		cld
 asmunit_chrout:
 		sta asmunit_char_out
 		rts

@@ -308,4 +308,19 @@ asmunit_addr_instrument = $0202
 
 .endmacro
 
+asmunit_char_out_io=$0200
+
+.macro dumpReg
+	sta asmunit_char_out_io
+	stx asmunit_char_out_io
+	sty asmunit_char_out_io
+	php
+	pha
+	php
+	pla
+	sta asmunit_char_out_io
+	pla
+	plp
+.endmacro
+
 .endif

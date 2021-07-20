@@ -6,6 +6,7 @@
 	.import __fat_alloc_fd
 	.import fat_fopen
 	.import fat_fread
+	.import fat_fread_byte
 
 .code
 
@@ -108,6 +109,7 @@
 		ldy #1
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread
+
 		assertZero 1
 		assertA EOK
 		assertX (1*FD_Entry_Size)
@@ -220,7 +222,7 @@
 		assertA EOK
 		assertX FD_Entry_Size*2
 		assertDirEntry $0440
-			fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+		fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
 
 ; -------------------
 		setup "fat_fopen O_RWONLY"
@@ -233,7 +235,27 @@
 		assertA EOK
 		assertX FD_Entry_Size*2
 		assertDirEntry $0460
-			fat32_dir_entry_file "FILE02  ", "TXT", $0a, 12
+		fat32_dir_entry_file "FILE02  ", "TXT", $0a, 12
+
+; -------------------
+		setup "fat_fread_byte 4 blocks 2s/cl"
+		set_sec_per_cl 2
+
+		ldx #(1*FD_Entry_Size)
+		jsr fat_fread_byte
+		assertCarry 1
+		assertA 'H'
+		assertX (1*FD_Entry_Size)
+
+		jsr fat_fread_byte
+		assertCarry 1
+		assertA 'W'
+		assertX (1*FD_Entry_Size)
+
+		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2, lba_addr
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
+		assert16 data_read+$0200, read_blkptr ; expect read_ptr was increased 4blocks, means 8*$100
+		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset 1, we have a 2 sec/cl fat geometry
 
 		brk
 
