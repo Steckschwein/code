@@ -1,4 +1,5 @@
 .include "asmunit.inc" 	; test api
+.include "debug.inc"
 
 .include "common.inc"
 .include "errno.inc"
@@ -92,20 +93,22 @@
 		cmp32_ne lba_addr, lba, :+
 		lda #<address
 		ldy #>address
-		jmp load_test_data
+		jsr load_test_data
+		dec read_blkptr+1
 :
 .endmacro
 
 .macro data_loader
+	.local @cp
 load_test_data:
 		sta test_data_ptr+0
 		sty test_data_ptr+1
 		ldy #0
 		jsr @cp
-		inc read_blkptr+1	; => same behaviour as real block read implementation
+		inc read_blkptr+1
 		inc test_data_ptr+1
 @cp:	lda (test_data_ptr),y
-		sta (read_blkptr), y
+		sta (read_blkptr),y
 		iny
 		bne @cp
 		rts

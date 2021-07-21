@@ -15,6 +15,7 @@
 .export path_inverse=mock_not_implemented3
 .export put_char=mock_not_implemented4
 
+debug_enabled=1
 .code
 
 ; -------------------
@@ -108,22 +109,28 @@ _rtc_ts:
 		rts
 
 mock_read_block:
+		debug32 "mock_read_block", lba_addr
 		load_block LBA_BEGIN, block_root_cl ; load root cl block
 		cmp32_ne lba_addr, FAT_LBA, :+
-		;simulate fat block read
-		m_memset block_fat+$000, $ff, $40	; simulate reserved
-		m_memset block_fat+$100, $ff, $40	;
-		m_memset block_fat+$40, $0, 4 ;
-
-		lda #EOK
-		rts
+			;simulate fat block read
+			m_memset block_fat+$000, $ff, $40	; simulate reserved
+			m_memset block_fat+$100, $ff, $40	;
+			m_memset block_fat+$40, $0, 4 ;
+			bra @exit
 
 :		load_block FS_INFO_LBA, block_fsinfo
 
-		assert32 $ffffffff, lba_addr
-		fail "mock read_block"
+;		assert32 $ffffffff, lba_addr
+;		fail "mock read_block"
+
+@exit:
+		inc read_blkptr+1 ; => same behaviour as real block read implementation
+		lda #EOK
+		rts
+
 
 mock_write_block:
+		debug32 "mock_write_block", lba_addr
 		cmp32_ne lba_addr, LBA_BEGIN, :+
 		rts
 :		cmp32_ne lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+0), :+
@@ -140,7 +147,8 @@ mock_write_block:
 		rts
 :		cmp32_ne lba_addr, FS_INFO_LBA, :+
 		rts
-:		assert32 $ffffffff, lba_addr ; fail
+:		;fail "invalid lba" ;
+		assert32 $ffffffff, lba_addr ; fail
 
 mock_not_implemented1:
 		fail "mock 1"

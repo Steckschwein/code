@@ -104,9 +104,9 @@ __fat_fseek:
 		;in:
 		;	X - offset into fd_area
 		;out:
-		;	C=1 on success and A=<byte>, C=0 on error and global errno set
+		;	C=1 on success and A=<byte>, C=0 on error, A=<error code>
 fat_fread_byte:
-		_is_file_open @l_err_exit
+		_is_file_open l_exit_einval
 
 		lda fd_area+F32_fd::seek_pos+3, x
 		cmp fd_area+F32_fd::FileSize+3, x
@@ -119,24 +119,35 @@ fat_fread_byte:
 		bne :+
 		lda fd_area+F32_fd::seek_pos+0, x
 		cmp fd_area+F32_fd::FileSize+0, x
-		beq @l_err_exit
+		bne :+
+		lda #EOK
+		bra l_exit
+		SetVector read_blkptr, block_data
 :
-		jsr __calc_lba_addr
-		jsr __fat_read_block
+		ldy #1
+		jsr __fat_fread
+		bne l_exit
+		cpy #1
+		bne l_exit
+
+		lda fd_area+F32_fd::seek_pos+0, x
+		tay
+:		lda block_data,y
+
 		inc fd_area+F32_fd::seek_pos+0, x
 		bne :+
 		inc fd_area+F32_fd::seek_pos+1, x
 		bne :+
 		inc fd_area+F32_fd::seek_pos+2, x
 		bne :+
-     	inc fd_area+F32_fd::seek_pos+3, x
-:
-		lda read_blkptr
-		sec
+		inc fd_area+F32_fd::seek_pos+3, x
+
+:		sec
 		rts
 
-@l_err_exit:
+l_exit_einval:
 		lda #EINVAL
+l_exit:
 		clc
      	rts
 
@@ -152,7 +163,8 @@ fat_fread_byte:
 		;	Z=1 on success and A=0 (EOK), Z=0 and A=error code otherwise
 		; 	Y - number of blocks which where successfully read
 fat_fread:
-		_is_file_open @l_exit_einval
+		_is_file_open l_exit_einval
+__fat_fread:
 		sty krn_tmp3										; safe requested block number
 		stz krn_tmp2										; init counter
 @_l_read_loop:
