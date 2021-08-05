@@ -108,22 +108,10 @@ __fat_fseek:
 fat_fread_byte:
 		_is_file_open l_exit_einval
 
-		lda fd_area+F32_fd::seek_pos+3, x
-		cmp fd_area+F32_fd::FileSize+3, x
-		bne :+
-		lda fd_area+F32_fd::seek_pos+2, x
-		cmp fd_area+F32_fd::FileSize+2, x
-		bne :+
-		lda fd_area+F32_fd::seek_pos+1, x
-		cmp fd_area+F32_fd::FileSize+1, x
-		bne :+
-		lda fd_area+F32_fd::seek_pos+0, x
-		cmp fd_area+F32_fd::FileSize+0, x
-		bne :+
-		lda #EOK
-		bra l_exit
-		SetVector read_blkptr, block_data
+		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
+		rts ; exit, C=1
 :
+		SetVector read_blkptr, block_data
 		ldy #1
 		jsr __fat_fread
 		bne l_exit
@@ -134,13 +122,7 @@ fat_fread_byte:
 		tay
 :		lda block_data,y
 
-		inc fd_area+F32_fd::seek_pos+0, x
-		bne :+
-		inc fd_area+F32_fd::seek_pos+1, x
-		bne :+
-		inc fd_area+F32_fd::seek_pos+2, x
-		bne :+
-		inc fd_area+F32_fd::seek_pos+3, x
+		_inc32_x fd_area+F32_fd::seek_pos
 
 :		sec
 		rts

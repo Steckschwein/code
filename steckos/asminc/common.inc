@@ -93,6 +93,17 @@
     _sub_n _val1, _val2, _res, 2
 .endmacro
 
+.macro _inc32_x val
+      .local @lbl
+      inc val+0,x
+      bne @lbl
+      inc val+1,x
+      bne @lbl
+      inc val+2,x
+      bne @lbl
+      inc val+3,x
+@lbl:
+.endmacro
 
 .macro _inc32 val
 		.local @l1
