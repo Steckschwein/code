@@ -111,6 +111,12 @@ fat_fread_byte:
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		rts ; exit, C=1
 :
+        lda fd_area+F32_fd::seek_pos+0,x
+        bne :+
+        lda fd_area+F32_fd::seek_pos+1,x
+        and #$01
+        bne :+
+
 		SetVector read_blkptr, block_data
 		ldy #1
 		jsr __fat_fread
