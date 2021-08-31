@@ -109,34 +109,33 @@ fat_fread_byte:
 		_is_file_open l_exit_einval
 
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
-		rts ; exit, C=1
-:
-        lda fd_area+F32_fd::seek_pos+0,x
-        bne :+
-        lda fd_area+F32_fd::seek_pos+1,x
-        and #$01
-        bne :+
+		rts ; exit - EOF, C=1
 
 		SetVector read_blkptr, block_data
-		ldy #1
-		jsr __fat_fread
-		bne l_exit
-		cpy #1
-		bne l_exit
 
+:		lda fd_area+F32_fd::seek_pos+0,x	;
+		bne l_read
+		lda fd_area+F32_fd::seek_pos+1,x
+		and #$01
+		bne l_read_h
+
+		jsr fat_read_block
+		bcs l_read
+		rts
+l_read_h:
+		inc read_blkptr+1
+l_read:
 		lda fd_area+F32_fd::seek_pos+0, x
 		tay
-:		lda block_data,y
-
+		lda (read_blkptr),y
 		_inc32_x fd_area+F32_fd::seek_pos
-
-:		sec
+		sec
 		rts
 
 l_exit_einval:
 		lda #EINVAL
-l_exit:
 		clc
+l_exit:
      	rts
 
 
@@ -148,67 +147,64 @@ l_exit:
 		;	Y - number of blocks to read at once - !!!NOTE!!! it's currently limited to $ff
 		;	read_blkptr - address where the data of the read blocks should be stored
 		;out:
-		;	Z=1 on success and A=0 (EOK), Z=0 and A=error code otherwise
+		;	C=1 on success and A=0 (EOK), C=0 and A=error code otherwise
 		; 	Y - number of blocks which where successfully read
 fat_fread:
 		_is_file_open l_exit_einval
-__fat_fread:
+
 		sty krn_tmp3										; safe requested block number
 		stz krn_tmp2										; init counter
-@_l_read_loop:
+@l_read_loop:
 		ldy krn_tmp2
 		cpy krn_tmp3
 		beq @l_exit_ok
 
-		lda fd_area+F32_fd::offset+0,x
-		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
-		bne @_l_read											 	; no, go on reading...
+		jsr fat_read_block
+		bcc @l_exit
 
-		copypointer read_blkptr, krn_ptr1					; backup read_blkptr
-		jsr __fat_read_cluster_block_and_select	    ; read fat block of the current cluster
-		bne @l_exit_err							; read error...
-		bcs @l_exit									; EOC reached?	return ok, and block counter
-		jsr __fat_next_cln						; select next cluster
-		stz fd_area+F32_fd::offset+0,x		; and reset offset within cluster
-		copypointer krn_ptr1, read_blkptr	; restore read_blkptr
-
-@_l_read:
-		jsr __calc_lba_addr
-		jsr __fat_read_block
-		bne @l_exit_err
 		inc read_blkptr+1							; read address + $0200 (block size)
 		inc read_blkptr+1
 		inc fd_area+F32_fd::offset+0,x		; inc block counter
 		inc krn_tmp2
-		bra @_l_read_loop
-@l_exit_einval:
-		lda #EINVAL
-		rts
-@l_exit:
-		ldy krn_tmp2
+		bra @l_read_loop
+
 @l_exit_ok:
 		lda #EOK														; A=0 (EOK)
-@l_exit_err:
+@l_exit:
+		ldy krn_tmp2
 		rts
 
-		;	@deprecated - use fat_fread instead, just for backward compatibility
-		;
 		; read one block, TODO - update seek position within FD
 		;in:
 		;	X	- offset into fd_area
 		;	read_blkptr has to be set to target address - TODO FIXME ptr. parameter
 		;out:
-		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
+		;	C=1 on success (A=0), C=0 and A=error code otherwise
 		;  X	- number of bytes read
 fat_read_block:
-		bit fd_area + F32_fd::CurrentCluster+3, x
-		bmi @l_err_exit
+		_is_file_open @l_err_exit
 
-		jsr __calc_blocks
+		lda fd_area+F32_fd::offset+0,x
+		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
+		bne @l_read											 		; no, go on reading...
+
+		copypointer read_blkptr, krn_ptr1	; backup read_blkptr
+		jsr __fat_next_cln						; select next cluster within chain
+		pha
+		copypointer krn_ptr1, read_blkptr	; restore read_blkptr
+		pla
+		bcc @l_exit									; exit on error (C=0)
+
+@l_read:
 		jsr __calc_lba_addr
-		jmp read_block
+		jsr __fat_read_block
+		bne @l_exit
+		sec ; exit success
+		rts
 @l_err_exit:
 		lda #EINVAL
+@l_exit:
+		clc
 		rts
 
 		;in:

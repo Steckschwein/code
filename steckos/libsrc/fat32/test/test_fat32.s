@@ -81,15 +81,14 @@
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 8 + test_start_cluster * 8 + 10, lba_addr ; expect $68f0 + (clnr * sec/cl) => $67f0 + $16a *8 + 10 = $734a
 
-
 ; -------------------
 		setup "fat_fread with error"
 		ldx #(2*FD_Entry_Size) ; use fd(2) - i/o error
 		SetVector data_read, read_blkptr
 		ldy #2
 		jsr fat_fread
-		assertZero 0; expect error
-		assertA EIO
+		assertA EINVAL
+		assertCarry 0; expect error
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert16 data_read, read_blkptr
 
@@ -99,7 +98,7 @@
 		SetVector data_read, read_blkptr
 		ldy #0
 		jsr fat_fread
-		assertZero 1
+		assertCarry 1
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 0					; nothing read
@@ -110,7 +109,7 @@
 		ldy #1
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread
-		assertZero 1
+		assertCarry 1; ok
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 1
@@ -125,7 +124,7 @@
 		ldy #2	; 2 blocks
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread
-		assertZero 1
+		assertCarry 1; ok
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 2
@@ -140,7 +139,7 @@
 		ldy #4	; 4 blocks at once
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread
-		assertZero 1
+		assertCarry 1; ok
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 4
@@ -157,7 +156,7 @@
 		ldy #1
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread
-		assertZero 1
+		assertCarry 1; ok
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 1
@@ -167,7 +166,7 @@
 		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset 1, we have a 2 sec/cl fat geometry
 
 		jsr fat_fread
-		assertZero 1
+		assertCarry 1; ok
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 1
@@ -176,7 +175,7 @@
 		assert8 2, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset 2
 
 		jsr fat_fread
-		assertZero 1
+		assertCarry 1; ok
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 1
@@ -185,7 +184,7 @@
 		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset 1
 
 		jsr fat_fread
-		assertZero 1
+		assertCarry 1; ok
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 1
@@ -195,7 +194,7 @@
 
 		ldy #4 ; read 4 blocks
 		jsr fat_fread
-		assertZero 1
+		assertCarry 1; ok
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 4
@@ -203,9 +202,9 @@
 		assert32 test_start_cluster+3, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster ; - new cluster, +2
 		assert8 2, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; again offset 2, but new cluster
 
-		; EOC expected here, 0 blocks read
+		; EOC reached, expected 0 blocks read
 		jsr fat_fread
-		assertZero 1
+		assertCarry 0; expect error, EOC reached
 		assertA EOK
 		assertX (1*FD_Entry_Size)
 		assertY 0
@@ -244,7 +243,7 @@
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread_byte
 		assertCarry 1
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset
+		assert8 0, fd_area+(1*FD_Entry_Size)+F32_fd::offset
 		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 		assertA 'F'
 		assertX (1*FD_Entry_Size)
@@ -263,6 +262,25 @@
 		assertCarry 1
 		assertA '!'
 		assertX (1*FD_Entry_Size)
+
+		lda #251
+		sta tmp1
+:		jsr fat_fread_byte
+		assertCarry 1
+		dec tmp1
+		bne :-
+
+		jsr fat_fread_byte
+		assertCarry 1
+		assertA '2'
+		assertX (1*FD_Entry_Size)
+		assert32 $100, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+
+		jsr fat_fread_byte
+		assertCarry 1
+		assertA 'n'
+		assertX (1*FD_Entry_Size)
+		assert32 $101, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 
 ;		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2, lba_addr
 ;		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
@@ -307,9 +325,9 @@ mock_not_implemented:
 mock_read_block:
 		debug32 "mock_read_block", lba_addr
 		cpx #(2*FD_Entry_Size)
-		bne :+
+		bcc :+
 		inc read_blkptr+1	; same behavior as real implementation
-		lda #EIO
+		lda #EINVAL
 		rts
 :
 		; defaults to dir entry data
@@ -343,6 +361,8 @@ block_root_cl:
 
 test_block_data:
 	.byte "FTW!"
+	.res 251,0
+	.byte "2nd half block"
 
 .bss
 data_read: .res 8*512, 0

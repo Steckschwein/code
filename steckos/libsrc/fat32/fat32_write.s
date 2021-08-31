@@ -352,7 +352,7 @@ __fat_write_dir_entry:
 		; new dir entry
 		jsr __fat_write_block_data					  				; write the current block with the updated dir entry first
 		bne @l_exit
-		ldy #$80															; safely, fill the new dir block with 0 to mark eod
+		ldy #$7f															; safely, fill the new dir block with 0 to mark eod
 @l_erase:; A=0 here
 		sta block_data+$000, y
 		sta block_data+$080, y
@@ -363,11 +363,6 @@ __fat_write_dir_entry:
 		;TODO FIXME test end of cluster, if so reserve a new one, update cluster chain for directory ;)
 		debug32 "eod_lba", lba_addr
 		debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
-;		lda lba_addr+0
-;		adc #02
-;		sbc volumeID+VolumeID::BPB + BPB::SecPerClus
-;		lda fd_area+F32_fd::CurrentCluster+0
-;		sbc lba_addr+0
 		jsr __inc_lba_address												; increment lba address to write to next block
 @l_eod:
 		;TODO FIXME erase the rest of the block, currently 0 is assumed
@@ -654,7 +649,7 @@ __fat_find_free_cluster:
 		lda fat_lba_begin+0
 		sta lba_addr+0
 
-		SetVector	block_fat, read_blkptr
+		SetVector block_fat, read_blkptr
 @next_block:
 		jsr __fat_read_block	; read fat block
 		bne @exit

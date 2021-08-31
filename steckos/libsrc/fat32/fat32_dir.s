@@ -38,9 +38,7 @@
 .import read_block
 
 ;lib internal api
-.import __fat_read_cluster_block_and_select
 .import __fat_isroot
-.import __fat_read_block
 .import __fat_init_fd
 .import __fat_free_fd
 .import __fat_alloc_fd
@@ -51,7 +49,6 @@
 .import __fat_find_next
 .import __fat_clone_fd
 .import __fat_clone_cd_td
-.import __fat_next_cln
 
 .import __calc_lba_addr
 

@@ -83,7 +83,6 @@
         sbc _val2+i
         sta _res+i
     .endrepeat
-
 .endmacro
 
 .macro sub32 _val1, _val2, _res
@@ -131,6 +130,21 @@
 @l2:	dec val+2
 @l1:	dec val+1
 @l0:	dec val+0
+.endmacro
+
+.macro _cmp32_x _s, _t, _lbl
+   lda _s+3, x
+   cmp _t+3, x
+   bne _lbl
+   lda _s+2, x
+   cmp _t+2, x
+   bne _lbl
+   lda _s+1, x
+   cmp _t+1, x
+   bne _lbl
+   lda _s+0, x
+   cmp _t+0, x
+   bne _lbl
 .endmacro
 
 .macro m_memcpy src, dest, n

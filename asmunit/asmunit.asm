@@ -296,16 +296,12 @@ _hexout:
 		lsr
 		jsr _hexdigit
 		pla
-_hexdigit:
 		and #$0f      	;mask lsd for hex print
-		ora #'0'			;add "0"
-		cmp #'9'+1		;is it a decimal digit?
-		bcc asmunit_chrout	;yes, output it
-		adc #$26			;add offset for letter a-f
-;		sed
-;		cmp #$0a
-;		adc #$30
-;		cld
+_hexdigit:
+		sed
+		cmp #$0a
+		adc #$30
+		cld
 asmunit_chrout:
 		sta asmunit_char_out
 		rts

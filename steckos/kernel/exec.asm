@@ -33,7 +33,11 @@
 
 .code
 
-.import fat_fopen, fat_read, fat_close, fat_read_block, sd_read_multiblock, __inc_lba_address
+.import fat_fopen, fat_close, fat_fread_byte
+
+.import hexout
+.import krn_chrout
+.export char_out=krn_chrout
 
 .export execv
 
@@ -42,58 +46,40 @@
 ; out:
 ;   Z=1 on success, Z=0 and A=<error code> otherwise
 execv:
-        ldy #O_RDONLY
+		  ldy #O_RDONLY
         jsr fat_fopen					; A/X - pointer to filename
         bne @l_err_exit
 
-		  SetVector block_data, read_blkptr
-		  phx ; save fd in x register for fat_close
-		  jsr fat_read_block
+		  jsr fat_fread_byte	; start address low
+		  bcc @l_err_exit
+		  sta krn_ptr2
+		  jsr hexout
 
-		  lda block_data
-		  sta krn_ptr1
-		  clc
-		  adc #$fe
-		  sta read_blkptr
+		  jsr fat_fread_byte ; start address high
+		  bcc @l_err_exit
+		  sta krn_ptr2+1
+		  jsr hexout
 
-		  lda block_data+1
-		  sta krn_ptr1+1
-		  inc
-		  sta read_blkptr+1
+@l:	  jsr fat_fread_byte
+			jsr hexout
 
-		  ldy #0
-@l:
-		  lda block_data+2,y
-		  sta (krn_ptr1),y
-		  iny
+		  bcc @l_err_exit
+		  sta (krn_ptr2),y
+		  inc krn_ptr2
+		  bne @l
+		  inc krn_ptr2+1
 		  bne @l
 
-		  inc krn_ptr1+1
-@l2:
-		  lda block_data+$100+2,y
-		  sta (krn_ptr1),y
-		  iny
-		  cpy #$fe
-		  bne @l2
-		  dec krn_ptr1+1
-
-		  jsr __inc_lba_address
-		  dec blocks
-		  beq @l_exec_run
-
-        jsr sd_read_multiblock
-
 @l_exec_run:
-
-        plx
         jsr fat_close			; close after read to free fd, regardless of error
 
         ; we came here using jsr, but will not rts.
         ; get return address from stack to prevent stack corruption
         pla
         pla
-        jmp (krn_ptr1)
+        jmp (krn_ptr2)
 
 @l_err_exit:
-        debug "exec"
-        rts
+			jsr fat_close			; close after read to free fd, regardless of error
+     		debug "exec"
+        	rts

@@ -22,6 +22,7 @@
 .define test_start_cluster	$016a
 
 .zeropage
+	tmp1: .res 1
 	test_data_ptr: .res 2
 
 .code
