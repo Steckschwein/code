@@ -151,7 +151,7 @@ PartType_FAT32_LBA    = $0c
    WrtTime         .word   ; hours as 0-23 bit 15-11, minutes as 0-59 bit 10-5, seconds/2 as 0-29 bit 4-0
    WrtDate         .word   ; year 0-119 (0=1980...127=2107) bit 15-9, month 1-12 bit 8-5, day 1-31 bit 4-0
    FstClusLO       .word
-   FileSize        .dword
+   FileSize        .dword  ;
 .endstruct
 
 DIR_Attr_Mask_ReadOnly  = 1<<0;

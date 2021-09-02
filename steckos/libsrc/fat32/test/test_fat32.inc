@@ -37,9 +37,9 @@
 	set32 cluster_begin_lba, (LBA_BEGIN - ROOT_CL * sec_per_cl)
 .endmacro
 
-.macro fd_entry_file dir_entry, dir_lba, attr
+.macro fd_entry_file dir_entry, dir_lba, attr, filesize
 	.dword 0; CurrentCluster
-	.dword 0; FileSize
+	.dword filesize; FileSize
 	.byte attr; Attr
 	.dword dir_lba; DirEntryLBA ; LBA of the block where the dir entry of the file is located
 	.byte dir_entry; DirEntryPos .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)

@@ -121,7 +121,7 @@ __fat_find_next:
 @ff_eoc:
 		ldx #FD_INDEX_TEMP_DIR				; TODO FIXME dont know if this is a good idea... FD_INDEX_TEMP_DIR was setup above and following the cluster chain is done with the FD_INDEX_TEMP_DIR to not clobber the FD_INDEX_CURRENT_DIR
 		jsr __fat_next_cln		  			; select next cluster
-		bcs ff_exit								; exit on error (C=0)
+		bcs ff_exit								; exit on error (C=1)
 		bra __fat_find_first		  ; C=0, go on with next cluster
 ff_exit:
 		clc											 ; we are at the end, C=0 and return
@@ -226,7 +226,7 @@ __fat_clone_fd:
 		;	updated file descriptor, DirEntryLBA and DirEntryPos setup accordingly
 __fat_set_fd_attr_direntry:
 		sta fd_area + F32_fd::Attr, x
-		
+
 	 	lda lba_addr + 3
 		sta fd_area + F32_fd::DirEntryLBA + 3, x
 	 	lda lba_addr + 2
@@ -516,10 +516,10 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if f
 		;	X - file descriptor
 		;	Y - offset from target address denoted by pointer (read_blkptr)
 		; out:
-		;	C=0 on failure, C=1 on success
+		;	C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0
 __fat_next_cln:
 		jsr __fat_read_cluster_block_and_select	    	; read fat block of the current cluster
-		bne @l_exit
+		bne @l_exit_err
 		bcs @l_exit
 		lda (read_blkptr), y
 		sta fd_area + F32_fd::CurrentCluster+0, x
@@ -534,10 +534,11 @@ __fat_next_cln:
 		sta fd_area + F32_fd::CurrentCluster+3, x
 		stz fd_area + F32_fd::offset, x 					; reset block offset here
 		lda #EOK
-		sec
-		rts
-@l_exit:
 		clc
+		rts
+@l_exit_err:
+		sec
+@l_exit:
 		rts
 
 		; in:
@@ -546,7 +547,7 @@ __fat_next_cln:
 		;	read_blkptr - setup to block_fat either low/high page
 		;	Y - offset within block_fat to clnr
 		;	Z=1 on success, Z=0 otherwise and A=error code
-		;	C=1 if the cluster number is the EOC, C=0 otherwise
+		;	C=1 if the cluster number is the EOC and A=EOK, C=0 otherwise
 __fat_read_cluster_block_and_select:
 		jsr __calc_fat_lba_addr
 		SetVector block_fat, read_blkptr

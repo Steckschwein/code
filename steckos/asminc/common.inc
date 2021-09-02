@@ -22,6 +22,10 @@
 .ifndef _COMMON_INC_
   _COMMON_INC_ = 1
 
+.macro dbg
+   .byte $db ; break to debugger (emulator)
+.endmacro
+
 .macro SetVector word, addr
 			lda #<word
 			sta addr
@@ -68,12 +72,25 @@
     .endrepeat
 .endmacro
 
+.macro _add_n_x _val1, _val2, _res, _bytes
+    clc
+    .repeat _bytes, i
+        lda _val1+i,x
+        adc _val2+i,x
+        sta _res+i,x
+    .endrepeat
+.endmacro
+
 .macro add32 _val1, _val2, _res
     _add_n _val1, _val2, _res, 4
 .endmacro
 
 .macro add16 _val1, _val2, _res
     _add_n _val1, _val2, _res, 2
+.endmacro
+
+.macro add32_x _val1, _val2, _res
+    _add_n_x _val1, _val2, _res, 4
 .endmacro
 
 .macro _sub_n _val1, _val2, _res, _bytes
@@ -132,6 +149,8 @@
 @l0:	dec val+0
 .endmacro
 
+; Z=1 if equal, Z=0 otherwise
+;
 .macro _cmp32_x _s, _t, _lbl
    lda _s+3, x
    cmp _t+3, x

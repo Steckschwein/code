@@ -104,38 +104,36 @@ __fat_fseek:
 		;in:
 		;	X - offset into fd_area
 		;out:
-		;	C=1 on success and A=<byte>, C=0 on error, A=<error code>
+		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 if EOF reached and A=0
 fat_fread_byte:
 		_is_file_open l_exit_einval
 
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
+		lda #EOK
 		rts ; exit - EOF, C=1
 
-		SetVector read_blkptr, block_data
-
-:		lda fd_area+F32_fd::seek_pos+0,x	;
-		bne l_read
+:		SetVector block_data, read_blkptr
 		lda fd_area+F32_fd::seek_pos+1,x
 		and #$01
-		bne l_read_h
+		bne l_read_h							; 2nd half block?
+		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos points to start of block
+		bne l_read
 
-		jsr fat_read_block
-		bcs l_read
+		jsr fat_read_block					; ... if so, read the block first
+		bcc l_read
 		rts
 l_read_h:
 		inc read_blkptr+1
 l_read:
-		lda fd_area+F32_fd::seek_pos+0, x
-		tay
+		ldy fd_area+F32_fd::seek_pos+0, x
 		lda (read_blkptr),y
+;		debug16 "rd", read_blkptr
 		_inc32_x fd_area+F32_fd::seek_pos
-		sec
+		clc
 		rts
-
 l_exit_einval:
 		lda #EINVAL
-		clc
-l_exit:
+		sec
      	rts
 
 
@@ -147,7 +145,7 @@ l_exit:
 		;	Y - number of blocks to read at once - !!!NOTE!!! it's currently limited to $ff
 		;	read_blkptr - address where the data of the read blocks should be stored
 		;out:
-		;	C=1 on success and A=0 (EOK), C=0 and A=error code otherwise
+		;	C=0 on success and A=0 (EOK), C=1 and A=error code otherwise
 		; 	Y - number of blocks which where successfully read
 fat_fread:
 		_is_file_open l_exit_einval
@@ -160,16 +158,16 @@ fat_fread:
 		beq @l_exit_ok
 
 		jsr fat_read_block
-		bcc @l_exit
+		bcs @l_exit
 
 		inc read_blkptr+1							; read address + $0200 (block size)
 		inc read_blkptr+1
-		inc fd_area+F32_fd::offset+0,x		; inc block counter
 		inc krn_tmp2
 		bra @l_read_loop
 
 @l_exit_ok:
 		lda #EOK														; A=0 (EOK)
+		clc
 @l_exit:
 		ldy krn_tmp2
 		rts
@@ -179,10 +177,9 @@ fat_fread:
 		;	X	- offset into fd_area
 		;	read_blkptr has to be set to target address - TODO FIXME ptr. parameter
 		;out:
-		;	C=1 on success (A=0), C=0 and A=error code otherwise
-		;  X	- number of bytes read
+		;	C=0 on success (A=0), C=1 on error and A=error code or EOC reached and A=0 otherwise
 fat_read_block:
-		_is_file_open @l_err_exit
+		_is_file_open @l_exit_einval
 
 		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
@@ -193,18 +190,20 @@ fat_read_block:
 		pha
 		copypointer krn_ptr1, read_blkptr	; restore read_blkptr
 		pla
-		bcc @l_exit									; exit on error (C=0)
+		bcs @l_exit									; exit on error (C=1)
 
 @l_read:
 		jsr __calc_lba_addr
 		jsr __fat_read_block
-		bne @l_exit
-		sec ; exit success
+		bne @l_exit_err
+		inc fd_area+F32_fd::offset+0,x		; inc block counter
+		clc ; exit success C=0
 		rts
-@l_err_exit:
+@l_exit_einval:
 		lda #EINVAL
+@l_exit_err:
+		sec
 @l_exit:
-		clc
 		rts
 
 		;in:
