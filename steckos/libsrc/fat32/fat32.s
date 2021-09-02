@@ -104,7 +104,7 @@ __fat_fseek:
 		;in:
 		;	X - offset into fd_area
 		;out:
-		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 if EOF reached and A=0
+		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 if EOF reached and A=0 (EOK)
 fat_fread_byte:
 		_is_file_open l_exit_einval
 
@@ -127,7 +127,6 @@ l_read_h:
 l_read:
 		ldy fd_area+F32_fd::seek_pos+0, x
 		lda (read_blkptr),y
-;		debug16 "rd", read_blkptr
 		_inc32_x fd_area+F32_fd::seek_pos
 		clc
 		rts
