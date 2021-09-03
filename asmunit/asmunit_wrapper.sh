@@ -9,12 +9,27 @@ _tt=$((($(date +%s%N) - $_ts)/1000000))
 test_fail=`grep "FAIL" $logfile | wc -l`
 tests=$(grep "\[.*\]" $logfile | wc -l)
 
+if [ "${ASMUNIT_VERBOSE}" == true ]; then
+   echo "[DEBUG] TEST OUTPUT"
+   cat $logfile
+fi
+
+# PC  AC XR YR SP NV-BDIZC
+# 65C02: 226a 42 00 ff ff 10110001
+_SP=$(tail -2 $logfile|head -1|cut -d ' ' -f6)
+if [ ! "${_SP}" = "ff" ]; then
+   echo "[ERROR] Stack corruption detected! Either your test or testee are broken. Expect SP=0xff after test was running."
+   tail -3 $logfile
+   exit 1
+fi
+
+
 if [ "${3}" = false ]; then
     exit 0
 fi
 
 if [ "${tests}" -eq 0 ]; then
-    echo "No Unit tests found. Make sure at least one test exists within ${1} and is labeled via test_name <name of test>!" >&2
+    echo "[ERROR] No Unit tests found. Make sure at least one test exists within ${1} and is labeled via test_name <name of test>!" >&2
     exit 1
 fi
 

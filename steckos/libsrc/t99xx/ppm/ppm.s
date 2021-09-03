@@ -116,7 +116,7 @@ read_blocks:
 		ldx fd
 		ldy #BLOCK_BUFFER
 		jsr fread
-		bne @l_error
+		bcs @l_error
 		tya
 		asl
 		sta _pages

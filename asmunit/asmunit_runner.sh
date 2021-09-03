@@ -32,7 +32,14 @@ binary=$1
 #echo .goto ${ld_address} >> /tmp/$$.py65
 
 #.add_breakpoint 0x19cf
-exec ${pythonbin} ${dir}/asmunit.monitor.py --mpu 65C02 --output $output <<EOF
-.load "${binary}" ${ld_address}
-.goto ${ld_address}
+# exec &> >(tee -a "$output")
+if [ "$ASMUNIT_ATTACH" == true ]; then
+	echo ".load "${binary}" ${ld_address}"
+	echo ".goto ${ld_address}"
+	exec ${pythonbin} ${dir}/asmunit.monitor.py --mpu 65C02 --output $output
+else
+	exec ${pythonbin} ${dir}/asmunit.monitor.py --mpu 65C02 --output $output <<EOF
+	.load "${binary}" ${ld_address}
+	.goto ${ld_address}
 EOF
+fi

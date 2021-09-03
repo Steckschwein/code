@@ -65,7 +65,7 @@ io_error:
         .byte $0a,"i/o error, code: ",0
         txa
         jsr hexout
-        jmp exit        
+        jmp exit
 
 gfxui_on:
 		jsr krn_textui_disable			;disable textui
@@ -80,16 +80,16 @@ gfxui_on:
 
 gfxui_off:
       sei
-      
+
       pha
       phx
       vdp_sreg v_reg9_nt, v_reg9  ; 192px
       jsr krn_textui_init
       plx
       pla
-      
+
       cli
-      
+
       rts
 .bss
 irqsafe: .res 2

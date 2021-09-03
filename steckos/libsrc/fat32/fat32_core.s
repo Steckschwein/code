@@ -93,7 +93,7 @@ ff_l4:
 
 		jsr __fat_matcher			  ; call matcher strategy
 		lda #EOK						  ; Z=1 (success) and no error
-		bcs ff_end						; if C=1 we had a match
+		bcs ff_end					  ; if C=1 we had a match
 		; in:
 		;	X - directory fd index into fd_area
 		; out:
@@ -111,20 +111,17 @@ __fat_find_next:
 		cmp #>(sd_blktarget + sd_blocksize)	; end of block reached?
 		bcc ff_l4			; no, process entry
 ;		lda dirptr
-;      	cmp #<(sd_blktarget + sd_blocksize)
-;      	bcc ff_l4
+;     cmp #<(sd_blktarget + sd_blocksize)
+;     bcc ff_l4
 
 		dec blocks
-		beq @ff_eoc			; end of cluster reached?
+		beq @ff_eoc			    	; end of cluster reached?
 		jsr __inc_lba_address	; increment lba address to read next block
 		bra ff_l3
 @ff_eoc:
-		ldx #FD_INDEX_TEMP_DIR					; TODO FIXME dont know if this is a good idea... FD_INDEX_TEMP_DIR was setup above and following the cluster chain is done with the FD_INDEX_TEMP_DIR to not clobber the FD_INDEX_CURRENT_DIR
-		jsr __fat_read_cluster_block_and_select
-		debug "feoc"
-		bne ff_exit								; read error...
-		bcs ff_exit								; EOC reached?
-		jsr __fat_next_cln		  ; select next cluster
+		ldx #FD_INDEX_TEMP_DIR				; TODO FIXME dont know if this is a good idea... FD_INDEX_TEMP_DIR was setup above and following the cluster chain is done with the FD_INDEX_TEMP_DIR to not clobber the FD_INDEX_CURRENT_DIR
+		jsr __fat_next_cln		  			; select next cluster
+		bcs ff_exit								; exit on error (C=1)
 		bra __fat_find_first		  ; C=0, go on with next cluster
 ff_exit:
 		clc											 ; we are at the end, C=0 and return
@@ -320,7 +317,7 @@ __fat_open_file:
 	 ;	.X - with index to fd_area
 	 ;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 __fat_alloc_fd:
-		ldx #(2*FD_Entry_Size)							; skip 2 entries, they're reserverd for current and temp dir
+		ldx #(2*FD_Entry_Size)							; skip 2 entries, they're reserved for current and temp dir
 @l1:	lda fd_area + F32_fd::CurrentCluster +3, x
 		cmp #$ff	;#$ff means unused, return current x as offset
 		beq __fat_init_fd
@@ -350,6 +347,10 @@ __fat_init_fd:
 		stz fd_area+F32_fd::FileSize+1,x
 		stz fd_area+F32_fd::FileSize+0,x
 		stz fd_area+F32_fd::offset+0,x		; init block offset/block counter
+		stz fd_area+F32_fd::seek_pos+3,x
+		stz fd_area+F32_fd::seek_pos+2,x
+		stz fd_area+F32_fd::seek_pos+1,x
+		stz fd_area+F32_fd::seek_pos+0,x
 		lda #EOK
 		rts
 
@@ -433,12 +434,6 @@ __calc_lba_addr:
 @lme:
 		; add cluster_begin_lba and lba_addr => TODO may be an optimization
 		add32 cluster_begin_lba, lba_addr, lba_addr
-		; clc
-		; .repeat 4, i
-		; 	lda cluster_begin_lba+i
-		; 	adc lba_addr+i
-		; 	sta lba_addr+i
-		; .endrepeat
 
 		clc
 		lda fd_area+F32_fd::offset+0,x			; load the current block counter
@@ -521,25 +516,29 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if f
 		;	X - file descriptor
 		;	Y - offset from target address denoted by pointer (read_blkptr)
 		; out:
-		;  Z=1 on success
+		;	C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0
 __fat_next_cln:
+		jsr __fat_read_cluster_block_and_select	    	; read fat block of the current cluster
+		bne @l_exit_err
+		bcs @l_exit
 		lda (read_blkptr), y
-		;debug "nc0"
 		sta fd_area + F32_fd::CurrentCluster+0, x
 		iny
 		lda (read_blkptr), y
-		;debug "nc1"
 		sta fd_area + F32_fd::CurrentCluster+1, x
 		iny
 		lda (read_blkptr), y
-		;debug "nc2"
 		sta fd_area + F32_fd::CurrentCluster+2, x
 		iny
 		lda (read_blkptr), y
-		;debug "nc3"
 		sta fd_area + F32_fd::CurrentCluster+3, x
-		;TODO stz offset here?!?
+		stz fd_area + F32_fd::offset, x 					; reset block offset here
 		lda #EOK
+		clc
+		rts
+@l_exit_err:
+		sec
+@l_exit:
 		rts
 
 		; in:
@@ -548,7 +547,7 @@ __fat_next_cln:
 		;	read_blkptr - setup to block_fat either low/high page
 		;	Y - offset within block_fat to clnr
 		;	Z=1 on success, Z=0 otherwise and A=error code
-		;	C=1 if the cluster number is the EOC, C=0 otherwise
+		;	C=1 if the cluster number is the EOC and A=EOK, C=0 otherwise
 __fat_read_cluster_block_and_select:
 		jsr __calc_fat_lba_addr
 		SetVector block_fat, read_blkptr
@@ -577,7 +576,7 @@ __fat_read_cluster_block_and_select:
 
 		; check whether the EOC (end of cluster chain) cluster number is reached
 		; out:
-		;	C = 1 if clnr is EOC, C=0 otherwise
+		;	C=1 if clnr is EOC, C=0 otherwise
 __fat_is_cln_eoc:
 		phy
 		lda (read_blkptr),y

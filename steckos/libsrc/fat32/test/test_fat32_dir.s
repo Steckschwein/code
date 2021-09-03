@@ -13,6 +13,7 @@
 .export path_inverse=mock_not_implemented
 .export put_char=mock_not_implemented
 
+debug_enabled=1
 .code
 
 ; -------------------
@@ -35,8 +36,7 @@
 
 mock_read_block:
 		load_block LBA_BEGIN, block_root_cl ; load root cl block
-		rts
-		fail "mock read_block";  lba_addr
+		rts ; fail "mock read_block";  lba_addr
 
 mock_not_implemented:
 		fail "mock!"
