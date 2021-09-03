@@ -3,6 +3,8 @@ TARGET_SYS=none
 
 DEFINES+=-DV9958
 
+ASMUNIT_VERBOSE=true
+
 # debug fat32
 #DEBUG += -DDEBUG_FAT32
 #DEBUG += -DDEBUG_FAT32_DIR
@@ -13,7 +15,7 @@ DEFINES+=-DV9958
 #DEBUG += -DDEBUG_DS1306
 #DEBUG += -DDEBUG_SDCARD_READ_MULTIBLOCK
 
-#DEBUG += -DDEBUG_FAT32 -DDEBUG_FAT32_DIR -DDEBUG_FAT32_CORE -DDEBUG_FAT32_WRITE
+# DEBUG += -DDEBUG_FAT32 -DDEBUG_FAT32_DIR -DDEBUG_FAT32_CORE -DDEBUG_FAT32_WRITE
 
 .PHONY: all mostlyclean clean install zip lib $(TARGET)
 
@@ -106,7 +108,7 @@ endef # COMPILE_recipe
 
 define RUNTEST_recipe
 	@$(LD65) $< $(TEST_LDFLAGS) -m $@.map -o $@
-  	TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 0x1000
+  	ASMUNIT_VERBOSE=true TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $@ 0x1000
 endef
 
 define DISASM_recipe

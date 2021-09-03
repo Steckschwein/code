@@ -12,8 +12,8 @@
 		.import vdp_init, _vdp_chrout, vdp_detect
 		.import sdcard_init
 		.import sdcard_detect
-		.import fat_open
-		.import fat_mount, fat_open, fat_read, fat_close
+		.import fat_fopen
+		.import fat_mount, fat_read, fat_close
 		.import read_nvram
 		.import sd_read_block, sd_write_block
 		.import spi_select_device
@@ -289,7 +289,7 @@ boot_from_card:
 			lda #(<nvram)+nvram::filename
 			ldx #>nvram
 			ldy #O_RDONLY
-         jsr fat_open
+         jsr fat_fopen
 			beq @loadfile
 
 			ldy #0

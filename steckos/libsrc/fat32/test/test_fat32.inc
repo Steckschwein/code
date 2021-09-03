@@ -1,4 +1,5 @@
 .include "asmunit.inc" 	; test api
+.include "debug.inc"
 
 .include "common.inc"
 .include "errno.inc"
@@ -21,6 +22,7 @@
 .define test_start_cluster	$016a
 
 .zeropage
+	tmp1: .res 1
 	test_data_ptr: .res 2
 
 .code
@@ -35,13 +37,14 @@
 	set32 cluster_begin_lba, (LBA_BEGIN - ROOT_CL * sec_per_cl)
 .endmacro
 
-.macro fd_entry_file dir_entry, dir_lba, attr
+.macro fd_entry_file dir_entry, dir_lba, attr, filesize
 	.dword 0; CurrentCluster
-	.dword 0; FileSize
+	.dword filesize; FileSize
 	.byte attr; Attr
 	.dword dir_lba; DirEntryLBA ; LBA of the block where the dir entry of the file is located
 	.byte dir_entry; DirEntryPos .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
 	.byte 0; offset          .byte;  7Bit block number of the CurrentCluster
+	.dword 0; seek_pos
 .endmacro
 
 .macro assertFdEntry address
@@ -84,28 +87,29 @@
 .endmacro
 
 .macro assertDirEntry address
-		assertMemory address, 32
+		assertMemory address, .sizeof(F32DirEntry)
 .endmacro
 
 .macro load_block lba, address
-		cmp32 lba_addr, lba
-		bne :+
+		cmp32_ne lba_addr, lba, :+
 		lda #<address
 		ldy #>address
-		jmp load_test_data
+		jsr load_test_data
+		dec read_blkptr+1
 :
 .endmacro
 
 .macro data_loader
+	.local @cp
 load_test_data:
 		sta test_data_ptr+0
 		sty test_data_ptr+1
 		ldy #0
 		jsr @cp
-		inc read_blkptr+1	; => same behaviour as real block read implementation
+		inc read_blkptr+1
 		inc test_data_ptr+1
 @cp:	lda (test_data_ptr),y
-		sta (read_blkptr), y
+		sta (read_blkptr),y
 		iny
 		bne @cp
 		rts

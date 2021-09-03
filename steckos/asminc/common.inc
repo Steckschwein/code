@@ -22,6 +22,10 @@
 .ifndef _COMMON_INC_
   _COMMON_INC_ = 1
 
+.macro dbg
+   .byte $db ; break to debugger (emulator)
+.endmacro
+
 .macro SetVector word, addr
 			lda #<word
 			sta addr
@@ -68,12 +72,25 @@
     .endrepeat
 .endmacro
 
+.macro _add_n_x _val1, _val2, _res, _bytes
+    clc
+    .repeat _bytes, i
+        lda _val1+i,x
+        adc _val2+i,x
+        sta _res+i,x
+    .endrepeat
+.endmacro
+
 .macro add32 _val1, _val2, _res
     _add_n _val1, _val2, _res, 4
 .endmacro
 
 .macro add16 _val1, _val2, _res
     _add_n _val1, _val2, _res, 2
+.endmacro
+
+.macro add32_x _val1, _val2, _res
+    _add_n_x _val1, _val2, _res, 4
 .endmacro
 
 .macro _sub_n _val1, _val2, _res, _bytes
@@ -83,7 +100,6 @@
         sbc _val2+i
         sta _res+i
     .endrepeat
-
 .endmacro
 
 .macro sub32 _val1, _val2, _res
@@ -93,6 +109,17 @@
     _sub_n _val1, _val2, _res, 2
 .endmacro
 
+.macro _inc32_x val
+      .local @lbl
+      inc val+0,x
+      bne @lbl
+      inc val+1,x
+      bne @lbl
+      inc val+2,x
+      bne @lbl
+      inc val+3,x
+@lbl:
+.endmacro
 
 .macro _inc32 val
 		.local @l1
@@ -120,6 +147,23 @@
 @l2:	dec val+2
 @l1:	dec val+1
 @l0:	dec val+0
+.endmacro
+
+; Z=1 if equal, Z=0 otherwise
+;
+.macro _cmp32_x _s, _t, _lbl
+   lda _s+3, x
+   cmp _t+3, x
+   bne _lbl
+   lda _s+2, x
+   cmp _t+2, x
+   bne _lbl
+   lda _s+1, x
+   cmp _t+1, x
+   bne _lbl
+   lda _s+0, x
+   cmp _t+0, x
+   bne _lbl
 .endmacro
 
 .macro m_memcpy src, dest, n

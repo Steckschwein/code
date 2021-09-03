@@ -50,7 +50,6 @@
 .import __fat_free_fd
 .import __fat_read_block
 .import __fat_isroot
-.import __fat_is_open
 .import __fat_find_next
 .import __fat_find_first_mask
 
@@ -58,7 +57,7 @@
 .import __calc_blocks
 .import __inc_lba_address
 
-.import fat_open
+.import fat_fopen
 
 		; in:
 		;	X - offset into fd_area
@@ -68,8 +67,8 @@
 fat_write:
 		stx fat_tmp_fd										; save fd
 
-		jsr __fat_is_open
-		beq @l_exit_einval								; exit, not open
+		bit fd_area + F32_fd::CurrentCluster+3, x
+		bmi @l_exit_einval								; exit, not open
 
 		lda fd_area + F32_fd::Attr, x
 		bit #DIR_Attr_Mask_Dir							; regular file?
@@ -353,7 +352,7 @@ __fat_write_dir_entry:
 		; new dir entry
 		jsr __fat_write_block_data					  				; write the current block with the updated dir entry first
 		bne @l_exit
-		ldy #$80															; safely, fill the new dir block with 0 to mark eod
+		ldy #$7f															; safely, fill the new dir block with 0 to mark eod
 @l_erase:; A=0 here
 		sta block_data+$000, y
 		sta block_data+$080, y
@@ -364,11 +363,6 @@ __fat_write_dir_entry:
 		;TODO FIXME test end of cluster, if so reserve a new one, update cluster chain for directory ;)
 		debug32 "eod_lba", lba_addr
 		debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
-;		lda lba_addr+0
-;		adc #02
-;		sbc volumeID+VolumeID::BPB + BPB::SecPerClus
-;		lda fd_area+F32_fd::CurrentCluster+0
-;		sbc lba_addr+0
 		jsr __inc_lba_address												; increment lba address to write to next block
 @l_eod:
 		;TODO FIXME erase the rest of the block, currently 0 is assumed
@@ -655,7 +649,7 @@ __fat_find_free_cluster:
 		lda fat_lba_begin+0
 		sta lba_addr+0
 
-		SetVector	block_fat, read_blkptr
+		SetVector block_fat, read_blkptr
 @next_block:
 		jsr __fat_read_block	; read fat block
 		bne @exit
@@ -730,7 +724,7 @@ __fat_find_free_cluster:
 ;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_unlink:
 		ldy #O_RDONLY
-		jsr fat_open		; try to open as regular file
+		jsr fat_fopen		; try to open as regular file
 		bne @l_exit
 		jsr __fat_unlink
 		debug "unlnk"

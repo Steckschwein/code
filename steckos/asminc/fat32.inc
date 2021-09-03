@@ -151,7 +151,7 @@ PartType_FAT32_LBA    = $0c
    WrtTime         .word   ; hours as 0-23 bit 15-11, minutes as 0-59 bit 10-5, seconds/2 as 0-29 bit 4-0
    WrtDate         .word   ; year 0-119 (0=1980...127=2107) bit 15-9, month 1-12 bit 8-5, day 1-31 bit 4-0
    FstClusLO       .word
-   FileSize        .dword
+   FileSize        .dword  ;
 .endstruct
 
 DIR_Attr_Mask_ReadOnly  = 1<<0;
@@ -169,22 +169,27 @@ DIR_Entry_Deleted            = $e5
 ;--------------------------------------------------------------------------------------
 
 .struct Seek
-			Whence	.byte		; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
-									; SEEK_CUR - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
-									; SEEK_END - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
-			Offset	.dword
+    Whence	.byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
+                    ; SEEK_CUR - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
+                    ; SEEK_END - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
+    Offset	.dword
 .endstruct
 
+.macro _is_file_open _label
+   bit fd_area + F32_fd::CurrentCluster+3, x ; is open
+   bmi _label
+.endmacro
+
 .struct F32_fd
-    CurrentCluster  .dword;
-    FileSize        .dword;
-    Attr            .byte;
-    DirEntryLBA     .dword; LBA of the block where the dir entry of the file is located
-    DirEntryPos     .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
-    offset          .byte;  7Bit block number of the CurrentCluster
-;	TODO FIXME offset        .word;	(2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
-;   SeekPos        .dword;	(4bt) seek position within the opened file
-;   openFlags     .byte; +1 flags during open
+    CurrentCluster   .dword ;
+    FileSize         .dword ;
+    Attr             .byte  ; file attributes (mirror of attributes from dir entry)
+    DirEntryLBA      .dword; LBA of the block where the dir entry of the file is located
+    DirEntryPos      .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
+    offset           .byte;  7Bit block number of the CurrentCluster (SecPerClus)
+;	TODO FIXME offset .word;	(2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
+    seek_pos         .dword ; seek position within the opened file
+;   flags            .byte; file open flags
 .endstruct
 
 FD_Entry_Size         = .sizeof(F32_fd)

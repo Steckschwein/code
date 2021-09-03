@@ -25,6 +25,7 @@
 .ifdef DEBUG_EXECV
 	debug_enabled=1
 .endif
+
 .include "common.inc"
 .include "kernel.inc"
 .include "errno.inc"
@@ -33,7 +34,7 @@
 
 .code
 
-.import fat_open, fat_read, fat_close, fat_read_block, sd_read_multiblock, __inc_lba_address
+.import fat_fopen, fat_close, fat_fread_byte
 
 .export execv
 
@@ -42,58 +43,41 @@
 ; out:
 ;   Z=1 on success, Z=0 and A=<error code> otherwise
 execv:
-        ldy #O_RDONLY
-        jsr fat_open					; A/X - pointer to filename
-        bne @l_err_exit
+			ldy #O_RDONLY
+			jsr fat_fopen					; A/X - pointer to filename
+			bne @l_exit
 
-        SetVector block_data, read_blkptr
-        phx ; save fd in x register for fat_close
-        jsr fat_read_block
-        plx
-        jsr fat_close			; close after read to free fd, regardless of error
+;		  dbg
 
-        lda block_data
-        sta krn_ptr1
-        clc
-        adc #$fe
-        sta read_blkptr
+			jsr fat_fread_byte	; start address low
+			bcs @l_err_exit
+			sta krn_ptr2
+			sta krn_ptr3
 
-        lda block_data+1
-        sta krn_ptr1+1
-        adc #$01
-        sta read_blkptr+1
+			jsr fat_fread_byte ; start address high
+			bcs @l_err_exit
+			sta krn_ptr2+1
+			sta krn_ptr3+1
 
-        ldy #0
-@l:
-        lda block_data+2,y
-        sta (krn_ptr1),y
-        iny
-        bne @l
-
-        inc krn_ptr1+1
-@l2:
-        lda block_data+$100+2,y
-        sta (krn_ptr1),y
-        iny
-        cpy #$fe
-        bne @l2
-
-        dec krn_ptr1+1
-
-        jsr __inc_lba_address
-
-        dec blocks
-        beq @l_exec_run
-
-        jsr sd_read_multiblock
-
-@l_exec_run:
-        ; we came here using jsr, but will not rts.
-        ; get return address from stack to prevent stack corruption
-        pla
-        pla
-        jmp (krn_ptr1)
-
+@l:		jsr fat_fread_byte
+			bcs @l_is_eof
+			sta (krn_ptr2)
+			inc krn_ptr2
+			bne @l
+			inc krn_ptr2+1
+			bne @l
 @l_err_exit:
-        debug "exec"
-        rts
+			jsr fat_close			; close after read to free fd, regardless of error
+@l_exit:
+     		debug "exec"
+        	rts
+@l_is_eof:
+			cmp #0
+			bne @l
+@l_exec_run:
+			jsr fat_close
+			; we came here using jsr, but will not rts.
+			; get return address from stack to prevent stack corruption
+			pla
+			pla
+			jmp (krn_ptr3)

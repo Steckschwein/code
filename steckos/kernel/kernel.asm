@@ -43,7 +43,7 @@
 
 .import sdcard_init
 
-.import fat_mount, fat_open, fat_close, fat_close_all, fat_read, fat_find_first, fat_find_next
+.import fat_mount, fat_fopen, fat_close, fat_close_all, fat_read, fat_find_first, fat_find_next
 .import fat_mkdir, fat_chdir, fat_rmdir
 .import fat_unlink
 .import fat_write
@@ -342,7 +342,7 @@ krn_uart_rx_nowait:				jmp uart_rx_nowait
 krn_mount: 					 		jmp fat_mount
 
 .export krn_open
-krn_open: 					 jmp fat_open
+krn_open: 					 jmp fat_fopen
 
 .export krn_chdir
 krn_chdir: 					 jmp fat_chdir

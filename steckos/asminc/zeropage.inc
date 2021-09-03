@@ -59,7 +59,7 @@ VIDEO_MODE_PAL      = 1<<7
 VIDEO_MODE_80_COLS  = 1<<6
 
 video_mode 		= $0288 ; video mode register
-                ; TODO not implemented/used yet - bit 0-4 - video mode bits - m1-m5 refer to msx spec. - e.g. 
+                ; TODO not implemented/used yet - bit 0-4 - video mode bits - m1-m5 refer to msx spec. - e.g.
                 ;   TEXT1 - 00001
                 ;   TEXT2 - 01001
                 ;   MC    - 00010
