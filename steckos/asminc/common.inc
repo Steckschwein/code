@@ -152,17 +152,17 @@
 ; Z=1 if equal, Z=0 otherwise
 ;
 .macro _cmp32_x _s, _t, _lbl
-   lda _s+3, x
-   cmp _t+3, x
-   bne _lbl
-   lda _s+2, x
-   cmp _t+2, x
+   lda _s+0, x
+   cmp _t+0, x
    bne _lbl
    lda _s+1, x
    cmp _t+1, x
    bne _lbl
-   lda _s+0, x
-   cmp _t+0, x
+   lda _s+2, x
+   cmp _t+2, x
+   bne _lbl
+   lda _s+3, x
+   cmp _t+3, x
    bne _lbl
 .endmacro
 
