@@ -218,17 +218,17 @@ __fat_set_direntry_filesize:
 __fat_set_direntry_cluster:
 		ldy #F32DirEntry::FstClusHI+1
 		lda fd_area + F32_fd::CurrentCluster+3 , x
-		sta (dirptr), y
+		sta (dirptr),y
 		dey
 		lda fd_area + F32_fd::CurrentCluster+2 , x
-		sta (dirptr), y
+		sta (dirptr),y
 
 		ldy #F32DirEntry::FstClusLO+1
 		lda fd_area + F32_fd::CurrentCluster+1 , x
-		sta (dirptr), y
+		sta (dirptr),y
 		dey
 		lda fd_area + F32_fd::CurrentCluster+0 , x
-		sta (dirptr), y
+		sta (dirptr),y
 		rts
 
 		; delete a directory entry denoted by given path in A/X
@@ -334,7 +334,7 @@ __fat_count_direntries:
 __fat_write_dir_entry:
 		jsr __fat_prepare_dir_entry
 		debug16 "f_w_dp", dirptr
-
+		
 		;TODO FIXME duplicate code here! - @see __fat_find_next:
 		lda dirptr+1
 		sta krn_ptr1+1
@@ -347,9 +347,11 @@ __fat_write_dir_entry:
 @l2:
 		lda krn_ptr1+1 												; end of block reached? :/ edge-case, we have to create the end-of-directory entry at the next block
 		cmp #>(block_data + sd_blocksize)
-		bne @l_eod														; no, write one block only
-
-		; new dir entry
+		beq @l_new_block												; yes, prepare new block
+		lda #0															; no, write the updated block only
+		sta (krn_ptr1)													;set eod
+		bra @l_eod
+@l_new_block:															; new dir entry
 		jsr __fat_write_block_data					  				; write the current block with the updated dir entry first
 		bne @l_exit
 		ldy #$7f															; safely, fill the new dir block with 0 to mark eod
@@ -365,7 +367,6 @@ __fat_write_dir_entry:
 		debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
 		jsr __inc_lba_address												; increment lba address to write to next block
 @l_eod:
-		;TODO FIXME erase the rest of the block, currently 0 is assumed
 		jsr __fat_write_block_data										; write the updated dir entry to device
 @l_exit:
 		debug "f_wde"
@@ -584,14 +585,13 @@ __fat_rtc_date:
 __fat_prepare_dir_entry:
 		lda fd_area + F32_fd::Attr, x
 		ldy #F32DirEntry::Attr										; store attribute
-		sta (dirptr), y
+		sta (dirptr),y
 
 		lda #0
 		ldy #F32DirEntry::Reserved									; unused
-		sta (dirptr), y
+		sta (dirptr),y
 		ldy #F32DirEntry::CrtTimeMillis
-		sta (dirptr), y												; ms to 0, ms not supported by rtc
-
+		sta (dirptr),y													; ms to 0, ms not supported by rtc
 		jsr __fat_set_direntry_timedate
 
 		ldy #F32DirEntry::WrtTime									; creation date/time copy over from modified date/time

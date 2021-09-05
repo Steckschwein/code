@@ -83,8 +83,6 @@ sd_write_block:
 			iny
 			bne @l3
 
-
-
 			; Send fake CRC bytes
 			lda #$00
 			jsr spi_rw_byte

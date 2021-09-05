@@ -54,6 +54,7 @@
 .import sd_read_block, sd_write_block
 .export read_block=sd_read_block
 .export write_block=sd_write_block
+.export char_out=krn_chrout
 
 .import execv
 .import strout, primm
