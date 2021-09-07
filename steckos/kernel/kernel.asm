@@ -50,6 +50,7 @@
 .import fat_fseek
 .import fat_fread, fat_get_root_and_pwd
 .import fat_getfilesize
+.import fat_fread_byte
 
 .import sd_read_block, sd_write_block
 .export read_block=sd_read_block
@@ -444,6 +445,9 @@ krn_sd_write_block:	 	jmp sd_write_block
 
 .export krn_sd_read_block
 krn_sd_read_block:	 	jmp sd_read_block
+
+.export krn_fread_byte
+krn_fread_byte:         jmp fat_fread_byte
 
 ;.import uart_rx_nowait
 ;.export krn_uart_rx_nowait
