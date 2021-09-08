@@ -21,7 +21,7 @@
 appstart $b100
 
 .include "basic.asm"
-.include "ext/gfx.asm"		    ;extensions
+;.include "ext/gfx.asm"		    ;extensions
 
 ; put the IRQ and MNI code in RAM so that it can be changed
 IRQ_vec	= VEC_SV+2		; IRQ code vector	(VEC_SV = ccflag+$0b)
@@ -42,10 +42,10 @@ LAB_stlp:
 		STA	VEC_IN-1,Y		; save to RAM
  		DEY				; decrement index/count
  		BNE	LAB_stlp		; loop if more to do
-		
-		lda	#0				;init text mode
-		sta 	GFX_MODE		
-	
+
+		;lda	#0				;init text mode
+		;sta 	GFX_MODE
+
 		JMP	LAB_COLD		; do EhBASIC cold start
 
 openfile:
@@ -87,6 +87,52 @@ bsave:
 		jsr krn_write
 		bne io_error
 		jmp krn_close
+
+fread_wrapper:
+    jsr krn_fread_byte
+    bcs @eof
+    sec
+    rts
+
+@eof:
+    cmp #0
+    beq @restore
+    clc
+    rts
+@restore:
+    jsr krn_close
+
+    lda #<krn_getkey
+    sta VEC_IN
+    lda #>krn_getkey
+    sta VEC_IN+1
+
+
+    clc
+    rts
+
+load:
+
+		lda #O_RDONLY
+		jsr openfile
+		bne io_error
+
+; @l:
+        ; jsr krn_fread_byte
+        ; bcs @check_eof
+        ; jsr krn_chrout
+        ; bra @l
+; @check_eof:
+        ; cmp #0
+        ; bne @l
+
+
+        lda #<fread_wrapper
+        sta VEC_IN
+        lda #>fread_wrapper
+        sta VEC_IN+1
+        rts
+
 
 bload:
 		lda #O_RDONLY
@@ -148,7 +194,7 @@ LAB_vec:
 	.word	krn_getkey		; byte in
 	.word	krn_chrout		; byte out
 .endif
-	.word	bload		; load vector for EhBASIC
+	.word	load		; load vector for EhBASIC
 	.word	bsave		; save vector for EhBASIC
 
 ; EhBASIC IRQ support

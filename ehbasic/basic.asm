@@ -266,7 +266,7 @@
     ;			= $DE		; unused
     ;			= $DF		; unused
 
-    ;                     = $E2           ; unused    
+    ;                     = $E2           ; unused
     ;                     = $E3           ; unused
     ;                     = $E4           ; unused
     ;                     = $E5           ; unused
@@ -7864,19 +7864,19 @@
         clc
         rts
 
-LAB_TEXT  = GFX_Off ; init with text model - @see RES_vec:
+;LAB_TEXT  = GFX_Off ; init with text model - @see RES_vec:
 
-LAB_PLOT:
-      lda GFX_MODE
-		jmp gfx_plot
+;LAB_PLOT:
+      ;lda GFX_MODE
+		;jmp gfx_plot
 
-LAB_GRAPHIC:
-      JSR LAB_GTBY    ; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
-      TXA
-		AND #$07
-		ASL
-		STA GFX_MODE
-		JMP gfx_mode
+;LAB_GRAPHIC:
+      ;JSR LAB_GTBY    ; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
+      ;TXA
+		;AND #$07
+		;ASL
+		;STA GFX_MODE
+		;JMP gfx_mode
 
 ; system dependant i/o vectors
 ; these are in RAM and are set by the monitor at start-up
@@ -8136,11 +8136,11 @@ LAB_CTBL:
 	.word	LAB_BITCLR-1	; BITCLR		new command
 	.word	LAB_IRQ-1		; IRQ			new command
 	.word	LAB_NMI-1		; NMI			new command
-	.word	LAB_PLOT-1
-	.word	LAB_TEXT-1
+	;.word	LAB_PLOT-1
+	;.word	LAB_TEXT-1
 	.word	LAB_DIR-1
 	.word	LAB_CD-1
-	.word	LAB_GRAPHIC-1
+;	.word	LAB_GRAPHIC-1
 
 
 
@@ -8435,8 +8435,8 @@ LBB_GOSUB:
 	.byte	"OSUB",TK_GOSUB	; GOSUB
 LBB_GOTO:
 	.byte	"OTO",TK_GOTO	; GOTO
-LBB_GRAPHIC:
-	.byte	"RAPHIC",TK_GRAPHIC	; GRAPHIC
+;LBB_GRAPHIC:
+;	.byte	"RAPHIC",TK_GRAPHIC	; GRAPHIC
 ;	.byte	$00	; TODO FIXME Why?
 TAB_ASCH:
 LBB_HEXS:
@@ -8507,8 +8507,8 @@ LBB_PEEK:
 LBB_PI:
 	.byte	"I",TK_PI		; PI
 
-LBB_PLOT:
-	.byte	"LOT",TK_PLOT	; PLOT
+;LBB_PLOT:
+;	.byte	"LOT",TK_PLOT	; PLOT
 
 LBB_POKE:
 	.byte	"OKE",TK_POKE	; POKE
@@ -8697,16 +8697,16 @@ LAB_KEYT:
 	.word	LBB_IRQ		; IRQ
 	.byte	3,'N'
 	.word	LBB_NMI		; NMI
-	.byte	4,'P'
-	.word	LBB_PLOT
-	.byte	4,'T'
-	.word	LBB_TEXT
+;	.byte	4,'P'
+;	.word	LBB_PLOT
+;	.byte	4,'T'
+;	.word	LBB_TEXT
 	.byte	3,'D'
 	.word	LBB_DIR
 	.byte	2,'C'
 	.word	LBB_CD
-	.byte	7,'G'
-	.word	LBB_GRAPHIC
+;	.byte	7,'G'
+;	.word	LBB_GRAPHIC
 
 
 

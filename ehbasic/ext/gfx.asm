@@ -49,11 +49,11 @@ gfx_plot:
 _gfx_set_mode:
 		jmp (_gfx_mode_table,x)
 
-		
+
 _gfx_mode_table:
       .word GFX_Off  ; 0
       .word GFX_Off  ; 1
-      .word vdp_gfx2_on ; 2
+      .word vdp_mode2_on ; 2
       .word vdp_mc_on ; 3
       .word gfx_dummy; 4
       .word gfx_dummy; 5
@@ -83,7 +83,7 @@ GFX_2_Plot:
 		jsr GFX_Plot_Begin
 		jsr vdp_gfx2_set_pixel
 		bra GFX_Plot_End
-    
+
 GFX_MC_Plot:
 		jsr GFX_Plot_Begin
 		jsr vdp_mc_set_pixel
@@ -92,7 +92,7 @@ GFX_MC_Plot:
 GFX_7_Plot:
 		jsr GFX_Plot_Begin
 		jsr vdp_gfx7_set_pixel
-		bra GFX_Plot_End      
+		bra GFX_Plot_End
 
 GFX_Plot_Begin:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
@@ -104,7 +104,7 @@ GFX_Plot_Begin:
  		ldx PLOT_XBYT
 		ldy PLOT_YBYT
 		rts
-    
+
 GFX_Plot_End:
 		vdp_wait_l 6
 		vdp_sreg <.HIWORD(ADDRESS_TEXT_SCREEN<<2), v_reg14
