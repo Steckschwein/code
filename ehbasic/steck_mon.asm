@@ -18,7 +18,7 @@
 .include "fcntl.inc"
 .include "appstart.inc"
 
-appstart $b100
+appstart $ba00
 
 .include "basic.asm"
 ;.include "ext/gfx.asm"		    ;extensions
@@ -88,23 +88,30 @@ bsave:
 		bne io_error
 		jmp krn_close
 
+_fd: .res 1
+
 fread_wrapper:
+   sei
+   ;dbg
     phx
     phy
+    ldx _fd
     jsr krn_fread_byte
     bcs @eof
+;    jsr krn_chrout
     sec
     ply
     plx
     rts
 
+;    lda #0 ; 0 byte (no input)
 @eof:
-    cmp #0
-    beq @restore
-    clc
-    ply
-    plx
-    rts
+;    cmp #0
+;    beq @restore
+    ;clc - not necessary, is already cleared here
+;    ply
+;    plx
+;    rts
 @restore:
     jsr krn_close
 
@@ -113,33 +120,34 @@ fread_wrapper:
     lda #>krn_getkey
     sta VEC_IN+1
 
-
     clc
     ply
     plx
+    cli
     rts
 
 load:
-
+      sei
+      dbg
 		lda #O_RDONLY
 		jsr openfile
 		bne io_error
+      stx _fd
+;@l:
+;      jsr krn_fread_byte
+;      bcs @check_eof
+;      jsr krn_chrout
+;      bra @l
+;@check_eof:
+;      cmp #0
+;      bne io_error
 
-; @l:
-        ; jsr krn_fread_byte
-        ; bcs @check_eof
-        ; jsr krn_chrout
-        ; bra @l
-; @check_eof:
-        ; cmp #0
-        ; bne @l
-
-
-        lda #<fread_wrapper
-        sta VEC_IN
-        lda #>fread_wrapper
-        sta VEC_IN+1
-        rts
+      lda #<fread_wrapper
+      sta VEC_IN
+      lda #>fread_wrapper
+      sta VEC_IN+1
+      cli
+      rts
 
 
 bload:
@@ -154,7 +162,7 @@ bload:
 		sta read_blkptr + 0
 
 		jsr krn_read
-		bne io_error
+		;bne io_error
 
 		phx
 		jsr krn_getfilesize
