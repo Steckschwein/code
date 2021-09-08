@@ -89,15 +89,21 @@ bsave:
 		jmp krn_close
 
 fread_wrapper:
+    phx
+    phy
     jsr krn_fread_byte
     bcs @eof
     sec
+    ply
+    plx
     rts
 
 @eof:
     cmp #0
     beq @restore
     clc
+    ply
+    plx
     rts
 @restore:
     jsr krn_close
@@ -109,6 +115,8 @@ fread_wrapper:
 
 
     clc
+    ply
+    plx
     rts
 
 load:
