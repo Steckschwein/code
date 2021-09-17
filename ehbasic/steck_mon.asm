@@ -98,57 +98,42 @@ fread_wrapper:
     ldx _fd
     jsr krn_fread_byte
     bcs @eof
-;    jsr krn_chrout
-    sec
-    ply
+    cmp #KEY_LF ; replace with "basic end of line"
+    bne :+
+@newline:
+    lda #KEY_CR
+:   ply
     plx
+    cmp #0
+    cli
     rts
 
-;    lda #0 ; 0 byte (no input)
 @eof:
-;    cmp #0
-;    beq @restore
-    ;clc - not necessary, is already cleared here
-;    ply
-;    plx
-;    rts
-@restore:
     jsr krn_close
 
     lda #<krn_getkey
     sta VEC_IN
     lda #>krn_getkey
     sta VEC_IN+1
-
-    clc
-    ply
-    plx
-    cli
-    rts
+    bra @newline
 
 load:
       sei
-      dbg
+;      dbg
 		lda #O_RDONLY
 		jsr openfile
 		bne io_error
       stx _fd
-;@l:
-;      jsr krn_fread_byte
-;      bcs @check_eof
-;      jsr krn_chrout
-;      bra @l
-;@check_eof:
-;      cmp #0
-;      bne io_error
 
       lda #<fread_wrapper
       sta VEC_IN
       lda #>fread_wrapper
       sta VEC_IN+1
-      cli
+;      dbg
+;      bra fread_wrapper  ; first byte
+;      JMP LAB_1357
+;      clc
       rts
-
 
 bload:
 		lda #O_RDONLY

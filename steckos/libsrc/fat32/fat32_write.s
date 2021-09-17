@@ -347,11 +347,14 @@ __fat_write_dir_entry:
 @l2:
 		lda krn_ptr1+1 												; end of block reached? :/ edge-case, we have to create the end-of-directory entry at the next block
 		cmp #>(block_data + sd_blocksize)
-		bne @l_eod														; no, write one block only
-
-		; new dir entry
+		beq @l_new_block												; yes, prepare new block
+		lda #0															; no, write the updated block only
+		sta (krn_ptr1)													; set eod
+		bra @l_eod
+@l_new_block:															; new dir entry
 		jsr __fat_write_block_data					  				; write the current block with the updated dir entry first
 		bne @l_exit
+
 		ldy #$7f															; safely, fill the new dir block with 0 to mark eod
 @l_erase:; A=0 here
 		sta block_data+$000, y

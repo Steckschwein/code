@@ -71,7 +71,7 @@
 
 .export fat_read_block
 .export fat_fopen
-.export fat_fread ; TODO FIXME update exec, use fat_fread / fat_fread_byte
+.export fat_fread
 .export fat_fread_byte
 .export fat_read
 .export fat_fseek
@@ -104,7 +104,7 @@ __fat_fseek:
 		;in:
 		;	X - offset into fd_area
 		;out:
-		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 if EOF reached and A=0 (EOK)
+		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 fat_fread_byte:
 		_is_file_open l_exit_einval
 
@@ -243,7 +243,7 @@ fat_fopen:
 		bne @l_error
 		lda fd_area + F32_fd::Attr, x
 		and #DIR_Attr_Mask_Dir			; regular file or directory?
-		beq @l_exit_ok						; not dir, ok
+		beq @l_atime						; not dir, update atime if desired, ok
 		lda #EISDIR							; was directory, we must not free any fd
 		rts									; exit with error "Is a directory"
 @l_error:
@@ -267,6 +267,8 @@ fat_fopen:
 		jsr __fat_write_dir_entry		; create dir entry at current dirptr
 		beq @l_exit_ok
 		jmp fat_close						; free the allocated file descriptor regardless of any errors
+@l_atime:
+;		jsr __fat_set_direntry_timedate
 @l_exit_ok:
 		lda #EOK								; A=0 (EOK)
 @l_exit:
