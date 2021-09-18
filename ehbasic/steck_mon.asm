@@ -91,8 +91,6 @@ bsave:
 _fd: .res 1
 
 fread_wrapper:
-   sei
-   ;dbg
     phx
     phy
     ldx _fd
@@ -105,9 +103,7 @@ fread_wrapper:
 :   ply
     plx
     cmp #0
-    cli
     rts
-
 @eof:
     jsr krn_close
 
@@ -118,8 +114,6 @@ fread_wrapper:
     bra @newline
 
 load:
-      sei
-;      dbg
 		lda #O_RDONLY
 		jsr openfile
 		bne io_error
@@ -129,11 +123,7 @@ load:
       sta VEC_IN
       lda #>fread_wrapper
       sta VEC_IN+1
-;      dbg
-;      bra fread_wrapper  ; first byte
-;      JMP LAB_1357
-;      clc
-      rts
+      JMP   LAB_1319 ; reset and return
 
 bload:
 		lda #O_RDONLY
@@ -161,10 +151,10 @@ bload:
 		plx
 
 		jsr krn_close
-
-        LDA   #<LAB_RMSG   ; "READY"
-        LDY   #>LAB_RMSG
-        JSR   LAB_18C3
+ready:
+      LDA   #<LAB_RMSG   ; "READY"
+      LDY   #>LAB_RMSG
+      JSR   LAB_18C3
 		JMP   LAB_1319
 
 .ifdef UART
