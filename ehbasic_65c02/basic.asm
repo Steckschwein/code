@@ -601,9 +601,9 @@ LAB_2DB6
       lda #>exit
       sta VEC_EXIT+1
 
-      lda #<load
+      lda #<LAB_LOAD
       sta VEC_LD
-      lda #>load
+      lda #>LAB_LOAD
       sta VEC_LD+1
 
 
@@ -7513,58 +7513,6 @@ LAB_GBYT
 LAB_2D05
       RTS
 
-LAB_LOAD
-        lda #O_RDONLY
-        jsr openfile
-        bne io_error
-
-        lda Smemh
-        sta read_blkptr + 1
-
-        lda Smeml
-        sta read_blkptr + 0
-
-        jsr krn_read
-        bne io_error_close
-
-        jsr krn_close
-
-    	JSR     get_basmem       ; find end of program space
-    	LDA     Itempl           ; get start of free memory low byte address
-    	LDY     Itemph           ; get start of free memory high byte address
-    	STA     Svarl            ; and set variables and strings pointers
-    	STA     Sarryl           ; to the start of free memory
-    	STA     Earryl           ;
-    	STY     Svarh            ;
-    	STY     Sarryh           ;
-    	STY     Earryh           ;
-
-    	SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-    	JMP     LAB_1319         ; cleanup and Return to BASIC
-
-
-        ;phx
-        ;jsr krn_getfilesize
-        ;clc
-        ;adc Smeml
-        ;sta Svarl
-
-        ;txa
-        ;adc Smemh
-        ;sta Svarh
-        ;plx
-
-
-        ; LDA   #<LAB_RMSG   ; "READY"
-        ; LDY   #>LAB_RMSG
-        ; JSR   LAB_18C3
-        ;SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-        ;lda #'x'
-        ;jsr krn_chrout
-        ;JMP   LAB_1319
-
-
-
 ; To Load a program you need to start loading at Smeml/h
 ; then find the end of program (two $00), using Itempl/h,
 ; then clear other variables and call BASIC cleanup
@@ -7622,54 +7570,45 @@ io_error:
    ; ldx #$24
    ; jmp LAB_XERR
 
-LAB_SAVE
-    lda #O_WRONLY
-    jsr openfile
-    bne io_error
+LAB_SAVE:
+      rts
 
-    lda Smemh
-    sta write_blkptr + 1
-    jsr hexout
-    lda Smeml
-    sta write_blkptr + 0
-    jsr hexout
 
-    lda #' '
-    jsr krn_chrout
 
-    lda Svarh
-    jsr hexout
-    lda Svarl
-    jsr hexout
+LAB_LOAD:
+	lda #O_RDONLY
+	jsr openfile
+	bne io_error
+      stx _fd
 
-    lda #' '
-    jsr krn_chrout
+      lda #<fread_wrapper
+      sta VEC_IN
+      lda #>fread_wrapper
+      sta VEC_IN+1
+      JMP   LAB_1319 ; reset and return
 
-    sec
-    lda Svarl
-    sbc Smeml
-    sta fd_area + F32_fd::FileSize + 0,x
-
-    lda Svarh
-    sbc Smemh
-    sta fd_area + F32_fd::FileSize + 1,x
-
-    jsr hexout
-    lda fd_area + F32_fd::FileSize + 0,x
-    jsr hexout
-    crlf
-
-    stz fd_area + F32_fd::FileSize + 2,x
-    stz fd_area + F32_fd::FileSize + 3,x
-
-    jsr krn_write
-;    stp
-    bne io_error_close
+fread_wrapper:
+    phx
+    phy
+    ldx _fd
+    jsr krn_fread_byte
+    bcs @eof
+    cmp #KEY_LF ; replace with "basic end of line"
+    bne :+
+@newline:
+    lda #KEY_CR
+:   ply
+    plx
+    cmp #0
+    rts
+@eof:
     jsr krn_close
 
-    SMB7 OPXMDM           ; set upper bit in flag (print Ready msg)
-    JMP LAB_1319
-
+    lda #<krn_getkey
+    sta VEC_IN
+    lda #>krn_getkey
+    sta VEC_IN+1
+    bra @newline
 LAB_DIR:
     pha
     phx
@@ -8757,9 +8696,7 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
 exit:		jmp (retvec)
-load:       lda #'L'
-            jsr krn_chrout
-            rts
 .bss
 buf:        .res 16
+_fd:        .res 1
  .END
