@@ -7585,7 +7585,15 @@ LAB_LOAD:
       sta VEC_IN
       lda #>fread_wrapper
       sta VEC_IN+1
+
+      lda #<outvec_dummy
+      sta VEC_OUT
+      lda #>outvec_dummy
+      sta VEC_OUT+1
       JMP   LAB_1319 ; reset and return
+
+outvec_dummy:
+      rts
 
 fread_wrapper:
     phx
@@ -7596,7 +7604,10 @@ fread_wrapper:
     cmp #KEY_LF ; replace with "basic end of line"
     bne :+
 @newline:
-    lda #KEY_CR
+    ;lda #KEY_CR
+    LDA   #<LAB_RMSG   ; "READY"
+    LDY   #>LAB_RMSG
+    JSR   LAB_18C3
 :   ply
     plx
     cmp #0
@@ -7608,6 +7619,14 @@ fread_wrapper:
     sta VEC_IN
     lda #>krn_getkey
     sta VEC_IN+1
+
+    lda #<krn_chrout
+    sta VEC_OUT
+    lda #>krn_chrout
+    sta VEC_OUT+1
+
+
+
     bra @newline
 LAB_DIR:
     pha
