@@ -8,6 +8,7 @@ LDFLAGS=-C ../prg.ld65.cfg -m $<.map $(LIBS)
 TOOLS=ls.prg ll.prg stat.prg fsinfo.prg attrib.prg rename.prg help.prg view.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg du.prg keycode.prg fig.prg vramtest.prg wozmon.prg rx.prg
 # c tools
 TOOLS+=\
+  cat.prg \
   clear.prg\
   echo.prg\
   keyboard.prg \

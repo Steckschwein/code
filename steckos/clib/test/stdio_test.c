@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <conio.h>
-#include <errno.h> 
+#include <errno.h>
 
 int test(int r);
 int test_file_io(void);
@@ -14,7 +14,7 @@ unsigned char *fileName = "1.txt";
 
 int main(int argc, char *argv[])
 {
-//	cprintf("argc %d\n", argc);
+//	printf("argc %d\n", argc);
 /*	if (argc < 2) {
         return EXIT_FAILURE;
     }
@@ -27,9 +27,9 @@ int main(int argc, char *argv[])
 
 int test(int r){
 	if(r != EXIT_SUCCESS)
-		cprintf("FAILED!\n");
+		printf("FAILED!\n");
 	else
-		cprintf("PASS!\n");
+		printf("PASS!\n");
 	return r;
 }
 
@@ -42,37 +42,37 @@ int test_file_io(){
 
 	f1 = fopen(fileName, "r");
 	if (!f1) {
-		cprintf("could not open '%s': %s\n", fileName, strerror(errno)); 
+		printf("could not open '%s': %s\n", fileName, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	cprintf("file '%s' opened fd='%d'\n", fileName, f1);
-	
+	printf("file '%s' opened fd='%d'\n", fileName, f1);
+
     i = fread(buf, sizeof(char), sizeof(buf), f1);
     if (i == -1) {
-        cprintf("read error '%s': %s\n", fileName, strerror(errno)); 
+        printf("read error '%s': %s\n", fileName, strerror(errno));
         return EXIT_FAILURE;
     }
-    cprintf("fread %d\n", i);
+    printf("fread %d\n", i);
     for(n=0;n<i && n<i;n++){
-        cprintf("%x ", buf[n]);
+        printf("%x ", buf[n]);
     }
 /*    if (feof(f1)) {
-        cprintf("end of file reached..., read %d bytes\n", i);
+        printf("end of file reached..., read %d bytes\n", i);
         return EXIT_SUCCESS;
     }
-*/	
+*/
     i = fclose(f1);
     if (i == -1) {
-        cprintf("close error '%s': %s\n", fileName, strerror(errno)); 
+        printf("close error '%s': %s\n", fileName, strerror(errno));
         return EXIT_FAILURE;
-    }    
-    return EXIT_SUCCESS;	
+    }
+    return EXIT_SUCCESS;
 }
 
 int test_dir_getcwd(){
 	char buf[64];
 	getcwd(buf, sizeof(buf));
-	cprintf("cwd: %s}\n", buf);
+	printf("cwd: %s}\n", buf);
 }
 
 int test_dir_io(){
@@ -81,8 +81,8 @@ int test_dir_io(){
     DIR *D;
     register struct dirent* E;
 
-    // Explain usage and wait for a key 
-/*    cprintf ("Use the following keys:\n"
+    // Explain usage and wait for a key
+/*    printf ("Use the following keys:\n"
             "  g -> go ahead without stop\n"
             "  q -> quit directory listing\n"
             "  r -> return to last entry\n"
@@ -90,21 +90,21 @@ int test_dir_io(){
             "Press any key to start ...\n");
     cgetc ();
 */
-    // Open the directory 
+    // Open the directory
     D = opendir (name);
     if (D == 0) {
-        cprintf("error opening %s: %s\n", name, strerror (errno));
+        printf("error opening %s: %s\n", name, strerror (errno));
         return 1;
     }
-    // Output the directory 
+    // Output the directory
     errno = 0;
-    cprintf("contents of \"%s\":\n", name);
+    printf("contents of \"%s\":\n", name);
     while ((E = readdir (D)) != 0) {
-		cprintf ("dirent.d_name[] : \"%s\"\n", E->d_name);
-//        cprintf ("dirent.d_blocks : %10u\n",   E->d_blocks);
-//        cprintf ("dirent.d_type   : %10d\n",   E->d_type);
-        cprintf ("telldir()       : %10lu\n",  telldir (D));
-        cprintf ("---\n");
+		printf ("dirent.d_name[] : \"%s\"\n", E->d_name);
+//        printf ("dirent.d_blocks : %10u\n",   E->d_blocks);
+//        printf ("dirent.d_type   : %10d\n",   E->d_type);
+        printf ("telldir()       : %10lu\n",  telldir (D));
+        printf ("---\n");
         if (!go) {
             switch (cgetc ()) {
                 case 'g':
@@ -127,13 +127,13 @@ int test_dir_io(){
     }
 done:
     if (errno == 0) {
-        cprintf ("Done\n");
+        printf ("Done\n");
     } else {
-        cprintf("Done: %d (%s)\n", errno, strerror (errno));
+        printf("Done: %d (%s)\n", errno, strerror (errno));
     }
 
     // Close the directory
     closedir (D);
 
-    return EXIT_SUCCESS;	
+    return EXIT_SUCCESS;
 }

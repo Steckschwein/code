@@ -5,7 +5,6 @@
 		  .include "fcntl.inc"
 		  .include "errno.inc"
 		  .include "kernel/kernel_jumptable.inc"
-		  ;		.include	"../kernel/zeropage.inc"
 
 		  .export _open
 		  .destructor	  closeallfiles, 5
@@ -15,7 +14,7 @@
 		  .import ldaxysp,addysp
 		  .import __oserror
 		  .importzp tmp3
-		
+
 ;--------------------------------------------------------------------------
 ; _open
 .proc	_open
@@ -43,7 +42,7 @@ parmok: jsr	  popax			  ; Get flags
 
 		  jsr	  popax			  ; Get name, ptr low/high in a/x
 		jsr		krn_open		 	; with a/x ptr to path
-		
+
 		  ;jsr	  fnparse			; Parse it
 		  ;tax
 		  bne	  oserror			; Bail out if problem with name
@@ -74,7 +73,7 @@ seterrno:
 		  jmp	  __directerrno
 
 ; Error entry: Set oserror and errno using error code in A and return -1
-oserror:	 
+oserror:
 		  jmp	  __mappederrno
 
 ; Read bit is set. Add an 'r' to the name
@@ -91,7 +90,7 @@ doread:
 dowrite:
 		lda		#ENOSYS			;TODO FIXME implement write
 		bne		oserror
-		
+
 		  lda	  tmp3
 		  and	  #O_TRUNC
 		  beq	  notrunc
@@ -111,17 +110,17 @@ notrunc:
 
 ; Append bit is set. Add an 'a' to the name
 
-append: 
+append:
 ;		lda	  #'a'
 ;		 jsr	  fnaddmode		 ; Add open mode to file name
 appendcreate:
 ;		  lda	  #LFN_WRITE
 
-		
+
 ; Common read/write code. Flags in A, handle in tmp2
 common:
 		sta	  tmp3	; save cleanead flags
-		
+
 ; Done. Return the handle in a/x
 		txa				; offset into fd_area from krn_open2 to a
 		  ldx	  #0

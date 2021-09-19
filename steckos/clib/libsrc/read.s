@@ -7,6 +7,7 @@
 		.include "errno.inc"
 		.include "kernel/kernel_jumptable.inc"
 		.include "asminc/zeropage.inc"
+		.include "asminc/common.inc"
 
 		.import __rwsetup,__do_oserror,__inviocb,__oserror, popax, popptr1
 
@@ -19,23 +20,23 @@
 .code
 
 .proc	_read
-		sta	  ptr3
-	  	stx	  ptr3+1			 ; save given count as result
-		eor	  #$FF			; the count argument
-		sta	  ptr2
+		sta ptr3
+		eor #$FF			; the count argument
+		sta ptr2
 		txa
-		eor	  #$FF
-		sta	  ptr2+1			 ; Remember -count-1
+		sta ptr3+1
+		eor #$FF
+		sta ptr2+1			; Remember -count-1
 
-		jsr	  popptr1			  ; get pointer to buf
+		jsr popptr1		; get pointer to buf
 
-		jsr	  popax			; the fd handle
-		cpx	  #0				; high byte must be 0
-		bne	  invalidfd
+		jsr popax			; the fd handle
+		cpx #0				; high byte must be 0
+		bne invalidfd
 
 		tax						; fd to x
-; read bytes loop
 
+; read bytes loop
 @r0:	inc		ptr2 			; count bytes read ?
 		bne		@r1
 		inc		ptr2+1
@@ -44,22 +45,26 @@
 		jsr krn_fread_byte
 		bcs @eof
 
-		sta (ptr1)
+:		sta (ptr1)	; save byte
+
 		inc ptr1
 		bne @r0
 		inc ptr1+1
 		bra @r0
 
-;	  	jmp __directerrno	; Sets _errno, clears _oserror, returns -1
-
-
 ; set _oserror and return the number of bytes read
 @eof:
-	  	sta  __oserror
+		sta __oserror
+;		jmp __directerrno	; Sets _errno, clears _oserror, returns -1
 @exit:
-		; FIXME - eof reached before char count is reached we give wrong result since count (ptr3) is static
-	  	lda ptr3
-	  	ldx ptr3+1
+		clc					; calc count bytes read
+		lda ptr2
+		adc ptr3
+		pha
+		lda ptr2+1
+		adc ptr3+1
+		tax
+	  	pla
 	  	rts
 
 ; Error entry: Device not present
