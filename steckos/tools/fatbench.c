@@ -25,43 +25,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <conio.h>
+#include <time.h>
 
-
-void usage (int status)
-{
-	if (status != EXIT_SUCCESS){
-		//   emit_try_help ();
-	}else{
-		printf ("Usage: %s [OPTION]... [FILE]...\n");
-
-	}
-	exit (status);
-}
-
-unsigned char buf[512];
+unsigned char buf[16384];
 
 int main (int argc, const char* argv[])
 {
-	FILE *fd;
-	int r,c;
+	FILE *fd = NULL;
+	int r = 0;
+	unsigned long int count = 0;
+	unsigned long int ms = 0;
+	struct timespec ts;
+
 	if(argc < 2){
-		usage(EXIT_FAILURE);
+		printf ("Usage: %s [OPTION]... [FILE]...\n", argv[0]);
+		exit (EXIT_FAILURE);
 	}
-	printf("%x %s\n", argc, argv[1]);
 	fd = fopen(argv[1], "r");
 	if(fd == NULL){
 		fprintf(stderr, "could not open...\n");
 		return EXIT_FAILURE;
 	}
-	while((r = fread(&buf,sizeof(char), sizeof(buf),fd)) != 0){
-		for(c=0;c<r;c++){
-			printf("%c", buf[c]);
-		}
+
+	printf("file %s with size %lu bench... \n", argv[1], 0);
+
+	clock_gettime(CLOCK_REALTIME, &ts);
+	ms = ts.tv_sec * 1000;
+	while((r = fread(buf,sizeof(char), sizeof(buf),fd)) > 0){
+		count+=r;
 	}
+	clock_gettime(CLOCK_REALTIME, &ts);
 
 	fclose(fd);
 
+	printf("bytes read: %lu took %lu ms\n", count, ts.tv_sec*1000 - ms);
 
 	return EXIT_SUCCESS;
 }
