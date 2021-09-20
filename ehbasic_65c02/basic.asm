@@ -7605,9 +7605,8 @@ fread_wrapper:
     bne :+
 @newline:
     ;lda #KEY_CR
-    LDA   #<LAB_RMSG   ; "READY"
-    LDY   #>LAB_RMSG
-    JSR   LAB_18C3
+    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+    jsr     LAB_1319         ; cleanup and Return to BASIC
 :   ply
     plx
     cmp #0
