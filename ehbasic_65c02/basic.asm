@@ -943,6 +943,23 @@ LAB_1330
       BRA   LAB_1325          ; go do next line, branch always, carry clear
 
 LAB_133E
+      BBR0 OPXMDM, :+
+:      BBR1 OPXMDM, :+
+:      BBR2 OPXMDM, :+
+:      BBR3 OPXMDM, :+
+:      BBR4 OPXMDM, :+
+:      BBR5 OPXMDM, :+
+:      BBR6 OPXMDM, :+
+:      BBR7 OPXMDM, :+
+
+       BBS0 OPXMDM, :+
+:      BBS1 OPXMDM, :+
+:      BBS2 OPXMDM, :+
+:      BBS3 OPXMDM, :+
+:      BBS4 OPXMDM, :+
+:      BBS5 OPXMDM, :+
+:      BBS6 OPXMDM, :+
+:
       BBS7  OPXMDM, DO_RDY    ; test to see if LOAD was executed
       JMP   LAB_127D          ; else we just wait for Basic command, no "Ready"
 DO_RDY
@@ -7603,10 +7620,7 @@ fread_wrapper:
     bcs @eof
     cmp #KEY_LF ; replace with "basic end of line"
     bne :+
-@newline:
-    ;lda #KEY_CR
-    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-    jsr     LAB_1319         ; cleanup and Return to BASIC
+    lda #KEY_CR
 :   ply
     plx
     cmp #0
@@ -7624,9 +7638,9 @@ fread_wrapper:
     lda #>krn_chrout
     sta VEC_OUT+1
 
+    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+    jmp     LAB_1319         ; cleanup and Return to BASIC
 
-
-    bra @newline
 LAB_DIR:
     pha
     phx
