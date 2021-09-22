@@ -7568,24 +7568,48 @@ LAB_2D05
      ; JMP     LAB_1319         ; cleanup and Return to BASIC
 
 openfile:
-   pha             ; save file open mode
-   jsr strparam2buf
-@open:
-   SetVector buf, filenameptr
-   lda #<buf
-   ldx #>buf
-   ply
-   jmp krn_open
+   pha 
+   phx
+   phy
 
+   ; evaluate sting parameter
+   jsr LAB_EVEX
+   jsr LAB_EVST
+
+   ; LAB_EVST returns the address of the string enclosed in " in x and y
+   stx str_pl
+   sty str_ph
+
+   ; overwrite last " with 0 to make it compatible with krn_open
+   tay 
+;    iny
+   lda (str_pl),Y
+   jsr krn_chrout
+   lda #0
+   sta (str_pl),y
+
+   lda str_pl
+   ldx str_ph
+   jsr krn_open
+   bne open_error
+   stx _fd
+
+   ply
+   plx
+   pla
+
+   rts
+
+open_error:
+   ply
+   plx
+   pla
+   bra io_error
 io_error_close:
    jsr krn_close
 io_error:
-   jsr hexout
-   lda #'E'
-   jsr krn_chrout
-   rts
-   ; ldx #$24
-   ; jmp LAB_XERR
+    ldx #$24 ; "Generate "File not found error"
+    jmp LAB_XERR
 
 LAB_SAVE:
       rts
@@ -7595,8 +7619,6 @@ LAB_SAVE:
 LAB_LOAD:
 	lda #O_RDONLY
 	jsr openfile
-	bne io_error
-      stx _fd
 
       lda #<fread_wrapper
       sta VEC_IN
@@ -7668,8 +7690,8 @@ LAB_DIR:
     jsr krn_find_first
 
     bcs @l2_1
-    lda #'E'
-    jsr LAB_PRNA
+;    lda #'E'
+;    jsr LAB_PRNA
     bra @end
 @l2_1:
     bcs @l4
@@ -7711,15 +7733,31 @@ pattern:
 
 
 LAB_CD:
-    jsr strparam2buf
-    SetVector buf, filenameptr
-    lda #<buf
-    ldx #>buf
+    ; evaluate sting parameter
+    jsr LAB_EVEX
+    jsr LAB_EVST
+
+    ; LAB_EVST returns the address of the string enclosed in " in x and y
+    stx str_pl
+    sty str_ph
+
+    ; overwrite last " with 0 to make it compatible with krn_open
+    tay 
+    lda (str_pl),Y
+    lda #0
+    sta (str_pl),y
+
+    lda str_pl
+    ldx str_ph
+    ; jsr strparam2buf
+    ; lda #<buf
+    ; ldx #>buf
     jsr krn_chdir
     beq @end
     ; File not found error
-    ldx #$24
-    jmp LAB_XERR
+    jmp io_error
+    ;ldx #$24
+    ;jmp LAB_XERR
 @end:
     SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
     JMP   LAB_1319
