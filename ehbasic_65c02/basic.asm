@@ -7568,57 +7568,40 @@ LAB_2D05
      ; JMP     LAB_1319         ; cleanup and Return to BASIC
 
 openfile:
-   pha 
-   phx
-   phy
+;    pha 
+;    phx
+;    phy
 
-   ; evaluate sting parameter
-   jsr LAB_EVEX
-   jsr LAB_EVST
-
-   ; LAB_EVST returns the address of the string enclosed in " in x and y
-   stx str_pl
-   sty str_ph
-
-   ; overwrite last " with 0 to make it compatible with krn_open
-   tay 
-;    iny
-   lda (str_pl),Y
-   jsr krn_chrout
-   lda #0
-   sta (str_pl),y
-
-   lda str_pl
-   ldx str_ph
+   
+   jsr termstrparam
    jsr krn_open
    bne open_error
    stx _fd
 
-   ply
-   plx
-   pla
+;    ply
+;    plx
+;    pla
 
    rts
 
-open_error:
-   ply
-   plx
-   pla
-   bra io_error
 io_error_close:
-   jsr krn_close
+    jsr krn_close
+open_error:
+;     ply
+;     plx
+;     pla
 io_error:
     ldx #$24 ; "Generate "File not found error"
     jmp LAB_XERR
 
 LAB_SAVE:
-      rts
+    rts
 
 
 
 LAB_LOAD:
-	lda #O_RDONLY
-	jsr openfile
+      lda #O_RDONLY
+      jsr openfile
 
       lda #<fread_wrapper
       sta VEC_IN
@@ -7670,12 +7653,17 @@ LAB_DIR:
 
     BEQ	@end0
 
-    jsr strparam2buf
-    bcc @end0
+    ;jsr strparam2buf
+    ;bcc @end0
+    jsr termstrparam
 
-    SetVector buf, filenameptr
-    lda #<buf
-    ldx #>buf
+
+    lda str_pl
+    sta filenameptr
+    lda str_ph
+    sta filenameptr+1
+
+    ;SetVector buf, filenameptr
     bra @skip
 
 @end0:
@@ -7733,22 +7721,7 @@ pattern:
 
 
 LAB_CD:
-    ; evaluate sting parameter
-    jsr LAB_EVEX
-    jsr LAB_EVST
-
-    ; LAB_EVST returns the address of the string enclosed in " in x and y
-    stx str_pl
-    sty str_ph
-
-    ; overwrite last " with 0 to make it compatible with krn_open
-    tay 
-    lda (str_pl),Y
-    lda #0
-    sta (str_pl),y
-
-    lda str_pl
-    ldx str_ph
+    jsr termstrparam
     ; jsr strparam2buf
     ; lda #<buf
     ; ldx #>buf
@@ -7834,28 +7807,25 @@ LAB_CD:
 ; skp_ith
 ;      RTS                      ; return to caller
 
-strparam2buf:
-     jsr LAB_EVEX
-     jsr LAB_EVST
-     cmp #$00
-     beq @end
-     tay
-     lda #0
-     sta buf,y
-     dey
-@loop:
-     lda (ut1_pl),y
-     beq @out
-     sta buf,y
-     dey
-     bpl @loop
-@out:
-     sec
-     rts
-@end:
-     clc
-     rts
+termstrparam:
+    ; evaluate sting parameter
+    jsr LAB_EVEX
+    jsr LAB_EVST
 
+    ; LAB_EVST returns the address of the string enclosed in " in x and y
+    stx str_pl
+    sty str_ph
+
+    ; overwrite last " with 0 to make it compatible with krn_open
+    tay 
+    lda (str_pl),Y
+    lda #0
+    sta (str_pl),y
+
+    lda str_pl
+    ldx str_ph
+
+    rts
 
 ; system dependant I/O vectors
 ; these are in RAM and are set by the monitor at start-up
@@ -8767,6 +8737,5 @@ LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
 exit:		jmp (retvec)
 .bss
-buf:        .res 16
 _fd:        .res 1
  .END
