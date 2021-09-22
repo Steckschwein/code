@@ -2,7 +2,6 @@
 .include "steckos.inc"
 .include "fcntl.inc"
 .include "fat32.inc"
-.import hexout
 .export char_out=krn_chrout
 
 __APPSTART__ = $ba00
