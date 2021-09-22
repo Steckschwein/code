@@ -7818,7 +7818,6 @@ termstrparam:
 
     ; overwrite last " with 0 to make it compatible with krn_open
     tay 
-    lda (str_pl),Y
     lda #0
     sta (str_pl),y
 
