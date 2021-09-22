@@ -7805,34 +7805,34 @@ LAB_CD:
 ; Once the end of Basic program space is found, (Itempl) is updated
 ; by two, which points to the start of free memory.
 
-get_basmem
-     LDA     Smeml            ; get start address
-     STA     Itempl           ; and save to
-     LDA     Smemh            ; temp pointer
-     STA     Itemph           ; high and low byte
-     LDY     #$01             ; set Y reg for offset of 1
+; get_basmem
+;      LDA     Smeml            ; get start address
+;      STA     Itempl           ; and save to
+;      LDA     Smemh            ; temp pointer
+;      STA     Itemph           ; high and low byte
+;      LDY     #$01             ; set Y reg for offset of 1
 
-scan_bas
-     LDA     (Itempl)         ; get BASIC low byte line address
-     TAX                      ; save to X reg (could be next line low address)
-     BEQ     chk_next         ; if zero, might be end, branch and check
-     LDA     (Itempl),y       ; else, get high byte line address
-upd_bas
-     STA     Itemph           ; update high byte line address
-     STX     Itempl           ; update low byte line address
-     BRA     scan_bas         ; branch back to find next line
+; scan_bas
+;      LDA     (Itempl)         ; get BASIC low byte line address
+;      TAX                      ; save to X reg (could be next line low address)
+;      BEQ     chk_next         ; if zero, might be end, branch and check
+;      LDA     (Itempl),y       ; else, get high byte line address
+; upd_bas
+;      STA     Itemph           ; update high byte line address
+;      STX     Itempl           ; update low byte line address
+;      BRA     scan_bas         ; branch back to find next line
 
-chk_next
-     LDA     (Itempl),y       ; get next byte, BASIC high byte line address
-     BNE     upd_bas          ; if non-zero, branch to update line address
+; chk_next
+;      LDA     (Itempl),y       ; get next byte, BASIC high byte line address
+;      BNE     upd_bas          ; if non-zero, branch to update line address
 
-     JSR     inc_line         ; else increment line address twice
-inc_line
-     INC     Itempl           ; increment low byte count
-     BNE     skp_ith          ; if not zero, skip high byte increment
-     INC     Itemph           ; else, increment high byte count
-skp_ith
-     RTS                      ; return to caller
+;      JSR     inc_line         ; else increment line address twice
+; inc_line
+;      INC     Itempl           ; increment low byte count
+;      BNE     skp_ith          ; if not zero, skip high byte increment
+;      INC     Itemph           ; else, increment high byte count
+; skp_ith
+;      RTS                      ; return to caller
 
 strparam2buf:
      jsr LAB_EVEX
