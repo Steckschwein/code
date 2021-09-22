@@ -586,15 +586,8 @@ LAB_2DB6
       STY   Smeml             ; save start of mem low byte
       STX   Smemh             ; save start of mem high byte
 
-      lda #<krn_chrout
-      sta VEC_OUT
-      lda #>krn_chrout
-      sta VEC_OUT+1
 
-      lda #<krn_getkey
-      sta VEC_IN
-      lda #>krn_getkey
-      sta VEC_IN+1
+      jsr init_iovectors
 
       lda #<exit
       sta VEC_EXIT
@@ -605,6 +598,11 @@ LAB_2DB6
       sta VEC_LD
       lda #>LAB_LOAD
       sta VEC_LD+1
+
+      lda #<LAB_SAVE
+      sta VEC_SV
+      lda #>LAB_SAVE
+      sta VEC_SV+1
 
 
       JSR   LAB_CRLF          ; print CR/LF
@@ -7633,18 +7631,22 @@ fread_wrapper:
 @eof:
     jsr krn_close
 
-    lda #<krn_getkey
-    sta VEC_IN
-    lda #>krn_getkey
-    sta VEC_IN+1
-
-    lda #<krn_chrout
-    sta VEC_OUT
-    lda #>krn_chrout
-    sta VEC_OUT+1
+    jsr init_iovectors
 
     SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
     jmp     LAB_1319         ; cleanup and Return to BASIC
+
+init_iovectors:
+      lda #<krn_chrout
+      sta VEC_OUT
+      lda #>krn_chrout
+      sta VEC_OUT+1
+
+      lda #<krn_getkey
+      sta VEC_IN
+      lda #>krn_getkey
+      sta VEC_IN+1
+      rts
 
 LAB_DIR:
     pha
@@ -7653,17 +7655,10 @@ LAB_DIR:
 
     BEQ	@end0
 
-    ;jsr strparam2buf
-    ;bcc @end0
     jsr termstrparam
 
+    copypointer str_pl, filenameptr
 
-    lda str_pl
-    sta filenameptr
-    lda str_ph
-    sta filenameptr+1
-
-    ;SetVector buf, filenameptr
     bra @skip
 
 @end0:
@@ -7678,8 +7673,6 @@ LAB_DIR:
     jsr krn_find_first
 
     bcs @l2_1
-;    lda #'E'
-;    jsr LAB_PRNA
     bra @end
 @l2_1:
     bcs @l4
@@ -7722,15 +7715,10 @@ pattern:
 
 LAB_CD:
     jsr termstrparam
-    ; jsr strparam2buf
-    ; lda #<buf
-    ; ldx #>buf
     jsr krn_chdir
     beq @end
     ; File not found error
     jmp io_error
-    ;ldx #$24
-    ;jmp LAB_XERR
 @end:
     SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
     JMP   LAB_1319
