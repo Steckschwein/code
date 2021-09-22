@@ -1,7 +1,9 @@
-load /save
-- binary
+[X] load
+[ ] save
 - ascii (intercept list to save)
+
 - use all available memory
 - gfx extension
-- cd command
-- dir command
+
+[X] cd command
+[X] dir command
