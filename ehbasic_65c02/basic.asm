@@ -7594,9 +7594,6 @@ LAB_LOAD:
       sta VEC_OUT+1
       JMP   LAB_1319 ; reset and return
 
-outvec_dummy:
-      rts
-
 fread_wrapper:
     phx
     phy
@@ -7628,6 +7625,7 @@ init_iovectors:
       sta VEC_IN
       lda #>krn_getkey
       sta VEC_IN+1
+outvec_dummy:
       rts
 
 LAB_DIR:
