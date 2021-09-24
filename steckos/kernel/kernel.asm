@@ -454,6 +454,8 @@ krn_fread_byte:         jmp fat_fread_byte
 ;krn_uart_rx_nowait:	 	jmp uart_rx_nowait
 
 .segment "VECTORS"
+; $FFF8/$FFF9 RETVEC
+.word 0
 ; ----------------------------------------------------------------------------------------------
 ; Interrupt vectors
 ; ----------------------------------------------------------------------------------------------

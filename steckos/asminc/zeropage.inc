@@ -40,8 +40,9 @@
 
 .globalzp cmdptr
 .globalzp paramptr
-.globalzp retvec
 .globalzp flags
+
+.global retvec
 
 ; custom isr, aligned with v-blank, called by kernel on each frame
 user_isr	  = $028a
