@@ -387,10 +387,11 @@ TK_BITCLR         = TK_BITSET+1     ; BITCLR token
 TK_EXIT           = TK_BITCLR+1     ; EXIT token
 TK_DIR            = TK_EXIT+1
 TK_CD             = TK_DIR+1
+TK_MODE           = TK_CD+1
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB            = TK_CD+1       ; TAB token
+TK_TAB            = TK_MODE+1       ; TAB token
 TK_ELSE           = TK_TAB+1        ; ELSE token
 TK_TO             = TK_ELSE+1       ; TO token
 TK_FN             = TK_TO+1         ; FN token
@@ -7613,6 +7614,9 @@ init_iovectors:
 outvec_dummy:
       rts
 
+LAB_MODE:         ; MODE - set gfx mode
+      rts
+
 LAB_DIR:
     pha
     phx
@@ -7964,8 +7968,9 @@ LAB_CTBL
       .word LAB_BITSET-1      ; BITSET new command
       .word LAB_BITCLR-1      ; BITCLR new command
       .word V_EXIT-1          ; EXIT new command (exits to C02 Monitor)
-      .word LAB_DIR-1           ; DIR
-      .word LAB_CD-1           ;CD
+      .word LAB_DIR-1         ; DIR
+      .word LAB_CD-1          ; CD
+      .word LAB_MODE-1        ; MODE
 
 
 ; function pre process routine table
@@ -8297,7 +8302,10 @@ LBB_MIDS
       .byte "ID$(",TK_MIDS    ; MID$(
 LBB_MIN
       .byte "IN(",TK_MIN      ; MIN(
+LBB_MODE
+      .byte "ODE", TK_MODE    ; MODE
       .byte $00
+
 TAB_ASCN
 LBB_NEW
       .byte "EW",TK_NEW       ; NEW
@@ -8496,6 +8504,8 @@ LAB_KEYT
       .word LBB_DIR
       .byte 2,"C"
       .word LBB_CD
+      .byte 4,"M"
+      .word LBB_MODE
 
 ; secondary commands (can't start a statement)
 
