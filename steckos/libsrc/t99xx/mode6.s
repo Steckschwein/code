@@ -49,7 +49,7 @@ vdp_init_bytes_gfx6:
 			.byte	$0
 			.byte $0
 		.byte	>(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
-			.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);  
+			.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);
 			.byte	Black
 			.byte v_reg8_VR	| v_reg8_SPD; VR - 64k VRAM TODO FIXME aware of max vram (bios)
 			.byte 0; NTSC/262, PAL/313 => v_reg9_nt | v_reg9_ln
@@ -57,25 +57,24 @@ vdp_init_bytes_gfx6:
 		.byte <.hiword(ADDRESS_GFX6_SPRITE<<1); sprite attribute high
 		.byte 0;  #R11
 		.byte 0;  #R12
-		.byte 0;  #R13		
+		.byte 0;  #R13
 vdp_init_bytes_gfx6_end:
 
 ;
-; blank gfx mode with black
+; blank gfx mode with given color
 ; 	A - color to fill 4|4 Bit
 vdp_gfx6_blank:		; 64K
-  tax
-  vdp_vram_w ADDRESS_GFX6_SCREEN
-  txa
-  ;lda #Black<<4|Black
-	ldx #192
-	jmp vdp_fill
+  		tax
+  		vdp_vram_w ADDRESS_GFX6_SCREEN
+  		txa
+		ldx #192
+		jmp vdp_fill
 
-;	set pixel to gfx2 mode screen
+;	set pixel to gfx6 mode screen
 ;
 ;	X - x coordinate [0..ff]
 ;	Y - y coordinate [0..bf]
-;	A - color [0..f]
+;	A - color [0..f] and bit 7 MSB x coordinate
 ;
 ; 	VRAM ADDRESS = 8(INT(X DIV 2)) + 256(INT(Y DIV 8)) + (Y MOD 8)
 vdp_gfx6_set_pixel:

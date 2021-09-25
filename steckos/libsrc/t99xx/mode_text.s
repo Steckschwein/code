@@ -56,12 +56,12 @@ vdp_text_blank:
 ;	text mode - 40x24/80x24 character mode, 2 colors
 ;	.A - color settings (#R07)
 vdp_text_on:
-    
+
     php
     sei
 
 	pha ; push color
-	
+
     lda #<vdp_text_init_bytes
 	ldy #>vdp_text_init_bytes
 	ldx #(vdp_text_init_bytes_end-vdp_text_init_bytes-1)

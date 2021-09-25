@@ -26,6 +26,7 @@
 .import vdp_nopslide_2m
 .import vdp_nopslide_8m
 .import vdp_fill
+.import vdp_wait_cmd
 
 .export vdp_mode7_on
 .export vdp_mode7_blank
@@ -35,8 +36,6 @@
 .export vdp_gfx7_set_pixel
 .export vdp_gfx7_set_pixel_cmd
 .export vdp_gfx7_set_pixel_direct
-
-.export vdp_wait_cmd
 
 .code
 ;
@@ -163,16 +162,6 @@ vdp_gfx7_set_pixel_direct:
 		  pla
 		  sta a_vram					  ; set color
 		  rts
-
-vdp_wait_cmd:
-	 vdp_sreg 2, v_reg15			; 2 - to select status register S#2
-@wait:
-	 vdp_wait_s 4
-	 lda a_vreg
-	 ror
-	 bcs @wait
-	 vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
-	 rts
 
 ;	set pixel to gfx7 using v9958 command engine
 ;

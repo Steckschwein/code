@@ -27,6 +27,7 @@
 .import vdp_gfx7_blank
 .import vdp_wait_cmd
 .import vdp_bgcolor
+.import gfx_line
 
 appstart $1000
 
@@ -43,57 +44,43 @@ main:
 
 		lda #0
 		sta pt_y
-		lda #$01
+		lda #$01 ; 2nd page
 		sta pt_y+1
 
-		lda #0
+		lda #250
 		sta ht_x
 		lda #0
 		sta ht_x+1
 
-		lda #0
+		lda #100
 		sta ht_y
 		lda #0
 		sta ht_y+1
 
-
-    sei
+		sei
     jsr	krn_textui_disable			;disable textui
     jsr	gfxui_on
 
-		ldx #0
+		;dbg
+		lda #<line_0
+		ldy #>line_0
+		;	jsr gfx_line
 
-@loop:
-    lda #$ff
-    jsr vdp_gfx7_line
+		lda #$ff
+		jsr vdp_gfx7_line
 
-    stx ht_x
-    stx pt_x
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
-;        dec ht_y
+		cli
+	 	keyin
 
-    inx
-    cpx #212
-    bne @loop
-
-    keyin
-
-    cli
     jsr	krn_textui_init
     jsr	krn_textui_enable
     bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts
 
-		jmp (retvec)
+ 	jmp (retvec)
+
+line_0:
+	.word 0,0,255,191
+	.byte $ff ; color
 
 gfxui_on:
     jsr vdp_gfx7_on			    ;enable gfx7 mode
@@ -102,54 +89,55 @@ gfxui_on:
     vdp_sreg  v_reg9_ln , v_reg9
 
     lda #%00000011
-    jsr vdp_gfx7_blank
-
-    rts
+    jmp vdp_gfx7_blank
 
 vdp_gfx7_line:
-	pha
+		php
+		sei
+		pha
 
-    vdp_sreg 36, v_reg17 ; start at ref36
-    vdp_wait_s 4
+		vdp_sreg 36, v_reg17 ; start at ref36
+		vdp_wait_s 4
 
-	lda pt_x
-	sta a_vregi
-    vdp_wait_s 2
+		;dbg
+		lda pt_x
+		sta a_vregi
+		vdp_wait_s 3
 
-	lda pt_x+1
-	sta a_vregi
-    vdp_wait_s 4
+		lda pt_x+1
+		sta a_vregi
+		vdp_wait_s 3
 
-	lda pt_y
-	sta a_vregi
-    vdp_wait_s 2
+		lda pt_y
+		sta a_vregi
+		vdp_wait_s 3
 
-	lda pt_y+1
-	sta a_vregi
-    vdp_wait_s 4
+		lda pt_y+1
+		sta a_vregi
+		vdp_wait_s 3
 
-	lda ht_x
-	sta a_vregi
-    vdp_wait_s 2
+		lda ht_x
+		sta a_vregi
+		vdp_wait_s 2
 
-	lda ht_x+1
-	sta a_vregi
-    vdp_wait_s 4
+		lda ht_x+1
+		sta a_vregi
+		vdp_wait_s 4
 
-	lda ht_y
-	sta a_vregi
-    vdp_wait_s 2
+		lda ht_y
+		sta a_vregi
+		vdp_wait_s 2
 
-	lda ht_y+1
-	sta a_vregi
-    vdp_wait_s 4
+		lda ht_y+1
+		sta a_vregi
+		vdp_wait_s 4
 
-	pla
-	sta a_vregi
-    vdp_wait_s 4
+		pla
+		sta a_vregi
+		vdp_wait_s 4
 
-    ; R#45 Set mode byte
-	lda #%0000001
+		; R#45 Set mode byte
+		lda #%00000001
          ;^^^^^^^
          ;|||||||--- Long/short axis definition - 0: long x, 1: long y
          ;||||||---- undefined
@@ -158,10 +146,13 @@ vdp_gfx7_line:
          ;|||------- Destination location       - 0: VRAM,   1: ExpRAM
          ;||-------- undefined
          ;|--------- 0
-	sta a_vregi
-  vdp_wait_s 2
+		sta a_vregi
+  		vdp_wait_s 2
 
-    ; R#46 - define logical operation and exec command
-	lda #v_cmd_line
-	sta a_vregi
-  jmp vdp_wait_cmd
+    	; R#46 - define logical operation and exec command
+		lda #v_cmd_line
+		sta a_vregi
+		vdp_wait_s
+  		jsr vdp_wait_cmd
+		plp
+		rts

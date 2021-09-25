@@ -218,7 +218,7 @@ ADDRESS_GFX6_SPRITE_PATTERN   =$0f000	  ;
 ADDRESS_GFX6_SPRITE			  =$0fa00	  ;
 ADDRESS_GFX6_SPRITE_COLOR	  =ADDRESS_GFX6_SPRITE-$0200
 
-ADDRESS_GFX7_SCREEN					=$10000							; 2nd 64 RAM
+ADDRESS_GFX7_SCREEN					=$10000							; 64k RAM, 2nd page
 ADDRESS_GFX7_SPRITE					=ADDRESS_GFX_SPRITE
 ADDRESS_GFX7_SPRITE_PATTERN	=ADDRESS_GFX1_SPRITE_PATTERN
 
@@ -251,7 +251,7 @@ vdp_nopslide_end:
 		.local _wasted_cycles
 		.ifndef vdp_nopslide_2m
 			.import vdp_nopslide_2m
-            .import vdp_nopslide_end
+         .import vdp_nopslide_end
 		.endif
 		.if(.paramcount > 0)
 ;			.if (_wasted_cycles >> 1 >= MAX_NOPS_2M)
@@ -265,7 +265,7 @@ vdp_nopslide_end:
 		.endif
 .endmacro
 
-.macro vdp_wait_l _wasted_cycles	; amount of cycles already wasted in rang [0..n]
+.macro vdp_wait_l _wasted_cycles	; amount of cycles already wasted in range [0..n]
 		.local _wasted_cycles
 		.ifndef vdp_nopslide_8m
 			.import vdp_nopslide_8m

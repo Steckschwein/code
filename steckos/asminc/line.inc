@@ -19,37 +19,15 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
+.ifndef _LINE_INC_
+  _LINE_INC_ = 1
 
-;----------------------------------------------------------------------------
-; time struct with date set to 1970-01-01
-.struct time_t
-		  tm_sec	.byte		;0-59
-		  tm_min	.byte		;0-59
-		  tm_hour	.byte		;0-23
-		  tm_mday	.byte		;1-31
-		  tm_mon	.byte	1	;0-11 0-jan, 11-dec
-		  tm_year	.word  70	;years since 1900
-		  tm_wday	.byte		;
- ;		 tm_yday
-  ;		tm_isdst
+.struct line_t
+   x1 .word ; 0..1023 - across 2 screens (pages)
+   y1 .word ; 0..511 ...
+   x2 .word ;
+   y2 .word ;
+   color .byte
 .endstruct
 
-;----------------------------------------------------------------------------
-; last known timestamp with date set to 1970-01-01
-rtc_systime_t = $0300
-
-; read rtc
-rtc_read = 0
-rtc_write = $80
-
-rtc_ctrlreg = $0f
-
-.if .VERSION = (2*$100+17*$10+0)
-.global				 _clock_gettime
-;------------------------------------------------------------------------------
-; Struct timespec - must match the struct defined in time.h
-.struct timespec
-		  tv_sec  .dword
-		  tv_nsec .dword
-.endstruct
-.endif
+.endif ;_LINE_INC_
