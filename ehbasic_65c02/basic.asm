@@ -7548,36 +7548,21 @@ LAB_2D05
      ; JMP     LAB_1319         ; cleanup and Return to BASIC
 
 openfile:
-;    pha
-;    phx
-;    phy
-
-
    jsr termstrparam
    jsr krn_open
-   bne open_error
+   bne io_error
    stx _fd
-
-;    ply
-;    plx
-;    pla
-
    rts
 
 io_error_close:
     jsr krn_close
-open_error:
-;     ply
-;     plx
-;     pla
 io_error:
     ldx #$24 ; "Generate "File not found error"
     jmp LAB_XERR
 
 LAB_SAVE:
+    jsr LAB_LIST
     rts
-
-
 
 LAB_LOAD:
       lda #O_RDONLY
