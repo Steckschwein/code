@@ -33,6 +33,14 @@ appstart
       ldy #>line_1
       jsr gfx_line
 
+      lda #<line_2
+      ldy #>line_2
+      jsr gfx_line
+
+      lda #<line_3
+      ldy #>line_3
+      jsr gfx_line
+
     keyin
 
     jsr	krn_textui_init
@@ -41,11 +49,17 @@ appstart
 
 .data
 line_0:
-   .word 0,0,511,211
-   .byte White<<4|White ; color
+   .word 0,0,511,191
+   .byte Cyan<<4|White ; color
 line_1:
-   .word 0,106,511,106
-   .byte Cyan<<4|Cyan ; color
+   .word 0,191,511,0
+   .byte Cyan<<4|White ; color
+line_2:
+   .word 255,0,256,191
+   .byte Cyan<<4|White ; color
+line_3:
+   .word 0,96,511,96
+   .byte Cyan<<4|White ; color
 
 charset:
     .include "../bios/charset_8x8.asm"
