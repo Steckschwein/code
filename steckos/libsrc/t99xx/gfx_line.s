@@ -46,8 +46,8 @@ gfx_line:
       vdp_sreg 36, v_reg17 ; start at r#36
 
       ; dx
-      ldy #line_t::x1+0
-      lda (__volatile_ptr),y
+;      ldy #line_t::x1+0
+      lda (__volatile_ptr)
       sta a_vregi             ; vdp #r36
       ldy #line_t::x2+0
       sec
@@ -78,10 +78,12 @@ gfx_line:
       sec
       sbc (__volatile_ptr),y
       sta (__volatile_ptr),y
+      ; TODO FIXME - adjust y according to current gfx mode
+      lda #ADDRESS_GFX7_SCREEN>>16
+      sta a_vregi             ; vdp #r39
+      
       ldy #line_t::y1+1
       lda (__volatile_ptr),y
-
-      sta a_vregi             ; vdp #r39
       ldy #line_t::y2+1
       sbc (__volatile_ptr),y
       bpl :+                  ; y1>y2 ?

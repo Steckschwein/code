@@ -16,7 +16,9 @@ debug_enabled=1
 
       lda #<input
       ldy #>input
+      resetCycles
       jsr gfx_line
+      assertCycles 380
 
       assertMemory __volatile_tmp, 1
          .byte linectrl

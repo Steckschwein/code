@@ -61,13 +61,22 @@ main:
     jsr	krn_textui_disable			;disable textui
     jsr	gfxui_on
 
-		;dbg
-		lda #<line_0
-		ldy #>line_0
-		;	jsr gfx_line
+	 lda #<line_0
+	 ldy #>line_0
+	 jsr gfx_line
+
+	 lda #<line_1
+	 ldy #>line_1
+	 jsr gfx_line
+	 lda #<line_2
+	 ldy #>line_2
+	 jsr gfx_line
+	 lda #<line_3
+	 ldy #>line_3
+	 jsr gfx_line
 
 		lda #$ff
-		jsr vdp_gfx7_line
+;		jsr vdp_gfx7_line
 
 		cli
 	 	keyin
@@ -79,8 +88,17 @@ main:
  	jmp (retvec)
 
 line_0:
-	.word 0,0,255,191
-	.byte $ff ; color
+.word 0,0,255,212
+.byte $ff ; color
+line_1:
+.word 0,212,255,0
+.byte $ff ; color
+line_2:
+.word 0,106,255,106
+.byte $ff ; color
+line_3:
+.word 128,0,128,212
+.byte $ff ; color
 
 gfxui_on:
     jsr vdp_gfx7_on			    ;enable gfx7 mode
