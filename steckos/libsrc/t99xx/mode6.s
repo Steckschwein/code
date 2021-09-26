@@ -43,11 +43,11 @@ vdp_gfx6_on:
 			jmp vdp_init_reg
 
 vdp_init_bytes_gfx6:
-			.byte v_reg0_m5|v_reg0_m3												; reg0 mode bits
-			.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 			; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-		.byte $7f	; => 0<A16>11 1111 - either bank 0 oder 1 (64k)
-			.byte	$0
-			.byte $0
+        .byte v_reg0_m5|v_reg0_m3												; reg0 mode bits
+        .byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 			; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
+		.byte $3f	; => 0<A16>11 1111 - either bank 0 oder 1 (64k)
+        .byte $0
+        .byte $0
 		.byte	>(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
 			.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);
 			.byte	Black
