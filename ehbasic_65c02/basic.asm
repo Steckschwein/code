@@ -388,10 +388,12 @@ TK_EXIT           = TK_BITCLR+1     ; EXIT token
 TK_DIR            = TK_EXIT+1
 TK_CD             = TK_DIR+1
 TK_MODE           = TK_CD+1
+TK_PLOT           = TK_MODE+1
+TK_LINE           = TK_PLOT+1
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB            = TK_MODE+1       ; TAB token
+TK_TAB            = TK_LINE+1       ; TAB token
 TK_ELSE           = TK_TAB+1        ; ELSE token
 TK_TO             = TK_ELSE+1       ; TO token
 TK_FN             = TK_TO+1         ; FN token
@@ -7615,6 +7617,12 @@ outvec_dummy:
       rts
 
 LAB_MODE:         ; MODE - set gfx mode
+      
+
+LAB_PLOT:         ; PLOT - set pixel
+
+
+LAB_LINE:         ; LINE - draw line
       rts
 
 LAB_DIR:
@@ -7971,6 +7979,8 @@ LAB_CTBL
       .word LAB_DIR-1         ; DIR
       .word LAB_CD-1          ; CD
       .word LAB_MODE-1        ; MODE
+      .word LAB_PLOT-1        ; PLOT
+      .word LAB_LINE-1        ; LINE
 
 
 ; function pre process routine table
@@ -8286,6 +8296,8 @@ LBB_LEN
       .byte "EN(",TK_LEN      ; LEN(
 LBB_LET
       .byte "ET",TK_LET       ; LET
+LBB_LINE
+      .byte "INE",TK_LINE     ; LINE
 LBB_LIST
       .byte "IST",TK_LIST     ; LIST
 LBB_LOAD
@@ -8327,6 +8339,8 @@ LBB_PEEK
       .byte "EEK(",TK_PEEK    ; PEEK(
 LBB_PI
       .byte "I",TK_PI         ; PI
+LBB_PLOT
+      .byte "LOT",TK_PLOT     ; PLOT
 LBB_POKE
       .byte "OKE",TK_POKE     ; POKE
 LBB_POS
@@ -8506,6 +8520,8 @@ LAB_KEYT
       .word LBB_CD
       .byte 4,"M"
       .word LBB_MODE
+      .byte 4,"P"
+      .word LBB_PLOT
 
 ; secondary commands (can't start a statement)
 
