@@ -18,7 +18,7 @@ basic.o: basic.asm ext/gfx.asm $(LIBS)
 	$(CA65) $(ASM_INCLUDE) --target none $(DEFINES) $<
 
 basic.prg: basic.o ext/gfx.o
-	$(LD65) $(LDFLAGS) basic.o $(LIBS) -o basic.prg
+	$(LD65) $(LDFLAGS) basic.o ext/gfx.o $(LIBS) -o basic.prg
 
 basic.dis: basic.prg
 		dcc6502 -o 0xb0fe -d -n -c $< > $@

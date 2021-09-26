@@ -9,7 +9,7 @@
 
 .export char_out=krn_chrout
 
-__APPSTART__ = $ba00
+__APPSTART__ = $b800
 appstart __APPSTART__
 
 ;
