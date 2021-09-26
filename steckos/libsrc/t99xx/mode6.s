@@ -37,22 +37,22 @@
 ;
 vdp_mode6_on:
 vdp_gfx6_on:
-			lda #<vdp_init_bytes_gfx6
-			ldy #>vdp_init_bytes_gfx6
+		lda #<vdp_init_bytes_gfx6
+		ldy #>vdp_init_bytes_gfx6
 		ldx #<(vdp_init_bytes_gfx6_end-vdp_init_bytes_gfx6)-1
-			jmp vdp_init_reg
+		jmp vdp_init_reg
 
 vdp_init_bytes_gfx6:
-        .byte v_reg0_m5|v_reg0_m3												; reg0 mode bits
-        .byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 			; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
+		.byte v_reg0_m5|v_reg0_m3												; reg0 mode bits
+		.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 			; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
 		.byte $3f	; => 0<A16>11 1111 - either bank 0 oder 1 (64k)
-        .byte $0
-        .byte $0
+		.byte $0
+		.byte $0
 		.byte	>(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
-			.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);
-			.byte	Black
-			.byte v_reg8_VR	| v_reg8_SPD; VR - 64k VRAM TODO FIXME aware of max vram (bios)
-			.byte 0; NTSC/262, PAL/313 => v_reg9_nt | v_reg9_ln
+		.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);
+		.byte	Black
+		.byte v_reg8_VR	| v_reg8_SPD; VR - 64k VRAM TODO FIXME aware of max vram (bios)
+		.byte 0; NTSC/262, PAL/313 => v_reg9_nt | v_reg9_ln
 		.byte 0
 		.byte <.hiword(ADDRESS_GFX6_SPRITE<<1); sprite attribute high
 		.byte 0;  #R11

@@ -2,6 +2,11 @@
 .include "steckos.inc"
 .include "fcntl.inc"
 .include "fat32.inc"
+
+.export LAB_SCGB
+.export LAB_GTBY
+
+
 .export char_out=krn_chrout
 
 __APPSTART__ = $ba00
@@ -7617,7 +7622,7 @@ outvec_dummy:
       rts
 
 LAB_MODE:         ; MODE - set gfx mode
-      
+
 
 LAB_PLOT:         ; PLOT - set pixel
 
