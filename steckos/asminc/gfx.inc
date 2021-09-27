@@ -22,11 +22,19 @@
 .ifndef _GFX_INC_
   _GFX_INC_ = 1
 
-GFX_OP_IMP = 0 ; DC = SC 
-GFX_OP_AND = 1 ; DC = SC & DC
-GFX_OP_OR  = 2 ; DC = SC | DC
-GFX_OP_XOR = 3 ; DC = SC ^ DC
-GFX_OP_NOT = 4 ; DC = !SC
+; DC = destination color - the color we want to set
+; SC = source color - the source color currently set at the target position
+GFX_OP_IMP = 0    ; DC = SC 
+GFX_OP_AND = 1    ; DC = SC & DC
+GFX_OP_OR  = 2    ; DC = SC | DC
+GFX_OP_XOR = 3    ; DC = SC ^ DC
+GFX_OP_NOT = 4    ; DC = !SC
+
+GFX_OP_TIMP = 8   ; SC = 0 => DC = DC; DC = SC otherwise
+GFX_OP_TAND = 9   ; SC = 0 => DC = DC; DC = SC & DC otherwise
+GFX_OP_TOR  = 10  ; SC = 0 => DC = DC; DC = SC | DC otherwise
+GFX_OP_TXOR = 11  ; SC = 0 => DC = DC; DC = SC ^ DC otherwise
+GFX_OP_TNOT = 12  ; SC = 0 => DC = DC; DC = !SC otherwise
 
 .struct line_t
    x1 .word ; 0..511 - depends on active screen mode
