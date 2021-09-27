@@ -19,15 +19,29 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.ifndef _LINE_INC_
-  _LINE_INC_ = 1
+.ifndef _GFX_INC_
+  _GFX_INC_ = 1
+
+GFX_OP_IMP = 0 ; DC = SC 
+GFX_OP_AND = 1 ; DC = SC & DC
+GFX_OP_OR  = 2 ; DC = SC | DC
+GFX_OP_XOR = 3 ; DC = SC ^ DC
+GFX_OP_NOT = 4 ; DC = !SC
 
 .struct line_t
-   x1 .word ; 0..1023 - across 2 screens (pages)
-   y1 .word ; 0..511 ...
+   x1 .word ; 0..511 - depends on active screen mode
+   y1 .word ; 0..211 
    x2 .word ;
    y2 .word ;
    color .byte
+   operator .byte ; one of IMP, AND, OR, XOR, NOT - use GFX_OP_xxx
 .endstruct
 
-.endif ;_LINE_INC_
+.struct circle_t
+   x1 .word ; 0..511 - depends on active screen mode
+   y1 .byte ; 0..211 
+   color .byte  ; color
+   operator .byte ; one of IMP, AND, OR, XOR, NOT - use GFX_OP_xxx
+.endstruct
+
+.endif ;_GFX_INC_

@@ -1,9 +1,9 @@
-      .include "steckos.inc"
-      .include "vdp.inc"
+.include "steckos.inc"
+.include "vdp.inc"
 
-      .import vdp_gfx6_on
-      .import vdp_gfx6_blank
-      .import vdp_fill
+.import vdp_gfx6_on
+.import vdp_gfx6_blank
+.import vdp_fill
 
 .import gfx_line
 
@@ -55,7 +55,7 @@ line_1:
    .word 0,191,511,0
    .byte Cyan<<4|White ; color
 line_2:
-   .word 255,0,256,191
+   .word 255,0,257,191
    .byte Cyan<<4|White ; color
 line_3:
    .word 0,96,511,96

@@ -21,8 +21,8 @@
 ; SOFTWARE.
 
 
-.include "line.inc"
 .include "vdp.inc"
+.include "gfx.inc"
 
 .import vdp_wait_cmd
 

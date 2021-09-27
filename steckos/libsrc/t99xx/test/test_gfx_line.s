@@ -2,7 +2,7 @@
 .include "debug.inc"
 
 .include "vdp.inc"
-.include "line.inc"
+.include "gfx.inc"
 
 .import gfx_line
 .importzp __volatile_tmp
