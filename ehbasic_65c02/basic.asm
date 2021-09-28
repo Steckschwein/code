@@ -14,7 +14,7 @@
 .import gfx_line_foo
 .import GFX_MODE
 
-__APPSTART__ = $b800
+__APPSTART__ = $b000
 appstart __APPSTART__
 
 ;
