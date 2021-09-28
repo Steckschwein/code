@@ -9,6 +9,9 @@
 
 .export char_out=krn_chrout
 
+.import gfx_mode
+.import gfx_plot
+
 __APPSTART__ = $b800
 appstart __APPSTART__
 
@@ -394,12 +397,10 @@ TK_DIR            = TK_EXIT+1
 TK_CD             = TK_DIR+1
 TK_SCREEN         = TK_CD+1
 TK_PLOT           = TK_SCREEN+1
-TK_LINE           = TK_PLOT+1
-TK_LOCATE         = TK_LINE+1
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB            = TK_LOCATE+1       ; TAB token
+TK_TAB            = TK_PLOT+1       ; TAB token
 TK_ELSE           = TK_TAB+1        ; ELSE token
 TK_TO             = TK_ELSE+1       ; TO token
 TK_FN             = TK_TO+1         ; FN token
@@ -7624,11 +7625,15 @@ outvec_dummy:
 
 ; stubs for gfx ext
 LAB_SCREEN:       ; SCREEN  - set gfx mode
-LAB_PLOT:         ; PLOT - set pixel
-LAB_LINE:         ; LINE - draw line
-LAB_LOCATE:	  ; LOCATE get current pos
-    rts
+      JSR LAB_GTBY    ; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
+      TXA
+	AND #$07
+	ASL
+	;STA GFX_MODE
+	JMP gfx_mode
 
+LAB_PLOT = gfx_plot         ; PLOT - set pixel
+      
 LAB_DIR:
     pha
     phx
@@ -7984,8 +7989,6 @@ LAB_CTBL
       .word LAB_CD-1          ; CD
       .word LAB_SCREEN-1      ; SCREEN
       .word LAB_PLOT-1        ; PLOT
-      .word LAB_LINE-1        ; LINE
-      .word LAB_LOCATE-1      ; LOCATE
 
 
 ; function pre process routine table
@@ -8301,14 +8304,10 @@ LBB_LEN
       .byte "EN(",TK_LEN      ; LEN(
 LBB_LET
       .byte "ET",TK_LET       ; LET
-LBB_LINE
-      .byte "INE",TK_LINE     ; LINE
 LBB_LIST
       .byte "IST",TK_LIST     ; LIST
 LBB_LOAD
       .byte "OAD",TK_LOAD     ; LOAD
-LBB_LOCATE
-      .byte "OCATE",TK_LOCATE ; LOCATE
 LBB_LOG
       .byte "OG(",TK_LOG      ; LOG(
 LBB_LOOP

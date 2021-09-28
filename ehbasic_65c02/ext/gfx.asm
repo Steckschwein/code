@@ -48,6 +48,9 @@
 .export GFX_2_Plot
 .export GFX_BgColor
 
+.export gfx_mode
+.export gfx_plot
+
 ;
 ;	within basic define extensions as follows
 ;
@@ -59,18 +62,25 @@
 gfx_mode:
 		php
 		sei
+		cmp #8
+		bne @gfx 
+		jsr GFX_Off
+		bra @out
+@gfx:	
 		pha
 		jsr krn_textui_disable			;disable textui
 		jsr krn_display_off
 		plx
 		jsr _gfx_set_mode
+@out:
 		plp
 		rts
 
 ;	in .A - mode 0-7
 gfx_plot:
-		tax
-      jmp (gfx_plot_table,x)
+	; tax
+	ldx #7
+	jmp (gfx_plot_table,x)
 
 _gfx_set_mode:
 		jmp (_gfx_mode_table,x)
