@@ -36,6 +36,13 @@ GFX_OP_TOR  = 10  ; SC = 0 => DC = DC; DC = SC | DC otherwise
 GFX_OP_TXOR = 11  ; SC = 0 => DC = DC; DC = SC ^ DC otherwise
 GFX_OP_TNOT = 12  ; SC = 0 => DC = DC; DC = !SC otherwise
 
+.struct plot_t
+   x1 .word ; 0..511 - depends on active screen mode
+   y1 .word ; 0..211
+   color .byte
+   operator .byte ; one of IMP, AND, OR, XOR, NOT - use GFX_OP_xxx
+.endstruct
+
 .struct line_t
    x1 .word ; 0..511 - depends on active screen mode
    y1 .word ; 0..211
@@ -47,8 +54,8 @@ GFX_OP_TNOT = 12  ; SC = 0 => DC = DC; DC = !SC otherwise
 
 .struct circle_t
    x1 .word ; 0..511 - depends on active screen mode
-   y1 .byte ; 0..211
-   radius .byte ; 0..211 
+   y2 .byte ; 0..211
+   radius .byte ; 0..211
    color .byte  ; color
    operator .byte ; one of IMP, AND, OR, XOR, NOT - use GFX_OP_xxx
 .endstruct

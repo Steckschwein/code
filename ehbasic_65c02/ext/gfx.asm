@@ -42,17 +42,16 @@
 .import vdp_bgcolor
 
 .import gfx_line
+.import gfx_circle
+.import gfx_plot
 
 .import LAB_SCGB
 .import LAB_GTBY
 
-.export GFX_7_Plot
-.export GFX_MC_Plot
-.export GFX_2_Plot
 .export GFX_BgColor
 
 .export gfx_mode
-.export gfx_plot
+.export LAB_GFX_PLOT
 .export gfx_line_foo
 
 .export GFX_MODE
@@ -69,10 +68,10 @@ gfx_mode:
 		php
 		sei
 		cmp #8
-		bne @gfx 
+		bne @gfx
 		jsr GFX_Off
 		bra @out
-@gfx:	
+@gfx:
 		pha
 		jsr krn_textui_disable			;disable textui
 		jsr krn_display_off
@@ -82,13 +81,8 @@ gfx_mode:
 		plp
 		rts
 
-;	in .A - mode 0-7
-gfx_plot:
-	ldx GFX_MODE
-	jmp (gfx_plot_table,x)
-
 _gfx_set_mode:
-		jmp (_gfx_mode_table,x)
+	jmp (_gfx_mode_table,x)
 
 
 _gfx_mode_table:
@@ -103,16 +97,6 @@ _gfx_mode_table:
 gfx_dummy:
       rts
 
-gfx_plot_table:
-      .word gfx_dummy  ; 0
-      .word gfx_dummy  ; 1
-      .word GFX_2_Plot ; 2
-      .word GFX_MC_Plot; 3
-      .word gfx_dummy; 4
-      .word gfx_dummy; 5
-      .word gfx_dummy; 6
-      .word GFX_7_Plot ; 7
-
 GFX_BgColor:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
 		txa
@@ -120,36 +104,23 @@ GFX_BgColor:
 
 GFX_Off = krn_textui_init     ;restore textui
 
-GFX_2_Plot:
-		jsr GFX_Plot_Begin
-		jsr vdp_mode2_set_pixel
-		bra GFX_Plot_End
+;	in .A - mode 0-7
+LAB_GFX_PLOT:
+	jsr LAB_GTBY
+	stx PLOT_STRUCT+plot_t::x1
+	stz PLOT_STRUCT+plot_t::x1+1
 
-GFX_MC_Plot:
-		jsr GFX_Plot_Begin
-		jsr vdp_mc_set_pixel
-		bra GFX_Plot_End
+	JSR LAB_SCGB 	; scan for "," and get byte
+	stx PLOT_STRUCT+plot_t::y1
 
-GFX_7_Plot:
-		jsr GFX_Plot_Begin
-		jsr vdp_gfx7_set_pixel
-		bra GFX_Plot_End
+	; color
+	JSR LAB_SCGB 	; scan for "," and get byte
+	stx PLOT_STRUCT+plot_t::color
+	stz PLOT_STRUCT+plot_t::operator
 
-GFX_Plot_Begin:
-		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
-		stx PLOT_XBYT	; save plot x
-		JSR LAB_SCGB 	; scan for "," and get byte
-		stx PLOT_YBYT	; save plot y
-		JSR LAB_SCGB 	; scan for "," and get byte
-		txa				    ; color to A
- 		ldx PLOT_XBYT
-		ldy PLOT_YBYT
-		rts
-
-GFX_Plot_End:
-		vdp_wait_l 6
-		vdp_sreg <.HIWORD(ADDRESS_TEXT_SCREEN<<2), v_reg14
-		rts
+	lda #<PLOT_STRUCT
+	ldy #>PLOT_STRUCT
+	jmp gfx_plot
 
 gfx_line_foo:
 	jsr LAB_GTBY
@@ -180,6 +151,6 @@ gfx_line_foo:
 
 .bss
 GFX_MODE:  .res 1, 0 ;mode as power of 2
-PLOT_XBYT: .res 1
-PLOT_YBYT: .res 1
+PLOT_STRUCT: .res .sizeof(plot_t)
 LINE_STRUCT: .res .sizeof(line_t)
+CIRCLE_STRUCT: .res .sizeof(circle_t)

@@ -32,7 +32,7 @@
 
 .export gfx_circle
 
-; X/Y ptr to circle_t struct
+; A/Y ptr to circle_t struct
 ;
 gfx_circle:
       php
@@ -41,17 +41,15 @@ gfx_circle:
       sta __volatile_ptr
       sty __volatile_ptr+1
 
-      ldy #0
-      lda (__volatile_ptr),y     ; x low
+      lda (__volatile_ptr),y      ; x low
       STA _XLO
       STA _X1
-      iny
+      ldy #circle_t::x1+1
       lda (__volatile_ptr),y     ; x high
       STA _X2
       STA _XHI
       iny
       lda (__volatile_ptr),y     ; y
-;      TAY
       STA _Y
       ldy #circle_t::radius
       lda (__volatile_ptr),y     ; radius
@@ -173,7 +171,7 @@ PLOT:
       lda _XLO
       vdp_wait_s 4
       sta a_vregi             ; vdp #r36
-      
+
       lda _XHI
       vdp_wait_s 4
       sta a_vregi             ; vdp #r37
@@ -181,7 +179,7 @@ PLOT:
       pla
       vdp_wait_s 3
       sta a_vregi             ; vdp #r38
-            
+
       lda #ADDRESS_GFX7_SCREEN>>16 ; TODO FIXME - adjust y according to current gfx mode
       vdp_wait_s 2
       sta a_vregi             ; vdp #r39
@@ -194,26 +192,26 @@ PLOT:
       sta a_vregi             ; vdp r#44 ; color
 
       ldy #circle_t::operator ; code re-order to safe wait
-      lda (__volatile_ptr),y  
-      
+      lda (__volatile_ptr),y
+
       stz a_vregi             ; vdp r#45 ; destination VRAM
 
       and #$0f                ; mask OPs
       ora #v_cmd_pset
       vdp_wait_s 4
       sta a_vregi             ; vdp r#46 ; PSET and OPs
-      
+
       jsr vdp_wait_cmd
 
       ply
       rts
 .bss
-
-_X1: .res 1
-_X2: .res 1
 _XLO: .res 1
 _XHI: .res 1
 _Y: .res 1
+
+_X1: .res 1
+_X2: .res 1
 _A: .res 1
 _B: .res 1
 _C: .res 1
