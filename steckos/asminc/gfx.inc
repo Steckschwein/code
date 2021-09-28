@@ -24,7 +24,7 @@
 
 ; DC = destination color - the color we want to set
 ; SC = source color - the source color currently set at the target position
-GFX_OP_IMP = 0    ; DC = SC 
+GFX_OP_IMP = 0    ; DC = SC
 GFX_OP_AND = 1    ; DC = SC & DC
 GFX_OP_OR  = 2    ; DC = SC | DC
 GFX_OP_XOR = 3    ; DC = SC ^ DC
@@ -38,7 +38,7 @@ GFX_OP_TNOT = 12  ; SC = 0 => DC = DC; DC = !SC otherwise
 
 .struct line_t
    x1 .word ; 0..511 - depends on active screen mode
-   y1 .word ; 0..211 
+   y1 .word ; 0..211
    x2 .word ;
    y2 .word ;
    color .byte
@@ -47,7 +47,8 @@ GFX_OP_TNOT = 12  ; SC = 0 => DC = DC; DC = !SC otherwise
 
 .struct circle_t
    x1 .word ; 0..511 - depends on active screen mode
-   y1 .byte ; 0..211 
+   y1 .byte ; 0..211
+   radius .byte ; 0..211 
    color .byte  ; color
    operator .byte ; one of IMP, AND, OR, XOR, NOT - use GFX_OP_xxx
 .endstruct

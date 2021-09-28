@@ -6,6 +6,7 @@
 .import vdp_fill
 
 .import gfx_line
+.import gfx_circle
 
 appstart
 
@@ -41,6 +42,10 @@ appstart
       ldy #>line_3
       jsr gfx_line
 
+      lda #<circle_0
+      ldy #>circle_0
+      jsr gfx_circle
+
     keyin
 
     jsr	krn_textui_init
@@ -60,6 +65,12 @@ line_2:
 line_3:
    .word 0,96,511,96
    .byte Cyan<<4|White ; color
+
+circle_0:
+   .word 256
+   .byte 96
+   .byte 80
+   .byte Cyan; color
 
 charset:
     .include "../bios/charset_8x8.asm"

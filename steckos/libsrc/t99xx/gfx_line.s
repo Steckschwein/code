@@ -81,7 +81,7 @@ gfx_line:
       ; TODO FIXME - adjust y according to current gfx mode
       lda #ADDRESS_GFX7_SCREEN>>16
       sta a_vregi             ; vdp #r39
-      
+
       ldy #line_t::y1+1
       lda (__volatile_ptr),y
       ldy #line_t::y2+1
@@ -144,4 +144,3 @@ gfx_line:
 
       plp
       rts
-      
