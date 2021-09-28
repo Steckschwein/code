@@ -1,11 +1,13 @@
 .include "steckos.inc"
 .include "vdp.inc"
+.include "gfx.inc"
 
 .import vdp_gfx6_on
 .import vdp_gfx6_blank
 .import vdp_fill
 
 .import gfx_line
+.import gfx_circle
 
 appstart
 
@@ -41,6 +43,13 @@ appstart
       ldy #>line_3
       jsr gfx_line
 
+:     lda #<circle_0
+      ldy #>circle_0
+      jsr gfx_circle
+      lsr circle_0+circle_t::radius
+
+      bne :-
+
     keyin
 
     jsr	krn_textui_init
@@ -60,6 +69,13 @@ line_2:
 line_3:
    .word 0,96,511,96
    .byte Cyan<<4|White ; color
+
+circle_0:
+   .word 256
+   .byte 96
+   .byte 72
+   .byte Cyan; color
+   .byte 0 ;
 
 charset:
     .include "../bios/charset_8x8.asm"

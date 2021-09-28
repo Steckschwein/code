@@ -81,7 +81,7 @@ gfx_line:
       ; TODO FIXME - adjust y according to current gfx mode
       lda #ADDRESS_GFX7_SCREEN>>16
       sta a_vregi             ; vdp #r39
-      
+
       ldy #line_t::y1+1
       lda (__volatile_ptr),y
       ldy #line_t::y2+1
@@ -136,12 +136,11 @@ gfx_line:
       vdp_wait_s 3
       sta a_vregi             ; vdp r#45
 
-     	lda #v_cmd_line
+      lda #v_cmd_line
       vdp_wait_s 2
-     	sta a_vregi             ; r#46 - exec line command
+      sta a_vregi             ; r#46 - exec line command
 
       jsr vdp_wait_cmd
 
       plp
       rts
-      
