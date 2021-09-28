@@ -21,6 +21,7 @@
 ; SOFTWARE.
 
 .include "vdp.inc"
+.include "gfx.inc"
 .include "kernel_jumptable.inc"
 
 .import	vdp_display_off
@@ -40,6 +41,8 @@
 .import vdp_gfx7_set_pixel_cmd
 .import vdp_bgcolor
 
+.import gfx_line
+
 .import LAB_SCGB
 .import LAB_GTBY
 
@@ -50,6 +53,9 @@
 
 .export gfx_mode
 .export gfx_plot
+.export gfx_line_foo
+
+.export GFX_MODE
 
 ;
 ;	within basic define extensions as follows
@@ -78,8 +84,7 @@ gfx_mode:
 
 ;	in .A - mode 0-7
 gfx_plot:
-	; tax
-	ldx #7
+	ldx GFX_MODE
 	jmp (gfx_plot_table,x)
 
 _gfx_set_mode:
@@ -146,6 +151,35 @@ GFX_Plot_End:
 		vdp_sreg <.HIWORD(ADDRESS_TEXT_SCREEN<<2), v_reg14
 		rts
 
+gfx_line_foo:
+	jsr LAB_GTBY
+	stx LINE_STRUCT+line_t::x1
+	stz LINE_STRUCT+line_t::x1+1
+
+	JSR LAB_SCGB 	; scan for "," and get byte
+	stx LINE_STRUCT+line_t::y1
+	stz LINE_STRUCT+line_t::y1+1
+
+	JSR LAB_SCGB 	; scan for "," and get byte
+	stx LINE_STRUCT+line_t::x2
+	stz LINE_STRUCT+line_t::x2+1
+
+	JSR LAB_SCGB 	; scan for "," and get byte
+	stx LINE_STRUCT+line_t::y2
+	stz LINE_STRUCT+line_t::y2+1
+
+	; color
+	JSR LAB_SCGB 	; scan for "," and get byte
+	stx LINE_STRUCT+line_t::color
+	stz LINE_STRUCT+line_t::operator
+
+	lda #<LINE_STRUCT
+	ldy #>LINE_STRUCT
+
+	jmp gfx_line
+
+.bss
 GFX_MODE:  .res 1, 0 ;mode as power of 2
 PLOT_XBYT: .res 1
 PLOT_YBYT: .res 1
+LINE_STRUCT: .res .sizeof(line_t)

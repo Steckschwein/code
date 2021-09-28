@@ -11,6 +11,8 @@
 
 .import gfx_mode
 .import gfx_plot
+.import gfx_line_foo
+.import GFX_MODE
 
 __APPSTART__ = $b800
 appstart __APPSTART__
@@ -397,10 +399,11 @@ TK_DIR            = TK_EXIT+1
 TK_CD             = TK_DIR+1
 TK_SCREEN         = TK_CD+1
 TK_PLOT           = TK_SCREEN+1
+TK_LINE           = TK_PLOT+1
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB            = TK_PLOT+1       ; TAB token
+TK_TAB            = TK_LINE+1       ; TAB token
 TK_ELSE           = TK_TAB+1        ; ELSE token
 TK_TO             = TK_ELSE+1       ; TO token
 TK_FN             = TK_TO+1         ; FN token
@@ -7629,10 +7632,11 @@ LAB_SCREEN:       ; SCREEN  - set gfx mode
       TXA
 	AND #$07
 	ASL
-	;STA GFX_MODE
+	STA GFX_MODE
 	JMP gfx_mode
 
 LAB_PLOT = gfx_plot         ; PLOT - set pixel
+LAB_LINE = gfx_line_foo
       
 LAB_DIR:
     pha
@@ -7989,6 +7993,7 @@ LAB_CTBL
       .word LAB_CD-1          ; CD
       .word LAB_SCREEN-1      ; SCREEN
       .word LAB_PLOT-1        ; PLOT
+      .word LAB_LINE-1    
 
 
 ; function pre process routine table
@@ -8304,6 +8309,8 @@ LBB_LEN
       .byte "EN(",TK_LEN      ; LEN(
 LBB_LET
       .byte "ET",TK_LET       ; LET
+LBB_LINE
+      .byte "INE",TK_LINE     ; LINE
 LBB_LIST
       .byte "IST",TK_LIST     ; LIST
 LBB_LOAD
@@ -8528,6 +8535,8 @@ LAB_KEYT
       .word LBB_SCREEN
       .byte 4,"P"
       .word LBB_PLOT
+      .byte 4,"L"
+      .word LBB_LINE
 
 ; secondary commands (can't start a statement)
 
