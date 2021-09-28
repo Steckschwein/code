@@ -392,13 +392,14 @@ TK_BITCLR         = TK_BITSET+1     ; BITCLR token
 TK_EXIT           = TK_BITCLR+1     ; EXIT token
 TK_DIR            = TK_EXIT+1
 TK_CD             = TK_DIR+1
-TK_MODE           = TK_CD+1
-TK_PLOT           = TK_MODE+1
+TK_SCREEN         = TK_CD+1
+TK_PLOT           = TK_SCREEN+1
 TK_LINE           = TK_PLOT+1
+TK_LOCATE         = TK_LINE+1
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB            = TK_LINE+1       ; TAB token
+TK_TAB            = TK_LOCATE+1       ; TAB token
 TK_ELSE           = TK_TAB+1        ; ELSE token
 TK_TO             = TK_ELSE+1       ; TO token
 TK_FN             = TK_TO+1         ; FN token
@@ -7621,14 +7622,12 @@ init_iovectors:
 outvec_dummy:
       rts
 
-LAB_MODE:         ; MODE - set gfx mode
-
-
+; stubs for gfx ext
+LAB_SCREEN:       ; SCREEN  - set gfx mode
 LAB_PLOT:         ; PLOT - set pixel
-
-
 LAB_LINE:         ; LINE - draw line
-      rts
+LAB_LOCATE:	  ; LOCATE get current pos
+    rts
 
 LAB_DIR:
     pha
@@ -7983,9 +7982,10 @@ LAB_CTBL
       .word V_EXIT-1          ; EXIT new command (exits to C02 Monitor)
       .word LAB_DIR-1         ; DIR
       .word LAB_CD-1          ; CD
-      .word LAB_MODE-1        ; MODE
+      .word LAB_SCREEN-1      ; SCREEN
       .word LAB_PLOT-1        ; PLOT
       .word LAB_LINE-1        ; LINE
+      .word LAB_LOCATE-1      ; LOCATE
 
 
 ; function pre process routine table
@@ -8307,6 +8307,8 @@ LBB_LIST
       .byte "IST",TK_LIST     ; LIST
 LBB_LOAD
       .byte "OAD",TK_LOAD     ; LOAD
+LBB_LOCATE
+      .byte "OCATE",TK_LOCATE ; LOCATE
 LBB_LOG
       .byte "OG(",TK_LOG      ; LOG(
 LBB_LOOP
@@ -8319,8 +8321,6 @@ LBB_MIDS
       .byte "ID$(",TK_MIDS    ; MID$(
 LBB_MIN
       .byte "IN(",TK_MIN      ; MIN(
-LBB_MODE
-      .byte "ODE", TK_MODE    ; MODE
       .byte $00
 
 TAB_ASCN
@@ -8374,6 +8374,8 @@ LBB_RUN
 TAB_ASCS
 LBB_SADD
       .byte "ADD(",TK_SADD    ; SADD(
+LBB_SCREEN
+      .byte "CREEN", TK_SCREEN ; SCREEN
 LBB_SAVE
       .byte "AVE",TK_SAVE     ; SAVE
 LBB_SGN
@@ -8523,8 +8525,8 @@ LAB_KEYT
       .word LBB_DIR
       .byte 2,"C"
       .word LBB_CD
-      .byte 4,"M"
-      .word LBB_MODE
+      .byte 6,"S"
+      .word LBB_SCREEN
       .byte 4,"P"
       .word LBB_PLOT
 
