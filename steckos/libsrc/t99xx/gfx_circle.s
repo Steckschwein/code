@@ -165,35 +165,47 @@ exit:
       plp
       rts
 PLOT:
-      tay   ; y low
+      phy
+      pha      ; safe Y low byte
 
       vdp_sreg 36, v_reg17 ; start at r#36
 
       lda _XLO
+      vdp_wait_s 4
       sta a_vregi             ; vdp #r36
+      
       lda _XHI
       vdp_wait_s 4
       sta a_vregi             ; vdp #r37
 
-      tya
-      vdp_wait_s 2
+      pla
+      vdp_wait_s 3
       sta a_vregi             ; vdp #r38
-      ; TODO FIXME - adjust y according to current gfx mode
-      lda #ADDRESS_GFX7_SCREEN>>16
+            
+      lda #ADDRESS_GFX7_SCREEN>>16 ; TODO FIXME - adjust y according to current gfx mode
+      vdp_wait_s 2
       sta a_vregi             ; vdp #r39
 
-      vdp_sreg 44, v_reg17 ; start at r#44
+      vdp_sreg 44, v_reg17    ; start at r#44
 
       ldy #circle_t::color
       lda (__volatile_ptr),y
-      sta a_vregi             ; vdp r#44
-      vdp_wait_s
-      stz a_vregi             ; vdp r#45
 
-      vdp_wait_s 2
-      lda #v_cmd_pset
-      sta a_vregi             ; vdp r#46
+      sta a_vregi             ; vdp r#44 ; color
 
+      ldy #circle_t::operator ; code re-order to safe wait
+      lda (__volatile_ptr),y  
+      
+      stz a_vregi             ; vdp r#45 ; destination VRAM
+
+      and #$0f                ; mask OPs
+      ora #v_cmd_pset
+      vdp_wait_s 4
+      sta a_vregi             ; vdp r#46 ; PSET and OPs
+      
+      jsr vdp_wait_cmd
+
+      ply
       rts
 .bss
 

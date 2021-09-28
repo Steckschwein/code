@@ -136,9 +136,9 @@ gfx_line:
       vdp_wait_s 3
       sta a_vregi             ; vdp r#45
 
-     	lda #v_cmd_line
+      lda #v_cmd_line
       vdp_wait_s 2
-     	sta a_vregi             ; r#46 - exec line command
+      sta a_vregi             ; r#46 - exec line command
 
       jsr vdp_wait_cmd
 

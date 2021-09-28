@@ -73,8 +73,9 @@ line_3:
 circle_0:
    .word 256
    .byte 96
-   .byte 80
+   .byte 72
    .byte Cyan; color
+   .byte 0 ;
 
 charset:
     .include "../bios/charset_8x8.asm"
