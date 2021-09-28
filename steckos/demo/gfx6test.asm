@@ -1,5 +1,6 @@
 .include "steckos.inc"
 .include "vdp.inc"
+.include "gfx.inc"
 
 .import vdp_gfx6_on
 .import vdp_gfx6_blank
@@ -42,9 +43,12 @@ appstart
       ldy #>line_3
       jsr gfx_line
 
-      lda #<circle_0
+:     lda #<circle_0
       ldy #>circle_0
       jsr gfx_circle
+      lsr circle_0+circle_t::radius
+
+      bne :-
 
     keyin
 
