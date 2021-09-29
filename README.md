@@ -9,6 +9,8 @@ We are developing a retro style 8bit computer based on the 65c02 CPU.
 
 ### Hardware ###
 - 65c02 CPU @ 8MHz
+- 64k SRAM
+- 32k EEPROM
 - V9958 Video Display Controller
 - Yamaha YM3812 (OPL2) Sound
 - RS232 serial interface using UART 16550
@@ -17,6 +19,7 @@ We are developing a retro style 8bit computer based on the 65c02 CPU.
     - SD-Card Interface
     - PS/2 keyboard interface
     - DS1306 RTC
+- User Port
 
 ### Software ###
 - steckOS operating system with FAT32 support
@@ -27,6 +30,7 @@ We are developing a retro style 8bit computer based on the 65c02 CPU.
 The goal is to design a machine that could have existed back in the home computer era, but with "modern" interfaces like PS/2, full fledged rs232, SPI, etc.
 
 We use as much open source tools as possible, such as
+
 - cc65
 - make
 - galasm
