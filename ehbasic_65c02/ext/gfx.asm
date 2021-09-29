@@ -79,6 +79,7 @@ gfx_mode:
 		jsr _gfx_set_mode
 @out:
 		plp
+gfx_dummy:
 		rts
 
 _gfx_set_mode:
@@ -94,8 +95,6 @@ _gfx_mode_table:
       .word gfx_dummy; 5
       .word gfx_dummy; 6
       .word vdp_gfx7_on ; 7
-gfx_dummy:
-      rts
 
 GFX_BgColor:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
