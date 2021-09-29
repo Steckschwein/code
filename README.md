@@ -6,6 +6,8 @@
 We are developing a retro style 8bit computer based on the 65c02 CPU.
 
 ## Features ##
+
+### Hardware ###
 - 65c02 CPU @ 8MHz
 - V9958 Video Display Controller
 - Yamaha YM3812 (OPL2) Sound
@@ -15,6 +17,11 @@ We are developing a retro style 8bit computer based on the 65c02 CPU.
     - SD-Card Interface
     - PS/2 keyboard interface
     - DS1306 RTC
+
+### Software ###
+- steckOS operating system with FAT32 support
+- Forth interpreter (Taliforth2)
+- EhBasic 2.22 with extensions 
 
 
 The goal is to design a machine that could have existed back in the home computer era, but with "modern" interfaces like PS/2, full fledged rs232, SPI, etc.
