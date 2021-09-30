@@ -7638,7 +7638,6 @@ LAB_SCREEN:       ; SCREEN  - set gfx mode
 	STA GFX_MODE
 	JMP gfx_mode
 
-.import LAB_GFX_PLOT
 LAB_PLOT = LAB_GFX_PLOT         ; PLOT - set pixel
 LAB_LINE = LAB_GFX_LINE
 LAB_CIRCLE = LAB_GFX_CIRCLE

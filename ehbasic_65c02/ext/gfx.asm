@@ -146,28 +146,26 @@ LAB_GFX_LINE:
 
 	lda #<GFX_STRUCT
 	ldy #>GFX_STRUCT
-
 	jmp gfx_line
 
 LAB_GFX_CIRCLE:
 	jsr LAB_GTBY
-	stx CIRCLE_STRUCT+circle_t::x1
-	stz CIRCLE_STRUCT+circle_t::x1+1
+	stx GFX_STRUCT+circle_t::x1
+	stz GFX_STRUCT+circle_t::x1+1
 
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx CIRCLE_STRUCT+circle_t::y1
+	stx GFX_STRUCT+circle_t::y1
 
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx CIRCLE_STRUCT+circle_t::radius
+	stx GFX_STRUCT+circle_t::radius
 
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx CIRCLE_STRUCT+circle_t::color
+	stx GFX_STRUCT+circle_t::color
+	; TODO
+	stz GFX_STRUCT+circle_t::operator
 
-	stz CIRCLE_STRUCT+circle_t::operator
-
-	lda #<CIRCLE_STRUCT
-	ldy #>CIRCLE_STRUCT
-
+	lda #<GFX_STRUCT
+	ldy #>GFX_STRUCT
 	jmp gfx_circle
 
 .bss
