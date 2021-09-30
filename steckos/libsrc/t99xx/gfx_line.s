@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.include "debug.inc"
 
 .include "vdp.inc"
 .include "gfx.inc"
@@ -58,7 +59,7 @@ gfx_line:
       sta a_vregi             ; vdp #r37
       ldy #line_t::x2+1
       sbc (__volatile_ptr),y
-      bpl :+                  ; x1>x2 ?
+      bcs :+                  ; x1>x2 ?
 
       eor #$ff
       sta (__volatile_ptr),y
@@ -78,25 +79,16 @@ gfx_line:
       sec
       sbc (__volatile_ptr),y
       sta (__volatile_ptr),y
-      ; TODO FIXME - adjust y according to current gfx mode
-      ; TODO FIXME - y calc can be reduced to 8 bit, cause screen size is y max 212px
-      lda #ADDRESS_GFX7_SCREEN>>16
-      sta a_vregi             ; vdp #r39
-      ldy #line_t::y1+1
-      lda (__volatile_ptr),y
-      ldy #line_t::y2+1
-      sbc (__volatile_ptr),y  ; and carry above
-      bpl :+                  ; y1>y2 ?
-
+      bcs :+                  ; y1>y2 ?
       eor #$ff
+      inc
       sta (__volatile_ptr),y
       lda #v_reg45_diy        ; y1<y2, y transfer down
       trb __volatile_tmp      ; clear bit
-      dey ; ldy #line_t::y2+0
-      lda (__volatile_ptr),y
-      eor #$ff ;two's complement
-      inc
-:     sta (__volatile_ptr),y
+:
+      ; TODO FIXME - hard wired to SCREEN 8 - adjust y offset according to current gfx mode
+      lda #ADDRESS_GFX7_SCREEN>>16
+      sta a_vregi             ; vdp #r39
 
       ; compare |dx| |dy|
       ldy #line_t::x2+0
@@ -105,11 +97,10 @@ gfx_line:
       cmp (__volatile_ptr),y  ; set carry for sbc
       ldy #line_t::x2+1
       lda (__volatile_ptr),y
-      ldy #line_t::y2+1
-      sbc (__volatile_ptr),y
+      sbc #0 ; y high always 0
       bcc @_y ; C=0 |dx| < |dy|
 
-      dec __volatile_tmp
+      dec __volatile_tmp      ; clear bit 0
 @_x:  ldy #line_t::x2+0       ; |dx| is longest
       lda (__volatile_ptr),y
       sta a_vregi             ; vdp #r40/42
@@ -121,12 +112,12 @@ gfx_line:
       ldy #line_t::y2+0       ; |dy| is longest
       lda (__volatile_ptr),y
       sta a_vregi             ; vdp #r40/42
-      iny ; ldy #line_t::y2+1
-      lda (__volatile_ptr),y
-      sta a_vregi             ; vdp #r41/43
+      vdp_wait_s
+      stz a_vregi             ; vdp #r41/43
       bcc @_x                 ; carry branch magic ;)
 
 :     ; color
+
       ldy #line_t::color
       lda (__volatile_ptr),y
       sta a_vregi             ; vdp #r44

@@ -22,10 +22,6 @@
 .ifndef _COMMON_INC_
   _COMMON_INC_ = 1
 
-.macro dbg
-   .byte $db ; break to debugger (emulator)
-.endmacro
-
 .macro SetVector word, addr
 			lda #<word
 			sta addr

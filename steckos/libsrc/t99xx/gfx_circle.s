@@ -41,7 +41,7 @@ gfx_circle:
       sta __volatile_ptr
       sty __volatile_ptr+1
 
-      lda (__volatile_ptr),y      ; x low
+      lda (__volatile_ptr)       ; x low
       STA _XLO
       STA _X1
       ldy #circle_t::x1+1
@@ -206,12 +206,11 @@ PLOT:
       ply
       rts
 .bss
+_X1: .res 1
+_X2: .res 1
 _XLO: .res 1
 _XHI: .res 1
 _Y: .res 1
-
-_X1: .res 1
-_X2: .res 1
 _A: .res 1
 _B: .res 1
 _C: .res 1

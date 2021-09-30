@@ -106,50 +106,48 @@ GFX_Off = krn_textui_init     ;restore textui
 ;	in .A - mode 0-7
 LAB_GFX_PLOT:
 	jsr LAB_GTBY
-	stx PLOT_STRUCT+plot_t::x1
-	stz PLOT_STRUCT+plot_t::x1+1
+	stx GFX_STRUCT+plot_t::x1
+	stz GFX_STRUCT+plot_t::x1+1
 
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx PLOT_STRUCT+plot_t::y1
+	stx GFX_STRUCT+plot_t::y1
 
 	; color
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx PLOT_STRUCT+plot_t::color
-	stz PLOT_STRUCT+plot_t::operator
+	stx GFX_STRUCT+plot_t::color
+	; TODO
+	stz GFX_STRUCT+plot_t::operator
 
-	lda #<PLOT_STRUCT
-	ldy #>PLOT_STRUCT
+	lda #<GFX_STRUCT
+	ldy #>GFX_STRUCT
 	jmp gfx_plot
 
 gfx_line_foo:
 	jsr LAB_GTBY
-	stx LINE_STRUCT+line_t::x1
-	stz LINE_STRUCT+line_t::x1+1
+	stx GFX_STRUCT+line_t::x1
+	stz GFX_STRUCT+line_t::x1+1
 
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx LINE_STRUCT+line_t::y1
-	stz LINE_STRUCT+line_t::y1+1
+	stx GFX_STRUCT+line_t::y1
 
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx LINE_STRUCT+line_t::x2
-	stz LINE_STRUCT+line_t::x2+1
+	stx GFX_STRUCT+line_t::x2
+	stz GFX_STRUCT+line_t::x2+1
 
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx LINE_STRUCT+line_t::y2
-	stz LINE_STRUCT+line_t::y2+1
+	stx GFX_STRUCT+line_t::y2
 
 	; color
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx LINE_STRUCT+line_t::color
-	stz LINE_STRUCT+line_t::operator
+	stx GFX_STRUCT+line_t::color
+	; TODO
+	stz GFX_STRUCT+line_t::operator
 
-	lda #<LINE_STRUCT
-	ldy #>LINE_STRUCT
+	lda #<GFX_STRUCT
+	ldy #>GFX_STRUCT
 
 	jmp gfx_line
 
 .bss
 GFX_MODE:  .res 1, 0 ;mode as power of 2
-PLOT_STRUCT: .res .sizeof(plot_t)
-LINE_STRUCT: .res .sizeof(line_t)
-CIRCLE_STRUCT: .res .sizeof(circle_t)
+GFX_STRUCT: .res .sizeof(line_t) ; we use size of line_t, biggest one

@@ -58,26 +58,38 @@ appstart
 
 .data
 line_0:
-   .word 0,0,511,191
+   .word 0
+   .byte 0
+   .word 511
+   .byte 191
    .byte Cyan<<4|White ; color
    .byte 0 ; op
 line_1:
-   .word 0,191,511,0
+   .word 0
+   .byte 191
+   .word 511
+   .byte 0
    .byte Cyan<<4|White ; color
    .byte 0 ; op
 line_2:
-   .word 255,0,257,191
+   .word 255
+   .byte 0
+   .word 257
+   .byte 191
    .byte Cyan<<4|White ; color
    .byte 0 ; op
 line_3:
-   .word 0,96,511,96
+   .word 0
+   .byte 96
+   .word 511
+   .byte 96
    .byte Cyan<<4|White ; color
    .byte 0 ; op
 
 circle_0:
    .word 256
    .byte 96
-   .byte 72
+   .word 72
    .byte Cyan; color
    .byte 0 ; op
 

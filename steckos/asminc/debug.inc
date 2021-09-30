@@ -28,6 +28,10 @@
 .import _debugdump
 .import _debugdirentry
 
+.macro dbg
+   .byte $db ; break to debugger (emulator)
+.endmacro
+
 .macro debugdirentry
 .if .defined(debug_enabled)
 	jsr _debugdirentry

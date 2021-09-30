@@ -7635,9 +7635,6 @@ LAB_SCREEN:       ; SCREEN  - set gfx mode
 	STA GFX_MODE
 	JMP gfx_mode
 
-.import LAB_GFX_PLOT
-LAB_PLOT = LAB_GFX_PLOT         ; PLOT - set pixel
-
 LAB_LINE = gfx_line_foo
 
 LAB_DIR:
@@ -7994,9 +7991,9 @@ LAB_CTBL
       .word LAB_DIR-1         ; DIR
       .word LAB_CD-1          ; CD
       .word LAB_SCREEN-1      ; SCREEN
-      .word LAB_PLOT-1        ; PLOT
+      .import LAB_GFX_PLOT
+      .word LAB_GFX_PLOT-1    ; PLOT - set pixel
       .word LAB_LINE-1
-
 
 ; function pre process routine table
 
