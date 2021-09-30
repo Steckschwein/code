@@ -10,8 +10,9 @@
 .export char_out=krn_chrout
 
 .import gfx_mode
-.import gfx_plot
-.import gfx_line_foo
+.import LAB_GFX_PLOT
+.import LAB_GFX_LINE
+.import LAB_GFX_CIRCLE
 .import GFX_MODE
 
 __APPSTART__ = $b000
@@ -400,10 +401,12 @@ TK_CD             = TK_DIR+1
 TK_SCREEN         = TK_CD+1
 TK_PLOT           = TK_SCREEN+1
 TK_LINE           = TK_PLOT+1
+TK_CIRCLE         = TK_LINE+1
+
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB            = TK_LINE+1       ; TAB token
+TK_TAB            = TK_CIRCLE+1       ; TAB token
 TK_ELSE           = TK_TAB+1        ; ELSE token
 TK_TO             = TK_ELSE+1       ; TO token
 TK_FN             = TK_TO+1         ; FN token
@@ -7637,8 +7640,8 @@ LAB_SCREEN:       ; SCREEN  - set gfx mode
 
 .import LAB_GFX_PLOT
 LAB_PLOT = LAB_GFX_PLOT         ; PLOT - set pixel
-
-LAB_LINE = gfx_line_foo
+LAB_LINE = LAB_GFX_LINE
+LAB_CIRCLE = LAB_GFX_CIRCLE
 
 LAB_DIR:
     pha
@@ -7996,6 +7999,7 @@ LAB_CTBL
       .word LAB_SCREEN-1      ; SCREEN
       .word LAB_PLOT-1        ; PLOT
       .word LAB_LINE-1
+      .word LAB_CIRCLE-1
 
 
 ; function pre process routine table
@@ -8234,6 +8238,8 @@ LBB_CD
     	.byte	"D",TK_CD	; CD
 LBB_CHRS
       .byte "HR$(",TK_CHRS    ; CHR$(
+LBB_CIRCLE
+      .byte "IRCLE",TK_CIRCLE ; CIRCLE
 LBB_CLEAR
       .byte "LEAR",TK_CLEAR   ; CLEAR
 LBB_CONT
@@ -8539,6 +8545,8 @@ LAB_KEYT
       .word LBB_PLOT
       .byte 4,"L"
       .word LBB_LINE
+      .byte 6,"C"
+      .word LBB_CIRCLE
 
 ; secondary commands (can't start a statement)
 
