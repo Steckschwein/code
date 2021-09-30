@@ -54,7 +54,7 @@ GFX_OP_TNOT = 12  ; SC = 0 => DC = DC; DC = !SC otherwise
 
 .struct circle_t
    x1 .word ; 0..511 - depends on active screen mode
-   y2 .byte ; 0..211
+   y1 .byte ; 0..211
    radius .byte ; 0..211
    color .byte  ; color
    operator .byte ; one of IMP, AND, OR, XOR, NOT - use GFX_OP_xxx
