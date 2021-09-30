@@ -30,12 +30,6 @@
 
 .export vdp_mode7_on
 .export vdp_mode7_blank
-.export vdp_mode7_set_pixel
-.export vdp_gfx7_on
-.export vdp_gfx7_blank
-.export vdp_gfx7_set_pixel
-.export vdp_gfx7_set_pixel_cmd
-.export vdp_gfx7_set_pixel_direct
 
 .code
 ;
@@ -70,7 +64,6 @@ vdp_init_bytes_gfx7_end:
 ; 	A - color to fill in GRB (3+3+2)
 ;
 vdp_mode7_blank:
-vdp_gfx7_blank:
 	php
 	sei
 	phx
@@ -103,114 +96,3 @@ colour:
 	.byte %00011100 ; colour
 	.byte $00 ; destination memory, x direction, y direction, yada yada
 	.byte v_cmd_hmmv ; command
-
-;	.X - x coordinate [0..ff]
-;	.Y - y coordinate [0..bf]
-;	.A - color [0..ff] as GRB 332 (green bit 7-5, red bit 4-2, blue bit 1-0)
-; 	VRAM ADDRESS = .X + 256*.Y
-vdp_mode7_set_pixel:
-vdp_gfx7_set_pixel:
-		  php
-		  sei
-		  stx a_vreg					  ; A7-A0 vram address low byte
-		  pha
-		  tya
-		  and #$3f						 ; A13-A8 vram address highbyte
-		  ora #WRITE_ADDRESS
-		  nop
-		  nop
-		  nop
-		  nop
-		  sta a_vreg
-		  tya
-		  rol								; A16-A14 bank select via reg#14, rol over carry
-		  rol
-		  rol
-		  and #$03
-		  ora #<.HIWORD(ADDRESS_GFX7_SCREEN<<2)
-		  nop
-		  nop
-		  sta a_vreg
-		  vdp_wait_s 2
-		  lda #v_reg14
-		  sta a_vreg
-		  vdp_wait_l 2
-		  pla
-		  sta a_vram					  ; set color
-		  plp
-		  rts
-
-; requires
-;	- int handling is done outside
-;	- page register set accordingly (v_reg14)
-;	.X - x coordinate [0..ff]
-;	.Y - y coordinate [0..bf]
-;	.A - color GRB [0..ff] as 332
-; 	VRAM ADDRESS = .X + 256*.Y
-vdp_gfx7_set_pixel_direct:
-		  stx a_vreg					  ; A7-A0 vram address low byte
-		  pha
-		  tya
-		  and #$3f						 ; A13-A8 vram address highbyte
-		  ora #WRITE_ADDRESS
-		  nop
-		  nop
-		  nop
-		  nop
-		  sta a_vreg
-		  vdp_wait_l 2
-		  pla
-		  sta a_vram					  ; set color
-		  rts
-
-;	set pixel to gfx7 using v9958 command engine
-;
-;	X - x coordinate [0..ff]
-;	Y - y coordinate [0..bf]
-;	A - color [0..f]
-;
-; 	VRAM ADDRESS = 8(INT(X DIV 8)) + 256(INT(Y DIV 8)) + (Y MOD 8)
-vdp_gfx7_set_pixel_cmd:
-		php
-		sei
-		pha
-		vdp_reg 17,36
-
-		vdp_wait_s
-		stx a_vregi
-
-		; dummy highbyte
-		vdp_wait_s
-		stz a_vregi
-
-		vdp_wait_s
-		sty a_vregi
-		vnops
-
-		; dummy highbyte
-		vdp_wait_s 2
-		lda #$01
-		sta a_vregi
-
-		vdp_wait_s
-		vdp_reg 17,44
-
-		pla
-		;	colour
-		;	GGGRRRBB
-		vdp_wait_s 2
-		sta a_vregi
-
-		vdp_wait_s 2
-		lda #$0
-		sta a_vregi
-
-		vdp_wait_s 2
-		lda #v_cmd_pset
-		sta a_vregi
-
-		vdp_wait_s 4
-		jsr vdp_wait_cmd
-
-		plp
-		rts

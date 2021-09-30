@@ -24,11 +24,11 @@
 .include "vdp.inc"
 
 
-.import vdp_gfx7_on
-.import vdp_gfx7_blank
-.import vdp_gfx7_set_pixel
-;.import vdp_gfx7_set_pixel_cmd
+.import vdp_mode7_on
+.import vdp_mode7_blank
+.import gfx_plot
 .import vdp_wait_cmd
+
 ;.import hexout
 ;.export char_out=krn_chrout
 
@@ -104,14 +104,14 @@ main:
 
 gfxui_on:
         sei
-        jsr vdp_gfx7_on			    ;enable gfx7 mode
+        jsr vdp_mode7_on			    ;enable gfx7 mode
 
         ; set vertical dot count to 212
         ; V9938 Programmer's Guide Pg 18
         vdp_sreg  v_reg9_ln , v_reg9
 
         lda #%00000011
-        jsr vdp_gfx7_blank
+        jsr vdp_mode7_blank
 
         cli
         rts
@@ -223,14 +223,14 @@ draw_bar_slow:
         ldy #0
 @l1:
         lda #$ff
-        jsr vdp_gfx7_set_pixel
+        jsr gfx_plot
         iny
         cpy old_y
         bne @l1
 
 @l2:
         lda #%00000011
-        jsr vdp_gfx7_set_pixel
+        jsr gfx_plot
         iny
         cpy #list_size+1
         bne @l2

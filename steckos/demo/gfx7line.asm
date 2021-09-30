@@ -23,8 +23,8 @@
 .include "steckos.inc"
 .include "vdp.inc"
 
-.import vdp_gfx7_on
-.import vdp_gfx7_blank
+.import vdp_mode7_on
+.import vdp_mode7_blank
 .import vdp_wait_cmd
 .import vdp_bgcolor
 .import gfx_line
@@ -101,13 +101,13 @@ line_3:
 .byte $ff ; color
 
 gfxui_on:
-    jsr vdp_gfx7_on			    ;enable gfx7 mode
+    jsr vdp_mode7_on			    ;enable gfx7 mode
     ; set vertical dot count to 212
     ; V9938 Programmer's Guide Pg 18
     vdp_sreg  v_reg9_ln , v_reg9
 
     lda #%00000011
-    jmp vdp_gfx7_blank
+    jmp vdp_mode7_blank
 
 vdp_gfx7_line:
 		php

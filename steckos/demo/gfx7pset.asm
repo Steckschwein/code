@@ -28,15 +28,15 @@
 .include "appstart.inc"
 
 
-; draw some pixels using vdp_gfx7_set_pixel_cmd, which uses the v9958 PSET command
+; draw some pixels using vdp_mode7_set_pixel_cmd, which uses the v9958 PSET command
 
-.import vdp_gfx7_on
-.import vdp_gfx7_blank
-;.import vdp_gfx7_set_pixel
-.import vdp_gfx7_set_pixel_cmd
+.import vdp_mode7_on
+.import vdp_mode7_blank
 .import vdp_display_off
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
+
+.import gfx_plot
 
 appstart $1000
 
@@ -81,16 +81,16 @@ gfxui_on:
 	jsr vdp_display_off			;display off
 	jsr vdp_mode_sprites_off	;sprites off
 
-	jsr vdp_gfx7_on			    ;enable gfx7 mode
+	jsr vdp_mode7_on			    ;enable mode7
 
 	lda #%00000011
-	jsr vdp_gfx7_blank
+	jsr vdp_mode7_blank
 
 	lda #$ff
 	ldx #0
 	ldy sintable,x
 @loop:
-	jsr vdp_gfx7_set_pixel_cmd
+	jsr gfx_plot
 	vnops
 	inx
 	ldy sintable,x

@@ -26,9 +26,9 @@
 .import vdp_fill
 .import vdp_nopslide_8m
 
-.export vdp_gfx6_on, vdp_mode6_on
-.export vdp_gfx6_blank
-.export vdp_gfx6_set_pixel
+.export vdp_mode6_on
+.export vdp_mode6_blank
+.export vdp_mode6_set_pixel
 
 .importzp vdp_ptr, vdp_tmp
 .code
@@ -36,7 +36,6 @@
 ;	gfx 6 - 512x192/212px, 16colors, sprite mode 2
 ;
 vdp_mode6_on:
-vdp_gfx6_on:
 		lda #<vdp_init_bytes_gfx6
 		ldy #>vdp_init_bytes_gfx6
 		ldx #<(vdp_init_bytes_gfx6_end-vdp_init_bytes_gfx6)-1
@@ -63,7 +62,7 @@ vdp_init_bytes_gfx6_end:
 ;
 ; blank gfx mode with given color
 ; 	A - color to fill 4|4 Bit
-vdp_gfx6_blank:		; 64K
+vdp_mode6_blank:		; 64K
   		tax
   		vdp_vram_w ADDRESS_GFX6_SCREEN
   		txa
@@ -77,7 +76,7 @@ vdp_gfx6_blank:		; 64K
 ;	A - color [0..f] and bit 7 MSB x coordinate
 ;
 ; 	VRAM ADDRESS = 8(INT(X DIV 2)) + 256(INT(Y DIV 8)) + (Y MOD 8)
-vdp_gfx6_set_pixel:
+vdp_mode6_set_pixel:
 		beq vdp_gfx6_set_pixel_e	; 0 - not set, leave blank
 ;		sta tmp1					; otherwise go on and set pixel
 		; calculate low byte vram adress

@@ -28,17 +28,15 @@
 .import	vdp_mc_on
 .import	vdp_mc_blank
 .import	vdp_mc_init_screen
-.import	vdp_mc_set_pixel
 
-.import vdp_gfx2_blank
-.import vdp_gfx2_on
+.import vdp_mode2_blank
 .import vdp_mode2_on
-.import vdp_mode2_set_pixel
 
-.import vdp_gfx7_on
-.import vdp_gfx7_blank
-.import vdp_gfx7_set_pixel
-.import vdp_gfx7_set_pixel_cmd
+.import vdp_mode6_on
+.import vdp_mode6_blank
+
+.import vdp_mode7_on
+.import vdp_mode7_blank
 .import vdp_bgcolor
 
 .import gfx_line
@@ -86,7 +84,6 @@ gfx_dummy:
 _gfx_set_mode:
 	jmp (_gfx_mode_table,x)
 
-
 _gfx_mode_table:
       .word GFX_Off  ; 0
       .word GFX_Off  ; 1
@@ -94,8 +91,19 @@ _gfx_mode_table:
       .word vdp_mc_on ; 3
       .word gfx_dummy; 4
       .word gfx_dummy; 5
-      .word gfx_dummy; 6
-      .word vdp_gfx7_on ; 7
+      .word vdp_mode6_on; 6
+      .word vdp_mode7_on ; 7
+
+
+_gfx_blank_table:
+	.word gfx_dummy; 4
+	.word gfx_dummy; 4
+	.word vdp_mode2_blank ; 2
+	.word vdp_mc_blank ; 3
+	.word gfx_dummy; 4
+	.word gfx_dummy; 5
+	.word vdp_mode6_blank; 6
+	.word vdp_mode7_blank ; 7
 
 GFX_BgColor:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.

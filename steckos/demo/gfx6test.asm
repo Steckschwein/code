@@ -2,8 +2,8 @@
 .include "vdp.inc"
 .include "gfx.inc"
 
-.import vdp_gfx6_on
-.import vdp_gfx6_blank
+.import vdp_mode6_on
+.import vdp_mode6_blank
 .import vdp_fill
 
 .import gfx_line
@@ -15,10 +15,10 @@ appstart
 
     jsr	krn_textui_disable			;disable textui
 
-    jsr vdp_gfx6_on
+    jsr vdp_mode6_on
 
     lda #Black<<4|Black
-    jsr vdp_gfx6_blank
+    jsr vdp_mode6_blank
 
     vdp_vram_r ADDRESS_TEXT_PATTERN
     vdp_vram_w ADDRESS_GFX6_SCREEN
