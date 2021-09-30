@@ -52,7 +52,8 @@
 
 .export gfx_mode
 .export LAB_GFX_PLOT
-.export gfx_line_foo
+.export LAB_GFX_LINE
+.export LAB_GFX_CIRCLE
 
 .export GFX_MODE
 
@@ -122,7 +123,7 @@ LAB_GFX_PLOT:
 	ldy #>GFX_STRUCT
 	jmp gfx_plot
 
-gfx_line_foo:
+LAB_GFX_LINE:
 	jsr LAB_GTBY
 	stx GFX_STRUCT+line_t::x1
 	stz GFX_STRUCT+line_t::x1+1
@@ -147,6 +148,27 @@ gfx_line_foo:
 	ldy #>GFX_STRUCT
 
 	jmp gfx_line
+
+LAB_GFX_CIRCLE:
+	jsr LAB_GTBY
+	stx CIRCLE_STRUCT+circle_t::x1
+	stz CIRCLE_STRUCT+circle_t::x1+1
+
+	JSR LAB_SCGB 	; scan for "," and get byte
+	stx CIRCLE_STRUCT+circle_t::y1
+
+	JSR LAB_SCGB 	; scan for "," and get byte
+	stx CIRCLE_STRUCT+circle_t::radius
+
+	JSR LAB_SCGB 	; scan for "," and get byte
+	stx CIRCLE_STRUCT+circle_t::color
+
+	stz CIRCLE_STRUCT+circle_t::operator
+
+	lda #<CIRCLE_STRUCT
+	ldy #>CIRCLE_STRUCT
+
+	jmp gfx_circle
 
 .bss
 GFX_MODE:  .res 1, 0 ;mode as power of 2
