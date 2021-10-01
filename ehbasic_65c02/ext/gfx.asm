@@ -89,8 +89,8 @@ _gfx_mode_table:
       .word GFX_Off  ; 1
       .word vdp_mode2_on ; 2
       .word vdp_mc_on ; 3
-      .word gfx_dummy; 4
-      .word gfx_dummy; 5
+      .word GFX_Off; 4
+      .word GFX_Off; 5
       .word vdp_mode6_on; 6
       .word vdp_mode7_on ; 7
 

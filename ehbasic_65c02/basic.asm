@@ -15,7 +15,7 @@
 .import LAB_GFX_CIRCLE
 .import GFX_MODE
 
-__APPSTART__ = $b000
+__APPSTART__ = $b400
 appstart __APPSTART__
 
 ;
