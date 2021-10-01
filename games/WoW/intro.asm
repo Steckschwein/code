@@ -13,7 +13,7 @@ intro_main:
 	jsr ppm_load_image
 	bcs error
     jsr	gfxui_blend_on
-@l:		
+@l:
     keyin
     beq @l
     jsr	gfxui_blend_off
@@ -28,11 +28,11 @@ error:
 	.byte CODE_LF, "ppm error (",0
     pla
     jsr hexout
-    pla 
+    pla
     jsr hexout
     jsr primm
     .byte ")!",0
-exit: 
+exit:
     rts
 
 blend_isr:
@@ -44,7 +44,7 @@ blend_isr:
     lda	#Black
 	jsr vdp_bgcolor
 	restore
-@0:   
+@0:
     rti
 
 gfxui_blend_on:
@@ -54,12 +54,12 @@ gfxui_blend_off:
 gfxui_on:
 		jsr krn_textui_disable			;disable textui
 
-		jsr vdp_gfx7_on			   ;enable gfx7 mode
+		jsr vdp_mode7_on			   ;enable mode7 mode
 
 ;		vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
 
 		lda #%00000000
-		jsr vdp_gfx7_blank
+		jsr vdp_mode7_blank
 
 ;		copypointer  $fffe, irqsafe
 ;		SetVector  blend_isr, $fffe
@@ -84,4 +84,4 @@ INTROGFX: .asciiz "wowintro.ppm"
 .bss
 irqsafe: .res 2
 tmp0:	.res 1
-tmp5:	.res 1 
+tmp5:	.res 1
