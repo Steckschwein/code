@@ -110,6 +110,11 @@ _gfx_blank_table:
 	.word vdp_mode6_blank; 6
 	.word vdp_mode7_blank ; 7
 
+_gfx_cmd_table:
+	.word gfx_plot
+	.word gfx_line
+	.word gfx_circle
+
 GFX_BgColor:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
 		txa
@@ -117,36 +122,17 @@ GFX_BgColor:
 
 GFX_Off = krn_textui_init     ;restore textui
 
+
 ;	in .A - mode 0-7
 LAB_GFX_PLOT:
-	jsr LAB_GTBY
-	stx GFX_STRUCT+plot_t::x1
-	stz GFX_STRUCT+plot_t::x1+1
-
-	JSR LAB_SCGB 	; scan for "," and get byte
-	stx GFX_STRUCT+plot_t::y1
-
-	; color
-	JSR LAB_SCGB 	; scan for "," and get byte
-	stx GFX_STRUCT+plot_t::color
-	; TODO
-	stz GFX_STRUCT+plot_t::operator
-
-	lda #<GFX_STRUCT
-	ldy #>GFX_STRUCT
-	jmp gfx_plot
+	jsr _LAB_GFX_SCN_X_Y
+	ldx #2
+	bra _LAB_GFX_COL_OP_CMD
 
 LAB_GFX_LINE:
-;	dbg
-;	sei
-	jsr LAB_GADB		; scan 16-bit,8-bit - Itempl/Itemph, X byte after colon
-	lda Itempl
-	sta GFX_STRUCT+line_t::x1
-	lda Itemph
-	sta GFX_STRUCT+line_t::x1+1
-	stx GFX_STRUCT+line_t::y1
+	jsr _LAB_GFX_SCN_X_Y
 
-	jsr LAB_IGBY		; next token
+	jsr LAB_IGBY		; proceed to next token
 	jsr LAB_GADB		; scan 16-bit,8-bit
 	lda Itempl
 	sta GFX_STRUCT+line_t::x2
@@ -154,27 +140,18 @@ LAB_GFX_LINE:
 	sta GFX_STRUCT+line_t::x2+1
 	stx GFX_STRUCT+line_t::y2
 
-	; color
-	JSR LAB_SCGB 	; scan for "," and get byte
-	stx GFX_STRUCT+line_t::color
-	; TODO
-	stz GFX_STRUCT+line_t::operator
-
-	lda #<GFX_STRUCT
-	ldy #>GFX_STRUCT
-	jmp gfx_line
+	ldx #2
+	bra _LAB_GFX_COL_OP_CMD
 
 LAB_GFX_CIRCLE:
-	jsr LAB_GADB
-	sty GFX_STRUCT+circle_t::x1
-	sta GFX_STRUCT+circle_t::x1+1
-
-	JSR LAB_SCGB 	; scan for "," and get byte
-	stx GFX_STRUCT+circle_t::y1
+	jsr _LAB_GFX_SCN_X_Y
 
 	JSR LAB_SCGB 	; scan for "," and get byte
 	stx GFX_STRUCT+circle_t::radius
+	ldx #4
 
+_LAB_GFX_COL_OP_CMD:
+	phx
 	JSR LAB_SCGB 	; scan for "," and get byte
 	stx GFX_STRUCT+circle_t::color
 	; TODO
@@ -182,7 +159,17 @@ LAB_GFX_CIRCLE:
 
 	lda #<GFX_STRUCT
 	ldy #>GFX_STRUCT
-	jmp gfx_circle
+	plx
+	jmp (_gfx_cmd_table,x)
+
+_LAB_GFX_SCN_X_Y:
+	jsr LAB_GADB		; scan 16-bit,8-bit - Itempl/Itemph, X byte after colon
+	lda Itempl
+	sta GFX_STRUCT+0 ; XLO
+	lda Itemph
+	sta GFX_STRUCT+1 ; XHI
+	stx GFX_STRUCT+2 ; Y
+	rts
 
 LAB_GFX_SCNCLR:
 
