@@ -23,6 +23,7 @@
 .include "vdp.inc"
 .include "gfx.inc"
 .include "kernel_jumptable.inc"
+.include "debug.inc"
 
 .import	vdp_display_off
 .import	vdp_mc_on
@@ -45,6 +46,10 @@
 
 .import LAB_SCGB
 .import LAB_GTBY
+.import LAB_GADB
+.import LAB_IGBY
+
+.importzp Itempl, Itemph
 
 .export GFX_BgColor
 
@@ -95,7 +100,6 @@ _gfx_mode_table:
       .word vdp_mode6_on; 6
       .word vdp_mode7_on ; 7
 
-
 _gfx_blank_table:
 	.word gfx_dummy; 4
 	.word gfx_dummy; 4
@@ -133,18 +137,21 @@ LAB_GFX_PLOT:
 	jmp gfx_plot
 
 LAB_GFX_LINE:
-	jsr LAB_GTBY
-	stx GFX_STRUCT+line_t::x1
-	stz GFX_STRUCT+line_t::x1+1
-
-	JSR LAB_SCGB 	; scan for "," and get byte
+;	dbg
+;	sei
+	jsr LAB_GADB		; scan 16-bit,8-bit - Itempl/Itemph, X byte after colon
+	lda Itempl
+	sta GFX_STRUCT+line_t::x1
+	lda Itemph
+	sta GFX_STRUCT+line_t::x1+1
 	stx GFX_STRUCT+line_t::y1
 
-	JSR LAB_SCGB 	; scan for "," and get byte
-	stx GFX_STRUCT+line_t::x2
-	stz GFX_STRUCT+line_t::x2+1
-
-	JSR LAB_SCGB 	; scan for "," and get byte
+	jsr LAB_IGBY		; next token
+	jsr LAB_GADB		; scan 16-bit,8-bit
+	lda Itempl
+	sta GFX_STRUCT+line_t::x2
+	lda Itemph
+	sta GFX_STRUCT+line_t::x2+1
 	stx GFX_STRUCT+line_t::y2
 
 	; color
@@ -158,9 +165,9 @@ LAB_GFX_LINE:
 	jmp gfx_line
 
 LAB_GFX_CIRCLE:
-	jsr LAB_GTBY
-	stx GFX_STRUCT+circle_t::x1
-	stz GFX_STRUCT+circle_t::x1+1
+	jsr LAB_GADB
+	sty GFX_STRUCT+circle_t::x1
+	sta GFX_STRUCT+circle_t::x1+1
 
 	JSR LAB_SCGB 	; scan for "," and get byte
 	stx GFX_STRUCT+circle_t::y1
@@ -178,7 +185,9 @@ LAB_GFX_CIRCLE:
 	jmp gfx_circle
 
 LAB_GFX_SCNCLR:
+
 	rts
+
 .bss
 GFX_MODE:  .res 1, 0 ;mode as power of 2
 GFX_STRUCT: .res .sizeof(line_t) ; we use size of line_t, biggest one

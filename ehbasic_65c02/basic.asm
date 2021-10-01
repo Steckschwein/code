@@ -5,7 +5,12 @@
 
 .export LAB_SCGB
 .export LAB_GTBY
+.export LAB_F2FX
+.export LAB_GADB
+.export LAB_IGBY
 
+
+.exportzp Itempl, Itemph
 
 .export char_out=krn_chrout
 
