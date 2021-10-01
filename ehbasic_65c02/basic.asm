@@ -13,6 +13,7 @@
 .import LAB_GFX_PLOT
 .import LAB_GFX_LINE
 .import LAB_GFX_CIRCLE
+.import LAB_GFX_SCNCLR
 .import GFX_MODE
 
 __APPSTART__ = $b400
@@ -402,11 +403,12 @@ TK_SCREEN         = TK_CD+1
 TK_PLOT           = TK_SCREEN+1
 TK_LINE           = TK_PLOT+1
 TK_CIRCLE         = TK_LINE+1
+TK_SCNCLR         = TK_CIRCLE+1
 
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB            = TK_CIRCLE+1       ; TAB token
+TK_TAB            = TK_SCNCLR+1       ; TAB token
 TK_ELSE           = TK_TAB+1        ; ELSE token
 TK_TO             = TK_ELSE+1       ; TO token
 TK_FN             = TK_TO+1         ; FN token
@@ -7641,6 +7643,8 @@ LAB_SCREEN:       ; SCREEN  - set gfx mode
 LAB_PLOT = LAB_GFX_PLOT         ; PLOT - set pixel
 LAB_LINE = LAB_GFX_LINE
 LAB_CIRCLE = LAB_GFX_CIRCLE
+LAB_SCNCLR = LAB_GFX_SCNCLR
+
 
 LAB_DIR:
     pha
@@ -8000,6 +8004,7 @@ LAB_CTBL
       .word LAB_GFX_PLOT-1    ; PLOT - set pixel
       .word LAB_LINE-1
       .word LAB_CIRCLE-1
+      .word LAB_SCNCLR-1
 
 ; function pre process routine table
 
@@ -8387,6 +8392,8 @@ LBB_RUN
 TAB_ASCS
 LBB_SADD
       .byte "ADD(",TK_SADD    ; SADD(
+LBB_SCNCLR
+      .byte "CNCLR", TK_SCNCLR ; SCNCLR
 LBB_SCREEN
       .byte "CREEN", TK_SCREEN ; SCREEN
 LBB_SAVE
@@ -8546,6 +8553,8 @@ LAB_KEYT
       .word LBB_LINE
       .byte 6,"C"
       .word LBB_CIRCLE
+      .byte 6,"S"
+      .word LBB_SCNCLR
 
 ; secondary commands (can't start a statement)
 

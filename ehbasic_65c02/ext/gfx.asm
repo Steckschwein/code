@@ -52,6 +52,7 @@
 .export LAB_GFX_PLOT
 .export LAB_GFX_LINE
 .export LAB_GFX_CIRCLE
+.export LAB_GFX_SCNCLR
 
 .export GFX_MODE
 
@@ -176,6 +177,8 @@ LAB_GFX_CIRCLE:
 	ldy #>GFX_STRUCT
 	jmp gfx_circle
 
+LAB_GFX_SCNCLR:
+	rts
 .bss
 GFX_MODE:  .res 1, 0 ;mode as power of 2
 GFX_STRUCT: .res .sizeof(line_t) ; we use size of line_t, biggest one
