@@ -72,11 +72,6 @@
 gfx_mode:
 		php
 		sei
-		cmp #8
-		bne @gfx
-		jsr GFX_Off
-		bra @out
-@gfx:
 		pha
 		jsr krn_textui_disable			;disable textui
 		jsr krn_display_off
@@ -99,6 +94,7 @@ _gfx_mode_table:
       .word GFX_Off; 5
       .word vdp_mode6_on; 6
       .word vdp_mode7_on ; 7
+      .word GFX_Off; 8
 
 _gfx_blank_table:
 	.word gfx_dummy; 4
