@@ -93,30 +93,30 @@ _gfx_blank:
 	jmp (_gfx_blank_table,x)
 
 _gfx_mode_table:
-      .word GFX_Off  ; 0
-      .word GFX_Off  ; 1
-      .word vdp_mode2_on ; 2
-      .word vdp_mc_on ; 3
-      .word GFX_Off; 4
-      .word GFX_Off; 5
-      .word vdp_mode6_on; 6
-      .word vdp_mode7_on ; 7
-      .word GFX_Off; 8
+		.word GFX_Off  ; 0
+		.word GFX_Off  ; 1
+		.word vdp_mode2_on ; 2
+		.word vdp_mc_on ; 3
+		.word GFX_Off; 4
+		.word GFX_Off; 5
+		.word vdp_mode6_on; 6
+		.word vdp_mode7_on ; 7
+		.word GFX_Off; 8
 
 _gfx_blank_table:
-	.word gfx_dummy; 4
-	.word gfx_dummy; 4
-	.word vdp_mode2_blank ; 2
-	.word vdp_mc_blank ; 3
-	.word gfx_dummy; 4
-	.word gfx_dummy; 5
-	.word vdp_mode6_blank; 6
-	.word vdp_mode7_blank ; 7
+		.word gfx_dummy; 4
+		.word gfx_dummy; 4
+		.word vdp_mode2_blank ; 2
+		.word vdp_mc_blank ; 3
+		.word gfx_dummy; 4
+		.word gfx_dummy; 5
+		.word vdp_mode6_blank; 6
+		.word vdp_mode7_blank ; 7
 
 _gfx_cmd_table:
-	.word gfx_plot
-	.word gfx_line
-	.word gfx_circle
+		.word gfx_plot
+		.word gfx_line
+		.word gfx_circle
 
 GFX_BgColor:
 		JSR LAB_GTBY	; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
@@ -175,8 +175,8 @@ _LAB_GFX_SCN_X_Y:
 	rts
 
 LAB_GFX_SCNCLR:
-
-	rts
+	ldx GFX_MODE
+	jmp (_gfx_blank_table,x)
 
 .bss
 GFX_MODE:  .res 1, 0 ;mode as power of 2
