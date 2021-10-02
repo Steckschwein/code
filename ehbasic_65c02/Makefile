@@ -19,6 +19,7 @@ basic.o: basic.asm ext/gfx.asm $(LIBS)
 
 basic.prg: basic.o ext/gfx.o
 	$(LD65) $(LDFLAGS) basic.o ext/gfx.o $(LIBS) -o basic.prg
+	grep "^BSS .*00E[4-9]" $@.map && echo "FAIL - SEGMENT OVERFLOW" && rm -f $@ && exit 1 || exit 0
 
 basic.dis: basic.prg
 		dcc6502 -o 0xb0fe -d -n -c $< > $@

@@ -21,7 +21,7 @@
 .import LAB_GFX_SCNCLR
 .import GFX_MODE
 
-__APPSTART__ = $b400
+__APPSTART__ = $b500
 appstart __APPSTART__
 
 ;
