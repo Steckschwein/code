@@ -73,10 +73,14 @@ gfx_mode:
 		php
 		sei
 		pha
+		pha
 		jsr krn_textui_disable			;disable textui
 		jsr krn_display_off
 		plx
 		jsr _gfx_set_mode
+		plx
+		lda #Black ; 0 - black in all modes
+		jsr _gfx_blank
 @out:
 		plp
 gfx_dummy:
@@ -84,6 +88,9 @@ gfx_dummy:
 
 _gfx_set_mode:
 	jmp (_gfx_mode_table,x)
+
+_gfx_blank:
+	jmp (_gfx_blank_table,x)
 
 _gfx_mode_table:
       .word GFX_Off  ; 0
@@ -122,7 +129,7 @@ GFX_Off = krn_textui_init     ;restore textui
 ;	in .A - mode 0-7
 LAB_GFX_PLOT:
 	jsr _LAB_GFX_SCN_X_Y
-	ldx #2
+	ldx #0
 	bra _LAB_GFX_COL_OP_CMD
 
 LAB_GFX_LINE:
@@ -149,9 +156,9 @@ LAB_GFX_CIRCLE:
 _LAB_GFX_COL_OP_CMD:
 	phx
 	JSR LAB_SCGB 	; scan for "," and get byte
-	stx GFX_STRUCT+circle_t::color
-	; TODO
-	stz GFX_STRUCT+circle_t::operator
+	stx GFX_STRUCT+plot_t::color
+	; TODO parse operator which should be optional
+	stz GFX_STRUCT+plot_t::operator
 
 	lda #<GFX_STRUCT
 	ldy #>GFX_STRUCT
