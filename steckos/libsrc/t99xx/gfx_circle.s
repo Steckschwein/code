@@ -44,7 +44,7 @@ gfx_circle:
       lda (__volatile_ptr)       ; x low
       STA _XLO
       STA _X1
-      ldy #circle_t::x1+1
+      ldy #plot_t::x1+1
       lda (__volatile_ptr),y     ; x high
       STA _X2
       STA _XHI
@@ -186,12 +186,12 @@ PLOT:
 
       vdp_sreg 44, v_reg17    ; start at r#44
 
-      ldy #circle_t::color
+      ldy #plot_t::color
       lda (__volatile_ptr),y
 
       sta a_vregi             ; vdp r#44 ; color
 
-      ldy #circle_t::operator ; code re-order to safe wait
+      ldy #plot_t::operator ; code re-order to safe wait
       lda (__volatile_ptr),y
 
       stz a_vregi             ; vdp r#45 ; destination VRAM

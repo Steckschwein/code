@@ -54,7 +54,7 @@ gfx_line:
       sec
       sbc (__volatile_ptr),y
       sta (__volatile_ptr),y
-      ldy #line_t::x1+1
+      ldy #plot_t::x1+1
       lda (__volatile_ptr),y
       sta a_vregi             ; vdp #r37
       ldy #line_t::x2+1
@@ -72,7 +72,7 @@ gfx_line:
 :     sta (__volatile_ptr),y
 
       ; dy
-      ldy #line_t::y1+0
+      ldy #plot_t::y1+0
       lda (__volatile_ptr),y
       sta a_vregi             ; vdp #r38
       ldy #line_t::y2+0
@@ -113,12 +113,10 @@ gfx_line:
       lda (__volatile_ptr),y
       sta a_vregi             ; vdp #r40/42
       vdp_wait_s
-      stz a_vregi             ; vdp #r41/43
+      stz a_vregi             ; vdp #r41/43  ; y high always 0
       bcc @_x                 ; carry branch magic ;)
 
-:     ; color
-
-      ldy #line_t::color
+:     ldy #plot_t::color      ; color
       lda (__volatile_ptr),y
       sta a_vregi             ; vdp #r44
 
@@ -127,7 +125,7 @@ gfx_line:
       vdp_wait_s 3
       sta a_vregi             ; vdp r#45
 
-      ldy #line_t::operator
+      iny ; ldy #plot_t::operator
       lda (__volatile_ptr),y
       and #$0f                ; mask ops
       ora #v_cmd_line
