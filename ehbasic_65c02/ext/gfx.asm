@@ -101,7 +101,6 @@ _gfx_mode_table:
 		.word GFX_Off; 5
 		.word vdp_mode6_on; 6
 		.word vdp_mode7_on ; 7
-		.word GFX_Off; 8
 
 _gfx_blank_table:
 		.word gfx_dummy; 4
