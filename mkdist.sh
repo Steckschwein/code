@@ -21,6 +21,12 @@ for n in steckos/demo/*.prg ; do
     cp $n $TARGET/DEMO/$un
 done
 
+mkdir -p $TARGET/BASIC
+for n in ehbasic_65c02/demo/* ; do
+    un=$(basename $n | awk '{print toupper($0)}')
+    cp $n $TARGET/BASIC/$un
+done
+
 GAMES="games/dinosaur/dinosaur.prg games/pong/pong.prg games/microchess/mchess.prg"
 mkdir -p $TARGET/GAMES
 for n in $GAMES ; do
