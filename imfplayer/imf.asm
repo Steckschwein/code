@@ -89,24 +89,36 @@ main:
 		jmp error
 @l5:
         stx fd
-		SetVector imf_data, read_blkptr
+		SetVector imf_data, imf_ptr
 
-		jsr krn_read
- 		beq @l6
- 		jmp error
-@l6:
-		jsr krn_getfilesize
+@load:
+		jsr krn_fread_byte
+		bcs @eof
 
-        clc
-		adc #<imf_data
- 		sta imf_end
+		sta (imf_ptr)
+		inc16 imf_ptr
 
-		txa
+		bra @load
 
- 		adc #>imf_data
- 		sta imf_end+1
+@eof:
+		jsr fclose
 
-        jsr fclose
+; 		jsr krn_read
+;  		beq @l6
+;  		jmp error
+; @l6:
+; 		jsr krn_getfilesize
+
+;         clc
+; 		adc #<imf_data
+;  		sta imf_end
+
+; 		txa
+
+;  		adc #>imf_data
+;  		sta imf_end+1
+
+;         jsr fclose
 
 play:
 		SetVector	imf_data, imf_ptr
