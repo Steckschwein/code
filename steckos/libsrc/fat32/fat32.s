@@ -76,7 +76,7 @@
 .export fat_read
 .export fat_fseek
 .export fat_find_first, fat_find_next
-.export fat_close_all, fat_close, fat_getfilesize
+.export fat_close_all, fat_close
 
 ;.ifdef TEST_EXPORT TODO FIXME - any ideas?
 .export __fat_init_fdarea
@@ -291,19 +291,6 @@ __fat_init_fdarea:
 		;	X - offset into fd_area
 fat_close = __fat_free_fd
 
-		; get size of file in fd
-		; in:
-		;	x - fd offset
-		; out:
-		;	.A - filesize lo
-		;	.X - filesize hi
-fat_getfilesize:
-		lda fd_area + F32_fd::FileSize + 0, x
-		pha
-		lda fd_area + F32_fd::FileSize + 1, x
-		tax
-		pla
-		rts
 
 		; find first dir entry
 		; in:

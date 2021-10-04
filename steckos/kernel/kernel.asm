@@ -49,7 +49,6 @@
 .import fat_write
 .import fat_fseek
 .import fat_fread, fat_get_root_and_pwd
-.import fat_getfilesize
 .import fat_fread_byte
 
 .import sd_read_block, sd_write_block
@@ -434,8 +433,8 @@ krn_primm:				jmp primm
 .export krn_getcwd
 krn_getcwd:				jmp fat_get_root_and_pwd
 
-.export krn_getfilesize
-krn_getfilesize:			jmp fat_getfilesize
+; .export krn_getfilesize
+krn_dummy:			.res 3
 
 .export krn_write
 krn_write:	 		jmp fat_write
