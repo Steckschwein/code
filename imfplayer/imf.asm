@@ -169,13 +169,13 @@ exit:
         lda #%01000000
 		sta via1ier
 
-		copypointer old_isr, $fffe
-
 		lda via1acr
 		and #%10111111
 		sta via1acr
 
         jsr opl2_init   ; reset opl
+
+		copypointer old_isr, $fffe
 
 		cli
 		jmp (retvec)
