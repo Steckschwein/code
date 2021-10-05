@@ -31,30 +31,6 @@
 .code
 
 .export spi_select_device
-.export spi_select_device_n
-
-; select spi device upon ordinal number given in A
-;	in:
-;		A = [0..2]
-;		 0 - SDCARD
-;		 1 - KEYBOARD
-;		 2 - RTC
-;	out:
-;		@see spi_select_device below
-device_n:
-	.byte spi_device_sdcard
-	.byte spi_device_keyboard
-	.byte spi_device_rtc
-spi_select_device_n:
-		and #$03
-		cmp #3
-		bne :+
-		lda #EINVAL
-		rts
-:		phx
-		tax
-		lda device_n,x
-		plx
 
 ; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
 ; in:
