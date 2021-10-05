@@ -2,18 +2,17 @@ MAKEFILE=Makefile
 all: build
 
 clean:
-	(cd fortune; make clean)
 	(cd games; make clean)
 	(cd steckos; make clean)
 	(cd imfplayer; make clean)
 	(cd edlib; make clean)
 	(cd ehbasic_65c02; make clean)
 	(cd asmunit; make clean)
-	rm steckos.img
+	if [ -e steckos.img ] ; then rm steckos.img ; fi
 
 distclean:
 	rm -rf dist/LOADER.BIN dist/STECKOS dist/GAMES dist/DEMO dist/PROGS/EDLPLY.PRG dist/PROGS/BASIC.PRG dist/PROGS/IMF.PRG
-	rm steckos.img
+	if [ -e steckos.img ] ; then rm steckos.img ; fi
 
 build:
 	(cd asmunit; make)
@@ -22,7 +21,6 @@ build:
 	(cd edlib; make )
 	(cd ehbasic_65c02; make )
 	(cd games; make)
-	(cd fortune; make)
 
 
 dist: build
