@@ -15,8 +15,8 @@ clean:
 	cc65 $(CC65FLAGS) -t none --cpu $(CPU) -O $<
 	ca65 --cpu $(CPU) $(CA65FLAGS) $(@:.o=.s)
 
-%.prg: %.o $(LIBS)
-	ld65 $< $(LDFLAGS) -o $@
+%.prg: %.c $(LIBS)
+	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(LDFLAGS) -o $@ 
 
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
