@@ -20,8 +20,11 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.include "asminc/spi.inc"
 .export _spi_select_rtc
 
-.import spi_select_rtc
+.import spi_select_device
 
-_spi_select_rtc = spi_select_rtc
+_spi_select_rtc:
+    lda #spi_device_rtc
+    jmp spi_select_device

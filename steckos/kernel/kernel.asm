@@ -35,7 +35,7 @@
 .import init_via1
 .import init_rtc
 .import read_nvram
-.import spi_r_byte, spi_rw_byte, spi_deselect, spi_select_rtc
+.import spi_r_byte, spi_rw_byte, spi_deselect, spi_select_rtc, spi_select_device
 .import uart_init, uart_tx, uart_rx, uart_rx_nowait
 .import textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
 .import getkey,fetchkey
@@ -409,8 +409,8 @@ krn_init_sdcard:		jmp sdcard_init
 .export krn_upload
 krn_upload:				jmp do_upload
 
-.export krn_spi_select_rtc
-krn_spi_select_rtc:	  jmp spi_select_rtc
+; .export krn_spi_select_rtc
+krn_spi_select_rtc:	  .res 3
 
 .export krn_spi_deselect
 krn_spi_deselect:		 jmp spi_deselect
@@ -433,8 +433,8 @@ krn_primm:				jmp primm
 .export krn_getcwd
 krn_getcwd:				jmp fat_get_root_and_pwd
 
-; .export krn_getfilesize
-krn_dummy:			.res 3
+.export krn_spi_select_device
+krn_spi_select_device:	  jmp spi_select_device
 
 .export krn_write
 krn_write:	 		jmp fat_write

@@ -35,7 +35,7 @@
 
 .importzp __volatile_ptr
 
-.export spi_select_rtc
+; .export spi_select_rtc
 .export rtc_systime
 .export rtc_systime_update
 
@@ -43,9 +43,9 @@
 
 ; out:
 ;	Z=1 spi for rtc could be selected (not busy), Z=0 otherwise
-spi_select_rtc:
-   lda #spi_device_rtc
-   jmp spi_select_device
+; spi_select_rtc:
+;    lda #spi_device_rtc
+;    jmp spi_select_device
 
 ;in:
 ;	A/X pointer to a time_t struct @see asminc/rtc.inc
