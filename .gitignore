@@ -36,3 +36,4 @@ steckos.img
 asmunit/asmunit.a
 
 
+asmunit/test.asmunit.o.dbg
