@@ -1,4 +1,4 @@
-LIBS=../../lib/steckschwein.a ../../tools/lib/toollib.a
+LIBS=../../lib/steckschwein.a 
 CAFLAGS=-I ../../asminc -I ../../kernel
 LDFLAGS=--config ../../prg.ld65.cfg $(LIBS)
 

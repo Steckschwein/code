@@ -1,6 +1,6 @@
 CC65FLAGS=-I ../clib --cpu 65c02 # --standard c89 #-Or
 CA65FLAGS=-I ../asminc -I ../kernel --cpu 65c02
-LIBS=../lib/steckschwein.a lib/toollib.a
+LIBS=../lib/steckschwein.a 
 CLIB=../clib/lib/steckschwein-clib.a
 LDFLAGS=-C ../prg.ld65.cfg -m $<.map $(LIBS)
 
@@ -25,7 +25,7 @@ TOOLS+=\
 .PHONY: all clean
 
 all: $(TOOLS)
-	(cd lib; make )
+	#(cd lib; make )
 	(cd unrclock; make )
 	(cd ppmview; make )
 

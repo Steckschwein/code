@@ -67,6 +67,7 @@ SRCDIRS +=  via
 SRCDIRS +=  util
 SRCDIRS +=  util/crc7
 SRCDIRS +=  keyboard
+SRCDIRS +=  lcd
 SRCDIRS +=  debug
 
 vpath %.s $(SRCDIRS)

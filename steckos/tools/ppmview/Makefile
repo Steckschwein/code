@@ -1,6 +1,6 @@
 CA65FLAGS=-I ../../asminc -I ../../../asmunit -I ../../kernel
 LDFLAGS=-C ../../prg.ld65.cfg
-LIBS=../lib/toollib.a ../../lib/steckschwein.a
+LIBS=../../lib/steckschwein.a
 TEST_LIBS=$(LIBS) ../../../asmunit/asmunit.a
 TEST_LDFLAGS=-C ../../../asmunit/asmunit.cfg -Dasmunit_char_out=0x200
 
