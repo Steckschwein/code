@@ -1,4 +1,4 @@
-LIBS=../../steckos/lib/steckschwein.a # ../../steckos/tools/lib/toollib.a
+LIBS=../../steckos/lib/steckschwein.a
 CA65FLAGS=-I ../../steckos/asminc -I ../../steckos/kernel
 LDFLAGS=-C ../../steckos/prg.ld65.cfg $(LIBS)
 

@@ -1,5 +1,5 @@
 CA65FLAGS=--include-dir ../asminc --include-dir ../kernel
-LDFLAGS=--config ../prg.ld65.cfg -m $@.map ../lib/steckschwein.a ../tools/lib/toollib.a
+LDFLAGS=--config ../prg.ld65.cfg -m $@.map ../lib/steckschwein.a
 ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 
 .PHONY: all clean

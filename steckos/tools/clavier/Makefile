@@ -1,7 +1,7 @@
 CPU=65c02
 CC65FLAGS=-I ../../clib/include
 CA65FLAGS=-I ../../asminc
-LIBS=../../clib/lib/steckschwein-clib.a ../../lib/steckschwein.a ../lib/toollib.a
+LIBS=../../clib/lib/steckschwein-clib.a ../../lib/steckschwein.a
 LDFLAGS=-C ../../prg.ld65.cfg $(LIBS)# -Dchar_out=0xFFB3
 
 .PHONY: all clean

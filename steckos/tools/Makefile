@@ -25,7 +25,6 @@ TOOLS+=\
 .PHONY: all clean
 
 all: $(TOOLS)
-	#(cd lib; make )
 	(cd unrclock; make )
 	(cd ppmview; make )
 

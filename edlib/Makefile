@@ -1,7 +1,7 @@
 TARGET=edlply.prg
 
 STECKOS=../steckos
-LIBS:=$(STECKOS)/lib/steckschwein.a $(STECKOS)/tools/lib/toollib.a
+LIBS:=$(STECKOS)/lib/steckschwein.a
 CAFLAGS=--include-dir $(STECKOS)/asminc --include-dir $(STECKOS)/kernel 
 LDFLAGS=--config $(STECKOS)/prg.ld65.cfg $(LIBS)
 

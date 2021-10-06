@@ -1,7 +1,7 @@
 OBJS=imf.o
 TARGET=imf.prg
 CA65FLAGS=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
-LIBS=../steckos/tools/lib/toollib.a ../steckos/lib/steckschwein.a
+LIBS=../steckos/lib/steckschwein.a
 
 all: $(TARGET)
 
