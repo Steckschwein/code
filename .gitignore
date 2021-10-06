@@ -30,7 +30,6 @@ steckos/clib/lib/*
 steckos/*/version.inc
 steckos/lib/steckschwein-kernel.lib
 steckos/lib/*
-steckos/tools/lib/toollib.a
 firmware/glue/decoder_html
 steckos.img
 asmunit/asmunit.a
