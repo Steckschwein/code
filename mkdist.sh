@@ -8,7 +8,7 @@ cp steckos/kernel/loader.bin $TARGET/LOADER.BIN
 mkdir -p $TARGET/STECKOS
 cp steckos/shell/shell.prg $TARGET/STECKOS/SHELL.PRG
 cp steckos/tools/unrclock/unrclock.prg $TARGET/STECKOS/UNRCLOCK.PRG
-cp steckos/tools/ppmview/ppmview.prg $TARGET/STECKOS/PPMVIEW.PRG
+cp ppmview/ppmview.prg $TARGET/STECKOS/PPMVIEW.PRG
 
 for n in steckos/tools/*.prg ; do
 	un=`basename $n | awk '{print toupper($0)}'`

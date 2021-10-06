@@ -25,13 +25,9 @@ TOOLS+=\
 .PHONY: all clean
 
 all: $(TOOLS)
-	(cd unrclock; make )
-	(cd ppmview; make )
 
 clean:
 	rm -f *.prg *.o *.map
-	(cd unrclock; make clean)
-	(cd ppmview; make clean)
 
 %.prg: %.c $(LIBS) $(CLIB)
 	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
