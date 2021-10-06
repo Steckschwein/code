@@ -3,13 +3,7 @@ all: build
 
 clean:
 	(cd games; make clean)
-	(cd ppmview; make clean)
-	(cd unrclock; make clean)
-	(cd clavier; make clean)
 	(cd steckos; make clean)
-	(cd imfplayer; make clean)
-	(cd edlib; make clean)
-	(cd ehbasic_65c02; make clean)
 	(cd asmunit; make clean)
 	if [ -e steckos.img ] ; then rm steckos.img ; fi
 
@@ -20,13 +14,7 @@ distclean:
 build:
 	(cd asmunit; make)
 	(cd steckos; make)
-	(cd imfplayer; make )
-	(cd edlib; make )
-	(cd ehbasic_65c02; make )
 	(cd games; make)
-	(cd ppmview; make)
-	(cd unrclock; make)
-	(cd clavier; make)
 
 
 dist: build
