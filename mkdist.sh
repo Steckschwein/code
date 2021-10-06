@@ -26,7 +26,7 @@ for n in $GAMES ; do
     cp $n $TARGET/GAMES/$un
 done
 
-PROGS="unrclock/unrclock.prg ppmview/ppmview.prg imfplayer/imf.prg ehbasic_65c02/basic.prg edlib/edlply.prg"
+PROGS="unrclock/unrclock.prg ppmview/ppmview.prg imfplayer/imf.prg ehbasic_65c02/basic.prg edlib/edlply.prg clavier/clavier.prg"
 mkdir -p $TARGET/PROGS
 for n in $PROGS ; do
     un=$(basename $n | awk '{print toupper($0)}')

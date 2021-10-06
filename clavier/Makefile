@@ -1,8 +1,8 @@
 CPU=65c02
-CC65FLAGS=-I ../../clib/include
-CA65FLAGS=-I ../../asminc
-LIBS=../../clib/lib/steckschwein-clib.a ../../lib/steckschwein.a
-LDFLAGS=-C ../../prg.ld65.cfg $(LIBS)# -Dchar_out=0xFFB3
+CC65FLAGS=-I ../steckos/clib/include
+CA65FLAGS=-I ../steckos/asminc
+LIBS=../steckos/clib/lib/steckschwein-clib.a ../steckos/lib/steckschwein.a
+LDFLAGS=-C ../steckos/prg.ld65.cfg $(LIBS)# -Dchar_out=0xFFB3
 
 .PHONY: all clean
 
@@ -22,4 +22,4 @@ clean:
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 %: %.prg
-	../../../transfer.py $< -s 0x1000
+	../transfer.py $< -s 0x1000
