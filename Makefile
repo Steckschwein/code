@@ -4,6 +4,7 @@ all: build
 clean:
 	(cd games; make clean)
 	(cd ppmview; make clean)
+	(cd unrclock; make clean)
 	(cd steckos; make clean)
 	(cd imfplayer; make clean)
 	(cd edlib; make clean)
@@ -23,6 +24,7 @@ build:
 	(cd ehbasic_65c02; make )
 	(cd games; make)
 	(cd ppmview; make)
+	(cd unrclock; make)
 
 
 dist: build
