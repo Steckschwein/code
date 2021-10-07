@@ -20,6 +20,9 @@
 //#include "time/cc65_2_17.h"
 #include <vdp/vdp.h>
 
+#define ROWS 25
+#define COLS 80
+
 
 #if defined(__C64__) || defined(__C128__)
 #  define SCREEN1               0xE000
@@ -39,7 +42,7 @@
 #  define CHARSET               0x7000
 #  define outb(addr,val)        (*(addr)) = (val)
 #  define inb(addr)             (*(addr))
-#else  //#elif defined(__STECKSCHWEIN__)
+#else // #elif defined(__STECKSCHWEIN__)
 #  define SCREEN1               SCREEN_BUFFER
 #  define SCREEN2               SCREEN_BUFFER+0x800
 #  define CHARSET               0x6000
@@ -105,8 +108,8 @@ static const unsigned char sinustable[0x100] = {
 
 static void doplasma (register unsigned char* scrn)
 {
-    unsigned char xbuf[40];
-    unsigned char ybuf[25];
+    unsigned char xbuf[COLS];
+    unsigned char ybuf[ROWS];
     unsigned char c1a,c1b;
     unsigned char c2a,c2b;
     unsigned char c1A,c1B;
@@ -115,7 +118,7 @@ static void doplasma (register unsigned char* scrn)
 
     c1a = c1A;
     c1b = c1B;
-    for (ii = 0; ii < 25; ++ii) {
+    for (ii = 0; ii < ROWS; ++ii) {
         ybuf[ii] = (sinustable[c1a] + sinustable[c1b]);
         c1a += 4;
         c1b += 9;
@@ -124,19 +127,19 @@ static void doplasma (register unsigned char* scrn)
     c1B -= 5;
     c2a = c2A;
     c2b = c2B;
-    for (i = 0; i < 40; ++i) {
+    for (i = 0; i < COLS; ++i) {
         xbuf[i] = (sinustable[c2a] + sinustable[c2b]);
         c2a += 3;
         c2b += 7;
     }
     c2A += 2;
     c2B -= 3;
-    for (ii = 0; ii < 25; ++ii) {
+    for (ii = 0; ii < ROWS; ++ii) {
         /* Unrolling the following loop will give a speed increase of
         ** nearly 100% (~24fps), but it will also increase the code
         ** size a lot.
         */
-        for (i = 0; i < 40; ++i, ++scrn) {
+        for (i = 0; i < COLS; ++i, ++scrn) {
             *scrn = (xbuf[i] + ybuf[ii]);
         }
     }
@@ -248,7 +251,7 @@ int main (void)
     while (!kbhit()) {
         /* Build page 1, then make it visible */
         doplasma ((unsigned char*)SCREEN1);
-        vdp_memcpy((unsigned char*)SCREEN1, ADDRESS_TEXT_SCREEN, 0x04);//update screen ram, 4 pages 
+        vdp_memcpy((unsigned char*)SCREEN1, ADDRESS_TEXT_SCREEN, 0x08);//update screen ram, 4 pages 
 #if defined(__PLUS4__)
         outb (&TED.video_addr, PAGE1);
 #else
@@ -257,7 +260,7 @@ int main (void)
 
         /* Build page 2, then make it visible */
         doplasma ((unsigned char*)SCREEN2);
-        vdp_memcpy((unsigned char*)SCREEN2, ADDRESS_TEXT_SCREEN, 0x04);//update screen ram, 4 pages 
+        vdp_memcpy((unsigned char*)SCREEN2, ADDRESS_TEXT_SCREEN, 0x08);//update screen ram, 4 pages 
 #if defined(__PLUS4__)
         outb (&TED.video_addr, PAGE2);
 #else

@@ -18,7 +18,7 @@
 #define Color_Gray           0x0e  //204 204 204	"CCCCCC"
 #define Color_White          0x0f  //255 255 255	"white"
 
-#define SCREEN_BUFFER        0xa000 // screen back buffer
+#define SCREEN_BUFFER        0xd000 // screen back buffer
 
 #define ADDRESS_TEXT_SCREEN	    0x0000			// name table
 #define ADDRESS_TEXT_PATTERN	0x1000			// pattern table
