@@ -9,7 +9,7 @@ ADDRESS=0x1000
 
 # Run 'make SYS=<target>' or set a SYS env
 # var to build for another target system.
-SYS ?= steckschwein
+SYS ?=steckschwein
 
 .PHONY: all clean
 all: plasma.prg

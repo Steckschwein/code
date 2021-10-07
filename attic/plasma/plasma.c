@@ -17,7 +17,7 @@
 #include <time.h>
 #include <conio.h>
 #include <cc65.h>
-//#include "time/cc65_2_17.h"
+#include <time.cc65_2_17.h>
 #include <vdp/vdp.h>
 
 #define ROWS 25
@@ -49,7 +49,7 @@
 #  define COLOR_BLUE  Color_Light_Blue
 #  define COLOR_BLACK Color_Black
 //#  define CLOCKS_PER_SEC _clocks_per_sec()
-#  define CLOCKS_PER_SEC        1 
+#  define CLOCKS_PER_SEC        1
 #endif
 
 
