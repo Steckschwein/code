@@ -17,7 +17,7 @@
 #include <time.h>
 #include <conio.h>
 #include <cc65.h>
-
+//#include "time/cc65_2_17.h"
 #include <vdp/vdp.h>
 
 
@@ -41,11 +41,12 @@
 #  define inb(addr)             (*(addr))
 #else  //#elif defined(__STECKSCHWEIN__)
 #  define SCREEN1               SCREEN_BUFFER
-#  define SCREEN2               SCREEN_BUFFER
+#  define SCREEN2               SCREEN_BUFFER+0x800
 #  define CHARSET               0x6000
 #  define COLOR_BLUE  Color_Light_Blue
 #  define COLOR_BLACK Color_Black
-#  define CLK_TCK 60
+//#  define CLOCKS_PER_SEC _clocks_per_sec()
+#  define CLOCKS_PER_SEC        1 
 #endif
 
 
@@ -136,7 +137,7 @@ static void doplasma (register unsigned char* scrn)
         ** size a lot.
         */
         for (i = 0; i < 40; ++i, ++scrn) {
-            *scrn = '@';(xbuf[i] + ybuf[ii]);
+            *scrn = (xbuf[i] + ybuf[ii]);
         }
     }
 }
@@ -168,7 +169,7 @@ static void makechar (void)
         }
     }
 	#if !defined(__C64__) && !defined(__C128__)
-	vdp_memcpy(CHARSET, ADDRESS_TEXT_PATTERN, 0x08);//copy to vram, 8 pages 
+	vdp_memcpy((unsigned char*)CHARSET, ADDRESS_TEXT_PATTERN, 0x08);//copy to vram, 8 pages 
 	#endif
 }
 
@@ -247,6 +248,7 @@ int main (void)
     while (!kbhit()) {
         /* Build page 1, then make it visible */
         doplasma ((unsigned char*)SCREEN1);
+        vdp_memcpy((unsigned char*)SCREEN1, ADDRESS_TEXT_SCREEN, 0x04);//update screen ram, 4 pages 
 #if defined(__PLUS4__)
         outb (&TED.video_addr, PAGE1);
 #else
@@ -255,6 +257,7 @@ int main (void)
 
         /* Build page 2, then make it visible */
         doplasma ((unsigned char*)SCREEN2);
+        vdp_memcpy((unsigned char*)SCREEN2, ADDRESS_TEXT_SCREEN, 0x04);//update screen ram, 4 pages 
 #if defined(__PLUS4__)
         outb (&TED.video_addr, PAGE2);
 #else

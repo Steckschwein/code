@@ -1,5 +1,7 @@
-  .include "kernel/kernel_jumptable.inc"
-  .include "asminc/vdp.inc"
+
+    .include "kernel/kernel_jumptable.inc"
+    .include "asminc/vdp.inc"
+    .include "asminc/debug.inc"
 
   .import pushax, steaxspidx, incsp1, incsp3, return0
   .importzp ptr1, tmp1, tmp2
@@ -19,6 +21,9 @@
 ;
 .export _vdp_memcpy
 .proc _vdp_memcpy
+        php
+        sei
+        ;dbg
 
 		pha ;save page count
 
@@ -33,9 +38,10 @@
 		phx
 		ply
 
-		pla ;restore page count
-
-		jmp vdp_memcpy
+		plx ;restore page count
+        jsr vdp_memcpy
+        plp
+        rts
 .endproc
 
 ; void __fastcall__ vdp_init (unsigned char mode);

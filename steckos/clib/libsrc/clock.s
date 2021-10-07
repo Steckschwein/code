@@ -6,9 +6,10 @@
 		.include "asminc/rtc.inc"
         .include "asminc/zeropage.inc"
 
+        .import mulax6,mulax5,mulax10
+        .importzp sreg
+
         .export         _clock, __clocks_per_sec
-        .importzp		sreg
-        .importzp mulax6,mulax5,mulax10
 
 _CPS_PAL=50
 _CPS_NTSC=60
