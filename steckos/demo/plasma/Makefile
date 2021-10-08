@@ -1,4 +1,4 @@
-STECKOS_DIR=../../steckos
+STECKOS_DIR=../..
 CPU=65c02 
 CC65FLAGS=-I $(STECKOS_DIR)/clib/include
 CA65FLAGS=-I $(STECKOS_DIR)/asminc

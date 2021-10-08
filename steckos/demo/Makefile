@@ -2,17 +2,20 @@ CA65FLAGS=--include-dir ../asminc --include-dir ../kernel
 LDFLAGS=--config ../prg.ld65.cfg -m $@.map ../lib/steckschwein.a
 ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 
-.PHONY: all clean
+.PHONY: all clean plasma
 
 all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		rstbars.prg \
 		stsdemo.prg \
 		gradient.prg \
-		mndlbrot.prg # \
-		mndlbrt2.prg
+		mndlbrot.prg \
+		plasma
 
+plasma:
+	(cd plasma; make)
 clean:
 	rm -f *.prg *.s *.o *.map
+	(cd plasma ; make clean)
 
  %.o: %.c
 	cc65 -t none -O $<
