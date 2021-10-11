@@ -7638,8 +7638,8 @@ outvec_dummy:
 
 ; stubs for gfx ext
 LAB_SCREEN:       ; SCREEN  - set gfx mode
-      JSR LAB_GTBY    ; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
-      TXA
+   JSR LAB_GTBY    ; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
+   TXA
 	AND #$07
 	ASL
 	STA GFX_MODE
