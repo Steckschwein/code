@@ -31,10 +31,11 @@ int main (int argc, const char* argv[])
     return EXIT_FAILURE;
   }
 
+  printf("Bootsector size: %x\n", sizeof(struct Bootsector));
   printf("Block signature [%02x%02x]\n", bootsector.signature[0], bootsector.signature[1]);
 
   printf(
-    "Bootable [%d]\nTypeCode [$%02x]\nLBABegin [%d]\nNumSectors [%d]\n", 
+    "Bootable [%d]\nTypeCode [$%02x]\nLBABegin [%lu]\nNumSectors [%lu]\n", 
     bootsector.partition[0].Bootflag,
     bootsector.partition[0].TypeCode,
     bootsector.partition[0].LBABegin,
