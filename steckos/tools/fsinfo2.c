@@ -34,7 +34,7 @@ int main (int argc, const char* argv[])
 
   printf("Block signature [%02x%02x]\n", bootsector.signature[0], bootsector.signature[1]);
 
-  for (i = 0; i<=3; i++)
+  //for (i = 0; i<=3; i++)
   {
     printf(
       "Partition [%d]\n Bootable [%d]\n TypeCode [$%02x]\n LBABegin [%d]\n NumSectors [%d]\n\n", 
