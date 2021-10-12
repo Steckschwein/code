@@ -79,7 +79,7 @@ gfx_mode:
 		jsr _gfx_set_mode
 		plp
 		jmp LAB_GFX_SCNCLR
-		
+
 gfx_dummy:
 		rts
 
@@ -120,7 +120,6 @@ GFX_BgColor:
 		jmp vdp_bgcolor
 
 GFX_Off = krn_textui_init     ;restore textui
-
 
 ;	in .A - mode 0-7
 LAB_GFX_PLOT:
@@ -174,6 +173,15 @@ LAB_GFX_SCNCLR:
 	ldx GFX_MODE
 	ldy #0
 	jmp (_gfx_blank_table,x)
+
+
+.export LAB_GFX_SCNWAIT
+LAB_GFX_SCNWAIT:
+	php
+	sei
+	SyncBlank
+	plp
+	rts
 
 .bss
 GFX_MODE:  .res 1, 0 ;mode as power of 2

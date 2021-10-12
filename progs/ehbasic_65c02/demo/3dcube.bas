@@ -3,11 +3,10 @@
 
 20 pt=-10
 30 raw = 0
-40 radius = 48
-50 px = 127
+40 radius = 64
+50 px = 120
 60 py = 100
 62 grb=255
-63 c=grb
 
 70 dim tx$(8)
 80 dim ty$(8)
@@ -38,10 +37,11 @@
 242 bx(o+3)=tx(o+3)
 244 by(o+3)=ty(o+3)+yn
 
-250 c=grb-c
+250 c=0
 251 o=4-o
+252 SCNWAIT
 253 gosub 300
-255 c=grb-c
+255 c=grb
 256 o=4-o
 258 gosub 300
 260 o=4-o
