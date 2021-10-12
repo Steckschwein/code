@@ -51,6 +51,7 @@ SRCDIRS += ym3812
 SRCDIRS += vdp
 SRCDIRS += opl2
 SRCDIRS += util
+SRCDIRS += sdcard
 SRCDIRS +=  $(CC65_HOME)/libsrc/conio     	\
 			$(CC65_HOME)/libsrc/runtime	 	\
 			$(CC65_HOME)/libsrc/zlib		\
