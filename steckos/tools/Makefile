@@ -1,4 +1,4 @@
-CC65FLAGS=-I ../clib --cpu 65c02 # --standard c89 #-Or
+CC65FLAGS=-I ../clib/include -I ../clib/ --cpu 65c02 # --standard c89 #-Or
 CA65FLAGS=-I ../asminc -I ../kernel --cpu 65c02
 LIBS=../lib/steckschwein.a 
 CLIB=../clib/lib/steckschwein-clib.a
@@ -19,7 +19,8 @@ TOOLS+=\
   nvram.prg\
   od.prg\
   setdate.prg \
-  uname.prg
+  uname.prg \
+  fsinfo2.prg
 
 
 .PHONY: all clean
