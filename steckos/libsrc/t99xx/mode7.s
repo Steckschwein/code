@@ -57,21 +57,16 @@ vdp_init_bytes_gfx7:
 			.byte 0;  #R11
 			.byte 0;  #R12
 			.byte 0;  #R13
-            .byte <.HIWORD(ADDRESS_GFX7_SCREEN<<2) ; #R14
+			.byte <.HIWORD(ADDRESS_GFX7_SCREEN<<2) ; #R14
 vdp_init_bytes_gfx7_end:
 ;
 ; blank gfx mode 7 with
-; 	A - color to fill in GRB (3+3+2)
+; 	Y - color to fill in GRB (3+3+2)
 ;
 vdp_mode7_blank:
 	php
 	sei
-	phx
-	sta colour
-	jsr vdp_wait_cmd
-;	vdp_vram_w ADDRESS_GFX7_SCREEN
-;	vdp_sreg <.HIWORD(ADDRESS_GFX7_SCREEN<<2), v_reg14
-;	vdp_sreg <.LOWORD(ADDRESS_GFX7_SCREEN), (WRITE_ADDRESS + >.LOWORD(ADDRESS_GFX7_SCREEN))
+	sty colour
 	vdp_sreg 36, v_reg17 ; set reg index to #36
 	ldx #0
 @loop:
@@ -82,16 +77,14 @@ vdp_mode7_blank:
 	cpx #12
 	bne @loop
 	jsr vdp_wait_cmd
-
-	plx
 	plp
 	rts
 
 data:
-	.word 0 ;x
+	.word 0 ;x #36/#37
 	.word (ADDRESS_GFX7_SCREEN>>8) ;y - from page offset
-	.word 256 ; len x
-	.word 212 ; len y
+	.word 256 ; len x #40/#41
+	.word 212 ; len y #42/#43
 colour:
 	.byte %00011100 ; colour
 	.byte $00 ; destination memory, x direction, y direction, yada yada

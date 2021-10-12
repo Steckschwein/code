@@ -73,16 +73,13 @@ gfx_mode:
 		php
 		sei
 		pha
-		pha
 		jsr krn_textui_disable			;disable textui
 		jsr krn_display_off
 		plx
 		jsr _gfx_set_mode
-		plx
-		lda #Black ; 0 - black in all modes
-		jsr _gfx_blank
-@out:
 		plp
+		jmp LAB_GFX_SCNCLR
+		
 gfx_dummy:
 		rts
 
@@ -175,6 +172,7 @@ _LAB_GFX_SCN_X_Y:
 
 LAB_GFX_SCNCLR:
 	ldx GFX_MODE
+	ldy #0
 	jmp (_gfx_blank_table,x)
 
 .bss
