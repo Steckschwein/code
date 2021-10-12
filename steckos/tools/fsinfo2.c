@@ -10,9 +10,9 @@ struct PartitionEntry
    unsigned char Bootflag;
    unsigned char CHSBegin[3];
    unsigned char TypeCode;
-   unsigned char CHSEnd [3];
-   unsigned char LBABegin[4];
-   unsigned char NumSectors[4];
+   unsigned char CHSEnd[3];
+   unsigned long LBABegin;
+   unsigned long NumSectors;
 };
 struct Bootsector
 {
@@ -37,13 +37,10 @@ int main (int argc, const char* argv[])
   );
 
   printf(
-    "[%c] [%x] [%x%x%x%x] [%4x]\n", 
+    "[%02x] [%02x] [%04x] [%04x]\n", 
     bootsector.partition[0].Bootflag,
     bootsector.partition[0].TypeCode,
-    bootsector.partition[0].LBABegin[0],
-    bootsector.partition[0].LBABegin[1],
-    bootsector.partition[0].LBABegin[2],
-    bootsector.partition[0].LBABegin[3],
+    bootsector.partition[0].LBABegin,
     bootsector.partition[0].NumSectors
   );
 
