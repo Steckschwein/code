@@ -18,20 +18,20 @@ struct Bootsector
 {
    unsigned char bootcode[446];
    struct PartitionEntry partition[4];
-   unsigned int signature[2];
+   unsigned char signature[2];
 } bootsector;
 
-char r;
 
 int main (int argc, const char* argv[])
 {
+  char r;
   r = read_block((unsigned char *)&bootsector, 0);
   if (r != 0)
   {
     return EXIT_FAILURE;
   }
 
-  printf("Block signature [%04x]\n", bootsector.signature);
+  printf("Block signature [%02x%02x]\n", bootsector.signature[0], bootsector.signature[1]);
 
   printf(
     "Bootable [%d]\nTypeCode [$%02x]\nLBABegin [%d]\nNumSectors [%d]\n", 
