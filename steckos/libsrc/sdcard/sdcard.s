@@ -42,9 +42,6 @@
 .export fullblock
 .export sd_busy_wait
 
-; public block api
-; .export read_block=sd_read_block
-
 .ifdef MULTIBLOCK_WRITE
 .export sd_write_multiblock
 .endif
@@ -273,8 +270,8 @@ sd_block_cmd_timeout:
 ;---------------------------------------------------------------------
 ; Read block from SD Card
 ;in:
-;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
-;	block lba in lba_addr
+;	lba_addr set with lba address to read
+;   read_blkptr target adress for the block data to be read
 ;
 ;out:
 ;	A - A = 0 on success, error code otherwise
