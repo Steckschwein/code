@@ -11,8 +11,8 @@ struct PartitionEntry
    unsigned char CHSBegin[3];
    unsigned char TypeCode;
    unsigned char CHSEnd[3];
-   unsigned long LBABegin;
-   unsigned long NumSectors;
+   unsigned char LBABegin[4];
+   unsigned char NumSectors[4];
 };
 struct Bootsector
 {
@@ -25,6 +25,7 @@ struct Bootsector
 int main (int argc, const char* argv[])
 {
   char r;
+  unsigned char i=0;
   r = read_block((unsigned char *)&bootsector, 0);
   if (r != 0)
   {
@@ -33,13 +34,17 @@ int main (int argc, const char* argv[])
 
   printf("Block signature [%02x%02x]\n", bootsector.signature[0], bootsector.signature[1]);
 
-  printf(
-    "Bootable [%d]\nTypeCode [$%02x]\nLBABegin [%d]\nNumSectors [%d]\n", 
-    bootsector.partition[0].Bootflag,
-    bootsector.partition[0].TypeCode,
-    bootsector.partition[0].LBABegin,
-    bootsector.partition[0].NumSectors
-  );
+  for (i = 0; i<=3; i++)
+  {
+    printf(
+      "Partition [%d]\n Bootable [%d]\n TypeCode [$%02x]\n LBABegin [%d]\n NumSectors [%d]\n\n", 
+      i,
+      bootsector.partition[i].Bootflag,
+      bootsector.partition[i].TypeCode,
+      (long)bootsector.partition[i].LBABegin,
+      (long)bootsector.partition[i].NumSectors
+    );
+  }
 
   return EXIT_SUCCESS;
 }
