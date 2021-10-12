@@ -25,11 +25,14 @@
 .include "common.inc"
 .include "fat32.inc"
 .include "sdcard.inc"
-
 .include "appstart.inc"
+
+.import hexout
+.export char_out=krn_chrout
+
 part0 = data + BootSector::Partitions + PartTable::Partition_0
 
-appstart $1000
+        appstart $1000
 
         stz lba_addr+0
         stz lba_addr+1
@@ -305,31 +308,7 @@ display_bcd:
         bpl @l
         rts
 
-hexout:
-		pha
-		phx
-
-		tax
-		lsr
-		lsr
-		lsr
-		lsr
-		jsr hexdigit
-		txa
-		jsr hexdigit
-		plx
-		pla
-		rts
-
-hexdigit:
-		and     #%00001111      ;mask lsd for hex print
-		ora     #'0'            ;add "0"
-		cmp     #'9'+1          ;is it a decimal digit?
-		bcc     @l	            ;yes! output it
-		adc     #6              ;add offset for letter a-f
-@l:
-		jmp 	krn_chrout
-
+.bss
 BCD: .res 6
 tmp0: .res 2
 data:
