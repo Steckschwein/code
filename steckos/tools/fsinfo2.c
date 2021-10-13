@@ -86,9 +86,11 @@ int main (int argc, const char* argv[])
     return EXIT_FAILURE;
   }
 
-  printf("Bootsector size: $%x\n", sizeof(struct Bootsector));
-  printf("VolumeID   size: $%x\n", sizeof(struct FAT32_VolumeID));
-  printf("Block signature [%02x%02x]\n", bootsector.signature[0], bootsector.signature[1]);
+  if (!bootsector.signature[0] == 0x55 || !bootsector.signature[1] == 0xaa)
+  {
+    printf("Block signature error\n");
+    return EXIT_FAILURE;
+  }
 
   printf(
     "Bootable [%x]\nTypeCode [$%02x]\nLBABegin [%lu]\nNumSectors [%lu]\n", 
@@ -109,7 +111,7 @@ int main (int argc, const char* argv[])
   printf("FS type        : %.*s\n", 8, volid.EBPB.FSType);
   printf("OEM name       : %.*s\n", 8, volid.OEMName);
   printf("Volume Label   : %.*s\n", 11, volid.EBPB.VolumeLabel);
-  printf("FS size        : %d\n", bootsector.partition[0].NumSectors * volid.BPB.BytsPerSec);
+  printf("FS size        : %lu\n", bootsector.partition[0].NumSectors * volid.BPB.BytsPerSec);
   printf("Bytes/sector   : %d\n", volid.BPB.BytsPerSec);
   printf("Sectors/clus.  : %d\n", volid.BPB.SecPerClus);
   printf("Cluster size   : %d\n", volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
