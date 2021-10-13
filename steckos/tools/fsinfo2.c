@@ -117,17 +117,17 @@ int main (int argc, const char* argv[])
     return EXIT_FAILURE;
   }
 
-  printf("Media type     : $%x\n", volid.BPB.Media);
-  printf("FS type        : %.*s\n", 8, volid.EBPB.FSType);
-  printf("OEM name       : %.*s\n", 8, volid.OEMName);
-  printf("Volume Label   : %.*s\n", 11, volid.EBPB.VolumeLabel);
-  printf("FS size        : %lu\n", bootsector.partition[0].NumSectors * volid.BPB.BytsPerSec);
+  printf("FS type        : [%.*s]\n", 8, volid.EBPB.FSType);
+  printf("OEM name       : [%.*s]\n", 8, volid.OEMName);
+  printf("Volume Label   : [%.*s]\n", 11, volid.EBPB.VolumeLabel);
   printf("Bytes/sector   : %d\n", volid.BPB.BytsPerSec);
   printf("Sectors/clus.  : %d\n", volid.BPB.SecPerClus);
   printf("Cluster size   : %d\n", volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
-  printf("# FATs         : %d\n", volid.BPB.NumFATs);
+  printf("Number of FATs : %d\n", volid.BPB.NumFATs);
+  printf("Active FAT     : %x\n", volid.EBPB.MirrorFlags);
+  printf("FSInfoSec      : %lu\n", bootsector.partition[0].LBABegin + volid.EBPB.FSInfoSec);
 
-  r = read_block((unsigned char *)&fsinfo, volid.EBPB.FSInfoSec);
+  r = read_block((unsigned char *)&fsinfo, bootsector.partition[0].LBABegin + volid.EBPB.FSInfoSec);
   if (r != 0)
   {
     printf("E: %d\n", r);
@@ -136,6 +136,9 @@ int main (int argc, const char* argv[])
 
   printf("Free clusters  : %lu\n", fsinfo.FreeClus);
   printf("Last cluster   : %lu\n", fsinfo.LastClus);
+
+  printf("\nFS size        : %lu\n", bootsector.partition[0].NumSectors * volid.BPB.BytsPerSec);
+  printf("bytes free     : %lu\n", fsinfo.FreeClus * volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
 
   return EXIT_SUCCESS;
 }
