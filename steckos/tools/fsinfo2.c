@@ -103,7 +103,7 @@ int main (int argc, const char* argv[])
   }
 
   printf(
-    "Bootable [%x]\nTypeCode [$%02x]\nLBABegin [%lu]\nNumSectors [%lu]\n", 
+    "Boot Type LBABegin   NumSectors \n[%x] [$%02x][%lu] [%lu]\n", 
     bootsector.partition[0].Bootflag,
     bootsector.partition[0].TypeCode,
     bootsector.partition[0].LBABegin,
@@ -120,6 +120,7 @@ int main (int argc, const char* argv[])
   printf("FS type        : [%.*s]\n", 8, volid.EBPB.FSType);
   printf("OEM name       : [%.*s]\n", 8, volid.OEMName);
   printf("Volume Label   : [%.*s]\n", 11, volid.EBPB.VolumeLabel);
+  printf("Res. sectors   : %d\n", volid.BPB.RsvdSecCnt);
   printf("Bytes/sector   : %d\n", volid.BPB.BytsPerSec);
   printf("Sectors/clus.  : %d\n", volid.BPB.SecPerClus);
   printf("Cluster size   : %d\n", volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
