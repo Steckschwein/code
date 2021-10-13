@@ -74,6 +74,16 @@ struct FAT32_VolumeID
    struct EBPB EBPB;
 } volid;
 
+struct F32FSInfo
+{
+  unsigned long Signature1;
+  unsigned char Reserved1[0x1e0];
+  unsigned long Signature2;
+  unsigned long FreeClus; //amount of free clusters
+  unsigned long LastClus; //last known cluster number
+  unsigned char Reserved2[11];
+  unsigned int  Signature;
+} fsinfo;
 
 int main (int argc, const char* argv[])
 {
@@ -116,6 +126,16 @@ int main (int argc, const char* argv[])
   printf("Sectors/clus.  : %d\n", volid.BPB.SecPerClus);
   printf("Cluster size   : %d\n", volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
   printf("# FATs         : %d\n", volid.BPB.NumFATs);
+
+  r = read_block((unsigned char *)&fsinfo, volid.EBPB.FSInfoSec);
+  if (r != 0)
+  {
+    printf("E: %d\n", r);
+    return EXIT_FAILURE;
+  }
+
+  printf("Free clusters  : %lu\n", fsinfo.FreeClus);
+  printf("Last cluster   : %lu\n", fsinfo.LastClus);
 
   return EXIT_SUCCESS;
 }
