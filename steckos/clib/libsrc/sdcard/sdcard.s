@@ -6,7 +6,6 @@
 .include "asminc/debug.inc"
 .include "asminc/spi.inc"
 
-.import _spi_select, spi_select_device_n
 .import sd_read_block
 .import popax
 
@@ -21,10 +20,6 @@
     sta lba_addr+2
     lda sreg+1
     sta lba_addr+3
-
-    lda #spi_device_sdcard
-    jsr _spi_select ; A - enum
-    bne @exit
 
     jsr popax
     sta read_blkptr
