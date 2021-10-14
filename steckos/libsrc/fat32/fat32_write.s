@@ -255,10 +255,10 @@ fat_rmdir:
 		debug "rmdir"
 		rts
 
-		  ; in:
-		  ; 	A/X - pointer to the directory name
-		; out:
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+; in:
+; 	A/X - pointer to the directory name
+; out:
+;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_mkdir:
 		jsr __fat_opendir_cwd
 		beq @err_exists								; open success, exists already
@@ -268,7 +268,6 @@ fat_mkdir:
 		copypointer dirptr, krn_ptr2
 		jsr string_fat_name							; build fat name upon input string (filenameptr) and store them directly to current dirptr!
 		bne @l_exit
-
 		jsr __fat_alloc_fd							; alloc a fd for the new directory - try to allocate a new fd here, right before any fat writes, cause they may fail
 		bne @l_exit										; and we want to avoid an error in between the different block writes
 
@@ -446,7 +445,7 @@ __fat_write_newdir_entry:
 		ldy #F32DirEntry::Attr																		; copy from (dirptr), start with F32DirEntry::Attr, the name is skipped and overwritten below
 @l_dir_cp:
 		lda (dirptr), y
-		sta block_data, y																				; 1st dir entry
+		sta block_data+0*.sizeof(F32DirEntry), y												; 1st dir entry
 		sta block_data+1*.sizeof(F32DirEntry), y												; 2nd dir entry
 		iny
 		cpy #.sizeof(F32DirEntry)
@@ -455,12 +454,12 @@ __fat_write_newdir_entry:
 		ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)	-1			; erase name and build the "." and ".." entries
 		lda #$20
 @l_clr_name:
-		sta block_data, y														; 1st dir entry
-		sta block_data+1*.sizeof(F32DirEntry), y								; 2nd dir entry
+		sta block_data, y																		; 1st dir entry
+		sta block_data+1*.sizeof(F32DirEntry), y										; 2nd dir entry
 		dey
 		bne @l_clr_name
 		lda #'.'
-		sta block_data+F32DirEntry::Name+0										; 1st entry "."
+		sta block_data+0*.sizeof(F32DirEntry)+F32DirEntry::Name+0				; 1st entry "."
 		sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::Name+0				; 2nd entry ".."
 		sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::Name+1
 
@@ -531,7 +530,11 @@ __fat_write_block:
 .ifndef FAT_NOWRITE
 		debug32 "fat_wb", lba_addr
 		debug16 "fat_wb", write_blkptr
-		jmp write_block
+		phx
+		jsr write_block
+		cmp #0
+		plx
+		rts
 .else
 		lda #EOK
 		rts

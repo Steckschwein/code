@@ -54,11 +54,7 @@ gfx_circle:
       ldy #circle_t::radius
       lda (__volatile_ptr),y     ; radius
       BNE NEXT ; R=0 ?
-      ldy _Y
-      TYA
-      jsr PLOT
-      plp
-      rts
+      jmp plot_exit
 NEXT: STA _B
       dec
       STA _A
@@ -159,6 +155,11 @@ LOOP: LDA _X1
       CMP _C
       BMI exit
       jmp LOOP
+
+plot_exit:
+      ldy _Y
+      TYA
+      jsr PLOT
 exit:
       plp
       rts
@@ -188,7 +189,6 @@ PLOT:
 
       ldy #plot_t::color
       lda (__volatile_ptr),y
-
       sta a_vregi             ; vdp r#44 ; color
 
       ldy #plot_t::operator ; code re-order to safe wait

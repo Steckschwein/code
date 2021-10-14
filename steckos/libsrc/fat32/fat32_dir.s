@@ -34,9 +34,6 @@
 
 .include "debug.inc"
 
-; external deps - block layer
-.import read_block
-
 ;lib internal api
 .import __fat_isroot
 .import __fat_init_fd

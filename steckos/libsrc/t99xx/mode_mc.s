@@ -45,8 +45,8 @@ vdp_mc_on:
 ; init mc screen
 ;
 vdp_mc_init_screen:
-            php
-            sei ; critical section vdp access
+         php
+         sei ; critical section vdp access
 
 			vdp_vram_w ADDRESS_GFX_MC_SCREEN
 			stz vdp_tmp
@@ -71,18 +71,22 @@ vdp_mc_init_screen:
 			sta vdp_tmp+1
 			bra @l1
 @le:
-            plp
-            rts
+			plp
+			rts
 
 ;
 ; blank multi color mode, set all pixel to black
 ; 	A - color to blank
 ;
 vdp_mc_blank:
-			vdp_sreg <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS+>ADDRESS_GFX_MC_PATTERN
-			ldx #(1536/256)
+			php
+			sei
+			vdp_vram_w ADDRESS_GFX_MC_PATTERN
 			lda #0
-			jmp vdp_fill
+			ldx #(1536/256)
+			jsr vdp_fill
+			plp
+			rts
 
 vdp_init_bytes_mc:
 			.byte 0;
@@ -95,5 +99,4 @@ vdp_init_bytes_mc:
 			.byte	Black
 			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
 			.byte v_reg9_nt ; #R9, set bit 1 to 1 for PAL
-
 vdp_init_bytes_mc_end:

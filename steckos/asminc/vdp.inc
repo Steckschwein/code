@@ -330,11 +330,10 @@ vdp_nopslide_end:
    vdp_pal _rgb>>16, (_rgb>>8 & $ff), (_rgb & $ff)
 .endmacro
 
-.macro	SyncBlank
-	bit a_vreg	; maybe within blank, we clean flag by read to a_vreg
+.macro SyncBlank
 @l:
-  vdp_wait_s
-  bit	a_vreg	; wait until blank - irq flag set?
+   vdp_wait_s
+   bit a_vreg	; wait until blank - irq flag set?
 	bpl @l
 .endmacro
 

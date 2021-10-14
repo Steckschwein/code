@@ -39,11 +39,8 @@
 
 .importzp __volatile_tmp
 
-; external deps - block layer
-.import read_block, write_block
 ; TODO FIXME - encapsulate within sd layer
 .import sd_read_multiblock
-
 
 ;lib internal api
 .import __fat_read_cluster_block_and_select
@@ -263,7 +260,7 @@ fat_fopen:
 		bne @l_exit							; we do any sd block writes which may result in various errors
 
 		lda #DIR_Attr_Mask_Archive		; create as regular file with archive bit set
-		jsr __fat_set_fd_attr_direntry; update dir lba addr and dir entry number within fd
+		jsr __fat_set_fd_attr_direntry; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
 		jsr __fat_write_dir_entry		; create dir entry at current dirptr
 		beq @l_exit_ok
 		jmp fat_close						; free the allocated file descriptor regardless of any errors
