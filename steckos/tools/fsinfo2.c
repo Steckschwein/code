@@ -46,12 +46,12 @@ struct EBPB
 
 struct BPB
 {
-  uint16_t  BytsPerSec; // 11-12  ; 512 usually
-  uint8_t SecPerClus; // 13     ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
-  uint16_t  RsvdSecCnt; //14-15  ; number of reserved sectors
-  uint8_t NumFATs ; // 16     ; usually 2
-  uint8_t Reserved[4]; //17-20 (max root entries, total logical sectors skipped)
-  uint8_t Media; // 21 ; For removable media, 0xF0 is frequently used.
+  uint16_t BytsPerSec; // 11-12  ; 512 usually
+  uint8_t  SecPerClus; // 13     ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
+  uint16_t RsvdSecCnt; //14-15  ; number of reserved sectors
+  uint8_t  NumFATs ; // 16     ; usually 2
+  uint8_t  Reserved[4]; //17-20 (max root entries, total logical sectors skipped)
+  uint8_t  Media; // 21 ; For removable media, 0xF0 is frequently used.
                        // The legal values for this field are
                        // 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
   uint16_t SectsPerFAT;    // 22-23 ; Number of sectors per FAT. 0 for fat32
@@ -66,29 +66,33 @@ struct FAT32_VolumeID
                                //Sometimes just garbage. Microsoft recommends "MSWIN4.1".)
                                // https://www.win.tue.nl/~aeb/linux/fs/fat/fat-1.html
 
-   struct BPB BPB;
+   struct  BPB BPB;
 
    uint8_t Reserved2[12]; //24-35 Placeholder until FAT32 EBPB
 
    // FAT32 Extended BIOS Parameter Block begins here
-   struct EBPB EBPB;
+   struct  EBPB EBPB;
 } volid;
 
 struct F32FSInfo
 {
   uint32_t Signature1;
-  uint8_t Reserved1[0x1e0];
+  uint8_t  Reserved1[0x1e0];
   uint32_t Signature2;
   uint32_t FreeClus; //amount of free clusters
   uint32_t LastClus; //last known cluster number
-  uint8_t Reserved2[11];
-  uint16_t  Signature;
+  uint8_t  Reserved2[11];
+  uint16_t Signature;
 } fsinfo;
+
+uint32_t fat[128];
 
 int main (int argc, const char* argv[])
 {
   char r;
   uint8_t i=0;
+  uint32_t fat_start;
+
   r = read_block((uint8_t *)&bootsector, 0);
   if (r != 0)
   {
@@ -102,14 +106,24 @@ int main (int argc, const char* argv[])
     return EXIT_FAILURE;
   }
 
-  printf(
-    "Boot Type LBABegin   NumSectors \n[%x] [$%02x][%lu] [%lu]\n", 
-    bootsector.partition[0].Bootflag,
-    bootsector.partition[0].TypeCode,
-    bootsector.partition[0].LBABegin,
-    bootsector.partition[0].NumSectors
-  );
+  printf("Partition table:\n");
+  for (i=0; i<=3; i++)
+  {
+    if (bootsector.partition[i] == 0)
+    {
+      continue;
+    }
+    printf(
+      "# Boot Type   LBABegin NumSectors \n%1d %4x  $%02x %10lu %10lu\n", 
+      i,
+      bootsector.partition[i].Bootflag,
+      bootsector.partition[i].TypeCode,
+      bootsector.partition[i].LBABegin,
+      bootsector.partition[i].NumSectors
+    );
+  }
 
+  printf("\n");
   r = read_block((uint8_t *)&volid, bootsector.partition[0].LBABegin);
   if (r != 0)
   {
@@ -117,9 +131,9 @@ int main (int argc, const char* argv[])
     return EXIT_FAILURE;
   }
 
-  printf("FS type        : [%.*s]\n", 8, volid.EBPB.FSType);
-  printf("OEM name       : [%.*s]\n", 8, volid.OEMName);
-  printf("Volume Label   : [%.*s]\n", 11, volid.EBPB.VolumeLabel);
+  printf("FS type        : %.*s\n", 8, volid.EBPB.FSType);
+  printf("OEM name       : %.*s\n", 8, volid.OEMName);
+  printf("Volume Label   : %.*s\n", 11, volid.EBPB.VolumeLabel);
   printf("Res. sectors   : %d\n", volid.BPB.RsvdSecCnt);
   printf("Bytes/sector   : %d\n", volid.BPB.BytsPerSec);
   printf("Sectors/clus.  : %d\n", volid.BPB.SecPerClus);
@@ -140,6 +154,21 @@ int main (int argc, const char* argv[])
 
   printf("\nFS size        : %lu\n", bootsector.partition[0].NumSectors * volid.BPB.BytsPerSec);
   printf("bytes free     : %lu\n", fsinfo.FreeClus * volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
+
+  // fat_start = bootsector.partition[0].LBABegin + volid.BPB.RsvdSecCnt;
+  // r = read_block((uint8_t *)&fat, fat_start);
+  // if (r != 0)
+  // {
+  //   printf("E: %d\n", r);
+  //   return EXIT_FAILURE;
+  // }
+
+  // for( i=0; i<=128; i++)
+  // {
+  //   printf("%08x\n", fat[i]);
+  // }
+
+
 
   return EXIT_SUCCESS;
 }
