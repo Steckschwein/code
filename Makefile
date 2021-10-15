@@ -2,6 +2,7 @@ MAKEFILE=Makefile
 all: build
 
 clean:
+	(cd progs; make clean)
 	(cd games; make clean)
 	(cd steckos; make clean)
 	(cd asmunit; make clean)
@@ -14,6 +15,7 @@ distclean:
 build:
 	(cd asmunit; make)
 	(cd steckos; make)
+	(cd progs; make)
 	(cd games; make)
 
 
