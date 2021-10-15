@@ -347,7 +347,7 @@ data_loader	; define data loader
 mock_not_implemented:
 		fail "mock was called, not implemented yet!"
 
-debug_enabled=1
+;debug_enabled=1
 
 mock_read_block:
 		debug32 "mock_read_block", lba_addr

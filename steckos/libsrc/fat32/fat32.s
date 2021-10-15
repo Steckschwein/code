@@ -63,7 +63,7 @@
 
 .import string_fat_name, fat_name_string, put_char
 .import string_fat_mask
-.import dirname_mask_matcher, cluster_nr_matcher
+.import dirname_mask_matcher
 .import path_inverse
 
 .export fat_read_block
@@ -240,7 +240,7 @@ fat_fopen:
 		bne @l_error
 		lda fd_area + F32_fd::Attr, x
 		and #DIR_Attr_Mask_Dir			; regular file or directory?
-		beq @l_atime						; not dir, update atime if desired, ok
+		beq @l_atime						; not dir, update atime if desired, exit ok
 		lda #EISDIR							; was directory, we must not free any fd
 		rts									; exit with error "Is a directory"
 @l_error:
@@ -261,13 +261,13 @@ fat_fopen:
 
 		lda #DIR_Attr_Mask_Archive		; create as regular file with archive bit set
 		jsr __fat_set_fd_attr_direntry; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
-		jsr __fat_write_dir_entry		; create dir entry at current dirptr
-		beq @l_exit_ok
-		jmp fat_close						; free the allocated file descriptor regardless of any errors
+		jmp __fat_write_dir_entry		; create dir entry at current dirptr
+;		bne @l_exit
+;		jmp fat_close						; free the allocated file descriptor regardless of any errors
 @l_atime:
 ;		jsr __fat_set_direntry_timedate
-@l_exit_ok:
-		lda #EOK								; A=0 (EOK)
+;@l_exit_ok:
+;		lda #EOK								; A=0 (EOK)
 @l_exit:
 		debug "fop"
 		rts

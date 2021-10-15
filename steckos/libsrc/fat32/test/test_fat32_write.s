@@ -15,7 +15,8 @@
 .export path_inverse=mock_not_implemented3
 .export put_char=mock_not_implemented4
 
-debug_enabled=1
+;debug_enabled=1
+
 .code
 
 ; -------------------
@@ -41,7 +42,7 @@ debug_enabled=1
 		ldx #>test_file_name_1
 		jsr fat_fopen
 		assertA EOK
-		assertX FD_Entry_Size*2
+		assertX FD_Entry_Size*2	; assert FD reserved
 		assertDirEntry $0480
 			fat32_dir_entry_file "TEST01  ", "TST", 0, 0		; 0 - no cluster reserved, file length 0
 		assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -63,8 +64,10 @@ debug_enabled=1
 				fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0; 3 * 512 + 3
 		set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 3 * 512 + 3 ; 4 blocks
 
+		SetVector $1234, write_blkptr
 		jsr fat_write
 		assertA EOK
+		assertX FD_Entry_Size*2	; assert FD reserved
 		jsr fat_close
 
 ; -------------------
@@ -109,55 +112,54 @@ _rtc_ts:
 		rts
 
 mock_read_block:
+		tax ; mock X destruction
 		debug32 "mock_read_block", lba_addr
-		load_block LBA_BEGIN, block_root_cl ; load root cl block
+		load_block LBA_BEGIN, block_root_cl ; load root cl block as default
 		cmp32_ne lba_addr, FAT_LBA, :+
 			;simulate fat block read
 			m_memset block_fat+$000, $ff, $40	; simulate reserved
 			m_memset block_fat+$100, $ff, $40	;
 			m_memset block_fat+$40, $0, 4 ;
-			bra @exit
+			bra @ok
 
-:		load_block FS_INFO_LBA, block_fsinfo
+:		cmp32_ne lba_addr, FS_INFO_LBA, :+
+			load_block FS_INFO_LBA, block_fsinfo
+			bra @ok
+:
+		assert32 FAT_EOC, lba_addr ; fail
 
-;		assert32 $ffffffff, lba_addr
-;		fail "mock read_block"
-
-@exit:
+@ok:
 		inc read_blkptr+1 ; => same behaviour as real block read implementation
 		lda #EOK
 		rts
 
-
 mock_write_block:
-		debug32 "mock_write_block", lba_addr
-		cmp32_ne lba_addr, LBA_BEGIN, :+
+		tax ; mock X destruction
+		debug32 "mock_write_block lba", lba_addr
+		debug16 "mock_write_block wptr", write_blkptr
+		cmp32_eq lba_addr, LBA_BEGIN, @ok
+		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+1), @ok
+		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+0), @ok
+		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+2), @ok
+		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+3), @ok
+		cmp32_eq lba_addr, FAT_LBA, @ok
+		cmp32_eq lba_addr, FAT2_LBA, @ok
+		cmp32_eq lba_addr, FS_INFO_LBA, @ok
+		assert32 FAT_EOC, lba_addr ; fail
+@ok:
+		inc write_blkptr+1 ; => same behaviour as real block read implementation
+		lda #EOK
 		rts
-:		cmp32_ne lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+0), :+
-		rts
-:		cmp32_ne lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+1), :+
-		rts
-:		cmp32_ne lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+2), :+
-		rts
-:		cmp32_ne lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * $10)+3), :+
-		rts
-:		cmp32_ne lba_addr, FAT_LBA, :+
-		rts
-:		cmp32_ne lba_addr, FAT2_LBA, :+
-		rts
-:		cmp32_ne lba_addr, FS_INFO_LBA, :+
-		rts
-:		;fail "invalid lba" ;
-		assert32 $ffffffff, lba_addr ; fail
+
 
 mock_not_implemented1:
-		fail "mock 1"
+		fail "mock cluster_nr_matcher called!"
 mock_not_implemented2:
-		fail "mock 2"
+		fail "mock fat_name_string called!"
 mock_not_implemented3:
-		fail "mock 3"
+		fail "mock path_inverse called!"
 mock_not_implemented4:
-		fail "mock 4"
+		fail "mock put_char called!"
 
 setUp:
 	jsr __fat_init_fdarea

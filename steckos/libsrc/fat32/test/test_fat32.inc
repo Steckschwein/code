@@ -9,7 +9,6 @@
 .include "zeropage.inc"
 
 .import asmunit_chrout
-.export chrout=asmunit_chrout
 
 ; fat32 geometry
 .define FAT_LBA 	$297e

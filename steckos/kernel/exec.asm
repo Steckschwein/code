@@ -47,8 +47,6 @@ execv:
 			jsr fat_fopen					; A/X - pointer to filename
 			bne @l_exit
 
-;		  dbg
-
 			jsr fat_fread_byte	; start address low
 			bcs @l_err_exit
 			sta krn_ptr2

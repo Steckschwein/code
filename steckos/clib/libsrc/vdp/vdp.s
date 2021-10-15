@@ -21,9 +21,8 @@
 ;
 .export _vdp_memcpy
 .proc _vdp_memcpy
-        php
-        sei
-        ;dbg
+      php
+      sei
 
 		pha ;save page count
 
@@ -39,9 +38,10 @@
 		ply
 
 		plx ;restore page count
-        jsr vdp_memcpy
-        plp
-        rts
+      jsr vdp_memcpy
+      
+      plp
+      rts
 .endproc
 
 ; void __fastcall__ vdp_init (unsigned char mode);

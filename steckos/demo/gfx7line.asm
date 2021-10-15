@@ -117,7 +117,6 @@ vdp_gfx7_line:
 		vdp_sreg 36, v_reg17 ; start at ref36
 		vdp_wait_s 4
 
-		;dbg
 		lda pt_x
 		sta a_vregi
 		vdp_wait_s 3

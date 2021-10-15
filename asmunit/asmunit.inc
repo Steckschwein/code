@@ -63,6 +63,13 @@ asmunit_addr_instrument = $0202
 	cmp16_ne address+2, (_32Bit>>16), _label
 .endmacro
 
+.macro cmp32_eq address, _32Bit, _label
+	cmp16_ne address+0, (_32Bit & $ffff), :+
+	cmp16_ne address+2, (_32Bit>>16), :+
+	jmp _label
+:
+.endmacro
+
 .macro set8 address, _8bit
 	lda #<_8bit
 	sta address

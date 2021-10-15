@@ -65,10 +65,7 @@
 		; out:
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_write:
-		stx fat_tmp_fd										; save fd
-
-		bit fd_area + F32_fd::CurrentCluster+3, x
-		bmi @l_exit_einval								; exit, not open
+		_is_file_open @l_exit_einval					; exit, not open
 
 		lda fd_area + F32_fd::Attr, x
 		bit #DIR_Attr_Mask_Dir							; regular file?
@@ -80,20 +77,17 @@ fat_write:
 		jsr __fat_isroot									; check whether the start cluster of the file is the root cluster - @see fat_alloc_fd, fat_open)
 		debug "fw_isroot"
 		bne	@l_write										; if not, we can directly update dir entry and write data afterwards
-		saveptr write_blkptr								;
-		jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster, fat_tmp_fd has to be set
+		jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster
 		debug "fw_res_cl"
 		bne @l_exit
-		restoreptr write_blkptr							; restore write ptr
 		debug "fw1"
-		ldx fat_tmp_fd										; restore fd, go on with writing data
 @l_write:
 		jsr __calc_blocks									; calc blocks
 		beq @l_exit											; Z=1 - no blocks to write
 		jsr __calc_lba_addr								; calc lba file payload
-		debug32 "fat_wb", lba_addr
-		debug16 "fat_wb", write_blkptr
-		debug16 "fat_wb", blocks
+		debug32 "fat_wb0", lba_addr
+		debug16 "fat_wb1", write_blkptr
+		debug16 "fat_wb2", blocks
 .ifdef MULTIBLOCK_WRITE
 		.warning "SD multiblock writes are EXPERIMENTAL"
 		.import sd_write_multiblock
@@ -101,13 +95,12 @@ fat_write:
 .else
 @l:
 		debug16 "fat_wb_blocks", blocks
-		jsr write_block
+		jsr __fat_write_block
 		bne @l_exit
 		jsr __inc_lba_address							; increment lba address to write next block
 		dec blocks
 		bne @l
 .endif
-		ldx fat_tmp_fd										; restore fd
 		jsr __fat_read_direntry							; read dir entry, dirptr is set accordingly
 		jsr __fat_set_direntry_cluster				; set cluster number of direntry entry via dirptr - TODO FIXME only necessary on first write
 		jsr __fat_set_direntry_filesize				; set filesize of directory entry via dirptr
@@ -118,7 +111,6 @@ fat_write:
 		lda #DIR_Attr_Mask_Archive
 		ora (dirptr),y
 		sta (dirptr),y
-
 		jsr __fat_write_block_data						; lba_addr is already set from read, see above
 @l_exit:
 		debug16 "fw_dirptr", dirptr
@@ -397,27 +389,30 @@ __fat_free_cluster:
 ;	Z=1 on success, Z=0 otherwise and A=error code
 __fat_reserve_cluster:
 		jsr __fat_find_free_cluster				; find free cluster, stored in fd_area for the fd given within X
-		bne @l_exit
+		bne l_exit
 		jsr __fat_mark_cluster_eoc					; mark cluster in block with EOC - TODO cluster chain support
 		jsr __fat_write_fat_blocks					; write the updated fat block for 1st and 2nd FAT to the device
 		beq __fat_update_fsinfo_dec				; ok - update the fsinfo sector/block
-@l_exit:
+l_exit:
 		rts
 		;TODO check valid fsinfo block
 		;TODO check whether clnr is maintained, test 0xFFFFFFFF ?
 		;TODO improve calc, currently fixed to cluster-=1
 		;TODO update amount of free clusters to be reserved/freed with A [-128...127]
+
 __fat_update_fsinfo_inc:
 		jsr __fat_read_fsinfo
-		bne __fat_update_fsinfo_exit
+		bne l_exit
 		debug32 "fs_info+", block_fat+F32FSInfo::FreeClus
 		_inc32 block_fat+F32FSInfo::FreeClus
 		jmp __fat_write_block_fat
+
 __fat_update_fsinfo_dec:
 		jsr __fat_read_fsinfo
 		bne __fat_update_fsinfo_exit
 		debug32 "fs_info-", block_fat+F32FSInfo::FreeClus
  		_dec32 block_fat+F32FSInfo::FreeClus
+
 		lda fd_area+F32_fd::CurrentCluster+0,x
 	 	sta block_fat+F32FSInfo::LastClus+0
 		lda fd_area+F32_fd::CurrentCluster+1,x
@@ -427,6 +422,7 @@ __fat_update_fsinfo_dec:
 		lda fd_area+F32_fd::CurrentCluster+3,x
 	 	sta block_fat+F32FSInfo::LastClus+3
 		jmp __fat_write_block_fat
+
 __fat_read_fsinfo:
 		m_memcpy fat_fsinfo_lba, lba_addr, 4
 		SetVector block_fat, read_blkptr
@@ -521,24 +517,24 @@ __fat_write_block_fat:
 		debugdump "fat_wb_dmp", block_fat
 .endif
 		lda #>block_fat
-		bra __fat_write_block
+		bra __fat_write_block_ptr
 __fat_write_block_data:
 		lda #>block_data
-__fat_write_block:
+__fat_write_block_ptr:
 		sta write_blkptr+1
 		stz write_blkptr	;page aligned
+__fat_write_block:
 .ifndef FAT_NOWRITE
 		debug32 "fat_wb", lba_addr
 		debug16 "fat_wb", write_blkptr
 		phx
 		jsr write_block
-		cmp #0
 		plx
-		rts
+		cmp #0
 .else
 		lda #EOK
-		rts
 .endif
+		rts
 
 __fat_rtc_high_word:
 		lsr
@@ -721,7 +717,7 @@ __fat_find_free_cluster:
 		sta fd_area+F32_fd::CurrentCluster+0, x
 		lda #0					; exit found
 		sta fd_area+F32_fd::CurrentCluster+3, x
-		bra @exit
+		rts
 
 ; unlink a file denoted by given path in A/X
 ; in:

@@ -114,16 +114,16 @@ fat_get_root_and_pwd:
 		m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, fat_tmp_dw, 4	; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
 		lda #<l_dot_dot
 		ldx #>l_dot_dot
-		ldy #FD_INDEX_TEMP_DIR							; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
+		ldy #FD_INDEX_TEMP_DIR									; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
 		jsr __fat_opendir
 		bne @l_exit
 		SetVector cluster_nr_matcher, fat_vec_matcher	; set the matcher strategy to the cluster number matcher
-		jsr __fat_find_first							; and call find first to find the entry with that cluster number we saved in fat_tmp_dw before we did the cd ".."
+		jsr __fat_find_first										; and call find first to find the entry with that cluster number we saved in fat_tmp_dw before we did the cd ".."
 		bcc @l_exit
-		jsr fat_name_string								; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
-		bra @l_rd_dir									; go on with bottom up walk until root is reached
+		jsr fat_name_string										; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
+		bra @l_rd_dir												; go on with bottom up walk until root is reached
 @l_inverse:
-		copypointer fat_tmp_dw2, krn_ptr2				; fat_tmp_dw2 is the pointer to the result string, given by the caller (eg. pwd.prg)
+		copypointer fat_tmp_dw2, krn_ptr2					; fat_tmp_dw2 is the pointer to the result string, given by the caller (eg. pwd.prg)
 		jsr path_inverse								; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
 		lda #EOK										; that's it...
 @l_exit:
