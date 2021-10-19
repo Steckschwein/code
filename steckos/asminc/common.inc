@@ -164,7 +164,7 @@
 
 .macro m_memcpy src, dest, n
    .local @l
-   .assert n<$80, error, "n must not >=$80"
+   .assert n<=$80, error, "n must not >=$80"
    ldy #n-1
 @l:
    lda src,y

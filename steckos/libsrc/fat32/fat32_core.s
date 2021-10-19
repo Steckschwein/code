@@ -67,12 +67,16 @@
 
 ; in:
 ;	.X - file descriptor (index into fd_area) of the directory
+; out:
+;
 __fat_find_first_mask:
 		SetVector fat_dirname_mask, krn_ptr2	; build fat dir entry mask from user input
 		jsr string_fat_mask
 		SetVector dirname_mask_matcher, fat_vec_matcher
 ; in:
 ;	.X - file descriptor (index into fd_area) of the directory
+; out:
+;  C=1 if dir entry was found with dirptr pointing to that entry, C=0 otherwise
 __fat_find_first:
 		SetVector block_data, read_blkptr
 		lda volumeID+VolumeID::BPB + BPB::SecPerClus
@@ -94,10 +98,10 @@ ff_l4:
 		jsr __fat_matcher			  ; call matcher strategy
 		lda #EOK						  ; Z=1 (success) and no error
 		bcs ff_end					  ; if C=1 we had a match
-		; in:
-		;	X - directory fd index into fd_area
-		; out:
-		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
+; in:
+;	X - directory fd index into fd_area
+; out:
+;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 __fat_find_next:
 		lda dirptr
 		clc
@@ -110,10 +114,6 @@ __fat_find_next:
 		lda dirptr+1
 		cmp #>(sd_blktarget + sd_blocksize)	; end of block reached?
 		bcc ff_l4			; no, process entry
-;		lda dirptr
-;     cmp #<(sd_blktarget + sd_blocksize)
-;     bcc ff_l4
-
 		dec blocks
 		beq @ff_eoc			    	; end of cluster reached?
 		jsr __inc_lba_address	; increment lba address to read next block
@@ -121,29 +121,24 @@ __fat_find_next:
 @ff_eoc:
 		ldx #FD_INDEX_TEMP_DIR				; TODO FIXME dont know if this is a good idea... FD_INDEX_TEMP_DIR was setup above and following the cluster chain is done with the FD_INDEX_TEMP_DIR to not clobber the FD_INDEX_CURRENT_DIR
 		jsr __fat_next_cln		  			; select next cluster
-		bcs ff_exit								; exit on error (C=1)
-		bra __fat_find_first		  ; C=0, go on with next cluster
+		bcs ff_exit								; C=1 on error, exit
+		bra __fat_find_first		  			; C=0, go on with next cluster
 ff_exit:
-		clc											 ; we are at the end, C=0 and return
+		clc										; we are at the end, nothing found C=0 and return
 		debug "ffex"
 ff_end:
 		rts
 
 
-		; open a path to a file or directory starting from current directory
-		; in:
-		;	A/X - pointer to string with the file path
-		;	Y	- file descriptor of fd_area denoting the start directory. usually FD_INDEX_CURRENT_DIR is used
-		; out:
-		;  X - index into fd_area of the opened file. if a directory was opened then X == FD_INDEX_TEMP_DIR
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
-		;	Note: regardless of return value, the dirptr points to the last visited directory entry and the corresponding lba_addr is set to the block where the dir entry resides.
-		;		  furthermore the filenameptr points to the last inspected path fragment of the given input path
-.macro _open
-		stz filename_buf, x			;\0 terminate the current path fragment
-		jsr __fat_open_file
-		bne @l_exit
-.endmacro
+; open a path to a file or directory starting from current directory
+; in:
+;	A/X - pointer to string with the file path
+;	Y	- file descriptor of fd_area denoting the start directory. usually FD_INDEX_CURRENT_DIR is used
+; out:
+;  X - index into fd_area of the opened file. if a directory was opened then X == FD_INDEX_TEMP_DIR
+;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	Note: regardless of return value, the dirptr points to the last visited directory entry and the corresponding lba_addr is set to the block where the dir entry resides.
+;		  furthermore the filenameptr points to the last inspected path fragment of the given input path
 __fat_open_path:
 		sta krn_ptr1
 		stx krn_ptr1+1				 	; save path arg given in a/x
@@ -167,7 +162,7 @@ __fat_open_path:
 		lda	(krn_ptr1), y		;end of input?
 		beq	@l_exit				;yes, so it was just the '/', exit with A=0
 @l31:
-		SetVector	filename_buf, filenameptr	; filenameptr to filename_buf
+		SetVector filename_buf, filenameptr	; filenameptr to filename_buf
 @l3:	;	parse input path fragments into filename_buf try to change dirs accordingly
 		ldx #0
 @l_parse_1:
@@ -185,7 +180,9 @@ __fat_open_path:
 		bne @l_parse_1
 		bra @l_err_einval
 @l_open:
-		_open
+		stz filename_buf, x			;\0 terminate the current path fragment
+		jsr __fat_open_file			; return with X as offset into fd_area with new allocated file descriptor
+		bne @l_exit
 		iny
 		bne	@l3					;overflow - <path argument> exceeds 255 chars
 @l_err_einval:
@@ -193,7 +190,9 @@ __fat_open_path:
 @l_exit:
 		rts
 @l_openfile:
-		_open					; return with X as offset into fd_area with new allocated file descriptor
+		stz filename_buf, x			;\0 terminate the current path fragment
+		jsr __fat_open_file			; return with X as offset into fd_area with new allocated file descriptor
+		bne @l_exit
 		lda #EOK
 		rts
 
@@ -516,10 +515,13 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if f
 		;	X - file descriptor
 		;	Y - offset from target address denoted by pointer (read_blkptr)
 		; out:
-		;	C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0
+		;	C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
 __fat_next_cln:
-		jsr __fat_read_cluster_block_and_select	    	; read fat block of the current cluster
-		bne @l_exit_err
+		lda read_blkptr
+		pha
+		lda read_blkptr+1
+		pha
+		jsr __fat_read_cluster_block_and_select    	; read fat block of the current cluster
 		bcs @l_exit
 		lda (read_blkptr), y
 		sta fd_area + F32_fd::CurrentCluster+0, x
@@ -533,12 +535,12 @@ __fat_next_cln:
 		lda (read_blkptr), y
 		sta fd_area + F32_fd::CurrentCluster+3, x
 		stz fd_area + F32_fd::offset, x 					; reset block offset here
-		lda #EOK
-		clc
-		rts
-@l_exit_err:
-		sec
+		clc ; success
 @l_exit:
+		ply
+		sty read_blkptr+1
+		ply
+		sty read_blkptr
 		rts
 
 		; in:
@@ -546,8 +548,7 @@ __fat_next_cln:
 		; out:
 		;	read_blkptr - setup to block_fat either low/high page
 		;	Y - offset within block_fat to clnr
-		;	Z=1 on success, Z=0 otherwise and A=error code
-		;	C=1 if the cluster number is the EOC and A=EOK, C=0 otherwise
+		;	C=1 if the cluster number is the EOC and A=EOK or C=1 and A=<error code>, C=0 otherwise
 __fat_read_cluster_block_and_select:
 		jsr __calc_fat_lba_addr
 		SetVector block_fat, read_blkptr
@@ -568,9 +569,9 @@ __fat_read_cluster_block_and_select:
 		asl											; block offset = clnr*4
 		asl
 		tay
-		jsr __fat_is_cln_eoc						; C is returned accordingly
-		lda #EOK
+		jmp __fat_is_cln_eoc						; C is returned accordingly
 @l_exit:
+		sec
 		debug16 "f_rcbs", read_blkptr
 		rts
 
@@ -597,6 +598,7 @@ __fat_is_cln_eoc:
 		clc
 @l_eoc:
 		ply
+		lda #EOK ; carry denotes EOC state
 		rts
 
 __inc_lba_address:

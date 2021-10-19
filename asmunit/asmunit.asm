@@ -52,7 +52,6 @@ _char_out:
 		ldx asmunit_char_out_ix
 		sta asmunit_char_out_buffer, x
 		inc asmunit_char_out_ix
-		jsr asmunit_chrout
 		plx
 		rts
 

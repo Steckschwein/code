@@ -31,7 +31,7 @@
 
 .export _debugdirentry
 
-.import char_out, primm
+.import debug_chrout, primm
 
 .code
 
@@ -71,7 +71,7 @@ _debugout_enter:
 		lda dbg_status
 		jsr _hexout
 		lda	#' '
-		jmp char_out
+		jmp debug_chrout
 
 _debugdirentry:
 		jsr 	_debugout_enter
@@ -80,7 +80,7 @@ _debugdirentry:
 		lda (dirptr),y
 		jsr _hexout
 		lda #' '
-		jsr char_out
+		jsr debug_chrout
 		iny
 		cpy #32
 		bne @l0
@@ -91,27 +91,27 @@ _debugdumpptr:
 ;		lda 	#11
 ;		bra		_debugout0
 _debugdump:
-		jsr 	_debugout_enter
-		lda 	#11
-		bra		_debugout0
+		jsr _debugout_enter
+		lda #11
+		bra _debugout0
 _debugout32:
-		jsr 	_debugout_enter
-		lda 	#3
-		bra		_debugout0
+		jsr _debugout_enter
+		lda #3
+		bra _debugout0
 _debugout16:
-		jsr 	_debugout_enter
-		lda		#1
-		bra		_debugout0
+		jsr _debugout_enter
+		lda #1
+		bra _debugout0
 _debugout8:
-		jsr 	_debugout_enter
-		lda		#0
-		bra		_debugout0
+		jsr _debugout_enter
+		lda #0
+		bra _debugout0
 _debugout:
-		jsr 	_debugout_enter
+		jsr _debugout_enter
 _debugoutnone:
-		lda		#$ff
+		lda #$ff
 _debugout0:
-		sta		dbg_bytes
+		sta dbg_bytes
 		pla							; Get the low part of "return" address
 									; (data start address)
 		sta	  dbg_return
@@ -137,15 +137,15 @@ _debugout0:
 		lda		__dbg_ptr
 		jsr 	_hexout
 		lda		#' '
-		jsr 	char_out
+		jsr 	debug_chrout
 @l1:	lda		(__dbg_ptr),y
 		jsr 	_hexout
 		lda 	#' '
-		jsr 	char_out
+		jsr 	debug_chrout
 		dey
 		bpl		@l1
 		lda		#' '
-		jsr 	char_out
+		jsr 	debug_chrout
 
 		clc
 		lda		dbg_return		; restore address for message argument
@@ -163,13 +163,13 @@ _debugout0:
 
 @PSICHO:lda	  (__dbg_ptr)		 ; Get the next string character
 		beq	  @PSIX1			 ; don't print the final NULL
-		jsr	  char_out		; write it out
+		jsr	  debug_chrout		; write it out
 		bra	  @PSINB			 ; back around
 @PSIX1:	inc	  __dbg_ptr  		;
 		bne	  @PSIX2			;
 		inc	  __dbg_ptr+1	  ; account for page crossing
 @PSIX2:	lda		#$0a			; line feed
-		jsr 	char_out
+		jsr 	debug_chrout
 
 		lda		__dbg_ptr		; __dbg_ptr points to instruction after msg, adjust ret vector
 		sta 	dbg_return
@@ -216,4 +216,4 @@ _hexout:
 		bcc	  @l					;yes! output it
 		adc	  #6				  ;add offset for letter a-f
 @l:
-		jmp 	char_out
+		jmp 	debug_chrout

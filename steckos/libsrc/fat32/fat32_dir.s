@@ -46,13 +46,14 @@
 .import __fat_find_next
 .import __fat_clone_fd
 .import __fat_clone_cd_td
-
 .import __calc_lba_addr
 
 .import string_fat_name, fat_name_string, put_char
 .import string_fat_mask
 .import dirname_mask_matcher, cluster_nr_matcher
 .import path_inverse
+
+.importzp __volatile_ptr
 
 .export fat_chdir
 .export fat_get_root_and_pwd
@@ -67,14 +68,15 @@
 ;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 ;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
 __fat_opendir_cwd:
-		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd
-		; open directory by given path starting from directory given as file descriptor
-		; in:
-	  	;	A/X - pointer to string with the file path
-		;	Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
-	  	; out:
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
-	  	;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
+		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
+
+; open directory by given path starting from directory given as file descriptor
+; in:
+;	A/X - pointer to string with the file path
+;	Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
+; out:
+;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
 __fat_opendir:
 		jsr __fat_open_path
 		bne @l_exit					; exit on error
@@ -95,8 +97,8 @@ __fat_opendir:
 		;out:
 		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_get_root_and_pwd:
-		sta	fat_tmp_dw2
-		stx	fat_tmp_dw2+1
+		sta __volatile_ptr
+		stx __volatile_ptr+1
 ;		tya
 ;		eor	#$ff
 		;sta	krn_ptr3					;TODO FIXME - length check of output buffer, save -size-1 for easy loop
@@ -123,7 +125,7 @@ fat_get_root_and_pwd:
 		jsr fat_name_string										; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
 		bra @l_rd_dir												; go on with bottom up walk until root is reached
 @l_inverse:
-		copypointer fat_tmp_dw2, krn_ptr2					; fat_tmp_dw2 is the pointer to the result string, given by the caller (eg. pwd.prg)
+		copypointer __volatile_ptr, krn_ptr2				; __volatile_ptr is the pointer to the result string, given by the caller (eg. pwd.prg)
 		jsr path_inverse								; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
 		lda #EOK										; that's it...
 @l_exit:

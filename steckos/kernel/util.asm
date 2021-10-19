@@ -42,7 +42,7 @@ cluster_nr_matcher:
 		cmp #DIR_Entry_Deleted
 		beq @l_notfound
 		ldy #F32DirEntry::FstClusLO+0
-		lda	fat_tmp_dw+0
+		lda fat_tmp_dw+0
 		cmp (dirptr),y
 		bne @l_notfound
 		ldy #F32DirEntry::FstClusLO+1
@@ -50,7 +50,7 @@ cluster_nr_matcher:
 		cmp (dirptr),y
 		bne @l_notfound
 		ldy #F32DirEntry::FstClusHI+0
-		lda	fat_tmp_dw+2
+		lda fat_tmp_dw+2
 		cmp (dirptr),y
 		bne @l_notfound
 		ldy #F32DirEntry::FstClusHI+1

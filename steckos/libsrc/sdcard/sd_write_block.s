@@ -33,7 +33,7 @@
 .include "spi.inc"
 .include "via.inc"
 .include "debug.inc"
-.code
+
 .import spi_rw_byte, spi_r_byte, spi_select_device, spi_deselect
 .import sd_deselect_card, sd_select_card, sd_cmd, sd_cmd_lba
 
@@ -42,13 +42,13 @@
 ; public bock api
 ; .export write_block=sd_write_block
 
-
+.code
 ;---------------------------------------------------------------------
 ; Write block to SD Card
 ;in:
 ;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
 ;	block lba in lba_addr
-;
+;  write_blkptr - pointer to data
 ;out:
 ;	A - A = 0 on success, error code otherwise
 ;---------------------------------------------------------------------
@@ -65,7 +65,7 @@ sd_write_block:
 			lda #sd_data_token
 			jsr spi_rw_byte
 
-			ldy #$00
+			ldy #0
 @l2:		lda (write_blkptr),y
 			phy
 			jsr spi_rw_byte

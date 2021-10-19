@@ -173,7 +173,7 @@ fat_fread:
 		;	X	- offset into fd_area
 		;	read_blkptr has to be set to target address - TODO FIXME ptr. parameter
 		;out:
-		;	C=0 on success (A=0), C=1 on error and A=error code or EOC reached and A=0 otherwise
+		;	C=0 on success, C=1 on error and A=error code or EOC reached and A=0 otherwise
 fat_read_block:
 		_is_file_open @l_exit_einval
 
@@ -181,19 +181,15 @@ fat_read_block:
 		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
 		bne @l_read											 		; no, go on reading...
 
-		copypointer read_blkptr, krn_ptr1	; backup read_blkptr
 		jsr __fat_next_cln						; select next cluster within chain
-		pha
-		copypointer krn_ptr1, read_blkptr	; restore read_blkptr
-		pla
-		bcs @l_exit									; exit on error (C=1)
-
+		bcs @l_exit									; exit on error or EOC (C=1)
 @l_read:
 		jsr __calc_lba_addr
 		jsr __fat_read_block
 		bne @l_exit_err
 		inc fd_area+F32_fd::offset+0,x		; inc block counter
 		clc ; exit success C=0
+		lda #EOK
 		rts
 @l_exit_einval:
 		lda #EINVAL
@@ -232,7 +228,7 @@ fat_read:
 		;		O_EXCL		= $80
 		; out:
 		;	.X - index into fd_area of the opened file
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+		;	C=0 on success (A=0), C=1 and A=error code otherwise
 fat_fopen:
 		sty __volatile_tmp				; save open flag
 		ldy #FD_INDEX_CURRENT_DIR		; use current dir fd as start directory
@@ -242,33 +238,35 @@ fat_fopen:
 		and #DIR_Attr_Mask_Dir			; regular file or directory?
 		beq @l_atime						; not dir, update atime if desired, exit ok
 		lda #EISDIR							; was directory, we must not free any fd
-		rts									; exit with error "Is a directory"
+		bra @l_exit_err					; exit with error "Is a directory"
 @l_error:
 		cmp #ENOENT							; no such file or directory ?
-		bne @l_exit							; other error, then exit
+		bne @l_exit_err					; other error, then exit
 		lda __volatile_tmp				; check if we should create a new file
 		and #O_CREAT | O_WRONLY | O_APPEND
 		bne :+
 		lda #ENOENT							; nothing set, exit with ENOENT
+@l_exit_err:
+		sec
 		rts
-:
-		debug "r+"
+
+:		debug "r+"
 		copypointer dirptr, krn_ptr2
 		jsr string_fat_name				; build fat name upon input string (filenameptr)
-		bne @l_exit
+		bne @l_exit_err
 		jsr __fat_alloc_fd				; alloc a fd for the new file we want to create to make sure we get one before
-		bne @l_exit							; we do any sd block writes which may result in various errors
+		bne @l_exit_err					; we do any sd block writes which may result in various errors
 
 		lda #DIR_Attr_Mask_Archive		; create as regular file with archive bit set
 		jsr __fat_set_fd_attr_direntry; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
-		jmp __fat_write_dir_entry		; create dir entry at current dirptr
-;		bne @l_exit
-;		jmp fat_close						; free the allocated file descriptor regardless of any errors
+		jsr __fat_write_dir_entry		; create dir entry at current dirptr
+		bcc @l_exit_ok
+		jmp fat_close						; free the allocated file descriptor if there where errors, C=1 and A are preserved
 @l_atime:
 ;		jsr __fat_set_direntry_timedate
-;@l_exit_ok:
 ;		lda #EOK								; A=0 (EOK)
-@l_exit:
+		clc
+@l_exit_ok:
 		debug "fop"
 		rts
 

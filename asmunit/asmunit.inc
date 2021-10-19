@@ -75,16 +75,16 @@ asmunit_addr_instrument = $0202
 	sta address
 .endmacro
 
-.macro set16 address, _16bit
+.macro set16 _address, _16bit
 	lda #<_16bit
-	sta address+0
+	sta _address+0
 	lda #>_16bit
-	sta address+1
+	sta _address+1
 .endmacro
 
-.macro set32 address, _32Bit
-	set16 address+0, (_32Bit & $ffff)
-	set16 address+2, (_32Bit>>16)
+.macro set32 _address, _32Bit
+	set16 _address+0, (_32Bit & $ffff)
+	set16 _address+2, (_32Bit>>16)
 .endmacro
 
 .macro _message label, mode
