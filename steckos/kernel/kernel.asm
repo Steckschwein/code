@@ -52,8 +52,6 @@
 .import fat_fread_byte
 
 .import sd_read_block, sd_write_block
-.export read_block=sd_read_block
-.export write_block=sd_write_block
 
 .import execv
 .import strout, primm
@@ -64,6 +62,11 @@
 ; internal kernel api stuff
 .import __automount
 .import __automount_init
+
+.export read_block=sd_read_block
+.export write_block=sd_write_block
+.export char_out=textui_chrout				 ; account for page crossing
+.export debug_chrout=textui_chrout				 ; account for page crossing
 
 nvram = $1000
 

@@ -434,7 +434,6 @@ cd:
       ldx paramptr+1
       jsr krn_chdir
       beq @l2
-      lda #$f2 ; invalid dir
       jmp errmsg
 @l2:
       jmp mainloop

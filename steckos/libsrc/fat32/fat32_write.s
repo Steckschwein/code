@@ -263,28 +263,29 @@ fat_rmdir:
 ;	C=0 on success (A=0), C=1 on error and A=error code otherwise
 fat_mkdir:
 		jsr __fat_opendir_cwd
-		beq @l_exit_exists							; open success, exists already
-		cmp #ENOENT										; we expect 'no such file or directory' error, otherwise a file with same name already exists
-		bne @l_exit_error								; exit on other error
+		bne :+
+		lda #EEXIST										; open success, exists already
+		bra @l_exit_err
+:		cmp #ENOENT										; we expect 'no such file or directory' error, otherwise a file with same name already exists
+		bne @l_exit_err								; exit on other error
 
 		copypointer dirptr, krn_ptr2
 		jsr string_fat_name							; build fat name upon input string (filenameptr) and store them directly to current dirptr!
-		bne @l_exit_error
-		ldx #FD_INDEX_TEMP_DIR
+		bne @l_exit_err
+		jsr __fat_alloc_fd							; alloc a fd for the new directory - try to allocate a new fd here, right before any fat writes, cause they may fail
+		bne @l_exit_err								; and we want to avoid an error in between the different block writes
 		lda #DIR_Attr_Mask_Dir						; set type directory
 		jsr __fat_set_fd_attr_direntry			; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
 		jsr __fat_reserve_cluster					; try to find and reserve next free cluster and store them in fd_area at fd (X)
-		bcs @l_exit
-
+		bcs @l_exit_close								; C=1 - fail, exit but close fd
 		jsr __fat_set_lba_from_fd_dirlba			; setup lba_addr from fd
 		jsr __fat_write_dir_entry					; create dir entry at current dirptr
-		bcs @l_exit
-		jmp __fat_write_newdir_entry				; write the data of the newly created directory with prepared data from dirptr
-@l_exit_exists:
-		lda #EEXIST
-@l_exit_error:
+		bcs @l_exit_close
+		jsr __fat_write_newdir_entry				; write the data of the newly created directory with prepared data from dirptr
+@l_exit_close:
+		jmp __fat_free_fd								; A/C are preserved
+@l_exit_err:
 		sec
-@l_exit:
 		debug "fat_mkdir"
 		rts
 
@@ -323,12 +324,12 @@ __fat_count_direntries:
 		.asciiz "*.*"
 
 
-		; write new dir entry to dirptr and set new end of directory marker
-		; in:
-		;	X - file descriptor
-		;	dirptr - set to current dir entry within block_data
-		; out:
-		;	C=0 on success, C=1 on error and A=<error code>
+; write new dir entry to dirptr and set new end of directory marker
+; in:
+;	X - file descriptor
+;	dirptr - set to current dir entry within block_data
+; out:
+;	C=0 on success, C=1 on error and A=<error code>
 __fat_write_dir_entry:
 		jsr __fat_prepare_dir_entry
 		debug16 "f_w_dp", dirptr
@@ -354,7 +355,8 @@ __fat_write_dir_entry:
 		bcs @l_exit
 
 		ldy #$7f															; safely, fill the new dir block with 0 to mark eod
-@l_erase:; A=0 here
+		lda #0
+@l_erase:
 		sta block_data+$000, y
 		sta block_data+$080, y
 		sta block_data+$100, y
@@ -477,15 +479,15 @@ __fat_write_newdir_entry:
 		lda fd_area+F32_fd::CurrentCluster+3,y
 		sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusHI+1
 
-		ldy #$80
+;		ldy #$7f
 		lda #$00
 @l_1st_block:
-		sta block_data+2*.sizeof(F32DirEntry), y								; all dir entries, but "." and ".." (+2), are set to 0
-		sta block_data+$080, y
-		sta block_data+$100, y
-		sta block_data+$180, y
-		dey
-		bpl @l_1st_block
+		stz block_data+2*.sizeof(F32DirEntry) ;, y								; all dir entries, but "." and ".." (+2), are set to 0
+;		sta block_data+$080, y
+;		sta block_data+$100, y
+;		sta block_data+$180, y
+;		dey
+;		bpl @l_1st_block
 
 		jsr __calc_lba_addr
 		jsr __fat_write_block_data
@@ -503,7 +505,7 @@ __fat_write_newdir_entry:
 		dey
 		bne @l_remain_blocks													; write until 0 (VolumeID::SecPerClus) reached
 @l_exit:
-		debug "__fat_write_newdir_entry"
+		debug "fat_wr_nd"
 		rts
 
 __fat_write_fat_blocks:

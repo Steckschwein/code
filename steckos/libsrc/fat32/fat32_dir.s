@@ -80,7 +80,7 @@ __fat_opendir_cwd:
 __fat_opendir:
 		jsr __fat_open_path
 		bne @l_exit					; exit on error
-		lda fd_area + F32_fd::Attr, x
+		lda fd_area + F32_fd::Attr,x
 		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
 		beq @l_exit_close
 		lda #EOK						; ok
@@ -108,9 +108,9 @@ fat_get_root_and_pwd:
 		jsr __fat_clone_cd_td							; start from current directory, clone the cd fd
 
 @l_rd_dir:
-		lda #'/'										; put the / char to result string
+		lda #'/'														; put the / char to result string
 		jsr put_char
-		ldx #FD_INDEX_TEMP_DIR							; if root, exit to inverse the path string
+		ldx #FD_INDEX_TEMP_DIR									; if root, exit to inverse the path string
 		jsr __fat_isroot
 		beq @l_inverse
 		m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, fat_tmp_dw, 4	; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)

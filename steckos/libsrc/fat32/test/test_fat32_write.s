@@ -34,6 +34,8 @@ debug_enabled=1
 		jsr fat_mkdir
 		assertZ 1
 		assertA EOK
+		assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
+			fat32_dir_entry_dir "DIR03   ", "   ", TEST_FILE_CL
 
 ; -------------------
 		setup "fat_fopen O_CREAT"
@@ -138,6 +140,7 @@ mock_read_block:
 		lda #EOK
 		rts
 
+; cluster search will always find $10 cluster
 TEST_FILE_CL=$10
 
 mock_write_block:

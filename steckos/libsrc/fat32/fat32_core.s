@@ -180,7 +180,7 @@ __fat_open_path:
 		bne @l_parse_1
 		bra @l_err_einval
 @l_open:
-		stz filename_buf, x			;\0 terminate the current path fragment
+		stz filename_buf, x			; \0 terminate the current path fragment
 		jsr __fat_open_file			; return with X as offset into fd_area with new allocated file descriptor
 		bne @l_exit
 		iny
@@ -191,10 +191,7 @@ __fat_open_path:
 		rts
 @l_openfile:
 		stz filename_buf, x			;\0 terminate the current path fragment
-		jsr __fat_open_file			; return with X as offset into fd_area with new allocated file descriptor
-		bne @l_exit
-		lda #EOK
-		rts
+		jmp __fat_open_file			; return with X as offset into fd_area with new allocated file descriptor
 
 __fat_clone_cd_td:
 		ldy #FD_INDEX_CURRENT_DIR
@@ -268,7 +265,7 @@ __fat_open_file:
 
 @l1:	ldy #F32DirEntry::Attr
 		lda (dirptr),y
-		bit #DIR_Attr_Mask_Dir 		; directory?
+		and #DIR_Attr_Mask_Dir 		; directory?
 		bne @l2							; yes, do not allocate a new fd, use index (X) which is already set to FD_INDEX_TEMP_DIR and just update the fd data
 		jsr __fat_alloc_fd			; no, then regular file and we allocate a new fd for them
 		bne @l_exit

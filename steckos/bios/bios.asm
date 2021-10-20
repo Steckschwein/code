@@ -1,32 +1,33 @@
-		.include "bios.inc"
-		.include "sdcard.inc"
-		.include "fat32.inc"
-		.include "fcntl.inc"
-		.include "nvram.inc"
-		.include "spi.inc"
-		.include "system.inc"
+.include "bios.inc"
+.include "sdcard.inc"
+.include "fat32.inc"
+.include "fcntl.inc"
+.include "nvram.inc"
+.include "spi.inc"
+.include "system.inc"
 
-		.import uart_init, upload
-		.import init_via1
-		.import hexout, primm
-		.import vdp_init, _vdp_chrout, vdp_detect
-		.import sdcard_init
-		.import sdcard_detect
-		.import fat_fopen
-		.import fat_mount, fat_read, fat_close
-		.import read_nvram
-		.import sd_read_block, sd_write_block
-		.import spi_select_device
-		.import spi_deselect
-		.import spi_rw_byte
-		.import spi_r_byte
-        .import fetchkey
+.import uart_init, upload
+.import init_via1
+.import hexout, primm
+.import vdp_init, _vdp_chrout, vdp_detect
+.import sdcard_init
+.import sdcard_detect
+.import fat_fopen
+.import fat_mount, fat_read, fat_close
+.import read_nvram
+.import sd_read_block, sd_write_block
+.import spi_select_device
+.import spi_deselect
+.import spi_rw_byte
+.import spi_r_byte
+  .import fetchkey
 
-		.export vdp_chrout
-		.export read_block=sd_read_block
-		.export char_out=_vdp_chrout
+.export vdp_chrout
+.export read_block=sd_read_block
+.export char_out=_vdp_chrout
+.export debug_chrout=_vdp_chrout
 
-		.exportzp startaddr, endaddr
+.exportzp startaddr, endaddr
 
 .zeropage
 	ptr1: .res 2
