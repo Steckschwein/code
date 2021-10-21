@@ -79,7 +79,7 @@ PartType_FAT32_LBA    = $0c
    BootSectCpy .word    ; 50-51
    Reserved3   .byte 12 ; 52-63
    PhysDrvNum  .byte    ; 64
-   Reserved4   .byte    ; 65 - bit 7-2 0, bit 0 "dirty flag"
+   Reserved4   .byte    ; 65/$41 - bit 7-2 0, bit 0 "dirty flag"
    ExtBootSig  .byte    ; 66
    VolumeID    .dword   ; 67-70
    VolumeLabel .byte 11 ; 71-82
@@ -98,7 +98,7 @@ PartType_FAT32_LBA    = $0c
    SectsPerFAT .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
 .endstruct
 
-; struct VolumeID like we keep in in memory
+; struct VolumeID like we keep it in memory
 .struct VolumeID
    BPB      .tag BPB
    EBPB     .tag EBPB
@@ -175,9 +175,13 @@ DIR_Entry_Deleted            = $e5
     Offset	.dword
 .endstruct
 
-.macro _is_file_open _label
+.macro _is_file_open
    bit fd_area + F32_fd::CurrentCluster+3, x ; is open
-   bmi _label
+   bpl :+
+   lda #EINVAL
+   sec
+   rts
+:
 .endmacro
 
 .struct F32_fd

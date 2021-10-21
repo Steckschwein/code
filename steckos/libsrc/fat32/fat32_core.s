@@ -41,7 +41,6 @@
 .import read_block
 
 .export __fat_read_cluster_block_and_select
-.export __fat_is_cln_eoc
 .export __fat_find_first
 .export __fat_find_first_mask
 .export __fat_find_next
@@ -555,6 +554,10 @@ __fat_read_cluster_block_and_select:
 		bne @l_clnr_fd
 		lda volumeID + VolumeID::EBPB + EBPB::RootClus+0
 		bra @l_clnr_page
+@l_exit:
+		sec
+		debug16 "f_rcbs", read_blkptr
+		rts
 @l_clnr_fd:
 		lda fd_area+F32_fd::CurrentCluster+0,x 	; offset within block_fat, clnr<<2 (* 4)
 @l_clnr_page:
@@ -566,15 +569,9 @@ __fat_read_cluster_block_and_select:
 		asl											; block offset = clnr*4
 		asl
 		tay
-		jmp __fat_is_cln_eoc						; C is returned accordingly
-@l_exit:
-		sec
-		debug16 "f_rcbs", read_blkptr
-		rts
-
-		; check whether the EOC (end of cluster chain) cluster number is reached
-		; out:
-		;	C=1 if clnr is EOC, C=0 otherwise
+; check whether the EOC (end of cluster chain) cluster number is reached
+; out:
+;	C=1 if clnr is EOC, C=0 otherwise
 __fat_is_cln_eoc:
 		phy
 		lda (read_blkptr),y
@@ -650,21 +647,10 @@ __calc_cluster_begin_lba:
 
 __calc_fat_fsinfo_lba:
 		; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
-		; clc
-		; lda lba_addr+0
-		; adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+0
-		; sta fat_fsinfo_lba+0
-		; lda lba_addr+1
-		; adc volumeID+ VolumeID::EBPB + EBPB::FSInfoSec+1
-		; sta fat_fsinfo_lba+1
-
 		add16 lba_addr, volumeID+ VolumeID::EBPB + EBPB::FSInfoSec, fat_fsinfo_lba
-
-		;TODO FIXME weird
-		lda #0
-		sta fat_fsinfo_lba+3
 		adc #0				; 0 + C
 		sta fat_fsinfo_lba+2
+		stz fat_fsinfo_lba+3 ; always 0
 		rts
 
 __calc_fat_lba_begin:

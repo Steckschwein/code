@@ -66,7 +66,7 @@
 ; out:
 ;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_write:
-		_is_file_open @l_exit_einval					; exit, not open
+		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		lda fd_area + F32_fd::Attr, x
 		bit #DIR_Attr_Mask_Dir							; regular file?
@@ -76,15 +76,11 @@ fat_write:
 		rts
 @l_isfile:
 		jsr __fat_isroot									; check whether the start cluster of the file is the root cluster - @see fat_alloc_fd, fat_open)
-		debug "fw_isroot"
 		bne @l_write										; if not, we can directly update dir entry and write data afterwards
 
-		copypointer write_blkptr, __volatile_ptr
 		jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster
 		debug "fw_res_cl"
 		bne @l_exit
-		copypointer __volatile_ptr, write_blkptr
-		debug "fw1"
 @l_write:
 		jsr __calc_blocks									; calc blocks
 		beq @l_direntry									; Z=1 - no blocks to write, but update dir entry
@@ -381,15 +377,16 @@ __fat_write_dir_entry:
 ; out:
 ;	C=0 on success, C=1 on error and A=error code
 __fat_free_cluster:
-	jsr __fat_read_cluster_block_and_select
-	bne @l_exit								; read error...
-	bcc @l_exit								; TODO FIXME cluster chain during deletion not supported yet - therefore EOC (C=1) expected here !!!
-	debug "f_fc"
-	jsr __fat_mark_cluster				; mark cluster as free (A=0)
-	jsr __fat_write_fat_blocks			; write back fat blocks
-	bcc __fat_update_fsinfo_inc		; ok - update fsinfo block
+		jsr __fat_read_cluster_block_and_select
+		bcs @l_exit								; read error... TODO FIXME cluster chain during deletion not supported yet - therefore EOC (C=1) expected here !!!
+		debug "f_fc"
+		lda #0
+		jsr __fat_mark_cluster				; mark cluster as free
+		jsr __fat_write_fat_blocks			; write back fat blocks
+		lda #$01
+		bcc __fat_update_fsinfo				; ok - update fsinfo block
 @l_exit:
-	rts
+		rts
 
 ; find and reserve next free cluster and maintains the fsinfo block
 ; in:
@@ -398,29 +395,41 @@ __fat_free_cluster:
 ;	C=0 on success, C=1 otherwise and A=error code
 __fat_reserve_cluster:
 		jsr __fat_find_free_cluster				; find free cluster, stored in fd_area for the fd given within X
-		bne l_exit
-		jsr __fat_mark_cluster_eoc					; mark cluster in block with EOC - TODO cluster chain support
+		bcs @l_exit
+		jsr __fat_mark_cluster_eoc					; mark cluster in fat block with EOC - TODO cluster chain support
 		jsr __fat_write_fat_blocks					; write the updated fat block for 1st and 2nd FAT to the device
-		bcc __fat_update_fsinfo_dec				; ok - update the fsinfo sector/block
-l_exit:
+		lda #<(-1)
+		bcc __fat_update_fsinfo						; exit on error, otherwise fall through and update the fsinfo sector/block
+@l_exit:
 		rts
+
 		;TODO check valid fsinfo block
 		;TODO check whether clnr is maintained, test 0xFFFFFFFF ?
 		;TODO improve calc, currently fixed to cluster-=1
 		;TODO update amount of free clusters to be reserved/freed with A [-128...127]
-
-__fat_update_fsinfo_inc:
-		jsr __fat_read_fsinfo
-		bne l_exit
-		debug32 "fs_info+", block_fat+F32FSInfo::FreeClus
-		_inc32 block_fat+F32FSInfo::FreeClus
-		jmp __fat_write_block_fat
-
-__fat_update_fsinfo_dec:
-		jsr __fat_read_fsinfo
-		bne __fat_update_fsinfo_exit
-		debug32 "fs_info-", block_fat+F32FSInfo::FreeClus
- 		_dec32 block_fat+F32FSInfo::FreeClus
+__fat_update_fsinfo:
+		pha
+		m_memcpy fat_fsinfo_lba, lba_addr, 4
+		SetVector block_fat, read_blkptr
+		jsr __fat_read_block
+		bne @l_exit
+		pla
+		debug32 "fs_info", block_fat+F32FSInfo::FreeClus
+		clc
+		stz krn_tmp
+		bpl :+
+		dec krn_tmp ; 2's complement ($ff)
+:		adc block_fat+F32FSInfo::FreeClus+0
+		sta block_fat+F32FSInfo::FreeClus+0
+		lda block_fat+F32FSInfo::FreeClus+1
+		adc krn_tmp
+		sta block_fat+F32FSInfo::FreeClus+1
+		lda block_fat+F32FSInfo::FreeClus+2
+		adc krn_tmp
+		sta block_fat+F32FSInfo::FreeClus+2
+		lda block_fat+F32FSInfo::FreeClus+3
+		adc krn_tmp
+		sta block_fat+F32FSInfo::FreeClus+3
 
 		lda fd_area+F32_fd::CurrentCluster+0,x
 	 	sta block_fat+F32FSInfo::LastClus+0
@@ -431,12 +440,8 @@ __fat_update_fsinfo_dec:
 		lda fd_area+F32_fd::CurrentCluster+3,x
 	 	sta block_fat+F32FSInfo::LastClus+3
 		jmp __fat_write_block_fat
-
-__fat_read_fsinfo:
-		m_memcpy fat_fsinfo_lba, lba_addr, 4
-		SetVector block_fat, read_blkptr
-		jmp __fat_read_block
-__fat_update_fsinfo_exit:
+@l_exit:
+		pla
 		rts
 
 
@@ -479,15 +484,15 @@ __fat_write_newdir_entry:
 		lda fd_area+F32_fd::CurrentCluster+3,y
 		sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusHI+1
 
-;		ldy #$7f
+		ldy #$7f
 		lda #$00
 @l_1st_block:
-		stz block_data+2*.sizeof(F32DirEntry) ;, y								; all dir entries, but "." and ".." (+2), are set to 0
-;		sta block_data+$080, y
-;		sta block_data+$100, y
-;		sta block_data+$180, y
-;		dey
-;		bpl @l_1st_block
+		sta block_data+2*.sizeof(F32DirEntry), y								; all dir entries, but "." and ".." (+2), are set to 0
+		sta block_data+$080, y
+		sta block_data+$100, y
+		sta block_data+$180, y
+		dey
+		bpl @l_1st_block
 
 		jsr __calc_lba_addr
 		jsr __fat_write_block_data
@@ -519,7 +524,7 @@ __fat_write_fat_blocks:
 		.endrepeat
 		jsr __fat_write_block_fat				; write to fat mirror (fat2)
 @err_exit:
-		debug "fw_fat_blocks"
+		debug "fw_blocks"
 		rts
 
 ; return C=0 on success, C=1 otherwise
@@ -550,8 +555,8 @@ __fat_write_block_ptr:
 		stz write_blkptr	;page aligned
 __fat_write_block:
 .ifndef FAT_NOWRITE
-		debug32 "fat_wb lba", lba_addr
-		debug16 "fat_wb wpt", write_blkptr
+		debug32 "f_wr lba", lba_addr
+		debug16 "f_wr wpt", write_blkptr
 		phx
 		jsr write_block
 		dec write_blkptr+1		; TODO FIXME clarification with TW - write_block increments write_blkptr highbyte - which is a sideeffect and should be avoided
@@ -664,14 +669,14 @@ __fat_mark_cluster:
 		sta (read_blkptr), y
 		rts
 
-		; in:
-		;	X - file descriptor
-		; out:
-		;	Z=1 on success
-		;		Y=offset in block_fat of found cluster
-		;		lba_addr with fat block where the found cluster resides
-		;		the found cluster is stored within the given file descriptor (fd_area+F32_fd::CurrentCluster,x)
-		;	Z=0 on error, A=error code
+; in:
+;	X - file descriptor
+; out:
+;	C=0 on success
+;		Y=offset in block_fat of found cluster
+;		lba_addr with fat block where the found cluster resides
+;		the found cluster is stored within the given file descriptor (fd_area+F32_fd::CurrentCluster,x)
+;	C=1 on error, A=error code
 __fat_find_free_cluster:
 		;TODO improve, use a previously saved lba_addr and/or found cluster number
 		stz lba_addr+3			; TODO FIXME we assume that 16 bit are sufficient for fat lba address
@@ -684,7 +689,7 @@ __fat_find_free_cluster:
 		SetVector block_fat, read_blkptr
 @next_block:
 		jsr __fat_read_block	; read fat block
-		bne @exit
+		bne @l_exit_err
 
 		ldy #0
 @l1:	lda block_fat+0,y			; 1st page find cluster entry with 00 00 00 00
@@ -710,7 +715,8 @@ __fat_find_free_cluster:
 		cmp fat2_lba_begin+0
 		bne @next_block
 		lda #ENOSPC				; end reached, answer ENOSPC () - "No space left on device"
-@exit:
+@l_exit_err:
+		sec
 	 	debug32 "free_cl", fd_area+(2*.sizeof(F32_fd)) + F32_fd::CurrentCluster ; almost the 3rd entry
 		rts
 @l_found_hb: ; found in "high" block (2nd page of the sd_blocksize)
@@ -729,7 +735,7 @@ __fat_find_free_cluster:
 
 		;m_memcpy lba_addr, safe_lba TODO FIXME fat lba address, reuse them at next search
 		; to calc them we have to clnr = (block number * 512) / 4 + (Y / 4) => (lba_addr - fat_lba_begin) << 7 + (Y>>2)
-		; to avoid the <<7, we simply <<8 and do one ror
+		; to avoid the <<7, we simply <<8 and do one ror - FTW!
 		sec
 		lda lba_addr+0
 		sbc fat_lba_begin+0
@@ -742,11 +748,12 @@ __fat_find_free_cluster:
 		ror
 		sta fd_area+F32_fd::CurrentCluster+1, x
 		lda #0
-		ror						; clnr += offset within block - already saved in F32_fd::CurrentCluster+0, x s.above
+		ror						; clnr += Y>>2 (offset within block) - already saved in F32_fd::CurrentCluster+0, x s.above
 		adc fd_area+F32_fd::CurrentCluster+0, x
 		sta fd_area+F32_fd::CurrentCluster+0, x
 		lda #0					; exit found
 		sta fd_area+F32_fd::CurrentCluster+3, x
+		clc ; found, C=0 success
 		rts
 
 ; unlink a file denoted by given path in A/X

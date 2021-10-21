@@ -43,7 +43,6 @@
 .import sd_read_multiblock
 
 ;lib internal api
-.import __fat_read_cluster_block_and_select
 .import __fat_isroot
 .import __fat_read_block
 .import __fat_init_fd
@@ -103,7 +102,7 @@ __fat_fseek:
 		;out:
 		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 fat_fread_byte:
-		_is_file_open l_exit_einval
+		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		lda #EOK
@@ -127,11 +126,6 @@ l_read:
 		_inc32_x fd_area+F32_fd::seek_pos
 		clc
 		rts
-l_exit_einval:
-		lda #EINVAL
-		sec
-     	rts
-
 
     	;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. the file size and blocks must be checked
     	;
@@ -144,7 +138,7 @@ l_exit_einval:
 		;	C=0 on success and A=0 (EOK), C=1 and A=error code otherwise
 		; 	Y - number of blocks which where successfully read
 fat_fread:
-		_is_file_open l_exit_einval
+		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		sty krn_tmp3										; safe requested block number
 		stz krn_tmp2										; init counter
@@ -175,7 +169,7 @@ fat_fread:
 		;out:
 		;	C=0 on success, C=1 on error and A=error code or EOC reached and A=0 otherwise
 fat_read_block:
-		_is_file_open @l_exit_einval
+		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
@@ -191,8 +185,6 @@ fat_read_block:
 		clc ; exit success C=0
 		lda #EOK
 		rts
-@l_exit_einval:
-		lda #EINVAL
 @l_exit_err:
 		sec
 @l_exit:

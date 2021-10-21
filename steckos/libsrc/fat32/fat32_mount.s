@@ -105,10 +105,7 @@ fat_mount:
 		jsr __calc_cluster_begin_lba
 		jsr __calc_fat_fsinfo_lba
 
-
-
-
-		debug8 "sec/cl", volumeID+VolumeID::BPB + BPB::SecPerClus
+		debug8 "sc/cl", volumeID+VolumeID::BPB + BPB::SecPerClus
 		debug32 "r_cl", volumeID+VolumeID::EBPB + EBPB::RootClus
 		debug32 "s_lba", lba_addr
 		debug16 "r_sc", volumeID + VolumeID::BPB + BPB::RsvdSecCnt
@@ -121,7 +118,7 @@ fat_mount:
 		debug16 "fbuf", filename_buf
 
 		; init file descriptor area
-      	ldx #0
+   	ldx #0
 		jsr __fat_init_fdarea
 
 		; alloc file descriptor for current dir. which is cluster number 0 on fat32 - !!! Note: the RootClus offset is compensated within calc_lba_addr

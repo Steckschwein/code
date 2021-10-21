@@ -29,6 +29,8 @@ debug_enabled=1
 
 ; -------------------
 		setup "fat_mkdir_new"
+
+		assert32 $100, block_fsinfo+F32FSInfo::FreeClus
 		lda #<test_dir_name_mkdir
 		ldx #>test_dir_name_mkdir
 		jsr fat_mkdir
@@ -36,6 +38,8 @@ debug_enabled=1
 		assertA EOK
 		assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
 			fat32_dir_entry_dir "DIR03   ", "   ", TEST_FILE_CL
+		assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
+		assert32 TEST_FILE_CL, block_fsinfo+F32FSInfo::LastClus
 
 ; -------------------
 		setup "fat_fopen O_CREAT"
@@ -148,13 +152,13 @@ mock_write_block:
 		debug32 "mock_write_block lba", lba_addr
 		debug16 "mock_write_block wptr", write_blkptr
 		store_block_if LBA_BEGIN, block_root_cl, @ok ; write root cl block
+		store_block_if FS_INFO_LBA, block_fsinfo, @ok ;
 		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), @dummy_write
 		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_write
 		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), @dummy_write
 		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), @dummy_write
 		cmp32_eq lba_addr, FAT_LBA, @dummy_write
 		cmp32_eq lba_addr, FAT2_LBA, @dummy_write
-		cmp32_eq lba_addr, FS_INFO_LBA, @dummy_write
 
 		assert32 FAT_EOC, lba_addr ; fail if we end up here
 @dummy_write:
@@ -215,7 +219,10 @@ block_fsinfo_init:
 	.byte "RRaA"
 	.res 480, 0
 	.byte "rrAa"
-	.res 512-(4+480+4)
+	.dword $100 ; edge case, 32bit add/sub
+	.dword $02
+	.res 12,0
+	.byte 0,0,$55,$aa
 
 .bss
 block_root_cl: .res sd_blocksize
