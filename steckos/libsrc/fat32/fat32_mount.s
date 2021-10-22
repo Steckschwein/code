@@ -39,10 +39,6 @@
 
 .import __fat_init_fdarea
 .import __fat_init_fd
-.import __calc_fat_lba_begin
-.import __calc_cluster_begin_lba
-.import __calc_fat_fsinfo_lba
-
 
 .export fat_mount
 
@@ -101,9 +97,82 @@ fat_mount:
 		lda #fat_invalid_sector_size
 		rts
 @l6:
-		jsr __calc_fat_lba_begin
-		jsr __calc_cluster_begin_lba
-		jsr __calc_fat_fsinfo_lba
+__calc_fat_fsinfo_lba:
+		; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
+		add16 lba_addr, volumeID+ VolumeID::EBPB + EBPB::FSInfoSec, fat_fsinfo_lba
+		lda lba_addr+2
+		adc #0				; + C
+		sta fat_fsinfo_lba+2
+		stz fat_fsinfo_lba+3 ; always 0
+
+__calc_fat_lba_begin:
+		; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
+		; fat_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors
+		; fat2_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors + Sectors_Per_FAT
+
+		; add number of reserved sectors to calculate fat_lba_begin. also store in cluster_begin_lba for further calculation
+		clc
+		lda lba_addr + 0
+		adc volumeID + VolumeID::BPB + BPB::RsvdSecCnt + 0
+		sta cluster_begin_lba + 0
+		sta fat_lba_begin + 0
+		lda lba_addr + 1
+		adc volumeID + VolumeID::BPB + BPB::RsvdSecCnt + 1
+		sta cluster_begin_lba + 1
+		sta fat_lba_begin + 1
+		lda lba_addr + 2
+		adc #0
+		sta cluster_begin_lba + 2
+		sta fat_lba_begin + 2
+		lda lba_addr + 3
+;		adc #0	; adc #0 above will never overflow
+		sta cluster_begin_lba + 3
+		sta fat_lba_begin + 3
+
+		add16 volumeID +  VolumeID::EBPB + EBPB::FATSz32, fat_lba_begin, fat2_lba_begin
+		; fall through
+
+__calc_cluster_begin_lba:
+		; Number of FATs. Must be 2
+		; cluster_begin_lba = fat_lba_begin + (sectors_per_fat * VolumeID::NumFATs (2))
+		ldy volumeID + VolumeID::BPB + BPB::NumFATs
+@l7:	clc
+		ldx #$00
+@l8:	ror ; get carry flag back
+		lda volumeID + VolumeID::EBPB + EBPB::FATSz32,x ; sectors per fat
+		adc cluster_begin_lba,x
+		sta cluster_begin_lba,x
+		inx
+		rol ; save status register before cpx to save carry
+		cpx #$04 ; 32Bit
+		bne @l8
+		dey
+		bne @l7
+
+		; performance optimization - the RootClus offset is compensated within calc_lba_addr
+		; cluster_begin_lba_m2 = cluster_begin_lba - (VolumeID::RootClus*VolumeID::SecPerClus)
+		; cluster_begin_lba_m2 = cluster_begin_lba - (2 * sec/cluster) = cluster_begin_lba - (sec/cluster << 1)
+
+		;TODO FIXME we assume 2 here instead of using the value in VolumeID::RootClus
+		lda volumeID+VolumeID::BPB + BPB::SecPerClus ; max sec/cluster can be 128, with 2 (BPB_RootClus) * 128 we may subtract max 256
+		asl
+
+		sta lba_addr		  ;	used as tmp
+		stz lba_addr +1	  ;	safe carry
+		rol lba_addr +1
+		sec						 ;	subtract from cluster_begin_lba
+		lda cluster_begin_lba
+		sbc lba_addr
+		sta cluster_begin_lba
+		lda cluster_begin_lba +1
+		sbc lba_addr +1
+		sta cluster_begin_lba +1
+		lda cluster_begin_lba +2
+		sbc #0
+		sta cluster_begin_lba +2
+		lda cluster_begin_lba +3
+		sbc #0
+		sta cluster_begin_lba +3
 
 		debug8 "sc/cl", volumeID+VolumeID::BPB + BPB::SecPerClus
 		debug32 "r_cl", volumeID+VolumeID::EBPB + EBPB::RootClus
