@@ -372,6 +372,10 @@ __fat_isroot:
 		; TODO dedicated calls for data and fat, clean code
 		; internal read block
 		; requires: read_blkptr and lba_addr already calculated
+__fat_read_block_fat:
+		stz read_blkptr
+		lda #>block_fat
+		sta read_blkptr+1
 __fat_read_block:
 		phx
 		debug32 "fat_rb", lba_addr
@@ -530,7 +534,7 @@ __fat_next_cln:
 		stz fd_area + F32_fd::offset, x 					; reset block offset here
 		clc ; success
 @l_exit:
-		ply
+		ply														; use Y to preserve A with return code
 		sty read_blkptr+1
 		ply
 		sty read_blkptr
@@ -544,8 +548,7 @@ __fat_next_cln:
 		;	C=0 on success, C=1 if the cluster number is the EOC and A=EOK or C=1 and A=<error code> otherwise
 __fat_read_cluster_block_and_select:
 		jsr __calc_fat_lba_addr
-		SetVector block_fat, read_blkptr
-		jsr __fat_read_block
+		jsr __fat_read_block_fat
 		bne @l_exit
 		jsr __fat_isroot							; is root clnr?
 		bne @l_clnr_fd
@@ -560,8 +563,7 @@ __fat_read_cluster_block_and_select:
 @l_clnr_page:
 		bit #$40										; clnr within 2nd page of the 512 byte block ?
 		beq @l_clnr
-		ldy #>(block_fat+$0100)					; yes, set read_blkptr to 2nd page of block_fat
-		sty read_blkptr+1
+		inc read_blkptr+1							; yes, set read_blkptr to 2nd page of block_fat
 @l_clnr:
 		asl											; block offset = clnr*4
 		asl
@@ -569,7 +571,7 @@ __fat_read_cluster_block_and_select:
 ; check whether the EOC (end of cluster chain) cluster number is reached
 ; out:
 ;	C=1 if clnr is EOC, C=0 otherwise
-__fat_is_cln_eoc:
+__fat_is_cluster_eoc:
 		phy
 		lda (read_blkptr),y
 		cmp #<FAT_EOC
@@ -577,6 +579,7 @@ __fat_is_cln_eoc:
 		iny
 		lda (read_blkptr),y
 		cmp #<(FAT_EOC>>8)
+		bne @l_neoc
 		iny
 		lda (read_blkptr),y
 		cmp #<(FAT_EOC>>16)
@@ -589,7 +592,7 @@ __fat_is_cln_eoc:
 		clc
 @l_eoc:
 		ply
-		lda #EOK ; carry denotes EOC state
+		lda #EOK ; and carry denotes EOC state
 		rts
 
 __inc_lba_address:

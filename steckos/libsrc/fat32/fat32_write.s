@@ -229,26 +229,26 @@ __fat_set_direntry_cluster:
 		sta (dirptr), y
 		rts
 
-		; delete a directory entry denoted by given path in A/X
-		  ;in:
-		  ;	A/X - pointer to the directory path
-		; out:
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+; delete a directory entry denoted by given path in A/X
+;in:
+;	A/X - pointer to the directory path
+; out:
+;	C=0 on success, C=1 and A=error code otherwise
 fat_rmdir:
 		jsr __fat_opendir_cwd
 		bne @l_exit
 		debugdirentry
-		jsr __fat_isroot
-		beq @l_err_root					; cannot delete the root dir ;)
+;		jsr __fat_isroot
+;		beq @l_err_root					; cannot delete the root dir ;)
 		jsr __fat_is_dot_dir
 		beq @l_err_einval
 		jsr __fat_dir_isempty
 		bcs @l_exit
-		jsr __fat_unlink
-		bra @l_exit
+		jmp __fat_unlink
 @l_err_root:
 @l_err_einval:
 		lda #EINVAL
+		sec
 @l_exit:
 		debug "rmdir"
 		rts
@@ -377,8 +377,9 @@ __fat_write_dir_entry:
 ; out:
 ;	C=0 on success, C=1 on error and A=error code
 __fat_free_cluster:
-		jsr __fat_read_cluster_block_and_select
-		bcs l_exit								; read error... TODO FIXME cluster chain during deletion not supported yet - therefore EOC (C=1) expected here !!!
+		jsr __fat_read_cluster_block_and_select	; Y offset in block
+		bne l_exit				; read error
+		bcc l_exit				; EOC? (C=1) expected here in order to free - TODO FIXME cluster chain during deletion not supported yet
 		lda #1
 		sta krn_tmp
 		lda #0
@@ -395,6 +396,7 @@ __fat_reserve_cluster:
 		bcs l_exit
 		lda #$ff
 		sta krn_tmp
+
 _fat_update_cluster:
 		jsr __fat_mark_cluster						; mark cluster in fat block eihter with EOC (0x0fffffff) or free 0x00000000
 		jsr __fat_write_fat_blocks					; write the updated fat block for 1st and 2nd FAT to the device
@@ -420,8 +422,7 @@ __fat_update_fsinfo:
 	 	sty block_fat+F32FSInfo::LastClus+2
 		ldy fd_area+F32_fd::CurrentCluster+3,x
 	 	sty block_fat+F32FSInfo::LastClus+3
-:		dbg
-		debug32 "fs_info", block_fat+F32FSInfo::FreeClus
+:		debug32 "fs_info", block_fat+F32FSInfo::FreeClus
 		clc
 		adc block_fat+F32FSInfo::FreeClus+0
 		sta block_fat+F32FSInfo::FreeClus+0
@@ -435,7 +436,6 @@ __fat_update_fsinfo:
 		adc krn_tmp2
 		sta block_fat+F32FSInfo::FreeClus+3
 		jmp __fat_write_block_fat
-
 
 ; create the "." and ".." entry of the new directory
 ; in:
@@ -762,15 +762,15 @@ fat_unlink:
 		rts
 
 __fat_unlink:
-		jsr __fat_isroot							; no clnr assigned yet, file was just touched
+		jsr __fat_isroot							; is root or no clnr assigned yet, file was just touched
 		beq @l_unlink_direntry					; if so, we can skip freeing clusters from fat
 
 		jsr __fat_free_cluster					; free cluster, update fsinfo
-		bne	@l_exit
+		bcs @l_exit
 @l_unlink_direntry:
 		jsr __fat_read_direntry					; read the dir entry
-		bne	@l_exit
-		lda	#DIR_Entry_Deleted				; mark dir entry as deleted ($e5)
+		bne @l_exit
+		lda #DIR_Entry_Deleted				; mark dir entry as deleted ($e5)
 		sta (dirptr)
 		jsr __fat_write_block_data				; write back dir entry
 @l_exit:
