@@ -44,7 +44,7 @@
 .import rtc_systime_update
 
 .import __fat_read_cluster_block_and_select
-.import __fat_set_fd_attr_direntry
+.import __fat_set_fd_attr_dirlba
 .import __fat_alloc_fd
 .import __fat_opendir_cwd
 .import __fat_free_fd
@@ -238,14 +238,11 @@ fat_rmdir:
 		jsr __fat_opendir_cwd
 		bne @l_exit
 		debugdirentry
-;		jsr __fat_isroot
-;		beq @l_err_root					; cannot delete the root dir ;)
 		jsr __fat_is_dot_dir
 		beq @l_err_einval
 		jsr __fat_dir_isempty
 		bcs @l_exit
 		jmp __fat_unlink
-@l_err_root:
 @l_err_einval:
 		lda #EINVAL
 		sec
@@ -259,9 +256,7 @@ fat_rmdir:
 ;	C=0 on success (A=0), C=1 on error and A=error code otherwise
 fat_mkdir:
 		jsr __fat_opendir_cwd
-		bne :+
-		lda #EEXIST										; open success, exists already
-		bra @l_exit_err
+		beq @l_exit_eexist							; open success, dir exists already
 :		cmp #ENOENT										; we expect 'no such file or directory' error, otherwise a file with same name already exists
 		bne @l_exit_err								; exit on other error
 
@@ -271,7 +266,7 @@ fat_mkdir:
 		jsr __fat_alloc_fd							; alloc a fd for the new directory - try to allocate a new fd here, right before any fat writes, cause they may fail
 		bne @l_exit_err								; and we want to avoid an error in between the different block writes
 		lda #DIR_Attr_Mask_Dir						; set type directory
-		jsr __fat_set_fd_attr_direntry			; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
+		jsr __fat_set_fd_attr_dirlba				; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
 		jsr __fat_reserve_cluster					; try to find and reserve next free cluster and store them in fd_area at fd (X)
 		bcs @l_exit_close								; C=1 - fail, exit but close fd
 		jsr __fat_set_lba_from_fd_dirlba			; setup lba_addr from fd
@@ -279,7 +274,9 @@ fat_mkdir:
 		bcs @l_exit_close
 		jsr __fat_write_newdir_entry				; write the data of the newly created directory with prepared data from dirptr
 @l_exit_close:
-		jmp __fat_free_fd								; A/C are preserved
+		jmp __fat_free_fd								; A and C are preserved
+@l_exit_eexist:
+		lda #EEXIST										; exists already
 @l_exit_err:
 		sec
 		debug "fat_mkdir"
@@ -322,7 +319,7 @@ __fat_count_direntries:
 
 ; write new dir entry to dirptr and set new end of directory marker
 ; in:
-;	X - file descriptor
+;	X - file descriptor of the new dir entry within fd_area
 ;	dirptr - set to current dir entry within block_data
 ; out:
 ;	C=0 on success, C=1 on error and A=<error code>
@@ -362,10 +359,10 @@ __fat_write_dir_entry:
 		;TODO FIXME test end of cluster, if so reserve a new one, update cluster chain for directory ;)
 		debug32 "eod_lba", lba_addr
 		debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
-		jsr __inc_lba_address												; increment lba address to write to next block
+		jsr __inc_lba_address										; increment lba address to write to next block
 @l_eod:
 		;TODO FIXME erase the rest of the block, currently 0 is assumed
-		jsr __fat_write_block_data										; write the updated dir entry to device
+		jsr __fat_write_block_data									; write the updated dir entry to device
 @l_exit:
 		debug "f_wde"
 		rts
@@ -644,10 +641,11 @@ __fat_prepare_dir_entry:
 		jsr __fat_set_direntry_cluster
 		jmp __fat_set_direntry_filesize
 
-		; mark cluster as EOC
-		; in:
-		;	Y - offset in block
-		; 	read_blkptr - points to block_fat either 1st or 2nd page
+; mark cluster according to A
+; in:
+;	A - 0x00 free, 0xff EOC
+;	Y - offset in block
+; 	read_blkptr - points to block_fat either 1st or 2nd page
 __fat_mark_cluster: ; TODO cluster chain support
 		sta (read_blkptr), y
 		iny
@@ -763,14 +761,14 @@ fat_unlink:
 
 __fat_unlink:
 		jsr __fat_isroot							; is root or no clnr assigned yet, file was just touched
-		beq @l_unlink_direntry					; if so, we can skip freeing clusters from fat
+		beq @l_unlink_direntry					; ... then we can skip freeing clusters from fat
 
 		jsr __fat_free_cluster					; free cluster, update fsinfo
 		bcs @l_exit
 @l_unlink_direntry:
 		jsr __fat_read_direntry					; read the dir entry
 		bne @l_exit
-		lda #DIR_Entry_Deleted				; mark dir entry as deleted ($e5)
+		lda #DIR_Entry_Deleted					; mark dir entry as deleted ($e5)
 		sta (dirptr)
 		jsr __fat_write_block_data				; write back dir entry
 @l_exit:

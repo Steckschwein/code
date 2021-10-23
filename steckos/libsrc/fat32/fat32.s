@@ -48,7 +48,7 @@
 .import __fat_init_fd
 .import __fat_free_fd
 .import __fat_alloc_fd
-.import __fat_set_fd_attr_direntry
+.import __fat_set_fd_attr_dirlba
 .import __fat_open_path
 .import __fat_find_first
 .import __fat_find_first_mask
@@ -250,7 +250,7 @@ fat_fopen:
 		bne @l_exit_err					; we do any sd block writes which may result in various errors
 
 		lda #DIR_Attr_Mask_Archive		; create as regular file with archive bit set
-		jsr __fat_set_fd_attr_direntry; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
+		jsr __fat_set_fd_attr_dirlba	; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
 		jsr __fat_write_dir_entry		; create dir entry at current dirptr
 		bcc @l_exit_ok
 		jmp fat_close						; free the allocated file descriptor if there where errors, C=1 and A are preserved

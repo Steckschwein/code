@@ -53,7 +53,7 @@
 .export __fat_next_cln
 .export __fat_open_path
 .export __fat_read_block
-.export __fat_set_fd_attr_direntry
+.export __fat_set_fd_attr_dirlba
 .export __calc_lba_addr
 .export __calc_blocks
 .export __inc_lba_address
@@ -216,7 +216,7 @@ __fat_clone_fd:
 		;	.X - file descriptor
 		; out:
 		;	updated file descriptor, DirEntryLBA and DirEntryPos setup accordingly
-__fat_set_fd_attr_direntry:
+__fat_set_fd_attr_dirlba:
 		sta fd_area + F32_fd::Attr, x
 
 	 	lda lba_addr + 3
@@ -296,7 +296,7 @@ __fat_open_file:
 
 		ldy #F32DirEntry::Attr
 		lda (dirptr),y
-		jsr __fat_set_fd_attr_direntry
+		jsr __fat_set_fd_attr_dirlba
 
 		lda #EOK ; no error
 @l_exit:
