@@ -93,11 +93,11 @@ int main (int argc, const char* argv[])
 {
   char r;
   uint8_t i=0;
+
   uint16_t RsvdSecCnt;
   uint16_t BytsPerSec; // 11-12  ; 512 usually
   uint8_t  SecPerClus;
   uint32_t FSInfoSec;
-
 
   struct PartitionEntry partitions[4];
 
