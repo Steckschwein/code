@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <conio.h>
 #include <stdint.h>
+#include <string.h>
 #include "sdcard.h"
 
 struct PartitionEntry
@@ -19,7 +20,7 @@ struct Bootsector
    uint8_t bootcode[446];
    struct  PartitionEntry partition[4];
    uint8_t signature[2];
-} bootsector;
+};
 
 struct EBPB
 {
@@ -72,7 +73,7 @@ struct FAT32_VolumeID
 
    // FAT32 Extended BIOS Parameter Block begins here
    struct  EBPB EBPB;
-} volid;
+} ;
 
 struct F32FSInfo
 {
@@ -83,92 +84,84 @@ struct F32FSInfo
   uint32_t LastClus; //last known cluster number
   uint8_t  Reserved2[11];
   uint16_t Signature;
-} fsinfo;
+};
 
-uint32_t fat[128];
+uint8_t buf[512];
 
 int main (int argc, const char* argv[])
 {
   char r;
   uint8_t i=0;
-  uint32_t fat_start;
 
-  r = read_block((uint8_t *)&bootsector, 0);
+  struct PartitionEntry partitions[4];
+
+  struct Bootsector * bootsector = (struct Bootsector *) buf;
+  struct FAT32_VolumeID * volid  = (struct FAT32_VolumeID *) buf;
+  struct F32FSInfo * fsinfo      = (struct F32FSInfo *) buf;
+
+  r = read_block(buf, 0);
   if (r != 0)
   {
     printf("E: %d\n", r);
     return EXIT_FAILURE;
   }
 
-  if (!bootsector.signature[0] == 0x55 || !bootsector.signature[1] == 0xaa)
+  if (!bootsector->signature[0] == 0x55 || !bootsector->signature[1] == 0xaa)
   {
     printf("Block signature error\n");
     return EXIT_FAILURE;
   }
 
+  memcpy(partitions, bootsector->partition, sizeof(partitions));
+
   printf("Partition table:\n");
   for (i=0; i<=3; i++)
   {
-    if (bootsector.partition[i] == 0)
+    if (partitions[i].TypeCode == 0)
     {
       continue;
     }
     printf(
       "# Boot Type   LBABegin NumSectors \n%1d %4x  $%02x %10lu %10lu\n", 
       i,
-      bootsector.partition[i].Bootflag,
-      bootsector.partition[i].TypeCode,
-      bootsector.partition[i].LBABegin,
-      bootsector.partition[i].NumSectors
+      partitions[i].Bootflag,
+      partitions[i].TypeCode,
+      partitions[i].LBABegin,
+      partitions[i].NumSectors
     );
   }
 
   printf("\n");
-  r = read_block((uint8_t *)&volid, bootsector.partition[0].LBABegin);
+  r = read_block(buf, partitions[0].LBABegin);
   if (r != 0)
   {
     printf("E: %d\n", r);
     return EXIT_FAILURE;
   }
 
-  printf("FS type        : %.*s\n", 8, volid.EBPB.FSType);
-  printf("OEM name       : %.*s\n", 8, volid.OEMName);
-  printf("Volume Label   : %.*s\n", 11, volid.EBPB.VolumeLabel);
-  printf("Res. sectors   : %d\n", volid.BPB.RsvdSecCnt);
-  printf("Bytes/sector   : %d\n", volid.BPB.BytsPerSec);
-  printf("Sectors/clus.  : %d\n", volid.BPB.SecPerClus);
-  printf("Cluster size   : %d\n", volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
-  printf("Number of FATs : %d\n", volid.BPB.NumFATs);
-  printf("Active FAT     : %x\n", volid.EBPB.MirrorFlags);
-  printf("FSInfoSec      : %lu\n", bootsector.partition[0].LBABegin + volid.EBPB.FSInfoSec);
+  printf("FS type        : %.*s\n", 8, volid->EBPB.FSType);
+  printf("OEM name       : %.*s\n", 8, volid->OEMName);
+  printf("Volume Label   : %.*s\n", 11, volid->EBPB.VolumeLabel);
+  printf("Res. sectors   : %d\n", volid->BPB.RsvdSecCnt);
+  printf("Bytes/sector   : %d\n", volid->BPB.BytsPerSec);
+  printf("Sectors/clus.  : %d\n", volid->BPB.SecPerClus);
+  printf("Cluster size   : %d\n", volid->BPB.SecPerClus * volid->BPB.BytsPerSec);
+  printf("Number of FATs : %d\n", volid->BPB.NumFATs);
+  printf("Active FAT     : %x\n", volid->EBPB.MirrorFlags);
+  printf("FSInfoSec      : %lu\n", partitions[0].LBABegin + volid->EBPB.FSInfoSec);
 
-  r = read_block((uint8_t *)&fsinfo, bootsector.partition[0].LBABegin + volid.EBPB.FSInfoSec);
+  r = read_block(buf, partitions[0].LBABegin + volid->EBPB.FSInfoSec);
   if (r != 0)
   {
     printf("E: %d\n", r);
     return EXIT_FAILURE;
   }
 
-  printf("Free clusters  : %lu\n", fsinfo.FreeClus);
-  printf("Last cluster   : %lu\n", fsinfo.LastClus);
+  printf("Free clusters  : %lu\n", fsinfo->FreeClus);
+  printf("Last cluster   : %lu\n", fsinfo->LastClus);
 
-  printf("\nFS size        : %lu\n", bootsector.partition[0].NumSectors * volid.BPB.BytsPerSec);
-  printf("bytes free     : %lu\n", fsinfo.FreeClus * volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
-
-  // fat_start = bootsector.partition[0].LBABegin + volid.BPB.RsvdSecCnt;
-  // r = read_block((uint8_t *)&fat, fat_start);
-  // if (r != 0)
-  // {
-  //   printf("E: %d\n", r);
-  //   return EXIT_FAILURE;
-  // }
-
-  // for( i=0; i<=128; i++)
-  // {
-  //   printf("%08x\n", fat[i]);
-  // }
-
-
+  //printf("\nFS size        : %lu\n", partitions[0].NumSectors * volid->BPB.BytsPerSec);
+  //printf("bytes free     : %lu\n", fsinfo.FreeClus * volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
 
   return EXIT_SUCCESS;
 }
