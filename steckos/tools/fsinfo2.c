@@ -87,17 +87,23 @@ struct F32FSInfo
 };
 
 uint8_t buf[512];
+uint32_t fat[128];
 
 int main (int argc, const char* argv[])
 {
   char r;
   uint8_t i=0;
+  uint16_t RsvdSecCnt;
+  uint16_t BytsPerSec; // 11-12  ; 512 usually
+  uint8_t  SecPerClus;
+  uint32_t FSInfoSec;
+
 
   struct PartitionEntry partitions[4];
 
-  struct Bootsector * bootsector = (struct Bootsector *) buf;
-  struct FAT32_VolumeID * volid  = (struct FAT32_VolumeID *) buf;
-  struct F32FSInfo * fsinfo      = (struct F32FSInfo *) buf;
+  struct Bootsector     * bootsector = (struct Bootsector *)     buf;
+  struct FAT32_VolumeID * volid      = (struct FAT32_VolumeID *) buf;
+  struct F32FSInfo      * fsinfo     = (struct F32FSInfo *)      buf;
 
   r = read_block(buf, 0);
   if (r != 0)
@@ -139,6 +145,11 @@ int main (int argc, const char* argv[])
     return EXIT_FAILURE;
   }
 
+  RsvdSecCnt = volid->BPB.RsvdSecCnt;
+  BytsPerSec = volid->BPB.BytsPerSec;
+  SecPerClus = volid->BPB.SecPerClus;
+  FSInfoSec  = partitions[0].LBABegin + volid->EBPB.FSInfoSec;
+
   printf("FS type        : %.*s\n", 8, volid->EBPB.FSType);
   printf("OEM name       : %.*s\n", 8, volid->OEMName);
   printf("Volume Label   : %.*s\n", 11, volid->EBPB.VolumeLabel);
@@ -148,9 +159,10 @@ int main (int argc, const char* argv[])
   printf("Cluster size   : %d\n", volid->BPB.SecPerClus * volid->BPB.BytsPerSec);
   printf("Number of FATs : %d\n", volid->BPB.NumFATs);
   printf("Active FAT     : %x\n", volid->EBPB.MirrorFlags);
-  printf("FSInfoSec      : %lu\n", partitions[0].LBABegin + volid->EBPB.FSInfoSec);
+  printf("Sectors/FAT    : %lu\n", volid->EBPB.FATSz32);
+  printf("FSInfoSec      : %lu\n", FSInfoSec);
 
-  r = read_block(buf, partitions[0].LBABegin + volid->EBPB.FSInfoSec);
+  r = read_block(buf, FSInfoSec);
   if (r != 0)
   {
     printf("E: %d\n", r);
@@ -160,8 +172,8 @@ int main (int argc, const char* argv[])
   printf("Free clusters  : %lu\n", fsinfo->FreeClus);
   printf("Last cluster   : %lu\n", fsinfo->LastClus);
 
-  //printf("\nFS size        : %lu\n", partitions[0].NumSectors * volid->BPB.BytsPerSec);
-  //printf("bytes free     : %lu\n", fsinfo.FreeClus * volid.BPB.SecPerClus * volid.BPB.BytsPerSec);
+  printf("\nFS size        : %lu\n", partitions[0].NumSectors * BytsPerSec);
+  printf("bytes free     : %lu\n", fsinfo->FreeClus * SecPerClus * BytsPerSec);
 
   return EXIT_SUCCESS;
 }
