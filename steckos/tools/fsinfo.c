@@ -93,11 +93,18 @@ int main (int argc, const char* argv[])
 {
   char r;
   uint8_t i=0;
+  uint32_t j=0;
 
   uint16_t RsvdSecCnt;
-  uint16_t BytsPerSec; // 11-12  ; 512 usually
+  uint16_t BytsPerSec;
   uint8_t  SecPerClus;
   uint32_t FSInfoSec;
+  uint32_t FATSz32;
+
+  uint32_t fat_lba;
+  int free=0;
+  int used=0;
+
 
   struct PartitionEntry partitions[4];
 
@@ -148,6 +155,7 @@ int main (int argc, const char* argv[])
   RsvdSecCnt = volid->BPB.RsvdSecCnt;
   BytsPerSec = volid->BPB.BytsPerSec;
   SecPerClus = volid->BPB.SecPerClus;
+  FATSz32    = volid->EBPB.FATSz32;
   FSInfoSec  = partitions[0].LBABegin + volid->EBPB.FSInfoSec;
 
   printf("FS type        : %.*s\n", 8, volid->EBPB.FSType);
@@ -175,5 +183,32 @@ int main (int argc, const char* argv[])
   printf("\nFS size        : %lu\n", partitions[0].NumSectors * BytsPerSec);
   printf("bytes free     : %lu\n", fsinfo->FreeClus * SecPerClus * BytsPerSec);
 
+  fat_lba = partitions[0].LBABegin + RsvdSecCnt;
+
+  for(j=0; j<=FATSz32; j++)
+  {
+    r = read_block((uint8_t *)fat, fat_lba);
+    if (r != 0)
+    {
+      printf("E: %d\n", r);
+      return EXIT_FAILURE;
+    }
+
+    for (i=0;i<=128;i++)
+    {
+      if (fat[i] == 0)
+      {
+        free++;
+        continue;
+      }
+      used++;
+    }
+
+    fat_lba++;
+
+  }
+
+  printf("Free clusters (counted) : %d\n", free);
+  printf("Used clusters (counted) : %d\n", used);
   return EXIT_SUCCESS;
 }
