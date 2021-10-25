@@ -102,8 +102,8 @@ int main (int argc, const char* argv[])
   uint32_t FATSz32;
 
   uint32_t fat_lba;
-  int free=0;
-  int used=0;
+  uint32_t free=0;
+  uint32_t used=0;
 
 
   struct PartitionEntry partitions[4];
@@ -215,7 +215,7 @@ int main (int argc, const char* argv[])
 
   }
 
-  printf("Free clusters (counted) : %d\n", free);
-  printf("Used clusters (counted) : %d\n", used);
+  printf("Free clusters (counted) : %lu\n", free);
+  printf("Used clusters (counted) : %lu\n", used);
   return EXIT_SUCCESS;
 }
