@@ -185,7 +185,7 @@ int main (int argc, const char* argv[])
 
   fat_lba = partitions[0].LBABegin + RsvdSecCnt;
 
-  for(j=0; j<=FATSz32; j++)
+  for(j=0; j<FATSz32; j++)
   {
     r = read_block((uint8_t *)fat, fat_lba);
     if (r != 0)
@@ -194,7 +194,7 @@ int main (int argc, const char* argv[])
       return EXIT_FAILURE;
     }
 
-    for (i=0;i<=128;i++)
+    for (i=0;i<128;i++)
     {
       // FAT starts at FAT entry 2 in first block
       // skip first 2 entries
