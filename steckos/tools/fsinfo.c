@@ -196,6 +196,13 @@ int main (int argc, const char* argv[])
 
     for (i=0;i<=128;i++)
     {
+      // FAT starts at FAT entry 2 in first block
+      // skip first 2 entries
+      if (j==0 && i<2)
+      {
+        continue;
+      }
+
       if (fat[i] == 0)
       {
         free++;
