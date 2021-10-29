@@ -65,7 +65,6 @@
 .import dirname_mask_matcher
 .import path_inverse
 
-.export fat_read_block
 .export fat_fopen
 .export fat_fread
 .export fat_fread_byte
@@ -108,6 +107,7 @@ fat_fread_byte:
 		lda #EOK
 		rts ; exit - EOF, C=1
 
+		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd
 :		SetVector block_data, read_blkptr
 		lda fd_area+F32_fd::seek_pos+1,x
 		and #$01
@@ -115,7 +115,7 @@ fat_fread_byte:
 		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos points to start of block
 		bne l_read
 
-		jsr fat_read_block					; ... if so, read the block first
+		jsr _fat_read_block_open			; ... if so, read the block first
 		bcc l_read
 		rts
 l_read_h:
@@ -127,7 +127,8 @@ l_read:
 		clc
 		rts
 
-    	;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. the file size and blocks must be checked
+    	;  TODO FIXME currently we always read until the end of the cluster chain (EOC) regardless
+		;  whether we reached the end of the file. the file size must be checked
     	;
 		;	read n blocks from file denoted by the given FD and maintains FD.offset
 		;in:
@@ -147,7 +148,7 @@ fat_fread:
 		cpy krn_tmp3
 		beq @l_exit_ok
 
-		jsr fat_read_block
+		jsr _fat_read_block_open
 		bcs @l_exit
 
 		inc read_blkptr+1							; read address + $0200 (block size)
@@ -162,15 +163,13 @@ fat_fread:
 		ldy krn_tmp2
 		rts
 
-		; read one block, TODO - update seek position within FD
-		;in:
-		;	X	- offset into fd_area
-		;	read_blkptr has to be set to target address - TODO FIXME ptr. parameter
-		;out:
-		;	C=0 on success, C=1 on error and A=error code or EOC reached and A=0 otherwise
-fat_read_block:
-		_is_file_open ; otherwise rts C=1 and A=#EINVAL
-
+; read one block, TODO - update seek position within FD, but conflicts with fat_fread_byte
+;in:
+;	X	- offset into fd_area
+;	read_blkptr has to be set to target address - TODO FIXME ptr. parameter
+;out:
+;	C=0 on success, C=1 on error and A=error code or EOC reached and A=0 otherwise
+_fat_read_block_open:
 		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
 		bne @l_read											 		; no, go on reading...

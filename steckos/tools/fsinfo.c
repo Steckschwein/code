@@ -135,7 +135,7 @@ int main (int argc, const char* argv[])
       continue;
     }
     printf(
-      "# Boot Type   LBABegin NumSectors \n%1d %4x  $%02x %10lu %10lu\n", 
+      "# Boot Type   LBABegin NumSectors \n%1d %4x  $%02x %10lu %10lu\n",
       i,
       partitions[i].Bootflag,
       partitions[i].TypeCode,
@@ -203,10 +203,19 @@ int main (int argc, const char* argv[])
         continue;
       }
 
-      if (fat[i] == 0)
+      if ((fat[i] & 0x0fffffff) == 0)
       {
         free++;
         continue;
+      }else{
+         if ((fat[i] & 0x0fffffff) >= 0x0ffffff8){
+            //EOC
+//            continue;
+         }
+         if ((fat[i] & 0x0fffffff) >= 0x0ffffff0 && (fat[i] & 0x0fffffff) <= 0x0ffffff7){
+            continue;
+            //reserved
+         }
       }
       used++;
     }

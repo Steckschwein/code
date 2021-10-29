@@ -61,6 +61,34 @@
 .importzp __volatile_ptr
 
 ; in:
+;	A - byte to write
+;	X - offset into fd_area
+; out:
+;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
+fat_write_byte:
+
+		_is_file_open ; otherwise rts C=1 and A=#EINVAL
+
+		pha
+		SetVector block_data, write_blkptr
+		lda fd_area+F32_fd::seek_pos+1,x
+		and #$01
+;		bne l_read_h							; 2nd half block?
+		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos points to start of block
+;		bne l_read
+
+		ldy fd_area+F32_fd::seek_pos+0, x
+		pla
+		sta (write_blkptr),y
+
+		_inc32_x fd_area+F32_fd::FileSize
+		_inc32_x fd_area+F32_fd::seek_pos
+
+		clc
+
+		rts
+
+; in:
 ;	X - offset into fd_area
 ;	write_blkptr - set to the address with data we have to write
 ; out:
