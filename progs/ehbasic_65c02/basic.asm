@@ -640,6 +640,41 @@ LAB_2DB6
       LDA   #<LAB_SMSG        ; point to sign-on message (low addr)
       LDY   #>LAB_SMSG        ; point to sign-on message (high addr)
       JSR   LAB_18C3          ; print null terminated string from memory
+
+
+      ; check for file parameter at call time
+      lda (paramptr)
+      beq @noparam
+      ldx paramptr+1
+      ldy #0
+
+@loop:
+      lda (paramptr),y
+      beq @out
+      jsr LAB_PRNA
+      iny
+      bne @loop
+
+@io_error:
+      lda #'E'
+      jmp LAB_PRNA
+
+@out:
+
+      ; jsr krn_open
+      ; bne @io_error
+      ; stx _fd
+
+      ; lda #<fread_wrapper
+      ; sta VEC_IN
+      ; lda #>fread_wrapper
+      ; sta VEC_IN+1
+
+      ; lda #<outvec_dummy
+      ; sta VEC_OUT
+      ; lda #>outvec_dummy
+      ; sta VEC_OUT+1
+@noparam:
       JMP   (Wrmjpl)          ; jump to warm start
 
 ; open up space in memory
