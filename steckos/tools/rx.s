@@ -1,4 +1,5 @@
 .include "steckos.inc"
+
 .import hexout
 
 .export char_out=krn_chrout
