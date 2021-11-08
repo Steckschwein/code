@@ -7,6 +7,8 @@ DEFINES+=-DV9958
 
 .SUFFIXES:
 
+$(if $(value CC65_HOME),,$(error CC65_HOME environment variable is not set))
+
 ifdef CMD_EXE
   DIRLIST = $(strip $(foreach dir,$1,$(wildcard $(dir))))
   MKDIR = mkdir $(subst /,\,$1)
