@@ -222,44 +222,47 @@ ADDRESS_GFX7_SCREEN			  = $10000							; 64k RAM, 2nd page
 ADDRESS_GFX7_SPRITE          = ADDRESS_GFX_SPRITE
 ADDRESS_GFX7_SPRITE_PATTERN  = ADDRESS_GFX1_SPRITE_PATTERN
 
-; long delay with 6+2 2µs wait
-MAX_NOPS_8M = (6 * 1000 / (1000 / clockspeed)) / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
+; long delay with 6+2 = 8µs wait
+MAX_NOPS_8M := 6 * 1000 / 1000 / clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
 ; short delay with 2µs wait
-MAX_NOPS_2M = (2 * 1000 / (1000 / clockspeed) - 12) / 2 ; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
+MAX_NOPS_2M := ((2 * 1000 / (1000 / clockspeed) - 12) / 2); - 12 => jsr/rts = 2*6cl = 12cl must be subtract
 
 .macro m_vdp_nopslide
 ; NOTE!!!
 ; - TMS9929 and V9938/V9958 wait 2µs between 2 byte writes and 8µs for the 3rd and n'th byte read/write
 vdp_nopslide_8m:
-			; long delay with 6+2 2µs wait
-			.repeat MAX_NOPS_8M
-			nop
-			.endrepeat
+		.repeat MAX_NOPS_8M			; long delay with 8µs wait (6µs+2µs below)
+		nop
+		.endrepeat
 vdp_nopslide_2m:
-			.repeat MAX_NOPS_2M
-			nop
-			.endrepeat
+	.if(MAX_NOPS_2M > 0) 		; if clockspeed is low we get negative nop counts
+		.repeat MAX_NOPS_2M		; short delay with 2µs
+		nop
+		.endrepeat
+	.endif
 vdp_nopslide_end:
-			rts
+	rts
 .endmacro
 
 .macro vnops
-		vdp_wait_l
+	.warning "# DEPRECATED - macro 'vnops' is deprectaed, please use vdp_wait_s/vdp_wait_l instead"
+	vdp_wait_l
 .endmacro
+
 
 .macro vdp_wait_s _wasted_cycles
 		.local _wasted_cycles
 		.ifndef vdp_nopslide_2m
 			.import vdp_nopslide_2m
-         .import vdp_nopslide_end
+			.import vdp_nopslide_end
 		.endif
 		.if(.paramcount > 0)
-;			.if (_wasted_cycles >> 1 >= MAX_NOPS_2M)
- ;               jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
-  ;          .else
-    			.assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>1), "<=", .string(MAX_NOPS_2M))
+			.if(MAX_NOPS_2M < 0 || (_wasted_cycles >> 1) > MAX_NOPS_2M)
+				jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
+            .else
+;    			.assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>1), "<=", .sprintf ("%d", MAX_NOPS_2M))
                 jsr vdp_nopslide_2m + (_wasted_cycles >> 1) ; add number of wasted clycle, we calculate the jsr offset to remaining nops
-   ;         .endif
+           .endif
 		.else
 			jsr vdp_nopslide_2m
 		.endif
@@ -269,31 +272,34 @@ vdp_nopslide_end:
 		.local _wasted_cycles
 		.ifndef vdp_nopslide_8m
 			.import vdp_nopslide_8m
+			.import vdp_nopslide_end
 		.endif
 		.if(.paramcount > 0)
-			.assert _wasted_cycles >= 0 && (_wasted_cycles / 2) <= MAX_NOPS_8M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles/2), "<=")
-			jsr vdp_nopslide_8m + (_wasted_cycles / 2) ; add number of wasted clycle, we calculate the jsr offset to remaining nops
+			.if (MAX_NOPS_8M < 0 || (_wasted_cycles >> 1) > MAX_NOPS_8M)
+				jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
+            .else
+				.assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_8M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles/2), "<=", .sprintf ("%d", MAX_NOPS_8M))
+				jsr vdp_nopslide_8m + (_wasted_cycles >> 1) ; add number of wasted clycle, we calculate the jsr offset to remaining nops
+			.endif
 		.else
 			jsr vdp_nopslide_8m
 		.endif
 .endmacro
 
 .macro vdp_sreg _1st, _2nd
-		.local _1st
-		.local _2nd
 		.if(.paramcount <> 2)	;no macro args, use the A/Y parameter call
 			vdp_wait_s
 			sta a_vreg
 			vdp_wait_s
 			sty a_vreg
 		.else							; otherwise use the new api call, with fewer nops for register writes
-			vdp_wait_s 2
+			vdp_wait_s
 			lda #_1st
 			sta a_vreg
-			vdp_wait_s 2
+			vdp_wait_s
 			lda #_2nd
 			sta a_vreg
-			.endif
+		.endif
 .endmacro
 
 .macro vdp_reg reg, val

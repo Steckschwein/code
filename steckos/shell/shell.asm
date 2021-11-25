@@ -44,7 +44,6 @@ p_history   = ptr3
 ;---------------------------------------------------------------------------------------------------------
 
 .export char_out=krn_chrout
-.import hexout
 
 .zeropage
 ptr1:   .res 2
@@ -53,8 +52,12 @@ ptr3:   .res 2
 tmp1:   .res 1
 tmp2:   .res 1
 
+.import hexout
+.import kernel_start
+
 appstart $e400
-.code
+.export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly
+
 init:
       jsr krn_primm
       .byte "steckOS shell  "

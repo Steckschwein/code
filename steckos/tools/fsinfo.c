@@ -84,6 +84,23 @@ struct F32FSInfo
   uint16_t Signature;
 };
 
+struct F32DirEntry      // https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
+{
+  uint8_t Name[8];
+  uint8_t Ext[3];
+  uint8_t Attr;
+  uint8_t Reserved;
+  uint8_t CrtTimeMillis;
+  uint16_t CrtTime;     // hours as 0-23 bit 15-11, minutes as 0-59 bit 10-5, seconds/2 as 0-29 bit 4-0
+  uint16_t CrtDate;     // year 0-119 (0=1980...127=2107) bit 15-9, month 1-12 bit 8-5, day 1-31 bit 4-0
+  uint16_t LstModDate;  // -""-
+  uint16_t FstClusHI;
+  uint16_t WrtTime;     // hours as 0-23 bit 15-11, minutes as 0-59 bit 10-5, seconds/2 as 0-29 bit 4-0
+  uint16_t WrtDate;    // year 0-119 (0=1980...127=2107) bit 15-9, month 1-12 bit 8-5, day 1-31 bit 4-0
+  uint16_t FstClusLO;
+  uint32_t FileSize;
+};
+
 uint8_t buf[512];
 uint32_t fat[128];
 
@@ -98,6 +115,7 @@ int main (int argc, const char* argv[])
   uint8_t  SecPerClus;
   uint32_t FSInfoSec;
   uint32_t FATSz32;
+
 
   uint32_t fat_lba;
   uint32_t free=0;
@@ -219,10 +237,10 @@ int main (int argc, const char* argv[])
     }
 
     fat_lba++;
-
   }
 
   printf("Free clusters (counted) : %lu\n", free);
   printf("Used clusters (counted) : %lu\n", used);
+
   return EXIT_SUCCESS;
 }

@@ -18,7 +18,7 @@ version.inc:
 	ca65 --target none $(DEBUG) $(CAFLAGS) $<
 
 shell.prg: version.inc shell.o $(LIBS)
-	ld65 $(LDFLAGS) -o shell.prg shell.o $(LIBS)
+	ld65 $(LDFLAGS) -m shell.map -o shell.prg shell.o $(LIBS)
 
 shell: shell.prg
 	../../transfer.py shell.prg
