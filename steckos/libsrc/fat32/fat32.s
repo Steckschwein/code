@@ -112,9 +112,8 @@ fat_fread_byte:
 		lda fd_area+F32_fd::seek_pos+1,x
 		and #$01
 		bne l_read_h							; 2nd half block?
-		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos points to start of block
+		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos LSB points to start of block
 		bne l_read
-
 		jsr _fat_read_block_open			; ... if so, read the block first
 		bcc l_read
 		rts

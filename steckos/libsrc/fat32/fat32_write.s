@@ -71,15 +71,17 @@ fat_write_byte:
 
 		pha
 		SetVector block_data, write_blkptr
-		lda fd_area+F32_fd::seek_pos+1,x
+		lda fd_area+F32_fd::seek_pos+1,x ;
 		and #$01
-;		bne l_read_h							; 2nd half block?
-		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos points to start of block
-;		bne l_read
-
-		ldy fd_area+F32_fd::seek_pos+0, x
+		beq l_write								; 2nd half block?
+		inc write_blkptr+1
+l_write:
+		ldy fd_area+F32_fd::seek_pos+0,x
 		pla
 		sta (write_blkptr),y
+
+		cpy #0									; check whether seek pos points to start of block
+		bne l_write
 
 		_inc32_x fd_area+F32_fd::FileSize
 		_inc32_x fd_area+F32_fd::seek_pos
