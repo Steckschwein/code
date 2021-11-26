@@ -19,6 +19,8 @@
 290      Y = Y + Y(F)
 300      X1 = 62 + X * 27.9
 320      Y1 = 192 - Y * 19.1
-330      PLOT X1 * 2 + 1,Y1,255
+330      PLOT X1 * 2 + 1,Y1,3
 335      REM PRINT R, X1 * 2 + 1,Y1,255
 340  NEXT
+350 GET A$ : IF A$ = "" THEN 350
+360 SCREEN 1
