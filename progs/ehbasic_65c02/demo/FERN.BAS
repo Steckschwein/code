@@ -8,7 +8,7 @@
 170  XX(4) =  - .15:XY(4) = .28
 180  YX(4) =    .26:YY(4) = .24
 190  LET Y(4) = .44
-200  SCREEN 7
+200  SCREEN 6
 220  LET X = 0:Y = 0
 230  FOR I = 1 TO 100000
 240      R = INT(RND(0) * 100)
@@ -19,6 +19,8 @@
 290      Y = Y + Y(F)
 300      X1 = 62 + X * 27.9
 320      Y1 = 192 - Y * 19.1
-330      PLOT X1 * 2 + 1,Y1,255
+330      PLOT X1 * 2 + 1,Y1,3
 335      REM PRINT R, X1 * 2 + 1,Y1,255
 340  NEXT
+350 GET A$ : IF A$ = "" THEN 350
+360 SCREEN 1
