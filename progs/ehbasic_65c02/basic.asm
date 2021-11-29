@@ -8,7 +8,9 @@
 .export LAB_F2FX
 .export LAB_GADB
 .export LAB_IGBY
-
+.export LAB_1FD0
+.export LAB_GBYT
+.export LAB_FCER
 
 .exportzp Itempl, Itemph
 
@@ -16,12 +18,13 @@
 
 .import gfx_mode
 .import LAB_GFX_PLOT
+.import LAB_GFX_POINT
 .import LAB_GFX_LINE
 .import LAB_GFX_CIRCLE
 .import LAB_GFX_SCNCLR
-.import GFX_MODE
+.import LAB_GFX_SCNWAIT
 
-__APPSTART__ = $b500
+__APPSTART__ = $b400
 appstart __APPSTART__
 
 ;
@@ -478,6 +481,7 @@ TK_VPTR           = TK_TWOPI+1      ; VARPTR token
 TK_LEFTS          = TK_VPTR+1       ; LEFT$ token
 TK_RIGHTS         = TK_LEFTS+1      ; RIGHT$ token
 TK_MIDS           = TK_RIGHTS+1     ; MID$ token
+TK_POINT          = TK_MIDS+1       ; POINT token
 
 ; offsets from a base of X or Y
 
@@ -7674,20 +7678,11 @@ outvec_dummy:
 
 ; stubs for gfx ext
 LAB_SCREEN:       ; SCREEN  - set gfx mode
-   JSR LAB_GTBY    ; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
-   TXA
-	AND #$07
-	ASL
-	STA GFX_MODE
-	JMP gfx_mode
-
-LAB_PLOT = LAB_GFX_PLOT         ; PLOT - set pixel
-LAB_LINE = LAB_GFX_LINE
-LAB_CIRCLE = LAB_GFX_CIRCLE
-LAB_SCNCLR = LAB_GFX_SCNCLR
-LAB_SCNWAIT = LAB_GFX_SCNWAIT
-
-.import LAB_GFX_SCNWAIT
+      JSR LAB_GTBY    ; Get byte parameter and ensure numeric type, else do type mismatch error. Return the byte in X.
+      TXA
+      AND #$07
+      ASL
+      JMP gfx_mode
 
 LAB_DIR:
     pha
@@ -8043,12 +8038,11 @@ LAB_CTBL
       .word LAB_DIR-1         ; DIR
       .word LAB_CD-1          ; CD
       .word LAB_SCREEN-1      ; SCREEN
-      .import LAB_GFX_PLOT
       .word LAB_GFX_PLOT-1    ; PLOT - set pixel
-      .word LAB_LINE-1
-      .word LAB_CIRCLE-1
-      .word LAB_SCNCLR-1
-      .word LAB_SCNWAIT-1
+      .word LAB_GFX_LINE-1
+      .word LAB_GFX_CIRCLE-1
+      .word LAB_GFX_SCNCLR-1
+      .word LAB_GFX_SCNWAIT-1
 
 ; function pre process routine table
 
@@ -8089,6 +8083,7 @@ LAB_FTPM    = LAB_FTPL+$01
       .word LAB_LRMS-1        ; LEFT$()   process string expression
       .word LAB_LRMS-1        ; RIGHT$()        "
       .word LAB_LRMS-1        ; MID$()          "
+      .word $0000             ; POINT()  none
 
 ; action addresses for functions
 
@@ -8129,6 +8124,7 @@ LAB_FTBM    = LAB_FTBL+$01
       .word LAB_LEFT-1        ; LEFT$()
       .word LAB_RIGHT-1       ; RIGHT$()
       .word LAB_MIDS-1        ; MID$()
+      .word LAB_GFX_POINT-1   ; POINT() - get pixel
 
 ; hierarchy and action addresses for operator
 
@@ -8408,6 +8404,8 @@ LBB_PI
       .byte "I",TK_PI         ; PI
 LBB_PLOT
       .byte "LOT",TK_PLOT     ; PLOT
+LBB_POINT
+      .byte "OINT(",TK_POINT  ; POINT(
 LBB_POKE
       .byte "OKE",TK_POKE     ; POKE
 LBB_POS
@@ -8728,6 +8726,9 @@ LAB_KEYT
       .word LBB_RIGHTS        ; RIGHT$
       .byte 5,'M'             ;
       .word LBB_MIDS          ; MID$
+      .byte 6,'P'             ;
+      .word LBB_POINT         ; POINT(
+
 
 ; BASIC messages, mostly error messages
 

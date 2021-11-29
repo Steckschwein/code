@@ -43,11 +43,16 @@
 .import gfx_line
 .import gfx_circle
 .import gfx_plot
+.import gfx_point
+
 
 .import LAB_SCGB
 .import LAB_GTBY
 .import LAB_GADB
 .import LAB_IGBY
+.import LAB_1FD0
+.import LAB_GBYT          ; get last byte back
+.import LAB_FCER          ; do function call error then warm start
 
 .importzp Itempl, Itemph
 
@@ -55,6 +60,7 @@
 
 .export gfx_mode
 .export LAB_GFX_PLOT
+.export LAB_GFX_POINT
 .export LAB_GFX_LINE
 .export LAB_GFX_CIRCLE
 .export LAB_GFX_SCNCLR
@@ -73,6 +79,7 @@ gfx_mode:
 		php
 		sei
 		pha
+		sta GFX_MODE
 		jsr krn_textui_disable			;disable textui
 		jsr krn_display_off
 		plx
@@ -111,6 +118,7 @@ _gfx_blank_table:
 
 _gfx_cmd_table:
 		.word gfx_plot
+		.word gfx_point
 		.word gfx_line
 		.word gfx_circle
 
@@ -121,24 +129,36 @@ GFX_BgColor:
 
 GFX_Off = krn_textui_init     ;restore textui
 
-;	in .A - mode 0-7
 LAB_GFX_PLOT:
 	jsr _LAB_GFX_SCN_X_Y
 	ldx #0
 	bra _LAB_GFX_COL_OP_CMD
 
-LAB_GFX_LINE:
+LAB_GFX_POINT:
+	JSR LAB_IGBY        ; increment BASIC pointer, we are on '('
+	jsr _LAB_GFX_SCN_X_Y
+
+	JSR LAB_GBYT          ; get last byte back
+	CMP #')'              ; is next character ')'
+	BEQ :+          	  ; if ok, go on
+	JMP LAB_FCER          ; do function call error then warm start
+:	JSR LAB_IGBY		  ; update BASIC execute pointer (to character past ")")
+	ldx #2
+	JSR _LAB_GFX_CMD
+	JMP LAB_1FD0		  ; convert Y to byte in FAC1
+
+LAB_GFX_LINE: ; LINE x1,y1,x2,y2,color
 	jsr _LAB_GFX_SCN_X_Y
 
 	jsr LAB_IGBY		; proceed to next token
 	jsr LAB_GADB		; scan 16-bit,8-bit
 	lda Itempl
-	sta GFX_STRUCT+line_t::x2
+	sta GFX_STRUCT+line_t::x2+0
 	lda Itemph
 	sta GFX_STRUCT+line_t::x2+1
 	stx GFX_STRUCT+line_t::y2
 
-	ldx #2
+	ldx #4
 	bra _LAB_GFX_COL_OP_CMD
 
 LAB_GFX_CIRCLE:
@@ -146,18 +166,17 @@ LAB_GFX_CIRCLE:
 
 	JSR LAB_SCGB 	; scan for "," and get byte
 	stx GFX_STRUCT+circle_t::radius
-	ldx #4
-
+	ldx #6
 _LAB_GFX_COL_OP_CMD:
 	phx
 	JSR LAB_SCGB 	; scan for "," and get byte
 	stx GFX_STRUCT+plot_t::color
 	; TODO parse operator which should be optional
 	stz GFX_STRUCT+plot_t::operator
-
+	plx
+_LAB_GFX_CMD:
 	lda #<GFX_STRUCT
 	ldy #>GFX_STRUCT
-	plx
 	jmp (_gfx_cmd_table,x)
 
 _LAB_GFX_SCN_X_Y:
@@ -184,5 +203,5 @@ LAB_GFX_SCNWAIT:
 	rts
 
 .bss
-GFX_MODE:  .res 1, 0 ;mode as power of 2
+GFX_MODE:  	.res 1 ;mode as power of 2
 GFX_STRUCT: .res .sizeof(line_t) ; we use size of line_t, biggest one

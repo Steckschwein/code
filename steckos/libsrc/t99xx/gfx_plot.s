@@ -30,6 +30,37 @@
 .importzp __volatile_tmp
 
 .export gfx_plot
+.export _gfx_prepare_x_y
+
+_gfx_prepare_x_y:
+
+      stx a_vreg
+
+      sta __volatile_ptr
+      sty __volatile_ptr+1
+
+      lda #v_reg17
+      vdp_wait_s 3+3+2
+      sta a_vreg
+
+      ; dx
+      lda (__volatile_ptr)    ; plot_t::x1+0
+      vdp_wait_s 5
+      sta a_vregi             ; vdp R#3X
+
+      ldy #plot_t::x1+1
+      lda (__volatile_ptr),y
+      sta a_vregi             ; vdp #r3X+1
+
+      ldy #plot_t::y1+0
+      lda (__volatile_ptr),y
+      sta a_vregi             ; vdp #r3X+2
+
+      lda #ADDRESS_GFX7_SCREEN>>16 ; TODO FIXME - adjust y according to current gfx mode
+      vdp_wait_s 2
+      sta a_vregi             ; vdp #r3X+3
+
+      rts
 
 ; A/Y ptr to plot_t struct
 ;
@@ -37,27 +68,8 @@ gfx_plot:
       php
       sei
 
-      sta __volatile_ptr
-      sty __volatile_ptr+1
-
-      vdp_sreg 36, v_reg17 ; start at r#36
-
-      ; dx
-      lda (__volatile_ptr)    ; plot_t::x1+0
-      vdp_wait_s 5
-      sta a_vregi             ; vdp #r36
-
-      ldy #plot_t::x1+1
-      lda (__volatile_ptr),y
-      sta a_vregi             ; vdp #r37
-
-      ldy #plot_t::y1+0
-      lda (__volatile_ptr),y
-      sta a_vregi             ; vdp #r38
-
-      lda #ADDRESS_GFX7_SCREEN>>16 ; TODO FIXME - adjust y according to current gfx mode
-      vdp_wait_s 2
-      sta a_vregi             ; vdp #r39
+      ldx #36                 ; start at r#36                     
+      jsr _gfx_prepare_x_y
 
       vdp_sreg 44, v_reg17    ; index to r#44
 
@@ -65,7 +77,7 @@ gfx_plot:
       lda (__volatile_ptr),y
       sta a_vregi             ; vdp r#44 ; color
 
-      ldy #plot_t::operator ; code re-order to safe wait
+      ldy #plot_t::operator   ; code re-order to safe wait
       lda (__volatile_ptr),y
 
       stz a_vregi             ; vdp r#45 ; destination VRAM
