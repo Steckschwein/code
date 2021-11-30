@@ -10,7 +10,7 @@
 190  LET Y(4) = .44
 200  SCREEN 6
 220  LET X = 0:Y = 0
-230  FOR I = 1 TO 100000
+230  FOR I = 1 TO 40000
 240      R = INT(RND(0) * 100)
 250      F = ((R < 7 AND 1)) + ((R < 14 AND 1)) + 2
 260      F = F - ((R = 99) AND 1)
