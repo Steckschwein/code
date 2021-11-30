@@ -20,7 +20,7 @@
 300      X1 = 62 + X * 27.9
 320      Y1 = 192 - Y * 19.1
 325      P=POINT(X1*2+1,Y1)
-326      C=P+(P < 5 AND 1)
+326      C=P+(P < 5 AND 1) OR 2
 330      PLOT X1 * 2 + 1,Y1,C
 335      REM PRINT R, X1 * 2 + 1,Y1,255
 340  NEXT
