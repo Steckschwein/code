@@ -248,9 +248,11 @@ upload:
 	; load start address
 	jsr uart_rx
 	sta startaddr
+	sta krn_ptr1
 
 	jsr uart_rx
 	sta startaddr+1
+	sta krn_ptr1+1
 
 	jsr upload_ok
 
@@ -270,11 +272,6 @@ upload:
 	lda length+1
 	adc startaddr+1
 	sta endaddr+1
-
-	lda startaddr
-	sta krn_ptr1
-	lda startaddr+1
-	sta krn_ptr1+1
 
 	jsr upload_ok
 
