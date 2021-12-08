@@ -297,4 +297,13 @@
 :		 dec word	; 3cl
 .endmacro
 
+.macro cmp16 op1, op2, _label
+	lda op1+0
+	cmp op2+0
+	bne _label
+	lda op1+1
+	cmp op2+1
+	bne _label
+.endmacro
+
 .endif  ; _COMMON_INC_
