@@ -276,7 +276,6 @@ upload:
 	jsr upload_ok
 
 	sei	; disable interrupt while loading the actual data
-	ldy #0
 @l1:
 	jsr uart_rx
 	sta (krn_ptr1)
