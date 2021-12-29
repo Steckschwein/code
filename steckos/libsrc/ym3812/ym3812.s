@@ -36,20 +36,24 @@
 opl2_init:
 		php
 		sei
-		ldx #4
-		lda #$60
-		jsr opl2_reg_write
-		lda #$80
-		jsr opl2_reg_write
-		
+
 		ldx #8
 		lda #0
-@l:
-		jsr opl2_reg_write
+@l:		jsr opl2_reg_write
 		inx
-		cpx #$f6					 ; until reg 245
+		cpx #$f6					 ; until reg $f5
 		bne @l
-		
+
+		ldx #1
+		lda #(1<<5) 	; enable WS
+		jsr opl2_reg_write
+
+		ldx #4
+		lda #$80		; reset irq
+		jsr opl2_reg_write
+		lda #$0		; disable timer 1 & 2 IRQ
+		jsr opl2_reg_write
+
 		plp
 		rts
 
@@ -58,18 +62,16 @@ opl2_init:
 ;		 .X - opl2 register select
 ;		 .A - opl2 data
 opl2_reg_write:
-		jsr opl2_delay_register
 		stx opl_sel
 		jsr opl2_delay_register
 		sta opl_data
-		jmp opl2_delay_data
-
+;		jsr opl2_delay_register
 opl2_delay_data: ; 23000ns - 3300ns => 8Mhz/125ns => 157cl => 12cl (jsr/rts) + 145cl (73 nop)
-.repeat opl2_data_delay
+.repeat opl2_delay_data_cnt
 		nop
 .endrepeat
 opl2_delay_register: ; 3300 ns => 8Mhz/125ns => 26cl => 12cl (jsr/rts) + 14cl (7 nop)
-.repeat opl2_reg_delay
-		nop
+.repeat opl2_delay_register_cnt
+		nop	
 .endrepeat
 		rts

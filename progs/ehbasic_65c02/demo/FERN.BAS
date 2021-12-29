@@ -10,7 +10,7 @@
 190  LET Y(4) = .44
 200  SCREEN 6
 220  LET X = 0:Y = 0
-230  FOR I = 1 TO 100000
+230  FOR I = 1 TO 40000
 240      R = INT(RND(0) * 100)
 250      F = ((R < 7 AND 1)) + ((R < 14 AND 1)) + 2
 260      F = F - ((R = 99) AND 1)
@@ -19,7 +19,9 @@
 290      Y = Y + Y(F)
 300      X1 = 62 + X * 27.9
 320      Y1 = 192 - Y * 19.1
-330      PLOT X1 * 2 + 1,Y1,3
+325      P=POINT(X1*2+1,Y1)
+326      C=P+(P < 5 AND 1) OR 2
+330      PLOT X1 * 2 + 1,Y1,C
 335      REM PRINT R, X1 * 2 + 1,Y1,255
 340  NEXT
 350 GET A$ : IF A$ = "" THEN 350

@@ -25,69 +25,32 @@
 .include "gfx.inc"
 
 .import vdp_wait_cmd
+.import _gfx_prepare_x_y
 
 .importzp __volatile_ptr
 .importzp __volatile_tmp
 
-.export gfx_plot
-.export _gfx_prepare_x_y
+.export gfx_point
 
-_gfx_prepare_x_y:
-
-      stx a_vreg
-
-      sta __volatile_ptr
-      sty __volatile_ptr+1
-
-      lda #v_reg17
-      vdp_wait_s 3+3+2
-      sta a_vreg
-
-      ; dx
-      lda (__volatile_ptr)    ; plot_t::x1+0
-      vdp_wait_s 5
-      sta a_vregi             ; vdp R#3X
-
-      ldy #plot_t::x1+1
-      lda (__volatile_ptr),y
-      sta a_vregi             ; vdp #r3X+1
-
-      ldy #plot_t::y1+0
-      lda (__volatile_ptr),y
-      sta a_vregi             ; vdp #r3X+2
-
-      lda #ADDRESS_GFX7_SCREEN>>16 ; TODO FIXME - adjust y according to current gfx mode
-      vdp_wait_s 2
-      sta a_vregi             ; vdp #r3X+3
-
-      rts
-
-; A/Y ptr to plot_t struct
+; A/Y ptr to point_t struct
 ;
-gfx_plot:
+gfx_point:
       php
       sei
 
-      ldx #36                 ; start at r#36                     
+      ldx #32
       jsr _gfx_prepare_x_y
-
-      vdp_sreg 44, v_reg17    ; index to r#44
-
-      ldy #plot_t::color
-      lda (__volatile_ptr),y
-      sta a_vregi             ; vdp r#44 ; color
-
-      ldy #plot_t::operator   ; code re-order to safe wait
-      lda (__volatile_ptr),y
-
-      stz a_vregi             ; vdp r#45 ; destination VRAM
-
-      and #$0f                ; mask OPs
-      ora #v_cmd_pset
-      vdp_wait_s 4
-      sta a_vregi             ; vdp r#46 ; PSET and OPs
+      
+      vdp_sreg 0, v_reg45     ; VRAM read
+      vdp_sreg v_cmd_point, v_reg46      ; R#46 ; POINT
 
       jsr vdp_wait_cmd
+
+      vdp_sreg 7, v_reg15	; select status register S#7
+      vdp_wait_s
+      ldy a_vreg              ; read color value - result to Y
+      
+      vdp_sreg 0, v_reg15     ; reset status register selection to S#0
 
       plp
       rts

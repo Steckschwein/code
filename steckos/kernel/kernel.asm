@@ -66,6 +66,7 @@
 .export read_block=sd_read_block
 .export write_block=sd_write_block
 .export char_out=textui_chrout				 ; account for page crossing
+
 .export debug_chrout=textui_chrout				 ; account for page crossing
 
 nvram = $1000
@@ -247,9 +248,11 @@ upload:
 	; load start address
 	jsr uart_rx
 	sta startaddr
+	sta krn_ptr1
 
 	jsr uart_rx
 	sta startaddr+1
+	sta krn_ptr1+1
 
 	jsr upload_ok
 
@@ -270,32 +273,17 @@ upload:
 	adc startaddr+1
 	sta endaddr+1
 
-	lda startaddr
-	sta krn_ptr1
-	lda startaddr+1
-	sta krn_ptr1+1
-
 	jsr upload_ok
 
 	sei	; disable interrupt while loading the actual data
 	ldy #0
 @l1:
 	jsr uart_rx
-	sta (krn_ptr1),y
+	sta (krn_ptr1)
 
-	iny
-	cpy #0
-	bne @l2
-	inc krn_ptr1+1
-@l2:
-	; msb of current address equals msb of end address?
-	lda krn_ptr1+1
-	cmp endaddr+1
-	bne @l1 ; no? read next byte
+	inc16 krn_ptr1
 
-	; yes? compare y to lsb of endaddr
-	cpy endaddr
-	bne @l1 ; no? read next byte
+	cmp16 krn_ptr1, endaddr, @l1
 
 	cli
 	; yes? send OK

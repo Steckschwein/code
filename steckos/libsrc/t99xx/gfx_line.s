@@ -41,7 +41,7 @@ gfx_line:
       sta __volatile_ptr
       sty __volatile_ptr+1
 
-      lda #v_reg45_dix | v_reg45_diy | v_reg45_maj; initial x transfer left, y transfer up and y as long side
+      lda #v_reg45_dix | v_reg45_diy | v_reg45_maj    ; initial x transfer left, y transfer up and y as long side
       sta __volatile_tmp
 
       vdp_sreg 36, v_reg17 ; start at r#36
