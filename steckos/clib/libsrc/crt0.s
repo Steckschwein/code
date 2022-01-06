@@ -39,12 +39,6 @@ _init:
 		LDA	  #>(__RAM_START__ + __RAM_SIZE__)
 		STA	  sp+1            
 		
-; Set up the stack.
-;			lda	  #<(__MAIN_START__ + __MAIN_SIZE__ + __STACKSIZE__)
-;			ldx	  #>(__MAIN_START__ + __MAIN_SIZE__ + __STACKSIZE__)
-;			sta	  sp
-;			stx	  sp+1				; Set argument stack ptr
-
 ; ---------------------------------------------------------------------------
 ; Initialize memory storage
 			JSR	  zerobss	            ; Clear BSS segment

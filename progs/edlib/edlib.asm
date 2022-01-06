@@ -67,13 +67,14 @@ fm_file_arrdata = ptr7
 ;;// ----------------------------------------------------------------------------------------------------------
 
 .zeropage
-    ptr1:  .res 2
+;    ptr1:  .res 2
     ptr2:  .res 2
     ptr3:  .res 2
     ptr4:  .res 2
     ptr5:  .res 2
     ptr6:  .res 2
     ptr7:  .res 2
+	
 .code
 
 .import opl2_reg_write
@@ -91,7 +92,7 @@ jch_fm_init:
 jch_fm_play:
 ;.pc = $1003 "PLAYER"
 		jmp jch_fm_play_
-fm_data_st_offset: .word d00file					;// location of FM file (D00), any caller must set $1006/$1007 first with the location of the D00 (lowbyte/highbyte)
+fm_data_st_offset: .word d00file					;// location of FM file (D00), any caller must set this vector first with the location of the D00 (lowbyte/highbyte)
 ;// ----------------------------------------------------------------------------------------------------------
 ;// JCH_FM_PLAY subroutine, this routine is called on IRQ interrupt, each frame (50 Hz)
 ;// ----------------------------------------------------------------------------------------------------------
@@ -1382,9 +1383,10 @@ loc_end_get_next_seq2:
 ;//----------------------------------------------------------------------------------------------------------------
 ;// FM D00 PLAYER VARIABLE MEMORY BLOCK
 ;//----------------------------------------------------------------------------------------------------------------
+.data
 fm_voice_has_data: .res 9,0				  ;// 0 = no data, no playing; 1 = data, process playing. per voice
 fm_local_voice_slide: .word	0				;// note slide counter (word)
-fm_master_volume: .byte 0					  ;// master volume (3f = silence)
+fm_master_volume: .byte 0  					;// master volume (3f = silence)
 fm_start_of_arrangement_data: .word 0		;// pointer to start of the sequence arrangement (tracks, so you will)
 fm_voice_instrument: .res 18,0				;// 6D5 = current channel/voice instrument (effect cxxxx)
 fm_cur_seq_command_tick_counter: .res 18,0	;// current sequence command time/tick counter (per channel/voice)

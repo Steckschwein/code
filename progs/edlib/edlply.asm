@@ -11,7 +11,7 @@
 .include "keyboard.inc"
 .include "appstart.inc"
 
-appstart
+appstart $1000
 
 .code
 .import vdp_bgcolor
@@ -22,6 +22,7 @@ appstart
 
 .export d00file
 .export char_out=krn_chrout
+
 main:
 		jsr opl2_detect
 		bcc @load
@@ -60,12 +61,15 @@ main:
 
 		freq=70
 		t2cycles=275
-		;jsr opl2_delay_register
 		lda #($ff-(1000000 / freq / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
 		sta t2_value
 		jsr set_timer_t2
 
-		jsr restart_timer
+		ldx #opl2_reg_ctrl
+		lda #$80
+		jsr opl2_reg_write
+		lda #$42 ; t1 disable, t2 enable and start
+		jsr opl2_reg_write
 
 		cli
 
@@ -85,15 +89,15 @@ main:
 		bra @keyin
 @key_min:
 		cmp #'-'
-    bne @key_pls
-    dec t2_value
-    bra @set_timer_t2
+		bne @key_pls
+		dec t2_value
+		bra @set_timer_t2
 @key_pls:
 		cmp #'+'
-    bne @key_esc
-    inc t2_value
+    	bne @key_esc
+    	inc t2_value
 @set_timer_t2:
-		jsr set_timer_t2
+		jsr set_timer_t2_safe
 		bra @keyin
 @key_esc:
 		cmp #KEY_ESCAPE
@@ -123,23 +127,16 @@ exit:
 		jsr krn_textui_init
 		jmp (retvec)
 
-restart_timer:
-reset_irq:
-		ldx #opl2_reg_ctrl
-		lda #$80
-		jsr opl2_reg_write
-		ldx #opl2_reg_ctrl
-		lda #$42	; t2
-		jmp opl2_reg_write
-
-set_timer_t2:
+set_timer_t2_safe:
     php
     sei
-		ldx #opl2_reg_t2	; t2 timer value
-    lda t2_value
-    jsr opl2_reg_write
+	jsr set_timer_t2
     plp
     rts
+set_timer_t2:
+	ldx #opl2_reg_t2	; t2 timer value
+    lda t2_value
+    jmp opl2_reg_write
 
 printMetaData:
 		jsr krn_primm
@@ -206,13 +203,19 @@ player_isr:
 		bit opl_stat
 		bpl @vdp     ; bit 6 set? (snd)
 		; do write operations on ym3812 within a user isr directly after reading opl_stat here, "is too hard", we have to delay at least register wait ;)
-		;jsr opl2_delay_register
-		jsr restart_timer
+		.import opl2_delay_data
+
 		lda #Medium_Green<<4|Medium_Red
 		jsr vdp_bgcolor
+
 		lda player_state
-		bne @vdp
+		bne @opl_ack
 		jsr jch_fm_play
+
+@opl_ack:
+		ldx #opl2_reg_ctrl
+		lda #$80	; ack IRQ
+		jsr opl2_reg_write
 @vdp:
 		bit a_vreg
 		bpl @exit
@@ -225,12 +228,13 @@ player_isr:
 
 		rts
 
+.data
 safe_isr:     .res 2
-player_state: .res 1,0
-t2_value:     .res 1,0
+player_state: .res 1
+t2_value:     .res 1
 fd:           .res 1
-irq_counter:  .res 0
-fm_master_volume: .res 1,0
+fm_master_volume: .res 1, $3f
 
 .bss
 d00file:
+	.res $2000
