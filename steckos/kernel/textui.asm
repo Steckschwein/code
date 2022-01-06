@@ -333,7 +333,7 @@ textui_chrout:
 	rts
 
 textui_blank:
-	ldx #4
+	ldx #4	;pages to blank
 	bit video_mode
 	bvc :+
 	ldx #8

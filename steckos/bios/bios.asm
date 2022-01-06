@@ -20,7 +20,7 @@
 .import spi_deselect
 .import spi_rw_byte
 .import spi_r_byte
-  .import fetchkey
+.import fetchkey
 
 .export vdp_chrout
 .export read_block=sd_read_block
