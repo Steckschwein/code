@@ -44,7 +44,7 @@ gfx_line:
       lda #v_reg45_dix | v_reg45_diy | v_reg45_maj    ; initial x transfer left, y transfer up and y as long side
       sta __volatile_tmp
 
-      vdp_sreg 36, v_reg17 ; start at r#36
+      vdp_sreg 36, v_reg17    ; start at r#36
 
       ; dx
       lda (__volatile_ptr)    ; line_t::x1+0

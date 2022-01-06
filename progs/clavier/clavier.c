@@ -186,7 +186,6 @@ int main (void)
     opl2_init();
 	soundall(snd01);//5, 2, 1, 0, 0, 0, 13, 0, 0, 11, 4, 4, 6, 0, 2, 0, 0, 0, 0, 0);
 
-
     cprintf("%s", txt);
 
     do

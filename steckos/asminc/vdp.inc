@@ -213,19 +213,25 @@ ADDRESS_GFX3_SPRITE_PATTERN = ADDRESS_GFX2_SPRITE_PATTERN
 ADDRESS_GFX3_SPRITE			= ADDRESS_GFX_SPRITE
 ADDRESS_GFX3_SPRITE_COLOR	= ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
 
-ADDRESS_GFX6_SCREEN			  =$10000 ; screen
-ADDRESS_GFX6_SPRITE_PATTERN  =$0f000	  ;
-ADDRESS_GFX6_SPRITE			  =$0fa00	  ;
-ADDRESS_GFX6_SPRITE_COLOR	  =ADDRESS_GFX6_SPRITE-$0200
+ADDRESS_GFX6_SCREEN			 = $10000 ; screen
+ADDRESS_GFX6_SPRITE_PATTERN  = $0f000	  ;
+ADDRESS_GFX6_SPRITE			 = $0fa00	  ;
+ADDRESS_GFX6_SPRITE_COLOR	 = ADDRESS_GFX6_SPRITE-$0200
 
-ADDRESS_GFX7_SCREEN			  = $10000							; 64k RAM, 2nd page
+ADDRESS_GFX7_SCREEN			 = $10000							; 64k RAM, 2nd page
 ADDRESS_GFX7_SPRITE          = ADDRESS_GFX_SPRITE
 ADDRESS_GFX7_SPRITE_PATTERN  = ADDRESS_GFX1_SPRITE_PATTERN
 
 ; long delay with 6+2 = 8µs wait
-MAX_NOPS_8M := 6 * 1000 / 1000 / clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
+MAX_NOPS_8M = 6 * clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
 ; short delay with 2µs wait
-MAX_NOPS_2M := ((2 * 1000 / (1000 / clockspeed) - 12) / 2); - 12 => jsr/rts = 2*6cl = 12cl must be subtract
+MAX_NOPS_2M = (2 * clockspeed - 12) / 2; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
+
+;.define MAX_NOPS_2M 2 * clockspeed
+
+;.macro MAX_NOPS_2M 
+;	(2 * clockspeed - 12) / 2; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
+;.endmacro
 
 .macro m_vdp_nopslide
 ; NOTE!!!
@@ -259,9 +265,13 @@ vdp_nopslide_end:
 		.if(.paramcount > 0)
 			.if(MAX_NOPS_2M < 0 || (_wasted_cycles >> 1) > MAX_NOPS_2M)
 				jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
-            .else
-;    			.assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>1), "<=", .sprintf ("%d", MAX_NOPS_2M))
-                jsr vdp_nopslide_2m + (_wasted_cycles >> 1) ; add number of wasted clycle, we calculate the jsr offset to remaining nops
+			.else
+				.if((_wasted_cycles >> 1) > 0)
+					jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
+				.else
+					.assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>>1), "<=", .sprintf ("%d", MAX_NOPS_2M))
+					jsr vdp_nopslide_2m + (_wasted_cycles >> 1) ; add number of wasted cycles, we calculate the jsr offset to remaining nops
+				.endif
            .endif
 		.else
 			jsr vdp_nopslide_2m
@@ -278,8 +288,8 @@ vdp_nopslide_end:
 			.if (MAX_NOPS_8M < 0 || (_wasted_cycles >> 1) > MAX_NOPS_8M)
 				jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
             .else
-				.assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_8M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles/2), "<=", .sprintf ("%d", MAX_NOPS_8M))
-				jsr vdp_nopslide_8m + (_wasted_cycles >> 1) ; add number of wasted clycle, we calculate the jsr offset to remaining nops
+				.assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_8M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>1), "<=", .sprintf ("%d", MAX_NOPS_8M))
+				jsr vdp_nopslide_8m + (_wasted_cycles >> 1) ; add number of wasted cycles, we calculate the jsr offset to remaining nops
 			.endif
 		.else
 			jsr vdp_nopslide_8m

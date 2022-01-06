@@ -25,6 +25,10 @@
 		; void __fastcall__ opl2_write(unsigned char val, unsigned char reg);
 		.export _opl2_write
 _opl2_write:
+		php
+		sei
 		tax
 		jsr popa
-		jmp opl2_reg_write
+		jsr opl2_reg_write
+		plp
+		rts

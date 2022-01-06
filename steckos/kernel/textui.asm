@@ -80,7 +80,7 @@ textui_scroll_up:
 	sta a_vreg
 	ldx #scroll_buffer_size-1
 	lda a_r+1
-	vdp_wait_s
+	vdp_wait_s 
 	sta a_vreg
 	vdp_wait_l
 @vram_read:
@@ -412,7 +412,7 @@ __textui_dispatch_char:
 scroll_buffer_size = 100 ; 40/80 col mode => 1000/2000 chars to copy
 scroll_buffer:			.res scroll_buffer_size
 screen_status:			.res 1
-screen_write_lock:   .res 1
+screen_write_lock:   	.res 1
 screen_frames:			.res 1
 saved_char:				.res 1
 a_r:					.res 2
