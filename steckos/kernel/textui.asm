@@ -61,9 +61,9 @@ textui_scroll_up:
 
 	lda #<ADDRESS_TEXT_SCREEN
 	clc
-    bit video_mode
-    bvc :+
-    adc #40
+	bit video_mode
+ 	bvc :+
+ 	adc #40
 :	adc #40
 	sta a_r
 	lda #>ADDRESS_TEXT_SCREEN
@@ -71,16 +71,16 @@ textui_scroll_up:
 	SetVector (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), a_w	; offset first row as "write address"
 
 	; 40/80 col mode, 10/20 * 100 calc pages to copy
-    ldy #10
+	ldy #10
 	bit video_mode
-    bvc @l1
+ 	bvc @l1
 	ldy #20
 @l1:
 	lda a_r+0	; 4cl
 	sta a_vreg
 	ldx #scroll_buffer_size-1
 	lda a_r+1
-	vdp_wait_s 
+	vdp_wait_s
 	sta a_vreg
 	vdp_wait_l
 @vram_read:
@@ -168,6 +168,26 @@ textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y
 	plp
 	rts
 
+textui_cursor:
+	lda screen_write_lock
+	bne @l_exit
+	lda screen_frames
+	and #$0f
+	bne @l_exit
+
+	lda screen_status
+	and #STATE_CURSOR_OFF
+	bne @l_exit
+
+	lda #STATE_CURSOR_BLINK
+	tsb screen_status
+	beq _vram_crs_ptr_write_saved
+	trb screen_status
+	lda #CURSOR_CHAR
+	bra _vram_crs_ptr_write
+@l_exit:
+	rts
+
 _vram_crs_ptr_write_saved:
 	lda saved_char
 _vram_crs_ptr_write:
@@ -213,28 +233,6 @@ textui_init:
 	lda #TEXTUI_COLOR
 	jsr vdp_text_on
 .endif
-	rts
-
-textui_cursor:
-	lda screen_write_lock
-	bne @l_exit
-	lda screen_frames
-	and #$0f
-	bne @l_exit
-
-	lda screen_status
-	and #STATE_CURSOR_OFF
-	bne @l_exit
-
-	lda #STATE_CURSOR_BLINK
-	tsb screen_status
-	beq @l1
-	trb screen_status
-	lda #CURSOR_CHAR
-	jmp _vram_crs_ptr_write
-@l1:
-	jmp _vram_crs_ptr_write_saved
-@l_exit:
 	rts
 
 textui_update_screen:
@@ -313,9 +311,9 @@ PSIX2:
 .endif
 
 textui_put:
-	inc screen_write_lock	 	; write on
+;	inc screen_write_lock	 	; write on
 	sta saved_char
-	stz screen_write_lock	 	; write off
+;	stz screen_write_lock	 	; write off
 	rts
 
 textui_chrout:
