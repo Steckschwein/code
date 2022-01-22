@@ -177,6 +177,9 @@ do_irq:
 @check_opl:
 	bit opl_stat
 	bpl @check_spi
+	.import vdp_bgcolor
+;	lda #Light_Yellow<<4|Black
+;	jsr vdp_bgcolor
 	; opl irq handling code
 
 @check_spi:
@@ -191,6 +194,8 @@ do_irq:
  	sta flags
 
 @exit:
+;	lda #Medium_Green<<4|Black
+;	jsr vdp_bgcolor
 	restore
 	rti
 
@@ -276,7 +281,6 @@ upload:
 	jsr upload_ok
 
 	sei	; disable interrupt while loading the actual data
-	ldy #0
 @l1:
 	jsr uart_rx
 	sta (krn_ptr1)

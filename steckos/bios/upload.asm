@@ -18,8 +18,10 @@ upload:
 		; load start address
 		jsr uart_rx
         sta startaddr
+		sta ptr_upload_addr
         jsr uart_rx
         sta startaddr+1
+		sta ptr_upload_addr+1
 
 		jsr hexout
 		lda startaddr
@@ -54,30 +56,16 @@ upload:
 		lda #' '
 		jsr vdp_chrout
 
-        lda startaddr
-		sta ptr_upload_addr
-		lda startaddr+1
-		sta ptr_upload_addr+1
 
 		jsr upload_ok
 
-		ldy #0
 @l1:
 		jsr uart_rx
-		sta (ptr_upload_addr),y
+		sta (ptr_upload_addr)
 
-		iny
-		bne @l2
-		inc ptr_upload_addr+1
-@l2:
-		; msb of current address equals msb of end address?
-		lda ptr_upload_addr+1
-		cmp endaddr+1
-		bne @l1 ; no? read next byte
+		inc16 ptr_upload_addr
 
-		; yes? compare y to lsb of endaddr
-		cpy endaddr
-		bne @l1 ; no? read next byte
+		cmp16 ptr_upload_addr, endaddr, @l1
 
 		; yes? write OK
 		jsr upload_ok
