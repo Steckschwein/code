@@ -178,8 +178,8 @@ do_irq:
 	bit opl_stat
 	bpl @check_spi
 	.import vdp_bgcolor
-	lda #Light_Yellow<<4|Black
-	jsr vdp_bgcolor
+;	lda #Light_Yellow<<4|Black
+;	jsr vdp_bgcolor
 	; opl irq handling code
 
 @check_spi:
@@ -194,8 +194,8 @@ do_irq:
  	sta flags
 
 @exit:
-	lda #Medium_Green<<4|Black
-	jsr vdp_bgcolor
+;	lda #Medium_Green<<4|Black
+;	jsr vdp_bgcolor
 	restore
 	rti
 

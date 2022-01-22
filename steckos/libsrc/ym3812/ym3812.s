@@ -62,6 +62,7 @@ opl2_init:
 ;		 .X - opl2 register select
 ;		 .A - opl2 data
 opl2_reg_write:
+		;nop
 		stx opl_sel
 		jsr opl2_delay_register
 		sta opl_data
