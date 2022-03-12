@@ -367,11 +367,11 @@ __textui_dispatch_char:
 	beq @exit
 	dec crs_y
 	lda #40
-    bit video_mode					; set x to max-cols -1
-    bvc @l3
-    lda #80
+	bit video_mode
+	bvc @l3
+	asl ; 80
 @l3:
-	dec 							; which is end of the line
+	dec 							; set x to max-cols -1 (end of the line)
 	sta crs_x
 @l2:
 	jsr textui_update_crs_ptr

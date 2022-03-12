@@ -102,7 +102,7 @@ fat_write:
 		bit #DIR_Attr_Mask_Dir							; regular file?
 		beq @l_isfile
 @l_exit_einval:
-		lda #EINVAL
+		lda #EISDIR
 		rts
 @l_isfile:
 		jsr __fat_isroot									; check whether the start cluster of the file is the root cluster - @see fat_alloc_fd, fat_open)
@@ -546,19 +546,18 @@ __fat_write_fat_blocks:
 		debug "fw_blocks"
 		rts
 
-; return C=0 on success, C=1 otherwise
+; return C=0 on success, C=1 otherwise and A=error code
 __fat_write_block_fat:
 		phy
 		ldy #>block_fat
-		bra __fat_write_block_ptr
+		bra :+
 __fat_write_block_data:
 		phy
 		ldy #>block_data
 .ifdef FAT_DUMP_FAT_WRITE
 		debugdump "fat_wb dmp", block_fat
 .endif
-__fat_write_block_ptr:
-		lda write_blkptr
+:		lda write_blkptr
 		pha
 		lda write_blkptr+1
 		pha
@@ -569,9 +568,8 @@ __fat_write_block_ptr:
 		sty write_blkptr
 		ply
 		rts
-
 :		sty write_blkptr+1
-		stz write_blkptr	;page aligned
+		stz write_blkptr	;block_data, block_fat address are page aligned - see fat32.inc
 __fat_write_block:
 .ifndef FAT_NOWRITE
 		debug32 "f_wr lba", lba_addr

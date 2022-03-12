@@ -66,34 +66,27 @@ sd_write_block:
 			jsr spi_rw_byte
 
 			ldy #0
-@l2:		lda (write_blkptr),y
-			phy
-			jsr spi_rw_byte
-			ply
-			iny
-			bne @l2
 
-			inc write_blkptr+1
-
-			ldy #$00
-@l3:		lda (write_blkptr),y
-			phy
-			jsr spi_rw_byte
-			ply
-			iny
-			bne @l3
-
-
+			jsr __sd_write_block_halfblock
+			jsr __sd_write_block_halfblock
 
 			; Send fake CRC bytes
 			lda #$00
 			jsr spi_rw_byte
 			lda #$00
 			jsr spi_rw_byte
-			inc write_blkptr+1
 			lda #$00
-
 @exit:
 			ply
 			plx
         	jmp sd_deselect_card
+
+__sd_write_block_halfblock:
+:			lda (write_blkptr),y
+			phy
+			jsr spi_rw_byte
+			ply
+			iny
+			bne :-
+			inc write_blkptr+1
+			rts

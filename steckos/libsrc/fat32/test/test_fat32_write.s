@@ -71,13 +71,13 @@ debug_enabled=1
 
 		; set file size and write ptr
 		set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (3*sd_blocksize+3)
-		SetVector $1234, write_blkptr
+		SetVector $1234, write_blkptr ; 1234 - just a random pointer to some memory
 		jsr fat_write
 
 		assertA EOK
 		assertX FD_Entry_Size*2	; assert FD reserved
-		assert16 $1234+4*sd_blocksize, write_blkptr
-		assertDirEntry block_root_cl+4*DIR_Entry_Size ;expect 4th entry updated
+		assert16 $1234+4*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
+		assertDirEntry block_root_cl+4*DIR_Entry_Size ; expect 4th entry updated
 			fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 3*sd_blocksize+3
 		jsr fat_close
 
@@ -94,19 +94,19 @@ debug_enabled=1
 				fat32_dir_entry_file "TST_02CL", "TST", 0, 0	; no cluster reserved yet
 		assertFdEntry fd_area + (FD_Entry_Size*2)
 				fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0
-		; size to 4 blocks + 1 block, new cluster must be reserved, assert cl chain build
+		; size to 4 blocks + 3 byte ;) - we use 4 SEC_PER_CL - hence a new cluster must be reserved and the chain build
 		set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (4 * sd_blocksize + 3)
-
 ;		TODO
-		SetVector $1234, write_blkptr
+		SetVector $1234, write_blkptr ; 1234 - just a random pointer to some memory
 ;		jsr fat_write
-;		assertA EOK
+	;	assertA EOK
 ;		assertX FD_Entry_Size*2	; assert FD
 ;		assertDirEntry $0480
 ;			fat32_dir_entry_file "TST_02CL", "TST", 0, $10
 		jsr fat_close
 
 		brk
+
 
 data_loader	; define data loader
 data_writer ; define data writer
