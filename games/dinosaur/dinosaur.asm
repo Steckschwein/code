@@ -625,7 +625,8 @@ game_isr:
 
 		restore
 game_isr_exit:
-		rti
+		jmp (save_isr)
+		;rti
 
 disable_pd:
 		stz	enemy_state
