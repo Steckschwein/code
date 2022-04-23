@@ -124,8 +124,6 @@ ESC		=	$1b		; ESC to exit
 XModem:
 			jsr	PrintMsg	; send prompt and info
 
-			sei
-
 			lda	#$01
 			sta	blkno		; set block # to 1
 			sta	bflag		; set flag to get address from block 1
@@ -234,7 +232,6 @@ Done:
 			lda	#ACK		; last block, send ACK and exit.
 			jsr	Put_Chr		;
 			jsr	Flush		; get leftover characters, if any
-			cli
 			jsr	Print_Good	;
 ;			rts			;
 
@@ -315,13 +312,18 @@ GoodMsg:	.byte 	"Upload Successful!"
 ;			clc
 ;            rts
 
-Get_Chr		= krn_uart_rx_nowait
-
+Get_Chr=krn_uart_rx_nowait
 ;
 ;
 ; output to OutPut Port
 ;
-Put_Chr	   	= krn_uart_tx
+Put_Chr:
+	sei
+	php
+	jsr krn_uart_tx
+	plp
+	rts
+
 ;=========================================================================
 ;
 ;
@@ -379,7 +381,7 @@ UpdCrc:		eor 	crc+1 		; Quick CRC computation with lookup tables
 ; low byte CRC lookup table (should be page aligned)
 ;		*= $7D00
 .data
-.align 256
+;.align 256
 crclo:
  .byte $00,$21,$42,$63,$84,$A5,$C6,$E7,$08,$29,$4A,$6B,$8C,$AD,$CE,$EF
  .byte $31,$10,$73,$52,$B5,$94,$F7,$D6,$39,$18,$7B,$5A,$BD,$9C,$FF,$DE
@@ -400,7 +402,7 @@ crclo:
 
 ; hi byte CRC lookup table (should be page aligned)
 ;		*= $7E00
-.align 256
+;.align 256
 crchi:
  .byte $00,$10,$20,$30,$40,$50,$60,$70,$81,$91,$A1,$B1,$C1,$D1,$E1,$F1
  .byte $12,$02,$32,$22,$52,$42,$72,$62,$93,$83,$B3,$A3,$D3,$C3,$F3,$E3
