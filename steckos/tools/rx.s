@@ -1,4 +1,5 @@
 .include "steckos.inc"
+.include "zeropage.inc"
 .import hexout
 
 .export char_out=krn_chrout
@@ -60,26 +61,34 @@ appstart $1000
 ; zero page variables (adjust these to suit your needs)
 ;
 ;
-addr		=	$36
+.zeropage
+.importzp ptr1
+addr		=	ptr1
 
-crc		=	$38		; CRC lo byte  (two byte variable)
-crch		=	$39		; CRC hi byte
+.importzp ptr2
+crc			=	ptr2		; CRC lo byte  (two byte variable)
+crch		=	ptr2+1		; CRC hi byte
 
-ptr		=	$3a		; data pointer (two byte variable)
-ptrh		=	$3b		;   "    "
+.importzp ptr3
+ptr			=	ptr3		; data pointer (two byte variable)
+ptrh		=	ptr3+1		;   "    "
 
-blkno		=	$3c		; block number
-retry		=	$3d		; retry counter
-retry2		=	$3e		; 2nd counter
-bflag		=	$3f		; block flag
-
-retvec		=	$da
+.importzp tmp0
+blkno		=	tmp0		; block number
+.importzp tmp1
+retry		=	tmp1		; retry counter
+.importzp tmp2
+retry2		=	tmp2		; 2nd counter
+.importzp tmp3
+bflag		=	tmp3		; block flag
+;
+;retvec		=	$da
 ;
 ;
 ; non-zero page variables and buffers
 ;
 ;
-Rbuff		=	$0300      	; temp 132 byte receive buffer
+;Rbuff		=	$0300      	; temp 132 byte receive buffer
 					;(place anywhere, page aligned)
 ;
 ;
@@ -119,8 +128,11 @@ ESC		=	$1b		; ESC to exit
 ; v 1.0 recode for use with SBC2
 ; v 1.1 added block 1 masking (block 257 would be corrupted)
 
+.code
 XModem:
 			jsr	PrintMsg	; send prompt and info
+
+			sei
 
 			lda	#$01
 			sta	blkno		; set block # to 1
@@ -226,9 +238,11 @@ IncBlk:		inc	blkno		; done.  Inc the block #
 			lda	#ACK		; send ACK
 			jsr	Put_Chr		;
 			jmp	StartBlk	; get next block
-Done:		lda	#ACK		; last block, send ACK and exit.
+Done:	
+			lda	#ACK		; last block, send ACK and exit.
 			jsr	Put_Chr		;
 			jsr	Flush		; get leftover characters, if any
+			cli
 			jsr	Print_Good	;
 ;			rts			;
 
@@ -372,7 +386,7 @@ UpdCrc:		eor 	crc+1 		; Quick CRC computation with lookup tables
 ;
 ; low byte CRC lookup table (should be page aligned)
 ;		*= $7D00
-.align 256
+.data
 crclo:
  .byte $00,$21,$42,$63,$84,$A5,$C6,$E7,$08,$29,$4A,$6B,$8C,$AD,$CE,$EF
  .byte $31,$10,$73,$52,$B5,$94,$F7,$D6,$39,$18,$7B,$5A,$BD,$9C,$FF,$DE
@@ -415,3 +429,5 @@ crchi:
 ;
 ; End of File
 ;
+.bss
+Rbuff: .res 132
