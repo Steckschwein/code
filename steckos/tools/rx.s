@@ -266,8 +266,6 @@ PrintMsg:
 			jsr krn_primm
 Msg:		.byte	"Begin XMODEM/CRC transfer."
 			.byte  	CR, LF
-			.byte	"Press <Esc> to abort..."
-			.byte  	CR, LF
          	.byte   0
 			rts
 ;
