@@ -4,7 +4,7 @@
 
 .export char_out=krn_chrout
 
-appstart $1000
+appstart $c000
 
 
 ; XMODEM/CRC Receiver for the 65C02
@@ -317,12 +317,7 @@ Get_Chr=krn_uart_rx_nowait
 ;
 ; output to OutPut Port
 ;
-Put_Chr:
-	sei
-	php
-	jsr krn_uart_tx
-	plp
-	rts
+Put_Chr=krn_uart_tx 
 
 ;=========================================================================
 ;
