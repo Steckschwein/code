@@ -62,27 +62,19 @@ appstart $1000
 ;
 ;
 .zeropage
-.importzp ptr1
-addr		=	ptr1
+addr:		.res 2
 
-.importzp ptr2
-crc			=	ptr2		; CRC lo byte  (two byte variable)
-crch		=	ptr2+1		; CRC hi byte
+crc:			.res 2			; CRC lo byte  (two byte variable)
+crch		=	crc+1		; CRC hi byte
 
-.importzp ptr3
-ptr			=	ptr3		; data pointer (two byte variable)
-ptrh		=	ptr3+1		;   "    "
+ptr:			.res 2			; data pointer (two byte variable)
+ptrh		=	ptr+1		;   "    "
 
-.importzp tmp0
-blkno		=	tmp0		; block number
-.importzp tmp1
-retry		=	tmp1		; retry counter
-.importzp tmp2
-retry2		=	tmp2		; 2nd counter
-.importzp tmp3
-bflag		=	tmp3		; block flag
+blkno:		.res 1		; block number
+retry:		.res 1		; retry counter
+retry2:		.res 1	; 2nd counter
+bflag:		.res 1	; block flag
 ;
-;retvec		=	$da
 ;
 ;
 ; non-zero page variables and buffers
@@ -387,6 +379,7 @@ UpdCrc:		eor 	crc+1 		; Quick CRC computation with lookup tables
 ; low byte CRC lookup table (should be page aligned)
 ;		*= $7D00
 .data
+.align 256
 crclo:
  .byte $00,$21,$42,$63,$84,$A5,$C6,$E7,$08,$29,$4A,$6B,$8C,$AD,$CE,$EF
  .byte $31,$10,$73,$52,$B5,$94,$F7,$D6,$39,$18,$7B,$5A,$BD,$9C,$FF,$DE
