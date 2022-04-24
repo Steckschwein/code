@@ -114,8 +114,11 @@ sprite_empty=92
 
 		jsr update_vram
 
-		copypointer $fffe, save_isr
-		SetVector	game_isr, $fffe
+		;copypointer $fffe, save_isr
+		;SetVector	game_isr, $fffe
+
+		copypointer user_isr, save_isr
+		SetVector game_isr, user_isr
 
 		lda #<vdp_init_gfx
 		ldy #>vdp_init_gfx
@@ -129,7 +132,7 @@ sprite_empty=92
 		bne :-
 
 		sei
-		copypointer save_isr, $fffe
+		copypointer save_isr, user_isr
 		cli
 		jsr	krn_textui_init
 		jsr krn_textui_enable
@@ -625,8 +628,7 @@ game_isr:
 
 		restore
 game_isr_exit:
-		jmp (save_isr)
-		;rti
+		rts
 
 disable_pd:
 		stz	enemy_state
