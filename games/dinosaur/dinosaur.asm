@@ -114,9 +114,6 @@ sprite_empty=92
 
 		jsr update_vram
 
-		;copypointer $fffe, save_isr
-		;SetVector	game_isr, $fffe
-
 		copypointer user_isr, save_isr
 		SetVector game_isr, user_isr
 
@@ -707,7 +704,7 @@ new_game:
 		ldy #O_WRONLY
 		jsr krn_open
 		bne @l_ng_reset_score
-		SetVector score_data, write_blkptr
+		SetVector score_value_high, write_blkptr
 		lda #$03
 		sta fd_area + 4 + 0,x
 		stz fd_area + 4 + 1,x
@@ -791,7 +788,7 @@ load_highscore:
 		ldy #O_RDONLY
 		jsr krn_open
 		bne :+ ; not found or other error, dont care...
-		SetVector score_data, read_blkptr
+		SetVector score_value_high, read_blkptr
 		jsr krn_read
 		jsr krn_close
 :		rts
@@ -1142,5 +1139,4 @@ sprite_tab_sky_trigger: .res 4,0
 save_isr: 				.res 2
 score_value:  			.res 3,0
 frame_cnt:				.res 1,0
-score_data:
-score_value_high: 	.res 3
+score_value_high: 		.res 3
