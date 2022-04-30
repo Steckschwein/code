@@ -44,6 +44,13 @@ BANK3 = BANK_SEL1 | BANK_SEL0
 
 CODE_LF  = $0a ; line feed
 
+; address constants of RAM addresses which can be used as buffers or kind of
+; !!! ATTENTION: if used together with fat read/write be aware that this buffers are used and may override your data  
+BUFFER_0 = $0400
+BUFFER_1 = BUFFER_0 + $0100
+BUFFER_2 = BUFFER_1 + $0100
+BUFFER_3 = BUFFER_2 + $0100
+
 SYS_VECTOR_NMI = $fffa
 SYS_VECTOR_RESET = $fffc
 SYS_VECTOR_IRQ = $fffe
