@@ -25,10 +25,11 @@
 
 .import kernel_start
 
-.segment "LOADER" ; @see kernel.cfg
+.include "appstart.inc"
+
+appstart $1000
 
 ; system attribute has to be set on file system
-
 src_ptr  = $0
 dst_ptr  = $2
    sei ; no irq if we upload from kernel to avoid clash

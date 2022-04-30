@@ -4,8 +4,8 @@ OBJS=kernel.o rtc.o out.o exec.o util.o automount.o
 OBJS+=textui.o
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
-LDFLAGS=-C kernel.cfg
-#LDFLAGS=-C ../prg.ld65.cfg
+LDFLAGS_KERNEL=-C kernel.cfg
+LDFLAGS=-C ../prg.ld65.cfg
 
 # if 9958 is used
 DEFINES+=-DV9958
@@ -46,7 +46,7 @@ version.inc:
 	echo -n ".byte \"`git rev-parse --short HEAD`\"" > version.inc
 
 kernel.bin: version.inc $(OBJS) $(LIBS)
-	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -m kernel.map -Ln symbols.txt -o kernel.bin
+	ld65 $(LDFLAGS_KERNEL) $(OBJS) $(LIBS) -m kernel.map -Ln symbols.txt -o kernel.bin
 	grep krn symbols.txt | egrep -v "(krn_tm|krn_ptr)" | sed "s/al 00//" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > kernel_jumptable.inc
 
 loader.bin: kernel.bin loader.o

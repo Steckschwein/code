@@ -35,7 +35,7 @@
 .import init_via1
 .import init_rtc
 .import read_nvram
-.import spi_r_byte, spi_rw_byte, spi_deselect, spi_select_rtc, spi_select_device
+.import spi_r_byte, spi_rw_byte, spi_deselect, spi_select_device
 .import uart_init, uart_tx, uart_rx, uart_rx_nowait
 .import textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
 .import getkey,fetchkey
@@ -59,6 +59,10 @@
 ;.import ansi_chrout
 .importzp krn_ptr1
 
+.import hexout
+.import crc16_table_init
+.import xmodem_upload
+
 ; internal kernel api stuff
 .import __automount
 .import __automount_init
@@ -66,6 +70,12 @@
 .export read_block=sd_read_block
 .export write_block=sd_write_block
 .export char_out=textui_chrout				 ; account for page crossing
+
+.export crc16_lo=BUFFER_0
+.export crc16_hi=BUFFER_1
+.export crc16_init=crc16_table_init
+.export xmodem_rcvbuffer=BUFFER_2
+.export xmodem_startaddress=startaddr
 
 .export debug_chrout=textui_chrout				 ; account for page crossing
 
@@ -121,8 +131,15 @@ kern_init:
 		ldx #>filename
 		jsr execv
 
+load_error:
+		jsr hexout
+		jsr primm
+		.byte " read error", CODE_LF, 0
 do_upload:
-		jsr upload
+		jsr primm
+		.byte "Serial upload... ", 0
+		jsr xmodem_upload
+		bcs load_error
 
 		ldx #$ff
 		txs
@@ -176,26 +193,33 @@ do_irq:
 
 @check_opl:
 	bit opl_stat
-	bpl @check_spi
+	bpl @check_spi_keyboard
 	.import vdp_bgcolor
 ;	lda #Light_Yellow<<4|Black
 ;	jsr vdp_bgcolor
 	; opl irq handling code
 
-@check_spi:
+@check_spi_keyboard:
 ;  TODO FIXME - we must fetch always, to satisfy the IRQ of the avr.
 	jsr fetchkey
-
- 	cmp #KEY_CTRL_C ; was it ctrl c?
- 	bne @exit      ; no
+ 	cmp #KEY_CTRL_C 	; was it ctrl c?
+ 	bne @check_spi_rtc	; no
 
  	lda flags       ; it is ctrl c. set bit 7 of flags
  	ora #$80
  	sta flags
 
+@check_spi_rtc:
+;	jsr rtc_irq
+	.import vdp_bgcolor
+	lda #Cyan<<4|Black
+	jsr vdp_bgcolor
+	sys_delay_us 200
+
 @exit:
-;	lda #Medium_Green<<4|Black
-;	jsr vdp_bgcolor
+	lda #Medium_Green<<4|Black
+	jsr vdp_bgcolor
+
 	restore
 	rti
 
@@ -241,71 +265,6 @@ do_reset:
 
 	jmp kern_init
 
-startaddr = $b0 ; FIXME - find better location for this
-endaddr	= $fd
-length	 = $ff
-
-upload:
-	save
-	crlf
-	printstring "Serial Upload"
-
-	; load start address
-	jsr uart_rx
-	sta startaddr
-	sta krn_ptr1
-
-	jsr uart_rx
-	sta startaddr+1
-	sta krn_ptr1+1
-
-	jsr upload_ok
-
-	; load number of bytes to be uploaded
-	jsr uart_rx
-	sta length
-
-	jsr uart_rx
-	sta length+1
-
-	; calculate end address
-	clc
-	lda length
-	adc startaddr
-	sta endaddr
-
-	lda length+1
-	adc startaddr+1
-	sta endaddr+1
-
-	jsr upload_ok
-
-	sei	; disable interrupt while loading the actual data
-@l1:
-	jsr uart_rx
-	sta (krn_ptr1)
-
-	inc16 krn_ptr1
-
-	cmp16 krn_ptr1, endaddr, @l1
-
-	cli
-	; yes? send OK
-	jsr upload_ok
-
-	jsr krn_primm
-  .asciiz "OK"
-
-	crlf
-	restore
-	rts
-
-upload_ok:
-	lda #'O'
-	jsr uart_tx
-	lda #'K'
-	jsr uart_tx
-	rts
 
 filename: .asciiz "steckos/shell.prg"
 
@@ -462,4 +421,5 @@ krn_fread_byte:         jmp fat_fread_byte
 ;*= $fffe
 .word do_irq
 
-.segment "LOADER" ; unused
+.bss
+startaddr:	.res 2

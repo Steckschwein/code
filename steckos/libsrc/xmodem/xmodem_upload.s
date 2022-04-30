@@ -7,7 +7,10 @@
 .import uart_rx_nowait
 .import crc16_init
 .import crc16_lo, crc16_hi
+.import char_out
+.import hexout, hexout_s
 .import xmodem_rcvbuffer
+.import xmodem_startaddress
 
 ; XMODEM/CRC Receiver for the 65C02
 ;
@@ -64,17 +67,18 @@
 ;
 ;
 .zeropage
-addr:		.res 2
-crc:		.res 2			; CRC lo byte  (two byte variable)
+crc:		.res 2		; CRC lo byte  (two byte variable)
 crch		= crc+1		; CRC hi byte
 
-ptr:		.res 2			; data pointer (two byte variable)
+ptr:		.res 2		; data pointer (two byte variable)
 ptrh		= ptr+1		;   "    "
 
+;callback	.res 2
+
 blkno:		.res 1	; block number
+bflag:		.res 1	; block flag
 retry:		.res 1	; retry counter
 retry2:		.res 1	; 2nd counter
-bflag:		.res 1	; block flag
 ;
 ;
 ;
@@ -122,10 +126,11 @@ ESC		=	$1b		; ESC to exit
 
 ; in
 ; out:
-; 	C=1 on error
+; 	C=0 on success, C=1 on any i/o or protocoll related error
 .code
 xmodem_upload_stats:
-			
+;			sta callback
+;			sty callback+1
 xmodem_upload:
 			jsr crc16_init
 			lda	#$01
@@ -168,7 +173,7 @@ GetBlk2:	sta	Rbuff,x		; good char, save it in the rcv buffer
 err_exit:
 			jsr	Flush		; mismatched - flush buffer and then exit
 							; unexpected block # - fatal error - RTS
-			; lda	#$FD		; put error code in "A" if desired
+			; lda	#$FD	; put error code in "A" if desired
 			sec
 			rts
 
@@ -210,11 +215,14 @@ GoodCrc:	ldx	#$02		;
 			beq	CopyBlk		; no, copy all 128 bytes
 			lda	Rbuff,x		; get target address from 1st 2 bytes of blk 1
 			sta	ptr			; save lo address
-			sta	addr
+			sta	xmodem_startaddress
 			inx				;
 			lda	Rbuff,x		; get hi address
 			sta	ptr+1		; save it
-			sta	addr+1
+			sta	xmodem_startaddress+1
+			jsr hexout_s
+			lda xmodem_startaddress
+			jsr hexout
 			inx				; point to first byte of data
 			dec	bflag		; set the flag so we won't get another address
 CopyBlk:	ldy	#$00		; set offset to zero
@@ -223,6 +231,8 @@ CopyBlk3:	lda	Rbuff,x		; get data byte from buffer
 			inc	ptr			; point to next address
 			bne	CopyBlk4	; did it step over page boundary?
 			inc	ptr+1		; adjust high address for page crossing
+			lda #'.'
+			jsr char_out
 CopyBlk4:	inx				; point to next data byte
 			cpx	#$82		; is it the last byte
 			bne	CopyBlk3	; no, get the next one
@@ -231,28 +241,33 @@ IncBlk:		inc	blkno		; done.  Inc the block #
 			jsr	Put_Chr		;
 			jmp	StartBlk	; get next block
 Done:	
+			lda ptr+1
+			jsr hexout_s
+			lda ptr
+			jsr hexout
+
 			lda	#ACK		; last block, send ACK and exit.
 			jsr	Put_Chr		;
 			jsr	Flush		; get leftover characters, if any
-			jmp (addr)
+			rts				; exit, C=0
 
 ;
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ;
 ; subroutines
 ;
-;					;
+;
 GetByte:	stz	retry		; set low value of timing loop
 StartCrcLp:	jsr	Get_Chr		; get chr from serial port, don't wait
-			bcs	exit	; got one, so exit
+			bcs	exit		; got one, so exit
 			dec	retry		; no character received, so dec counter
 			bne	StartCrcLp	;
 			dec	retry2		; dec hi byte of counter
 			bne	StartCrcLp	; look for character again
 			clc				; if loop times out, CLC, else SEC and return
-exit:
-			rts				; with character in "A"
-;
+exit:		rts				; with character in "A"
+
+
 Flush:		lda	#$70		; flush receive buffer
 			sta	retry2		; flush until empty for ~1 sec.
 			jsr	GetByte		; read the port
@@ -275,19 +290,6 @@ Flush:		lda	#$70		; flush receive buffer
 ; character was send upon return from this routine.
 ;
 ;
-; input chr from ACIA (no waiting)
-; TODO
-;Get_Chr:
-;            lda #$01        ; Maske fuer DataReady Bit
-;            bit uart1lsr
-;            beq +
-;            lda uart1rxtx
-;			sec
-;			rts
-;+
-;			clc
-;            rts
-
 Get_Chr=uart_rx_nowait
 ;
 ;

@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.export hexout_s
 .export hexout
 
 .import char_out
@@ -30,7 +31,12 @@
 ;		A - the byte to convert
 ;	out:
 ;		-
-hexout: ;
+hexout_s:
+        pha
+        lda #'$'
+        jsr char_out
+        pla 
+hexout:
         pha
 		pha
 
@@ -52,6 +58,7 @@ hexout: ;
         cmp #$0a
         adc #$30
         cld
+_out:
         jsr char_out
 
         pla

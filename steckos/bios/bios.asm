@@ -29,8 +29,9 @@
 .export debug_chrout=_vdp_chrout
 .export crc16_lo=BUFFER_0
 .export crc16_hi=BUFFER_1
-.export xmodem_rcvbuffer=BUFFER_2
 .export crc16_init=crc16_table_init
+.export xmodem_rcvbuffer=BUFFER_2
+.export xmodem_startaddress=startaddr
 
 .exportzp startaddr, endaddr
 
@@ -313,18 +314,17 @@ boot_from_card:
 	SetVector steckos_start, read_blkptr
 	jsr fat_read
 	jsr fat_close
-	bne @load_error
+	bne load_error
 	println "OK"
 	bra startup
 
-@load_error:
+load_error:
 	jsr hexout
 	println " read error"
 do_upload:
 	print "Serial upload... "
 	jsr xmodem_upload
-	println "FAILED"
-	bcs do_upload
+	bcs load_error
 startup:
 	; re-init stack pointer
 	ldx #$ff
