@@ -13,5 +13,5 @@ clean:
 	rm -f $(TARGET) $(OBJS)
 
 tx: $(TARGET)
-	../transfer.py $(TARGET)    
+	../xmodem.sh $(TARGET)    
 

@@ -6,5 +6,5 @@ clean:
 	acme -v -f plain --cpu 65c02 -o $@ $<
 
 transfer: all
-	../transfer.py demo.bin	
-#	../transfer.py sprites.bin	0x1000
+	../xmodem.sh demo.bin	
+#	../xmodem.sh sprites.bin	0x1000

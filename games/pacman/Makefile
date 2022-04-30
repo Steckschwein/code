@@ -1,5 +1,5 @@
 DEBUG=-D__DEBUG
-DEBUG+=-D__NO_SOUND
+#DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 DEBUG+=-D__NO_INTRO
 
@@ -81,8 +81,8 @@ test.%: test.%.bin
 pacman.prg: $(OBJS_STS) $(LIBS)
 	ld65 -o $@ $(LDFLAGS_STS) $(OBJS_STS) $(LIBS_STS)
 
-pacman: pacman.prg
-	steckschwein-emu -rom ../../steckos/kernel/kernel.bin,0xe800 -upload $<
+#pacman: pacman.prg
+#	steckschwein-emu -rom ../../steckos/kernel/kernel.bin,0xe800 -upload $<
 
 pacman64.prg: $(OBJS_C64) $(LIBS_C64)
 	ld65 -o $@ $(LDFLAGS_C64) $(OBJS_C64) $(LIBS_C64)
@@ -98,4 +98,4 @@ pacman64.dis: pacman64.prg
 	dcc6502 -o 0x7ff -d -n -c $< > $@
 
 %: %.prg
-	../../transfer.py $<
+	../../xmodem.sh $<

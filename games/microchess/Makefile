@@ -16,4 +16,4 @@ clean:
 
 
 transfer: all
-	../../transfer.py mchess.prg
+	../../xmodem.sh mchess.prg

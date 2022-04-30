@@ -23,4 +23,4 @@ basic.dis: basic.prg
 		dcc6502 -o 0xb0fe -d -n -c $< > $@
 
 basic: all
-	../transfer.py $(OBJ)
+	../xmodem.sh $(OBJ)

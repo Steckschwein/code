@@ -16,4 +16,4 @@ joystick.prg: joystick.o
 	ld65 joystick.o $(LDFLAGS) -o joystick.prg
 
 joystick: all
-	../../transfer.py joystick.prg
+	../../xmodem.sh joystick.prg

@@ -56,7 +56,7 @@ loader.bin: kernel.bin loader.o
 dis: loader.bin
 	dcc6502 -o 0xe700 -m 0x1800 -d -n -c loader.bin > loader.dis
 transfer: loader.bin
-	../../transfer.py -s 0x1000 loader.bin
+	../../xmodem.sh loader.bin
 
 test.bin: test.o
 	cl65 --target none --config kernel.cfg test.asm -o test.bin

@@ -24,4 +24,4 @@ clean:
 	rm -f $(TARGET) $(OBJS)
 
 imfplayer: $(TARGET)
-	../../transfer.py $(TARGET)
+	../../xmodem.sh $(TARGET)

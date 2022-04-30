@@ -15,4 +15,4 @@ userport.prg: $(OBJS)
 	ld65  $(OBJS) $(LDFLAGS) -o userport.prg
 
 userport: all
-	../transfer.py userport.prg
+	../xmodem.sh userport.prg
