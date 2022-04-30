@@ -7,7 +7,7 @@
 .import uart_rx_nowait
 .import crc16_init
 .import crc16_lo, crc16_hi
-.import char_out
+.import primm
 .import hexout, hexout_s
 .import xmodem_rcvbuffer
 .import xmodem_startaddress
@@ -231,8 +231,6 @@ CopyBlk3:	lda	Rbuff,x		; get data byte from buffer
 			inc	ptr			; point to next address
 			bne	CopyBlk4	; did it step over page boundary?
 			inc	ptr+1		; adjust high address for page crossing
-			lda #'.'
-			jsr char_out
 CopyBlk4:	inx				; point to next data byte
 			cpx	#$82		; is it the last byte
 			bne	CopyBlk3	; no, get the next one
@@ -241,10 +239,14 @@ IncBlk:		inc	blkno		; done.  Inc the block #
 			jsr	Put_Chr		;
 			jmp	StartBlk	; get next block
 Done:	
+			jsr primm
+			.asciiz "..."
 			lda ptr+1
 			jsr hexout_s
 			lda ptr
 			jsr hexout
+			jsr primm
+			.asciiz " OK"		
 
 			lda	#ACK		; last block, send ACK and exit.
 			jsr	Put_Chr		;
