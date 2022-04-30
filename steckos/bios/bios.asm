@@ -6,7 +6,8 @@
 .include "spi.inc"
 .include "system.inc"
 
-.import uart_init, upload
+.import uart_init
+.import xmodem_upload,crc16_table_init
 .import init_via1
 .import hexout, primm
 .import vdp_init, _vdp_chrout, vdp_detect
@@ -26,6 +27,10 @@
 .export read_block=sd_read_block
 .export char_out=_vdp_chrout
 .export debug_chrout=_vdp_chrout
+.export crc16_lo=BUFFER_0
+.export crc16_hi=BUFFER_1
+.export xmodem_rcvbuffer=BUFFER_2
+.export crc16_init=crc16_table_init
 
 .exportzp startaddr, endaddr
 
@@ -34,7 +39,6 @@
 	startaddr: .res 2
 	endaddr: .res 2
     init_step: .res 1
-
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
@@ -252,31 +256,31 @@ mem_ok:
 			set_ctrlport
 			jsr init_via1
 
-         lda #<nvram
-         ldy #>nvram
+         	lda #<nvram
+         	ldy #>nvram
 			jsr read_nvram
-         set_ctrlport
+			set_ctrlport
 
 			jsr uart_init
-         set_ctrlport
+         	set_ctrlport
 
 			jsr keyboard_init
 
 			jsr sdcard_detect
-         beq @sdcard_init
+         	beq @sdcard_init
 			println "No SD card"
 			cli
 
 			jmp do_upload
 @sdcard_init:
-         jsr sdcard_init
-         beq boot_from_card
+			jsr sdcard_init
+			beq boot_from_card
 			println "SD card init failed"
 			jmp do_upload
 
 boot_from_card:
 			print "Boot from SD card."
-         jsr fat_mount
+			jsr fat_mount
 			beq @findfile
 			pha
 			print " mount error "
@@ -290,7 +294,7 @@ boot_from_card:
 			lda #(<nvram)+nvram::filename
 			ldx #>nvram
 			ldy #O_RDONLY
-         jsr fat_fopen
+			jsr fat_fopen
 			beq @loadfile
 
 			ldy #0
@@ -317,7 +321,10 @@ boot_from_card:
 	jsr hexout
 	println " read error"
 do_upload:
-	jsr upload
+	print "Serial upload... "
+	jsr xmodem_upload
+	println "FAILED"
+	bcs do_upload
 startup:
 	; re-init stack pointer
 	ldx #$ff

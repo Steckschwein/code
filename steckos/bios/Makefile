@@ -1,5 +1,5 @@
 LIBS=../lib/steckschwein.a
-OBJS=bios.o charset_6x8.o vdp.o upload.o
+OBJS=bios.o charset_6x8.o vdp.o
 CA65FLAGS=-I ../asminc
 LDFLAGS=-C bios.cfg -m bios.map -Ln bios.lbl
 # 6x8 characters
@@ -23,7 +23,6 @@ bios.asm: version.inc
 	ca65 --target none $(CA65FLAGS) $(DEFINES) $<
 
 version.inc:
-	#echo -n ".byte \"`git rev-parse --short HEAD`\"" > version.inc
 	echo -n ".byte \"`git log -1 --format="%t (%cd)" --date=format-local:%Y/%m/%d\ %H:%M:%S`\"" > version.inc
 
 bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
@@ -33,14 +32,17 @@ bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 bios.dis: bios.bin
 	dcc6502 -o 0xe000 -m 0x1fff -d -n -c $< > $@
 
+loader: loader.bin
+	../../xmodem.sh loader.bin
+
 loader.o: loader.asm bios.bin
 	ca65 --target none $(CA65FLAGS) $<
 
 loader.bin: loader.o
-	ld65 -C loader.cfg -m loader.map loader.o -o loader.bin
+	ld65 -C ../prg.ld65.cfg -m loader.map loader.o -o loader.bin
 
 %.dis: %.bin
-	dcc6502 -o 0x0300 -d -n -c $< > $@
+	dcc6502 -o 0x0800 -d -n -c $< > $@
 
 transfer: loader.bin
-	../../transfer.py -s 0x0300 loader.bin
+	../../transfer.py -s 0x07fe loader.bin

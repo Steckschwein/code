@@ -1,8 +1,11 @@
-      .setcpu "65c02"
+.setcpu "65c02"
 
-      .include "common.inc"
-      .include "system.inc"
-      
+.include "common.inc"
+.include "system.inc"
+.include "appstart.inc"
+
+appstart $0800
+
 .zeropage
 p_src:		.res 2
 p_tgt:		.res 2
