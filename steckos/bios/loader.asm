@@ -4,7 +4,7 @@
 .include "system.inc"
 .include "appstart.inc"
 
-appstart $0800
+appstart $1000
 
 .zeropage
 p_src:		.res 2

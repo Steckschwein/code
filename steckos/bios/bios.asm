@@ -269,7 +269,7 @@ mem_ok:
 
 			jsr sdcard_detect
          	beq @sdcard_init
-			println "No SD card"
+			println "SD card not found!"
 			cli
 
 			jmp do_upload
