@@ -11,7 +11,7 @@
 .export xmodem_rcvbuffer=BUFFER_2
 .export xmodem_startaddress=startaddr
 
-appstart $1000
+appstart $d000
 
 ;**************************************************************************
 ;

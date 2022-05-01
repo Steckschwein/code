@@ -276,7 +276,7 @@ mem_ok:
 @sdcard_init:
 			jsr sdcard_init
 			beq boot_from_card
-			println "SD card init failed"
+			println "SD card init failed!"
 			jmp do_upload
 
 boot_from_card:
@@ -289,7 +289,6 @@ boot_from_card:
 			jsr hexout
 			println ""
 			bra do_upload
-
 @findfile:
 			print_dot
 			lda #(<nvram)+nvram::filename
@@ -304,33 +303,33 @@ boot_from_card:
 			jsr vdp_chrout
 			iny
 			bne @loop
-@loop_end:
-			println " not found."
+@loop_end:	println " not found."
 			jmp do_upload
 
 @loadfile:
-	print_dot
-	SetVector steckos_start, startaddr
-	SetVector steckos_start, read_blkptr
-	jsr fat_read
-	jsr fat_close
-	bne load_error
-	println "OK"
-	bra startup
-
+			print_dot
+			;2 byte load address workaround
+			steckos_start		= $1000
+			SetVector (steckos_start-2), startaddr 
+			SetVector (steckos_start-2), read_blkptr
+			jsr fat_read
+			jsr fat_close
+			bne load_error
+			println "OK"
+			bra startup
 load_error:
-	jsr hexout
-	println " read error"
+			jsr hexout
+			println " read error"
 do_upload:
-	print "Serial upload... "
-	jsr xmodem_upload
-	bcs load_error
+			print "Serial upload... "
+			jsr xmodem_upload
+			bcs load_error
 startup:
-	; re-init stack pointer
-	ldx #$ff
-	txs
-	; jump to new code
-	jmp (startaddr)
+			; re-init stack pointer
+			ldx #$ff
+			txs
+			; jump to new code
+			jmp (startaddr)
 
 bios_irq:
     save

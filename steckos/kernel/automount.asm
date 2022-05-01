@@ -46,17 +46,17 @@ __automount_init:
 		bne sdcard_err_detect
 __automount:
 		jsr sdcard_detect
-		bne reset_retry	  ; no card, reset retry and exit
-		lda sdcard_retry	 ; should we try?
-		beq exit				; no, exit
+		bne reset_retry	  	; no card, reset retry and exit
+		lda sdcard_retry	; should we try?
+		beq exit			; no, exit
 		
-		jsr sdcard_init	  ; yes, try init
+		jsr sdcard_init	  	; yes, try init
 		debug8 "init", sdcard_retry
 		bne sdcard_err_init
 @mount:
 		stz sdcard_retry	 ; ok, no further retries
 		jsr fat_mount
-		beq exit				; init and mount ok, exit
+		beq exit			; init and mount ok, exit
 		pha
 		jsr primm
 		.byte "mount error (",0

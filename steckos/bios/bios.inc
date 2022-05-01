@@ -18,8 +18,6 @@ ram_end_h			= ram_end+1
 
 nvram				= $1000
 
-steckos_start		= $1000
-
 .macro	print_dot
 			lda #'.'
 			jsr vdp_chrout
