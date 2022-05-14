@@ -22,4 +22,4 @@ while [ "$1" != "" ] ; do
 done
 
 stty -F $port $speed ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke
-sx $file > $port < $port
+sx -vv $file > $port < $port

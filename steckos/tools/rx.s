@@ -1,10 +1,9 @@
 .include "steckos.inc"
-
 .import hexout
 
 .export char_out=krn_chrout
 
-appstart $1000
+appstart $c000
 
 
 ; XMODEM/CRC Receiver for the 65C02
@@ -61,26 +60,26 @@ appstart $1000
 ; zero page variables (adjust these to suit your needs)
 ;
 ;
-addr		=	$36
+.zeropage
+addr:		.res 2
 
-crc		=	$38		; CRC lo byte  (two byte variable)
-crch		=	$39		; CRC hi byte
+crc:			.res 2			; CRC lo byte  (two byte variable)
+crch		=	crc+1		; CRC hi byte
 
-ptr		=	$3a		; data pointer (two byte variable)
-ptrh		=	$3b		;   "    "
+ptr:			.res 2			; data pointer (two byte variable)
+ptrh		=	ptr+1		;   "    "
 
-blkno		=	$3c		; block number
-retry		=	$3d		; retry counter
-retry2		=	$3e		; 2nd counter
-bflag		=	$3f		; block flag
-
-retvec		=	$da
+blkno:		.res 1		; block number
+retry:		.res 1		; retry counter
+retry2:		.res 1	; 2nd counter
+bflag:		.res 1	; block flag
+;
 ;
 ;
 ; non-zero page variables and buffers
 ;
 ;
-Rbuff		=	$0300      	; temp 132 byte receive buffer
+;Rbuff		=	$0300      	; temp 132 byte receive buffer
 					;(place anywhere, page aligned)
 ;
 ;
@@ -120,6 +119,7 @@ ESC		=	$1b		; ESC to exit
 ; v 1.0 recode for use with SBC2
 ; v 1.1 added block 1 masking (block 257 would be corrupted)
 
+.code
 XModem:
 			jsr	PrintMsg	; send prompt and info
 
@@ -227,7 +227,8 @@ IncBlk:		inc	blkno		; done.  Inc the block #
 			lda	#ACK		; send ACK
 			jsr	Put_Chr		;
 			jmp	StartBlk	; get next block
-Done:		lda	#ACK		; last block, send ACK and exit.
+Done:
+			lda	#ACK		; last block, send ACK and exit.
 			jsr	Put_Chr		;
 			jsr	Flush		; get leftover characters, if any
 			jsr	Print_Good	;
@@ -263,8 +264,6 @@ Flush1:		jsr	GetByte		; read the port
 PrintMsg:
 			jsr krn_primm
 Msg:		.byte	"Begin XMODEM/CRC transfer."
-			.byte  	CR, LF
-			.byte	"Press <Esc> to abort..."
 			.byte  	CR, LF
          	.byte   0
 			rts
@@ -310,13 +309,13 @@ GoodMsg:	.byte 	"Upload Successful!"
 ;			clc
 ;            rts
 
-Get_Chr		= krn_uart_rx_nowait
-
+Get_Chr=krn_uart_rx_nowait
 ;
 ;
 ; output to OutPut Port
 ;
-Put_Chr	   	= krn_uart_tx
+Put_Chr=krn_uart_tx
+
 ;=========================================================================
 ;
 ;
@@ -373,7 +372,8 @@ UpdCrc:		eor 	crc+1 		; Quick CRC computation with lookup tables
 ;
 ; low byte CRC lookup table (should be page aligned)
 ;		*= $7D00
-.align 256
+.data
+;.align 256
 crclo:
  .byte $00,$21,$42,$63,$84,$A5,$C6,$E7,$08,$29,$4A,$6B,$8C,$AD,$CE,$EF
  .byte $31,$10,$73,$52,$B5,$94,$F7,$D6,$39,$18,$7B,$5A,$BD,$9C,$FF,$DE
@@ -394,7 +394,7 @@ crclo:
 
 ; hi byte CRC lookup table (should be page aligned)
 ;		*= $7E00
-.align 256
+;.align 256
 crchi:
  .byte $00,$10,$20,$30,$40,$50,$60,$70,$81,$91,$A1,$B1,$C1,$D1,$E1,$F1
  .byte $12,$02,$32,$22,$52,$42,$72,$62,$93,$83,$B3,$A3,$D3,$C3,$F3,$E3
@@ -416,3 +416,5 @@ crchi:
 ;
 ; End of File
 ;
+.bss
+Rbuff: .res 132
