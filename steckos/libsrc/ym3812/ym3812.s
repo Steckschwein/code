@@ -25,7 +25,8 @@
 .include "ym3812.inc"
 .include "debug.inc"
 
-.export opl2_init, opl2_delay_data, opl2_delay_register, opl2_reg_write
+.export opl2_init, opl2_delay_data, opl2_delay_register
+.export opl2_reg_write
 .export _opl2_init=opl2_init
 
 ;----------------------------------------------------------------------------------------------
@@ -40,29 +41,35 @@ opl2_init:
 
 		lda #0
 		tax
-@l:		jsr opl2_reg_write
+@l:		jsr _opl2_reg_write
 		inx
 		bne @l
 
 		ldx #opl2_reg_ctrl
 		lda #$60	; disable timer 1 & 2 IRQ
-		jsr opl2_reg_write
+		jsr _opl2_reg_write
 
 		lda #$80	; reset irq
-		jsr opl2_reg_write
+		jsr _opl2_reg_write
 
 		ldx #1
 		lda #(1<<5) 	; enable WS
-		jsr opl2_reg_write
+		jsr _opl2_reg_write
 
+		plp
+		rts
+
+opl2_reg_write:
+		php
+		sei
+		jsr _opl2_reg_write
 		plp
 		rts
 
 ;	in:
 ;		 .X - opl2 register select
 ;		 .A - opl2 data
-opl2_reg_write:
-		;nop
+_opl2_reg_write:
 		stx opl_sel
 		jsr opl2_delay_register
 		sta opl_data

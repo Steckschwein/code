@@ -1,7 +1,9 @@
 .include "zeropage.inc"
+.include "system.inc"
+.include "keyboard.inc"
 
 .export xmodem_upload
-.export xmodem_upload_stats
+.export xmodem_upload_verbose
 
 .import uart_tx
 .import uart_rx_nowait
@@ -73,8 +75,6 @@ crch		= crc+1		; CRC hi byte
 ptr:		.res 2		; data pointer (two byte variable)
 ptrh		= ptr+1		;   "    "
 
-;callback	.res 2
-
 blkno:		.res 1	; block number
 bflag:		.res 1	; block flag
 retry:		.res 1	; retry counter
@@ -128,9 +128,9 @@ ESC		=	$1b		; ESC to exit
 ; out:
 ; 	C=0 on success, C=1 on any i/o or protocoll related error
 .code
-xmodem_upload_stats:
-;			sta callback
-;			sty callback+1
+xmodem_upload_verbose:
+			jsr primm
+			.byte "XMODEM upload... ", 0
 xmodem_upload:
 			jsr crc16_init
 			lda	#$01
@@ -156,7 +156,11 @@ GotByte:	cmp	#SOH		; start of block?
 			beq	BegBlk		; yes
 			cmp	#EOT		;
 			bne	BadCrc		; Not SOH or EOT, so flush buffer & send NAK
-			jmp	Done		; EOT - all done!
+Done:						; EOT - all done!
+			lda	#ACK		; last block, send ACK and exit.
+			jsr	Put_Chr		;
+			jmp	Flush		; get leftover characters, if any
+							; exit, C=0
 BegBlk:		ldx	#$00
 GetBlk:		lda	#$ff		; 3 sec window to receive characters
 			sta retry2		;
@@ -194,7 +198,7 @@ UpdCrc:		eor 	crc+1 		; Quick CRC computation with lookup tables
        		sta 	crc
 
 			iny				;
-			cpy	#$82		; 2+128 bytes
+			cpy	#$80+2		; 2+128 bytes
 			bne	CalcCrc		;
 			lda	Rbuff,y		; get hi CRC from buffer
 			cmp	crch		; compare to calculated hi CRC
@@ -223,14 +227,24 @@ GoodCrc:	ldx	#$02		;
 			jsr hexout_s
 			lda xmodem_startaddress
 			jsr hexout
+			jsr primm
+			.asciiz "...     "
 			inx				; point to first byte of data
 			dec	bflag		; set the flag so we won't get another address
-CopyBlk:	ldy	#$00		; set offset to zero
+CopyBlk:	;ldy	#$00		; set offset to zero
 CopyBlk3:	lda	Rbuff,x		; get data byte from buffer
-			sta	(ptr),y		; save to target
+			sta	(ptr)		; save to target
 			inc	ptr			; point to next address
 			bne	CopyBlk4	; did it step over page boundary?
 			inc	ptr+1		; adjust high address for page crossing
+
+			jsr primm
+			.byte KEY_BACKSPACE, KEY_BACKSPACE, KEY_BACKSPACE, KEY_BACKSPACE, KEY_BACKSPACE, 0
+			
+			lda ptr+1
+			jsr hexout_s
+			lda ptr
+			jsr hexout
 CopyBlk4:	inx				; point to next data byte
 			cpx	#$82		; is it the last byte
 			bne	CopyBlk3	; no, get the next one
@@ -238,20 +252,6 @@ IncBlk:		inc	blkno		; done.  Inc the block #
 			lda	#ACK		; send ACK
 			jsr	Put_Chr		;
 			jmp	StartBlk	; get next block
-Done:	
-			jsr primm
-			.asciiz "..."
-			lda ptr+1
-			jsr hexout_s
-			lda ptr
-			jsr hexout
-			jsr primm
-			.asciiz " OK"		
-
-			lda	#ACK		; last block, send ACK and exit.
-			jsr	Put_Chr		;
-			jsr	Flush		; get leftover characters, if any
-			rts				; exit, C=0
 
 ;
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -259,6 +259,12 @@ Done:
 ; subroutines
 ;
 ;
+Flush:		lda	#$70		; flush receive buffer
+			sta	retry2		; flush until empty for ~1 sec.
+			jsr	GetByte		; read the port
+			bcs	Flush		; if chr recvd, wait for another
+			rts				; else done
+
 GetByte:	stz	retry		; set low value of timing loop
 StartCrcLp:	jsr	Get_Chr		; get chr from serial port, don't wait
 			bcs	exit		; got one, so exit
@@ -268,13 +274,6 @@ StartCrcLp:	jsr	Get_Chr		; get chr from serial port, don't wait
 			bne	StartCrcLp	; look for character again
 			clc				; if loop times out, CLC, else SEC and return
 exit:		rts				; with character in "A"
-
-
-Flush:		lda	#$70		; flush receive buffer
-			sta	retry2		; flush until empty for ~1 sec.
-			jsr	GetByte		; read the port
-			bcs	Flush		; if chr recvd, wait for another
-			rts				; else done
 
 ;
 ;======================================================================

@@ -22,40 +22,41 @@
 
 .include "common.inc"
 .include "kernel.inc"
+.include "appstart.inc"
 
 .import kernel_start
 
-.include "appstart.inc"
+; system attribute has to be set on file system
+.zeropage
+p_src:		.res 2
+p_tgt:		.res 2
 
 appstart $1000
 
-; system attribute has to be set on file system
-src_ptr  = $0
-dst_ptr  = $2
    sei ; no irq if we upload from kernel to avoid clash
    ; copy kernel code to kernel_start
    lda #>payload
-   sta src_ptr+1
-   stz src_ptr
+   sta p_src+1
+   stz p_src
 
    lda #>kernel_start
-   sta dst_ptr+1
-   stz dst_ptr
+   sta p_tgt+1
+   stz p_tgt
 
    ldy #0
 loop:
-   lda (src_ptr),y
-   sta (dst_ptr),y
+   lda (p_src),y
+   sta (p_tgt),y
    iny
    bne loop
-   lda src_ptr+1
+   lda p_src+1
    cmp #>payload_end
    bne @skip
    cpy #<payload_end
    beq end
 @skip:
-   inc src_ptr+1
-   inc dst_ptr+1
+   inc p_src+1
+   inc p_tgt+1
    bne loop
 end:
    lda #$01

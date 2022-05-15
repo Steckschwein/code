@@ -39,7 +39,7 @@ vdp_init_reg:
 	sty vdp_ptr+1
 	txa			; x length of init table
 	tay
-	ora #$80		; bit 7 = 1 => register write
+	ora #$80	; bit 7 = 1 => register write
 	tax
 @l:
 	vdp_wait_s 4

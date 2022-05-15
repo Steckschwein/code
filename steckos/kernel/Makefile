@@ -55,6 +55,7 @@ loader.bin: kernel.bin loader.o
 	# -m <kernel start adress - $100 (loader)
 dis: loader.bin
 	dcc6502 -o 0xe700 -m 0x1800 -d -n -c loader.bin > loader.dis
+
 transfer: loader.bin
 	../../xmodem.sh loader.bin
 
@@ -66,3 +67,8 @@ test:
 
 ../lib/steckschwein.a:
 	(cd ../libsrc ; make)
+
+emu: loader.bin
+	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img  
+
+# -upload $^

@@ -55,6 +55,11 @@ SYS_VECTOR_NMI = $fffa
 SYS_VECTOR_RESET = $fffc
 SYS_VECTOR_IRQ = $fffe
 
+.macro crlf
+  lda #CODE_LF		;\n already does the carriage return
+  jsr char_out
+.endmacro
+
 .macro sys_delay_us micros
     .local @0,@1,@2
     .local cnt

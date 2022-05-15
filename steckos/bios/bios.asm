@@ -1,20 +1,14 @@
 .include "bios.inc"
-.include "sdcard.inc"
-.include "fat32.inc"
-.include "fcntl.inc"
-.include "nvram.inc"
-.include "spi.inc"
-.include "system.inc"
 
 .import uart_init
-.import xmodem_upload,crc16_table_init
+.import xmodem_upload_verbose,crc16_table_init
 .import init_via1
 .import hexout, primm
 .import vdp_init, _vdp_chrout, vdp_detect
 .import sdcard_init
 .import sdcard_detect
-.import fat_fopen
-.import fat_mount, fat_read, fat_close
+.import fat_mount
+.import fat_fopen, fat_fread_byte, fat_close
 .import read_nvram
 .import sd_read_block, sd_write_block
 .import spi_select_device
@@ -111,9 +105,7 @@ keyboard_init:
     jsr _keyboard_cmd_status
 	bne _fail
 
-_ok:
-	jsr primm
-	.byte "OK", CODE_LF, 0
+	jsr print_ok
 	jmp spi_deselect
 _fail:
     pha
@@ -243,7 +235,7 @@ mem_ok:
 			jsr primm
 			.byte "steckOS BIOS   "
 			.include "version.inc"
-			.byte $0a,0
+			.byte CODE_LF,0
 
 			print "Memcheck $"
 			lda ptr1+1
@@ -280,56 +272,73 @@ mem_ok:
 			jmp do_upload
 
 boot_from_card:
-			print "Boot from SD card."
+			print "Boot from SD card... "
 			jsr fat_mount
 			beq @findfile
 			pha
-			print " mount error "
+			print "mount error "
 			pla
 			jsr hexout
 			println ""
 			bra do_upload
 @findfile:
-			print_dot
-			lda #(<nvram)+nvram::filename
-			ldx #>nvram
-			ldy #O_RDONLY
-			jsr fat_fopen
-			beq @loadfile
-
 			ldy #0
-@loop:	lda nvram+nvram::filename,y
-			beq @loop_end
+@loop:		lda nvram+nvram::filename,y
+			beq :+
 			jsr vdp_chrout
 			iny
 			bne @loop
+:			
+			lda #(<nvram)+nvram::filename
+			ldx #>nvram
+			ldy #O_RDONLY
+			jsr fat_fopen					; A/X - pointer to filename
+			beq @loadfile
 @loop_end:	println " not found."
-			jmp do_upload
-
+			bra do_upload
 @loadfile:
+			print " found."
+			jsr fat_fread_byte	; start address low
+			bcs load_error
+			sta startaddr
+			sta ptr1
 			print_dot
-			;2 byte load address workaround
-			steckos_start		= $1000
-			SetVector (steckos_start-2), startaddr 
-			SetVector (steckos_start-2), read_blkptr
-			jsr fat_read
-			jsr fat_close
-			bne load_error
-			println "OK"
-			bra startup
-load_error:
-			jsr hexout
+
+			jsr fat_fread_byte ; start address high
+			bcs load_error
+			sta startaddr+1
+			sta ptr1+1
+			print_dot
+@l:			jsr fat_fread_byte
+			bcs @l_is_eof
+			sta (ptr1)
+			inc ptr1
+			bne @l
+			inc ptr1+1
+			bne @l
+@l_is_eof:
+			cmp #0
+			bne @l
+			jsr fat_close		; close after read to free fd, regardless of error
+			beq load_ok
+load_error:	jsr hexout
 			println " read error"
 do_upload:
-			print "Serial upload... "
-			jsr xmodem_upload
+			jsr xmodem_upload_verbose
 			bcs load_error
+load_ok:			
+			jsr print_ok
 startup:
 			; re-init stack pointer
 			ldx #$ff
 			txs
 			; jump to new code
 			jmp (startaddr)
+
+print_ok: ; !!! jsr _ok
+	jsr primm
+	.byte " OK", CODE_LF, 0
+	rts
 
 bios_irq:
     save

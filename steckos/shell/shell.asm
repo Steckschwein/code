@@ -34,9 +34,6 @@ prompt  = $af
 ; SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 80 ;TODO maybe too small?
 
-bufptr			= ptr1
-pathptr			= ptr2
-p_history   = ptr3
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
@@ -46,9 +43,9 @@ p_history   = ptr3
 .export char_out=krn_chrout
 
 .zeropage
-ptr1:   .res 2
-ptr2:   .res 2
-ptr3:   .res 2
+bufptr:         .res 2
+pathptr:        .res 2
+p_history:      .res 2
 tmp1:   .res 1
 tmp2:   .res 1
 
@@ -62,7 +59,7 @@ init:
       jsr krn_primm
       .byte "steckOS shell  "
       .include "version.inc"
-      .byte $0a,0
+      .byte CODE_LF,0
 exit_from_prg:
       cld
       jsr	krn_textui_init
@@ -77,28 +74,25 @@ exit_from_prg:
       SetVector buf, paramptr ; set param to empty buffer
       SetVector PATH, pathptr
 mainloop:
-      jsr krn_primm
-      .byte $0a, '[', 0
-      ; output current path
-      lda #<cwdbuf
-      ldx #>cwdbuf
-      ldy #cwdbuf_size
-      jsr krn_getcwd
-      bne @nocwd
+        jsr krn_primm
+        .byte CODE_LF, '[', 0
+        ; output current path
+        lda #<cwdbuf
+        ldx #>cwdbuf
+        ldy #cwdbuf_size
+        jsr krn_getcwd
+        bne @nocwd
 
-      lda #<cwdbuf
-      ldx #>cwdbuf
-      jsr krn_strout
-      bra @prompt
+        lda #<cwdbuf
+        ldx #>cwdbuf
+        jsr krn_strout
+        bra @prompt
 @nocwd:
          lda #'?'
          jsr char_out
 @prompt:
-         lda #']'
-         jsr char_out
-        ; output prompt character
-        lda #prompt
-        jsr char_out
+        jsr krn_primm
+        .byte ']', prompt, 0
 
         lda crs_x
         sta crs_x_prompt
@@ -264,16 +258,16 @@ compare:
 		bra @l1
 
 cmdfound:
-      inx
-      jmp (cmdlist,x) ; 65c02 FTW!!
+        crlf
+        inx
+        jmp (cmdlist,x) ; 65c02 FTW!!
 
 try_exec:
-      lda (bufptr)
-      beq @l1
+        lda (bufptr)
+        beq @l1
 
-      lda #$0a
-      jsr char_out
-      jmp exec
+        crlf
+        jmp exec
 
 @l1:	jmp mainloop
 
@@ -336,7 +330,7 @@ history_peek:
         rts
 
 history_push:
-        lda #$0a
+        lda #CODE_LF
         ;jsr char_out
 
         tya
@@ -349,7 +343,7 @@ history_push:
         dex
         bpl :-
 
-        lda #$0a
+        lda #CODE_LF
         ;jsr char_out
 
         lda p_history   ; new end
@@ -359,27 +353,26 @@ history_push:
         rts
 
 printbuf:
-		ldy #$01
-		sty crs_x
-		jsr krn_textui_update_crs_ptr
+        ldy #$01
+        sty crs_x
+        jsr krn_textui_update_crs_ptr
 
-		ldy #$00
+        ldy #$00
 @l1:	lda (bufptr),y
-		beq @l2
-		sta buf,y
-		jsr char_out
-		iny
-		bra @l1
+        beq @l2
+        sta buf,y
+        jsr char_out
+        iny
+        bra @l1
 @l2:	rts
 
 
 cmdlist:
+        .byte "cd",0
+        .word cd
 
-		.byte "cd",0
-		.word cd
-
-		.byte "up",0
-		.word krn_upload
+        .byte "up",0
+        .word krn_upload
 
 .ifdef DEBUG
 		.byte "dump",0
@@ -410,7 +403,7 @@ errmsg:
 		bne @l1
 
 		jsr krn_primm
-		.byte $0a,"invalid command",$0a,$00
+		.byte CODE_LF,"invalid command",CODE_LF,$00
 		jmp mainloop
 
 @l1:
@@ -418,12 +411,12 @@ errmsg:
 		bne @l2
 
 		jsr krn_primm
-		.byte $0a,"invalid directory",$0a,$00
+		.byte CODE_LF,"invalid directory",CODE_LF,$00
 		jmp mainloop
 
 @l2:
 		jsr krn_primm
-		.byte $0a,"unknown error",$0a,$00
+		.byte CODE_LF,"unknown error",CODE_LF,$00
 		jmp mainloop
 
 mode_toggle:

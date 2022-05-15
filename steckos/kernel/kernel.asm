@@ -61,7 +61,7 @@
 
 .import hexout
 .import crc16_table_init
-.import xmodem_upload
+.import xmodem_upload_verbose
 
 ; internal kernel api stuff
 .import __automount
@@ -123,7 +123,6 @@ kern_init:
 .endif
 
 		SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
-
 		jsr __automount_init
 		bne do_upload
 
@@ -136,10 +135,11 @@ load_error:
 		jsr primm
 		.byte " read error", CODE_LF, 0
 do_upload:
-		jsr primm
-		.byte "Serial upload... ", 0
-		jsr xmodem_upload
+		jsr xmodem_upload_verbose
 		bcs load_error
+		
+		jsr primm
+		.byte " OK", CODE_LF, 0
 
 		ldx #$ff
 		txs
@@ -177,13 +177,13 @@ do_irq:
 	bit a_vreg ; vdp irq ?
 	bpl @check_via
 
-	jsr textui_update_screen	 ; update text ui
+	jsr textui_update_screen	; update text ui
 	dec frame
 	lda frame
-	and #$0f				  ; every 16 frames we try to update rtc, gives 320ms clock resolution
+	and #$0f				  	; every 16 frames we try to update rtc, gives 320ms clock resolution
 	bne @check_via
 
-	jsr rtc_systime_update	 ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
+	jsr rtc_systime_update	 	; update system time, read date time and store to rtc_systime_t (see rtc.inc)
 	jsr __automount
 
 @check_via:
