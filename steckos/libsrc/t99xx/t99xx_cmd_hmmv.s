@@ -36,25 +36,31 @@
 vdp_cmd_hmmv:
 	php
 	sei
+
 	sta vdp_ptr
 	stx vdp_ptr+1
-	phy						; safe color
 
 	vdp_sreg 36, v_reg17 	; set reg index to #36
+
+	phy						; safe color
+
 	ldy #0
 @loop:
-	vdp_wait_s 7
+	vdp_wait_s 5
 	lda (vdp_ptr),y
 	sta a_vregi
 	iny
 	cpy #08
 	bne @loop
 	
-	pla 
-	sta a_vregi				; color (r#44)
+	pla 					; color (r#44)
+	sta a_vregi				
 
+	vdp_wait_s 2
 	lda #0
 	sta a_vregi
+
+	vdp_wait_s 2
 	lda #v_cmd_hmmv
 	sta a_vregi
 
