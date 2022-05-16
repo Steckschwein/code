@@ -25,8 +25,7 @@
 .import vdp_init_reg
 .import vdp_nopslide_2m
 .import vdp_nopslide_8m
-.import vdp_fill
-.import vdp_wait_cmd
+.import vdp_cmd_hmmv
 
 .export vdp_mode7_on
 .export vdp_mode7_blank
@@ -64,28 +63,12 @@ vdp_init_bytes_gfx7_end:
 ; 	Y - color to fill in GRB (3+3+2)
 ;
 vdp_mode7_blank:
-	php
-	sei
-	sty colour
-	vdp_sreg 36, v_reg17 ; set reg index to #36
-	ldx #0
-@loop:
-	vdp_wait_s 4
-	lda data,x
-	sta a_vregi
-	inx
-	cpx #12
-	bne @loop
-	jsr vdp_wait_cmd
-	plp
-	rts
+	lda #<_cmd_hmmv_data
+	ldx #>_cmd_hmmv_data
+	jmp vdp_cmd_hmmv
 
-data:
+_cmd_hmmv_data:
 	.word 0 ;x #36/#37
 	.word (ADDRESS_GFX7_SCREEN>>8) ;y - from page offset
 	.word 256 ; len x #40/#41
 	.word 212 ; len y #42/#43
-colour:
-	.byte %00011100 ; colour
-	.byte $00 ; destination memory, x direction, y direction, yada yada
-	.byte v_cmd_hmmv ; command

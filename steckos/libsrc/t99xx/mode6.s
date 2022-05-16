@@ -23,7 +23,7 @@
 .include "vdp.inc"
 
 .import vdp_init_reg
-.import vdp_fill
+.import vdp_cmd_hmmv
 
 .export vdp_mode6_on
 .export vdp_mode6_blank
@@ -59,14 +59,15 @@ vdp_init_bytes_gfx6:
 vdp_init_bytes_gfx6_end:
 
 ;
-; blank gfx mode with given color
+; blank gfx mode 6 with given color
 ; .Y - color to fill 4|4 Bit
 vdp_mode6_blank:		; 64K
-		php
-		sei
-  		vdp_vram_w ADDRESS_GFX6_SCREEN
-  		tya
-		ldx #0 ; 64k
-		jsr vdp_fill
-		plp
-		rts
+	lda #<_cmd_hmmv_data
+	ldx #>_cmd_hmmv_data
+	jmp vdp_cmd_hmmv
+
+_cmd_hmmv_data:
+	.word 0 ;x #36/#37
+	.word (ADDRESS_GFX6_SCREEN>>8) ;y - from page offset
+	.word 512 ; len x #40/#41
+	.word 212 ; len y #42/#43
