@@ -32,12 +32,12 @@
 ;		-
 hexout: ;
         pha
-		pha
-
-		lsr     ; msb first
-		lsr
-		lsr
-		lsr
+        pha
+        
+        lsr     ; msb first
+        lsr
+        lsr
+        lsr
         ; https://twitter.com/adumont/status/1381857942467702785
         sed
         cmp #$0a
@@ -55,4 +55,4 @@ hexout: ;
         jsr char_out
 
         pla
-		rts
+        rts
