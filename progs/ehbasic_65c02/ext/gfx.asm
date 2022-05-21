@@ -107,7 +107,7 @@ _gfx_mode_table:
 		.word vdp_mode7_on ; 7
 
 _gfx_blank_table:
-		.word gfx_dummy; 4
+		.word gfx_dummy; 4	;0
 		.word gfx_dummy; 4
 		.word vdp_mode2_blank ; 2
 		.word vdp_mc_blank ; 3
