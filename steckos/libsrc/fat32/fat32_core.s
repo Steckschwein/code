@@ -53,6 +53,8 @@
 .export __fat_next_cln
 .export __fat_open_path
 .export __fat_read_block
+.export __fat_read_block_data
+.export __fat_read_block_fat
 .export __fat_set_fd_attr_dirlba
 .export __calc_lba_addr
 .export __calc_blocks
@@ -373,9 +375,12 @@ __fat_isroot:
 		; internal read block
 		; requires: read_blkptr and lba_addr already calculated
 __fat_read_block_fat:
-		stz read_blkptr
 		lda #>block_fat
-		sta read_blkptr+1
+		bra :+
+__fat_read_block_data:
+		lda #>block_data
+:		sta read_blkptr+1
+		stz read_blkptr
 __fat_read_block:
 		phx
 		debug32 "fat_rb", lba_addr
@@ -510,7 +515,6 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if f
 		; unsigned int offs = (clnr << 2 & (BLOCK_SIZE-1));//offset within 512 byte block, cluster nr * 4 (32 Bit) and Bit 8-0 gives the offset
 		; in:
 		;	X - file descriptor
-		;	Y - offset from target address denoted by pointer (read_blkptr)
 		; out:
 		;	C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
 __fat_next_cln:
@@ -518,7 +522,7 @@ __fat_next_cln:
 		pha
 		lda read_blkptr+1
 		pha
-		jsr __fat_read_cluster_block_and_select    	; read fat block of the current cluster
+		jsr __fat_read_cluster_block_and_select    	; read fat block of the current cluster, Y will offset
 		bcs @l_exit
 		lda (read_blkptr), y
 		sta fd_area + F32_fd::CurrentCluster+0, x
@@ -531,10 +535,10 @@ __fat_next_cln:
 		iny
 		lda (read_blkptr), y
 		sta fd_area + F32_fd::CurrentCluster+3, x
-		stz fd_area + F32_fd::offset, x 					; reset block offset here
+		stz fd_area + F32_fd::offset, x 			; reset block offset here
 		clc ; success
 @l_exit:
-		ply														; use Y to preserve A with return code
+		ply											; use Y to preserve A with return code
 		sty read_blkptr+1
 		ply
 		sty read_blkptr

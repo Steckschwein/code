@@ -73,9 +73,8 @@
 .export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
 
-;.ifdef TEST_EXPORT TODO FIXME - any ideas?
 .export __fat_init_fdarea
-;.endif
+.export __fat_read_block_open
 
 .code
 
@@ -101,20 +100,21 @@ __fat_fseek:
 		;out:
 		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 fat_fread_byte:
+
 		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		lda #EOK
 		rts ; exit - EOF, C=1
 
-		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd
+		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd in between
 :		SetVector block_data, read_blkptr
 		lda fd_area+F32_fd::seek_pos+1,x
 		and #$01
-		bne l_read_h							; 2nd half block?
+		bne l_read_h						; 2nd half block?
 		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos LSB points to start of block
 		bne l_read
-		jsr _fat_read_block_open			; ... if so, read the block first
+		jsr __fat_read_block_open			; ... if so, read the block first
 		bcc l_read
 		rts
 l_read_h:
@@ -124,7 +124,7 @@ l_read:
 		lda (read_blkptr),y
 		_inc32_x fd_area+F32_fd::seek_pos
 		clc
-		rts
+l_exit:	rts
 
     	;  TODO FIXME currently we always read until the end of the cluster chain (EOC) regardless
 		;  whether we reached the end of the file. the file size must be checked
@@ -147,7 +147,7 @@ fat_fread:
 		cpy krn_tmp3
 		beq @l_exit_ok
 
-		jsr _fat_read_block_open
+		jsr __fat_read_block_open
 		bcs @l_exit
 
 		inc read_blkptr+1							; read address + $0200 (block size)
@@ -156,25 +156,25 @@ fat_fread:
 		bra @l_read_loop
 
 @l_exit_ok:
-		lda #EOK														; A=0 (EOK)
+		lda #EOK									; A=0 (EOK)
 		clc
 @l_exit:
 		ldy krn_tmp2
 		rts
 
-; read one block, TODO - update seek position within FD, but conflicts with fat_fread_byte
+; read block
 ;in:
 ;	X	- offset into fd_area
 ;	read_blkptr has to be set to target address - TODO FIXME ptr. parameter
 ;out:
 ;	C=0 on success, C=1 on error and A=error code or EOC reached and A=0 otherwise
-_fat_read_block_open:
+__fat_read_block_open:
 		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
-		bne @l_read											 		; no, go on reading...
+		bne @l_read										; no, go on reading...
 
-		jsr __fat_next_cln						; select next cluster within chain
-		bcs @l_exit									; exit on error or EOC (C=1)
+		jsr __fat_next_cln		; select next cluster within chain
+		bcs @l_exit				; exit on error or EOC (C=1)
 @l_read:
 		jsr __calc_lba_addr
 		jsr __fat_read_block

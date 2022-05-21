@@ -4,6 +4,7 @@
 .import fat_fopen
 .import fat_close
 .import fat_write
+.import fat_write_byte
 .import fat_mkdir
 
 ; mock defines
@@ -79,6 +80,7 @@ debug_enabled=1
 		assert16 $1234+4*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
 		assertDirEntry block_root_cl+4*DIR_Entry_Size ; expect 4th entry updated
 			fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 3*sd_blocksize+3
+
 		jsr fat_close
 
 ; -------------------
@@ -101,9 +103,31 @@ debug_enabled=1
 ;		jsr fat_write
 	;	assertA EOK
 ;		assertX FD_Entry_Size*2	; assert FD
-;		assertDirEntry $0480
+;		assertDirEntry block_data+$80
 ;			fat32_dir_entry_file "TST_02CL", "TST", 0, $10
 		jsr fat_close
+
+
+; -------------------
+		setup "fat_write_byte O_CREAT 2 cluster";
+		ldy #O_CREAT
+		lda #<test_file_name_2cl
+		ldx #>test_file_name_2cl
+		jsr fat_fopen
+		assertA EOK
+		assertX FD_Entry_Size*2	; assert FD reserved
+
+		assertDirEntry block_data+$80
+				fat32_dir_entry_file "TST_02CL", "TST", 0, 0	; no cluster reserved yet
+		assertFdEntry fd_area + (FD_Entry_Size*2)
+				fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0
+
+		lda #'F'
+		jsr fat_write_byte
+		assertC 0
+
+		assertDirEntry block_data+$80
+				fat32_dir_entry_file "TST_02CL", "TST", 0, 0	; no cluster reserved yet
 
 		brk
 
@@ -203,7 +227,7 @@ setUp:
 
 .data
 	test_file_name_1: 		.asciiz "test01.tst"
-	test_file_name_1cl: 		.asciiz "tst_01cl.tst"
+	test_file_name_1cl:		.asciiz "tst_01cl.tst"
 	test_file_name_2cl:		.asciiz "tst_02cl.tst"
 	test_dir_name_eexist:	.asciiz "dir01"
 	test_dir_name_mkdir: 	.asciiz "dir03"

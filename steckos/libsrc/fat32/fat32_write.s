@@ -38,6 +38,7 @@
 .export fat_rmdir
 .export fat_unlink
 .export fat_write
+.export fat_write_byte
 
 .import string_fat_name
 .import write_block
@@ -49,6 +50,8 @@
 .import __fat_opendir_cwd
 .import __fat_free_fd
 .import __fat_read_block
+.import __fat_read_block_data
+.import __fat_read_block_fat
 .import __fat_isroot
 .import __fat_find_next
 .import __fat_find_first_mask
@@ -56,6 +59,7 @@
 .import __calc_lba_addr
 .import __calc_blocks
 .import __inc_lba_address
+.import __fat_read_block_open
 
 .import fat_fopen
 .importzp __volatile_ptr
@@ -64,31 +68,35 @@
 ;	A - byte to write
 ;	X - offset into fd_area
 ; out:
-;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
+;	C=0 on success, C=1 on error and A=<error code>
 fat_write_byte:
 
 		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		pha
-		SetVector block_data, write_blkptr
-		lda fd_area+F32_fd::seek_pos+1,x ;
+
+		jsr __fat_isroot
+		
+		SetVector block_data, read_blkptr
+		lda fd_area+F32_fd::seek_pos+1,x
 		and #$01
-		beq l_write								; 2nd half block?
-		inc write_blkptr+1
-l_write:
-		ldy fd_area+F32_fd::seek_pos+0,x
-		pla
-		sta (write_blkptr),y
-
-		cpy #0									; check whether seek pos points to start of block
-		bne l_write
-
-		_inc32_x fd_area+F32_fd::FileSize
-		_inc32_x fd_area+F32_fd::seek_pos
-
-		clc
-
+		bne l_read_h						; 2nd half block?
+		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos LSB points to start of block
+		bne l_read
+		jsr __fat_read_block_open			; ... if so, read the block first
+		bcc l_read
+		ply 								; correct stack, get back byte to write
 		rts
+l_read_h:
+		inc read_blkptr+1
+l_read:
+		ldy fd_area+F32_fd::seek_pos+0, x
+		pla									; get back byte to write
+		sta (read_blkptr),y
+		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
+		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
+:		_inc32_x fd_area+F32_fd::seek_pos
+		jmp __fat_write_block_data			; write block
 
 ; in:
 ;	X - offset into fd_area
@@ -156,8 +164,7 @@ fat_write:
 		;	dirptr pointing to the corresponding directory entry of type F32DirEntry
 __fat_read_direntry:
 		jsr __fat_set_lba_from_fd_dirlba					; setup lba address from fd
-		SetVector block_data, read_blkptr
-		jsr __fat_read_block									; and read the block with the dir entry
+		jsr __fat_read_block_data							; and read the block with the dir entry
 		bne @l_exit
 
 		stz dirptr
@@ -434,8 +441,7 @@ _fat_update_cluster:
 		;TODO update amount of free clusters to be reserved/freed with A [-128...127]
 __fat_update_fsinfo:
 		m_memcpy fat_fsinfo_lba, lba_addr, 4
-		SetVector block_fat, read_blkptr
-		jsr __fat_read_block
+		jsr __fat_read_block_fat
 		bne l_exit
 		stz krn_tmp2
 		lda krn_tmp
@@ -708,7 +714,7 @@ __fat_find_free_cluster:
 		bne @l_exit_err
 
 		ldy #0
-@l1:	lda block_fat+0,y			; 1st page find cluster entry with 00 00 00 00
+@l1:	lda block_fat+0,y		; 1st page find cluster entry with 00 00 00 00
 		ora block_fat+1,y
 		ora block_fat+2,y
 		ora block_fat+3,y
