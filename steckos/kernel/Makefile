@@ -34,7 +34,7 @@ OPT += -DTEXTUI_STROUT
 OPT += -DTEXTUI_PRIMM
 
 .PHONY: all clean
-all: kernel.bin loader.bin
+all: kernel.bin loader.prg
 
 clean:
 	rm -f *.o *.bin *.map *.txt kernel_jumptable.inc version.inc
@@ -49,15 +49,15 @@ kernel.bin: version.inc $(OBJS) $(LIBS)
 	ld65 $(LDFLAGS_KERNEL) $(OBJS) $(LIBS) -m kernel.map -Ln symbols.txt -o kernel.bin
 	grep krn symbols.txt | egrep -v "(krn_tm|krn_ptr)" | sed "s/al 00//" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > kernel_jumptable.inc
 
-loader.bin: kernel.bin loader.o
-	ld65 $(LDFLAGS) loader.o -o loader.bin
+loader.prg: kernel.bin loader.o
+	ld65 $(LDFLAGS) loader.o -o loader.prg
 
 	# -m <kernel start adress - $100 (loader)
-dis: loader.bin
-	dcc6502 -o 0xe700 -m 0x1800 -d -n -c loader.bin > loader.dis
+dis: loader.prg
+	dcc6502 -o 0xe700 -m 0x1800 -d -n -c loader.prg > loader.dis
 
-transfer: loader.bin
-	../../xmodem.sh loader.bin
+transfer: loader.prg
+	../../xmodem.sh loader.prg
 
 test.bin: test.o
 	cl65 --target none --config kernel.cfg test.asm -o test.bin
@@ -68,7 +68,7 @@ test:
 ../lib/steckschwein.a:
 	(cd ../libsrc ; make)
 
-emu: loader.bin
+emu: loader.prg
 	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img  
 
 # -upload $^
