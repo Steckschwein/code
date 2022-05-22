@@ -44,3 +44,7 @@ loader.bin: loader.o
 
 transfer: loader.bin
 	../../transfer.py -s 0x0300 loader.bin
+
+burn: bios.bin 
+	minipro --device AT28C256 --write bios.bin -s
+
