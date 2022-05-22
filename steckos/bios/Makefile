@@ -42,4 +42,11 @@ loader.prg: loader.o
 	ld65 -C ../prg.ld65.cfg -m loader.map loader.o -o loader.prg
 
 %.dis: %.bin
-	dcc6502 -o 0x0800 -d -n -c $< > $@
+	dcc6502 -o 0x0300 -d -n -c $< > $@
+
+transfer: loader.bin
+	../../transfer.py -s 0x0300 loader.bin
+
+burn: bios.bin 
+	minipro --device AT28C256 --write bios.bin -s
+
