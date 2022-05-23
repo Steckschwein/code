@@ -3,7 +3,7 @@
 TARGET=dist
 
 
-cp steckos/kernel/loader.bin $TARGET/LOADER.BIN
+cp steckos/kernel/loader.prg $TARGET/LOADER.PRG
 
 mkdir -p $TARGET/STECKOS
 cp steckos/shell/shell.prg $TARGET/STECKOS/SHELL.PRG

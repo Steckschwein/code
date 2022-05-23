@@ -1135,8 +1135,8 @@ charset:
 .include "ati_8x8.h.asm"
 
 .bss
-sprite_tab_sky_trigger: .res 4,0
-save_isr: 				.res 2
+score_value_high: 		.res 3,0
+sprite_tab_sky_trigger: 	.res 4,0
 score_value:  			.res 3,0
-frame_cnt:				.res 1,0
-score_value_high: 		.res 3
+frame_cnt:			.res 1,0
+save_isr: 			.res 2

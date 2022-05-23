@@ -33,9 +33,9 @@ ROWS=24
 CURSOR_BLANK=' '
 CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
 
-STATE_CURSOR_OFF			=1<<1
+STATE_CURSOR_OFF		=1<<1
 STATE_CURSOR_BLINK		=1<<2
-STATE_TEXTUI_ENABLED		=1<<3
+STATE_TEXTUI_ENABLED	=1<<7
 
 .code
 .export textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
@@ -164,30 +164,28 @@ textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y
 	sta crs_ptr+1
 	vdp_wait_l 3
 	lda a_vram
-	sta saved_char		  ; save char at new position
+	sta saved_char		  		; save char at new position
 	plp
 	rts
 
 textui_cursor:
 	lda screen_write_lock
-	bne @l_exit
+	bne _l_exit
 	lda screen_frames
 	and #$0f
-	bne @l_exit
+	bne _l_exit
 
 	lda screen_status
 	and #STATE_CURSOR_OFF
-	bne @l_exit
+	bne _l_exit
 
 	lda #STATE_CURSOR_BLINK
 	tsb screen_status
 	beq _vram_crs_ptr_write_saved
 	trb screen_status
 	lda #CURSOR_CHAR
+;	sta saved_char
 	bra _vram_crs_ptr_write
-@l_exit:
-	rts
-
 _vram_crs_ptr_write_saved:
 	lda saved_char
 _vram_crs_ptr_write:
@@ -204,6 +202,7 @@ _vram_crs_ptr_write:
 	vdp_wait_l 3
 	sta a_vram
 	plp
+_l_exit:
 	rts
 
 textui_init0:
@@ -236,10 +235,9 @@ textui_init:
 	rts
 
 textui_update_screen:
-	lda screen_status
-	and #STATE_TEXTUI_ENABLED
-	beq :+
 	inc screen_frames
+	lda screen_status
+	bpl :+
 	jmp textui_cursor
 :	rts
 
@@ -288,26 +286,26 @@ textui_strout:
 ;----------------------------------------------------------------------------------------------
 .ifdef TEXTUI_PRIMM
 textui_primm:
-		  pla								; Get the low part of "return" address
-		  sta	  krn_ptr3
-		  pla								; Get the high part of "return" address
-		  sta	  krn_ptr3+1
+		pla								; Get the low part of "return" address
+		sta krn_ptr3
+		pla								; Get the high part of "return" address
+		sta krn_ptr3+1
 
-		  inc screen_write_lock
-		  ; Note: actually we're pointing one short
-PSINB:  inc	  krn_ptr3				 ; update the pointer
-		  bne	  PSICHO			 ; if not, we're pointing to next character
-		  inc	  krn_ptr3+1				 ; account for page crossing
-PSICHO: lda	  (krn_ptr3)				; Get the next string character
-		  beq	  PSIX1			  ; don't print the final NULL
-		  jsr	  __textui_dispatch_char		  ; write it out
-		  bra	  PSINB			  ; back around
-PSIX1:  inc	  krn_ptr3				 ;
-		  bne	  PSIX2			  ;
-		  inc	  krn_ptr3+1				 ; account for page crossing
+		inc screen_write_lock
+		; Note: actually we're pointing one short
+PSINB:	inc krn_ptr3				 ; update the pointer
+		bne	PSICHO			 ; if not, we're pointing to next character
+		inc	krn_ptr3+1				 ; account for page crossing
+PSICHO: lda	(krn_ptr3)				; Get the next string character
+		beq	PSIX1			  ; don't print the final NULL
+		jsr	__textui_dispatch_char		  ; write it out
+		bra	PSINB			  ; back around
+PSIX1:  inc	krn_ptr3				 ;
+		bne	PSIX2			  ;
+		inc	krn_ptr3+1				 ; account for page crossing
 PSIX2:
-		  stz screen_write_lock
-		  jmp	  (krn_ptr3)			  ; return to byte following final NULL
+		stz screen_write_lock
+		jmp	(krn_ptr3)			  ; return to byte following final NULL
 .endif
 
 textui_put:
@@ -321,11 +319,11 @@ textui_chrout:
 	beq @l1	 						; \0 char
 	php
 	sei
-	pha		  						; save char
+	pha	  						; save char
 	inc screen_write_lock	 	; write on
 	jsr __textui_dispatch_char
 	stz screen_write_lock	 	; write off
-	pla						  		; restore a
+	pla						  	; restore a
 	plp
 @l1:
 	rts
@@ -349,38 +347,37 @@ textui_blank:
 textui_crsxy:
 	stx crs_x
 	sty crs_y
-	jmp textui_update_crs_ptr
+	rts
 
 __textui_dispatch_char:
 	cmp #KEY_CR	;carriage return?
 	bne @lfeed
 	stz crs_x
-	jmp textui_update_crs_ptr
+	rts 
 @lfeed:
 	cmp #KEY_LF	;line feed
 	beq @l5
 	cmp #KEY_BACKSPACE
-	bne @l4
+	bne @l4							; normal char
 	lda crs_x
 	bne @l3
 	lda crs_y						; cursor y=0, no dec
 	beq @exit
 	dec crs_y
-	lda #40
-	bit video_mode
+	lda #40							; set x to max-cols
+    bit video_mode					
 	bvc @l3
-	asl ; 80
+	asl ; 80 cols
 @l3:
 	dec 							; set x to max-cols -1 (end of the line)
 	sta crs_x
-@l2:
 	jsr textui_update_crs_ptr
 	lda #CURSOR_BLANK				; blank the saved char
 	sta saved_char
 @exit:
 	rts
 @l4:
-	sta saved_char			; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
+	sta saved_char					; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
 	lda crs_x
 	inc
     bit video_mode

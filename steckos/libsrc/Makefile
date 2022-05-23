@@ -71,6 +71,7 @@ SRCDIRS +=  util/crc7
 SRCDIRS +=  keyboard
 SRCDIRS +=  lcd
 SRCDIRS +=  debug
+SRCDIRS +=  xmodem
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS)

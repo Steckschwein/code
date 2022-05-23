@@ -21,6 +21,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.include "system.inc"
+
 ; TODO FIXME replace with errno.inc from cc65 api
 fat_bad_block_signature      = $01
 fat_invalid_partition_type   = $02
@@ -225,6 +227,6 @@ fd_area               = $0380 ; File descriptor area until $0400
 fd_area_end           = $0400
 
 sd_blocksize          = $200  ; block size
-sd_blktarget          = $0400
-block_data            = sd_blktarget ; $0400-$5ff
-block_fat             = block_data+sd_blocksize ; $0600-$07ff
+sd_blktarget          = BUFFER_0
+block_data            = BUFFER_0 ; $0400-$5ff
+block_fat             = BUFFER_2 ; $0600-$07ff

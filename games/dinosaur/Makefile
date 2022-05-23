@@ -46,4 +46,4 @@ gfx.res: *.res
 	ld65 $< $(LDFLAGS) -o $@
 
 dinosaur: all
-	../../transfer.py dinosaur.prg
+	../../xmodem.sh dinosaur.prg

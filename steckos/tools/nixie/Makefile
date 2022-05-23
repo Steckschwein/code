@@ -14,4 +14,4 @@ clean:
 	ld65 $< $(LDFLAGS) -o $@
 
 nixie: nixie.prg
-	../../../transfer.py nixie.prg -s 0x1000
+	../../../xmodem.sh nixie.prg

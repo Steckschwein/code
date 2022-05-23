@@ -57,7 +57,7 @@ execv:
 			sta krn_ptr2+1
 			sta krn_ptr3+1
 
-@l:		jsr fat_fread_byte
+@l:			jsr fat_fread_byte
 			bcs @l_is_eof
 			sta (krn_ptr2)
 			inc krn_ptr2

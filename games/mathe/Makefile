@@ -13,4 +13,4 @@ clean:
 	ld65 -C ../../steckos/lib/steckschwein-kernel.cfg $< ../../steckos/lib/steckschwein-kernel.lib -o $@
 	
 mathe: mathe.bin
-	../../transfer.py mathe.bin -s 0x1000
+	../../xmodem.sh mathe.bin

@@ -1,19 +1,14 @@
 .include "bios.inc"
-.include "sdcard.inc"
-.include "fat32.inc"
-.include "fcntl.inc"
-.include "nvram.inc"
-.include "spi.inc"
-.include "system.inc"
 
-.import uart_init, upload
+.import uart_init
+.import xmodem_upload_verbose,crc16_table_init
 .import init_via1
 .import hexout, primm
 .import vdp_init, _vdp_chrout, vdp_detect
 .import sdcard_init
 .import sdcard_detect
-.import fat_fopen
-.import fat_mount, fat_read, fat_close
+.import fat_mount
+.import fat_fopen, fat_fread_byte, fat_close
 .import read_nvram
 .import sd_read_block, sd_write_block
 .import spi_select_device
@@ -26,6 +21,11 @@
 .export read_block=sd_read_block
 .export char_out=_vdp_chrout
 .export debug_chrout=_vdp_chrout
+.export crc16_lo=BUFFER_0
+.export crc16_hi=BUFFER_1
+.export crc16_init=crc16_table_init
+.export xmodem_rcvbuffer=BUFFER_2
+.export xmodem_startaddress=startaddr
 
 .exportzp startaddr, endaddr
 
@@ -34,7 +34,6 @@
 	startaddr: .res 2
 	endaddr: .res 2
     init_step: .res 1
-
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
@@ -106,9 +105,7 @@ keyboard_init:
     jsr _keyboard_cmd_status
 	bne _fail
 
-_ok:
-	jsr primm
-	.byte "OK", CODE_LF, 0
+	jsr print_ok
 	jmp spi_deselect
 _fail:
     pha
@@ -238,7 +235,7 @@ mem_ok:
 			jsr primm
 			.byte "steckOS BIOS   "
 			.include "version.inc"
-			.byte $0a,0
+			.byte CODE_LF,0
 
 			print "Memcheck $"
 			lda ptr1+1
@@ -252,78 +249,96 @@ mem_ok:
 			set_ctrlport
 			jsr init_via1
 
-         lda #<nvram
-         ldy #>nvram
+         	lda #<nvram
+         	ldy #>nvram
 			jsr read_nvram
-         set_ctrlport
+			set_ctrlport
 
 			jsr uart_init
-         set_ctrlport
+         	set_ctrlport
 
 			jsr keyboard_init
 
 			jsr sdcard_detect
-         beq @sdcard_init
-			println "No SD card"
+         	beq @sdcard_init
+			println "SD card not found!"
 			cli
 
 			jmp do_upload
 @sdcard_init:
-         jsr sdcard_init
-         beq boot_from_card
-			println "SD card init failed"
+			jsr sdcard_init
+			beq boot_from_card
+			println "SD card init failed!"
 			jmp do_upload
 
 boot_from_card:
-			print "Boot from SD card."
-         jsr fat_mount
+			print "Boot from SD card... "
+			jsr fat_mount
 			beq @findfile
 			pha
-			print " mount error "
+			print "mount error "
 			pla
 			jsr hexout
 			println ""
 			bra do_upload
-
 @findfile:
-			print_dot
-			lda #(<nvram)+nvram::filename
-			ldx #>nvram
-			ldy #O_RDONLY
-         jsr fat_fopen
-			beq @loadfile
-
 			ldy #0
-@loop:	lda nvram+nvram::filename,y
-			beq @loop_end
+@loop:		lda nvram+nvram::filename,y
+			beq :+
 			jsr vdp_chrout
 			iny
 			bne @loop
-@loop_end:
-			println " not found."
-			jmp do_upload
-
+:			
+			lda #(<nvram)+nvram::filename
+			ldx #>nvram
+			ldy #O_RDONLY
+			jsr fat_fopen					; A/X - pointer to filename
+			beq @loadfile
+@loop_end:	println " not found."
+			bra do_upload
 @loadfile:
-	print_dot
-	SetVector steckos_start, startaddr
-	SetVector steckos_start, read_blkptr
-	jsr fat_read
-	jsr fat_close
-	bne @load_error
-	println "OK"
-	bra startup
+			print " found."
+			jsr fat_fread_byte	; start address low
+			bcs load_error
+			sta startaddr
+			sta ptr1
+			print_dot
 
-@load_error:
-	jsr hexout
-	println " read error"
+			jsr fat_fread_byte ; start address high
+			bcs load_error
+			sta startaddr+1
+			sta ptr1+1
+			print_dot
+@l:			jsr fat_fread_byte
+			bcs @l_is_eof
+			sta (ptr1)
+			inc ptr1
+			bne @l
+			inc ptr1+1
+			bne @l
+@l_is_eof:
+			cmp #0
+			bne @l
+			jsr fat_close		; close after read to free fd, regardless of error
+			beq load_ok
+load_error:	jsr hexout
+			println " read error"
 do_upload:
-	jsr upload
+			jsr xmodem_upload_verbose
+			bcs load_error
+load_ok:			
+			jsr print_ok
 startup:
-	; re-init stack pointer
-	ldx #$ff
-	txs
-	; jump to new code
-	jmp (startaddr)
+			; re-init stack pointer
+			ldx #$ff
+			txs
+			; jump to new code
+			jmp (startaddr)
+
+print_ok: ; !!! jsr _ok
+	jsr primm
+	.byte " OK", CODE_LF, 0
+	rts
 
 bios_irq:
     save

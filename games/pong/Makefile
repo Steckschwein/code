@@ -16,4 +16,4 @@ clean:
 	ld65 $< $(LDFLAGS) -o $@
 
 %: %.prg
-	../../transfer.py $< -s 0x1000
+	../../xmodem.sh $<
