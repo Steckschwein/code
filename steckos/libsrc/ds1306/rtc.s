@@ -35,17 +35,10 @@
 
 .importzp __volatile_ptr
 
-; .export spi_select_rtc
 .export rtc_systime
 .export rtc_systime_update
 
 .code
-
-; out:
-;	Z=1 spi for rtc could be selected (not busy), Z=0 otherwise
-; spi_select_rtc:
-;    lda #spi_device_rtc
-;    jmp spi_select_device
 
 ;in:
 ;	A/X pointer to a time_t struct @see asminc/rtc.inc
@@ -66,44 +59,44 @@ rtc_systime:
 ;in:
 ;  -
 ;out:
-;  - rtc_systime_t updated
+;  - time_t struct at address rtc_systime_t updated - @see rtc.inc
 rtc_systime_update:
-   lda #spi_device_rtc
-   jsr spi_select_device
+	lda #spi_device_rtc
+	jsr spi_select_device
 	beq :+
 	rts
 :	debug "update systime"
-	lda #0				;0 means rtc read, start from first address (seconds)
+	lda #0			  	;0 means rtc read, start from first address (seconds)
 	jsr spi_rw_byte
 
-	jsr spi_r_byte	  ;seconds
+	jsr spi_r_byte		;seconds
 	jsr BCD2dec
 	sta rtc_systime_t+time_t::tm_sec
 
-	jsr spi_r_byte	  ;minute
+	jsr spi_r_byte	  	;minute
 	jsr BCD2dec
 	sta rtc_systime_t+time_t::tm_min
 
-	jsr spi_r_byte	  ;hour
+	jsr spi_r_byte	  	;hour
 	jsr BCD2dec
 	sta rtc_systime_t+time_t::tm_hour
 
-	jsr spi_r_byte	  ;week day
+	jsr spi_r_byte	  	;week day
 	sta rtc_systime_t+time_t::tm_wday
 
-	jsr spi_r_byte	  					;day of month
+	jsr spi_r_byte	  	;day of month
 	jsr BCD2dec
 	sta rtc_systime_t+time_t::tm_mday
 
-	jsr spi_r_byte	  					;month
-	dec										;dc1306 gives 1-12, but 0-11 expected
+	jsr spi_r_byte	  	;month
+	dec					;dc1306 gives 1-12, but 0-11 expected
 	jsr BCD2dec
 	sta rtc_systime_t+time_t::tm_mon
 
-	jsr spi_r_byte						;year value - rtc year 2000+year register
+	jsr spi_r_byte		;year value - rtc year 2000+year register
 	jsr BCD2dec
 	clc
-	adc #100								;time_t year starts from 1900
+	adc #100			;time_t year starts from 1900
 	sta rtc_systime_t+time_t::tm_year
 	debug32 "rtc0", rtc_systime_t
 	debug32 "rtc1", rtc_systime_t+4
@@ -113,7 +106,7 @@ rtc_systime_update:
 
 ; dec = (((BCD>>4)*10) + (BCD&0xf))
 BCD2dec:
-   tax
+	tax
 	and #%00001111
 	sta __volatile_ptr
 	txa

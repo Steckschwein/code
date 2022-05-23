@@ -30,6 +30,6 @@ wow.prg: $(OBJS_STS) $(LIBS_STS)
 	ld65 $(LDFLAGS_STS) $(OBJS_STS) $(LIBS_STS) -o $@ 
 		
 wow: wow.prg
-	../../transfer.py wow.prg -s 0x1000
+	../../xmodem.sh wow.prg
 	
 #https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ7EQaLTgGaPL_VGRyXpupFka8nJUtsy9sKNgAOUoo7H8Iw7SLzQQ

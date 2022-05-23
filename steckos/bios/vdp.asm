@@ -61,7 +61,7 @@ vdp_init:
 
 .ifndef V9958
 			vdp_vram_w ADDRESS_GFX_SPRITE
-			vnops
+			vdp_wait_l
 			lda #SPRITE_OFF					;sprites off, at least y=$d0 will disable the sprite subsystem
 			sta a_vram
 .endif
@@ -94,7 +94,7 @@ vdp_detect:
 			lda #1          ; select sreg #1
 			ldy #v_reg15
 			vdp_sreg
-			vnops
+			vdp_wait_l
 			lda a_vreg
 			lsr             ; shift right
 			and #$1f        ; and mask chip ID#
@@ -227,16 +227,16 @@ vdp_scroll_up:
 			nop
 			lda	ptr3+1	; 3cl
 			sta	a_vreg
-			vnops		; wait 2µs, 8Mhz = 16cl => 8 nop
+			vdp_wait_l		; wait 2µs, 8Mhz = 16cl => 8 nop
 			ldx	a_vram	;
-			vnops
+			vdp_wait_l
 
 			lda	ptr4+0	; 3cl
 			sta	a_vreg
-			vnops
+			vdp_wait_l
 			lda	ptr4+1	; 3cl
 			sta a_vreg
-			vnops
+			vdp_wait_l
 			stx	a_vram
 			inc	ptr3+0	; 5cl
 			bne	@l3		; 3cl
@@ -254,7 +254,7 @@ vdp_scroll_up:
 			lda	#' '
 @l5:
 			sta	a_vram
-			vnops
+			vdp_wait_l
 			dex
 			bne	@l5
 			rts

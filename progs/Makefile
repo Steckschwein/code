@@ -11,7 +11,7 @@ clean:
 
 build:
 	(cd clavier; make)
-	# (cd midi; make)
+#	(cd midi; make)
 	(cd edlib; make)  
 	(cd ehbasic_65c02; make)  
 	(cd imfplayer; make)

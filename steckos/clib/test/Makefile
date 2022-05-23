@@ -1,5 +1,5 @@
 
-TRANSFER=../../../transfer.py
+TRANSFER=../../../xmodem.sh
 
 CC65FLAGS=--target none --cpu 65c02 --standard c99 -I ../include
 CA65FLAGS=-I ../../asminc

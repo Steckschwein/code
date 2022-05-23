@@ -31,11 +31,6 @@
     .byte $0a,$0
 .endmacro
 
-.macro crlf
-  lda #$0a		;\n already does the carriage return
-  jsr krn_chrout
-.endmacro
-
 .macro krn_ram_on
     +krn_rom_off
 .endmacro

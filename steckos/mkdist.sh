@@ -25,7 +25,7 @@ TOOLS='
 '
 
 mkdir -p $TARGET/STECKOS
-cp kernel/loader.bin $TARGET/LOADER.BIN
+cp kernel/loader.prg $TARGET/LOADER.PRG
 cp shell/shell.prg $TARGET/STECKOS/SHELL.PRG
 cp tools/unrclock/unrclock.prg $TARGET/STECKOS/UNRCLOCK.PRG
 

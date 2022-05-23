@@ -21,7 +21,7 @@ shell.prg: version.inc shell.o $(LIBS)
 	ld65 $(LDFLAGS) -m shell.map -o shell.prg shell.o $(LIBS)
 
 shell: shell.prg
-	../../transfer.py shell.prg
+	../../xmodem.sh shell.prg
 
 %.dis: %.prg
 	dcc6502 -o 0xd7fe -d -n -c $< > $@

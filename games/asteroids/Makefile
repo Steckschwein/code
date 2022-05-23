@@ -28,7 +28,7 @@ asteroids.prg: asteroids.o intro.o scoreboard.o halloffame.o
 	ld65 -o $@ $(LDFLAGS) $^ $(LIBS)
 
 asteroids: asteroids.prg
-	../../transfer.py -s 0x1000 $@
+	../../xmodem.sh $@
 
 emu: asteroids.prg
 	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $^

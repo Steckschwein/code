@@ -38,7 +38,7 @@ test.%: test.%.bin
 	../../../asmunit/asmunit_wrapper.sh $@.bin $(KERNEL_ADDRESS)
 
 %: %.prg
-	../../../transfer.py $<
+	../../../xmodem.sh $<
 
 ../../../asmunit/asmunit.a:
 	(cd ../../../asmunit ; make)
