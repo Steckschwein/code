@@ -35,7 +35,7 @@
 .include "debug.inc"
 
 ;lib internal api
-.import __fat_isroot
+.import __fat_is_cln_zero
 .import __fat_init_fd
 .import __fat_free_fd
 .import __fat_alloc_fd
@@ -111,7 +111,7 @@ fat_get_root_and_pwd:
 		lda #'/'														; put the / char to result string
 		jsr put_char
 		ldx #FD_INDEX_TEMP_DIR									; if root, exit to inverse the path string
-		jsr __fat_isroot
+		jsr __fat_is_cln_zero
 		beq @l_inverse
 		m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, fat_tmp_dw, 4	; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
 		lda #<l_dot_dot

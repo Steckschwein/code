@@ -52,7 +52,8 @@
 .import __fat_read_block
 .import __fat_read_block_data
 .import __fat_read_block_fat
-.import __fat_isroot
+.import __fat_is_cln_root
+.import __fat_is_cln_zero
 .import __fat_find_next
 .import __fat_find_first_mask
 
@@ -75,24 +76,30 @@ fat_write_byte:
 
 		pha
 
-		jsr __fat_isroot
+		jsr __fat_is_cln_zero
+		bne :+
+		jsr __fat_reserve_cluster			; reserve cluster
+		bcs @l_exit
 		
-		SetVector block_data, read_blkptr
+		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd in between
+:		SetVector block_data, read_blkptr
 		lda fd_area+F32_fd::seek_pos+1,x
 		and #$01
-		bne l_read_h						; 2nd half block?
+		bne @l_read_h						; 2nd half block?
 		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos LSB points to start of block
-		bne l_read
+		bne @l_read
 		jsr __fat_read_block_open			; ... if so, read the block first
-		bcc l_read
-		ply 								; correct stack, get back byte to write
+		bcc @l_read
+@l_exit:
+		ply 								; correct stack
 		rts
-l_read_h:
+@l_read_h:
 		inc read_blkptr+1
-l_read:
+@l_read:
 		ldy fd_area+F32_fd::seek_pos+0, x
 		pla									; get back byte to write
 		sta (read_blkptr),y
+		debug ">>>"
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
 :		_inc32_x fd_area+F32_fd::seek_pos
@@ -113,14 +120,14 @@ fat_write:
 		lda #EISDIR
 		rts
 @l_isfile:
-		jsr __fat_isroot									; check whether the start cluster of the file is the root cluster - @see fat_alloc_fd, fat_open)
-		bne @l_write										; if not, we can directly update dir entry and write data afterwards
+		jsr __fat_is_cln_zero							; check whether the start cluster of the file is the root cluster - @see fat_alloc_fd, fat_open)
+		bne @l_write									; if not, we can directly update dir entry and write data afterwards
 
 		jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster
 		debug "fw_res_cl"
-		bne @l_exit
+		bcs @l_exit
 @l_write:
-		jsr __calc_blocks									; calc blocks
+		jsr __calc_blocks								; calc blocks
 		beq @l_direntry									; Z=1 - no blocks to write, but update dir entry
 		jsr __calc_lba_addr								; calc lba file payload
 		debug32 "fat_wr lb", lba_addr
@@ -143,9 +150,9 @@ fat_write:
 
 @l_direntry:
 		jsr __fat_read_direntry							; read dir entry, dirptr is set accordingly
-		jsr __fat_set_direntry_cluster				; set cluster number of direntry entry via dirptr - TODO FIXME only necessary on first write
-		jsr __fat_set_direntry_filesize				; set filesize of directory entry via dirptr
-		jsr __fat_set_direntry_timedate				; set time and date
+		jsr __fat_set_direntry_cluster					; set cluster number of direntry entry via dirptr - TODO FIXME only necessary on first write
+		jsr __fat_set_direntry_filesize					; set filesize of directory entry via dirptr
+		jsr __fat_set_direntry_timedate					; set time and date
 
 		; set archive bit
 		ldy #F32DirEntry::Attr
@@ -305,7 +312,7 @@ fat_mkdir:
 		lda #DIR_Attr_Mask_Dir						; set type directory
 		jsr __fat_set_fd_attr_dirlba				; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
 		jsr __fat_reserve_cluster					; try to find and reserve next free cluster and store them in fd_area at fd (X)
-		bcs @l_exit_close								; C=1 - fail, exit but close fd
+		bcs @l_exit_close							; C=1 - fail, exit but close fd
 		jsr __fat_set_lba_from_fd_dirlba			; setup lba_addr from fd
 		jsr __fat_write_dir_entry					; create dir entry at current dirptr
 		bcs @l_exit_close
@@ -420,13 +427,14 @@ __fat_free_cluster:
 		bra _fat_update_cluster
 l_exit:
 		rts
-; find and reserve next free cluster and maintains the fsinfo block
+
+; find and reserve next free cluster in given FD (.X), also maintains the fsinfo block
 ; in:
 ;	X - the file descriptor into fd_area where the found cluster should be stored
 ; out:
 ;	C=0 on success, C=1 otherwise and A=error code
 __fat_reserve_cluster:
-		jsr __fat_find_free_cluster				; find free cluster, stored in fd_area for the fd given within X
+		jsr __fat_find_free_cluster					; find free cluster, stored in fd_area for the fd given within X
 		bcs l_exit
 		lda #$ff
 		sta krn_tmp
@@ -707,12 +715,11 @@ __fat_find_free_cluster:
 		sta lba_addr+1
 		lda fat_lba_begin+0
 		sta lba_addr+0
-
 		SetVector block_fat, read_blkptr
 @next_block:
 		jsr __fat_read_block	; read fat block
 		bne @l_exit_err
-
+		
 		ldy #0
 @l1:	lda block_fat+0,y		; 1st page find cluster entry with 00 00 00 00
 		ora block_fat+1,y
@@ -729,9 +736,9 @@ __fat_find_free_cluster:
 		iny
 		iny
 		bne @l1
-		jsr __inc_lba_address; inc lba_addr, next fat block
+		jsr __inc_lba_address	; inc lba_addr, next fat block
 		lda lba_addr+1			; end of fat reached?
-		cmp fat2_lba_begin+1	; cmp with fat2_begin_lba
+		cmp fat2_lba_begin+1	; cmp with fat2_begin_lba - FIXME - works only if BPB:NumFATs >= 2 
 		bne @next_block
 		lda lba_addr+0
 		cmp fat2_lba_begin+0
@@ -746,7 +753,7 @@ __fat_find_free_cluster:
 		sta read_blkptr+1
 		lda #$40				; adjust clnr with +$40 (256 / 4 byte/clnr) clusters since it was found in 2nd page
 		debug "fat_ffc_hb"
-@l_found_lb:				; A=0 here, if called from above
+@l_found_lb:					; A=0 here, if called from above
 		sta fd_area+F32_fd::CurrentCluster+0, x
 		tya
 		lsr						; offset Y>>2 (div 4, 32 bit clnr)
@@ -794,7 +801,7 @@ fat_unlink:
 		rts
 
 __fat_unlink:
-		jsr __fat_isroot							; is root or no clnr assigned yet, file was just touched
+		jsr __fat_is_cln_zero							; is root or no clnr assigned yet, file was just touched
 		beq @l_unlink_direntry					; ... then we can skip freeing clusters from fat
 
 		jsr __fat_free_cluster					; free cluster, update fsinfo

@@ -43,7 +43,7 @@
 .import sd_read_multiblock
 
 ;lib internal api
-.import __fat_isroot
+.import __fat_is_cln_zero
 .import __fat_read_block
 .import __fat_init_fd
 .import __fat_free_fd
@@ -111,16 +111,18 @@ fat_fread_byte:
 :		SetVector block_data, read_blkptr
 		lda fd_area+F32_fd::seek_pos+1,x
 		and #$01
-		bne l_read_h						; 2nd half block?
+		bne @l_read_h						; 2nd half block?
 		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos LSB points to start of block
-		bne l_read
+		bne @l_read
 		jsr __fat_read_block_open			; ... if so, read the block first
-		bcc l_read
+		bcc @l_read
+@l_exit:
 		rts
-l_read_h:
+@l_read_h:
 		inc read_blkptr+1
-l_read:
+@l_read:
 		ldy fd_area+F32_fd::seek_pos+0, x
+
 		lda (read_blkptr),y
 		_inc32_x fd_area+F32_fd::seek_pos
 		clc

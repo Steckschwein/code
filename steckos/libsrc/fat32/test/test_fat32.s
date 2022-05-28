@@ -1,7 +1,7 @@
 	.include "test_fat32.inc"
 
 	.import __calc_lba_addr
-	.import __fat_isroot
+	.import __fat_is_cln_zero
 	.import __fat_init_fdarea
 	.import __fat_alloc_fd
 	.import fat_fopen
@@ -42,15 +42,15 @@
 		assertA EMFILE
 
 ; -------------------
-		setup "__fat_isroot"
+		setup "__fat_is_cln_zero"
 
 		ldx #(0*FD_Entry_Size)
-		jsr __fat_isroot
+		jsr __fat_is_cln_zero
 		assertZero 1		; expect fd0 - "is root"
 		assertX (0*FD_Entry_Size)
 
 		ldx #(1*FD_Entry_Size)
-		jsr __fat_isroot
+		jsr __fat_is_cln_zero
 		assertZero 0		; expect fd0 - "is not root"
 		assertX (1*FD_Entry_Size)
 

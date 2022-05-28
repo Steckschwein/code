@@ -49,7 +49,7 @@
 .export __fat_clone_fd
 .export __fat_init_fd
 .export __fat_free_fd
-.export __fat_isroot
+.export __fat_is_cln_zero
 .export __fat_next_cln
 .export __fat_open_path
 .export __fat_read_block
@@ -364,7 +364,7 @@ __fat_free_fd:
 		;	X - file descriptor
 		; out:
 		;	Z=1 if it is the root cluster, Z=0 otherwise
-__fat_isroot:
+__fat_is_cln_zero:
 		lda fd_area+F32_fd::CurrentCluster+3,x				; check whether start cluster is the root dir cluster nr (0x00000000) as initial set by fat_alloc_fd
 		ora fd_area+F32_fd::CurrentCluster+2,x
 		ora fd_area+F32_fd::CurrentCluster+1,x
@@ -383,8 +383,8 @@ __fat_read_block_data:
 		stz read_blkptr
 __fat_read_block:
 		phx
-		debug32 "fat_rb", lba_addr
-		debug16 "fat_rb", read_blkptr
+		debug32 "fat_rb_lba", lba_addr
+		debug16 "fat_rb_ptr", read_blkptr
 		jsr read_block
 		dec read_blkptr+1		; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
 		plx
@@ -397,7 +397,7 @@ __fat_read_block:
 		;	lba_addr setup with lba address from given file descriptor
 		;	A - with bit 0-7 of lba address
 __prepare_calc_lba_addr:
-		jsr	__fat_isroot
+		jsr	__fat_is_cln_zero
 		bne	@l_scl
 		.repeat 4,i
 			lda volumeID + VolumeID::EBPB + EBPB::RootClus + i
@@ -554,7 +554,7 @@ __fat_read_cluster_block_and_select:
 		jsr __calc_fat_lba_addr
 		jsr __fat_read_block_fat
 		bne @l_exit
-		jsr __fat_isroot							; is root clnr?
+		jsr __fat_is_cln_zero							; is root clnr?
 		bne @l_clnr_fd
 		lda volumeID + VolumeID::EBPB + EBPB::RootClus+0
 		bra @l_clnr_page
@@ -572,6 +572,7 @@ __fat_read_cluster_block_and_select:
 		asl											; block offset = clnr*4
 		asl
 		tay
+
 ; check whether the EOC (end of cluster chain) cluster number is reached
 ; out:
 ;	C=1 if clnr is EOC, C=0 otherwise

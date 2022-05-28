@@ -51,9 +51,9 @@ debug_enabled=1
 		assertA EOK
 		assertX FD_Entry_Size*2	; assert FD reserved
 		assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
-			fat32_dir_entry_file "TEST01  ", "TST", 0, 0		; 0 - no cluster reserved, file length 0
+			fat32_dir_entry_file "TEST01  ", "TST", 0, 0		; 0 - no cluster reserved yet, file length 0
 		assertFdEntry fd_area + (FD_Entry_Size*2)
-			fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0
+			fd_entry_file 0, 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0
 		jsr fat_close
 
 ; -------------------
@@ -68,7 +68,7 @@ debug_enabled=1
 		assertDirEntry block_root_cl+4*DIR_Entry_Size ;expect 4th entry created
 			fat32_dir_entry_file "TST_01CL", "TST", 0, 0	; filesize 0 and no cluster reserved yet
 		assertFdEntry fd_area + (FD_Entry_Size*2)
-			fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0
+			fd_entry_file 0, 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0
 
 		; set file size and write ptr
 		set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (3*sd_blocksize+3)
@@ -95,7 +95,7 @@ debug_enabled=1
 		assertDirEntry $0480
 				fat32_dir_entry_file "TST_02CL", "TST", 0, 0	; no cluster reserved yet
 		assertFdEntry fd_area + (FD_Entry_Size*2)
-				fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0
+				fd_entry_file 0, 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0
 		; size to 4 blocks + 3 byte ;) - we use 4 SEC_PER_CL - hence a new cluster must be reserved and the chain build
 		set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (4 * sd_blocksize + 3)
 ;		TODO
@@ -109,7 +109,7 @@ debug_enabled=1
 
 
 ; -------------------
-		setup "fat_write_byte O_CREAT 2 cluster";
+		setup "fat_write_byte O_CREAT 1 cluster";
 		ldy #O_CREAT
 		lda #<test_file_name_2cl
 		ldx #>test_file_name_2cl
@@ -120,14 +120,37 @@ debug_enabled=1
 		assertDirEntry block_data+$80
 				fat32_dir_entry_file "TST_02CL", "TST", 0, 0	; no cluster reserved yet
 		assertFdEntry fd_area + (FD_Entry_Size*2)
-				fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0
+				fd_entry_file 0, 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0
 
 		lda #'F'
+		debug ">>> fat_write_byte"
 		jsr fat_write_byte
 		assertC 0
+		assertX FD_Entry_Size*2	; assert FD preserved
+		assertFdEntry fd_area + (FD_Entry_Size*2)
+				fd_entry_file TEST_FILE_CL, 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, 1
+		brk
 
 		assertDirEntry block_data+$80
 				fat32_dir_entry_file "TST_02CL", "TST", 0, 0	; no cluster reserved yet
+
+		lda #'T'
+		jsr fat_write_byte
+		assertC 0
+		assertX FD_Entry_Size*2	; assert FD preserved
+		assertFdEntry fd_area + (FD_Entry_Size*2)
+				fd_entry_file TEST_FILE_CL, 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, 1
+		assertDirEntry block_data+$80
+				fat32_dir_entry_file "TST_02CL", "TST", 0, 2	; no cluster reserved yet
+
+		lda #'W'
+		jsr fat_write_byte
+		assertC 0
+		assertX FD_Entry_Size*2	; assert FD preserved
+		assertFdEntry fd_area + (FD_Entry_Size*2)
+				fd_entry_file TEST_FILE_CL, 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 3, 1
+		assertDirEntry block_data+$80
+				fat32_dir_entry_file "TST_02CL", "TST", 0, 2	; no cluster reserved yet
 
 		brk
 
@@ -153,6 +176,7 @@ mock_read_block:
 		debug32 "mock_read_block", lba_addr
 		load_block_if LBA_BEGIN, block_root_cl, @ok ; load root cl block
 		load_block_if FS_INFO_LBA, block_fsinfo, @ok
+		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_read
 		cmp32_ne lba_addr, FAT_LBA, :+
 			;simulate fat block read
 			m_memset block_fat+$000, $ff, $40	; simulate reserved, next free cluster is TEST_FILE_CL ($10)
@@ -177,8 +201,8 @@ mock_write_block:
 		debug16 "mock_write_block wptr", write_blkptr
 		store_block_if LBA_BEGIN, block_root_cl, @ok ; write root cl block
 		store_block_if FS_INFO_LBA, block_fsinfo, @ok ;
-		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), @dummy_write
 		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_write
+		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), @dummy_write
 		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), @dummy_write
 		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), @dummy_write
 		cmp32_eq lba_addr, FAT_LBA, @dummy_write

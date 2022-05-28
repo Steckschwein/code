@@ -38,14 +38,14 @@
 	set32 cluster_begin_lba, (LBA_BEGIN - ROOT_CL * sec_per_cl)
 .endmacro
 
-.macro fd_entry_file dir_entry, dir_lba, attr, filesize
-	.dword 0; CurrentCluster
-	.dword filesize; FileSize
-	.byte attr; Attr
-	.dword dir_lba; DirEntryLBA ; LBA of the block where the dir entry of the file is located
-	.byte dir_entry; DirEntryPos .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
-	.byte 0; offset          .byte;  7Bit block number of the CurrentCluster
-	.dword 0; seek_pos
+.macro fd_entry_file clnr, dir_entry, dir_lba, attr, filesize, offset
+	.dword clnr ; CurrentCluster
+	.dword filesize ; FileSize
+	.byte attr ; Attr
+	.dword dir_lba ; DirEntryLBA ; LBA of the block where the dir entry of the file is located
+	.byte dir_entry ; DirEntryPos .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
+	.byte offset ; offset - 7Bit block number within the CurrentCluster
+	.dword filesize ; seek_pos - for write tests, we set seek pos to expected filesize 
 .endmacro
 
 .macro assertFdEntry address
