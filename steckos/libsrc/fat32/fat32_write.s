@@ -71,7 +71,6 @@
 ; out:
 ;	C=0 on success, C=1 on error and A=<error code>
 fat_write_byte:
-
 		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		pha
@@ -80,7 +79,7 @@ fat_write_byte:
 		bne :+
 		jsr __fat_reserve_cluster			; reserve cluster
 		bcs @l_exit
-		
+
 		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd in between
 :		SetVector block_data, read_blkptr
 		lda fd_area+F32_fd::seek_pos+1,x
@@ -103,7 +102,9 @@ fat_write_byte:
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
 :		_inc32_x fd_area+F32_fd::seek_pos
-		jmp __fat_write_block_data			; write block
+		jsr __fat_write_block_data			; write block
+		bcs @l_exit
+		jmp __fat_update_direntry			; finally update dir entry
 
 ; in:
 ;	X - offset into fd_area
@@ -118,6 +119,7 @@ fat_write:
 		beq @l_isfile
 @l_exit_einval:
 		lda #EISDIR
+@l_exit:
 		rts
 @l_isfile:
 		jsr __fat_is_cln_zero							; check whether the start cluster of the file is the root cluster - @see fat_alloc_fd, fat_open)
@@ -128,7 +130,7 @@ fat_write:
 		bcs @l_exit
 @l_write:
 		jsr __calc_blocks								; calc blocks
-		beq @l_direntry									; Z=1 - no blocks to write, but update dir entry
+		beq __fat_update_direntry						; Z=1 - no blocks to write, but update dir entry
 		jsr __calc_lba_addr								; calc lba file payload
 		debug32 "fat_wr lb", lba_addr
 .ifdef MULTIBLOCK_WRITE
@@ -148,7 +150,7 @@ fat_write:
 		bne @l
 .endif
 
-@l_direntry:
+__fat_update_direntry:
 		jsr __fat_read_direntry							; read dir entry, dirptr is set accordingly
 		jsr __fat_set_direntry_cluster					; set cluster number of direntry entry via dirptr - TODO FIXME only necessary on first write
 		jsr __fat_set_direntry_filesize					; set filesize of directory entry via dirptr
@@ -161,7 +163,7 @@ fat_write:
 		sta (dirptr),y
 		jsr __fat_write_block_data						; lba_addr is already set from read, see above
 @l_exit:
-		debug16 "fat_wr dirptr", dirptr
+		debug16 "fat_up_direntry", dirptr
 		rts
 
 		; read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
@@ -294,7 +296,7 @@ fat_rmdir:
 fat_mkdir:
 		jsr __fat_opendir_cwd
 		beq @l_exit_eexist							; open success, dir exists already
-:		cmp #ENOENT										; we expect 'no such file or directory' error, otherwise a file with same name already exists
+:		cmp #ENOENT									; we expect 'no such file or directory' error, otherwise a file with same name already exists
 		bne @l_exit_err								; exit on other error
 
 		copypointer dirptr, krn_ptr2
@@ -431,7 +433,6 @@ __fat_reserve_cluster:
 		bcs l_exit
 		lda #$ff
 		sta krn_tmp
-
 _fat_update_cluster:
 		jsr __fat_mark_cluster						; mark cluster in fat block eihter with EOC (0x0fffffff) or free 0x00000000
 		jsr __fat_write_fat_blocks					; write the updated fat block for 1st and 2nd FAT to the device
@@ -804,9 +805,8 @@ __fat_unlink:
 		bne @l_exit
 		lda #DIR_Entry_Deleted					; mark dir entry as deleted ($e5)
 		sta (dirptr)
-		jsr __fat_write_block_data				; write back dir entry
+		jmp __fat_write_block_data				; write back dir entry
 @l_exit:
-		debug "_ulnk"
 		rts
 
 __fat_is_dot_dir:
