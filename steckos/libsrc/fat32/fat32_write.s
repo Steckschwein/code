@@ -170,23 +170,16 @@ fat_write:
 		; out:
 		;	dirptr pointing to the corresponding directory entry of type F32DirEntry
 __fat_read_direntry:
-		jsr __fat_set_lba_from_fd_dirlba					; setup lba address from fd
-		jsr __fat_read_block_data							; and read the block with the dir entry
+		jsr __fat_set_lba_from_fd_dirlba			; setup lba address from fd
+		jsr __fat_read_block_data					; and read the block with the dir entry
 		bne @l_exit
 
-		stz dirptr
-		lda fd_area + F32_fd::DirEntryPos, x			; setup dirptr
-		lsr
-		ror dirptr
-		ror
-		ror dirptr
-		ror
-		ror dirptr
-
-		clc
-		adc #>block_data
+		lda fd_area + F32_fd::DirEntryPos, x		; setup dirptr
+		asl
+		sta dirptr
+		lda #>block_data
+		adc #0 ; + Carry
 		sta dirptr+1
-
 		lda #EOK
 @l_exit:
 		rts

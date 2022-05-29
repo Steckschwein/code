@@ -74,7 +74,7 @@
 	.assert .strlen(_8_3_name) = 8, error, "file name size"
 	.assert .strlen(_8_3_ext) = 3, error, "ext size"
 	.byte _8_3_name		; 8 byte
-	.byte	_8_3_ext			; 3 byte
+	.byte _8_3_ext			; 3 byte
 	.byte attr				; attr
 	.byte 0					; reserved
 	.byte 0					; create time millis
