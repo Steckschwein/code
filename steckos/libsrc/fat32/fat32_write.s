@@ -61,6 +61,7 @@
 .import __calc_blocks
 .import __inc_lba_address
 .import __fat_read_block_open
+.import __fat_read_block_open_seek
 
 .import fat_fopen
 .importzp __volatile_ptr
@@ -77,24 +78,13 @@ fat_write_byte:
 
 		jsr __fat_is_cln_zero
 		bne :+
-		jsr __fat_reserve_cluster			; reserve cluster
-		bcs @l_exit
 
-		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd in between
-:		SetVector block_data, read_blkptr
-		lda fd_area+F32_fd::seek_pos+1,x
-		and #$01
-		bne @l_read_h						; 2nd half block?
-		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos LSB points to start of block
-		bne @l_read
-		jsr __fat_read_block_open			; ... if so, read the block first
-		bcc @l_read
-@l_exit:
-		ply 								; correct stack
-		rts
-@l_read_h:
-		inc read_blkptr+1
-@l_read:
+		jsr __fat_reserve_cluster			; reserve cluster
+		bcs @l_exit_restore
+
+:		jsr __fat_read_block_open_seek
+		bcs @l_exit_restore
+		
 		ldy fd_area+F32_fd::seek_pos+0, x
 		pla									; get back byte to write
 		sta (read_blkptr),y
@@ -105,6 +95,10 @@ fat_write_byte:
 		jsr __fat_write_block_data			; write block
 		bcs @l_exit
 		jmp __fat_update_direntry			; finally update dir entry
+@l_exit_restore:
+		ply
+@l_exit:
+		rts
 
 ; in:
 ;	X - offset into fd_area

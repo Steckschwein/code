@@ -149,6 +149,8 @@ debug_enabled=1
 				fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 3, 1
 		assertDirEntry block_data+$80
 				fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 3	; TEST_FILE_CL cluster, filesize 3
+		jsr fat_close
+	
 		brk
 
 

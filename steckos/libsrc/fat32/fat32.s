@@ -75,6 +75,7 @@
 
 .export __fat_init_fdarea
 .export __fat_read_block_open
+.export __fat_read_block_open_seek
 
 .code
 
@@ -107,26 +108,15 @@ fat_fread_byte:
 		lda #EOK
 		rts ; exit - EOF, C=1
 
-		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd in between
-:		SetVector block_data, read_blkptr
-		lda fd_area+F32_fd::seek_pos+1,x
-		and #$01
-		bne @l_read_h						; 2nd half block?
-		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos LSB points to start of block
-		bne @l_read
-		jsr __fat_read_block_open			; ... if so, read the block first
-		bcc @l_read
-@l_exit:
-		rts
-@l_read_h:
-		inc read_blkptr+1
-@l_read:
-		ldy fd_area+F32_fd::seek_pos+0, x
+:		jsr __fat_read_block_open_seek
+		bcs @l_exit
 
+		ldy fd_area+F32_fd::seek_pos+0, x
 		lda (read_blkptr),y
 		_inc32_x fd_area+F32_fd::seek_pos
 		clc
-l_exit:	rts
+@l_exit:
+		rts
 
     	;  TODO FIXME currently we always read until the end of the cluster chain (EOC) regardless
 		;  whether we reached the end of the file. the file size must be checked
@@ -170,13 +160,21 @@ fat_fread:
 ;	read_blkptr has to be set to target address - TODO FIXME ptr. parameter
 ;out:
 ;	C=0 on success, C=1 on error and A=error code or EOC reached and A=0 otherwise
+__fat_read_block_open_seek:
+		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd in between
+		SetVector block_data, read_blkptr
+		lda fd_area+F32_fd::seek_pos+1,x
+		and #$01
+		bne l_read_h						; 2nd half block?
+		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos LSB points to start of block
+		bne l_exit
 __fat_read_block_open:
 		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
 		bne @l_read										; no, go on reading...
 
 		jsr __fat_next_cln		; select next cluster within chain
-		bcs @l_exit				; exit on error or EOC (C=1)
+		bcs l_exit				; exit on error or EOC (C=1)
 @l_read:
 		jsr __calc_lba_addr
 		jsr __fat_read_block
@@ -187,8 +185,10 @@ __fat_read_block_open:
 		rts
 @l_exit_err:
 		sec
-@l_exit:
 		rts
+l_read_h:
+		inc read_blkptr+1
+l_exit:	rts
 
 		;in:
 		;	X - offset into fd_area
