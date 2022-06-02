@@ -18,7 +18,7 @@
 .define FS_INFO_LBA 1 ; sector 1
 .define LBA_BEGIN $00006800
 .define SEC_PER_CL 4
-.define ROOT_CL $02
+.define ROOT_CL $02 ; 
 
 .define test_start_cluster	$016a
 

@@ -70,5 +70,3 @@ test:
 
 emu: loader.prg
 	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img  
-
-# -upload $^

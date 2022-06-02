@@ -6,6 +6,7 @@
 .import fat_write
 .import fat_write_byte
 .import fat_mkdir
+.import fat_fread_byte
 
 ; mock defines
 .export read_block=mock_read_block
@@ -122,8 +123,8 @@ debug_enabled=1
 		assertFdEntry fd_area + (FD_Entry_Size*2)
 				fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0
 
-		lda #'F'
 		debug ">>> fat_write_byte"
+		lda #'F'
 		jsr fat_write_byte
 		assertC 0
 		assertX FD_Entry_Size*2	; assert FD preserved
@@ -150,7 +151,24 @@ debug_enabled=1
 		assertDirEntry block_data+$80
 				fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 3	; TEST_FILE_CL cluster, filesize 3
 		jsr fat_close
-	
+
+		brk
+		ldy #O_RDONLY
+		lda #<test_file_name_2cl
+		ldx #>test_file_name_2cl
+		jsr fat_fopen
+		assertA EOK
+		assertX FD_Entry_Size*2	; assert FD reserved
+		jsr fat_fread_byte
+		assertC 0
+		assertA 'F'
+		jsr fat_fread_byte
+		assertC 0
+		assertA 'T'
+		jsr fat_fread_byte
+		assertC 0
+		assertA 'W'
+		jsr fat_close
 		brk
 
 
@@ -175,7 +193,12 @@ mock_read_block:
 		debug32 "mock_read_block", lba_addr
 		load_block_if LBA_BEGIN, block_root_cl, @ok ; load root cl block
 		load_block_if FS_INFO_LBA, block_fsinfo, @ok
-		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_read
+		
+		load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), block_data_00, @ok
+		load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), block_data_01, @ok
+		load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), block_data_02, @ok
+		load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), block_data_03, @ok
+;		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_read
 		cmp32_ne lba_addr, FAT_LBA, :+
 			;simulate fat block read
 			m_memset block_fat+$000, $ff, $40	; simulate reserved, next free cluster is TEST_FILE_CL ($10)
@@ -200,15 +223,22 @@ mock_write_block:
 		debug16 "mock_write_block wptr", write_blkptr
 		store_block_if LBA_BEGIN, block_root_cl, @ok ; write root cl block
 		store_block_if FS_INFO_LBA, block_fsinfo, @ok ;
-		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_write
-		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), @dummy_write
-		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), @dummy_write
-		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), @dummy_write
-		cmp32_eq lba_addr, FAT_LBA, @dummy_write
-		cmp32_eq lba_addr, FAT2_LBA, @dummy_write
+		store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), block_data_00, @ok
+		store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), block_data_01, @ok
+		store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), block_data_02, @ok
+		store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), block_data_03, @ok
+;		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_write
+;		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), @dummy_write
+;		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), @dummy_write
+;		cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), @dummy_write
+;		cmp32_eq lba_addr, FAT_LBA, @dummy_write
+;		cmp32_eq lba_addr, FAT2_LBA, @dummy_write
+		store_block_if FAT_LBA, block_fat_0, @ok
+		store_block_if FAT2_LBA, block_fat2_0, @ok
 
 		assert32 FAT_EOC, lba_addr ; fail if we end up here
 @dummy_write:
+		debug "dummy write"
 		inc write_blkptr+1 ; => same behaviour as real block read implementation
 @ok:
 		lda #EOK
@@ -272,5 +302,17 @@ block_fsinfo_init:
 	.byte 0,0,$55,$aa
 
 .bss
-block_root_cl: .res sd_blocksize
-block_fsinfo: 	.res sd_blocksize
+block_fat_0:	.res sd_blocksize
+block_fat2_0:	.res sd_blocksize
+block_root_cl:	.res sd_blocksize
+block_fsinfo:	.res sd_blocksize
+block_data_00:	.res sd_blocksize
+block_data_01:	.res sd_blocksize
+block_data_02:	.res sd_blocksize
+block_data_03:	.res sd_blocksize
+block_data_04:	.res sd_blocksize
+block_data_06:	.res sd_blocksize
+block_data_07:	.res sd_blocksize
+block_data_08:	.res sd_blocksize
+block_data_09:	.res sd_blocksize
+block_data_0a:	.res sd_blocksize

@@ -72,23 +72,24 @@
 ; out:
 ;	C=0 on success, C=1 on error and A=<error code>
 fat_write_byte:
+
 		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		pha
 
 		jsr __fat_is_cln_zero
 		bne :+
-
 		jsr __fat_reserve_cluster			; reserve cluster
 		bcs @l_exit_restore
 
 :		jsr __fat_read_block_open_seek
 		bcs @l_exit_restore
+
+		pla									; get back byte to write
 		
 		ldy fd_area+F32_fd::seek_pos+0, x
-		pla									; get back byte to write
 		sta (read_blkptr),y
-		debug ">>>"
+		debug16 ">>>", read_blkptr
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
 :		_inc32_x fd_area+F32_fd::seek_pos
