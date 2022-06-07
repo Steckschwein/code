@@ -50,6 +50,7 @@
 .import fat_fseek
 .import fat_fread, fat_get_root_and_pwd
 .import fat_fread_byte
+.import fat_write_byte
 
 .import sd_read_block, sd_write_block
 
@@ -363,8 +364,8 @@ krn_init_sdcard:		jmp sdcard_init
 .export krn_upload
 krn_upload:				jmp do_upload
 
-; .export krn_spi_select_rtc
-krn_spi_select_rtc:	  .res 3
+.export krn_write_byte
+krn_write_byte:         jmp fat_write_byte
 
 .export krn_spi_deselect
 krn_spi_deselect:		 jmp spi_deselect
@@ -401,6 +402,9 @@ krn_sd_read_block:	 	jmp sd_read_block
 
 .export krn_fread_byte
 krn_fread_byte:         jmp fat_fread_byte
+
+;.export krn_write_byte
+;krn_write_byte:         jmp fat_write_byte
 
 ;.import uart_rx_nowait
 ;.export krn_uart_rx_nowait
