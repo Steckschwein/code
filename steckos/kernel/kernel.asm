@@ -350,8 +350,6 @@ krn_textui_update_crs_ptr:  jmp textui_update_crs_ptr
 .export krn_textui_clrscr_ptr
 krn_textui_clrscr_ptr:		jmp textui_blank
 
-;.export krn_fseek
-;krn_fseek:						jmp fat_fseek
 .export krn_textui_setmode
 krn_textui_setmode:	  jmp textui_setmode
 
@@ -402,13 +400,6 @@ krn_sd_read_block:	 	jmp sd_read_block
 
 .export krn_fread_byte
 krn_fread_byte:         jmp fat_fread_byte
-
-;.export krn_write_byte
-;krn_write_byte:         jmp fat_write_byte
-
-;.import uart_rx_nowait
-;.export krn_uart_rx_nowait
-;krn_uart_rx_nowait:	 	jmp uart_rx_nowait
 
 .segment "VECTORS"
 ; $FFF8/$FFF9 RETVEC
