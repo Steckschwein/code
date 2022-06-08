@@ -7611,29 +7611,31 @@ LAB_2D05
      ; JMP     LAB_1319         ; cleanup and Return to BASIC
 
 openfile:
-   jsr termstrparam
-   jsr krn_open
-   bne io_error
-   stx _fd
-   rts
+      jsr termstrparam
+      jsr krn_open
+      bcs io_error
+      stx _fd
+      rts
 
 io_error_close:
-    jsr krn_close
+      jsr krn_close
 io_error:
-    ldx #$24 ; "Generate "File not found error"
-    jmp LAB_XERR
+      ldx #$24 ; "Generate "File not found error"
+      jmp LAB_XERR
 
-LAB_SAVE:
-      lda #O_WRONLY
-
-      lda #<krn_write_byte
-      sta VEC_OUT
-      lda #<krn_write_byte
-      sta VEC_OUT+1
+LAB_SAVE:   
+      ldy #O_CREAT | O_WRONLY | O_APPEND
       jsr openfile
 
+      lda #<fwrite_wrapper
+      sta VEC_OUT
+      lda #>fwrite_wrapper
+      sta VEC_OUT+1
+
+      ; TODO find out how to fake parameters for LIST so that it outputs something
       jsr LAB_LIST
 
+      ldx _fd
       jsr krn_close
 
       jsr init_iovectors
@@ -7641,10 +7643,19 @@ LAB_SAVE:
       SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
       jmp     LAB_1319         ; cleanup and Return to BASIC
 
+filename:
+      .asciiz "foo.bas"
+
+fwrite_wrapper:
+      phx
+      ldx _fd 
+      ;jsr krn_write_byte
+      jsr krn_chrout
+      plx
       rts
 
 LAB_LOAD:
-      lda #O_RDONLY
+      ldy #O_RDONLY
       jsr openfile
 
       lda #<fread_wrapper
@@ -7659,25 +7670,25 @@ LAB_LOAD:
       JMP   LAB_1319 ; reset and return
 
 fread_wrapper:
-    phx
-    phy
-    ldx _fd
-    jsr krn_fread_byte
-    bcs @eof
-    cmp #KEY_LF ; replace with "basic end of line"
-    bne :+
-    lda #KEY_CR
-:   ply
-    plx
-    cmp #0
-    rts
+      phx
+      phy
+      ldx _fd
+      jsr krn_fread_byte
+      bcs @eof
+      cmp #KEY_LF ; replace with "basic end of line"
+      bne :+
+      lda #KEY_CR
+:     ply
+      plx
+      cmp #0
+      rts
 @eof:
-    jsr krn_close
+      jsr krn_close
 
-    jsr init_iovectors
+      jsr init_iovectors
 
-    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-    jmp     LAB_1319         ; cleanup and Return to BASIC
+      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+      jmp     LAB_1319         ; cleanup and Return to BASIC
 
 init_iovectors:
       lda #<krn_chrout
@@ -7848,6 +7859,8 @@ LAB_CD:
 ;      RTS                      ; return to caller
 
 termstrparam:
+    phy 
+
     ; evaluate sting parameter
     jsr LAB_EVEX
     jsr LAB_EVST
@@ -7864,6 +7877,7 @@ termstrparam:
     lda str_pl
     ldx str_ph
 
+    ply
     rts
 
 ; system dependant I/O vectors
