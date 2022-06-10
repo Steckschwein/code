@@ -1371,17 +1371,20 @@ LAB_LIST
       BCC   LAB_14BD          ; branch if next character numeric (LIST n..)
       BEQ   LAB_14BD          ; branch if next character [NULL] (LIST)
 
+
       CMP   #TK_MINUS         ; compare with token for -
       BNE   LAB_14A6          ; exit if not - (LIST -m)
 
                               ; LIST [[n][-m]]
                               ; this bit sets the n , if present, as the start and end
 LAB_14BD
+
       JSR   LAB_GFPN          ; get fixed-point number into temp integer
       JSR   LAB_SSLN          ; search BASIC for temp integer line number
                               ; (pointer in Baslnl/Baslnh)
       JSR   LAB_GBYT          ; scan memory
       BEQ   LAB_14D4          ; branch if no more characters
+
 
                               ; this bit checks the - is present
       CMP   #TK_MINUS         ; compare with token for -
@@ -1397,7 +1400,7 @@ LAB_14D4
       LDA   Itempl            ; get temporary integer low byte
       ORA   Itemph            ; OR temporary integer high byte
       BNE   LAB_14E2          ; branch if start set
-
+foo_list
       LDA   #$FF              ; set for -1
       STA   Itempl            ; set temporary integer low byte
       STA   Itemph            ; set temporary integer high byte
@@ -7632,7 +7635,10 @@ LAB_SAVE:
       lda #>fwrite_wrapper
       sta VEC_OUT+1
 
-      ; TODO find out how to fake parameters for LIST so that it outputs something
+      ; TODO LIST called from SAVE this way will interpret the arguments given to SAVE
+      ; and exit with a syntax error
+      ; find out how to make LIST ignore any arguments 
+      ; or remove them
       jsr LAB_LIST
 
       ldx _fd
@@ -7643,14 +7649,10 @@ LAB_SAVE:
       SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
       jmp     LAB_1319         ; cleanup and Return to BASIC
 
-filename:
-      .asciiz "foo.bas"
-
 fwrite_wrapper:
       phx
       ldx _fd 
-      ;jsr krn_write_byte
-      jsr krn_chrout
+      jsr krn_write_byte
       plx
       rts
 
