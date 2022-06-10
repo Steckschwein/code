@@ -7624,23 +7624,6 @@ io_error:
     jmp LAB_XERR
 
 LAB_SAVE:
-      lda #O_WRONLY
-
-      lda #<krn_fwrite_byte
-      sta VEC_OUT
-      lda #<krn_fwrite_byte
-      sta VEC_OUT+1
-      jsr openfile
-
-      jsr LAB_LIST
-
-      jsr krn_close
-
-      jsr init_iovectors
-
-      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-      jmp     LAB_1319         ; cleanup and Return to BASIC
-
       rts
 
 LAB_LOAD:
