@@ -3,13 +3,8 @@ size=128
 
 img="steckos.img"
 
-if [ -e $img ] ; then
-    echo "Image $img already exists"
-    exit 1
-else
-    echo "Creating image $img"
-    dd if=/dev/zero of=$img bs=1024k count=$size
-fi
+echo "Creating image $img"
+dd if=/dev/zero of=$img bs=1024k count=$size
 
 printf 'o\nn\np\n1\n\n\nt\nc\nw\n' | fdisk $img
 foo=$(sudo kpartx -av "$img")
