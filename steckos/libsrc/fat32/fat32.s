@@ -39,34 +39,10 @@
 
 .importzp __volatile_tmp
 
-; TODO FIXME - encapsulate within sd layer
-.import sd_read_multiblock
-
 ;lib internal api
-.import __fat_is_cln_zero
-.import __fat_read_block
-.import __fat_init_fd
-.import __fat_free_fd
-.import __fat_alloc_fd
-.import __fat_set_fd_attr_dirlba
-.import __fat_open_path
-.import __fat_find_first
-.import __fat_find_first_mask
-.import __fat_find_next
-.import __fat_clone_fd
-.import __fat_clone_cd_td
-.import __fat_next_cln
-.import __fat_write_dir_entry
-.import __calc_lba_addr
-.import __calc_blocks
-
-.import string_fat_name, fat_name_string, put_char
-.import string_fat_mask
-.import dirname_mask_matcher
-.import path_inverse
+.autoimport
 
 .export fat_fopen
-.export fat_fread
 .export fat_fread_byte
 .export fat_read
 .export fat_fseek
@@ -75,7 +51,6 @@
 
 .export __fat_init_fdarea
 .export __fat_read_block_open
-.export __fat_read_block_open_seek
 
 .code
 
@@ -102,93 +77,59 @@ __fat_fseek:
 		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 fat_fread_byte:
 
-		_is_file_open ; otherwise rts C=1 and A=#EINVAL
+		_is_file_open	; otherwise rts C=1 and A=#EINVAL
+;		_is_file_dir	;
 
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		lda #EOK
 		rts ; exit - EOF, C=1
 
-:		jsr __fat_read_block_open_seek
-		bcs @l_exit
+:		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd in between
+		lda fd_area+F32_fd::seek_pos+0,x
+		sta read_blkptr+0
+		lda fd_area+F32_fd::seek_pos+1,x
+		and #$01
+		ora #>block_data
+		sta read_blkptr+1
 
-		ldy fd_area+F32_fd::seek_pos+0, x
-		lda (read_blkptr),y
+		and #$01				 ; mask MSB and test
+		ora read_blkptr+0		 ; whether seek_pos is at the begin of a block (multiple of $0200) ?
+		bne @l_read
+		jsr __fat_read_block_open
+		bcs @l_exit
+@l_read:
+		lda (read_blkptr)
+		debug16 "rd_bt <<<", read_blkptr
 		_inc32_x fd_area+F32_fd::seek_pos
 		clc
 @l_exit:
 		rts
 
-    	;  TODO FIXME currently we always read until the end of the cluster chain (EOC) regardless
-		;  whether we reached the end of the file. the file size must be checked
-    	;
-		;	read n blocks from file denoted by the given FD and maintains FD.offset
-		;in:
-		;	X - offset into fd_area
-		;	Y - number of blocks to read at once - !!!NOTE!!! it's currently limited to $ff
-		;	read_blkptr - address where the data of the read blocks should be stored
-		;out:
-		;	C=0 on success and A=0 (EOK), C=1 and A=error code otherwise
-		; 	Y - number of blocks which where successfully read
-fat_fread:
-		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
-		sty krn_tmp3										; safe requested block number
-		stz krn_tmp2										; init counter
-@l_read_loop:
-		ldy krn_tmp2
-		cpy krn_tmp3
-		beq @l_exit_ok
-
-		jsr __fat_read_block_open
-		bcs @l_exit
-
-		inc read_blkptr+1							; read address + $0200 (block size)
-		inc read_blkptr+1
-		inc krn_tmp2
-		bra @l_read_loop
-
-@l_exit_ok:
-		lda #EOK									; A=0 (EOK)
-		clc
-@l_exit:
-		ldy krn_tmp2
-		rts
-
-; read block
+; read block upon given fd state, if the end of cluster is reached the next cluster is selected until EOC
 ;in:
 ;	X	- offset into fd_area
-;	read_blkptr has to be set to target address - TODO FIXME ptr. parameter
 ;out:
 ;	C=0 on success, C=1 on error and A=error code or EOC reached and A=0 otherwise
-__fat_read_block_open_seek:
-		; TODO FIXME - dirty check - the block_data may be corrupted if there where a read from another fd in between
-		SetVector block_data, read_blkptr
-		lda fd_area+F32_fd::seek_pos+1,x
-		and #$01
-		bne l_read_h						; 2nd half block?
-		lda fd_area+F32_fd::seek_pos+0,x	; check whether seek pos LSB points to start of block
-		bne l_exit
 __fat_read_block_open:
 		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
 		bne @l_read										; no, go on reading...
 
 		jsr __fat_next_cln		; select next cluster within chain
-		bcs l_exit				; exit on error or EOC (C=1)
+		bcs @l_exit				; exit on error or EOC (C=1)
 @l_read:
 		jsr __calc_lba_addr
-		jsr __fat_read_block
+		jsr __fat_read_block_data
 		bne @l_exit_err
-		inc fd_area+F32_fd::offset+0,x		; inc block counter
-		clc ; exit success C=0
+		inc fd_area+F32_fd::offset+0,x			; inc block counter
+		clc ; exit, success C=0
 		lda #EOK
 		rts
 @l_exit_err:
 		sec
+@l_exit:
 		rts
-l_read_h:
-		inc read_blkptr+1
-l_exit:	rts
 
 		;in:
 		;	X - offset into fd_area
@@ -255,7 +196,7 @@ fat_fopen:
 		bcc @l_exit_ok
 		jmp fat_close						; free the allocated file descriptor if there where errors, C=1 and A are preserved
 @l_atime:
-;		jsr __fat_set_direntry_timedate
+;		jsr __fat_set_direntry_modify_datetime
 ;		lda #EOK								; A=0 (EOK)
 		clc
 @l_exit_ok:

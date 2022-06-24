@@ -46,7 +46,6 @@
 .import __fat_find_next
 .import __fat_clone_fd
 .import __fat_clone_cd_td
-.import __calc_lba_addr
 
 .import string_fat_name, fat_name_string, put_char
 .import string_fat_mask

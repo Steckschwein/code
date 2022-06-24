@@ -40,30 +40,8 @@
 .export fat_write
 .export fat_write_byte
 
-.import string_fat_name
-.import write_block
-.import rtc_systime_update
+.autoimport
 
-.import __fat_read_cluster_block_and_select
-.import __fat_set_fd_attr_dirlba
-.import __fat_alloc_fd
-.import __fat_opendir_cwd
-.import __fat_free_fd
-.import __fat_read_block
-.import __fat_read_block_data
-.import __fat_read_block_fat
-.import __fat_is_cln_root
-.import __fat_is_cln_zero
-.import __fat_find_next
-.import __fat_find_first_mask
-
-.import __calc_lba_addr
-.import __calc_blocks
-.import __inc_lba_address
-.import __fat_read_block_open
-.import __fat_read_block_open_seek
-
-.import fat_fopen
 .importzp __volatile_ptr
 
 ; in:
@@ -73,33 +51,61 @@
 ;	C=0 on success, C=1 on error and A=<error code>
 fat_write_byte:
 
-		_is_file_open ; otherwise rts C=1 and A=#EINVAL
+		_is_file_open	; otherwise rts C=1 and A=#EINVAL
+		_is_file_dir  	; otherwise rts C=1 and A=#EISDIR
 
 		pha
 
-		jsr __fat_is_cln_zero
+		jsr __fat_is_cln_zero			; cluster already reserved?
 		bne :+
-		jsr __fat_reserve_cluster			; reserve cluster
+@l_reserve_cl:		
+		jsr __fat_reserve_cluster		; reserve cluster
 		bcs @l_exit_restore
+		jsr __fat_update_direntry
+		bne @l_exit_restore
 
-:		jsr __fat_read_block_open_seek
+:		lda fd_area+F32_fd::offset+0,x
+		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
+		bne @l_read										; no, go on reading...
+		jsr __fat_next_cln		; select next cluster within chain
+		bcc @l_read
+		cmp #EOK 				; C=1 and A=<EOK> EOC reached, new cluster must be reserved
+		bne @l_read
+		jsr __fat_reserve_cluster	; reserve cluster
 		bcs @l_exit_restore
+@l_read:
+		jsr __calc_lba_addr
+		jsr __fat_read_block_data
+		beq @l_write
+@l_exit_restore:
+		ply						
+@l_exit:
+		rts
+@l_write:
+		lda fd_area+F32_fd::seek_pos+1,x
+		and #$01
+		ora #>block_data
+		sta write_blkptr+1
+		lda fd_area+F32_fd::seek_pos+0, x
+		sta write_blkptr+0
 
 		pla									; get back byte to write
-		
-		ldy fd_area+F32_fd::seek_pos+0, x
-		sta (read_blkptr),y
-		debug16 ">>>", read_blkptr
+		sta (write_blkptr)
+		debug16 ">>> fw_bt", write_blkptr
+
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
 :		_inc32_x fd_area+F32_fd::seek_pos
+
+		lda fd_area+F32_fd::seek_pos+1,x	; seek pos points to new block?
+		and #$01
+		ora fd_area+F32_fd::seek_pos+0,x	; multiple of $200 ?
+		bne @l_write_data
+		inc fd_area+F32_fd::offset+0,x		; ... yes, inc block counter for next write
+@l_write_data:
 		jsr __fat_write_block_data			; write block
 		bcs @l_exit
 		jmp __fat_update_direntry			; finally update dir entry
-@l_exit_restore:
-		ply
-@l_exit:
-		rts
 
 ; in:
 ;	X - offset into fd_area
@@ -107,22 +113,17 @@ fat_write_byte:
 ; out:
 ;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_write:
-		_is_file_open ; otherwise rts C=1 and A=#EINVAL
+		_is_file_open	; otherwise rts C=1 and A=#EINVAL
+		_is_file_dir  	; otherwise rts C=1 and A=#EISDIR
 
-		lda fd_area + F32_fd::Attr, x
-		bit #DIR_Attr_Mask_Dir							; regular file?
-		beq @l_isfile
-@l_exit_einval:
-		lda #EISDIR
-@l_exit:
-		rts
-@l_isfile:
 		jsr __fat_is_cln_zero							; check whether the start cluster of the file is the root cluster - @see fat_alloc_fd, fat_open)
 		bne @l_write									; if not, we can directly update dir entry and write data afterwards
 
 		jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster
 		debug "fw_res_cl"
-		bcs @l_exit
+		bcc @l_write
+@l_exit:
+		rts
 @l_write:
 		jsr __calc_blocks								; calc blocks
 		beq __fat_update_direntry						; Z=1 - no blocks to write, but update dir entry
@@ -147,25 +148,29 @@ fat_write:
 
 __fat_update_direntry:
 		jsr __fat_read_direntry							; read dir entry, dirptr is set accordingly
-		jsr __fat_set_direntry_cluster					; set cluster number of direntry entry via dirptr - TODO FIXME only necessary on first write
-		jsr __fat_set_direntry_filesize					; set filesize of directory entry via dirptr
-		jsr __fat_set_direntry_timedate					; set time and date
+		bne @l_exit
 
 		; set archive bit
 		ldy #F32DirEntry::Attr
 		lda #DIR_Attr_Mask_Archive
 		ora (dirptr),y
 		sta (dirptr),y
+		jsr __fat_set_direntry_cluster					; set cluster number of directory entry via dirptr
+
+		jsr __fat_set_direntry_filesize					; set filesize of directory entry via dirptr
+		jsr __fat_set_direntry_modify_datetime			; set modification time and date
+
 		jsr __fat_write_block_data						; lba_addr is already set from read, see above
 @l_exit:
-		debug16 "fat_up_direntry", dirptr
+		debug16 "fw_updt_direntry", dirptr
 		rts
 
-		; read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
-		; in:
-		;	X - file descriptor of the file the directory entry should be read
-		; out:
-		;	dirptr pointing to the corresponding directory entry of type F32DirEntry
+; read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
+; in:
+;	X - file descriptor of the file the directory entry should be read
+; out:
+;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	dirptr pointing to the corresponding directory entry of type F32DirEntry
 __fat_read_direntry:
 		jsr __fat_set_lba_from_fd_dirlba			; setup lba address from fd
 		jsr __fat_read_block_data					; and read the block with the dir entry
@@ -197,10 +202,10 @@ __fat_set_lba_from_fd_dirlba:
 		debug32 "fw_slba", lba_addr
 		rts
 
-		; write new timestamp to direntry entry given as dirptr
-		; in:
-		;	dirptr
-__fat_set_direntry_timedate:
+; write new timestamp to direntry entry given as dirptr
+; in:
+;	dirptr
+__fat_set_direntry_modify_datetime:
 		phx
 		jsr rtc_systime_update									; update systime struct
 		;TODO FIXME rtx may be #EBUSY
@@ -244,9 +249,9 @@ __fat_set_direntry_filesize:
 		sta (dirptr),y
 		rts
 
-		; copy cluster number from file descriptor to direntry given as dirptr
-		; in:
-		;	dirptr
+; copy cluster number from file descriptor to direntry given as dirptr
+; in:
+;	dirptr
 __fat_set_direntry_cluster:
 		ldy #F32DirEntry::FstClusHI+1
 		lda fd_area + F32_fd::CurrentCluster+3 , x
@@ -308,9 +313,9 @@ fat_mkdir:
 		bcs @l_exit_close
 		jsr __fat_write_newdir_entry				; write the data of the newly created directory with prepared data from dirptr
 @l_exit_close:
-		jmp __fat_free_fd								; A and C are preserved
+		jmp __fat_free_fd							; A and C are preserved
 @l_exit_eexist:
-		lda #EEXIST										; exists already
+		lda #EEXIST									; exists already
 @l_exit_err:
 		sec
 		debug "fat_mkdir"
@@ -358,31 +363,64 @@ __fat_count_direntries:
 ; out:
 ;	C=0 on success, C=1 on error and A=<error code>
 __fat_write_dir_entry:
-		jsr __fat_prepare_dir_entry
+
+		lda fd_area + F32_fd::Attr, x
+		ldy #F32DirEntry::Attr										; store attribute
+		sta (dirptr), y
+
+		lda #0
+		ldy #F32DirEntry::Reserved									; unused
+		sta (dirptr), y
+		ldy #F32DirEntry::CrtTimeMillis
+		sta (dirptr), y												; ms to 0, ms not supported by rtc
+
+		jsr __fat_set_direntry_modify_datetime
+
+		ldy #F32DirEntry::WrtTime									; creation date/time copy over from modified date/time
+		lda (dirptr),y
+		ldy #F32DirEntry::CrtTime
+		sta (dirptr),y
+		ldy #F32DirEntry::WrtTime+1
+		lda (dirptr),y
+		ldy #F32DirEntry::CrtTime+1
+		sta (dirptr),y
+
+		ldy #F32DirEntry::WrtDate
+		lda (dirptr),y
+		ldy #F32DirEntry::CrtDate
+		sta (dirptr),y
+		ldy #F32DirEntry::WrtDate+1
+		lda (dirptr),y
+		ldy #F32DirEntry::CrtDate+1
+		sta (dirptr),y
+
+		jsr __fat_set_direntry_cluster
+		jsr __fat_set_direntry_filesize
+		
 		debug16 "f_w_dp", dirptr
 
 		;TODO FIXME duplicate code here! - @see __fat_find_next:
 		lda dirptr+1
 		sta krn_ptr1+1
-		lda dirptr														; create the end of directory entry
+		lda dirptr													; create the end of directory entry
 		clc
 		adc #DIR_Entry_Size
 		sta krn_ptr1
 		bcc @l2
 		inc krn_ptr1+1
 @l2:
-		lda krn_ptr1+1 												; end of block reached? :/ edge-case, we have to create the end-of-directory entry at the next block
+		lda krn_ptr1+1 							; end of block reached? :/ edge-case, we have to create the end-of-directory entry at the next block
 		cmp #>(block_data + sd_blocksize)
-		beq @l_new_block												; yes, prepare new block
-		lda #0															; no, write the updated block only
-		sta (krn_ptr1)													; set eod
+		beq @l_new_block						; yes, prepare new block
+		lda #0									; mark EOD
+		sta (krn_ptr1)
 		bra @l_eod
-@l_new_block:															; new dir entry
-		jsr __fat_write_block_data					  				; write the current block with the updated dir entry first
+@l_new_block:									; new dir entry
+		jsr __fat_write_block_data				; write the current block with the updated dir entry first
 		bcs @l_exit
 
-		ldy #$7f															; safely, fill the new dir block with 0 to mark eod
-		lda #0
+		ldy #$7f								; safely, fill the new dir block with 0 to mark eod
+		lda #0									; mark end of dir 
 @l_erase:
 		sta block_data+$000, y
 		sta block_data+$080, y
@@ -414,9 +452,10 @@ __fat_free_cluster:
 		lda #1
 		sta krn_tmp
 		lda #0
-		bra _fat_update_cluster
+		bra __fat_update_cluster
 l_exit:
 		rts
+
 
 ; find and reserve next free cluster in given FD (.X), also maintains the fsinfo block
 ; in:
@@ -424,25 +463,27 @@ l_exit:
 ; out:
 ;	C=0 on success, C=1 otherwise and A=error code
 __fat_reserve_cluster:
-		jsr __fat_find_free_cluster					; find free cluster, stored in fd_area for the fd given within X
+		jsr __fat_find_free_cluster
 		bcs l_exit
+
 		lda #$ff
 		sta krn_tmp
-_fat_update_cluster:
-		jsr __fat_mark_cluster						; mark cluster in fat block eihter with EOC (0x0fffffff) or free 0x00000000
+; update cluster		
+; in:
+;	.A - mark cluster in fat block eihter with EOC (0x0fffffff) or free 0x00000000
+;	krn_tmp amount of  clusters to be reserved/freed with A [-128...127]
+__fat_update_cluster:
+		jsr __fat_mark_cluster
 		jsr __fat_write_fat_blocks					; write the updated fat block for 1st and 2nd FAT to the device
-		bcs l_exit										; exit on error, otherwise fall through and update the fsinfo sector/block
+		bcs l_exit									; exit on error, otherwise fall through and update the fsinfo sector/block
 		;TODO check valid fsinfo block
 		;TODO check whether clnr is maintained, test 0xFFFFFFFF ?
-		;TODO improve calc, currently fixed to cluster-=1
-		;TODO update amount of free clusters to be reserved/freed with A [-128...127]
-__fat_update_fsinfo:
 		m_memcpy fat_fsinfo_lba, lba_addr, 4
 		jsr __fat_read_block_fat
 		bne l_exit
 		stz krn_tmp2
 		lda krn_tmp
-		bpl :+											; cluster reserved?
+		bpl :+											; +/- fs info cluster number?
 		dec krn_tmp2 ; 2's complement ($ff)
 		ldy fd_area+F32_fd::CurrentCluster+0,x
 	 	sty block_fat+F32FSInfo::LastClus+0
@@ -634,44 +675,6 @@ __fat_rtc_date:
 		ora krn_tmp2
 		rts
 
-		; prepare dir entry, expects cluster number set in fd_area of newly allocated fd given in X
-		; in:
-		;	X - file descriptor
-		;	dirptr of the directory entry to prepare
-__fat_prepare_dir_entry:
-		lda fd_area + F32_fd::Attr, x
-		ldy #F32DirEntry::Attr										; store attribute
-		sta (dirptr), y
-
-		lda #0
-		ldy #F32DirEntry::Reserved									; unused
-		sta (dirptr), y
-		ldy #F32DirEntry::CrtTimeMillis
-		sta (dirptr), y												; ms to 0, ms not supported by rtc
-
-		jsr __fat_set_direntry_timedate
-
-		ldy #F32DirEntry::WrtTime									; creation date/time copy over from modified date/time
-		lda (dirptr),y
-		ldy #F32DirEntry::CrtTime
-		sta (dirptr),y
-		ldy #F32DirEntry::WrtTime+1
-		lda (dirptr),y
-		ldy #F32DirEntry::CrtTime+1
-		sta (dirptr),y
-
-		ldy #F32DirEntry::WrtDate
-		lda (dirptr),y
-		ldy #F32DirEntry::CrtDate
-		sta (dirptr),y
-		ldy #F32DirEntry::WrtDate+1
-		lda (dirptr),y
-		ldy #F32DirEntry::CrtDate+1
-		sta (dirptr),y
-
-		jsr __fat_set_direntry_cluster
-		jmp __fat_set_direntry_filesize
-
 ; mark cluster according to A
 ; in:
 ;	A - 0x00 free, 0xff EOC
@@ -692,9 +695,9 @@ __fat_mark_cluster: ; TODO cluster chain support
 ;	X - file descriptor
 ; out:
 ;	C=0 on success
-;		Y=offset in block_fat of found cluster
-;		lba_addr with fat block where the found cluster resides
-;		the found cluster is stored within the given file descriptor (fd_area+F32_fd::CurrentCluster,x)
+;	Y=offset in block_fat of found cluster
+;	lba_addr with fat block where the found cluster resides
+;	the found cluster is stored within the given file descriptor (fd_area+F32_fd::CurrentCluster,x)
 ;	C=1 on error, A=error code
 __fat_find_free_cluster:
 		;TODO improve, use a previously saved lba_addr and/or found cluster number

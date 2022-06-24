@@ -186,6 +186,18 @@ DIR_Entry_Deleted            = $e5
 :
 .endmacro
 
+.macro _is_file_dir
+   pha
+   lda fd_area+F32_fd::Attr, x
+   bit #DIR_Attr_Mask_Dir		; is directory?
+   beq :+
+   pla
+   lda #EISDIR
+   sec
+   rts
+:  pla
+.endmacro
+
 .struct F32_fd
     CurrentCluster   .dword   ;
     FileSize         .dword   ;

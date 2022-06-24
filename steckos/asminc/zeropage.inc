@@ -27,6 +27,8 @@
 .globalzp tmp
 .globalzp spi_sr
 .globalzp vdp_ptr, vdp_tmp
+.globalzp __volatile_ptr
+.globalzp __volatile_tmp
 
 .globalzp crs_ptr
 

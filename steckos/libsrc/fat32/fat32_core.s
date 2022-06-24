@@ -86,7 +86,7 @@ ff_l3:
 		bne ff_exit
 ff_l4:
 		lda (dirptr)
-		beq ff_exit									; first byte of dir entry is $00 (end of directory)
+		beq ff_exit								; first byte of dir entry is $00 (end of directory)
 @l5:
 		ldy #F32DirEntry::Attr					; else check if long filename entry
 		lda (dirptr),y 							; we are only going to filter those here (or maybe not?)
@@ -111,10 +111,10 @@ __fat_find_next:
 		.assert <(sd_blktarget + sd_blocksize) = $00, error, "sd_blktarget isn't aligned on a RAM page boundary"
 		lda dirptr+1
 		cmp #>(sd_blktarget + sd_blocksize)	; end of block reached?
-		bcc ff_l4			; no, process entry
+		bcc ff_l4							; no, process entry
 		dec blocks
-		beq @ff_eoc			    	; end of cluster reached?
-		jsr __inc_lba_address	; increment lba address to read next block
+		beq @ff_eoc			    			; end of cluster reached?
+		jsr __inc_lba_address				; increment lba address to read next block
 		bra ff_l3
 @ff_eoc:
 		ldx #FD_INDEX_TEMP_DIR				; TODO FIXME dont know if this is a good idea... FD_INDEX_TEMP_DIR was setup above and following the cluster chain is done with the FD_INDEX_TEMP_DIR to not clobber the FD_INDEX_CURRENT_DIR
@@ -363,16 +363,15 @@ __fat_is_cln_zero:
 		ora fd_area+F32_fd::CurrentCluster+0,x
 		rts
 
-		; TODO dedicated calls for data and fat, clean code
-		; internal read block
-		; requires: read_blkptr and lba_addr already calculated
+; internal read block
+; requires: read_blkptr and lba_addr already calculated
 __fat_read_block_fat:
 		lda #>block_fat
 		bra :+
 __fat_read_block_data:
 		lda #>block_data
 :		sta read_blkptr+1
-		stz read_blkptr
+		stz read_blkptr+0
 __fat_read_block:
 		phx
 		debug32 "fat_rb_lba", lba_addr
@@ -410,15 +409,16 @@ __prepare_calc_lba_addr:
 ;			X - file descriptor index
 __calc_lba_addr:
 		pha
+;		phy
 
 		jsr __prepare_calc_lba_addr
 
 		;SecPerClus is a power of 2 value, therefore cluster << n, where n is the number of bit set in VolumeID::SecPerClus
-		lda volumeID+VolumeID::BPB + BPB::SecPerClus
-		sta krn_tmp
-@lm:
-		lsr krn_tmp
+		ldy volumeID+VolumeID::BPB + BPB::SecPerClus
+@lm:	tya
+		lsr
 		beq @lme	 ; until 1 sector/cluster
+		tay
 		asl lba_addr +0
 		rol lba_addr +1
 		rol lba_addr +2
@@ -440,7 +440,7 @@ __calc_lba_addr:
 		.endrepeat
 :
 		;debug32 "f_lba", lba_addr
-
+;		ply
 		pla
 		rts
 
@@ -503,12 +503,12 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if f
 		debug16 "__calc_blocks", blocks
 		rts
 
-		; extract next cluster number from the 512 fat block buffer
-		; unsigned int offs = (clnr << 2 & (BLOCK_SIZE-1));//offset within 512 byte block, cluster nr * 4 (32 Bit) and Bit 8-0 gives the offset
-		; in:
-		;	X - file descriptor
-		; out:
-		;	C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
+; extract next cluster number from the 512 fat block buffer
+; unsigned int offs = (clnr << 2 & (BLOCK_SIZE-1));//offset within 512 byte block, cluster nr * 4 (32 Bit) and Bit 8-0 gives the offset
+; in:
+;	X - file descriptor
+; out:
+;	C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
 __fat_next_cln:
 		lda read_blkptr
 		pha
@@ -536,17 +536,17 @@ __fat_next_cln:
 		sty read_blkptr
 		rts
 
-		; in:
-		;	X - file descriptor
-		; out:
-		;	read_blkptr - setup to block_fat either low/high page
-		;	Y - offset within block_fat to clnr
-		;	C=0 on success, C=1 if the cluster number is the EOC and A=EOK or C=1 and A=<error code> otherwise
+; in:
+;	X - file descriptor
+; out:
+;	read_blkptr - setup to block_fat either low/high page
+;	Y - offset within block_fat to clnr
+;	C=0 on success, C=1 if the cluster number is the EOC and A=EOK or C=1 and A=<error code> otherwise
 __fat_read_cluster_block_and_select:
 		jsr __calc_fat_lba_addr
 		jsr __fat_read_block_fat
 		bne @l_exit
-		jsr __fat_is_cln_zero							; is root clnr?
+		jsr __fat_is_cln_zero					; is root clnr?
 		bne @l_clnr_fd
 		lda volumeID + VolumeID::EBPB + EBPB::RootClus+0
 		bra @l_clnr_page
@@ -557,14 +557,13 @@ __fat_read_cluster_block_and_select:
 @l_clnr_fd:
 		lda fd_area+F32_fd::CurrentCluster+0,x 	; offset within block_fat, clnr<<2 (* 4)
 @l_clnr_page:
-		bit #$40										; clnr within 2nd page of the 512 byte block ?
+		bit #$40								; clnr within 2nd page of the 512 byte block ?
 		beq @l_clnr
-		inc read_blkptr+1							; yes, set read_blkptr to 2nd page of block_fat
+		inc read_blkptr+1						; yes, set read_blkptr to 2nd page of block_fat
 @l_clnr:
-		asl											; block offset = clnr*4
+		asl										; block offset = clnr*4
 		asl
 		tay
-
 ; check whether the EOC (end of cluster chain) cluster number is reached
 ; out:
 ;	C=1 if clnr is EOC, C=0 otherwise
