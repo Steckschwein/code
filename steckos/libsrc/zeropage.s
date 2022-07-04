@@ -10,19 +10,18 @@
 ; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
 .exportzp cmdptr    = $d6
 .exportzp paramptr  = $d8
-.export retvec    = $fff8
 
 ; TEXTUI
 .exportzp crs_ptr   = $e0
 
-; kernel pointer (internally used)
-.exportzp krn_ptr1	= $e2	; 2 bytes
-.exportzp krn_ptr2	= $e4	; 2 bytes
-.exportzp krn_ptr3	= $e6	; 2 bytes
+; pointer and temps - internally used by library
+.exportzp s_ptr1	= $e2	; 2 bytes
+.exportzp s_ptr2	= $e4	; 2 bytes
+.exportzp s_ptr3	= $e6	; 2 bytes
 
-.exportzp krn_tmp	= $e8
-.exportzp krn_tmp2	= krn_tmp+1	; single byte
-.exportzp krn_tmp3	= krn_tmp+2	; single byte
+.exportzp s_tmp1	= $e8
+.exportzp s_tmp2	= s_tmp1+1	; single byte
+.exportzp s_tmp3	= s_tmp1+2	; single byte
 
 ; have to use fixed zp locations to avoid ehbasic clashes
 .exportzp vdp_ptr   =$ec
@@ -50,3 +49,8 @@
 ;.exportzp ansi_index			 = $fa
 ;.exportzp ansi_param1			= $fb
 ;.exportzp ansi_param2			= $fc
+
+.export retvec    = $fff8
+
+; custom isr, aligned with v-blank, called by kernel on each frame
+.export user_isr	= $028a

@@ -34,8 +34,8 @@
 .endmacro
 
 .macro set_sec_per_cl sec_per_cl
-	set8 volumeID+VolumeID::BPB + BPB::SecPerClus, sec_per_cl
-	set32 cluster_begin_lba, (LBA_BEGIN - ROOT_CL * sec_per_cl)
+	set8 volumeID + VolumeID::BPB_SecPerClus, sec_per_cl
+	set32 volumeID + VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * sec_per_cl)
 .endmacro
 
 .macro fd_entry_file clnr, dir_entry, dir_lba, attr, filesize, offset

@@ -124,9 +124,10 @@ sprite_empty=92
 
 		cli
 
-:	  	jsr krn_getkey
-		cmp #KEY_ESCAPE
-		bne :-
+:	  	;jsr krn_getkey
+;		cmp #KEY_ESCAPE
+;		bne :-
+		bra :-
 
 		sei
 		copypointer save_isr, user_isr
@@ -746,12 +747,11 @@ score_board:
 
 action_handler:
 	 ;TODO FIXME just for testing
-;	 jsr krn_getkey
-;	cmp #$1b
- ;	bne +
- ;	jsr krn_getkey
-	;cmp #'A'
-	; beq .up
+		jsr krn_getkey
+		cmp #'d'
+		beq @up
+		cmp #'a'
+		beq @duck
 
 		jsr get_joy_status
 		and #JOY_UP
@@ -774,7 +774,7 @@ action_handler:
 		jsr get_joy_status
 		and #JOY_DOWN
 		bne :+
-		lda	#DINOSAUR_DUCK
+@duck:	lda	#DINOSAUR_DUCK
 		sta dinosaur_state
 		rts
 :	  	lda	#DINOSAUR_RUN

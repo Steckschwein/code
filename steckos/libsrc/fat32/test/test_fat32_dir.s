@@ -47,10 +47,10 @@ data_loader	; define data loader
 setUp:
 		jsr __fat_init_fdarea
 
-		set8  volumeID + VolumeID::BPB  + BPB::SecPerClus, SEC_PER_CL
-		set32 volumeID + VolumeID::EBPB + EBPB::RootClus, ROOT_CL
-		set32 cluster_begin_lba, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL))
-		set32 fat_lba_begin, FAT_LBA		;fat lba to
+		set8  volumeID + VolumeID::BPB_SecPerClus, SEC_PER_CL
+		set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
+		set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL))
+		set32 volumeID+VolumeID::lba_fat, FAT_LBA		;fat lba to
 
 		;setup fd0 (cwd) to root cluster
 		set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0

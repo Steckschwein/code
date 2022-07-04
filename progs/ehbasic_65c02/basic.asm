@@ -7626,34 +7626,7 @@ io_error:
       ldx #$24 ; "Generate "File not found error"
       jmp LAB_XERR
 
-LAB_SAVE:   
-      ldy #O_CREAT | O_WRONLY | O_APPEND
-      jsr openfile
-
-      lda #<fwrite_wrapper
-      sta VEC_OUT
-      lda #>fwrite_wrapper
-      sta VEC_OUT+1
-
-      ; TODO LIST called from SAVE this way will interpret the arguments given to SAVE
-      ; and exit with a syntax error
-      ; find out how to make LIST ignore any arguments 
-      ; or remove them
-      jsr LAB_LIST
-
-      ldx _fd
-      jsr krn_close
-
-      jsr init_iovectors
-
-      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-      jmp     LAB_1319         ; cleanup and Return to BASIC
-
-fwrite_wrapper:
-      phx
-      ldx _fd 
-      jsr krn_write_byte
-      plx
+LAB_SAVE:
       rts
 
 LAB_LOAD:

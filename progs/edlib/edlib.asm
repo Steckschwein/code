@@ -74,7 +74,7 @@ fm_file_arrdata = ptr7
     ptr5:  .res 2
     ptr6:  .res 2
     ptr7:  .res 2
-	
+
 .code
 
 .import opl2_reg_write

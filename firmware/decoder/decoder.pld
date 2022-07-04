@@ -26,7 +26,7 @@ CSUART   ; UART at $0200
 CSVIA    ; VIA  at $0210
 CSVDP	 ; VDP  at $0220
 MEMCTL	 ; MEMCTL at $0230, control latch for ROMOFF, etc.
-CSIO     ; 4xIO  at $0240  - $0270
+CSIO     ; 4xIO  at $0240 - $027ff
 VCC
 
 ;
@@ -35,11 +35,13 @@ VCC
 /CSROM   = /ROMOFF*RW*A15*A14*A13			; Reads  to $e000-$ffff go to the ROM, IF ROMOFF is High
 
 CSLORAM = A15
-        + /A14 * /A13 * /A12 * /A11 * /A10 * A9 * /A8 * /A7
+       + /A15 * /A14 * /A13 * /A12 * /A11 * /A10 * A9 * /A8 * /A7
+
+;/A15 * /A14 * A13 * A12 * A11 * A10 * /A9 * A8 * A7      ; $0200-$027f
 
 /CSHIRAM = A15*/A13                       
          + A15*/A14
-         + /RW*A15*A14*A13 					; Writes to $e000-$ffff go to the RAM
+         + /RW*A15*A14*A13 		        	; Writes to $e000-$ffff go to the RAM
          + ROMOFF*RW*A15*A14*A13			; Reads  to $e000-$ffff go to the RAM, IF ROMOFF is Low
 
 

@@ -24,6 +24,11 @@
 .include "system.inc"
 .include "zeropage.inc"
 .include "debug.inc"
+.include "common.inc"
+.include "vdp.inc"
+.include "via.inc"
+.include "ym3812.inc"
+.include "keyboard.inc"
 
 .macro printstring text
     jsr krn_primm

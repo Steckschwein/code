@@ -24,9 +24,9 @@
 :
   ; build mask
 	SetVector @input, filenameptr
-	SetVector fat_dirname_mask, krn_ptr2    ; ouput
+	SetVector fat_dirname_mask, s_ptr2    ; ouput
 	jsr string_fat_mask
-	;assertString "", krn_ptr2
+	;assertString "", s_ptr2
   
 	SetVector @entry, dirptr
 	jsr dirname_mask_matcher

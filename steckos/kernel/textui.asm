@@ -263,13 +263,13 @@ textui_cursor_onoff:
 ;	X - highbyte of string address
 ;----------------------------------------------------------------------------------------------
 textui_strout:
-	sta krn_ptr3		  ;init for output below
-	stx krn_ptr3+1
+	sta s_ptr3		  ;init for output below
+	stx s_ptr3+1
 
 	inc screen_write_lock	 ;write lock on
 	ldy	 #$00
 @l1:
-	lda	 (krn_ptr3),y
+	lda	 (s_ptr3),y
 	beq	 @l2
 	jsr __textui_dispatch_char
 	iny
@@ -287,25 +287,25 @@ textui_strout:
 .ifdef TEXTUI_PRIMM
 textui_primm:
 		pla								; Get the low part of "return" address
-		sta krn_ptr3
+		sta s_ptr3
 		pla								; Get the high part of "return" address
-		sta krn_ptr3+1
+		sta s_ptr3+1
 
 		inc screen_write_lock
 		; Note: actually we're pointing one short
-PSINB:	inc krn_ptr3				 ; update the pointer
+PSINB:	inc s_ptr3				 ; update the pointer
 		bne	PSICHO			 ; if not, we're pointing to next character
-		inc	krn_ptr3+1				 ; account for page crossing
-PSICHO: lda	(krn_ptr3)				; Get the next string character
+		inc	s_ptr3+1				 ; account for page crossing
+PSICHO: lda	(s_ptr3)				; Get the next string character
 		beq	PSIX1			  ; don't print the final NULL
 		jsr	__textui_dispatch_char		  ; write it out
 		bra	PSINB			  ; back around
-PSIX1:  inc	krn_ptr3				 ;
+PSIX1:  inc	s_ptr3				 ;
 		bne	PSIX2			  ;
-		inc	krn_ptr3+1				 ; account for page crossing
+		inc	s_ptr3+1				 ; account for page crossing
 PSIX2:
 		stz screen_write_lock
-		jmp	(krn_ptr3)			  ; return to byte following final NULL
+		jmp	(s_ptr3)			  ; return to byte following final NULL
 .endif
 
 textui_put:

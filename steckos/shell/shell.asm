@@ -29,6 +29,7 @@ prompt  = $af
 .include "common.inc"
 .include "keyboard.inc"
 .include "rtc.inc"
+.include "debug.inc"
 .include "appstart.inc"
 
 ; SCREENSAVER_TIMEOUT_MINUTES=2
@@ -62,7 +63,7 @@ init:
       .byte CODE_LF,0
 exit_from_prg:
       cld
-      jsr	krn_textui_init
+      jsr krn_textui_init
 
       ldx #BUF_SIZE
 :     stz tmpbuf,x
@@ -181,8 +182,6 @@ parse:
         cmp #' '
         bne @l3
         inc cmdptr
-;        bcc @l1
- ;       inc cmdptr+1
         bra @l1
 @l3:
         copypointer cmdptr, paramptr
@@ -206,56 +205,56 @@ parse:
       inc paramptr
       bra @l6
 @l7:
-      SetVector buf, bufptr
+        SetVector buf, bufptr
 
-      jsr terminate
+        jsr terminate
 
 compare:
       ; compare
-      ldx #$00
-@l1:	ldy #$00
+        ldx #$00
+@l1:    ldy #$00
 @l2:	lda (cmdptr),y
 
-      ; if not, there is a terminating null
-      bne @l3
+        ; if not, there is a terminating null
+        bne @l3
 
-      cmp cmdlist,x
-      beq cmdfound
+        cmp cmdlist,x
+        beq cmdfound
 
       ; command string in buffer is terminated with $20 if there are cmd line arguments
 
 @l3:
-      cmp #$20
-      bne @l4
+        cmp #$20
+        bne @l4
 
-      cmp cmdlist,x
-      bne cmdfound
+        cmp cmdlist,x
+        bne cmdfound
 
 @l4:
-      ; make lowercase
-      ora #$20
+        ; make lowercase
+        ora #$20
 
-      cmp cmdlist,x
-      bne @l5	; difference. this isnt the command were looking for
+        cmp cmdlist,x
+        bne @l5	; difference. this isnt the command were looking for
 
-      iny
-      inx
+        iny
+        inx
 
-      bra @l2
+        bra @l2
 
       ; next cmdlist entry
 @l5:
-		inx
-		lda cmdlist,x
-		bne @l5
-		inx
-		inx
-		inx
+        inx
+        lda cmdlist,x
+        bne @l5
+        inx
+        inx
+        inx
 
-		lda cmdlist,x
-		cmp #$ff
-		beq try_exec
-		bra @l1
+        lda cmdlist,x
+        cmp #$ff
+        beq try_exec
+        bra @l1
 
 cmdfound:
         crlf
@@ -407,7 +406,7 @@ errmsg:
 		jmp mainloop
 
 @l1:
-    cmp #$f2
+                cmp #$f2
 		bne @l2
 
 		jsr krn_primm
@@ -426,20 +425,20 @@ mode_toggle:
         jsr krn_textui_setmode
         jmp mainloop
 cd:
-      lda paramptr
-      ldx paramptr+1
-      jsr krn_chdir
-      beq @l2
-      jmp errmsg
+        lda paramptr
+        ldx paramptr+1
+        jsr krn_chdir
+        beq @l2
+        jmp errmsg
 @l2:
-      jmp mainloop
+        jmp mainloop
 
 exec:
-		lda cmdptr
-		ldx cmdptr+1    ; cmdline in a/x
-		jsr krn_execv   ; return A with errorcode
-		bne @l1         ; error? try different path
-		jmp mainloop
+        lda cmdptr
+        ldx cmdptr+1    ; cmdline in a/x
+        jsr krn_execv   ; return A with errorcode
+        bne @l1         ; error? try different path
+        jmp mainloop
 
 @l1:
 		stz tmp2

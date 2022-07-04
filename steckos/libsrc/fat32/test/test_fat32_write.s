@@ -109,6 +109,8 @@ debug_enabled=1
 		jsr fat_close
 
 
+		brk
+
 ; -------------------
 		setup "fat_write_byte O_CREAT 1 cluster";
 		ldy #O_CREAT
@@ -122,16 +124,16 @@ debug_enabled=1
 				fat32_dir_entry_file "TST_02CL", "TST", 0, 0	; no cluster reserved yet
 		assertFdEntry fd_area + (FD_Entry_Size*2)
 				fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0
-
-		debug ">>> fat_write_byte"
+		
 		lda #'F'
 		jsr fat_write_byte
 		assertC 0
 		assertX FD_Entry_Size*2	; assert FD preserved
 		assertFdEntry fd_area + (FD_Entry_Size*2)
-				fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, 0
+				fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, 0 ; TEST_FILE_CL reserved
 		assertDirEntry block_data+$80
 				fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 1	; TEST_FILE_CL cluster reserved, filesize 1
+
 
 		lda #'T'
 		jsr fat_write_byte
@@ -164,7 +166,7 @@ debug_enabled=1
 				fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 256	; TEST_FILE_CL cluster, filesize 3
 
 		jsr fat_close
-		brk
+		
 		
 		ldy #O_RDONLY
 		lda #<test_file_name_2cl
@@ -270,14 +272,14 @@ mock_not_implemented4:
 setUp:
 	jsr __fat_init_fdarea
 
-	set8 volumeID+VolumeID::BPB + BPB::SecPerClus, SEC_PER_CL
-	set8 volumeID+VolumeID::BPB + BPB::NumFATs, 2
-	set32 volumeID + VolumeID::EBPB + EBPB::RootClus, ROOT_CL
-	set32 volumeID + VolumeID::EBPB + EBPB::FATSz32, (FAT2_LBA - FAT_LBA)
-	set32 cluster_begin_lba, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL))
-	set32 fat_lba_begin, FAT_LBA
-	set32 fat2_lba_begin, FAT2_LBA
-	set32 fat_fsinfo_lba, FS_INFO_LBA
+	set8 volumeID+VolumeID::BPB_SecPerClus, SEC_PER_CL
+;	set8 volumeID+VolumeID::BPB_NumFATs, 2
+	set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
+	set32 volumeID + VolumeID::EBPB_FATSz32, (FAT2_LBA - FAT_LBA)
+	set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL))
+	set32 volumeID+VolumeID::lba_fat, FAT_LBA
+	set32 volumeID+VolumeID::lba_fat2, FAT2_LBA
+	set32 volumeID+VolumeID::lba_fsinfo, FS_INFO_LBA
 
 	;setup fd0 as root cluster
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0

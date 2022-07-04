@@ -18,7 +18,7 @@ appstart $1000
 .import hexout
 .import jch_fm_init, jch_fm_play
 .import jch_fm_set_volume
-.import opl2_detect, opl2_init, opl2_reg_write
+.import opl2_detect, opl2_init, opl2_reg_write, opl2_reg_write_save
 
 .export d00file
 .export char_out=krn_chrout
@@ -58,6 +58,8 @@ main:
 		sei
     	copypointer user_isr, safe_isr
 		SetVector player_isr, user_isr
+;		copypointer $fffe, safe_isr
+;		SetVector player_isr, $fffe
 
 		freq=70
 		t2cycles=275

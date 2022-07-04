@@ -39,12 +39,10 @@
 
 .importzp __volatile_tmp
 
-;lib internal api
 .autoimport
 
 .export fat_fopen
 .export fat_fread_byte
-.export fat_read
 .export fat_fseek
 .export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
@@ -76,7 +74,6 @@ __fat_fseek:
 		;out:
 		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 fat_fread_byte:
-
 		_is_file_open	; otherwise rts C=1 and A=#EINVAL
 ;		_is_file_dir	;
 
@@ -113,7 +110,7 @@ fat_fread_byte:
 ;	C=0 on success, C=1 on error and A=error code or EOC reached and A=0 otherwise
 __fat_read_block_open:
 		lda fd_area+F32_fd::offset+0,x
-		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
+		cmp volumeID+VolumeID::BPB_SecPerClus  	; last block of cluster reached?
 		bne @l_read										; no, go on reading...
 
 		jsr __fat_next_cln		; select next cluster within chain
@@ -122,7 +119,8 @@ __fat_read_block_open:
 		jsr __calc_lba_addr
 		jsr __fat_read_block_data
 		bne @l_exit_err
-		inc fd_area+F32_fd::offset+0,x			; inc block counter
+		inc fd_area+F32_fd::offset+0,x			; inc block number in cluster
+
 		clc ; exit, success C=0
 		lda #EOK
 		rts
@@ -131,23 +129,6 @@ __fat_read_block_open:
 @l_exit:
 		rts
 
-		;in:
-		;	X - offset into fd_area
-		;out:
-		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
-fat_read:
-		bit fd_area + F32_fd::CurrentCluster+3, x
-		bmi @l_err_exit
-
-		jsr __calc_blocks
-		beq @l_exit					; if Z=0, no blocks to read. we return with "EOK", 0 bytes read
-		jsr __calc_lba_addr
-		jsr sd_read_multiblock
-		rts
-@l_err_exit:
-		lda #EINVAL
-@l_exit:
-		rts
 
 		; in:
 		;	A/X - pointer to zero terminated string with the file path
@@ -184,7 +165,7 @@ fat_fopen:
 		rts
 
 :		debug "r+"
-		copypointer dirptr, krn_ptr2
+		copypointer dirptr, s_ptr2
 		jsr string_fat_name				; build fat name upon input string (filenameptr)
 		bne @l_exit_err
 		jsr __fat_alloc_fd				; alloc a fd for the new file we want to create to make sure we get one before
@@ -219,7 +200,6 @@ __fat_init_fdarea:
 		;	X - offset into fd_area
 fat_close = __fat_free_fd
 
-
 		; find first dir entry
 		; in:
 		;	X - file descriptor (index into fd_area) of the directory
@@ -228,7 +208,7 @@ fat_close = __fat_free_fd
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 		;	C=1 if found and dirptr is set to the dir entry found (requires Z=1), C=0 otherwise
 fat_find_first:
-		txa											; use the given fd as source (Y)
+		txa										; use the given fd as source (Y)
 		tay
 		ldx #FD_INDEX_TEMP_DIR					; we use the temp dir with a copy of given fd, cause F32_fd::CurrentCluster is adjusted if end of cluster is reached
 		jsr __fat_clone_fd

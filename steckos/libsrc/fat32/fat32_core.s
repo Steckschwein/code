@@ -57,7 +57,6 @@
 .export __fat_read_block_fat
 .export __fat_set_fd_attr_dirlba
 .export __calc_lba_addr
-.export __calc_blocks
 .export __inc_lba_address
 
 .import dirname_mask_matcher
@@ -68,7 +67,7 @@
 ; out:
 ;
 __fat_find_first_mask:
-		SetVector fat_dirname_mask, krn_ptr2	; build fat dir entry mask from user input
+		SetVector fat_dirname_mask, s_ptr2	; build fat dir entry mask from user input
 		jsr string_fat_mask
 		SetVector dirname_mask_matcher, fat_vec_matcher
 ; in:
@@ -77,7 +76,7 @@ __fat_find_first_mask:
 ;  C=1 if dir entry was found with dirptr pointing to that entry, C=0 otherwise
 __fat_find_first:
 		SetVector block_data, read_blkptr
-		lda volumeID+VolumeID::BPB + BPB::SecPerClus
+		lda volumeID+VolumeID::BPB_SecPerClus
 		sta blocks
 		jsr __calc_lba_addr
 ff_l3:
@@ -108,9 +107,9 @@ __fat_find_next:
 		bcc @l6
 		inc dirptr+1
 @l6:
-		.assert <(sd_blktarget + sd_blocksize) = $00, error, "sd_blktarget isn't aligned on a RAM page boundary"
+		.assert <(block_data + sd_blocksize) = $00, error, "block_data isn't aligned on a RAM page boundary"
 		lda dirptr+1
-		cmp #>(sd_blktarget + sd_blocksize)	; end of block reached?
+		cmp #>(block_data + sd_blocksize)	; end of block reached?
 		bcc ff_l4							; no, process entry
 		dec blocks
 		beq @ff_eoc			    			; end of cluster reached?
@@ -138,15 +137,15 @@ ff_end:
 ;	Note: regardless of return value, the dirptr points to the last visited directory entry and the corresponding lba_addr is set to the block where the dir entry resides.
 ;		  furthermore the filenameptr points to the last inspected path fragment of the given input path
 __fat_open_path:
-		sta krn_ptr1
-		stx krn_ptr1+1				 	; save path arg given in a/x
+		sta s_ptr1
+		stx s_ptr1+1				 	; save path arg given in a/x
 
 		ldx #FD_INDEX_TEMP_DIR		; we use the temp dir fd to not clobber the current dir (Y parameter!), maybe we will run into an error
 		jsr __fat_clone_fd			; Y is given as param
 
 		ldy #0							; trim wildcard at the beginning
 @l1:
-		lda (krn_ptr1), y
+		lda (s_ptr1), y
 		cmp #' '
 		bne @l2
 		iny
@@ -157,14 +156,14 @@ __fat_open_path:
 		bne @l31
 		jsr __fat_open_rootdir
 		iny
-		lda	(krn_ptr1), y		;end of input?
+		lda	(s_ptr1), y		;end of input?
 		beq	@l_exit				;yes, so it was just the '/', exit with A=0
 @l31:
 		SetVector filename_buf, filenameptr	; filenameptr to filename_buf
 @l3:	;	parse input path fragments into filename_buf try to change dirs accordingly
 		ldx #0
 @l_parse_1:
-		lda (krn_ptr1), y
+		lda (s_ptr1), y
 		beq @l_openfile
 		cmp #' '					 ;TODO FIXME support file/dir name with spaces? it's beyond 8.3 file support
 		beq @l_openfile
@@ -201,12 +200,12 @@ __fat_clone_cd_td:
 __fat_clone_fd:
 		phx
 		lda #FD_Entry_Size
-		sta krn_tmp
+		sta s_tmp1
 @l1:	lda fd_area, y
 		sta fd_area, x
 		inx
 		iny
-		dec krn_tmp
+		dec s_tmp1
 		bne @l1
 		plx
 		rts
@@ -231,7 +230,7 @@ __fat_set_fd_attr_dirlba:
 		sta fd_area + F32_fd::DirEntryLBA + 0, x
 
 		lda dirptr+1
-		and #$01		; div 32, just bit 0 of high byte must be taken into account. dirptr must be $0200 aligned
+		and #$01		; div 32 (DIR_Entry_Size), just bit 0 of high byte must be taken into account. dirptr must be $0200 aligned
 		.assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
 		lsr
 		lda dirptr
@@ -391,7 +390,7 @@ __prepare_calc_lba_addr:
 		jsr	__fat_is_cln_zero
 		bne	@l_scl
 		.repeat 4,i
-			lda volumeID + VolumeID::EBPB + EBPB::RootClus + i
+			lda volumeID + VolumeID::EBPB_RootClus + i
 			sta lba_addr + i
 		.endrepeat
 		rts
@@ -404,7 +403,7 @@ __prepare_calc_lba_addr:
 
 
 ; 		calculate LBA address of first block from cluster number found in file descriptor entry. file descriptor index must be in x
-;		Note: lba_addr = cluster_begin_lba_m2 + (cluster_number * VolumeID::SecPerClus)
+;		Note: lba_addr = volumeID+VolumeID::lba_cluster_m2 + (cluster_number * VolumeID_SecPerClus)
 ;		in:
 ;			X - file descriptor index
 __calc_lba_addr:
@@ -414,7 +413,7 @@ __calc_lba_addr:
 		jsr __prepare_calc_lba_addr
 
 		;SecPerClus is a power of 2 value, therefore cluster << n, where n is the number of bit set in VolumeID::SecPerClus
-		ldy volumeID+VolumeID::BPB + BPB::SecPerClus
+		ldy volumeID+VolumeID::BPB_SecPerClus
 @lm:	tya
 		lsr
 		beq @lme	 ; until 1 sector/cluster
@@ -425,8 +424,8 @@ __calc_lba_addr:
 		rol lba_addr +3
 		bra @lm
 @lme:
-		; add cluster_begin_lba and lba_addr => TODO may be an optimization
-		add32 cluster_begin_lba, lba_addr, lba_addr
+		; add volumeID+VolumeID::lba_data and lba_addr => TODO may be an optimization
+		add32 volumeID+VolumeID::lba_data, lba_addr, lba_addr
 
 		clc
 		lda fd_area+F32_fd::offset+0,x			; load the current block counter
@@ -466,41 +465,10 @@ __calc_fat_lba_addr:
 		rol
 		sta lba_addr+3
 
-	; add fat_lba_begin and lba_addr
-	add16 fat_lba_begin, lba_addr, lba_addr
-	; TODO FIXME currently only 16 Bit LBA Fat-Sizes supported
-	stz lba_addr +2
-	stz lba_addr +3
+		; add volumeID+VolumeID::lba_fat and lba_addr
+		add32 volumeID+VolumeID::lba_fat, lba_addr, lba_addr
 
-	;debug32 "f_flba", lba_addr
-	rts
-
-		; in:
-		;	X - file descriptor
-		; out:
-		;	Z=1 (A=0) if no blocks to read (file has zero length)
-__calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if filesize LSB is not 0
-		lda fd_area + F32_fd::FileSize + 3,x
-		lsr
-		sta blocks + 2
-		lda fd_area + F32_fd::FileSize + 2,x
-		ror
-		sta blocks + 1
-		lda fd_area + F32_fd::FileSize + 1,x
-		ror
-		sta blocks + 0
-		bcs @l1
-		lda fd_area + F32_fd::FileSize + 0,x
-		beq @l2
-@l1:	inc blocks
-		bne @l2
-		inc blocks+1
-		bne @l2
-		inc blocks+2
-@l2:	lda blocks+2
-		ora blocks+1
-		ora blocks+0
-		debug16 "__calc_blocks", blocks
+		;debug32 "f_flba", lba_addr
 		rts
 
 ; extract next cluster number from the 512 fat block buffer
@@ -548,7 +516,7 @@ __fat_read_cluster_block_and_select:
 		bne @l_exit
 		jsr __fat_is_cln_zero					; is root clnr?
 		bne @l_clnr_fd
-		lda volumeID + VolumeID::EBPB + EBPB::RootClus+0
+		lda volumeID + VolumeID::EBPB_RootClus+0
 		bra @l_clnr_page
 @l_exit:
 		sec

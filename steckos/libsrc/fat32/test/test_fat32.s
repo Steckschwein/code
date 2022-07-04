@@ -8,7 +8,6 @@
 	.import fat_fread_byte
 
 .code
-
 ; -------------------
 		setup "__fat_init_fdarea / isOpen"	; test init fd area
     	jsr __fat_init_fdarea
@@ -69,8 +68,8 @@
 ; -------------------
 		setup "__calc_lba_addr 8s/cl +10 blocks"
 		ldx #(1*FD_Entry_Size)
-		set8 volumeID+VolumeID::BPB + BPB::SecPerClus, 8
-		set32 cluster_begin_lba, (LBA_BEGIN - ROOT_CL * 8)
+		set8 volumeID+VolumeID::BPB_SecPerClus, 8
+		set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * 8)
 		lda #10 ; 10 blocks offset
 		sta fd_area+F32_fd::offset+0,x
 
@@ -285,8 +284,8 @@
 setUp:
 	jsr __fat_init_fdarea
 	set_sec_per_cl SEC_PER_CL
-	set32 volumeID + VolumeID::EBPB + EBPB::RootClus, ROOT_CL
-	set32 fat_lba_begin, FAT_LBA		;fat lba to
+	set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
+	set32 volumeID + VolumeID::lba_fat, FAT_LBA		;fat lba to
 
 	;setup fd0 as root cluster
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0

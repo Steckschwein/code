@@ -56,7 +56,7 @@ __dmm_neq:
 		; build 11 byte fat file name (8.3) as used within dir entries
 		; in:
 		;	filenameptr pointer to input string to convert to fat file name mask
-		;	krn_ptr2 pointer to result of fat file name mask
+		;	s_ptr2 pointer to result of fat file name mask
 		; out:
 		;	C=1 if input was too large (>255 byte), C=0 otherwise
 		;	Z=1 if input was empty string, Z=0 otherwise
@@ -65,23 +65,23 @@ string_fat_mask:
 		bcs __tfm_exit					; C=1, overflow
 		beq __tfm_exit					; Z=1, empty input
 
-		stz krn_tmp
+		stz s_tmp1
 		ldy #0
 	__tfn_mask_input:
-		sty krn_tmp2
-		ldy krn_tmp
+		sty s_tmp2
+		ldy s_tmp1
 		lda (filenameptr), y
 		beq __tfn_mask_fill_blank
-		inc krn_tmp
+		inc s_tmp1
 		cmp #'.'
 		bne __tfn_mask_qm
-		ldy krn_tmp2
+		ldy s_tmp2
 		beq __tfn_mask_char_l2		; first position, we capture the "."
 		cpy #8							; reached from here from first fill (the name) ?
 		beq __tfn_mask_input
 		cpy #1							; 2nd position?
 		bne __tfn_mask_fill_blank	; no, fill section
-		cmp	(krn_ptr2)				; otherwise check whether we already captured a "." as first char
+		cmp	(s_ptr2)				; otherwise check whether we already captured a "." as first char
 		beq __tfn_mask_char_l2
 	__tfn_mask_fill_blank:
 		lda #' '
@@ -98,9 +98,9 @@ string_fat_mask:
 	__tfn_mask_fill:
 		clc
 	__tfn_mask_fill_l1:
-		ldy krn_tmp2
+		ldy s_tmp2
 	__tfn_mask_fill_l2:
-		sta (krn_ptr2), y
+		sta (s_ptr2), y
 		iny
 		bcs __tfn_mask_input			; C=1, then go on next char
 		cpy #8
@@ -116,9 +116,9 @@ string_fat_mask:
 	  bcs __tfn_mask_char_l1
 		and #$DF
 	__tfn_mask_char_l1:
-		ldy krn_tmp2
+		ldy s_tmp2
 	__tfn_mask_char_l2:
-		sta (krn_ptr2), y
+		sta (s_ptr2), y
 		iny
 		cpy #8+3
 		bne __tfn_mask_input
@@ -132,20 +132,20 @@ string_fat_mask:
 		;	Z=0 and A=length of string, Z=1 if string was trimmed to empty string (A=0)
 		;	C=1 on string overflow, means input >255 byte
 string_trim:
-			stz krn_tmp
-			stz krn_tmp2
+			stz s_tmp1
+			stz s_tmp2
 	l_1:
-			ldy	krn_tmp
-			inc	krn_tmp
+			ldy	s_tmp1
+			inc	s_tmp1
 			lda	(filenameptr),	y
 			beq	l_2
 			cmp	#' '+1
 			bcc	l_1					; skip all chars within 0..32
-	l_2:	ldy	krn_tmp2
+	l_2:	ldy	s_tmp2
 			sta	(filenameptr), y
 			cmp	#0					; was end of string?
 			beq	l_st_ex
-			inc	krn_tmp2
+			inc	s_tmp2
 			bne	l_1
 			sec
 			rts
@@ -157,9 +157,9 @@ string_trim:
 			; build 11 byte fat file name (8.3) as used within dir entries
 			; in:
 			;	filenameptr with input string to convert to fat file name mask
-			;	krn_ptr2 with pointer where the fat file name mask should be stored
+			;	s_ptr2 with pointer where the fat file name mask should be stored
 			; out:
-			;	Z=1 on success and krn_ptr2 with the pointer of the mask build upon input string
+			;	Z=1 on success and s_ptr2 with the pointer of the mask build upon input string
 			;  Z=0 on error, the input string contains invalid chars not allowed within a dos 8.3. file name
 string_fat_name:
 			ldy #0

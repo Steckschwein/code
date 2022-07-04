@@ -1,6 +1,6 @@
 CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
-OBJS=kernel.o rtc.o out.o exec.o util.o automount.o
+OBJS=kernel.o rtc.o out.o exec.o automount.o
 OBJS+=textui.o
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
@@ -18,12 +18,6 @@ DEFINES+=-DDISABLE_INTRO
 #DEBUG += -DDEBUG_KERNEL
 # debug rtc updates by kernel
 #DEBUG += -DDEBUG_RTC
-# debug util
-#DEBUG += -DDEBUG_UTIL
-# dump fat blocks on write
-#DEBUG += -DFAT_DUMP_FAT_WRITE
-# do not write anything (metadata)
-#DEBUG += -DFAT_NOWRITE
 #DEBUG += -DV9958
 #DEBUG += -DDEBUG_EXECV
 #DEBUG += -DDEBUG_SPI
@@ -69,4 +63,4 @@ test:
 	(cd ../libsrc ; make)
 
 emu: loader.prg
-	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img  
+	steckschwein-emu -scale 2 -rom ../bios/bios.bin -sdcard ../../steckos.img  

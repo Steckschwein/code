@@ -111,7 +111,7 @@ attrib:
 
 @save:
 		; set write pointer accordingly and
-		SetVector sd_blktarget, write_blkptr
+		SetVector block_data, write_blkptr
 
 		; just write back the block. lba_address still contains the right address
 		jsr krn_sd_write_block

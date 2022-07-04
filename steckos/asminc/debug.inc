@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 .ifndef __DEBUG_INC
-.define	__DEBUG_INC "__DEBUG_INC"
+	__DEBUG_INC=1
 
 .import _debugout, _debugout8, _debugout16, _debugout32
 .import _debugout32p

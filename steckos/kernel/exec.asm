@@ -49,20 +49,20 @@ execv:
 
 			jsr fat_fread_byte	; start address low
 			bcs @l_err_exit
-			sta krn_ptr2
-			sta krn_ptr3
+			sta s_ptr2
+			sta s_ptr3
 
 			jsr fat_fread_byte ; start address high
 			bcs @l_err_exit
-			sta krn_ptr2+1
-			sta krn_ptr3+1
+			sta s_ptr2+1
+			sta s_ptr3+1
 
 @l:			jsr fat_fread_byte
 			bcs @l_is_eof
-			sta (krn_ptr2)
-			inc krn_ptr2
+			sta (s_ptr2)
+			inc s_ptr2
 			bne @l
-			inc krn_ptr2+1
+			inc s_ptr2+1
 			bne @l
 @l_err_exit:
 			jsr fat_close			; close after read to free fd, regardless of error
@@ -78,4 +78,4 @@ execv:
 			; get return address from stack to prevent stack corruption
 			pla
 			pla
-			jmp (krn_ptr3)
+			jmp (s_ptr3)

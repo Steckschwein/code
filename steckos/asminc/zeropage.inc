@@ -24,7 +24,7 @@
 
 .globalzp ptr1, ptr2, ptr3, ptr4, ptr5, ptr6
 .globalzp tmp1, tmp2, tmp3, tmp4
-.globalzp tmp
+
 .globalzp spi_sr
 .globalzp vdp_ptr, vdp_tmp
 .globalzp __volatile_ptr
@@ -32,9 +32,8 @@
 
 .globalzp crs_ptr
 
-.globalzp krn_ptr1,krn_ptr2, krn_ptr3
-.globalzp krn_ptr2, krn_ptr3
-.globalzp krn_tmp,krn_tmp2,krn_tmp3
+.globalzp s_ptr1, s_ptr2, s_ptr3 ; static pointer (memory location wise)
+.globalzp s_tmp1,s_tmp2,s_tmp3 ; static temp (memory location wise)
 
 .globalzp filenameptr, dirptr
 .globalzp read_blkptr, write_blkptr
@@ -45,18 +44,15 @@
 .globalzp flags
 
 .global retvec
+.global user_isr
 
-; custom isr, aligned with v-blank, called by kernel on each frame
-user_isr	  = $028a
+lba_addr 		= $0280		; 4 bytes
+blocks			= $0284		; 3 bytes blocks to read, 3 bytes sufficient to address 4GB -> 4294967296 >> 9 = 8388608 ($800000) max blocks/file
+key         = $0287   ; 1 byte keyboard char
 
 ; TEXTUI
 crs_x	= $028c
 crs_y	= $028d
-
-key = $0287 ; 1 byte keyboard char
-
-lba_addr 		= $0280		; 4 bytes
-blocks			= $0284		; 3 bytes blocks to read, 3 bytes sufficient to address 4GB -> 4294967296 >> 9 = 8388608 ($800000) max blocks/file
 
 VIDEO_MODE_PAL      = 1<<7
 VIDEO_MODE_80_COLS  = 1<<6

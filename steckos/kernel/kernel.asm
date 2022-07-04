@@ -23,14 +23,11 @@
 	debug_enabled=1
 .endif
 
-.include "common.inc"
 .include "kernel.inc"
-.include "vdp.inc"
-.include "via.inc"
-.include "ym3812.inc"
-.include "keyboard.inc"
 
 .code
+
+.autoimport
 
 .import init_via1
 .import init_rtc
@@ -43,12 +40,13 @@
 
 .import sdcard_init
 
-.import fat_mount, fat_fopen, fat_close, fat_close_all, fat_read, fat_find_first, fat_find_next
+.import fat_mount, fat_fopen, fat_close, fat_close_all, fat_find_first, fat_find_next
 .import fat_mkdir, fat_chdir, fat_rmdir
 .import fat_unlink
 .import fat_write
 .import fat_fseek
 .import fat_get_root_and_pwd
+.import fat_read
 .import fat_fread_byte
 .import fat_write_byte
 
@@ -310,9 +308,6 @@ krn_close:						jmp fat_close
 .export krn_close_all
 krn_close_all:					jmp fat_close_all
 
-.export krn_read
-krn_read:						jmp fat_read
-
 .export krn_find_first
 krn_find_first:				jmp fat_find_first
 .export krn_find_next
@@ -394,6 +389,9 @@ krn_sd_write_block:	 	jmp sd_write_block
 
 .export krn_sd_read_block
 krn_sd_read_block:	 	jmp sd_read_block
+
+.export krn_read
+krn_read:						jmp fat_read
 
 .export krn_fread_byte
 krn_fread_byte:         jmp fat_fread_byte
