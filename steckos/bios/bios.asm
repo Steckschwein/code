@@ -37,7 +37,7 @@
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
-			.export __fat_write_dir_entry=fat_write_dir_entry
+.export __fat_write_dir_entry=fat_write_dir_entry
 fat_write_dir_entry:
 			rts
 

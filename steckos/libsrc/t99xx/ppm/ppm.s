@@ -75,18 +75,13 @@ _i:     .res 1
 		bne @io_error
 		stx fd
 
-		jsr ppm_parse_header					; .Y - return with offset to first data byte
-		bcs @ppm_error
-
-		jsr load_image ; timing critical
-		bcs @io_error
-
-		clc
-		bra @close_exit
-
-@ppm_error:
+		jsr ppm_parse_header
+		bcc @ppm_ok
         ldx #0
         bra @error
+@ppm_ok:
+		jsr load_image ; timing critical
+		bcc @close_exit
 @io_error:
         tax
         lda #0
@@ -240,7 +235,7 @@ parse_int:
 		cmp #'9'+1
 		bcs @l_exit
 
-		pha		;n*10 => n*2 + n*8
+		pha		;(n-1)*10 + n => (n-1)*2 + (n-1)*8 + n
 		lda _i
 		asl
 		sta _i
@@ -250,7 +245,7 @@ parse_int:
 		sta _i
 		pla
 		sec
-		sbc #'0'
+		sbc #'0' ; make numeric
 		clc
 		adc _i
 		sta _i
@@ -261,16 +256,6 @@ parse_int:
 		bcc @l_toi ; C=1 on error
 @l_exit:
 		lda _i
-		rts
-
-; C=0 if digit
-is_digit:
-		cmp #'0'
-		bcc @l_end
-		cmp #'9'+1
-		bcs @l_end
-		rts
-@l_end:	sec
 		rts
 
 parse_until_size:
@@ -291,12 +276,8 @@ parse_string:
 @le:	rts
 
 .bss
-_offs: 	.res 1
-_error:	.res 1
-_pages:	.res 1
 cols:   .res 1
 rows:   .res 1
 fd:     .res 1
 ppm_width:  .res 1
 ppm_height: .res 1
-;ppm_data:    .res BLOCK_BUFFER * $200

@@ -18,7 +18,7 @@
 .import ppm_width
 .import ppm_height
 
-debug_enabled=0
+;debug_enabled=1
 .export debug_chrout=asmunit_chrout
 
 .macro setup label
