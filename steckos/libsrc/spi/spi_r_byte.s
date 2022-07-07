@@ -38,8 +38,8 @@
 ;----------------------------------------------------------------------------------------------
 spi_r_byte:
 		lda via1portb	; Port laden
-		AND #$fe		  ; Takt ausschalten
-		TAX				 		; aufheben
+		AND #$fe		; Takt ausschalten
+		TAX				; aufheben
 		INC
 
 		STA via1portb ; Takt An 1

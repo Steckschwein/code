@@ -89,8 +89,8 @@ fat_fread_byte:
 		ora #>block_data
 		sta read_blkptr+1
 
-		and #$01				 ; mask MSB and test
-		ora read_blkptr+0		 ; whether seek_pos is at the begin of a block (multiple of $0200) ?
+		and #$01				 ; mask again
+		ora read_blkptr+0		 ; and test whether seek_pos is at the begin of a block (multiple of $0200) ?
 		bne @l_read
 		jsr __fat_read_block_open
 		bcs @l_exit

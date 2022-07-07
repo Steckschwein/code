@@ -41,7 +41,7 @@ dbg_yreg	= $02fb
 dbg_status	= $02fc
 dbg_bytes	= $02fd
 dbg_savept	= $02fe
-dbg_return	= $028e
+dbg_return	= $028d
 
 __dbg_ptr=$0
 

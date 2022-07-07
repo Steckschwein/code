@@ -75,7 +75,7 @@ SYS_VECTOR_IRQ = $fffe
 @1: ldy #<cnt ; ~6cl inner loop
 @2: dey
     nop
-	bne @2
+    bne @2
     dex
     bne @1
     dec a

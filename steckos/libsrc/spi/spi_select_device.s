@@ -57,7 +57,7 @@ spi_isbusy:
 		sta via1portb
 
 		plp
-		lda #EOK			;exit ok
+		lda #EOK		;exit ok
 		rts
 @l_exit:
 		pla

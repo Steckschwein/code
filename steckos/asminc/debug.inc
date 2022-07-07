@@ -30,7 +30,7 @@
 
 .macro dbg
    sei       ; disable interrupt to avoid further isr during debug
-   .byte $db ; break to debugger (emulator)
+   stp		 ; break to debugger (emulator)
 .endmacro
 
 .macro debugdirentry

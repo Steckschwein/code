@@ -47,7 +47,7 @@ fetchkey:
 		cmp #0
 		beq exit
 		;  TODO FIXME - tradeoff here is that we override a possible previously stored key anyway
-		sta key
+		sta key_char
 		rts
 
 ; get byte from keyboard buffer
@@ -55,9 +55,9 @@ fetchkey:
 ;	out:
 ;		C=1 key was pressed and A=<key code>, C=0 otherwise
 getkey:
-        lda key
+        lda key_char
         beq exit
-        stz key
+        stz key_char
         sec
         rts
 exit:

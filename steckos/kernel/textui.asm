@@ -132,36 +132,36 @@ textui_update_crs_ptr:				; updates the 16 bit pointer crs_ptr upon crs_x, crs_y
 	;use the crs_ptr as tmp variable
 	php
 	sei
-	stz crs_ptr+1
+	stz vdp_ptr+1
 	lda crs_y
 	asl							; y*2
 	asl							; y*4
 	asl							; y*8
-	sta crs_ptr					; save for add below
+	sta vdp_ptr					; save for add below
 
 	asl							; y*16
-	rol crs_ptr+1				; shift carry to address high byte
+	rol vdp_ptr+1				; shift carry to address high byte
 	asl							; y*32
-	rol crs_ptr+1			  	; shift carry to address high byte
+	rol vdp_ptr+1			  	; shift carry to address high byte
 
-	adc crs_ptr					; y*40 = y*8+y*32
+	adc vdp_ptr					; y*40 = y*8+y*32
 	bcc :+
-	inc crs_ptr+1				; overflow inc page count
+	inc vdp_ptr+1				; overflow inc page count
 	clc
 
 :	bit video_mode
 	bvc :+
 	asl 						; y*80 => y*40*2
-	rol crs_ptr+1               ; shift carry to address high byte
+	rol vdp_ptr+1               ; shift carry to address high byte
 
 :	adc crs_x					; add cursor x
 	sta a_vreg
-	sta crs_ptr
+	sta vdp_ptr
 
 	lda #>ADDRESS_TEXT_SCREEN
-	adc crs_ptr+1		  		; add carry (above) and page to address high byte
+	adc vdp_ptr+1		  		; add carry (above) and page to address high byte
 	sta a_vreg
-	sta crs_ptr+1
+	sta vdp_ptr+1
 	vdp_wait_l 3
 	lda a_vram
 	sta saved_char		  		; save char at new position
@@ -192,10 +192,10 @@ _vram_crs_ptr_write:
 	php
 	sei
 	pha
-	lda crs_ptr
+	lda vdp_ptr
 	sta a_vreg
 	vdp_wait_s 5
-	lda crs_ptr+1
+	lda vdp_ptr+1
 	ora #WRITE_ADDRESS
 	sta a_vreg
 	pla

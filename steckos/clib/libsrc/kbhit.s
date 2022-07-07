@@ -12,6 +12,6 @@
 .proc	_kbhit
 
         ldx #0				  ; High byte of return is always zero
-        lda key
+        lda key_char
         rts
 .endproc

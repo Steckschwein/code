@@ -30,10 +30,10 @@
 
 .zeropage
 .importzp spi_sr
-.code
+
 .export spi_rw_byte
 
-
+.code
 ;----------------------------------------------------------------------------------------------
 ; Transmit byte VIA SPI
 ; Byte to transmit in A, received byte in A at exit
@@ -45,13 +45,12 @@ spi_rw_byte:
 		ldx #$08
 
 		lda via1portb	; Port laden
-		and #$fe			; SPICLK loeschen
+		and #$fe		; SPICLK loeschen
 
 		asl				; Nach links schieben, damit das bit nachher an der richtigen stelle steht
 		tay		 		; bunkern
 
-@l:
-		rol spi_sr
+@l:		rol spi_sr
 		tya				; portinhalt
 		ror				; datenbit reinschieben
 

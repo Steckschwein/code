@@ -101,7 +101,7 @@ kern_init:
 
 		jsr uart_init
 
-		stz key
+		stz key_char
 		stz flags
 
 	cli

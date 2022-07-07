@@ -110,7 +110,6 @@ debug_enabled=1
 
 
 		brk
-
 ; -------------------
 		setup "fat_write_byte O_CREAT 1 cluster";
 		ldy #O_CREAT
