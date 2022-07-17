@@ -77,6 +77,17 @@
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 8 + test_start_cluster * 8 + 10, lba_addr ; expect $68f0 + (clnr * sec/cl) => $67f0 + $16a *8 + 10 = $734a
 
+
+; -------------------
+		setup "fat_fopen O_RDONLY ENOENT"
+
+		ldy #O_RDONLY
+		lda #<test_file_name_enoent
+		ldx #>test_file_name_enoent
+		jsr fat_fopen
+		assertC 1
+		assertA ENOENT
+
 ; -------------------
 		setup "fat_fopen O_RDONLY"
 
@@ -99,20 +110,49 @@
 		jsr fat_fopen
 		assertA EOK
 		assertCarry 0
-		assertX FD_Entry_Size*2
+		assertX 2*FD_Entry_Size
 		assertDirEntry block_data+3*DIR_Entry_Size ; offset see below
 			fat32_dir_entry_file "FILE02  ", "TXT", $0a, 12
 
 ; -------------------
 		setup "fat_fread_byte with error"
 		ldx #(2*FD_Entry_Size) ; use fd(2) - i/o error
-		SetVector data_read, read_blkptr
-		ldy #2
 		jsr fat_fread_byte
 		assertA EINVAL
 		assertCarry 1; expect error
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
-		assert16 data_read, read_blkptr
+
+; -------------------
+		setup "fat_fread_byte empty file"
+		;setup fd2 with test cluster, but 0 filesize
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
+		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
+		set8 fd_area+(2*FD_Entry_Size)+F32_fd::offset, 0
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos, 0
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0
+			
+		ldx #(2*FD_Entry_Size) ; use fd(3) - 0 byte file
+		jsr fat_fread_byte
+		assertCarry 1; expect "error"
+		assertA EOK ; EOF
+		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos
+
+; -------------------
+		setup "fat_fread_byte touched file"
+		;setup fd with 0 (root cluster)
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, 0
+		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
+		set8 fd_area+(2*FD_Entry_Size)+F32_fd::offset, 0
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos, 0
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0
+
+		ldx #(2*FD_Entry_Size) ; use fd(4) - touched file, no cluster reserved
+		jsr fat_fread_byte
+		assertCarry 1; expect "error"
+		assertA EOK ; EOF
+		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos
 
 ; -------------------
 		setup "fat_fread_byte 1 byte 4s/cl"
@@ -285,14 +325,15 @@ setUp:
 	jsr __fat_init_fdarea
 	set_sec_per_cl SEC_PER_CL
 	set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
-	set32 volumeID + VolumeID::lba_fat, FAT_LBA		;fat lba to
+	set32 volumeID + VolumeID::lba_fat, FAT_LBA		;fat lba
 
 	;setup fd0 as root cluster
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
+	set8 fd_area+(0*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Dir
 	set8 fd_area+(0*FD_Entry_Size)+F32_fd::offset, 0
-
 	;setup fd1 with test cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
+	set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::offset, 0
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, $1000
@@ -347,11 +388,12 @@ mock_read_block:
 .data
 test_file_name_1: .asciiz "file01.dat"
 test_file_name_2: .asciiz "file02.txt"
+test_file_name_enoent:	.asciiz "enoent.tst"
 
 block_root_cl:
-	fat32_dir_entry_dir 	"DIR01   ", "   ", 8
-	fat32_dir_entry_dir 	"DIR02   ", "   ", 9
-	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0		; 0 - no cluster reserved, 0 - size
+	fat32_dir_entry_dir  "DIR01   ", "   ", 8
+	fat32_dir_entry_dir  "DIR02   ", "   ", 9
+	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0 ; 0 - no cluster reserved, 0 - size
 	fat32_dir_entry_file "FILE02  ", "TXT", $a, 12	; $a - 1st cluster nr of file, 12 - byte file size
 
 test_block_data:
@@ -362,5 +404,6 @@ test_block_data:
 test_block_data_4sec_cl:
 	.byte "4s/cl"
 	.res 252,0
+
 .bss
 data_read: .res 8*sd_blocksize, 0

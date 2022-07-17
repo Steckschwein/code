@@ -61,16 +61,15 @@ fat_write_byte:
 
 		jsr __fat_is_cln_zero			; cluster already reserved?
 		bne :+
-@l_reserve_cl:		
-		jsr __fat_reserve_cluster		; reserve cluster
+		jsr __fat_reserve_cluster		; reserve first cluster
 		bcs @l_exit_restore
 		jsr __fat_update_direntry
 		bne @l_exit_restore
 
 :		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB_SecPerClus  	; last block of cluster reached?
-		bne @l_read										; no, go on reading...
-		jsr __fat_next_cln			; select next cluster within chain
+		bne @l_read								; no, go on reading...
+		jsr __fat_next_cln			; select next cluster within chain - if the file is not new, e.g. update file write
 		bcc @l_read
 		cmp #EOK 					; C=1 and A=<EOK> EOC reached, new cluster must be reserved
 		bne @l_read					; otherwise go on read
@@ -85,27 +84,26 @@ fat_write_byte:
 @l_exit:
 		rts
 @l_write:
+		lda fd_area+F32_fd::seek_pos+0,x
+		sta write_blkptr+0
 		lda fd_area+F32_fd::seek_pos+1,x
 		and #$01
 		ora #>block_data
 		sta write_blkptr+1
-		lda fd_area+F32_fd::seek_pos+0, x
-		sta write_blkptr+0
-
 		pla									; get back byte to write
 		sta (write_blkptr)
-		debug16 ">>> fw_bt", write_blkptr
+		debug16 "fw_bt >>>", write_blkptr
 
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
 :		_inc32_x fd_area+F32_fd::seek_pos
-
+		
 		lda fd_area+F32_fd::seek_pos+1,x	; seek pos points to new block?
 		and #$01
 		ora fd_area+F32_fd::seek_pos+0,x	; multiple of $200 ?
-		bne @l_write_data
+		bne @l_write_block
 		inc fd_area+F32_fd::offset+0,x		; ... yes, inc block counter for next write
-@l_write_data:
+@l_write_block:
 		jsr __fat_write_block_data			; write block
 		bcs @l_exit
 		jmp __fat_update_direntry			; finally update dir entry
@@ -275,7 +273,7 @@ fat_rmdir:
 fat_mkdir:
 		jsr __fat_opendir_cwd
 		beq @l_exit_eexist							; open success, dir exists already
-		cmp #ENOENT									; we expect 'no such file or directory' error, otherwise a file with same name already exists
+		cmp #ENOENT									; we expect 'no such file or directory' error, otherwise a file/dir with same name already exists
 		bne @l_exit_err								; exit on other error
 
 		copypointer dirptr, s_ptr2
@@ -380,15 +378,13 @@ __fat_write_dir_entry:
 		jsr __fat_write_block_data				; write the current block with the updated dir entry first
 		bcs @l_exit
 
-		ldy #$7f								; safely, fill the new dir block with 0 to mark eod
-		lda #0									; mark end of dir 
+		ldy #0									; safely, fill the new dir block with 0 to mark end-of-directory
+		tya 									
 @l_erase:
 		sta block_data+$000, y
-		sta block_data+$080, y
 		sta block_data+$100, y
-		sta block_data+$180, y
-		dey
-		bpl @l_erase
+		iny
+		bne @l_erase
 		;TODO FIXME test end of cluster, if so reserve a new one, update cluster chain for directory ;)
 		debug32 "eod_lba", lba_addr
 		debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR

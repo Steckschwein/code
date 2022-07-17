@@ -38,7 +38,7 @@
 	set32 volumeID + VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * sec_per_cl)
 .endmacro
 
-.macro fd_entry_file clnr, dir_entry, dir_lba, attr, filesize, offset
+.macro fd_entry_file clnr, dir_entry, dir_lba, attr, filesize, offset, flags
 	.dword clnr ; CurrentCluster
 	.dword filesize ; FileSize
 	.byte attr ; Attr
@@ -46,6 +46,7 @@
 	.byte dir_entry ; DirEntryPos .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
 	.byte offset ; offset - 7Bit block number within the CurrentCluster
 	.dword filesize ; seek_pos - for write tests, we set seek pos to expected filesize 
+	.byte flags
 .endmacro
 
 .macro assertFdEntry address

@@ -211,12 +211,12 @@ __fat_clone_fd:
 		rts
 
 
-		; update the dir entry position and dir lba_addr of the given file descriptor
-		; in:
-		;	.A - file attr
-		;	.X - file descriptor
-		; out:
-		;	updated file descriptor, DirEntryLBA and DirEntryPos setup accordingly
+; update the dir entry position and dir lba_addr of the given file descriptor
+; in:
+;	.A - file attr
+;	.X - file descriptor
+; out:
+;	updated file descriptor, DirEntryLBA and DirEntryPos setup accordingly
 __fat_set_fd_attr_dirlba:
 		sta fd_area + F32_fd::Attr, x
 
@@ -331,11 +331,11 @@ __fat_init_fd:
 		stz fd_area+F32_fd::FileSize+2,x
 		stz fd_area+F32_fd::FileSize+1,x
 		stz fd_area+F32_fd::FileSize+0,x
-		stz fd_area+F32_fd::offset+0,x		; init block offset/block counter
 		stz fd_area+F32_fd::seek_pos+3,x
 		stz fd_area+F32_fd::seek_pos+2,x
 		stz fd_area+F32_fd::seek_pos+1,x
 		stz fd_area+F32_fd::seek_pos+0,x
+		stz fd_area+F32_fd::offset+0,x		; init block offset/block counter
 		lda #EOK
 		rts
 
@@ -408,7 +408,6 @@ __prepare_calc_lba_addr:
 ;			X - file descriptor index
 __calc_lba_addr:
 		pha
-;		phy
 
 		jsr __prepare_calc_lba_addr
 
@@ -429,7 +428,7 @@ __calc_lba_addr:
 
 		clc
 		lda fd_area+F32_fd::offset+0,x			; load the current block counter
-		adc lba_addr+0									; add to lba_addr
+		adc lba_addr+0							; add to lba_addr
 		sta lba_addr+0
 		bcc :+
 		.repeat 3, i
@@ -438,8 +437,7 @@ __calc_lba_addr:
 			sta lba_addr+1+i
 		.endrepeat
 :
-		;debug32 "f_lba", lba_addr
-;		ply
+;		debug32 "f_lba", lba_addr
 		pla
 		rts
 
@@ -475,6 +473,7 @@ __calc_fat_lba_addr:
 ; unsigned int offs = (clnr << 2 & (BLOCK_SIZE-1));//offset within 512 byte block, cluster nr * 4 (32 Bit) and Bit 8-0 gives the offset
 ; in:
 ;	X - file descriptor
+;     - flags indicate
 ; out:
 ;	C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
 __fat_next_cln:
@@ -517,7 +516,7 @@ __fat_read_cluster_block_and_select:
 		jsr __fat_is_cln_zero					; is root clnr?
 		bne @l_clnr_fd
 		lda volumeID + VolumeID::EBPB_RootClus+0
-		bra @l_clnr_page
+		bra @l_isroot
 @l_exit:
 		sec
 		debug16 "f_rcbs", read_blkptr
@@ -531,6 +530,7 @@ __fat_read_cluster_block_and_select:
 @l_clnr:
 		asl										; block offset = clnr*4
 		asl
+@l_isroot:
 		tay
 ; check whether the EOC (end of cluster chain) cluster number is reached
 ; out:
@@ -556,7 +556,7 @@ __fat_is_cluster_eoc:
 		clc
 @l_eoc:
 		ply
-		lda #EOK ; and carry denotes EOC state
+		lda #EOK ; carry denotes EOC state
 		rts
 
 __inc_lba_address:

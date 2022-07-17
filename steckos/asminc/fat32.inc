@@ -186,7 +186,7 @@ DIR_Entry_Deleted            = $e5
    DirEntryPos       .byte    ; block offset within the block (n * DIR_Entry_Size)
    offset            .byte    ; 7Bit block number of the CurrentCluster (SecPerClus)
    seek_pos          .dword   ; seek position within the opened file
-;   flags             .byte    ; file open flags
+   flags             .byte    ; file open flags
 .endstruct
 
 FD_Entry_Size         = .sizeof(F32_fd)
@@ -204,18 +204,13 @@ FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
 ; memory locations for fat32 driver
 volumeID              = $0308 ; address of VolumeID
-;cluster_begin_lba     = volumeID + .sizeof(VolumeID) ; begin of cluster area (4 byte)
-;fat_lba_begin         = cluster_begin_lba + 4; (2 byte) begin of fat area - TODO FIXME we assume 16bit are sufficient since fat is placed at the beginning of the device
-;fat2_lba_begin        = fat_lba_begin + 2   ; (2 byte) end of first fat and begin of 2nd fat (mirror) area - TODO FIXME we assume 16bit ...
-;fat_fsinfo_lba        = fat2_lba_begin + 2; (4 byte)
-;fat_tmp_dw            = fat_fsinfo_lba + 4; (4 byte) internallly used tmp
 
 filename_buf          = volumeID + .sizeof(VolumeID) ; (13 byte, 8.3 + \0) file name buffer
 fat_dirname_mask      = filename_buf + 13; (11 byte, fat32 name and ext)
 fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector
-.assert fat_vec_matcher+2 < fd_area, error, "fat metadata overflow!"
+.assert fat_vec_matcher+2 <= fd_area, error, "fat metadata overflow!"
 
-fd_area               = $0380 ; File descriptor area until $0400
+fd_area               = fat_vec_matcher+2 ; File descriptor area until $0400
 fd_area_end           = $0400
 
 sd_blocksize          = $200  ; block size
@@ -236,11 +231,11 @@ block_fat             = BUFFER_2 ; $0600-$07ff
 .macro _is_file_dir
    pha
    lda fd_area+F32_fd::Attr, x
-   bit #DIR_Attr_Mask_Dir		; is directory?
-   beq :+
+   and #DIR_Attr_Mask_Dir		; is directory?
+   cmp #DIR_Attr_Mask_Dir
    pla
+   bcc :+
    lda #EISDIR
-   sec
    rts
-:  pla
+:  
 .endmacro

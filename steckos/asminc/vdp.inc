@@ -163,22 +163,22 @@ SPRITE_OFF=$d0	 ; in 192 line mode +8 ($d8) in 212 line mode
 
 SPRITE_EC=1<<7  ;early clock bit
 
-Transparent	   =$00
-Black	         =$01	;0	0	0		"black"
-Medium_Green	=$02 ;35	203	50		"23
-Light_Green	   =$03	;96	221	108
-Dark_Blue      =$04 ;84	78	255		"544EFF"
-Light_Blue     =$05 ;125 112 255	"7D70FF"
-Dark_Red       =$06 ;210 84	66		"D25442"
-Cyan           =$07 ;69 232	255		(Aqua Blue)
-Medium_Red	   =$08 ;250 89	72 		"FA5948"
+Transparent		=$00
+Black			=$01 ;0	0	0		"black"
+Medium_Green	=$02 ;35 203	50		"23
+Light_Green		=$03 ;96 221 108	"#60DD6C"
+Dark_Blue		=$04 ;84	78	255		"544EFF"
+Light_Blue		=$05 ;125 112 255	"7D70FF"
+Dark_Red		=$06 ;210 84	66		"D25442"
+Cyan			=$07 ;69 232	255		(Aqua Blue)
+Medium_Red		=$08 ;250 89	72 		"FA5948"
 Light_Red		=$09 ;255 124 108	"FF7C6C"
-Dark_Yellow    =$0a ;211 198 60		"D3C63C"
-Light_Yellow   =$0b ;229 210 109	"E5D26D"
-Dark_Green     =$0c ;35 178	44
-Magenta		   =$0d ;200 90	198 	"C85AC6" (Purple)
-Gray           =$0e ;204 204 204	"CCCCCC"
-White          =$0f ;255 255 255	"white"
+Dark_Yellow    	=$0a ;211 198 60		"D3C63C"
+Light_Yellow   	=$0b ;229 210 109	"E5D26D"
+Dark_Green		=$0c ;35 178	44
+Magenta			=$0d ;200 90	198 	"C85AC6" (Purple)
+Gray			=$0e ;204 204 204	"CCCCCC"
+White			=$0f ;255 255 255	"white"
 
 WRITE_ADDRESS=$40
 

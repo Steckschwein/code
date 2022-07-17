@@ -43,6 +43,11 @@
 ; Mount FAT32 on Partition 0
 ;---------------------------------------------------------------------
 fat_mount:
+		ldx #.sizeof(VolumeID)
+:		stz volumeID,x
+		dex
+		bpl :-
+
 		; set lba_addr to $00000000 since we want to read the bootsector
 		stz lba_addr + 0
 		stz lba_addr + 1
@@ -94,11 +99,7 @@ fat_mount:
 
 __calc_fat_fsinfo_lba:
 		; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
-		add16 lba_addr, block_data + F32_VolumeID::EBPB + EBPB::FSInfoSec, volumeID+VolumeID::lba_fsinfo
-		lda lba_addr+2
-		adc #0				  ; + C
-		sta volumeID+VolumeID::lba_fsinfo+2
-		stz volumeID+VolumeID::lba_fsinfo+3 ; always 0
+		add16to32 lba_addr, block_data + F32_VolumeID::EBPB + EBPB::FSInfoSec, volumeID + VolumeID::lba_fsinfo
 
 __calc_fat_lba_begin:
 		; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
@@ -109,21 +110,21 @@ __calc_fat_lba_begin:
 		clc
 		lda lba_addr + 0
 		adc block_data + F32_VolumeID::BPB + BPB::RsvdSecCnt + 0
-		sta volumeID+VolumeID::lba_data + 0
-		sta volumeID+VolumeID::lba_fat + 0
+		sta volumeID + VolumeID::lba_data + 0
+		sta volumeID + VolumeID::lba_fat + 0
 		lda lba_addr + 1
 		adc block_data + F32_VolumeID::BPB + BPB::RsvdSecCnt + 1
-		sta volumeID+VolumeID::lba_data + 1
-		sta volumeID+VolumeID::lba_fat + 1
+		sta volumeID + VolumeID::lba_data + 1
+		sta volumeID + VolumeID::lba_fat + 1
 		lda lba_addr + 2
 		adc #0
-		sta volumeID+VolumeID::lba_data + 2
-		sta volumeID+VolumeID::lba_fat + 2
+		sta volumeID + VolumeID::lba_data + 2
+		sta volumeID + VolumeID::lba_fat + 2
 		; adc #0 above will never overflow
-		stz volumeID+VolumeID::lba_data + 3
-		stz volumeID+VolumeID::lba_fat + 3
+		stz volumeID + VolumeID::lba_data + 3
+		stz volumeID + VolumeID::lba_fat + 3
 
-		add32 block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID+VolumeID::lba_fat, volumeID+VolumeID::lba_fat2
+		add32 block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::lba_fat, volumeID + VolumeID::lba_fat2
 		; fall through
 
 __calc_cluster_begin_lba:
@@ -131,7 +132,7 @@ __calc_cluster_begin_lba:
 		; cluster_begin_lba = fat_lba_begin + (sectors_per_fat * VolumeID::NumFATs (2))
 		ldy block_data + F32_VolumeID::BPB + BPB::NumFATs
 @l7:	clc
-		add32 volumeID+VolumeID::lba_data, block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID+VolumeID::lba_data ; add sectors per fat
+		add32 volumeID + VolumeID::lba_data, block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::lba_data ; add sectors per fat
 		dey
 		bne @l7
 
@@ -146,19 +147,19 @@ __calc_cluster_begin_lba:
 		sta lba_addr+0	  	;	used as tmp
 		stz lba_addr +1	  	;	safe carry
 		rol lba_addr +1
-		sec					;	subtract from volumeID+VolumeID::lba_data
-		lda volumeID+VolumeID::lba_data+0
+		sec					;	subtract from volumeID + VolumeID::lba_data
+		lda volumeID + VolumeID::lba_data+0
 		sbc lba_addr+0
-		sta volumeID+VolumeID::lba_data+0
-		lda volumeID+VolumeID::lba_data +1
+		sta volumeID + VolumeID::lba_data+0
+		lda volumeID + VolumeID::lba_data +1
 		sbc lba_addr +1
-		sta volumeID+VolumeID::lba_data +1
-		lda volumeID+VolumeID::lba_data +2
+		sta volumeID + VolumeID::lba_data +1
+		lda volumeID + VolumeID::lba_data +2
 		sbc #0
-		sta volumeID+VolumeID::lba_data +2
-		lda volumeID+VolumeID::lba_data +3
+		sta volumeID + VolumeID::lba_data +2
+		lda volumeID + VolumeID::lba_data +3
 		sbc #0
-		sta volumeID+VolumeID::lba_data +3
+		sta volumeID + VolumeID::lba_data +3
 
 		debug8 "sc/cl", volumeID + VolumeID::BPB_SecPerClus
 		debug32 "r_cl", volumeID + VolumeID::EBPB_RootClus
@@ -166,8 +167,8 @@ __calc_cluster_begin_lba:
 		debug32 "s_lba", lba_addr
 		debug16 "r_sc", block_data + F32_VolumeID::BPB + BPB::RsvdSecCnt
 		debug16 "fi_sc", block_data + F32_VolumeID::EBPB + EBPB::FSInfoSec
-		debug32 "cl_lba", volumeID+VolumeID::lba_data
-		debug32 "fi_lba", volumeID+VolumeID::lba_fsinfo
+		debug32 "cl_lba", volumeID + VolumeID::lba_data
+		debug32 "fi_lba", volumeID + VolumeID::lba_fsinfo
 		debug16 "f_lba", volumeID + VolumeID::lba_fat
 		debug16 "f2_lba", volumeID + VolumeID::lba_fat2
 		debug16 "fbuf", filename_buf

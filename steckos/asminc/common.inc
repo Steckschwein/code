@@ -29,20 +29,20 @@
 			sta addr+1
 .endmacro
 
-.macro add16to32 a32, a16
+.macro add16to32 _a32, _a16, _res
 		clc
-		lda a32+0
-		adc a16+0
-		sta a32+0
-		lda a32+1
-		adc a16+1
-		sta a32+1
-		lda a32+2
+		lda _a32+0
+		adc _a16+0
+		sta _res+0
+		lda _a32+1
+		adc _a16+1
+		sta _res+1
+		lda _a32+2
 		adc #0
-		sta a32+2
-		lda a32+3
+		sta _res+2
+		lda _a32+3
 		adc #0
-		sta a32+3
+		sta _res+3
 .endmacro
 
 .macro nops _n
@@ -145,7 +145,7 @@
 @l0:	dec val+0
 .endmacro
 
-; Z=1 if equal, Z=0 otherwise
+; Z=1 if equal, Z=0 otherwise and branch to given label
 ;
 .macro _cmp32_x _s, _t, _lbl
    lda _s+3, x
