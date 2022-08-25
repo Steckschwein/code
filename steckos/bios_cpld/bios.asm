@@ -2,7 +2,7 @@
 
 .code
 
-uart_cpb = $0250
+uart_cpb = $0200
 
 do_reset:
 			; disable interrupt
