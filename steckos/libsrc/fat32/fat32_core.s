@@ -52,7 +52,6 @@
 .export __fat_is_cln_zero
 .export __fat_next_cln
 .export __fat_open_path
-.export __fat_read_block
 .export __fat_read_block_data
 .export __fat_read_block_fat
 .export __fat_set_fd_attr_dirlba
@@ -75,13 +74,12 @@ __fat_find_first_mask:
 ; out:
 ;  C=1 if dir entry was found with dirptr pointing to that entry, C=0 otherwise
 __fat_find_first:
-		SetVector block_data, read_blkptr
 		lda volumeID+VolumeID::BPB_SecPerClus
 		sta blocks
 		jsr __calc_lba_addr
 ff_l3:
 		SetVector block_data, dirptr			; dirptr to begin of target buffer
-		jsr __fat_read_block
+		jsr __fat_read_block_data
 		bne ff_exit
 ff_l4:
 		lda (dirptr)
@@ -93,12 +91,12 @@ ff_l4:
 		beq __fat_find_next
 
 		jsr __fat_matcher			  ; call matcher strategy
-		lda #EOK						  ; Z=1 (success) and no error
+		lda #EOK					  ; Z=1 (success) and no error
 		bcs ff_end					  ; if C=1 we had a match
 ; in:
 ;	X - directory fd index into fd_area
 ; out:
-;	Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	C=1 on success (A=0), C=0 and A=error code otherwise
 __fat_find_next:
 		lda dirptr
 		clc
@@ -118,10 +116,10 @@ __fat_find_next:
 @ff_eoc:
 		ldx #FD_INDEX_TEMP_DIR				; TODO FIXME dont know if this is a good idea... FD_INDEX_TEMP_DIR was setup above and following the cluster chain is done with the FD_INDEX_TEMP_DIR to not clobber the FD_INDEX_CURRENT_DIR
 		jsr __fat_next_cln		  			; select next cluster
-		bcs ff_exit								; C=1 on error, exit
-		bra __fat_find_first		  			; C=0, go on with next cluster
+		bcc __fat_find_first ; ff_exit		; C=0 go on with next cluster
+		; C=1 on error or EOC, exit
 ff_exit:
-		clc										; we are at the end, nothing found C=0 and return
+		clc									; we are at the end, nothing found C=0 and return
 		debug "ffex"
 ff_end:
 		rts
@@ -371,14 +369,18 @@ __fat_read_block_data:
 		lda #>block_data
 :		sta read_blkptr+1
 		stz read_blkptr+0
-__fat_read_block:
+;__fat_read_block:
 		phx
 		debug32 "fat_rb_lba", lba_addr
 		debug16 "fat_rb_ptr", read_blkptr
 		jsr read_block
 		dec read_blkptr+1		; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
 		plx
-		cmp #0
+		cmp #0					; TODO FIXME inverse api result C=0 on error, C=1 on success to avoid waste of cylce on result dispatching here and "everywhere"
+		bne :+
+		clc
+		rts
+:		sec
 		rts
 
 		; in:

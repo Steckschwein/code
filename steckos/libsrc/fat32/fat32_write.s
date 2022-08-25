@@ -45,8 +45,6 @@
 
 .autoimport
 
-.importzp __volatile_ptr
-
 ; in:
 ;	A - byte to write
 ;	X - offset into fd_area
@@ -54,60 +52,23 @@
 ;	C=0 on success, C=1 on error and A=<error code>
 fat_write_byte:
 
-		_is_file_open	; otherwise rts C=1 and A=#EINVAL
-		_is_file_dir  	; otherwise rts C=1 and A=#EISDIR
+		sta __volatile_tmp
 
-		pha
+		jsr __fat_prepare_access
 
-		jsr __fat_is_cln_zero			; cluster already reserved?
-		bne :+
-		jsr __fat_reserve_cluster		; reserve first cluster
-		bcs @l_exit_restore
-		jsr __fat_update_direntry
-		bne @l_exit_restore
-
-:		lda fd_area+F32_fd::offset+0,x
-		cmp volumeID+VolumeID::BPB_SecPerClus  	; last block of cluster reached?
-		bne @l_read								; no, go on reading...
-		jsr __fat_next_cln			; select next cluster within chain - if the file is not new, e.g. update file write
-		bcc @l_read
-		cmp #EOK 					; C=1 and A=<EOK> EOC reached, new cluster must be reserved
-		bne @l_read					; otherwise go on read
-		jsr __fat_reserve_cluster	; reserve cluster
-		bcs @l_exit_restore
-@l_read:
-		jsr __calc_lba_addr
-		jsr __fat_read_block_data
-		beq @l_write
-@l_exit_restore:
-		ply						
-@l_exit:
-		rts
-@l_write:
-		lda fd_area+F32_fd::seek_pos+0,x
-		sta write_blkptr+0
-		lda fd_area+F32_fd::seek_pos+1,x
-		and #$01
-		ora #>block_data
-		sta write_blkptr+1
-		pla									; get back byte to write
+		lda __volatile_tmp					; get back byte to write
 		sta (write_blkptr)
 		debug16 "fw_bt >>>", write_blkptr
 
-		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
-		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
-:		_inc32_x fd_area+F32_fd::seek_pos
-		
-		lda fd_area+F32_fd::seek_pos+1,x	; seek pos points to new block?
-		and #$01
-		ora fd_area+F32_fd::seek_pos+0,x	; multiple of $200 ?
-		bne @l_write_block
-		inc fd_area+F32_fd::offset+0,x		; ... yes, inc block counter for next write
-@l_write_block:
+;		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
+;		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
+;:		_inc32_x fd_area+F32_fd::seek_pos
+l_write_block:
 		jsr __fat_write_block_data			; write block
 		bcs @l_exit
 		jmp __fat_update_direntry			; finally update dir entry
-
+@l_exit:
+		rts
 
 __fat_update_direntry:
 		jsr __fat_read_direntry							; read dir entry, dirptr is set accordingly

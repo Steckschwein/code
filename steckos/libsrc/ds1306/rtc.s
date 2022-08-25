@@ -35,7 +35,7 @@
 
 .importzp __volatile_ptr
 
-.export rtc_systime
+;.export rtc_systime
 .export rtc_systime_update
 
 .code

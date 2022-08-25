@@ -37,8 +37,6 @@
 ;lib internal api
 .autoimport
 
-.importzp __volatile_ptr
-
 .export fat_chdir
 .export __fat_opendir
 .export __fat_opendir_cwd

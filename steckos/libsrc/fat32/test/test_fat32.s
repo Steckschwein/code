@@ -129,9 +129,9 @@
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::offset, 0
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos, 0
-		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0 ; empty file
 			
-		ldx #(2*FD_Entry_Size) ; use fd(3) - 0 byte file
+		ldx #(2*FD_Entry_Size) ; 0 byte file
 		jsr fat_fread_byte
 		assertCarry 1; expect "error"
 		assertA EOK ; EOF
@@ -140,14 +140,13 @@
 
 ; -------------------
 		setup "fat_fread_byte touched file"
-		;setup fd with 0 (root cluster)
-		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, 0
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, 0 ; touched file, no cluster reserved
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::offset, 0
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos, 0
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0
 
-		ldx #(2*FD_Entry_Size) ; use fd(4) - touched file, no cluster reserved
+		ldx #(2*FD_Entry_Size)
 		jsr fat_fread_byte
 		assertCarry 1; expect "error"
 		assertA EOK ; EOF

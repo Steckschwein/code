@@ -130,9 +130,8 @@ debug_enabled=1
 				fat32_dir_entry_file "TST_02CL", "TST", 0, 0	; no cluster reserved yet
 		assertFdEntry fd_area + (FD_Entry_Size*2)
 				fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0, O_RDWR
-		
-		brk
-		
+				
+		;brk
 		lda #'F'
 ;		jsr fat_fread_byte
 		jsr fat_write_byte
