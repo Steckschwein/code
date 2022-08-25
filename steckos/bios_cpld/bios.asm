@@ -14,11 +14,10 @@ do_reset:
 			ldx #$ff
 			txs
 
-		lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
-		sta uart1+uart_fcr
-
-		stz uart1+uart_ier	; polled mode (so far)
-		stz uart1+uart_mcr	; reset DTR, RTS
+;		lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
+;		sta uart1+uart_fcr
+;		stz uart1+uart_ier	; polled mode (so far)
+;		stz uart1+uart_mcr	; reset DTR, RTS
 
 		lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
 		sta uart_cpb+uart_fcr
@@ -36,13 +35,13 @@ do_reset:
 		lda #'A'
 		sta uart_cpb+uart_rxtx
 
-@l1:
-		lda #lsr_THRE
-		bit uart1+uart_lsr
-		beq @l1
-
-		lda #'X'
-		sta uart1+uart_rxtx
+;@l1:
+;		lda #lsr_THRE
+;		bit uart1+uart_lsr
+;		beq @l1
+;
+;		lda #'X'
+;		sta uart1+uart_rxtx
 
 		bra	@loop
 
