@@ -46,3 +46,6 @@ clean:
 
 %: %.prg
 	../../xmodem.sh $<
+
+%.emu: %.prg
+	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -upload $<

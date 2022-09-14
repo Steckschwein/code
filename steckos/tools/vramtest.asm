@@ -28,13 +28,14 @@
 .include "appstart.inc"
 
 .import hexout
+.import hexout_s
 .importzp ptr2, ptr3
 
 .export char_out=krn_chrout
 
 appstart $1000
 
-VRAM_START=$4000 ; start from bank 1
+VRAM_START=$0000
 
 main:
 	lda	#v_reg8_VR ;64K
@@ -44,13 +45,14 @@ main:
 	sta a_vreg
 
 	jsr krn_primm
-	.byte $0a, "Video Mem - Bank:$   Address:$",0
+	.byte $0a, "Video Mem - Address:",0
 
-	lda #<(VRAM_START>>14)
+	; start from 2nd bank, after text ui
+	lda #<((VRAM_START+$4000)>>14)
 	sta vbank
 
 lbank:
-	lda #(WRITE_ADDRESS|>(VRAM_START & $3fff))
+	lda #(>(VRAM_START & $3fff) | WRITE_ADDRESS)
 	sta adr_h_w
 	ldx #>(VRAM_START & $3fff)
 	stx adr_h_r
@@ -71,26 +73,24 @@ l2:
 	phy
 	ldy adr_h_r
 	vdp_wait_l 12
-    jsr set_vaddr
     ply
     vdp_wait_l 8
 	lda a_vram
 
-	jsr rset_vbank		; reset vbank - TODO FIXME, kernel has to make sure that correct video address is set for all vram operations, use V9958 flag
 	cli
 
 	cmp pattern, x
 	bne l3
 
 	inx
-	cpx   #(pattern_e-pattern)		; size of test pattern table
-	bne   l2
-	ldx   #0
-	iny
-	bne   l2
-	inc   adr_h_w	; next 256 byte page
-	inc   adr_h_r
-	jsr   mem_ca
+	cpx #(pattern_e-pattern)		; size of test pattern table
+	bne l2
+	ldx #0
+	iny								; 
+	bne l2
+	inc adr_h_w	; next 256 byte page
+	inc adr_h_r
+	jsr mem_ca
 
 	lda	adr_h_r
 	cmp	#$40		; 16k reached?
@@ -108,29 +108,37 @@ l_ok:
 	jmp	(retvec)
 
 l3:	pha            	;save erroneous pattern
-		jsr   mem_ca
-		lda   #' '
-		jsr   krn_chrout
-		pla
-		jsr   hexout
-		jsr krn_primm
-		.asciiz " FAILED"
+	jsr mem_ca
+	lda #' '
+	jsr krn_chrout
+	pla
+	jsr  hexout
+	jsr krn_primm
+	.asciiz " FAILED"
 	jmp (retvec)
 
-mem_ca:	; output value
-	phy            	;save vram adress low byte
-	ldx #18			; offset output
+mem_ca:	; output current address
+	sei
+	phy            	; save vram adress low byte
+	jsr rset_vbank	; reset vbank (for text output)
+	ldx #20			; offset output
 	ldy crs_y
 	jsr krn_textui_crsxy
+	lda vbank		; vbank (#reg14) A16-A14
+	lsr
+	lsr
+	jsr hexout_s
+	clc
 	lda vbank
-	jsr hexout
-	ldx #30			; offset output
-	ldy crs_y
-	jsr krn_textui_crsxy
-	lda adr_h_r
+	and #$03
+	ror
+	ror
+	ror
+	ora adr_h_r
 	jsr hexout
 	pla
 	jsr hexout
+	cli
 	rts
 
 
@@ -156,11 +164,11 @@ rset_vbank:
 	rts
 
 
+.data
 pattern:  .byte $f0,$0f,$96,$69,$a9,$9a,$10,$01
 pattern_e:
 
+.bss
 adr_h_w:	.res 2
 adr_h_r:	.res 2
 vbank:	 	.res 1
-
-.segment "STARTUP"

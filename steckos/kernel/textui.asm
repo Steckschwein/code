@@ -347,7 +347,7 @@ textui_blank:
 textui_crsxy:
 	stx crs_x
 	sty crs_y
-	rts
+	jmp textui_update_crs_ptr
 
 __textui_dispatch_char:
 	cmp #KEY_CR	;carriage return?
