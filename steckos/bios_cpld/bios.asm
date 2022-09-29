@@ -35,15 +35,15 @@ do_reset:
 ;		stz uart1+uart_mcr	; reset DTR, RTS
 
 @loop:
-        ldx #'9'+1
+        ldx #'0'
 @lx:
-        dex
 		lda #lsr_THRE
 @l0:
 		bit uart_cpb+uart_lsr
 		beq @l0
         stx uart_cpb+uart_rxtx
-        cpx #'0' 
+        inx
+        cpx #'9'+1
         bne @lx
 ;		lda #lsr_THRE
 ;@l1:
