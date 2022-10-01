@@ -15,6 +15,43 @@ do_reset:
 		ldx #$ff
 		txs
 
+		jsr uart_init
+
+;		lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
+;		sta uart1+uart_fcr
+;		stz uart1+uart_ier	; polled mode (so far)
+;		stz uart1+uart_mcr	; reset DTR, RTS
+
+@loop:
+        ldx #'0'
+@lx:
+		txa
+		jsr uart_tx
+
+        inx
+        cpx #'9'+1
+        bne @lx
+;		lda #lsr_THRE
+;@l1:
+;		bit uart1+uart_lsr
+;		beq @l1
+;		lda #'Y'
+;		sta uart1+uart_rxtx
+
+		bra	@loop
+
+uart_tx:
+		pha
+		lda #lsr_THRE
+@l0:
+		bit uart_cpb+uart_lsr
+		beq @l0
+
+		pla
+        sta uart_cpb+uart_rxtx
+		rts
+
+uart_init:
         lda #lcr_DLAB
         sta uart_cpb+uart_lcr
 
@@ -28,31 +65,7 @@ do_reset:
 		sta uart_cpb+uart_fcr
 		stz uart_cpb+uart_ier	; polled mode (so far)
 		stz uart_cpb+uart_mcr	; reset DTR, RTS
-
-;		lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
-;		sta uart1+uart_fcr
-;		stz uart1+uart_ier	; polled mode (so far)
-;		stz uart1+uart_mcr	; reset DTR, RTS
-
-@loop:
-        ldx #'0'
-@lx:
-		lda #lsr_THRE
-@l0:
-		bit uart_cpb+uart_lsr
-		beq @l0
-        stx uart_cpb+uart_rxtx
-        inx
-        cpx #'9'+1
-        bne @lx
-;		lda #lsr_THRE
-;@l1:
-;		bit uart1+uart_lsr
-;		beq @l1
-;		lda #'Y'
-;		sta uart1+uart_rxtx
-
-		bra	@loop
+		rts
 
 bios_irq:
 	    rti
