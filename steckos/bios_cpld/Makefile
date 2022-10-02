@@ -1,4 +1,4 @@
-#LIBS=../lib/steckschwein.a
+LIBS=../lib/steckschwein.a
 OBJS=bios.o
 CA65FLAGS=-I ../asminc
 LDFLAGS=-C bios.cfg -m bios.map -Ln bios.lbl
@@ -30,7 +30,7 @@ bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 	cat bios.lbl | sed "s/al 0[0-9]//g" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > bios_call.inc
 
 bios.dis: bios.bin
-	dcc6502 -o 0x8000 -m 0x1fff -d -n -c $< > $@
+	dcc6502 -o 0xe000 -m 0x1fff -d -n -c $< > $@
 
 loader: loader.prg
 	../../xmodem.sh loader.prg
@@ -41,8 +41,8 @@ loader.o: loader.asm bios.bin
 loader.prg: loader.o
 	ld65 -C ../prg.ld65.cfg -m loader.map loader.o -o loader.prg
 
-%.dis: %.bin
-	dcc6502 -o 0x8000 -d -n -c $< > $@
+%.dis: %.prg
+	dcc6502 -o 0x1000 -d -n -c $< > $@
 
 transfer: loader.bin
 	../../transfer.py -s 0x0300 loader.bin

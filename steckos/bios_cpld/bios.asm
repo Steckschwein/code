@@ -1,9 +1,24 @@
 .include "bios.inc"
 
-.code
+.import xmodem_upload
+.import crc16_table_init
+
+.export crc16_lo=BUFFER_0
+.export crc16_hi=BUFFER_1
+.export crc16_init=crc16_table_init
+.export xmodem_rcvbuffer=BUFFER_2
+.export xmodem_startaddress=$380
+
+.export uart_tx,uart_rx_nowait
+.export char_out ;=uart_tx
 
 uart_cpb = $0250
+;uart_cpb = uart1
 
+.zeropage
+	startaddr: .res 2
+
+.code
 do_reset:
 		; disable interrupt
 		sei
@@ -15,12 +30,16 @@ do_reset:
 		ldx #$ff
 		txs
 
+		lda ctrl_port
+;		ora #%11111000
+;		sta ctrl_port
+
 		jsr uart_init
 
-;		lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
-;		sta uart1+uart_fcr
-;		stz uart1+uart_ier	; polled mode (so far)
-;		stz uart1+uart_mcr	; reset DTR, RTS
+		jsr xmodem_upload
+		ldx #$ff
+		txs
+		jmp (startaddr)
 
 @loop:
         ldx #'0'
@@ -31,12 +50,6 @@ do_reset:
         inx
         cpx #'9'+1
         bne @lx
-;		lda #lsr_THRE
-;@l1:
-;		bit uart1+uart_lsr
-;		beq @l1
-;		lda #'Y'
-;		sta uart1+uart_rxtx
 
 		bra	@loop
 
@@ -65,6 +78,20 @@ uart_init:
 		sta uart_cpb+uart_fcr
 		stz uart_cpb+uart_ier	; polled mode (so far)
 		stz uart_cpb+uart_mcr	; reset DTR, RTS
+		rts
+
+uart_rx_nowait:
+		lda #lsr_DR
+		bit uart_cpb+uart_lsr
+		beq @l
+		lda uart_cpb+uart_rxtx
+		sec
+		rts
+@l:
+		clc
+		rts
+
+char_out:
 		rts
 
 bios_irq:
