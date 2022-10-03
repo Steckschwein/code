@@ -34,7 +34,8 @@ uart_cpb = $0250
 .code
 
 @loop:
-      lda ctrl_port
+
+      lda ctrl_port+0
       jsr uart_tx
       lda ctrl_port+1
       jsr uart_tx
