@@ -32,17 +32,14 @@ bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 bios.dis: bios.bin
 	dcc6502 -o 0xe000 -m 0x1fff -d -n -c $< > $@
 
-loader: loader.prg
-	../../xmodem.sh loader.prg
+%: %.prg
+	../../xmodem.sh $<
 
-loader.o: loader.asm bios.bin
-	ca65 --target none $(CA65FLAGS) $<
-
-loader.prg: loader.o
-	ld65 -C ../prg.ld65.cfg -m loader.map loader.o -o loader.prg
+%.prg: %.o
+	ld65 -C ../prg.ld65.cfg -m %.map $< -o $@
 
 %.dis: %.prg
-	dcc6502 -o 0x1000 -d -n -c $< > $@
+	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 transfer: loader.bin
 	../../transfer.py -s 0x0300 loader.bin

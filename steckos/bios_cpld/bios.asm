@@ -7,16 +7,14 @@
 .export crc16_hi=BUFFER_1
 .export crc16_init=crc16_table_init
 .export xmodem_rcvbuffer=BUFFER_2
-.export xmodem_startaddress=$380
+.export xmodem_startaddress=startaddr
 
 .export uart_tx,uart_rx_nowait
 .export char_out ;=uart_tx
 
 uart_cpb = $0250
 ;uart_cpb = uart1
-
-.zeropage
-	startaddr: .res 2
+startaddr = $0380
 
 .code
 do_reset:
