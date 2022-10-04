@@ -44,6 +44,11 @@ uart_cpb = $0250
       lda ctrl_port+3
       jsr uart_tx
 
+      lda #$13
+      sta ctrl_port+0
+      
+      inc ctrl_port+1
+
       bra @loop
 
 uart_tx:
