@@ -35,7 +35,9 @@
 appstart $1000
 
 uart_cpb = $0250
+bank_addr = $4000
 bank_reg=ctrl_port+1
+
 
 .code
       sys_delay_ms 1000
@@ -55,7 +57,17 @@ bank_reg=ctrl_port+1
       lda pattern,x
       jsr dump_cpu
       ldy #0            ; fill last page of the 16k ram segments with patterns
-@l1:  sta $3f00,y
+@l1:  
+      sta bank_addr+$0300,y
+      sta bank_addr+$0600,y
+      sta bank_addr+$0900,y
+      sta bank_addr+$2000,y
+      sta bank_addr+$2300,y
+      sta bank_addr+$2a00,y
+      sta bank_addr+$3300,y
+      sta bank_addr+$3200,y
+      sta bank_addr+$3f00,y
+      
       iny
       bne @l1
 
@@ -75,7 +87,24 @@ bank_reg=ctrl_port+1
       lda pattern,x
       jsr dump_cpu
       ldy #0
-@l3:  cmp $3f00,y
+@l3:  
+      cmp bank_addr+$0300,y
+      bne exit_error
+      cmp bank_addr+$0600,y
+      bne exit_error
+      cmp bank_addr+$0900,y
+      bne exit_error
+      cmp bank_addr+$2000,y
+      bne exit_error
+      cmp bank_addr+$2300,y
+      bne exit_error
+      cmp bank_addr+$2a00,y
+      bne exit_error
+      cmp bank_addr+$3300,y
+      bne exit_error
+      cmp bank_addr+$3200,y
+      bne exit_error
+      cmp bank_addr+$3f00,y
       bne exit_error
       iny 
       bne @l3
@@ -84,6 +113,9 @@ bank_reg=ctrl_port+1
       inx
       cpx #(pattern_e-pattern)
       bne @l2
+
+      jsr primm
+      .byte KEY_LF,"success",KEY_LF,0
 
 :      bra :-
       jmp @loop
@@ -99,7 +131,7 @@ exit_error:
       jsr primm
       .byte " was ",0
       ply
-      lda $3f00,y
+      lda bank_addr,y
       jsr hexout_s
       jsr primm
       .byte " offset ",0
@@ -108,6 +140,7 @@ exit_error:
       rts
 
 dump_cpu:
+      rts
       pha
       lda #' '
       jsr uart_tx
