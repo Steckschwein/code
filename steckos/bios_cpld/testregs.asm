@@ -54,13 +54,13 @@ uart_cpb = $0250
       bne @0
       
       lda #$1f
-      sta ctrl_port+0     
+      inc ctrl_port+0     
       lda #$88
-      sta ctrl_port+1      
+      dec ctrl_port+1      
       lda #$14
-      sta ctrl_port+2
+      inc ctrl_port+2
       
-      inc ctrl_port+3
+      dec ctrl_port+3
 
       jsr reg_dump
 
