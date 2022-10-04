@@ -41,6 +41,35 @@ uart_cpb = $0250
 .code
 
 @loop:
+      ldy #3
+      ldx #$0
+@0:   phx
+      phy
+      jsr reg_dump
+      ply
+      plx
+      dex 
+      bne @0
+      dey
+      bne @0
+      
+      lda #$1f
+      sta ctrl_port+0     
+      lda #$88
+      sta ctrl_port+1      
+      lda #$14
+      sta ctrl_port+2
+      
+      inc ctrl_port+3
+
+      jsr reg_dump
+
+      bra @loop
+
+reg_dump:
+      lda #KEY_CR
+      jsr uart_tx
+
       jsr primm
       .asciiz " R0:"
       lda ctrl_port+0
@@ -64,17 +93,7 @@ uart_cpb = $0250
       lda ctrl_port+3
       jsr hexout_s
 ;      jsr uart_tx
-
-      lda #$0
- ;     sta ctrl_port+0     
- ;     sta ctrl_port+1
-      sta ctrl_port+2
-;      sta ctrl_port+3
-
-      lda #KEY_CR
-      jsr uart_tx
-
-      bra @loop
+      rts
 
 uart_tx:
       pha
