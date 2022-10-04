@@ -35,8 +35,8 @@ bios.dis: bios.bin
 %: %.prg
 	../../xmodem.sh $<
 
-%.prg: %.o
-	ld65 -C ../prg.ld65.cfg -m %.map $< -o $@
+%.prg: %.o $(LIBS)
+	ld65 -C ../prg.ld65.cfg -m %.map $< $(LIBS) -o $@
 
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@

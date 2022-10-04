@@ -24,6 +24,13 @@
 .include "system.inc"
 .include "appstart.inc"
 .include "uart.inc"
+.include "keyboard.inc"
+
+.import primm
+.import hexout
+.import hexout_s
+
+.export char_out=uart_tx
 
 .zeropage
 
@@ -34,20 +41,38 @@ uart_cpb = $0250
 .code
 
 @loop:
-
+      jsr primm
+      .asciiz " R0:"
       lda ctrl_port+0
+      jsr hexout_s
+;      jsr uart_tx
+
+      jsr primm
+      .asciiz " R1:"
       jsr uart_tx
       lda ctrl_port+1
-      jsr uart_tx
-      lda ctrl_port+2
-      jsr uart_tx
-      lda ctrl_port+3
-      jsr uart_tx
+      jsr hexout_s
 
-      lda #$13
-      sta ctrl_port+0
-      
-      inc ctrl_port+1
+      jsr primm
+      .asciiz " R2:"
+      lda ctrl_port+2
+      jsr hexout_s
+;      jsr uart_tx
+
+      jsr primm
+      .asciiz " R3:"
+      lda ctrl_port+3
+      jsr hexout_s
+;      jsr uart_tx
+
+      lda #$0
+ ;     sta ctrl_port+0     
+ ;     sta ctrl_port+1
+      sta ctrl_port+2
+;      sta ctrl_port+3
+
+      lda #KEY_CR
+      jsr uart_tx
 
       bra @loop
 
