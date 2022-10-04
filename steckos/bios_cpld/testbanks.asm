@@ -32,49 +32,102 @@
 
 .export char_out=uart_tx
 
-.zeropage
-
 appstart $1000
 
 uart_cpb = $0250
+bank_reg=ctrl_port+1
 
 .code
+      sys_delay_ms 1000
 
+      jsr primm
+      .byte KEY_LF,"memory bank test", KEY_LF,0
+      
 @loop:
-      ldy #1
-      ldx #$0
-@0:   phx
-      phy
-      jsr reg_dump
-      ply
-      plx
-      dex 
-      bne @0
-      dey
-      bne @0
-      
-      lda #$1f
-      inc ctrl_port+0     
-      lda #$88
-      dec ctrl_port+1      
-      lda #$14
-      inc ctrl_port+2
-      
-      dec ctrl_port+3
-
-      jsr reg_dump
-
-      bra @loop
-
-reg_dump:
+      ; fill
+      stz bank_reg ; 2nd 16k window is used for testing, we start with RAM address $00000
+      ldx #0
+@l0:
       lda #KEY_CR
       jsr uart_tx
+      jsr reg_dump
 
+      lda pattern,x
+      jsr dump_cpu
+      ldy #0            ; fill last page of the 16k ram segments with patterns
+@l1:  sta $3f00,y
+      iny
+      bne @l1
+
+      inc bank_reg
+      inx
+      cpx #(pattern_e-pattern)
+      bne @l0
+      
+      ; test 
+      stz bank_reg
+      ldx #0
+@l2:  
+      lda #KEY_CR
+      jsr uart_tx
+      jsr reg_dump
+
+      lda pattern,x
+      jsr dump_cpu
+      ldy #0
+@l3:  cmp $3f00,y
+      bne exit_error
+      iny 
+      bne @l3
+
+      inc bank_reg
+      inx
+      cpx #(pattern_e-pattern)
+      bne @l2
+
+:      bra :-
+      jmp @loop
+
+exit_error:
+      phy
+      phy
+      pha
+      jsr primm
+      .byte KEY_LF, "Error - expect pattern ",0
+      pla
+      jsr hexout_s
+      jsr primm
+      .byte " was ",0
+      ply
+      lda $3f00,y
+      jsr hexout_s
+      jsr primm
+      .byte " offset ",0
+      pla
+      jsr hexout_s      
+      rts
+
+dump_cpu:
+      pha
+      lda #' '
+      jsr uart_tx
+      jsr hexout_s
+      txa
+      jsr hexout_s
+      tya
+      jsr hexout_s
+      lda #KEY_LF
+      jsr uart_tx
+      pla
+      rts
+
+reg_dump:
+      phx
+      phy
       jsr primm
       .asciiz " R0:"
       lda ctrl_port+0
       jsr hexout_s
-;      jsr uart_tx
 
       jsr primm
       .asciiz " R1:"
@@ -86,13 +139,13 @@ reg_dump:
       .asciiz " R2:"
       lda ctrl_port+2
       jsr hexout_s
-;      jsr uart_tx
 
       jsr primm
       .asciiz " R3:"
       lda ctrl_port+3
       jsr hexout_s
-;      jsr uart_tx
+      ply
+      plx
       rts
 
 uart_tx:
@@ -105,3 +158,11 @@ uart_tx:
       pla
       sta uart_cpb+uart_rxtx
       rts
+
+.data
+pattern:  
+      .byte $f0,$0f,$96,$69,$a9,$9a,$10,$01
+      .byte $3c,$c3,$61,$16,$e7,$7e,$81,$18
+      .byte $24,$42,$ff,$00,$a7,$7a,$31,$13
+      .byte $41,$14,$51,$15,$f3,$3f,$8a,$a8
+pattern_e:
