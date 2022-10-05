@@ -79,8 +79,8 @@ uart_cpb = $0250
 
       jsr primm
       .byte KEY_LF,KEY_LF,"Memtest OK",KEY_LF,0
-:     bra :-
-;      jmp @start
+;:     bra :-
+      jmp @start
 
 exit_error:
       phy

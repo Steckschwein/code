@@ -22,9 +22,12 @@
 
 .include "common.inc"
 .include "system.inc"
-.include "appstart.inc"
-.include "uart.inc"
 .include "keyboard.inc"
+.include "uart.inc"
+.include "via.inc"
+.include "vdp.inc"
+.include "ym3812.inc"
+.include "appstart.inc"
 
 .import primm
 .import hexout
@@ -40,52 +43,29 @@ uart_cpb = $0250
 
 .code
 
+      jsr primm
+      .byte KEY_LF, "CS Test",KEY_CR,0
 @loop:
-      ldy #1
-      ldx #$0
-@0:   phx
-      phy
-      jsr reg_dump
-      ply
-      plx
-      dex 
-      bne @0
-      dey
-      bne @0
-      
-      dec ctrl_port+1      
-      inc ctrl_port+2
-      dec ctrl_port+3
+      lda #$0f
+      sta uart1
+      lda uart1
 
-      jsr reg_dump
+      lda #$f0
+      sta a_vdp
+      lda a_vdp
+
+      lda #$e7
+      sta opl_stat
+      lda opl_stat
+
+      lda #$c3
+      sta via1
+      lda via1
+
+      jsr primm
+      .byte "Running...",KEY_CR,0
 
       bra @loop
-
-reg_dump:
-      lda #KEY_CR
-      jsr char_out
-
-      jsr primm
-      .asciiz " R0:"
-      lda ctrl_port+0
-      jsr hexout_s
-
-      jsr primm
-      .asciiz " R1:"
-      jsr char_out
-      lda ctrl_port+1
-      jsr hexout_s
-
-      jsr primm
-      .asciiz " R2:"
-      lda ctrl_port+2
-      jsr hexout_s
-
-      jsr primm
-      .asciiz " R3:"
-      lda ctrl_port+3
-      jsr hexout_s
-      rts
 
 uart_tx:
       pha
