@@ -32,90 +32,48 @@
 
 .export char_out=uart_tx
 
+.zeropage
+      bank_nr:    .res 1
+      bank_addr:  .res 2
+
 appstart $1000
 
 uart_cpb = $0250
-bank_addr = $4000
-bank_reg=ctrl_port+1
-
 
 .code
       sys_delay_ms 1000
 
       jsr primm
-      .byte KEY_LF,"memory bank test", KEY_LF,0
-      
-@loop:
+      .byte KEY_LF,"steckschwein 2.0 memory bank test", KEY_LF,0
+
+@start:
       ; fill
-      stz bank_reg ; 2nd 16k window is used for testing, we start with RAM address $00000
-      ldx #0
-@l0:
-      lda #KEY_CR
-      jsr uart_tx
-      jsr reg_dump
+      ldx #1         ; start with 2nd 16k window is used for testing, we start with RAM address $00000
+@loop:
+      stx bank_nr
+      lda bank_tab_l,x
+      sta bank_addr+0
+      lda bank_tab_h,x
+      sta bank_addr+1
 
-      lda pattern,x
-      jsr dump_cpu
-      ldy #0            ; fill last page of the 16k ram segments with patterns
-@l1:  
-      sta bank_addr+$0300,y
-      sta bank_addr+$0600,y
-      sta bank_addr+$0900,y
-      sta bank_addr+$2000,y
-      sta bank_addr+$2300,y
-      sta bank_addr+$2a00,y
-      sta bank_addr+$3300,y
-      sta bank_addr+$3200,y
-      sta bank_addr+$3f00,y
-      
-      iny
-      bne @l1
-
-      inc bank_reg
-      inx
-      cpx #(pattern_e-pattern)
-      bne @l0
-      
-      ; test 
-      stz bank_reg
-      ldx #0
-@l2:  
-      lda #KEY_CR
-      jsr uart_tx
-      jsr reg_dump
-
-      lda pattern,x
-      jsr dump_cpu
-      ldy #0
-@l3:  
-      cmp bank_addr+$0300,y
+      jsr memcheck_linear
       bne exit_error
-      cmp bank_addr+$0600,y
-      bne exit_error
-      cmp bank_addr+$0900,y
-      bne exit_error
-      cmp bank_addr+$2000,y
-      bne exit_error
-      cmp bank_addr+$2300,y
-      bne exit_error
-      cmp bank_addr+$2a00,y
-      bne exit_error
-      cmp bank_addr+$3300,y
-      bne exit_error
-      cmp bank_addr+$3200,y
-      bne exit_error
-      cmp bank_addr+$3f00,y
-      bne exit_error
-      iny 
-      bne @l3
-
-      inc bank_reg
-      inx
-      cpx #(pattern_e-pattern)
-      bne @l2
 
       jsr primm
-      .byte KEY_LF,"success",KEY_LF,0
+      .byte KEY_LF,"bank ",0
+      lda bank_nr
+      jsr hexout_s
+      jsr primm
+      .byte " OK",KEY_LF,0
+
+      ldx bank_nr
+      inx
+      cpx #04
+      bne @loop
+;      bra @start
+
+      jsr primm
+      .byte KEY_LF,"success - FTW! ;)",KEY_LF,0
 
 :      bra :-
       jmp @loop
@@ -125,7 +83,11 @@ exit_error:
       phy
       pha
       jsr primm
-      .byte KEY_LF, "Error - expect pattern ",0
+      .byte KEY_LF, "Error detected bank ", 0
+      lda bank_nr
+      jsr hexout_s
+      jsr primm
+      .byte " expect pattern ",0
       pla
       jsr hexout_s
       jsr primm
@@ -136,8 +98,61 @@ exit_error:
       jsr primm
       .byte " offset ",0
       pla
-      jsr hexout_s      
+      jsr hexout_s
       rts
+
+memcheck_linear:
+      ldx bank_nr      ; select bank
+      stz ctrl_port,x 
+      ;fill
+      ldx #0
+@l0:
+      lda #KEY_CR
+      jsr uart_tx
+      jsr reg_dump
+
+      lda pattern,x
+      ldy #0            ; fill last page of the 16k ram segments with patterns
+@l1:  
+      sta (bank_addr),y
+      iny
+      bne @l1
+
+      phx
+      ldx bank_nr
+      inc ctrl_port,x
+      plx
+      inx
+      cpx #(pattern_e-pattern) ; 32 pattern, for 32*16k = 512k RAM
+      bne @l0
+      
+      ; test 
+      ldx bank_nr
+      stz ctrl_port,x 
+      ldx #0
+@l2:  
+      lda #KEY_CR
+      jsr uart_tx
+      jsr reg_dump
+
+      lda pattern,x
+      ldy #0
+@l3:  
+      cmp (bank_addr),y
+      bne @exit
+      iny 
+      bne @l3
+
+      phx
+      ldx bank_nr
+      inc ctrl_port,x
+      plx
+      inx
+      cpx #(pattern_e-pattern)
+      bne @l2
+@exit:
+      rts
+
 
 dump_cpu:
       rts
@@ -193,6 +208,17 @@ uart_tx:
       rts
 
 .data
+bank_tab_l:
+      .byte $00
+      .byte $00
+      .byte $00
+      .byte $00
+bank_tab_h:
+      .byte $04
+      .byte $47
+      .byte $89
+      .byte $ce
+
 pattern:  
       .byte $f0,$0f,$96,$69,$a9,$9a,$10,$01
       .byte $3c,$c3,$61,$16,$e7,$7e,$81,$18
