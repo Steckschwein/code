@@ -63,7 +63,7 @@ uart_cpb = $0250
       bne exit_error
       
       jsr primm
-      .byte KEY_LF,"bank ",0
+      .byte " bank ",0
       lda bank_nr
       jsr hexout_s
       jsr primm
@@ -77,12 +77,10 @@ uart_cpb = $0250
       jsr memcheck_mixed_bank
       bne exit_error
 
-
       jsr primm
-      .byte KEY_LF,"success - FTW! ;)",KEY_LF,0
-
-:      bra :-
-      jmp @loop
+      .byte KEY_LF,KEY_LF,"Memtest OK",KEY_LF,0
+:     bra :-
+;      jmp @start
 
 exit_error:
       phy
@@ -109,7 +107,7 @@ exit_error:
 
 memcheck_mixed_bank:
       jsr primm
-      .byte KEY_LF, "memory test across banks",KEY_LF,0
+      .byte KEY_LF, "memory test across banks",0
 
       ldy #0
 @loop:      
@@ -177,6 +175,10 @@ memcheck_mixed_bank:
       inx
       cpx #(pattern_e-pattern)
       bne @l2
+
+      jsr primm
+      .asciiz " OK"
+
       ldy _ix
       iny 
       cpy #(bank_cross_tgt-bank_cross_src)
