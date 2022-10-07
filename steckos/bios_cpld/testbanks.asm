@@ -78,7 +78,7 @@ uart_cpb = $0250
       bne exit_error
 
       jsr primm
-      .byte KEY_LF,KEY_LF,"Memtest OK",KEY_LF,0
+      .byte KEY_LF,KEY_LF,"512k RAM memtest OK",KEY_LF,0
 ;:     bra :-
       jmp @start
 
