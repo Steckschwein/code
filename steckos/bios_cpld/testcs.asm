@@ -53,10 +53,12 @@ uart_cpb = $0250
       lda #$f0
       sta a_vdp
       lda a_vdp
+      inc a_vdp
 
       lda #$e7
       sta opl_stat
       lda opl_stat
+      inc opl_stat
 
       lda #$c3
       sta via1
