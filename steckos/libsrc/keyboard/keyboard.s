@@ -45,9 +45,10 @@ fetchkey:
 		plx
 
 		cmp #0
-		beq exit
+		beq exit_ok ; with C=1
 		;  TODO FIXME - tradeoff here is that we override a possible previously stored key anyway
 		sta key
+exit_ok:
 		rts
 
 ; get byte from keyboard buffer

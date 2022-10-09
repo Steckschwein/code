@@ -24,15 +24,28 @@
 .include "system.inc"
 .include "appstart.inc"
 
+.include "uart.inc"
+.include "keyboard.inc"
+.import hexout_s
+.import hexout
+.export char_out=uart_tx
+
+uart_cpb = $0250
+
+
 .zeropage
 p_src:		.res 2
 p_tgt:		.res 2
 
 appstart $1000
 
+
 .code
+      lda #$03
+      sta ctrl_port+3
+
       SetVector biosdata, p_src
-      SetVector $e000, p_tgt
+      SetVector $c000, p_tgt
       ldy #0
 loop:
       lda (p_src),y
@@ -43,12 +56,20 @@ loop:
       inc p_tgt+1
       bne loop
       
-      ; rom off
-      lda #$01
-      sta ctrl_port
-
       ;reset
       jmp ($fffc)
+
+uart_tx:
+      pha
+      lda #lsr_THRE
+@l0:
+      bit uart_cpb+uart_lsr
+      beq @l0
+
+      pla
+      sta uart_cpb+uart_rxtx
+      rts
+
 .data
 biosdata:
 .incbin "bios.bin"

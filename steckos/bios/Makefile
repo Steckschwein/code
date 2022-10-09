@@ -39,7 +39,7 @@ loader.o: loader.asm bios.bin
 	ca65 --target none $(CA65FLAGS) $<
 
 loader.prg: loader.o
-	ld65 -C ../prg.ld65.cfg -m loader.map loader.o -o loader.prg
+	ld65 -C ../prg.ld65.cfg -m loader.map loader.o $(LIBS) -o loader.prg
 
 %.dis: %.bin
 	dcc6502 -o 0x0300 -d -n -c $< > $@

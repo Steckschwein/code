@@ -13,7 +13,9 @@
       .import vdp_text_init_bytes
       .import vdp_memcpy
       .import vdp_fills
-      .import vdp_chrout
+      
+	  .import char_out
+
 .zeropage
 ptr3: .res 2
 ptr4: .res 2
@@ -110,7 +112,7 @@ _l_chip:
 			jsr primm
 			.byte "V99",0
 			pla
-			jsr vdp_chrout
+			jsr char_out
 			jsr primm
 			.byte "8 VRAM: ",0
 			lda #0          ; select sreg #0
@@ -130,7 +132,7 @@ _vdp_detect_ext_ram:
 			jsr _vdp_detect_ram
 
 			lda #CODE_LF
-			jmp vdp_chrout
+			jmp char_out
 
 _vdp_detect_ram:
 			lda #$ff
@@ -164,7 +166,7 @@ _vdp_detect_ram:
 			tay
 			ldx #3
 :			lda _ram,y
-			jsr vdp_chrout
+			jsr char_out
 			iny
 			dex
 			bne :-
@@ -173,7 +175,7 @@ _vdp_detect_ram:
 			rts
 @l_nc:
 			lda #'-'
-			jmp vdp_chrout
+			jmp char_out
 _ram:
 			.byte " 16 32 64128"
 

@@ -225,7 +225,7 @@ ADDRESS_GFX7_SPRITE_PATTERN  = ADDRESS_GFX1_SPRITE_PATTERN
 ; long delay with 6+2 = 8µs wait
 MAX_NOPS_8M = 6 * clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
 ; short delay with 2µs wait
-MAX_NOPS_2M = (2 * clockspeed - 12) / 2; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
+MAX_NOPS_2M = (2 * clockspeed - 12) / 2; -12 => jsr/rts = 2*6cl = 12cl to substract
 
 ;.define MAX_NOPS_2M 2 * clockspeed
 

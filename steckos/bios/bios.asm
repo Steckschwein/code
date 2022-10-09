@@ -17,7 +17,6 @@
 .import spi_r_byte
 .import fetchkey
 
-.export vdp_chrout
 .export read_block=sd_read_block
 .export char_out=_vdp_chrout
 .export debug_chrout=_vdp_chrout
@@ -31,10 +30,11 @@
 
 .zeropage
 	ptr1: .res 2
-	startaddr: .res 2
 	endaddr: .res 2
     init_step: .res 1
 .code
+
+startaddr=$0380
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
 			.export __fat_write_dir_entry=fat_write_dir_entry
@@ -42,7 +42,7 @@ fat_write_dir_entry:
 			rts
 
 .macro set_ctrlport
-			jsr _set_ctrlport
+;			jsr _set_ctrlport
 .endmacro
 
 _set_ctrlport:
@@ -131,40 +131,38 @@ do_reset:
 			ldx #$ff
 			txs
 
-			lda ctrl_port
-			ora #%11111000
-			sta ctrl_port
-
+			lda #$00
+			sta ctrl_port+0
+			lda #$01
+			sta ctrl_port+1
+			lda #$02
+			sta ctrl_port+2
+			
 			; Check zeropage and Memory
 check_zp:
 			; Start at $ff
-			ldy #$ff
+			ldy #0
 			; Start with pattern $03 : $ff
-@l2:		ldx #num_patterns
+@l2:		ldx #num_patterns-1
 @l1:		lda pattern,x
 			sta $00,y
 			cmp $00,y
 			bne zp_broken
-
 			dex
-			bne @l1
-
-			dey
+			bpl @l1
+			iny
 			bne @l2
 
 check_stack:
 			;check stack
-			ldy #$ff
-@l2:		ldx #num_patterns
+@l2:		ldx #num_patterns-1
 @l1:		lda pattern,x
 			sta $0100,y
 			cmp $0100,y
 			bne stack_broken
-
 			dex
-			bne @l1
-
-			dey
+			bpl @l1
+			iny
 			bne @l2
 
 check_memory:
@@ -173,36 +171,25 @@ check_memory:
 			ldy #<start_check
 			stz ptr1
 
-@l2:		ldx #num_patterns  ; 2 cycles
+@l2:		ldx #num_patterns-1  ; 2 cycles
 @l1:		lda pattern,x      ; 4 cycles
 	  		sta (ptr1),y   ; 6 cycles
 			cmp (ptr1),y   ; 5 cycles
 			bne @l3				  ; 2 cycles, 3 if taken
-
 			dex  				  ; 2 cycles
-			bne @l1			  ; 2 cycles, 3 if taken
-
+			bpl @l1			  ; 2 cycles, 3 if taken
 			iny  				  ; 2 cycles
 			bne @l2				  ; 2 cycles, 3 if taken
 
-			; Stop at $e000 to prevent overwriting BIOS Code when ROMOFF
+			; Stop at ROM begin to prevent overwriting BIOS Code
 			ldx ptr1+1		  ; 3 cycles
 			inx				  ; 2 cycles
 			stx ptr1+1		  ; 3 cycles
-			cpx #$e0			  ; 2 cycles
-
+			cpx #$c0		  ; 2 cycles
 			bne @l2 			  ; 2 cycles, 3 if taken
 @l3:  		sty ptr1		  ; 3 cycles
 
-	  					  ; 42 cycles
-
-	  		; save end address
-	  		; lda ptr1l
-	  		; sta ram_end_l
-	  		; lda ptr1h
-	  		; sta ram_end_h
-
-			lda #$e0
+			lda #$c0
 			cmp ptr1+1
 			bne mem_broken
 
@@ -212,18 +199,9 @@ check_memory:
 			bra mem_ok
 
 mem_broken:
-			lda #$80
-			bra stop
-
 zp_broken:
-			lda #$40
-			bra stop
-
 stack_broken:
-			lda #$20
-stop:
-			sta ctrl_port
-@loop:	bra @loop
+stop:		bra stop
 
 mem_ok:
 			set_ctrlport
@@ -263,7 +241,6 @@ mem_ok:
          	beq @sdcard_init
 			println "SD card not found!"
 			cli
-
 			jmp do_upload
 @sdcard_init:
 			jsr sdcard_init
@@ -340,15 +317,69 @@ print_ok: ; !!! jsr _ok
 	.byte " OK", CODE_LF, 0
 	rts
 
-bios_irq:
+do_nmi:
     save
+	lda #Light_Blue<<4|Light_Blue
+	jsr vdp_bgcolor
+	lda #Gray<<4|Black
+	jsr vdp_bgcolor
+	restore
+	rti
+
+bios_irq:
+.import vdp_bgcolor
+.include "ym3812.inc"
+    save
+
+@check_vdp:
+		pla	; get P state
+		pha ; push back
+		and #%00010000 ; brk command?
+		beq @lvdp
+		lda #Magenta<<4|Magenta
+		jsr vdp_bgcolor
+@lvdp:
+		bit a_vreg ; vdp irq ?
+		bpl @check_via
+		lda #Cyan
+		jsr vdp_bgcolor
+@check_via:
+		bit via1ifr		; Interrupt from VIA?
+		bpl @check_opl
+		; via irq handling code - can only be keyboard at the moment
+		lda #Light_Yellow<<4
+		jsr vdp_bgcolor
+
+@check_opl:
+		bit opl_stat
+		bpl @check_spi_keyboard
+		lda #Light_Green<<4
+		jsr vdp_bgcolor
+
+@check_spi_keyboard:
+;  TODO FIXME - we must fetch always, to satisfy the IRQ of the avr.
     jsr fetchkey ; read and forget
+	bcc busy
+	cmp #0
+	beq lok
+	lda #White
+	jsr vdp_bgcolor
+	sys_delay_us 100	
+	bra lok
+busy:
+	lda #Light_Red
+	jsr vdp_bgcolor
+	
+lok:
+	lda #Gray<<4|Black
+	jsr vdp_bgcolor
+
     restore
 	rti
 
 num_patterns = $02
 pattern:
-	.byte $aa,$55,$00
+	.byte $aa,$55
 
 .segment "VECTORS"
 vdp_chrout:
@@ -357,7 +388,7 @@ vdp_chrout:
 ; Interrupt vectors
 ;----------------------------------------------------------------------------------------------
 ; $FFFA/$FFFB NMI Vector
-.word mem_ok
+.word do_nmi
 ; $FFFC/$FFFD reset vector
 ;*= $fffc
 .word do_reset

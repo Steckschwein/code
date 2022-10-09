@@ -18,8 +18,6 @@ BIOS_COLOR=Gray<<4|Black  ; gray text, black backdrop/border
 ; start memcheck here
 start_check		 	= $0300
 ram_end 			= $0288
-ram_end_l			= ram_end
-ram_end_h			= ram_end+1
 
 nvram				= $1000
 

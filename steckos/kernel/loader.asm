@@ -33,6 +33,9 @@ p_tgt:		.res 2
 
 appstart $1000
 
+   lda #$03 ; enable RAM
+   sta ctrl_port+3
+
    sei ; no irq if we upload from kernel to avoid clash
    ; copy kernel code to kernel_start
    lda #>payload
@@ -59,8 +62,6 @@ loop:
    inc p_tgt+1
    bne loop
 end:
-   lda #$01
-   sta ctrl_port
 
    ; jump to reset vector
    jmp ($fffc)
