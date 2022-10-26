@@ -44,6 +44,9 @@ bios.dis: bios.bin
 transfer: loader.bin
 	../../transfer.py -s 0x0300 loader.bin
 
-burn: bios.bin 
+emu: bios.bin
+	steckschwein-emu -rom $< -debug 0xc8ae
+
+burn: bios.bin
 	minipro --device AT28C256 --write bios.bin -s
 

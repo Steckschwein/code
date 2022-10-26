@@ -26,7 +26,7 @@
 .export xmodem_rcvbuffer=BUFFER_2
 .export xmodem_startaddress=startaddr
 
-.exportzp startaddr, endaddr
+.exportzp endaddr
 
 .zeropage
 	ptr1: .res 2
@@ -137,7 +137,7 @@ do_reset:
 			sta ctrl_port+1
 			lda #$02
 			sta ctrl_port+2
-			
+
 			; Check zeropage and Memory
 check_zp:
 			; Start at $ff
@@ -152,7 +152,6 @@ check_zp:
 			bpl @l1
 			iny
 			bne @l2
-
 check_stack:
 			;check stack
 @l2:		ldx #num_patterns-1
@@ -164,43 +163,43 @@ check_stack:
 			bpl @l1
 			iny
 			bne @l2
-
 check_memory:
 			lda #>start_check
 			sta ptr1+1
 			ldy #<start_check
-			stz ptr1
-
-@l2:		ldx #num_patterns-1  ; 2 cycles
-@l1:		lda pattern,x      ; 4 cycles
-	  		sta (ptr1),y   ; 6 cycles
-			cmp (ptr1),y   ; 5 cycles
-			bne @l3				  ; 2 cycles, 3 if taken
-			dex  				  ; 2 cycles
-			bpl @l1			  ; 2 cycles, 3 if taken
-			iny  				  ; 2 cycles
-			bne @l2				  ; 2 cycles, 3 if taken
+			stz ptr1+0
+@l2:		ldx #num_patterns-1 ; 2 cycles
+@l1:		lda pattern,x       ; 4 cycles
+	  		sta (ptr1),y        ; 6 cycles
+			cmp (ptr1),y   		; 5 cycles
+			bne @l3				; 2 cycles, 3 if taken
+			dex  				; 2 cycles
+			bpl @l1			  	; 2 cycles, 3 if taken
+			iny  				; 2 cycles
+			bne @l2				; 2 cycles, 3 if taken
 
 			; Stop at ROM begin to prevent overwriting BIOS Code
 			ldx ptr1+1		  ; 3 cycles
-			inx				  ; 2 cycles
-			stx ptr1+1		  ; 3 cycles
-			cpx #$c0		  ; 2 cycles
-			bne @l2 			  ; 2 cycles, 3 if taken
-@l3:  		sty ptr1		  ; 3 cycles
+            inx				  ; 2 cycles
+			stx ptr1+1		; 3 cycles
+			cpx #$c0		; 2 cycles
+			bne @l2			; 2 cycles, 3 if taken
+@l3:  		sty ptr1        ; 3 cycles
 
 			lda #$c0
 			cmp ptr1+1
 			bne mem_broken
 
-			lda ptr1
+			lda ptr1+0
 			bne mem_broken
 
 			bra mem_ok
-
 mem_broken:
+			stp
 zp_broken:
+			stp
 stack_broken:
+			stp
 stop:		bra stop
 
 mem_ok:
@@ -265,7 +264,7 @@ boot_from_card:
 			jsr vdp_chrout
 			iny
 			bne @loop
-:			
+:
 			lda #(<nvram)+nvram::filename
 			ldx #>nvram
 			ldy #O_RDONLY
@@ -303,7 +302,7 @@ load_error:	jsr hexout
 do_upload:
 			jsr xmodem_upload_verbose
 			bcs load_error
-load_ok:			
+load_ok:
 			jsr print_ok
 startup:
 			; re-init stack pointer
@@ -364,12 +363,12 @@ bios_irq:
 	beq lok
 	lda #White
 	jsr vdp_bgcolor
-	sys_delay_us 100	
+	sys_delay_us 100
 	bra lok
 busy:
 	lda #Light_Red
 	jsr vdp_bgcolor
-	
+
 lok:
 	lda #Gray<<4|Black
 	jsr vdp_bgcolor

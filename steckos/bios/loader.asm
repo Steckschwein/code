@@ -55,7 +55,7 @@ loop:
       inc p_src+1
       inc p_tgt+1
       bne loop
-      
+
       ;reset
       jmp ($fffc)
 

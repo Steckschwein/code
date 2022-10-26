@@ -1,5 +1,5 @@
 STECKOS_DIR=../..
-CPU=65c02 
+CPU=65c02
 CC65FLAGS=-I $(STECKOS_DIR)/clib/include
 CA65FLAGS=-I $(STECKOS_DIR)/asminc
 LIBS=$(STECKOS_DIR)/clib/lib/steckschwein-clib.a $(STECKOS_DIR)/lib/steckschwein.a
@@ -20,7 +20,7 @@ clean:
 %.o: %.c
 	cc65 $(CC65FLAGS) -t none --cpu $(CPU) -O $<
 	ca65 $(CA65FLAGS) $(@:.o=.s)
-  
+
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
