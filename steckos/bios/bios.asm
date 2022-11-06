@@ -41,21 +41,6 @@ startaddr=$0380
 fat_write_dir_entry:
 			rts
 
-.macro set_ctrlport
-;			jsr _set_ctrlport
-.endmacro
-
-_set_ctrlport:
-			pha
-			lda ctrl_port
-			lsr
-			lda ctrl_port
-			and #$fe
-			rol
-			sta ctrl_port
-			pla
-			rts
-
 _delay_10ms:
 :   sys_delay_ms 10
     dey
@@ -163,51 +148,15 @@ check_stack:
 			bpl @l1
 			iny
 			bne @l2
-check_memory:
-			lda #>start_check
-			sta ptr1+1
-			ldy #<start_check
-			stz ptr1+0
-@l2:		ldx #num_patterns-1 ; 2 cycles
-@l1:		lda pattern,x       ; 4 cycles
-	  		sta (ptr1),y        ; 6 cycles
-			cmp (ptr1),y   		; 5 cycles
-			bne @l3				; 2 cycles, 3 if taken
-			dex  				; 2 cycles
-			bpl @l1			  	; 2 cycles, 3 if taken
-			iny  				; 2 cycles
-			bne @l2				; 2 cycles, 3 if taken
 
-			; Stop at ROM begin to prevent overwriting BIOS Code
-			ldx ptr1+1		  ; 3 cycles
-            inx				  ; 2 cycles
-			stx ptr1+1		; 3 cycles
-			cpx #$c0		; 2 cycles
-			bne @l2			; 2 cycles, 3 if taken
-@l3:  		sty ptr1        ; 3 cycles
-
-			lda #$c0
-			cmp ptr1+1
-			bne mem_broken
-
-			lda ptr1+0
-			bne mem_broken
-
-			bra mem_ok
+			bra zp_stack_ok
 mem_broken:
-			stp
 zp_broken:
-			stp
 stack_broken:
 			stp
-stop:		bra stop
 
-mem_ok:
-			set_ctrlport
-
+zp_stack_ok:
 			jsr vdp_init
-
-			set_ctrlport
 
 			jsr primm
 			.byte "steckOS BIOS   "
@@ -223,16 +172,13 @@ mem_ok:
 
 			jsr vdp_detect
 
-			set_ctrlport
 			jsr init_via1
 
          	lda #<nvram
          	ldy #>nvram
 			jsr read_nvram
-			set_ctrlport
 
 			jsr uart_init
-         	set_ctrlport
 
 			jsr keyboard_init
 
