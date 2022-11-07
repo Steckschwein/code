@@ -41,6 +41,83 @@ startaddr=$0380
 fat_write_dir_entry:
 			rts
 
+memcheck:
+
+			ldx #0
+@check_page:
+			cpx #0
+			bne @not_bank_zero
+			lda #>$4300
+			sta ptr1+1
+			bra @foo
+@not_bank_zero:
+			lda #>$4000
+			sta ptr1+1
+@foo:
+			lda #<$4000
+			sta ptr1+0
+			
+
+
+			stx ctrl_port+1
+			;txa
+			;jsr hexout
+			;println ""
+@checkloop:
+
+			lda #'X'
+			sta (ptr1)
+			lda (ptr1)
+			cmp #'X'
+			beq @next
+
+			jsr primm
+			.byte "Memory error! Bank ",0
+
+			txa
+			jsr hexout
+			jsr primm
+			.byte " at $",0
+
+			lda ptr1+1
+			jsr hexout
+			lda ptr1
+			jsr hexout
+			println ""
+
+@stop:		jmp @stop
+			;jmp mem_broken
+			rts
+@next:
+			inc16 ptr1
+
+			;stz crs_x
+			;txa
+			;jsr hexout
+			;lda ptr1+1
+			;sec 
+			;sbc #$30
+			;jsr hexout
+			;lda ptr1
+			;jsr hexout
+			
+			lda ptr1+1
+			cmp #$80
+			bne @checkloop
+			lda ptr1+0
+			cmp #0
+			bne @checkloop
+
+			txa
+			;jsr hexout
+			inx
+			cmp #31
+			bne @check_page
+
+			print "Memcheck 512k OK"
+			println ""
+
+			rts
 _delay_10ms:
 :   sys_delay_ms 10
     dey
@@ -163,12 +240,8 @@ zp_stack_ok:
 			.include "version.inc"
 			.byte CODE_LF,0
 
-			print "Memcheck $"
-			lda ptr1+1
-			jsr hexout
-			lda ptr1
-			jsr hexout
-			println ""
+			jsr memcheck
+
 
 			jsr vdp_detect
 
