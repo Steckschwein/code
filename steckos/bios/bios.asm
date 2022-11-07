@@ -65,12 +65,21 @@ memcheck:
 			;println ""
 @checkloop:
 
-			lda #'X'
+			ldy #num_patterns-1
+@patternloop:
+			lda pattern,y
 			sta (ptr1)
 			lda (ptr1)
-			cmp #'X'
-			beq @next
+			cmp pattern,y
+			bne @mem_broken
 
+			dey
+			bne @patternloop
+
+			jmp @next
+
+
+@mem_broken:
 			jsr primm
 			.byte "Memory error! Bank ",0
 
@@ -99,7 +108,7 @@ memcheck:
 			cmp #0
 			bne @checkloop
 
-			jsr display_shit
+			jsr display_progress
 
 			txa
 			;jsr hexout
@@ -113,7 +122,7 @@ memcheck:
 
 			rts
 
-display_shit:
+display_progress:
 			stz crs_x
 			jsr primm
 			.byte "Memcheck bank #",0
@@ -398,9 +407,9 @@ lok:
     restore
 	rti
 
-num_patterns = $02
+num_patterns = $04
 pattern:
-	.byte $aa,$55
+	.byte $ff,$aa,$55,$00
 
 .segment "VECTORS"
 vdp_chrout:
