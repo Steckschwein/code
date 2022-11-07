@@ -91,15 +91,6 @@ memcheck:
 @next:
 			inc16 ptr1
 
-			;stz crs_x
-			;txa
-			;jsr hexout
-			;lda ptr1+1
-			;sec 
-			;sbc #$30
-			;jsr hexout
-			;lda ptr1
-			;jsr hexout
 			
 			lda ptr1+1
 			cmp #$80
@@ -108,16 +99,28 @@ memcheck:
 			cmp #0
 			bne @checkloop
 
+			jsr display_shit
+
 			txa
 			;jsr hexout
 			inx
 			cmp #31
 			bne @check_page
 
-			print "Memcheck 512k OK"
+			stz crs_x
+			print "Memcheck 512k OK "
 			println ""
 
 			rts
+
+display_shit:
+			stz crs_x
+			jsr primm
+			.byte "Memcheck bank #",0
+			txa
+			jsr hexout
+			rts
+
 _delay_10ms:
 :   sys_delay_ms 10
     dey
