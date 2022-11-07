@@ -57,12 +57,7 @@ memcheck:
 			lda #<$4000
 			sta ptr1+0
 			
-
-
 			stx ctrl_port+1
-			;txa
-			;jsr hexout
-			;println ""
 @checkloop:
 
 			ldy #num_patterns-1
@@ -95,7 +90,6 @@ memcheck:
 			println ""
 
 @stop:		jmp @stop
-			;jmp mem_broken
 			rts
 @next:
 			inc16 ptr1
@@ -239,7 +233,6 @@ check_stack:
 			bne @l2
 
 			bra zp_stack_ok
-mem_broken:
 zp_broken:
 stack_broken:
 			stp
@@ -253,7 +246,6 @@ zp_stack_ok:
 			.byte CODE_LF,0
 
 			jsr memcheck
-
 
 			jsr vdp_detect
 
