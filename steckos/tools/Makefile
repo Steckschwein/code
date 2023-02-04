@@ -19,7 +19,8 @@ TOOLS+=\
   nvram.prg\
   od.prg\
   setdate.prg \
-  uname.prg
+  uname.prg \
+	test.prg
 
 
 .PHONY: all clean
