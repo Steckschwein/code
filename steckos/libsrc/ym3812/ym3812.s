@@ -62,7 +62,7 @@ opl2_init:
 opl2_reg_write:
 		php
 		sei
-		jsr _opl2_reg_write
+    jsr _opl2_reg_write
 		plp
 		rts
 
@@ -80,7 +80,7 @@ opl2_delay_data:
 opl2_delay_register:
 .if(opl2_delay_register_cnt>0)
 	.repeat opl2_delay_register_cnt
-		nop	
+		nop
 	.endrepeat
 .endif
 		rts

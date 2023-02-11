@@ -3,7 +3,8 @@
 .import uart_init
 .import xmodem_upload_verbose,crc16_table_init
 .import init_via1
-.import hexout, primm
+.import hexout, hexout_s
+.import primm
 .import vdp_init, _vdp_chrout, vdp_detect
 .import sdcard_init
 .import sdcard_detect
@@ -82,7 +83,7 @@ memcheck:
 			bne @check_page
 
 			stz crs_x
-			println "Memcheck 512k OK"
+			println "Memcheck 512k OK "
 			rts
 
 display_progress:
@@ -251,7 +252,11 @@ zp_stack_ok:
 @sdcard_init:
 			jsr sdcard_init
 			beq boot_from_card
-			println "SD card init failed!"
+      pha
+			print "SD card init failed! "
+      pla
+      jsr hexout_s
+      println ""
 			jmp do_upload
 
 boot_from_card:

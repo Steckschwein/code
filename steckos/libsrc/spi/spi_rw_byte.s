@@ -56,7 +56,7 @@ spi_rw_byte:
 		ror				; datenbit reinschieben
 
 		sta via1portb	; ab in den port
-		inc via1portb	; takt an
+    inc via1portb	; takt an
 		sta via1portb	; takt aus
 
 		dex

@@ -61,6 +61,7 @@ sdcard_detect:
 ;	out:  Z=1 on success, Z=0 otherwise
 ;
 ;---------------------------------------------------------------------
+
 sdcard_init:
 		lda #spi_device_sdcard
 		jsr spi_select_device
@@ -78,8 +79,8 @@ sdcard_init:
 			iny
 
 @l1:
-			sty via1portb
-			sta via1portb
+      sty via1portb
+      sta via1portb
 			dex
 			bne @l1
 
@@ -87,7 +88,6 @@ sdcard_init:
 			beq @next
 			jmp @exit
 @next:
-
 			jsr sd_param_init
 
 			; CMD0 needs CRC7 checksum to be correct
@@ -106,8 +106,10 @@ sdcard_init:
 			phy
 			jsr sd_cmd
 			ply
+      bcc :+
+      jmp @exit
 			; debug "CMD0"
-			cmp #$01
+:			cmp #$01
 			bne @lcmd
 
 			lda #$01
@@ -231,12 +233,13 @@ sd_cmd:
 			pha
 			jsr sd_busy_wait
 			pla
+      bcs sd_exit ; from sd_busy_wait
 			; transfer command byte
 			jsr spi_rw_byte
 
 			; transfer parameter buffer
 			ldx #$00
-@l1:	 	lda sd_cmd_param,x
+@l1:	lda sd_cmd_param,x
 			phx
 			jsr spi_rw_byte
 			plx
@@ -250,7 +253,7 @@ sd_cmd:
 ; http://elm-chan.org/docs/mmc/mmc_e.html
 ; out:
 ; A - response of card, for error codes see sdcard.inc. $1F if no valid response within NCR
-; Z=1 - no error
+; C = 0 on success, C = 1 on error, A = error code
 ;---------------------------------------------------------------------
 sd_cmd_response_wait:
 			ldy #sd_cmd_response_retries
@@ -260,10 +263,13 @@ sd_cmd_response_wait:
 			debug "sd_cm_wt"
 			bmi @l
 			debug "sd_cm_wt_e"
+      clc
 			rts
 sd_block_cmd_timeout:
 			debug "sd_cm_wtt"
-			lda #$1f ; make up error code distinct from possible sd card responses to mark timeout
+			lda #sd_card_error_timeout_command ; make up error code distinct from possible sd card responses to mark timeout
+      sec
+sd_exit:
 			rts
 
 
@@ -372,11 +378,11 @@ sd_select_card:
 
 ;---------------------------------------------------------------------
 ; wait while sd card is busy
-; Z = 1, A = 1 when error (timeout)
+; C = 0 on success, C = 1 on error (timeout)
 ;---------------------------------------------------------------------
 sd_busy_wait:
 			ldx #$ff
-@l1:	 	lda #$ff
+@l1:  lda #$ff
 			dex
 			beq @err
 
@@ -385,11 +391,10 @@ sd_busy_wait:
 			plx
 			cmp #$ff
 			bne @l1
-
-			lda #$00
+      clc
 			rts
-@err:
-			lda #sd_card_error_timeout_busy
+@err: lda #sd_card_error_timeout_busy
+      sec
 			rts
 
 ;---------------------------------------------------------------------
