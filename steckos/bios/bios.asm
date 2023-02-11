@@ -29,9 +29,9 @@
 .exportzp endaddr
 
 .zeropage
-	ptr1: .res 2
-	endaddr: .res 2
-    init_step: .res 1
+	ptr1:       .res 2
+	endaddr:    .res 2
+  init_step:  .res 1
 .code
 
 startaddr=$0380
@@ -42,42 +42,59 @@ fat_write_dir_entry:
 			rts
 
 memcheck:
-
-			ldx #0
+      ldx #0    ; start bank 0
+      bit ctrl_port+3 ; bank 4 RAM?
+      bpl @starthigh
+			lda #>$4300 ; start bank 0, but skip zp
+      bra @check_page0
+@starthigh:
+      ldx #4
 @check_page:
-			cpx #0
-			bne @not_bank_zero
-			lda #>$4300
-			sta ptr1+1
-			bra @foo
-@not_bank_zero:
 			lda #>$4000
+@check_page0:
 			sta ptr1+1
-@foo:
-			lda #<$4000
-			sta ptr1+0
-			
+      stz ptr1+0
 			stx ctrl_port+1
-@checkloop:
 
+@checkloop:
 			ldy #num_patterns-1
 @patternloop:
 			lda pattern,y
 			sta (ptr1)
 			lda (ptr1)
 			cmp pattern,y
-			bne @mem_broken
-
+			bne mem_broken
 			dey
-			bne @patternloop
+			bpl @patternloop
 
-			jmp @next
+			inc16 ptr1
 
+			lda ptr1+1
+			cmp #$80
+			bne @checkloop
 
-@mem_broken:
+			jsr display_progress
+
+			;txa
+			;jsr hexout
+			inx
+			cmp #31
+			bne @check_page
+
+			stz crs_x
+			println "Memcheck 512k OK"
+			rts
+
+display_progress:
+			stz crs_x
+			jsr primm
+			.byte "Memcheck bank #",0
+			txa
+			jmp hexout
+
+mem_broken:
 			jsr primm
 			.byte "Memory error! Bank ",0
-
 			txa
 			jsr hexout
 			jsr primm
@@ -88,41 +105,8 @@ memcheck:
 			lda ptr1
 			jsr hexout
 			println ""
-
-@stop:		jmp @stop
-			rts
-@next:
-			inc16 ptr1
-
-			
-			lda ptr1+1
-			cmp #$80
-			bne @checkloop
-			lda ptr1+0
-			cmp #0
-			bne @checkloop
-
-			jsr display_progress
-
-			txa
-			;jsr hexout
-			inx
-			cmp #31
-			bne @check_page
-
-			stz crs_x
-			print "Memcheck 512k OK "
-			println ""
-
-			rts
-
-display_progress:
-			stz crs_x
-			jsr primm
-			.byte "Memcheck bank #",0
-			txa
-			jsr hexout
-			rts
+@stop:
+      jmp @stop
 
 _delay_10ms:
 :   sys_delay_ms 10
@@ -201,9 +185,9 @@ do_reset:
 
 			lda #$00
 			sta ctrl_port+0
-			lda #$01
+      lda #$01
 			sta ctrl_port+1
-			lda #$02
+      lda #$02
 			sta ctrl_port+2
 
 			; Check zeropage and Memory
@@ -245,14 +229,14 @@ zp_stack_ok:
 			.include "version.inc"
 			.byte CODE_LF,0
 
-			jsr memcheck
-
 			jsr vdp_detect
+
+			jsr memcheck
 
 			jsr init_via1
 
-         	lda #<nvram
-         	ldy #>nvram
+      lda #<nvram
+      ldy #>nvram
 			jsr read_nvram
 
 			jsr uart_init

@@ -30,7 +30,7 @@ IRQ_VIA			= 1<<5		; irq from VIA (6522)
 IRQ_IO0			= 1<<4		; i/o port 0
 ;...
 
-clockspeed  = 8	; in Mhz
+clockspeed  = 16	; in Mhz
 
 ctrl_port	= $0230
 
@@ -45,7 +45,7 @@ BANK3 = BANK_SEL1 | BANK_SEL0
 CODE_LF  = $0a ; line feed
 
 ; address constants of RAM addresses which can be used as buffers or kind of
-; !!! ATTENTION: if used together with fat read/write be aware that this buffers are used and may override your data  
+; !!! ATTENTION: if used together with fat read/write be aware that this buffers are used and may override your data
 BUFFER_0 = $0400
 BUFFER_1 = BUFFER_0 + $0100
 BUFFER_2 = BUFFER_1 + $0100
