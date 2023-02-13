@@ -39,17 +39,6 @@
 ; Byte to transmit in A, received byte in A at exit
 ; Destructive: A,X,Y
 ;----------------------------------------------------------------------------------------------
-_spi_delay:
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    rts
-
 spi_rw_byte:
 		sta spi_sr	; zu transferierendes byte im akku retten
 
@@ -66,11 +55,8 @@ spi_rw_byte:
 		tya				; portinhalt
 		ror				; datenbit reinschieben
 
-    jsr _spi_delay
 		sta via1portb	; ab in den port
-    jsr _spi_delay
     inc via1portb	; takt an
-    jsr _spi_delay
 		sta via1portb	; takt aus
 
 		dex

@@ -204,6 +204,7 @@ player_isr:
 		bpl @vdp     ; bit 6 set? (snd)
 		; do write operations on ym3812 within a user isr directly after reading opl_stat here, "is too hard", we have to delay at least register wait ;)
 		.import opl2_delay_data
+    jsr opl2_delay_data
 
 		lda #Medium_Green<<4|Medium_Red
 		jsr vdp_bgcolor
