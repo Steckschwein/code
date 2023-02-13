@@ -36,28 +36,60 @@
 ; Received byte in A at exit, Z, N flags set accordingly to A
 ; Destructive: A,X
 ;----------------------------------------------------------------------------------------------
+_spi_delay:
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    rts
+
 spi_r_byte:
 		lda via1portb	; Port laden
 		AND #$fe		  ; Takt ausschalten
 		TAX				 		; aufheben
 		INC
 
+    jsr _spi_delay
 		STA via1portb ; Takt An 1
+    jsr _spi_delay
 		STX via1portb ; Takt aus
+    jsr _spi_delay
 		STA via1portb ; Takt An 2
+    jsr _spi_delay
 		STX via1portb ; Takt aus
+    jsr _spi_delay
 		STA via1portb ; Takt An 3
+    jsr _spi_delay
 		STX via1portb ; Takt aus
+    jsr _spi_delay
 		STA via1portb ; Takt An 4
+    jsr _spi_delay
 		STX via1portb ; Takt aus
+    jsr _spi_delay
 		STA via1portb ; Takt An 5
+    jsr _spi_delay
 		STX via1portb ; Takt aus
+    jsr _spi_delay
 		STA via1portb ; Takt An 6
+    jsr _spi_delay
 		STX via1portb ; Takt aus
+    jsr _spi_delay
 		STA via1portb ; Takt An 7
+    jsr _spi_delay
 		STX via1portb ; Takt aus
+    jsr _spi_delay
 		STA via1portb ; Takt An 8
+    jsr _spi_delay
 		STX via1portb ; Takt aus
+    jsr _spi_delay
 
 		lda via1sr
 		rts

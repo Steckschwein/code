@@ -44,8 +44,8 @@ sd_data_token = $fe
 sd_cmd_param 		= $02a0
 sd_cmd_chksum		= sd_cmd_param+4
 
-sd_cmd_response_retries = $08
-sd_data_token_retries = $0f ; increase, card specific and must be larger for "huge" cards
+sd_cmd_response_retries = $18
+sd_data_token_retries = $1f ; increase, card specific and must be larger for "huge" cards
 
 ; sd card R1 response status bits
 sd_card_status_idle             = %00000001

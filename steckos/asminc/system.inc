@@ -30,7 +30,7 @@ IRQ_VIA			= 1<<5		; irq from VIA (6522)
 IRQ_IO0			= 1<<4		; i/o port 0
 ;...
 
-clockspeed  = 8	; in Mhz
+clockspeed  = 14	; in Mhz
 
 ctrl_port	= $0230
 
@@ -75,7 +75,7 @@ SYS_VECTOR_IRQ = $fffe
 @1: ldy #<cnt ; ~6cl inner loop
 @2: dey
     nop
-	bne @2
+	  bne @2
     dex
     bne @1
     dec a

@@ -26,6 +26,7 @@
 	debug_enabled=1
 .endif
 
+.include "system.inc"
 .include "common.inc"
 .include "zeropage.inc"
 .include "errno.inc"
@@ -61,31 +62,29 @@ sdcard_detect:
 ;	out:  Z=1 on success, Z=0 otherwise
 ;
 ;---------------------------------------------------------------------
-
 sdcard_init:
-		lda #spi_device_sdcard
-		jsr spi_select_device
-		beq @init
-		rts
+      lda #spi_device_sdcard
+      jsr spi_select_device
+      beq @init
+      rts
 @init:
 		; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
 
 			; set ALL CS lines and DO to HIGH
 			lda #%11111110
-			sta via1portb
-
 			tay
 			iny
-
-@l1:
-      sty via1portb
+init_clk:
       sta via1portb
+      sys_delay_us 4 ; 4µs => 250Khz
+      sty via1portb
+      sys_delay_us 4
 			dex
-			bne @l1
+			bne init_clk
 
 			jsr sd_select_card
-			beq @next
+			bcc @next
 			jmp @exit
 @next:
 			jsr sd_param_init
@@ -98,7 +97,7 @@ sdcard_init:
 @lcmd:
 			dey
 			bne @l2
-			;debug "sd_i_cmd0_max_retries"
+			debug "sd_i_cmd0_max_retries"
 			jmp @exit
 @l2:
 			; send CMD0 - init SD card to SPI mode
@@ -106,9 +105,7 @@ sdcard_init:
 			phy
 			jsr sd_cmd
 			ply
-      bcc :+
-      jmp @exit
-			; debug "CMD0"
+;			debug "CMD0"
 :			cmp #$01
 			bne @lcmd
 
@@ -125,7 +122,6 @@ sdcard_init:
 			debug32 "CMD8", sd_cmd_param
 
 			jsr sd_param_init
-
 			cmp #$01
 			bne @l5
 			; Invalid Card (or card we can't handle yet)
@@ -233,7 +229,8 @@ sd_cmd:
 			pha
 			jsr sd_busy_wait
 			pla
-      bcs sd_exit ; from sd_busy_wait
+      debug "sd_cmd"
+      ;bcs sd_exit ; from sd_busy_wait
 			; transfer command byte
 			jsr spi_rw_byte
 
@@ -367,7 +364,9 @@ sd_wait:
 
 
 ;---------------------------------------------------------------------
-; select sd card, pull CS line to low
+; select sd card, pull CS line to low with busy wait
+; out:
+;   see below
 ;---------------------------------------------------------------------
 sd_select_card:
 			lda #spi_device_sdcard
@@ -375,7 +374,6 @@ sd_select_card:
 			;TODO FIXME race condition here!
 
 ; fall through to sd_busy_wait
-
 ;---------------------------------------------------------------------
 ; wait while sd card is busy
 ; C = 0 on success, C = 1 on error (timeout)
@@ -383,8 +381,8 @@ sd_select_card:
 sd_busy_wait:
 			ldx #$ff
 @l1:  lda #$ff
-			dex
-			beq @err
+      dex
+      beq @err
 
 			phx
 			jsr spi_rw_byte
