@@ -27,16 +27,18 @@
 .include "spi.inc"
 .include "errno.inc"
 
-.zeropage
-.code
 .export spi_r_byte
 
+.code
 ;----------------------------------------------------------------------------------------------
 ; Receive byte VIA SPI
 ; Received byte in A at exit, Z, N flags set accordingly to A
 ; Destructive: A,X
 ;----------------------------------------------------------------------------------------------
 spi_r_byte:
+    php           ; critical section
+    sei
+
 		lda via1portb	; Port laden
 		AND #$fe		  ; Takt ausschalten
 		TAX				 		; aufheben
@@ -60,4 +62,6 @@ spi_r_byte:
 		STX via1portb ; Takt aus
 
 		lda via1sr
+    plp
+    cmp #0
 		rts

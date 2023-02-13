@@ -23,23 +23,24 @@
 	debug_enabled=1
 .endif
 
-;.include "kernel.inc"
 .include "via.inc"
 .include "spi.inc"
 .include "errno.inc"
 
-.zeropage
 .importzp spi_sr
-.code
+
 .export spi_rw_byte
 
-
+.code
 ;----------------------------------------------------------------------------------------------
 ; Transmit byte VIA SPI
 ; Byte to transmit in A, received byte in A at exit
 ; Destructive: A,X,Y
 ;----------------------------------------------------------------------------------------------
 spi_rw_byte:
+    php
+    sei         ; critical section
+
 		sta spi_sr	; zu transferierendes byte im akku retten
 
 		ldx #$08
@@ -60,8 +61,9 @@ spi_rw_byte:
 		sta via1portb	; takt aus
 
 		dex
-		bne @l			; schon acht mal?
+		bne @l			  ; schon acht mal?
 
 		lda via1sr		; Schieberegister auslesen
-
+    plp
+    cmp #0
 		rts
