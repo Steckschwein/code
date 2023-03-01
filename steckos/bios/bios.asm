@@ -232,7 +232,7 @@ zp_stack_ok:
 
 			jsr vdp_detect
 
-;			jsr memcheck
+			jsr memcheck
 
 			jsr init_via1
 
