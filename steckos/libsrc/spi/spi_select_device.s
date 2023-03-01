@@ -29,6 +29,8 @@
 .include "errno.inc"
 
 .export spi_select_device
+.export spi_set_device
+.export spi_replace_device
 
 .code
 ; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
@@ -44,8 +46,9 @@ spi_select_device:
 		sei ;critical section start
 		pha
 
-		;check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
-		;	Z=1 not busy, Z=0 spi is busy and A=#EBUSY
+; check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
+; out:
+;   Z=1 not busy, Z=0 spi is busy and A=#EBUSY
 spi_isbusy:
 		lda via1portb
     and #spi_device_deselect
@@ -58,8 +61,25 @@ spi_isbusy:
 		plp
 		lda #EOK	;exit ok
 		rts
+
 @l_exit:
 		pla
-		plp				;restore P (interrupt flag)
+		plp				  ;restore P (interrupt flag)
 		lda #EBUSY
 		rts
+
+
+; in:
+;   A - device to select
+; out:
+;   X - previous selected device if any, the "deselect device" otherwise
+spi_replace_device:
+    pha
+		lda via1portb
+    and #spi_device_deselect
+    tax
+    pla
+spi_set_device:
+    and #spi_device_deselect
+		sta via1portb
+    rts

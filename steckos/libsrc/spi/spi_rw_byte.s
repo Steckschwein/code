@@ -38,9 +38,6 @@
 ; Destructive: A,X,Y
 ;----------------------------------------------------------------------------------------------
 spi_rw_byte:
-    php
-    sei         ; critical section
-
 		sta spi_sr	; zu transferierendes byte im akku retten
 
 		ldx #$08
@@ -51,8 +48,7 @@ spi_rw_byte:
 		asl				; Nach links rotieren, damit das bit nachher an der richtigen stelle steht
 		tay		 		; bunkern
 
-@l:
-		rol spi_sr
+@l:	rol spi_sr
 		tya				; portinhalt
 		ror				; datenbit reinschieben
 
@@ -64,6 +60,4 @@ spi_rw_byte:
 		bne @l			  ; schon acht mal?
 
 		lda via1sr		; Schieberegister auslesen
-    plp
-    cmp #0
 		rts

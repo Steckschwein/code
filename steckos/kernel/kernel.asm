@@ -137,7 +137,7 @@ load_error:
 do_upload:
 		jsr xmodem_upload_verbose
 		bcs load_error
-		
+
 		jsr primm
 		.byte " OK", CODE_LF, 0
 
@@ -200,21 +200,27 @@ do_irq:
 	; opl irq handling code
 
 @check_spi_keyboard:
-;  TODO FIXME - we must fetch always, to satisfy the IRQ of the avr.
+; fetch always, to satisfy the IRQ of the avr.
 	jsr fetchkey
- 	cmp #KEY_CTRL_C 	; was it ctrl c?
- 	bne @check_spi_rtc	; no
+  bcc check_spi_rtc
+  pha
+	lda #Cyan<<4|Black
+  jsr vdp_bgcolor
+	sys_delay_us 63
+  pla
+  cmp #KEY_CTRL_C 	  ; was it ctrl c?
+ 	bne check_spi_rtc  ; no
 
  	lda flags       ; it is ctrl c. set bit 7 of flags
  	ora #$80
  	sta flags
 
-@check_spi_rtc:
+check_spi_rtc:
 ;	jsr rtc_irq
-	.import vdp_bgcolor
-	lda #Cyan<<4|Black
-	jsr vdp_bgcolor
-	sys_delay_us 200
+;	.import vdp_bgcolor
+;	lda #Cyan<<4|Black
+;	jsr vdp_bgcolor
+;	sys_delay_us 200
 
 @exit:
 	lda #Medium_Green<<4|Black
@@ -262,7 +268,6 @@ do_reset:
 	; init stack pointer
 	ldx #$ff
 	txs
-
 	jmp kern_init
 
 
