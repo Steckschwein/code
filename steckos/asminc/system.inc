@@ -60,34 +60,31 @@ SYS_VECTOR_IRQ = $fffe
   jsr char_out
 .endmacro
 
+.macro sys_delay_ms millis
+	sys_delay_us (millis * 1000)
+.endmacro
+
 .macro sys_delay_us micros
-    .local @0,@1,@2
-    .local cnt
-    cnt = (micros * clockspeed)
-    .assert cnt >= 0, error, "micros to small!"
-    .assert (>.HIWORD(cnt)) = 0, error, "micros to large!"
+    .assert (micros * clockspeed) >= 0, error, "micros to small!"
+    .assert (>.HIWORD(micros * clockspeed)) = 0, error, "micros to large!"
     php
     pha
     phx
     phy
-    lda #1+<.HIWORD(cnt)
-@0:	ldx #>cnt
-@1: ldy #<cnt ; ~6cl inner loop
-@2: dey
+    lda #1+<.HIWORD(micros * clockspeed)
+:   ldx #>(micros * clockspeed)
+:   ldy #<(micros * clockspeed) ; ~6cl inner loop
+:   dey
     nop
-	  bne @2
+	  bne :-
     dex
-    bne @1
-    dec a
-    bne @0
+    bne :--
+    dec
+    bne :---
     ply
     plx
     pla
     plp
-.endmacro
-
-.macro sys_delay_ms millis
-	sys_delay_us (millis * 1000)
 .endmacro
 
 .endif

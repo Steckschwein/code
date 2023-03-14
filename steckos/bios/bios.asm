@@ -6,6 +6,7 @@
 .import hexout, hexout_s
 .import primm
 .import vdp_init, _vdp_chrout, vdp_detect
+.import vdp_bgcolor
 .import sdcard_init
 .import sdcard_detect
 .import fat_mount
@@ -83,7 +84,7 @@ memcheck:
 			bne @check_page
 
 			stz crs_x
-			println "Memcheck 512k OK "
+			println "Memcheck 512k OK  "
 			rts
 
 display_progress:
@@ -91,18 +92,18 @@ display_progress:
 			jsr primm
 			.byte "Memcheck bank #",0
 			txa
-			jmp hexout
+			jmp hexout_s
 
 mem_broken:
 			jsr primm
 			.byte "Memory error! Bank ",0
 			txa
-			jsr hexout
+			jsr hexout_s
 			jsr primm
-			.byte " at $",0
+			.byte " at ",0
 
 			lda ptr1+1
-			jsr hexout
+			jsr hexout_s
 			lda ptr1
 			jsr hexout
 			println ""
@@ -140,36 +141,36 @@ keyboard_init:
 
     stz init_step
 
-	lda #spi_device_keyboard
-	jsr spi_select_device
-	bne _fail
-
-    inc init_step
-	lda #KBD_CMD_RESET
-    jsr spi_rw_byte
-	jsr _keyboard_cmd_status
+    lda #spi_device_keyboard
+    jsr spi_select_device
     bne _fail
 
     inc init_step
-	lda #KBD_CMD_TYPEMATIC
+	  lda #KBD_CMD_RESET
     jsr spi_rw_byte
-	lda nvram+nvram::keyboard_tm ; typematic settings
+	  jsr _keyboard_cmd_status
+    bne _fail
+
+    inc init_step
+  	lda #KBD_CMD_TYPEMATIC
+    jsr spi_rw_byte
+    lda nvram+nvram::keyboard_tm ; typematic settings
     jsr spi_rw_byte
     jsr _keyboard_cmd_status
-	bne _fail
+    bne _fail
 
-	jsr print_ok
-	jmp spi_deselect
+    jsr print_ok
+    jmp spi_deselect
 _fail:
     pha
 	jsr primm
 	.byte "FAIL (",0
     lda init_step
-    jsr hexout
+    jsr hexout_s
     lda #'/'
     jsr char_out
     pla
-    jsr hexout
+    jsr hexout_s
     jsr primm
 	.byte ")", CODE_LF, 0
 	jmp spi_deselect
@@ -220,8 +221,6 @@ check_stack:
 			bra zp_stack_ok
 zp_broken:
 stack_broken:
-			stp
-
 zp_stack_ok:
 			jsr vdp_init
 
@@ -266,7 +265,7 @@ boot_from_card:
 			pha
 			print "mount error "
 			pla
-			jsr hexout
+			jsr hexout_s
 			println ""
 			bra do_upload
 @findfile:
@@ -282,14 +281,15 @@ boot_from_card:
 			ldy #O_RDONLY
 			jsr fat_fopen					; A/X - pointer to filename
 			beq @loadfile
-@loop_end:	println " not found."
+@loop_end:
+      println " not found."
 			bra do_upload
 @loadfile:
 			print " found."
 			jsr fat_fread_byte	; start address low
 			bcs load_error
-			sta startaddr
-			sta ptr1
+			sta startaddr+0
+			sta ptr1+0
 			print_dot
 
 			jsr fat_fread_byte ; start address high
@@ -297,10 +297,10 @@ boot_from_card:
 			sta startaddr+1
 			sta ptr1+1
 			print_dot
-@l:			jsr fat_fread_byte
+@l: 	jsr fat_fread_byte
 			bcs @l_is_eof
 			sta (ptr1)
-			inc ptr1
+			inc ptr1+0
 			bne @l
 			inc ptr1+1
 			bne @l
@@ -309,13 +309,16 @@ boot_from_card:
 			bne @l
 			jsr fat_close		; close after read to free fd, regardless of error
 			beq load_ok
-load_error:	jsr hexout
+load_error:
+      jsr hexout_s
 			println " read error"
 do_upload:
 			jsr xmodem_upload_verbose
 			bcs load_error
 load_ok:
+      stp
 			jsr print_ok
+      stp
 startup:
 			; re-init stack pointer
 			ldx #$ff
@@ -324,9 +327,9 @@ startup:
 			jmp (startaddr)
 
 print_ok: ; !!! jsr _ok
-	jsr primm
-	.byte " OK", CODE_LF, 0
-	rts
+      jsr primm
+      .byte " OK", CODE_LF, 0
+      rts
 
 do_nmi:
     save
@@ -338,8 +341,6 @@ do_nmi:
 	rti
 
 bios_irq:
-.import vdp_bgcolor
-.include "ym3812.inc"
     save
 
 @check_vdp:

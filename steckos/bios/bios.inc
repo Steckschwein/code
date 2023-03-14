@@ -12,18 +12,17 @@
 .include "fcntl.inc"
 .include "nvram.inc"
 .include "spi.inc"
+.include "ym3812.inc"
 
 BIOS_COLOR=Gray<<4|Black  ; gray text, black backdrop/border
 
 ; start memcheck here
-start_check		 	= $0300
-ram_end 			= $0288
-
-nvram				= $1000
+start_check		= $0300
+nvram				  = $1000
 
 .macro	print_dot
 	lda #'.'
-	jsr vdp_chrout
+	jsr char_out
 .endmacro
 
 .macro	println text
