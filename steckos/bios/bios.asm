@@ -316,9 +316,7 @@ do_upload:
 			jsr xmodem_upload_verbose
 			bcs load_error
 load_ok:
-      stp
 			jsr print_ok
-      stp
 startup:
 			; re-init stack pointer
 			ldx #$ff

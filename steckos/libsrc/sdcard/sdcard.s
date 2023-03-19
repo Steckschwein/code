@@ -77,9 +77,9 @@ sdcard_init:
 			iny
 init_clk:
       sta via1portb
-      sys_delay_us 4 ; 4µs => 250Khz
+      jsr _sys_delay_4us ; 4µs delay => 250Khz
       sty via1portb
-      sys_delay_us 4
+      jsr _sys_delay_4us
 			dex
 			bne init_clk
 
@@ -216,6 +216,10 @@ init_clk:
 			lda #$00
 @exit:
 			jmp sd_deselect_card
+
+_sys_delay_4us:
+      sys_delay_us 4
+      rts
 
 ;---------------------------------------------------------------------
 ; Send SD Card Command

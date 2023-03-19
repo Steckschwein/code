@@ -30,7 +30,7 @@ IRQ_VIA			= 1<<5		; irq from VIA (6522)
 IRQ_IO0			= 1<<4		; i/o port 0
 ;...
 
-clockspeed  = 8	; in Mhz
+clockspeed  = 10	; in Mhz
 
 ctrl_port	= $0230
 
@@ -65,26 +65,27 @@ SYS_VECTOR_IRQ = $fffe
 .endmacro
 
 .macro sys_delay_us micros
-    .assert (micros * clockspeed) >= 0, error, "micros to small!"
-    .assert (>.HIWORD(micros * clockspeed)) = 0, error, "micros to large!"
-    php
-    pha
-    phx
-    phy
-    lda #1+<.HIWORD(micros * clockspeed)
-:   ldx #>(micros * clockspeed)
-:   ldy #<(micros * clockspeed) ; ~6cl inner loop
-:   dey
-    nop
-	  bne :-
-    dex
-    bne :--
-    dec
-    bne :---
-    ply
-    plx
-    pla
-    plp
+      .local @l1,@l2,@l3
+      .assert (micros * clockspeed) >= 0, error, "micros to small!"
+      .assert (>.HIWORD(micros * clockspeed)) = 0, error, "micros to large!"
+      php
+      pha
+      phx
+      phy
+      lda #1+<.HIWORD(micros * clockspeed)
+@l1:  ldx #>(micros * clockspeed)
+@l2:  ldy #<(micros * clockspeed) ; ~6cl inner loop
+@l3:  dey
+      nop
+      bne @l3
+      dex
+      bne @l2
+      dec
+      bne @l1
+      ply
+      plx
+      pla
+      plp
 .endmacro
 
 .endif
