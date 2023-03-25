@@ -169,8 +169,7 @@ __fat_set_lba_from_fd_dirlba:
 __fat_set_direntry_timedate:
 		phx
 		jsr rtc_systime_update									; update systime struct
-		;TODO FIXME rtx may be #EBUSY
-		jsr __fat_rtc_time
+		jsr __fat_rtc_time                      ; rtc meight be #EBUSY
 
 		ldy #F32DirEntry::WrtTime
 		sta (dirptr), y

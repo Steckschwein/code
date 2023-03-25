@@ -67,20 +67,20 @@ fm_file_arrdata = ptr7
 ;;// ----------------------------------------------------------------------------------------------------------
 
 .zeropage
-;    ptr1:  .res 2
     ptr2:  .res 2
     ptr3:  .res 2
     ptr4:  .res 2
     ptr5:  .res 2
     ptr6:  .res 2
     ptr7:  .res 2
-	
+
 .code
 
 .import opl2_reg_write
 .import hexout
 .import d00file
 
+.export fm_master_volume
 .export jch_fm_init, jch_fm_play
 .export jch_fm_set_volume
 

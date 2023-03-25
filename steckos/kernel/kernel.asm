@@ -63,6 +63,8 @@
 .import crc16_table_init
 .import xmodem_upload_verbose
 
+.import vdp_bgcolor
+
 ; internal kernel api stuff
 .import __automount
 .import __automount_init
@@ -105,7 +107,7 @@ kern_init:
 		stz key
 		stz flags
 
-	cli
+  	cli
 
 .ifndef DISABLE_INTRO
 		jsr primm
@@ -137,7 +139,7 @@ load_error:
 do_upload:
 		jsr xmodem_upload_verbose
 		bcs load_error
-		
+
 		jsr primm
 		.byte " OK", CODE_LF, 0
 
@@ -176,15 +178,7 @@ do_irq:
 @check_vdp:
 	bit a_vreg ; vdp irq ?
 	bpl @check_via
-
 	jsr textui_update_screen	; update text ui
-	dec frame
-	lda frame
-	and #$0f				  	; every 16 frames we try to update rtc, gives 320ms clock resolution
-	bne @check_via
-
-	jsr rtc_systime_update	 	; update system time, read date time and store to rtc_systime_t (see rtc.inc)
-	jsr __automount
 
 @check_via:
 	bit via1ifr		; Interrupt from VIA?
@@ -194,16 +188,21 @@ do_irq:
 @check_opl:
 	bit opl_stat
 	bpl @check_spi_keyboard
-	.import vdp_bgcolor
-;	lda #Light_Yellow<<4|Black
-;	jsr vdp_bgcolor
+	lda #Light_Yellow<<4|Light_Yellow
+	jsr vdp_bgcolor
 	; opl irq handling code
 
 @check_spi_keyboard:
-;  TODO FIXME - we must fetch always, to satisfy the IRQ of the avr.
+; fetch always, to satisfy the IRQ of the avr.
 	jsr fetchkey
- 	cmp #KEY_CTRL_C 	; was it ctrl c?
- 	bne @check_spi_rtc	; no
+  bcc @check_spi_rtc
+  pha
+	lda #Cyan<<4|Cyan
+  jsr vdp_bgcolor
+	sys_delay_us 63
+  pla
+  cmp #KEY_CTRL_C 	  ; was it ctrl c?
+ 	bne @check_spi_rtc  ; no
 
  	lda flags       ; it is ctrl c. set bit 7 of flags
  	ora #$80
@@ -211,14 +210,19 @@ do_irq:
 
 @check_spi_rtc:
 ;	jsr rtc_irq
-	.import vdp_bgcolor
-	lda #Cyan<<4|Black
-	jsr vdp_bgcolor
-	sys_delay_us 200
-
+;	lda #Cyan<<4|Black
+;	jsr vdp_bgcolor
+;	sys_delay_us 200
 @exit:
 	lda #Medium_Green<<4|Black
 	jsr vdp_bgcolor
+
+	dec frame
+	lda frame
+	and #$0f				  	; every 16 frames we try to update rtc, gives 320ms clock resolution
+	bne @exit
+	jsr rtc_systime_update	 	; update system time, read date time and store to rtc_systime_t (see rtc.inc)
+	jsr __automount
 
 	restore
 	rti
@@ -262,7 +266,6 @@ do_reset:
 	; init stack pointer
 	ldx #$ff
 	txs
-
 	jmp kern_init
 
 

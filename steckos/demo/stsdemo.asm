@@ -74,11 +74,11 @@ pause_cnt: .res 1
 
 	sei
 	copypointer save_isr, $fffe
-	cli
-
 	vdp_sreg v_reg25_wait, v_reg25
-	jsr krn_textui_init
+  vdp_sreg 0, v_reg15
+  jsr krn_textui_init
 	jsr krn_textui_enable
+	cli
 	jmp (retvec)
 
 

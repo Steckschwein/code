@@ -23,17 +23,15 @@
 	debug_enabled=1
 .endif
 
-;.include "kernel.inc"
 .include "via.inc"
 .include "spi.inc"
 .include "errno.inc"
 
-.zeropage
 .importzp spi_sr
-.code
+
 .export spi_rw_byte
 
-
+.code
 ;----------------------------------------------------------------------------------------------
 ; Transmit byte VIA SPI
 ; Byte to transmit in A, received byte in A at exit
@@ -50,8 +48,7 @@ spi_rw_byte:
 		asl				; Nach links rotieren, damit das bit nachher an der richtigen stelle steht
 		tay		 		; bunkern
 
-@l:
-		rol spi_sr
+@l:	rol spi_sr
 		tya				; portinhalt
 		ror				; datenbit reinschieben
 
@@ -60,8 +57,7 @@ spi_rw_byte:
 		sta via1portb	; takt aus
 
 		dex
-		bne @l			; schon acht mal?
+		bne @l			  ; schon acht mal?
 
 		lda via1sr		; Schieberegister auslesen
-
 		rts

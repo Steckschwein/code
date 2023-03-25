@@ -36,7 +36,6 @@
 
 .globalzp filenameptr, dirptr
 .globalzp read_blkptr, write_blkptr
-.globalzp sd_tmp
 
 .globalzp cmdptr
 .globalzp paramptr

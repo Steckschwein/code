@@ -13,7 +13,7 @@
       .import vdp_text_init_bytes
       .import vdp_memcpy
       .import vdp_fills
-      
+
 	  .import char_out
 
 .zeropage
@@ -276,7 +276,7 @@ _vdp_chrout:
 			stz	crs_x
 			rts
 @l1:
-			cmp	#KEY_LF			;line feed
+			cmp	#CODE_LF			;line feed
 			bne	@l2
 			stz	crs_x
 			bra	inc_cursor_y

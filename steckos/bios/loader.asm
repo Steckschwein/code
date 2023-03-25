@@ -26,12 +26,11 @@
 
 .include "uart.inc"
 .include "keyboard.inc"
-.import hexout_s
-.import hexout
+.import bios_start
+
 .export char_out=uart_tx
 
 uart_cpb = $0250
-
 
 .zeropage
 p_src:		.res 2
@@ -39,13 +38,14 @@ p_tgt:		.res 2
 
 appstart $1000
 
-
 .code
       lda #$03
       sta ctrl_port+3
 
+      sei
+
       SetVector biosdata, p_src
-      SetVector $c000, p_tgt
+      SetVector bios_start, p_tgt
       ldy #0
 loop:
       lda (p_src),y

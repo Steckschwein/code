@@ -52,7 +52,7 @@ kernel.bin: version.inc $(OBJS) $(LIBS)
 loader.prg: kernel.bin loader.o
 	ld65 $(LDFLAGS) loader.o -o loader.prg
 
-	# -m <kernel start adress - $100 (loader)
+# -m <kernel start adress - $100 (loader)
 dis: loader.prg
 	dcc6502 -o 0xe700 -m 0x1800 -d -n -c loader.prg > loader.dis
 
@@ -69,6 +69,6 @@ test:
 	(cd ../libsrc ; make)
 
 emu: loader.prg
-	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img  
+	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img
 
 # -upload $^

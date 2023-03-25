@@ -77,9 +77,9 @@ sdcard_init:
 			iny
 init_clk:
       sta via1portb
-      sys_delay_us 4 ; 4µs => 250Khz
+      jsr _sys_delay_4us ; 4µs delay => 250Khz
       sty via1portb
-      sys_delay_us 4
+      jsr _sys_delay_4us
 			dex
 			bne init_clk
 
@@ -217,6 +217,10 @@ init_clk:
 @exit:
 			jmp sd_deselect_card
 
+_sys_delay_4us:
+      sys_delay_us 4
+      rts
+
 ;---------------------------------------------------------------------
 ; Send SD Card Command
 ; in:
@@ -280,7 +284,7 @@ sd_exit:
 ;	A - A = 0 on success, error code otherwise
 ;---------------------------------------------------------------------
 sd_read_block:
-			jsr sd_select_card
+      jsr sd_select_card
 
 			jsr sd_cmd_lba
 			lda #cmd17
@@ -295,25 +299,24 @@ sd_read_block:
 ; to allow card to deinit
 ;---------------------------------------------------------------------
 sd_deselect_card:
-		pha
-		phy
+      pha
+      phy
 
-		jsr spi_deselect
+      jsr spi_deselect
 
-		ldy #$04
+      ldy #$04
 @l1:
-		jsr spi_r_byte
-		dey
-		bne @l1
+      jsr spi_r_byte
+      dey
+      bne @l1
 
-		ply
-		pla
+      ply
+      pla
 
-		rts
+      rts
 
 fullblock:
 			; wait for sd card data token
-			lda #sd_data_token
 			jsr sd_wait
 			bne @exit
 
@@ -340,17 +343,16 @@ halfblock:
 ;---------------------------------------------------------------------
 ; wait for sd card whatever
 ; in: A - value to wait for
-; out: Z = 1, A = 1 when error (timeout)
+; out: Z = 1, A = 0 on success, A = error (timeout) otherwise
 ;---------------------------------------------------------------------
 sd_wait:
-			sta sd_tmp
 			ldy #sd_data_token_retries
 			ldx #0
 @l1:
 			phx
 			jsr spi_r_byte
 			plx
-			cmp sd_tmp
+			cmp #sd_data_token
 			beq @l2
 			dex
 			bne @l1
@@ -359,7 +361,7 @@ sd_wait:
 
 			lda #sd_card_error_timeout
 			rts
-@l2:		lda #0
+@l2:  lda #0
 			rts
 
 
