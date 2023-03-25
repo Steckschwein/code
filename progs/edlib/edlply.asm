@@ -52,7 +52,9 @@ main:
 		jmp exit
 @load:
 		jsr loadfile
-		beq :+
+		bcc :+
+    cmp #EOK
+    beq :+
 		pha
 		jsr krn_primm
 		.byte "i/o error occured: ",0
@@ -207,16 +209,18 @@ loadfile:
 		ldy #O_RDONLY
 		jsr krn_open
     bcs @l_exit
-		stx fd
-		SetVector d00file, read_blkptr
-		jsr krn_read
-		pha
-		ldx fd
-		jsr krn_close
-		pla
-		cmp #EOK
+    SetVector d00file, file_ptr
+:		jsr krn_fread_byte
+    bcs @eof
+    sta (file_ptr)
+    inc file_ptr+0
+    bne :-
+    inc file_ptr+1
+    bra :-
 @l_exit:
-		rts
+    rts
+@eof:
+    jmp krn_close
 
 player_isr:
 		bit opl_stat
@@ -247,6 +251,10 @@ player_isr:
 		jsr vdp_bgcolor
 
 		rts
+
+
+.zeropage
+  file_ptr: .res 2
 
 .data
   safe_isr:     .res 2

@@ -78,7 +78,7 @@ sd_read_multiblock:
 			jsr sd_cmd
 			beq @exit			; no busy, already done
 			jsr sd_busy_wait	; otherwise do a busy wait
-			
+      lda #0
 @exit:
 			ply
 			plx
