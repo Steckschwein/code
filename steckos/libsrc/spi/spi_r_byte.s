@@ -37,7 +37,7 @@
 ;----------------------------------------------------------------------------------------------
 spi_r_byte:
 		lda via1portb	; Port laden
-		AND #$7e		  ; Takt ausschalten, MOSI set to '0' - we send 0 byte
+		AND #$fe		  ; Takt ausschalten, MOSI set to '1' - we send $ff byte
 		TAX				 		; aufheben
 		INC
 

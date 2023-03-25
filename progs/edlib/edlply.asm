@@ -62,7 +62,7 @@ main:
 		jsr char_out
 		jmp exit
 
-:   	jsr isD00File
+:   jsr isD00File
 		beq :+
 		jsr krn_primm
 		.byte "not a D00 file",$0a,0
@@ -191,15 +191,13 @@ printString:
 
 isD00File:
 		ldy #0
-:
-		lda d00file, y
+:		lda d00file, y
 		cmp d00header,y
 		bne :+
 		iny
 		cpy #6
 		bne :-
-:
-		rts
+:   rts
 d00header:
 		.byte "JCH",$26,$2,$66
 
@@ -251,12 +249,11 @@ player_isr:
 		rts
 
 .data
-safe_isr:     .res 2
-player_state: .res 1
-t2_value:     .res 1
-fd:           .res 1
-fm_master_volume: .res 1, $3f
+  safe_isr:     .res 2
+  player_state: .res 1
+  t2_value:     .res 1
+  fd:           .res 1
+  fm_master_volume: .res 1
 
 .bss
-d00file:
-	.res $2000
+  d00file:      .res $4000
