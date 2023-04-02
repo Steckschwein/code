@@ -33,6 +33,8 @@
 .import spi_r_byte
 .import spi_rw_byte
 
+.import rtc_write_reg
+
 .export rtc_irq0_ack
 .export rtc_irq0
 
@@ -51,7 +53,7 @@ rtc_irq0_ack:
       jsr spi_rw_byte
       jsr spi_r_byte
       clc
-      and #rtc_sats_irq0
+      and #rtc_status_irq0
       beq @exit
       lda #(rtc_read | rtc_reg_alm0_s)
       jsr spi_rw_byte
@@ -62,7 +64,7 @@ rtc_irq0_ack:
 
 ;in:
 ;out:
-;	C=1 IRQF0 (bit 0) is set in DS1306 control register, C=0 on error, A=<error> .e.g EBUSY
+;	C=1 AIE0 (bit 0) is set in DS1306 control register, C=0 on error, A=<error> .e.g EBUSY
 rtc_irq0:
       lda #spi_device_rtc
       jsr spi_select_device
@@ -70,18 +72,21 @@ rtc_irq0:
       clc
       rts
 :     ; set mask to "once per second"
-      lda #rtc_write | rtc_reg_alm0_s
-      jsr spi_rw_byte
+      ldx #(rtc_write | rtc_reg_alm0_d)
       lda #rtc_reg_alm_mask
-      jsr spi_rw_byte
-      jsr spi_rw_byte
-      jsr spi_rw_byte
-      jsr spi_rw_byte
-
+      jsr rtc_write_reg
+      ldx #(rtc_write | rtc_reg_alm0_h)
+      lda #rtc_reg_alm_mask
+      jsr rtc_write_reg
+      ldx #(rtc_write | rtc_reg_alm0_m)
+      lda #rtc_reg_alm_mask
+      jsr rtc_write_reg
+      ldx #(rtc_write | rtc_reg_alm0_s)
+      lda #rtc_reg_alm_mask
+      jsr rtc_write_reg
       ; enable alarm 0 int
-      lda #(rtc_write | rtc_reg_ctrl)
-      jsr spi_rw_byte
+      ldx #(rtc_write | rtc_reg_ctrl)
       lda #rtc_ctrl_aie0
-      jsr spi_rw_byte
+      jsr rtc_write_reg
       sec
       jmp spi_deselect

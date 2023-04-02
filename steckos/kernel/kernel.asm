@@ -63,6 +63,8 @@ kern_init:
 
 		jsr init_via1
 
+    jsr init_rtc
+
 		lda #<nvram
 		ldy #>nvram
 		jsr read_nvram
@@ -137,64 +139,67 @@ do_irq:
 ; system interrupt handler
 ; handle keyboard input and text screen refresh
 @irq:
-	save
+    save
 
-	cld ;clear decimal flag, maybe an app has modified it during execution
-	jsr call_user_isr			; user isr first, maybe there are timing critical things
+    cld ;clear decimal flag, maybe an app has modified it during execution
+    jsr call_user_isr			; user isr first, maybe there are timing critical things
 
 @check_vdp:
-	bit a_vreg ; vdp irq ?
-	bpl @check_via
-	jsr textui_update_screen	; update text ui
+    bit a_vreg ; vdp irq ?
+    bpl @check_via
+    jsr textui_update_screen	; update text ui
+    bra @check_spi_keyboard
 
 @check_via:
-	bit via1ifr		; Interrupt from VIA?
-	bpl @check_opl
-  ; via irq handling code
+    bit via1ifr		; Interrupt from VIA?
+    bpl @check_opl
+    ; via irq handling code
+    bra @check_spi_keyboard
 
 @check_opl:
-	bit opl_stat  ; IRQ from OPL?
-	bpl @check_spi_keyboard
-	lda #Light_Yellow<<4|Light_Yellow
-	jsr vdp_bgcolor
-	; opl isr
-
-@check_spi_keyboard:
-	jsr fetchkey        ; fetch key (to satisfy the IRQ of the avr)
-  bcc @check_spi_rtc
-  cmp #KEY_CTRL_C 	  ; was it ctrl c?
- 	bne @check_spi_rtc  ; no
-
- 	lda flags           ; it is ctrl c. set bit 7 of flags
- 	ora #$80
- 	sta flags
+    bit opl_stat  ; IRQ from OPL?
+    bpl @check_spi_rtc
+    lda #Light_Yellow<<4|Light_Yellow
+    jsr vdp_bgcolor
+    bra @check_spi_keyboard
+    ; opl isr
 
 @check_spi_rtc:
-	jsr rtc_irq0_ack
-  bcc @exit
-	lda #Cyan<<4|Cyan
-  jsr vdp_bgcolor
-  sys_delay_ms 10
+    jsr rtc_irq0_ack
+    bcc @check_spi_keyboard
+    lda #Cyan<<4|Cyan
+    jsr vdp_bgcolor
+;  sys_delay_ms 5
 
+@check_spi_keyboard:
+    jsr fetchkey        ; fetch key (to satisfy the IRQ of the avr)
+    bcc @system
+    cmp #KEY_CTRL_C 	  ; was it ctrl c?
+    bne @system  ; no
+
+    lda flags           ; it is ctrl c. set bit 7 of flags
+    ora #$80
+    sta flags
+
+@system:
+    dec frame
+    lda frame
+    and #$0f				  	; every 16 frames we try to update rtc, gives 320ms clock resolution
+    bne @exit
+    jsr rtc_systime_update	 	; update system time, read date time and store to rtc_systime_t (see rtc.inc)
+    jsr __automount
 
 @exit:
-	lda #Medium_Green<<4|Black
-	jsr vdp_bgcolor
+    lda #Medium_Green<<4|Black
+    jsr vdp_bgcolor
 
-	dec frame
-	lda frame
-	and #$0f				  	; every 16 frames we try to update rtc, gives 320ms clock resolution
-	bne @exit
-	jsr rtc_systime_update	 	; update system time, read date time and store to rtc_systime_t (see rtc.inc)
-	jsr __automount
-
-	restore
-	rti
+  	restore
+	  rti
 
 call_user_isr:
-	jmp (user_isr)
+  	jmp (user_isr)
 user_isr_default:
-	rts
+	  rts
 
 frame:
 	 .res 1

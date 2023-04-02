@@ -20,47 +20,31 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-;----------------------------------------------------------------------------
-; time struct with date set to 1970-01-01
-.struct time_t
-		  tm_sec	.byte		;0-59
-		  tm_min	.byte		;0-59
-		  tm_hour	.byte		;0-23
-		  tm_mday	.byte		;1-31
-		  tm_mon	.byte	1	;0-11 0-jan, 11-dec
-		  tm_year	.word  70	;years since 1900
-		  tm_wday	.byte		;
- ;		 tm_yday
-  ;		tm_isdst
-.endstruct
-
-;----------------------------------------------------------------------------
-; last known timestamp with date set to 1970-01-01
-rtc_systime_t = $0300
-
-; read rtc
-rtc_read = 0
-rtc_write = $80
-
-rtc_reg_alm_mask  = 1<<7
-rtc_reg_alm0_s = $07
-rtc_reg_alm0_m = $08
-rtc_reg_alm0_h = $09
-rtc_reg_alm0_d = $0a
-
-rtc_reg_ctrl    = $0f
-rtc_reg_status  = $10
-rtc_ctrl_wp     = 1<<6  ; write protect
-rtc_ctrl_aie0   = 1<<0  ; alarm 0 interrupt enable
-
-rtc_status_irq0 = 1<<0  ; alarm 0 interrupt request
-
-.if .VERSION = (2*$100+17*$10+0)
-.global				 _clock_gettime
-;------------------------------------------------------------------------------
-; Struct timespec - must match the struct defined in time.h
-.struct timespec
-		  tv_sec  .dword
-		  tv_nsec .dword
-.endstruct
+.ifdef DEBUG_DS1306 ; debug switch for this module
+	debug_enabled=1
 .endif
+
+.include "debug.inc"
+.include "rtc.inc"
+.include "spi.inc"
+
+.import spi_select_device
+.import spi_deselect
+.import spi_r_byte
+.import spi_rw_byte
+
+.export rtc_write_reg
+
+.code
+
+; useful for alarm registers where no burst mode is available
+; in:
+;   X - adress
+;   A - value
+rtc_write_reg:
+      pha
+      txa
+      jsr spi_rw_byte
+      pla
+      jmp spi_rw_byte
+
