@@ -66,10 +66,10 @@ rtc_systime_update:
 	beq :+
 	rts
 :	debug "update systime"
-	lda #0			  	;0 means rtc read, start from first address (seconds)
+	lda #0			  	    ;0 means rtc read, start from first address (seconds)
 	jsr spi_rw_byte
 
-	jsr spi_r_byte		;seconds
+	jsr spi_r_byte		  ;seconds
 	jsr BCD2dec
 	sta rtc_systime_t+time_t::tm_sec
 
