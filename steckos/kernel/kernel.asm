@@ -32,42 +32,7 @@
 
 .code
 
-.import init_via1
-.import init_rtc
-.import read_nvram
-.import spi_r_byte, spi_rw_byte, spi_deselect, spi_select_device
-.import uart_init, uart_tx, uart_rx, uart_rx_nowait
-.import textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
-.import getkey,fetchkey
-.import textui_enable, textui_disable, vdp_display_off,  textui_blank, textui_update_crs_ptr, textui_crsxy, textui_scroll_up, textui_cursor_onoff, textui_setmode
-
-.import sdcard_init
-
-.import fat_mount, fat_fopen, fat_close, fat_close_all, fat_read, fat_find_first, fat_find_next
-.import fat_mkdir, fat_chdir, fat_rmdir
-.import fat_unlink
-.import fat_write
-.import fat_fseek
-.import fat_fread, fat_get_root_and_pwd
-.import fat_fread_byte
-
-.import sd_read_block, sd_write_block
-
-.import execv
-.import strout, primm
-.import rtc_systime_update
-;.import ansi_chrout
-.importzp krn_ptr1
-
-.import hexout
-.import crc16_table_init
-.import xmodem_upload_verbose
-
-.import vdp_bgcolor
-
-; internal kernel api stuff
-.import __automount
-.import __automount_init
+.autoimport
 
 .export read_block=sd_read_block
 .export write_block=sd_write_block
@@ -98,6 +63,8 @@ kern_init:
 
 		jsr init_via1
 
+    jsr init_rtc
+
 		lda #<nvram
 		ldy #>nvram
 		jsr read_nvram
@@ -106,6 +73,8 @@ kern_init:
 
 		stz key
 		stz flags
+
+    jsr rtc_irq0
 
   	cli
 
@@ -170,67 +139,67 @@ do_irq:
 ; system interrupt handler
 ; handle keyboard input and text screen refresh
 @irq:
-	save
+    save
 
-	cld ;clear decimal flag, maybe an app has modified it during execution
-	jsr call_user_isr			; user isr first, maybe there are timing critical things
+    cld ;clear decimal flag, maybe an app has modified it during execution
+    jsr call_user_isr			; user isr first, maybe there are timing critical things
 
 @check_vdp:
-	bit a_vreg ; vdp irq ?
-	bpl @check_via
-	jsr textui_update_screen	; update text ui
+    bit a_vreg ; vdp irq ?
+    bpl @check_via
+    jsr textui_update_screen	; update text ui
+    bra @check_spi_keyboard
 
 @check_via:
-	bit via1ifr		; Interrupt from VIA?
-	bpl @check_opl
-  	; via irq handling code - can only be keyboard at the moment
+    bit via1ifr		; Interrupt from VIA?
+    bpl @check_opl
+    ; via irq handling code
+    bra @check_spi_keyboard
 
 @check_opl:
-	bit opl_stat
-	bpl @check_spi_keyboard
-	lda #Light_Yellow<<4|Light_Yellow
-	jsr vdp_bgcolor
-	; opl irq handling code
-
-@check_spi_keyboard:
-; fetch always, to satisfy the IRQ of the avr.
-	jsr fetchkey
-  bcc @check_spi_rtc
-  pha
-	lda #Cyan<<4|Cyan
-  jsr vdp_bgcolor
-	sys_delay_us 63
-  pla
-  cmp #KEY_CTRL_C 	  ; was it ctrl c?
- 	bne @check_spi_rtc  ; no
-
- 	lda flags       ; it is ctrl c. set bit 7 of flags
- 	ora #$80
- 	sta flags
+    bit opl_stat  ; IRQ from OPL?
+    bpl @check_spi_rtc
+    lda #Light_Yellow<<4|Light_Yellow
+    jsr vdp_bgcolor
+    bra @check_spi_keyboard
+    ; opl isr
 
 @check_spi_rtc:
-;	jsr rtc_irq
-;	lda #Cyan<<4|Black
-;	jsr vdp_bgcolor
-;	sys_delay_us 200
+    jsr rtc_irq0_ack
+    bcc @check_spi_keyboard
+    lda #Cyan<<4|Cyan
+    jsr vdp_bgcolor
+;  sys_delay_ms 5
+
+@check_spi_keyboard:
+    jsr fetchkey        ; fetch key (to satisfy the IRQ of the avr)
+    bcc @system
+    cmp #KEY_CTRL_C 	  ; was it ctrl c?
+    bne @system  ; no
+
+    lda flags           ; it is ctrl c. set bit 7 of flags
+    ora #$80
+    sta flags
+
+@system:
+    dec frame
+    lda frame
+    and #$0f				  	; every 16 frames we try to update rtc, gives 320ms clock resolution
+    bne @exit
+    jsr rtc_systime_update	 	; update system time, read date time and store to rtc_systime_t (see rtc.inc)
+    jsr __automount
+
 @exit:
-	lda #Medium_Green<<4|Black
-	jsr vdp_bgcolor
+    lda #Medium_Green<<4|Black
+    jsr vdp_bgcolor
 
-	dec frame
-	lda frame
-	and #$0f				  	; every 16 frames we try to update rtc, gives 320ms clock resolution
-	bne @exit
-	jsr rtc_systime_update	 	; update system time, read date time and store to rtc_systime_t (see rtc.inc)
-	jsr __automount
-
-	restore
-	rti
+  	restore
+	  rti
 
 call_user_isr:
-	jmp (user_isr)
+  	jmp (user_isr)
 user_isr_default:
-	rts
+	  rts
 
 frame:
 	 .res 1

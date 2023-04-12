@@ -30,6 +30,7 @@
 .include "via.inc"
 .import spi_rw_byte, spi_r_byte, spi_deselect, spi_select_device
 .import rtc_systime_update
+.import rtc_write_reg
 
 .export init_rtc
 
@@ -40,10 +41,10 @@ init_rtc:
 	; Select SPI SS for RTC
 	lda #spi_device_rtc
 	sta via1portb
-	lda #rtc_write | rtc_ctrlreg
-	jsr spi_rw_byte
-	lda #$00 ; disable INT0, INT1, WP (Write Protect)
-	jsr spi_rw_byte
-	jsr spi_deselect
-	rts
-	;jmp rtc_systime_update
+  ldx #rtc_write | rtc_reg_ctrl
+	lda #0  ; disable WP (Write Protect)
+	jsr rtc_write_reg
+  ldx #rtc_write | rtc_reg_ctrl
+	lda #0  ; disable INT0, INT1
+	jsr rtc_write_reg
+  jmp spi_deselect
