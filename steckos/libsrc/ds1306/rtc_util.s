@@ -44,6 +44,7 @@
 rtc_write_reg:
       pha
       txa
+      ora #$80
       jsr spi_rw_byte
       pla
       jmp spi_rw_byte
