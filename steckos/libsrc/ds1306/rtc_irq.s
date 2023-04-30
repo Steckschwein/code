@@ -72,20 +72,26 @@ rtc_irq0:
       clc
       rts
 :     ; set mask to "once per second"
-      ldx #(rtc_write | rtc_reg_alm0_d)
+      lda #(rtc_reg_alm0_s | rtc_write) ; write alarm, start with day
+      jsr spi_rw_byte
+      lda #rtc_reg_alm_mask ; burst...
+      jsr spi_rw_byte
       lda #rtc_reg_alm_mask
-      jsr rtc_write_reg
-      ldx #(rtc_write | rtc_reg_alm0_h)
+      jsr spi_rw_byte
       lda #rtc_reg_alm_mask
-      jsr rtc_write_reg
-      ldx #(rtc_write | rtc_reg_alm0_m)
+      jsr spi_rw_byte
       lda #rtc_reg_alm_mask
-      jsr rtc_write_reg
-      ldx #(rtc_write | rtc_reg_alm0_s)
-      lda #rtc_reg_alm_mask
-      jsr rtc_write_reg
+      jsr spi_rw_byte
+
+      php
+      sei
+      jsr spi_deselect      ; disable/enable to setup new address
+      lda #spi_device_rtc
+      jsr spi_select_device
+      plp
+
       ; enable alarm 0 int
-      ldx #(rtc_write | rtc_reg_ctrl)
+      ldx #rtc_reg_ctrl
       lda #rtc_ctrl_aie0
       jsr rtc_write_reg
       sec
