@@ -10,9 +10,9 @@ jobs:
 
   build:
 
-    runs-on: steckschwein/buildenv:v2_19-alpine
+    runs-on: ubuntu-latest
+    container: steckschwein/buildenv:v2_19-alpine
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Prepare build environment
-      run: cc65
+    - name: checkout
+      uses: actions/checkout@v3
