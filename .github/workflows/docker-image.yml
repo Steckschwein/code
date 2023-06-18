@@ -11,8 +11,9 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    container: steckschwein/buildenv:v2_19-alpine
 
     steps:
     - uses: actions/checkout@v3
     - name: Prepare build environment
-      run: apt-get install --no-install-recommends -y gcc make libc-dev git python3 python3-pip
+      run: cc65
