@@ -15,7 +15,8 @@ crc16_table_init:
 		stz crc16_hi,x
 		inx
 		bne	:-
-fetch:	txa
+fetch:
+    txa
 		eor	crc16_hi,x
 		sta	crc16_hi,x
 		ldy	#$08
