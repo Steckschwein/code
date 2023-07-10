@@ -20,67 +20,49 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.setcpu "65c02"
+.include "common.inc"
+.include "system.inc"
+.include "appstart.inc"
+.include "uart.inc"
+.include "keyboard.inc"
 
-.include "ym3812.inc"
-.include "debug.inc"
+.import primm
+.import hexout
+.import hexout_s
+.autoimport
 
-.export opl2_init, opl2_delay_data, opl2_delay_register
-.export opl2_reg_write
-.export _opl2_init=opl2_init
+.export char_out=uart_tx
 
-;----------------------------------------------------------------------------------------------
-; "init" opl2 by writing zeros into most registers
-;
-; void __fastcall__ opl2_init(void);
-;----------------------------------------------------------------------------------------------
+.zeropage
+      _ix: .res 1
+
+appstart $1000
+
+uart_cpb = $0200
+
 .code
-opl2_init:
-		php
-		sei
+      sys_delay_ms 1000
 
-		lda #0
-		tax
-@l:		jsr _opl2_reg_write
-		inx
-		bne @l
+      jsr primm
+      .byte KEY_LF,"steckschwein 2.0 video test", KEY_LF,0
 
-		ldx #opl2_reg_ctrl
-		lda #$60	; disable timer 1 & 2 IRQ
-		jsr _opl2_reg_write
+@start:
+      sei
 
-		lda #$80	; reset irq
-		jsr _opl2_reg_write
+      stz _ix
+:
+			jsr vdp_text_on
 
-		ldx #opl2_reg_test
-		lda #(1<<5) 	; enable WS
-		jsr _opl2_reg_write
+      lda _ix
+      jsr vdp_bgcolor
+      jsr hexout_s
+      dec _ix
+      bne :-
+      bra @start
 
-		plp
-		rts
+      cli
 
-opl2_reg_write:
-		php
-		sei
-    jsr _opl2_reg_write
-		plp
-		rts
+      jsr primm
+      .byte KEY_LF,KEY_LF,"OK",KEY_LF,0
+      bra @start
 
-;	in:
-;		 .X - opl2 register select
-;		 .A - opl2 data
-_opl2_reg_write:
-		stx opl_sel
-		jsr opl2_delay_register
-		sta opl_data
-opl2_delay_data:
-.repeat opl2_delay_data_cnt
-		nop
-.endrepeat
-opl2_delay_register:
-.if(opl2_delay_register_cnt>0)
-	.repeat opl2_delay_register_cnt
-		nop
-	.endrepeat
-.endif
-		rts

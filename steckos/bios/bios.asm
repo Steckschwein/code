@@ -20,8 +20,9 @@
 .import fetchkey
 
 .export read_block=sd_read_block
-.export char_out=_vdp_chrout
 .export debug_chrout=_vdp_chrout
+.export char_out=_vdp_chrout
+;.export char_out=uart_tx
 .export crc16_lo=BUFFER_0
 .export crc16_hi=BUFFER_1
 .export crc16_init=crc16_table_init
@@ -189,8 +190,8 @@ do_reset:
 			sta ctrl_port+0
       lda #$01
 			sta ctrl_port+1
-      lda #$02
-			sta ctrl_port+2
+;      lda #$02
+;			sta ctrl_port+2
 
 			; Check zeropage and Memory
 check_zp:
@@ -231,7 +232,7 @@ zp_stack_ok:
 
 			jsr vdp_detect
 
-			jsr memcheck
+			;jsr memcheck
 
 			jsr init_via1
 
@@ -244,9 +245,8 @@ zp_stack_ok:
 			jsr keyboard_init
 
 			jsr sdcard_detect
-         	beq @sdcard_init
+      beq @sdcard_init
 			println "SD card not found!"
-			cli
 			jmp do_upload
 @sdcard_init:
 			jsr sdcard_init
@@ -351,19 +351,19 @@ bios_irq:
 @lvdp:
 		bit a_vreg ; vdp irq ?
 		bpl @check_via
-		lda #Cyan
+		lda #Cyan<<4|Cyan
 		jsr vdp_bgcolor
 @check_via:
 		bit via1ifr		; Interrupt from VIA?
 		bpl @check_opl
 		; via irq handling code - can only be keyboard at the moment
-		lda #Light_Yellow<<4
+		lda #Light_Yellow<<4|Light_Yellow
 		jsr vdp_bgcolor
 
 @check_opl:
 		bit opl_stat
 		bpl @check_spi_keyboard
-		lda #Light_Green<<4
+		lda #Light_Green<<4|Light_Green
 		jsr vdp_bgcolor
 
 @check_spi_keyboard:
@@ -372,19 +372,18 @@ bios_irq:
 	bcc busy
 	cmp #0
 	beq lok
-	lda #White
+	lda #White<<4|White
 	jsr vdp_bgcolor
 	sys_delay_us 100
 	bra lok
 busy:
-	lda #Light_Red
+	lda #Light_Red<<4|Light_Red
 	jsr vdp_bgcolor
 
 lok:
 	lda #Gray<<4|Black
 	jsr vdp_bgcolor
-
-    restore
+  restore
 	rti
 
 num_patterns = $04

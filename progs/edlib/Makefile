@@ -2,7 +2,7 @@ TARGET=edlply.prg
 
 STECKOS=../../steckos
 LIBS:=$(STECKOS)/lib/steckschwein.a
-CAFLAGS=--include-dir $(STECKOS)/asminc --include-dir $(STECKOS)/kernel 
+CAFLAGS=--include-dir $(STECKOS)/asminc --include-dir $(STECKOS)/kernel
 LDFLAGS=--config $(STECKOS)/prg.ld65.cfg $(LIBS)
 
 C64LIBS=$(CC65_HOME)/lib/c64.lib
@@ -22,7 +22,10 @@ edlply64.prg: edlply64.o edlib.o $(C64LIBS)
 
 edlply.prg: edlply.o edlib.o $(LIBS)
 	ld65 -v $< --obj edlib.o $(LDFLAGS) --mapfile $<.map -o $@
-  
+
+edlplytest.prg: edlplytest.o edlib.o $(LIBS)
+	ld65 -v $< --obj edlib.o $(LDFLAGS) --mapfile $<.map -o $@
+
 %.o: %.asm
 	ca65 $(CAFLAGS) $(@:.o=.asm)
 

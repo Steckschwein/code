@@ -30,7 +30,7 @@ bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 	cat bios.lbl | sed "s/al 0[0-9]//g" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > bios_call.inc
 
 bios.dis: bios.bin
-	dcc6502 -o 0xc000 -m 0x3fff -d -n -c $< > $@
+	dcc6502 -o 0x8000 -m 0x7fff -d -n -c $< > $@
 
 loader: loader.prg
 	../../xmodem.sh loader.prg

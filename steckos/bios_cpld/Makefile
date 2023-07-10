@@ -25,8 +25,8 @@ bios.asm: version.inc
 version.inc:
 	echo -n ".byte \"`git log -1 --format="%t (%cd)" --date=format-local:%Y/%m/%d\ %H:%M:%S`\"" > version.inc
 
-bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
-	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -o bios.bin
+%.bin: $(OBJS) $(LIBS) bios.inc version.inc
+	ld65 $(LDFLAGS) $(OBJS) $(LIBS) -o $@
 	cat bios.lbl | sed "s/al 0[0-9]//g" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > bios_call.inc
 
 bios.dis: bios.bin
@@ -40,6 +40,9 @@ bios.dis: bios.bin
 
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
+
+loader: loader.prg
+	../../xmodem.sh loader.prg
 
 transfer: loader.bin
 	../../transfer.py -s 0x0300 loader.bin

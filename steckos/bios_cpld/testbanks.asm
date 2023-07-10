@@ -39,7 +39,7 @@
 
 appstart $1000
 
-uart_cpb = $0250
+uart_cpb = $0200
 
 .code
       sys_delay_ms 1000
@@ -49,7 +49,7 @@ uart_cpb = $0250
 
 @start:
       jsr primm
-      .byte KEY_LF,"memory test single banks",KEY_LF,0
+      .byte KEY_LF,"memooOOwWW_?ry test single banks",KEY_LF,0
       ; fill
       ldx #1         ; start with 2nd 16k window is used for testing, we start with RAM address $00000
 @loop:
@@ -79,8 +79,7 @@ uart_cpb = $0250
 
       jsr primm
       .byte KEY_LF,KEY_LF,"512k RAM memtest OK",KEY_LF,0
-;:     bra :-
-      jmp @start
+      bra @start
 
 exit_error:
       phy
@@ -103,7 +102,7 @@ exit_error:
       .byte " offset ",0
       pla
       jsr hexout_s
-      rts
+:     bra :-
 
 memcheck_mixed_bank:
       jsr primm

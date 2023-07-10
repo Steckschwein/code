@@ -12,7 +12,7 @@
 .export uart_tx,uart_rx_nowait
 .export char_out ;=uart_tx
 
-uart_cpb = $0250
+uart_cpb = $0200
 ;uart_cpb = uart1
 startaddr = $0380
 
@@ -28,13 +28,14 @@ do_reset:
 		ldx #$ff
 		txs
 
-		lda ctrl_port
+;		lda ctrl_port
 ;		ora #%11111000
 ;		sta ctrl_port
 
 		jsr uart_init
 
 		jsr xmodem_upload
+
 		ldx #$ff
 		txs
 		jmp (startaddr)
@@ -44,10 +45,9 @@ do_reset:
 @lx:
 		txa
 		jsr uart_tx
-
-        inx
-        cpx #'9'+1
-        bne @lx
+    inx
+    cpx #'9'+1
+    bne @lx
 
 		bra	@loop
 
@@ -59,18 +59,18 @@ uart_tx:
 		beq @l0
 
 		pla
-        sta uart_cpb+uart_rxtx
+    sta uart_cpb+uart_rxtx
 		rts
 
 uart_init:
-        lda #lcr_DLAB
-        sta uart_cpb+uart_lcr
+    lda #lcr_DLAB
+    sta uart_cpb+uart_lcr
 
-        lda #$01 ;115200
-        sta uart_cpb+uart_dll
-        stz uart_cpb+uart_dlh ; dlh always 0, we do not support baudrates < 600
-        lda #$03 ;8N1
-        sta uart_cpb+uart_lcr
+    lda #$01 ;115200
+    sta uart_cpb+uart_dll
+    stz uart_cpb+uart_dlh ; dlh always 0, we do not support baudrates < 600
+    lda #$03 ;8N1
+    sta uart_cpb+uart_lcr
 
 		lda #fcr_FIFO_enable | fcr_reset_receiver_FIFO | fcr_reset_transmit_FIFO
 		sta uart_cpb+uart_fcr

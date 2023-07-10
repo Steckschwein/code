@@ -36,7 +36,7 @@
 
 appstart $1000
 
-uart_cpb = $0250
+uart_cpb = $0200
 
 .code
 
@@ -48,12 +48,12 @@ uart_cpb = $0250
       jsr reg_dump
       ply
       plx
-      dex 
+      dex
       bne @0
       dey
       bne @0
-      
-      dec ctrl_port+1      
+
+      dec ctrl_port+1
       inc ctrl_port+2
       dec ctrl_port+3
 
