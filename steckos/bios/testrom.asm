@@ -23,41 +23,59 @@
 .include "common.inc"
 .include "system.inc"
 .include "appstart.inc"
-
 .include "uart.inc"
 .include "keyboard.inc"
-.import bios_start
-.import uart_tx
 
-.export char_out=uart_tx
+.autoimport
 
-.zeropage
-p_src:		.res 2
-p_tgt:		.res 2
+.export char_out=$8D2E
 
 appstart $1000
 
 .code
-      lda #$03
-      sta ctrl_port+3
-
       sei
+      jsr primm
+      .byte KEY_LF,"steckschwein 2.0 rom test", KEY_LF, 0
 
-      SetVector biosdata, p_src
-      SetVector bios_start, p_tgt
-      ldy #0
-loop:
-      lda (p_src),y
-      sta (p_tgt),y
-      iny
-      bne loop
-      inc p_src+1
-      inc p_tgt+1
-      bne loop
+      jsr primm
+      .byte "read", 0
+      jsr dump
 
-      ;reset
-      jmp ($fffc)
+      jsr primm
+      .byte KEY_LF,"write", KEY_LF,0
 
-.data
-biosdata:
-.incbin "bios.bin"
+      lda #31
+      ldx #01
+      ldy #00
+      jsr rom_write_byte_protected
+
+      jsr primm
+      .byte KEY_LF,"read back", 0
+      jsr dump
+
+@exit:
+     bra @exit
+
+dump:
+      ldx #0
+@l:
+      txa
+      and #$07
+      bne :+
+      lda #KEY_LF
+      jsr char_out
+:
+      lda $4000,x
+      phx
+      jsr hexout_s
+      lda #' '
+      jsr char_out
+      plx
+      inx
+      cpx #$10
+      bne @l
+      rts
+
+
+.bss
+rom_poll:

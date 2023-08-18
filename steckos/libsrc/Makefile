@@ -62,6 +62,7 @@ SRCDIRS +=  joystick
 SRCDIRS +=  ym3812
 SRCDIRS +=  nvram
 SRCDIRS +=  uart/16550
+SRCDIRS +=  rom
 SRCDIRS +=  spi
 SRCDIRS +=  sdcard
 SRCDIRS +=  fat32

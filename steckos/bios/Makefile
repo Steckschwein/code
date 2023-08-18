@@ -32,6 +32,15 @@ bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 bios.dis: bios.bin
 	dcc6502 -o 0x8000 -m 0x7fff -d -n -c $< > $@
 
+%: %.prg
+	../../xmodem.sh $<
+
+%.prg: %.o $(LIBS)
+	ld65 -C ../prg.ld65.cfg -m %.map $< $(LIBS) -o $@
+
+%.dis: %.prg
+	dcc6502 -o 0x0ffe -d -n -c $< > $@
+
 loader: loader.prg
 	../../xmodem.sh loader.prg
 
@@ -44,11 +53,8 @@ loader.prg: loader.o
 %.dis: %.bin
 	dcc6502 -o 0x0300 -d -n -c $< > $@
 
-transfer: loader.bin
-	../../transfer.py -s 0x0300 loader.bin
-
 emu: bios.bin
-	steckschwein-emu -rom $< -debug 0xc8ae
+	steckschwein-emu -rom $< # -debug 0xc8ae
 
 burn: bios.bin
 	minipro --device AT28C256 --write bios.bin -s

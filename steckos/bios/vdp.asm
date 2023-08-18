@@ -146,7 +146,7 @@ _vdp_detect_ram:
 			ldy #v_reg14
 			jsr vdp_set_sreg
 
-            jsr _vdp_bank_available
+      jsr _vdp_bank_available
 			beq @l_detect
 @l_end:
 			vdp_sreg 0, v_reg14 ;switch back to bank 0 and vram
@@ -220,6 +220,7 @@ _vdp_vram0:
 			rts
 
 vdp_scroll_up:
+      phx
 			SetVector	(ADDRESS_TEXT_SCREEN+COLS), ptr3		        ; +COLS - offset second row
 			SetVector	(ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr4	; offset first row as "write adress"
 @l1:
@@ -259,6 +260,7 @@ vdp_scroll_up:
 			vdp_wait_l
 			dex
 			bne	@l5
+      plx
 			rts
 
 inc_cursor_y:
