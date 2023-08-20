@@ -10,7 +10,4 @@ RUN apk update \
 	&& PREFIX=/usr/local/ make install \
     && apk del gcc musl-dev
 
-RUN addgroup -S schwein && adduser -S schwein -G schwein
-USER schwein
-WORKDIR /home/schwein
 
