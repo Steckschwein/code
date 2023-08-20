@@ -24,6 +24,3 @@ build:
 test:
 	(cd libsrc; make test)
 	(cd kernel; make test)
-
-img: build
-	./mkimg.sh
