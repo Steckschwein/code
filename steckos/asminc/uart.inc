@@ -21,8 +21,7 @@
 ; SOFTWARE.
 
 ; UART address and registers
-;uart1			  = $0200
-uart1			  = $0250
+uart1			  = $0200
 uart_rxtx		 = 0
 uart_ier		 = 0
 uart_dll		 = 0
