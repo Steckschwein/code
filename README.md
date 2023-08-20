@@ -3,13 +3,13 @@
 [Main Web Site](http://steckschwein.de/)
 
 ## Description ##
-We are developing a retro style 8bit computer based on the 65c02 CPU.
+A retro style 8bit computer based on the 65c02 CPU.
 
 ## Features ##
 
 ### Hardware ###
-- 65c02 CPU @ 8MHz
-- 64k SRAM
+- 65c02 CPU @ 10MHz
+- 512k SRAM
 - 32k EEPROM
 - V9958 Video Display Controller
 - Yamaha YM3812 (OPL2) Sound
@@ -26,7 +26,6 @@ We are developing a retro style 8bit computer based on the 65c02 CPU.
 - Forth interpreter (Taliforth2)
 - EhBasic 2.22 with extensions 
 
-
 The goal is to design a machine that could have existed back in the home computer era, but with "modern" interfaces like PS/2, full fledged rs232, SPI, etc.
 
 We use as much open source tools as possible, such as
@@ -39,4 +38,4 @@ We use as much open source tools as possible, such as
 - git
 
 The repository contains the source for the system firmware, the steckOS "operating system", test and demo programs, galasm source for the address decoder.
-The KiCAD project files for schematics and layout can be found in the "steckschwein-hardware" repository.
+The KiCAD project files for schematics and layout can be found in the "hardware" repository.
