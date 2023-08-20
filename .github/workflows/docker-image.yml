@@ -18,5 +18,7 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v3
-    - name: build everything and run tests
+    - name: build 
       run: export CC65_HOME=/cc65/ && make
+    - name: test
+      run: export CC65_HOME=/cc65/ && make test
