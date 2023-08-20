@@ -12,7 +12,7 @@ jobs:
 
     runs-on: ubuntu-latest
     container: 
-      image: steckschwein/buildenv:v2_19-alpine-nouser
+      image: steckschwein/buildenv:2_19-alpine-nouser
 
     steps:
     - name: checkout
