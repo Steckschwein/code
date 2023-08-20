@@ -22,8 +22,8 @@ build:
 	(cd demo; make )
 
 test:
+	(cd libsrc; make test)
 	(cd kernel; make test)
-	(cd tools; make test)
 
 img: build
 	./mkimg.sh
