@@ -41,7 +41,9 @@ ifeq ($(words $(MAKECMDGOALS)),1)
   endif
 endif
 
-all: ../lib/$(TARGET).a runtests
+all: ../lib/$(TARGET).a 
+
+test: runtests 
 
 clean:
 	rm -f ../lib/$(TARGET).a

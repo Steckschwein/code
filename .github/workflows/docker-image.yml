@@ -12,11 +12,12 @@ jobs:
 
     runs-on: ubuntu-latest
     container: 
-      image: steckschwein/buildenv:v2_19-alpine
-      options: --user root
+      image: steckschwein/buildenv:2_19-alpine-nouser
 
     steps:
     - name: checkout
       uses: actions/checkout@v3
-    - name: build everything and run tests
+    - name: build 
       run: export CC65_HOME=/cc65/ && make
+    - name: test
+      run: export CC65_HOME=/cc65/ && make test
