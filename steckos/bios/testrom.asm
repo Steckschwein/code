@@ -44,9 +44,9 @@ appstart $1000
       jsr primm
       .byte KEY_LF,"write", KEY_LF,0
 
-      lda #31
-      ldx #01
-      ldy #00
+      lda #$27
+      ldx #0
+      ldy #0
       jsr rom_write_byte_protected
 
       jsr primm
@@ -57,10 +57,14 @@ appstart $1000
      bra @exit
 
 dump:
+      lda ctrl_port+1
+      pha
+      lda #$80
+      sta ctrl_port+1
       ldx #0
 @l:
       txa
-      and #$07
+      and #$0f
       bne :+
       lda #KEY_LF
       jsr char_out
@@ -72,8 +76,12 @@ dump:
       jsr char_out
       plx
       inx
-      cpx #$10
+      cpx #$20
       bne @l
+
+      pla
+      sta ctrl_port+1
+
       rts
 
 
