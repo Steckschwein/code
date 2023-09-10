@@ -1,13 +1,13 @@
-LIBS=../steckos/lib/steckschwein.a
-CAFLAGS=-I ../steckos/asminc -I ../steckos/kernel
-LDFLAGS=--config ../steckos/prg.ld65.cfg $(LIBS)
+LIBS=../../steckos/lib/steckschwein.a
+CAFLAGS=-I ../../steckos/asminc -I ../../steckos/kernel
+LDFLAGS=--config ../../steckos/prg.ld65.cfg $(LIBS)
 
 .PHONY: all clean
 
-all: test.prg
+all: shmup.prg
 
 clean:
-	rm -f *.prg *.s *.o
+	rm -f *.prg *.o
 
 %.o: %.s
 	ca65 $(CAFLAGS) $(@:.o=.s)
