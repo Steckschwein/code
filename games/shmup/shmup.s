@@ -15,12 +15,35 @@
 appstart $1000
 
 
-	jsr vdp_mode7_on
-	; set vertical dot count to 212
-	; V9938 Programmer's Guide Pg 18
-	vdp_sreg  v_reg9_ln , v_reg9
+	jsr gfxui_on
 
-	lda #%00000011
-	jsr vdp_mode7_blank
+	keyin
 
-loop:	jmp loop
+	jsr gfxui_off
+
+	jmp (retvec)
+
+gfxui_on:
+		jsr krn_textui_disable			;disable textui
+
+		jsr vdp_mode7_on			   ;enable gfx7 mode
+		vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
+
+		ldy #0
+		jsr vdp_mode7_blank
+
+		rts
+
+gfxui_off:
+      sei
+
+      pha
+      phx
+      vdp_sreg v_reg9_nt, v_reg9  ; 192px
+      jsr krn_textui_init
+      plx
+      pla
+
+      cli
+
+      rts
