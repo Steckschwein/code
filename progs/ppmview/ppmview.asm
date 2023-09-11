@@ -73,7 +73,7 @@ gfxui_on:
 		jsr vdp_mode7_on			   ;enable gfx7 mode
 		vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
 
-		lda #%00000000
+		ldy #0
 		jsr vdp_mode7_blank
 
 		rts
