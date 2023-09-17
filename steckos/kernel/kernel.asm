@@ -159,16 +159,16 @@ do_irq:
 @check_opl:
     bit opl_stat  ; IRQ from OPL?
     bpl @check_spi_rtc
-    lda #Light_Yellow<<4|Light_Yellow
-    jsr vdp_bgcolor
+;    lda #Light_Yellow<<4|Light_Yellow
+;    jsr vdp_bgcolor
     bra @check_spi_keyboard
     ; opl isr
 
 @check_spi_rtc:
     jsr rtc_irq0_ack
     bcc @check_spi_keyboard
-    lda #Cyan<<4|Cyan
-    jsr vdp_bgcolor
+ ;   lda #Cyan<<4|Cyan
+ ;   jsr vdp_bgcolor
 ;  sys_delay_ms 5
 
 @check_spi_keyboard:
@@ -190,8 +190,8 @@ do_irq:
     jsr __automount
 
 @exit:
-    lda #Medium_Green<<4|Black
-    jsr vdp_bgcolor
+    ;lda #Medium_Green<<4|Black
+    ;jsr vdp_bgcolor
 
   	restore
 	  rti
