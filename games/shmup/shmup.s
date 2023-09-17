@@ -82,7 +82,7 @@ vdp_init_bytes_gfx7:
 	.byte $0
 	.byte $0
 	.byte >(ADDRESS_GFX7_SPRITE<<2); r#5
-	.byte >(ADDRESS_GFX7_SPRITE_PATTERN<<2); R#6
+	.byte >(ADDRESS_GFX7_SPRITE_PATTERN<<1); R#6
 	.byte %11100000 ; R#7 border color
 	.byte v_reg8_VR	; VR - 64k VRAM  - R#8
 	.byte v_reg9_nt | v_reg9_ln ; #R9, 212px , set bit to 1 for PAL
