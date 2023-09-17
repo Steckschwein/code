@@ -16,9 +16,9 @@
 appstart $1000
 
 	sei
-	;copypointer user_isr, save_isr
-	;SetVector isr, user_isr
-	;cli
+	copypointer user_isr, save_isr
+	SetVector isr, user_isr
+	cli
 
 	jsr gfxui_on
 
@@ -26,9 +26,9 @@ appstart $1000
 
 	jsr gfxui_off
 
-	;sei
-;;	copypointer save_isr, user_isr
-;	cli
+	sei
+	copypointer save_isr, user_isr
+	cli
 
 	jmp (retvec)
 
@@ -97,11 +97,6 @@ sprite_attr_0:
 	sprite_y: .byte 50
 	sprite_x: .byte 50
 	pattern:  .byte 0
-	res: .byte 0
-sprite_attr_1:
-	sprite_y: .byte 150
-	sprite_x: .byte 150
-	pattern:  .byte 1
 	res: .byte 0
 sprite_attr_end:
 
