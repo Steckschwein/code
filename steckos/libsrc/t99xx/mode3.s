@@ -22,17 +22,17 @@
 
 .include "vdp.inc"
 
-		.import vdp_mode2_on
-		.import vdp_mode2_blank
+    .import vdp_mode2_on
+    .import vdp_mode2_blank
 
-		.export vdp_mode3_on
-		.export vdp_mode3_blank
+    .export vdp_mode3_on
+    .export vdp_mode3_blank
 
 
 .code
 vdp_mode3_on:
-		jsr vdp_mode2_on
-		vdp_sreg v_reg0_m4, v_reg0  ; reg0 m4, enable G3
-		rts
+    jsr vdp_mode2_on
+    vdp_sreg v_reg0_m4, v_reg0  ; reg0 m4, enable G3
+    rts
 
 vdp_mode3_blank=vdp_mode2_blank

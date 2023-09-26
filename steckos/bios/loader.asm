@@ -26,23 +26,24 @@
 
 .include "uart.inc"
 .include "keyboard.inc"
-.import bios_start
 
-.export char_out=uart_tx
-
-uart_cpb = $0250
+.import bios_start ; bios.cfg
 
 .zeropage
 p_src:		.res 2
 p_tgt:		.res 2
 
 appstart $1000
-
-.code
+      ; enable RAM
+      lda #$02
+      sta ctrl_port+2
       lda #$03
       sta ctrl_port+3
 
       sei
+
+      ldx #$01
+      stx ctrl_port+1
 
       SetVector biosdata, p_src
       SetVector bios_start, p_tgt
@@ -58,17 +59,6 @@ loop:
 
       ;reset
       jmp ($fffc)
-
-uart_tx:
-      pha
-      lda #lsr_THRE
-@l0:
-      bit uart_cpb+uart_lsr
-      beq @l0
-
-      pla
-      sta uart_cpb+uart_rxtx
-      rts
 
 .data
 biosdata:

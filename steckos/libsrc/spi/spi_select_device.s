@@ -35,10 +35,7 @@
 .code
 ; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
 ; in:
-;	A = spi device, one of
-;			spi_device_sdcard	  =   %0001 1100 ;spi device number 1110??? (SPI_SS1)
-;			spi_device_keyboard =   %0001 1010 ;spi device number 1101??? (SPI_SS2)
-;			spi_device_rtc      =   %0001 0110 ;spi device number 1011??? (SPI_SS3)
+;	A = spi device, one of devuces see spi.inc
 ; out:
 ;	Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
 spi_select_device:

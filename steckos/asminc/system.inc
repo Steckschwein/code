@@ -34,13 +34,10 @@ clockspeed  = 10	; in Mhz
 
 ctrl_port	= $0230
 
-ROM_OFF = 1<<0
-BANK_SEL0 = 1<<1
-BANK_SEL1 = 1<<2
-BANK0 = 0
-BANK1 = BANK_SEL0
-BANK2 = BANK_SEL1
-BANK3 = BANK_SEL1 | BANK_SEL0
+BANK0 = ctrl_port+0
+BANK1 = ctrl_port+1
+BANK2 = ctrl_port+2
+BANK3 = ctrl_port+3
 
 CODE_LF  = $0a ; line feed
 
@@ -72,11 +69,10 @@ SYS_VECTOR_IRQ = $fffe
       pha
       phx
       phy
-      lda #1+<.HIWORD(micros * clockspeed)
-@l1:  ldx #>(micros * clockspeed)
-@l2:  ldy #<(micros * clockspeed) ; ~6cl inner loop
+      lda #1+<.HIWORD(micros * clockspeed / 5)
+@l1:  ldx #1+>(micros * clockspeed / 5)
+@l2:  ldy #1+<(micros * clockspeed / 5) ; ~5cl inner loop
 @l3:  dey
-      nop
       bne @l3
       dex
       bne @l2

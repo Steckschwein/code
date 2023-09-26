@@ -142,7 +142,7 @@ _vdp_detect_ram:
 			dex
 			bmi @l_end    ; we have to break after given amount of banks, otherwise overflow vram address starts from beginning
 
-            lda tmp1      ; select bank
+      lda tmp1      ; select bank
 			ldy #v_reg14
 			jsr vdp_set_sreg
 
@@ -194,7 +194,7 @@ _vdp_bank_available:
 			jsr _vdp_r_vram ; ... read back again
 			pla
 			lda a_vram
-         cmp #PATTERN
+      cmp #PATTERN
 			bne @invalid
 			jsr _vdp_w_vram
 			stx a_vram      ;restore

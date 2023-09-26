@@ -74,7 +74,10 @@ kern_init:
 		stz key
 		stz flags
 
-    jsr rtc_irq0
+    lda #$03  ; enable RAM below kernel
+    sta BANK2
+
+;    jsr rtc_irq0
 
   	cli
 
