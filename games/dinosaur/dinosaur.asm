@@ -27,6 +27,7 @@
 .include "common.inc"
 .include "zeropage.inc"
 .include "joystick.inc"
+.include "uart.inc"
 .include "snes.inc"
 
 .include "keyboard.inc"
@@ -123,8 +124,7 @@ sprite_empty=92
 		jsr	vdp_init_reg
 
 		cli
-
-:	  	jsr krn_getkey
+:	  jsr krn_getkey
 		cmp #KEY_ESCAPE
 		bne :-
 
@@ -359,39 +359,39 @@ vdp_print:
 :		rts
 
 get_joy_status:
-        phx
-        phy
+    phx
+    phy
 		joy_off
-        jsr query_controllers
+    jsr query_controllers
 		joy_on
-        ply
-        plx
+    ply
+    plx
 		lda controller1+2
 		beq snes
-    	lda #JOY_PORT
+    lda #JOY_PORT
 		jmp joystick_read
 snes:
-        lda controller1
-        ror ; ignore right
-        ror ; ignore left
-        ror ; down?
-        bcc down
-        ror ; up?
-        bcc up
-        ror ; start
-        bcc button
-        ror ; ignore select
-        ror ; button Y
-        bcc button
-        ror ; button B
-    	bcc button
+    lda controller1
+    ror ; ignore right
+    ror ; ignore left
+    ror ; down?
+    bcc down
+    ror ; up?
+    bcc up
+    ror ; start
+    bcc button
+    ror ; ignore select
+    ror ; button Y
+    bcc button
+    ror ; button B
+    bcc button
 		lda controller1+1
 		rol ; button A
 		bcc button
 		rol ; button X
 		bcc button
-        lda #$ff
-        rts
+    lda #$ff
+    rts
 down:
         lda #<(~JOY_DOWN)
        	rts
@@ -600,20 +600,22 @@ game_isr:
 		jsr	animate_dinosaur
 		bra	@l_update_vram
 :
+;    stp
+		jsr krn_getkey
+		cmp #$20	 ; space ?
+		beq @l_new_game
+
 		jsr get_joy_status
 		and	#JOY_FIRE
 		beq	:+
 		lda	game_state
 		and #(!STATUS_JOY_PRESSED)
 		sta game_state
-		jsr krn_getkey
-		cmp #$20	 ; space ?
-		bne @l_update_vram
-:
-		lda	game_state
+    bra @l_update_vram
+:		lda	game_state
 		and	#STATUS_JOY_PRESSED
 		bne	@l_update_vram
-
+@l_new_game:
 		jsr new_game
 
 @l_update_vram:
@@ -746,12 +748,12 @@ score_board:
 
 action_handler:
 	 ;TODO FIXME just for testing
-;	 jsr krn_getkey
-;	cmp #$1b
- ;	bne +
- ;	jsr krn_getkey
-	;cmp #'A'
-	; beq .up
+	;  jsr krn_getkey
+ ;   cmp #$1b
+;  	bne +
+    jsr krn_getkey
+	  cmp #'A'
+	  beq @up
 
 		jsr get_joy_status
 		and #JOY_UP
