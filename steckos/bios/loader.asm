@@ -23,43 +23,24 @@
 .include "common.inc"
 .include "system.inc"
 .include "appstart.inc"
-
 .include "uart.inc"
 .include "keyboard.inc"
 
-.import bios_start ; bios.cfg
+.include "bios_call.inc"
+
+.autoimport
 
 .zeropage
 p_src:		.res 2
 p_tgt:		.res 2
 
 appstart $1000
+
+      jsr xmodem_upload_callback
       ; enable RAM
       lda #$02
-      sta ctrl_port+2
+      sta bank2
       lda #$03
-      sta ctrl_port+3
+      sta bank3
 
-      sei
-
-      ldx #$01
-      stx ctrl_port+1
-
-      SetVector biosdata, p_src
-      SetVector bios_start, p_tgt
-      ldy #0
-loop:
-      lda (p_src),y
-      sta (p_tgt),y
-      iny
-      bne loop
-      inc p_src+1
-      inc p_tgt+1
-      bne loop
-
-      ;reset
-      jmp ($fffc)
-
-.data
-biosdata:
-.incbin "bios.bin"
+      rts

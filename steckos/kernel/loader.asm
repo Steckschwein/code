@@ -28,13 +28,13 @@
 
 ; system attribute has to be set on file system
 .zeropage
-p_src:		.res 2
-p_tgt:		.res 2
+p_src:    .res 2
+p_tgt:    .res 2
 
 appstart $1000
 
-   lda #$31 ; enable RAM at $c000
-   sta ctrl_port+3
+   lda #$31 ; enable RAM at bank3
+   sta bank3
 
    sei ; no irq if we upload from kernel to avoid clash
    ; copy kernel code to kernel_start

@@ -1,7 +1,7 @@
 .include "bios.inc"
 
 .import uart_init
-.import xmodem_upload_verbose,crc16_table_init
+.import xmodem_upload,crc16_table_init
 .import init_via1
 .import hexout, hexout_s
 .import primm
@@ -145,13 +145,13 @@ keyboard_init:
 
       lda #spi_device_keyboard
       jsr spi_select_device
-      bne _fail
+      bne @fail
 
       inc init_step
       lda #KBD_CMD_RESET
       jsr spi_rw_byte
       jsr _keyboard_cmd_status
-      bne _fail
+      bne @fail
 
       inc init_step
       lda #KBD_CMD_TYPEMATIC
@@ -159,11 +159,12 @@ keyboard_init:
       lda nvram+nvram::keyboard_tm ; typematic settings
       jsr spi_rw_byte
       jsr _keyboard_cmd_status
-      bne _fail
+      bne @fail
 
       jsr print_ok
+      clc
       jmp spi_deselect
-_fail:
+@fail:
       pha
       jsr primm
       .byte "FAIL (",0
@@ -175,6 +176,7 @@ _fail:
       jsr hexout_s
       jsr primm
       .byte ")", CODE_LF, 0
+      sec
       jmp spi_deselect
 
 do_reset:
@@ -244,7 +246,7 @@ zp_stack_ok:
       ;jsr memcheck
 
       jsr keyboard_init
-
+@sdcard:
       jsr sdcard_detect
       beq @sdcard_init
       println "SD card not found!"
@@ -314,7 +316,7 @@ load_error:
       jsr hexout_s
       println " read error"
 do_upload:
-      jsr xmodem_upload_verbose
+      jsr xmodem_upload
       bcs load_error
 load_ok:
       jsr print_ok
@@ -362,25 +364,10 @@ bios_irq:
       jsr vdp_bgcolor
 @check_opl:
       bit opl_stat
-      bpl @check_spi_keyboard
+      bpl @lok
       lda #Light_Green<<4|Light_Green
       jsr vdp_bgcolor
-
-@check_spi_keyboard:
-;  TODO FIXME - we must fetch always, to satisfy the IRQ of the avr.
-      jsr fetchkey ; read and forget
-      bcc busy
-      cmp #0
-      beq lok
-      lda #White<<4|White
-      jsr vdp_bgcolor
-      sys_delay_us 100
-      bra lok
-busy:
-      lda #Light_Red<<4|Light_Red
-      jsr vdp_bgcolor
-
-lok:
+@lok:
       lda #Gray<<4|Black
       jsr vdp_bgcolor
       restore

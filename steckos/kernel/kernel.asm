@@ -75,7 +75,7 @@ kern_init:
 		stz flags
 
     lda #$03  ; enable RAM below kernel
-    sta BANK2
+    sta bank2
 
 ;    jsr rtc_irq0
 
@@ -109,7 +109,7 @@ load_error:
 		jsr primm
 		.byte " read error", CODE_LF, 0
 do_upload:
-		jsr xmodem_upload_verbose
+		jsr xmodem_upload
 		bcs load_error
 
 		jsr primm

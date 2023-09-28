@@ -52,7 +52,7 @@ tmp2:   .res 1
 .import hexout
 .import kernel_start
 
-appstart $e400
+appstart $e200
 .export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly
 
 init:
