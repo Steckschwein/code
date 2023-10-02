@@ -1,6 +1,7 @@
 .include "zeropage.inc"
 .include "system.inc"
 .include "keyboard.inc"
+.include "xmodem.inc"
 
 .export xmodem_upload_callback
 
@@ -213,7 +214,7 @@ BadCrc:   jsr Flush  ; flush the input port
           lda #NAK  ;
           jsr Put_Chr  ; send NAK to resend block
           bra StartBlk ; start over, get the block again
-GoodCrc:  ldx #$02  ;
+GoodCrc:  ldx #XMODEM_DATA_START  ;
           lda blkno  ; get the block number
           jsr _block_rx
 IncBlk:   inc blkno  ; done.  Inc the block #

@@ -25,6 +25,7 @@
 .include "keyboard.inc"
 .include "zeropage.inc"
 .include "appstart.inc"
+.include "xmodem.inc"
 
 .autoimport
 
@@ -51,6 +52,7 @@ appstart $1000
       lda #>bios_start
       sta p_tgt+1
 
+      sei
       lda #<handle_block
       ldx #>handle_block
       jsr xmodem_upload_callback
@@ -58,21 +60,21 @@ appstart $1000
       jsr primm
       .asciiz " OK "
 
-      jmp (SYS_VECTOR_RESET)
+      jmp (SYS_VECTOR_RESET)  ; reset
 
 handle_block:
-      ldx crs_x
-      phx
+      ldy crs_x
+      phy
       pha
-      ldx #0
-:     lda xmodem_rcvbuffer,x
+@copy:
+      lda xmodem_rcvbuffer,x
       sta (p_tgt)
       inc p_tgt
       bne :+
       inc p_tgt+1
 :     inx
-      cpx #$80
-      bne :-
+      cpx #XMODEM_DATA_END
+      bne @copy
 
       pla
       jsr hexout_s

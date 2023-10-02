@@ -1,6 +1,7 @@
 .include "zeropage.inc"
 .include "system.inc"
 .include "keyboard.inc"
+.include "xmodem.inc"
 
 .export xmodem_upload
 
@@ -68,7 +69,7 @@ CopyBlk3: lda xmodem_rcvbuffer,x  ; get data byte from buffer
           bne CopyBlk4  ; did it step over page boundary?
           inc ptr+1     ; adjust high address for page crossing
 CopyBlk4: inx           ; point to next data byte
-          cpx #$82      ; is it the last byte
+          cpx #XMODEM_DATA_END      ; is it the last byte
           bne CopyBlk3  ; no, get the next one
 
           jsr primm

@@ -30,8 +30,6 @@
 .zeropage
 ptr3: .res 2
 ptr4: .res 2
-tmp1: .res 1
-tmp2: .res 1
 
 .code
 ROWS=23
