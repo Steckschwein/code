@@ -22,25 +22,65 @@
 
 .include "common.inc"
 .include "system.inc"
-.include "appstart.inc"
-.include "uart.inc"
 .include "keyboard.inc"
-
-.include "bios_call.inc"
+.include "zeropage.inc"
+.include "appstart.inc"
 
 .autoimport
 
+.export char_out=vdp_charout
+
+.export crc16_hi = BUFFER_0
+.export crc16_lo = BUFFER_1
+.export crc16_init = crc16_table_init
+.export xmodem_rcvbuffer = BUFFER_2
+
 .zeropage
-p_src:		.res 2
 p_tgt:		.res 2
 
 appstart $1000
 
-      jsr xmodem_upload_callback
-      ; enable RAM
+      ; enable RAM to load bios into
       lda #$02
       sta bank2
       lda #$03
       sta bank3
 
+      lda #<bios_start
+      sta p_tgt
+      lda #>bios_start
+      sta p_tgt+1
+
+      lda #<handle_block
+      ldx #>handle_block
+      jsr xmodem_upload_callback
+
+      jsr primm
+      .asciiz " OK "
+
+      jmp (SYS_VECTOR_RESET)
+
+handle_block:
+      ldx crs_x
+      phx
+      pha
+      ldx #0
+:     lda xmodem_rcvbuffer,x
+      sta (p_tgt)
+      inc p_tgt
+      bne :+
+      inc p_tgt+1
+:     inx
+      cpx #$80
+      bne :-
+
+      pla
+      jsr hexout_s
+      inc crs_x
+      lda p_tgt+1
+      jsr hexout_s
+      lda p_tgt
+      jsr hexout
+      pla
+      sta crs_x
       rts

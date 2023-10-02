@@ -24,15 +24,14 @@ A retro style 8bit computer based on the 65c02 CPU.
 ### Software ###
 - steckOS operating system with FAT32 support
 - Forth interpreter (Taliforth2)
-- EhBasic 2.22 with extensions 
+- EhBasic 2.22 with extensions
 
 The goal is to design a machine that could have existed back in the home computer era, but with "modern" interfaces like PS/2, full fledged rs232, SPI, etc.
 
 We use as much open source tools as possible, such as
 
-- cc65
+- ca65/cc65
 - make
-- galasm
 - KiCAD
 - avr-gcc
 - git

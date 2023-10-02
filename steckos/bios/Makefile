@@ -44,8 +44,8 @@ loader.prg: loader.o
 %.dis: %.bin
 	dcc6502 -o 0x0300 -d -n -c $< > $@
 
-transfer: loader.bin
-	../../transfer.py -s 0x0300 loader.bin
+bios: bios.bin
+	../../xmodem.sh bios.bin
 
 emu: bios.bin
 	steckschwein-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg

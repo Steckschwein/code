@@ -3,14 +3,12 @@
 .include "keyboard.inc"
 
 .export xmodem_upload_callback
-.export xmodem_upload
 
 .import uart_tx
 .import uart_rx_nowait
 .import crc16_init
 .import crc16_lo, crc16_hi
 .import primm
-.import hexout, hexout_s
 .import xmodem_rcvbuffer
 .import xmodem_startaddress
 
@@ -72,11 +70,7 @@
 crc:  .res 2  ; CRC lo byte  (two byte variable)
 crch  = crc+1  ; CRC hi byte
 
-ptr:  .res 2  ; data pointer (two byte variable)
-ptrh  = ptr+1  ;   "    "
-
 blkno:  .res 1 ; block number
-bflag:  .res 1 ; block flag
 retry:  .res 1 ; retry counter
 retry2:  .res 1 ; 2nd counter
 
@@ -129,15 +123,9 @@ ESC  = $1b  ; ESC to exit
 ; v 1.1 added block 1 masking (block 257 would be corrupted)
 
 ; in
+;   .A/.X pointer to block rcv callback
 ; out:
 ;  C=0 on success, C=1 on any i/o or protocoll related error
-.proc xmodem_upload
-          lda #<_block_rx_dflt
-          ldx #>_block_rx_dflt
-.endproc
-
-; in
-;   .A/.X pointer to block rcv callback
 .proc xmodem_upload_callback
           sta block_rx+0
           stx block_rx+1
@@ -149,7 +137,6 @@ ESC  = $1b  ; ESC to exit
 
           lda #$01
           sta blkno    ; set block # to 1
-          sta bflag    ; set flag to get address from block 1
 StartCrc: lda #'C' ; "C" start with CRC mode
           jsr Put_Chr  ; send it
           lda #$FF
@@ -181,7 +168,7 @@ GetBlk:   lda #$ff    ; 3 sec window to receive characters
           sta retry2  ;
 GetBlk1:  jsr GetByte  ; get next character
           bcc BadCrc  ; chr rcv error, flush and send NAK
-GetBlk2: sta Rbuff,x  ; good char, save it in the rcv buffer
+GetBlk2:  sta Rbuff,x  ; good char, save it in the rcv buffer
           inx        ; inc buffer pointer
           cpx #$84    ; <01> <FE> <128 bytes> <CRCH> <CRCL>
           bne GetBlk  ; get 132 characters
@@ -202,7 +189,7 @@ GoodBlk1: eor #$ff    ; 1's comp of block #
           bne err_exit  ; err, no match!
 
 GoodBlk2: ldy #$02  ;
-CalcCrc: lda Rbuff,y  ; calculate the CRC for the 128 bytes of data
+CalcCrc:  lda Rbuff,y  ; calculate the CRC for the 128 bytes of data
 
 UpdCrc:  eor  crc+1  ; Quick CRC computation with lookup tables
           tax        ; updates the two bytes at crc & crc+1
@@ -222,7 +209,7 @@ UpdCrc:  eor  crc+1  ; Quick CRC computation with lookup tables
           lda Rbuff,y  ; get lo CRC from buffer
           cmp crc   ; compare to calculated lo CRC
           beq GoodCrc  ; good CRC
-BadCrc:  jsr Flush  ; flush the input port
+BadCrc:   jsr Flush  ; flush the input port
           lda #NAK  ;
           jsr Put_Chr  ; send NAK to resend block
           bra StartBlk ; start over, get the block again
@@ -237,42 +224,6 @@ _block_rx:
           jmp (block_rx)
 .endproc
 
-_block_rx_dflt:
-          cmp #$01  ; 1st block?
-          bne CopyBlk  ; no, copy all 128 bytes
-          lda bflag  ; is it really block 1, not block 257, 513 etc.
-          beq CopyBlk  ; no, copy all 128 bytes
-          lda Rbuff,x  ; get target address from 1st 2 bytes of blk 1
-          sta ptr   ; save lo address
-          sta xmodem_startaddress
-          inx    ;
-          lda Rbuff,x  ; get hi address
-          sta ptr+1  ; save it
-          sta xmodem_startaddress+1
-          jsr hexout_s
-          lda xmodem_startaddress
-          jsr hexout
-          jsr primm
-          .asciiz "...     "
-          inx    ; point to first byte of data
-          dec bflag  ; set the flag so we won't get another address
-CopyBlk: ;ldy #$00  ; set offset to zero
-CopyBlk3: lda Rbuff,x  ; get data byte from buffer
-          sta (ptr)  ; save to target
-          inc ptr   ; point to next address
-          bne CopyBlk4 ; did it step over page boundary?
-          inc ptr+1  ; adjust high address for page crossing
-CopyBlk4: inx    ; point to next data byte
-          cpx #$82  ; is it the last byte
-          bne CopyBlk3 ; no, get the next one
-
-          jsr primm
-          .byte KEY_BACKSPACE, KEY_BACKSPACE, KEY_BACKSPACE, KEY_BACKSPACE, KEY_BACKSPACE, 0
-
-          lda ptr+1
-          jsr hexout_s
-          lda ptr
-          jmp hexout
 ;
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ;
