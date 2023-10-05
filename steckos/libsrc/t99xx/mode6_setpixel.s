@@ -26,53 +26,53 @@
 
 .importzp vdp_tmp
 
-;	set pixel to gfx6 mode screen
+;  set pixel to gfx6 mode screen
 ;
-;	X - x coordinate [0..ff]
-;	Y - y coordinate [0..bf]
-;	A - color [0..f] and bit 7 MSB x coordinate
+;  X - x coordinate [0..ff]
+;  Y - y coordinate [0..bf]
+;  A - color [0..f] and bit 7 MSB x coordinate
 ;
-; 	VRAM ADDRESS = 8(INT(X DIV 2)) + 256(INT(Y DIV 8)) + (Y MOD 8)
+;   VRAM ADDRESS = 8(INT(X DIV 2)) + 256(INT(Y DIV 8)) + (Y MOD 8)
 vdp_mode6_set_pixel:
-		beq vdp_gfx6_set_pixel_e	; 0 - not set, leave blank
-;		sta tmp1					; otherwise go on and set pixel
-		; calculate low byte vram adress
-		txa						;2
-		and	#$f8
-		sta	vdp_tmp
-		tya
-		and	#$07
-		ora	vdp_tmp
-		sta	a_vreg	;4 set vdp vram address low byte
-		sta	vdp_tmp	;3 safe vram low byte
+    beq vdp_gfx6_set_pixel_e  ; 0 - not set, leave blank
+;    sta tmp1          ; otherwise go on and set pixel
+    ; calculate low byte vram adress
+    txa            ;2
+    and  #$f8
+    sta  vdp_tmp
+    tya
+    and  #$07
+    ora  vdp_tmp
+    sta  a_vreg  ;4 set vdp vram address low byte
+    sta  vdp_tmp  ;3 safe vram low byte
 
-		; high byte vram address - div 8, result is vram address "page" $0000, $0100, ...
-		tya						;2
-		lsr						;2
-		lsr						;2
-		lsr						;2
-		sta	a_vreg				;set vdp vram address high byte
-		ora #WRITE_ADDRESS		;2 adjust for write
-		tay						;2 safe vram high byte for write in y
+    ; high byte vram address - div 8, result is vram address "page" $0000, $0100, ...
+    tya            ;2
+    lsr            ;2
+    lsr            ;2
+    lsr            ;2
+    sta  a_vreg        ;set vdp vram address high byte
+    ora #WRITE_ADDRESS    ;2 adjust for write
+    tay            ;2 safe vram high byte for write in y
 
-		txa						;2 set the appropriate bit
-		and	#$07				;2
-		tax						;2
-		lda	bitmask,x			;4
-		ora	a_vram				;4 read current byte in vram and OR with new pixel
-		tax						;2 or value to x
-		nop						;2
-		nop						;2
-		nop						;2
-		lda	vdp_tmp			;2
-		sta a_vreg
-		tya						;2
-		nop						;2
-		nop						;2
-		sta	a_vreg
-		vnops
-		stx a_vram	;set vdp vram address high byte
+    txa            ;2 set the appropriate bit
+    and  #$07        ;2
+    tax            ;2
+    lda  bitmask,x      ;4
+    ora  a_vram        ;4 read current byte in vram and OR with new pixel
+    tax            ;2 or value to x
+    nop            ;2
+    nop            ;2
+    nop            ;2
+    lda  vdp_tmp      ;2
+    sta a_vreg
+    tya            ;2
+    nop            ;2
+    nop            ;2
+    sta  a_vreg
+    vnops
+    stx a_vram  ;set vdp vram address high byte
 vdp_gfx6_set_pixel_e:
-		rts
+    rts
 bitmask:
-	.byte $80,$40,$20,$10,$08,$04,$02,$01
+  .byte $80,$40,$20,$10,$08,$04,$02,$01

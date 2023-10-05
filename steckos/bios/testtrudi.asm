@@ -19,21 +19,36 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.ifdef DEBUG_SPI; enable debug for this module
-	debug_enabled=1
-.endif
 
-.include "via.inc"
-.include "spi.inc"
-.include "errno.inc"
+.include "common.inc"
+.include "system.inc"
+.include "appstart.inc"
+.include "uart.inc"
+.include "keyboard.inc"
 
+.import primm
+.import hexout
+.import hexout_s
+
+.autoimport
+
+.export char_out=$8D2E
+
+appstart $1000
 .code
-.export spi_deselect
 
-spi_deselect:
-		pha
-		lda #spi_device_deselect
-		sta via1portb
-		pla
-		rts
+          ldx #255
 
+@label1:
+          phx
+          jsr primm
+          .byte "trudi lauke moin axolotl", KEY_LF,0
+
+          plx
+          dex
+          bne @label1
+
+
+
+@exit:
+     bra @exit

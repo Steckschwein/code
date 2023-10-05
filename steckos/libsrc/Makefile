@@ -1,7 +1,12 @@
 TARGET=steckschwein
 TARGET_SYS=none
 
+# if 9958 is used
 DEFINES+=-DV9958
+# enable 80 cols
+DEFINES+=-DCOLS80
+# 6x8 characters
+DEFINES+=-DCHAR6x8
 
 ASMUNIT_VERBOSE=true
 
@@ -41,9 +46,9 @@ ifeq ($(words $(MAKECMDGOALS)),1)
   endif
 endif
 
-all: ../lib/$(TARGET).a 
+all: ../lib/$(TARGET).a
 
-test: runtests 
+test: runtests
 
 clean:
 	rm -f ../lib/$(TARGET).a

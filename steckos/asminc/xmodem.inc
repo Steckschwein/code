@@ -19,21 +19,11 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.ifdef DEBUG_SPI; enable debug for this module
-	debug_enabled=1
+
+.ifndef __XMODEM_INC
+.define	__XMODEM_INC "__XMODEM_INC"
+
+XMODEM_DATA_START = $02
+XMODEM_DATA_END = $82
+
 .endif
-
-.include "via.inc"
-.include "spi.inc"
-.include "errno.inc"
-
-.code
-.export spi_deselect
-
-spi_deselect:
-		pha
-		lda #spi_device_deselect
-		sta via1portb
-		pla
-		rts
-

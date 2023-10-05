@@ -37,4 +37,4 @@ test.%: test.%.bin
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 %: %.prg
-	../xmodem.sh $<
+	../../../xmodem.sh $<

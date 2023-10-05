@@ -41,43 +41,49 @@
 ptr1:   .res 2
 ptr2:   .res 2
 p_tgt:  .res 2
+p_src:  .res 2
+
 tmp1:   .res 2
 tmp2:   .res 2
 
 appstart $1000
 
-      ; enable RAM to load bios into
+      sei
+      ; enable RAM to load bios into it
       lda #$02
       sta bank2
       lda #$03
       sta bank3
 
-      lda #<bios_start
-      sta p_tgt
-      lda #>bios_start
-      sta p_tgt+1
+      jsr _set_pointer
 
       jsr primm
       .asciiz "BIOS "
 
-      sei
       lda #<handle_block
       ldx #>handle_block
       jsr xmodem_upload_callback
 
       jsr primm
-      .asciiz " OK. Reset..."
+      .byte " OK.", CODE_LF, "Flash ROM ... ", 0
 
-      ; erase vram for testing purpose
-      vdp_vram_w 0
-      lda #0
-      ldx #>$200 ; 200 pages clear
-      jsr vdp_fill
-      lda #0
-      ldx #<$200 ; 200 pages clear
-      jsr vdp_fill
+      jsr _set_pointer
+
+      lda #$02
+      sta bank2
+      lda #$03
+      sta bank3
 
       jmp (SYS_VECTOR_RESET)  ; reset
+
+_set_pointer:
+      lda #<bios_start
+      sta p_tgt
+      sta p_src
+      lda #>bios_start
+      sta p_tgt+1
+      sta p_src+1
+      rts
 
 handle_block:
       ldy crs_x ; save crs x

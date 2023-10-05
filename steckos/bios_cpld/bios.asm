@@ -13,7 +13,6 @@
 .export char_out ;=uart_tx
 
 uart_cpb = $0200
-;uart_cpb = uart1
 startaddr = $0380
 
 .code
@@ -28,11 +27,7 @@ do_reset:
 		ldx #$ff
 		txs
 
-;		lda ctrl_port
-;		ora #%11111000
-;		sta ctrl_port
-
-		jsr uart_init
+    jsr uart_init
 
 		jsr xmodem_upload
 
@@ -41,7 +36,7 @@ do_reset:
 		jmp (startaddr)
 
 @loop:
-        ldx #'0'
+    ldx #'0'
 @lx:
 		txa
 		jsr uart_tx

@@ -1,4 +1,5 @@
 .include "joystick.inc"
+.include "uart.inc"
 .include "via.inc"
 
 .export read_joystick
@@ -26,8 +27,8 @@ _read:
 ;
 joystick_on:
 		  lda #%11111011
-		  and uart1mcr
-		  sta uart1mcr
+		  and uart_mcr
+		  sta uart_mcr
 		  ;Port A directions
 		  lda #%11000000 		; via port A - set PA7,6 to output (joystick port select), PA1-5 to input (directions)
 		  sta via1ddra
