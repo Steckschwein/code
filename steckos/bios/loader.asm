@@ -26,6 +26,7 @@
 .include "zeropage.inc"
 .include "appstart.inc"
 .include "xmodem.inc"
+.include "vdp.inc"
 
 .autoimport
 
@@ -66,6 +67,15 @@ appstart $1000
 
       jsr primm
       .asciiz " OK. Reset..."
+
+      ; erase vram for testing purpose
+      vdp_vram_w 0
+      lda #0
+      ldx #>$200 ; 200 pages clear
+      jsr vdp_fill
+      lda #0
+      ldx #<$200 ; 200 pages clear
+      jsr vdp_fill
 
       jmp (SYS_VECTOR_RESET)  ; reset
 

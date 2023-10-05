@@ -30,26 +30,16 @@
 .importzp tmp1,tmp2
 .importzp ptr1,ptr2
 
-;.zeropage
-;tmp1: .res 1
-;tmp2: .res 1
-;ptr1: .res 2
-;ptr2: .res 2
-
 .code
 
 ROWS=23
-.ifdef CHAR6x8
-  .ifdef COLS80
-    .ifndef V9958
-      .assert 0, error, "80 COLUMNS ARE SUPPORTED ON V9958 ONLY! MAKE SURE -DV9958 IS ENABLED"
-    .endif
-    COLS=80
-  .else
-    COLS=40
+.ifdef COLS80
+  .ifndef V9958
+    .assert 0, error, "80 COLUMNS ARE SUPPORTED ON V9958 ONLY! MAKE SURE -DV9958 IS ENABLED"
   .endif
+  COLS=80
 .else
-  COLS=32
+  COLS=40
 .endif
 
 _vdp_scroll_up:
@@ -77,7 +67,7 @@ _vdp_scroll_up:
       bne  @l3    ; 3cl
       inc  ptr1+1
       lda  ptr1+1
-      cmp  #>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))  ;screen ram $1800 - $1b00
+      cmp  #>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))  ;screen ram end reached?
       beq  @l4
 @l3:
       inc  ptr2+0  ; 5cl
