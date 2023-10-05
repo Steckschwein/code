@@ -5,7 +5,7 @@
 .import init_via1
 .import hexout, hexout_s
 .import primm
-.import vdp_init, _vdp_chrout, vdp_detect
+.import vdp_init, vdp_detect, vdp_charout
 .import vdp_bgcolor
 .import sdcard_init
 .import sdcard_detect
@@ -20,8 +20,8 @@
 .import fetchkey
 
 .export read_block=sd_read_block
-;.export debug_chrout=_vdp_chrout
-.export char_out=_vdp_chrout
+;.export debug_chrout=vdp_charout
+.export char_out=vdp_charout
 ;.export char_out=uart_tx
 ;.import uart_tx
 .export crc16_lo=BUFFER_0
@@ -30,11 +30,9 @@
 .export xmodem_rcvbuffer=BUFFER_2
 .export xmodem_startaddress=startaddr
 
-.exportzp endaddr
-
 .zeropage
       ptr1:       .res 2
-      endaddr:    .res 2
+      ptr2:       .res 2
       init_step:  .res 1
 .code
 
@@ -379,7 +377,7 @@ pattern:
 
 .segment "VECTORS"
 vdp_chrout:
-      jmp _vdp_chrout
+      jmp vdp_charout
 ;----------------------------------------------------------------------------------------------
 ; Interrupt vectors
 ;----------------------------------------------------------------------------------------------

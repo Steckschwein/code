@@ -37,7 +37,11 @@
 .export xmodem_rcvbuffer = BUFFER_2
 
 .zeropage
-p_tgt:		.res 2
+ptr1:   .res 2
+ptr2:   .res 2
+p_tgt:  .res 2
+tmp1:   .res 2
+tmp2:   .res 2
 
 appstart $1000
 
@@ -52,18 +56,21 @@ appstart $1000
       lda #>bios_start
       sta p_tgt+1
 
+      jsr primm
+      .asciiz "BIOS "
+
       sei
       lda #<handle_block
       ldx #>handle_block
       jsr xmodem_upload_callback
 
       jsr primm
-      .asciiz " OK "
+      .asciiz " OK. Reset..."
 
       jmp (SYS_VECTOR_RESET)  ; reset
 
 handle_block:
-      ldy crs_x
+      ldy crs_x ; save crs x
       phy
       pha
 @copy:

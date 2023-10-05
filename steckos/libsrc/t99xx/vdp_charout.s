@@ -27,14 +27,19 @@
 .include "keyboard.inc"
 .include "zeropage.inc"
 
-.zeropage
-ptr3: .res 2
-ptr4: .res 2
+.importzp tmp1,tmp2
+.importzp ptr1,ptr2
+
+;.zeropage
+;tmp1: .res 1
+;tmp2: .res 1
+;ptr1: .res 2
+;ptr2: .res 2
 
 .code
+
 ROWS=23
 .ifdef CHAR6x8
-  .import charset_6x8
   .ifdef COLS80
     .ifndef V9958
       .assert 0, error, "80 COLUMNS ARE SUPPORTED ON V9958 ONLY! MAKE SURE -DV9958 IS ENABLED"
@@ -45,42 +50,39 @@ ROWS=23
   .endif
 .else
   COLS=32
-  .import charset_8x8
 .endif
 
-.code
-
-vdp_scroll_up:
-      SetVector  (ADDRESS_TEXT_SCREEN+COLS), ptr3            ; +COLS - offset second row
-      SetVector  (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr4  ; offset first row as "write adress"
+_vdp_scroll_up:
+      SetVector  (ADDRESS_TEXT_SCREEN+COLS), ptr1            ; +COLS - offset second row
+      SetVector  (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr2  ; offset first row as "write adress"
 @l1:
 @l2:
-      lda  ptr3+0  ; 3cl
+      lda  ptr1+0  ; 3cl
       sta  a_vreg
       nop
-      lda  ptr3+1  ; 3cl
+      lda  ptr1+1  ; 3cl
       sta  a_vreg
       vdp_wait_l    ; wait 2µs, 8Mhz = 16cl => 8 nop
       ldx  a_vram  ;
       vdp_wait_l
 
-      lda  ptr4+0  ; 3cl
+      lda  ptr2+0  ; 3cl
       sta  a_vreg
       vdp_wait_l
-      lda  ptr4+1  ; 3cl
+      lda  ptr2+1  ; 3cl
       sta a_vreg
       vdp_wait_l
       stx  a_vram
-      inc  ptr3+0  ; 5cl
+      inc  ptr1+0  ; 5cl
       bne  @l3    ; 3cl
-      inc  ptr3+1
-      lda  ptr3+1
+      inc  ptr1+1
+      lda  ptr1+1
       cmp  #>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))  ;screen ram $1800 - $1b00
       beq  @l4
 @l3:
-      inc  ptr4+0  ; 5cl
+      inc  ptr2+0  ; 5cl
       bne  @l2    ; 3cl
-      inc  ptr4+1
+      inc  ptr2+1
       bra  @l1
 @l4:
       ldx  #COLS  ; write address is already setup from loop
@@ -96,7 +98,7 @@ _inc_cursor_y:
       lda crs_y
       cmp  #ROWS    ;last line ?
       bne  @l1
-      bra  vdp_scroll_up  ; scroll up, dont inc y, exit
+      bra  _vdp_scroll_up  ; scroll up, dont inc y, exit
 @l1:
       inc crs_y
       rts

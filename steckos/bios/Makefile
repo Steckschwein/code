@@ -32,10 +32,10 @@ bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 bios.dis: bios.bin
 	dcc6502 -o 0x8000 -m 0x7fff -d -n -c $< > $@
 
-loader: loader.prg
-	../../xmodem.sh loader.prg
+%: %.prg
+	../../xmodem.sh $<
 
-loader.o: loader.asm bios.bin
+loader.o: loader.asm
 	ca65 --target none $(CA65FLAGS) $<
 
 loader.prg: loader.o
@@ -46,6 +46,9 @@ loader.prg: loader.o
 
 bios: bios.bin
 	../../xmodem.sh bios.bin
+
+mettwurst: mettwurst.prg
+	../../xmodem.sh mettwurst.prg
 
 emu: bios.bin
 	steckschwein-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg
