@@ -20,8 +20,8 @@
 .import fetchkey
 
 .export read_block=sd_read_block
-;.export debug_chrout=vdp_charout
 .export char_out=vdp_charout
+.export debug_chrout=vdp_charout
 ;.export char_out=uart_tx
 ;.import uart_tx
 .export crc16_lo=BUFFER_0

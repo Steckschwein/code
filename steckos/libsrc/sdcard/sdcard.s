@@ -60,7 +60,6 @@ sdcard_detect:
 ; Destructive: A, X, Y
 ;
 ;	out:  Z=1 on success, Z=0 otherwise
-;
 ;---------------------------------------------------------------------
 sdcard_init:
       lda #spi_device_sdcard
@@ -212,7 +211,7 @@ init_clk:
 			;debug "CMD16"
 @exit_ok:
 @l9:
-	; SD card init successful
+	    ; SD card init successful
 			lda #$00
 @exit:
 			jmp sd_deselect_card
@@ -257,11 +256,11 @@ sd_cmd:
 ; C = 0 on success, C = 1 on error, A = error code
 ;---------------------------------------------------------------------
 sd_cmd_response_wait:
-			ldy #sd_cmd_response_retries
+			ldy #(1+sd_cmd_response_retries)
 @l:		dey
 			beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
 			jsr spi_r_byte
-			debug "sd_cm_wt"
+;			debug "sd_cm_wt"
 			bmi @l
 			debug "sd_cm_wt_e"
       clc

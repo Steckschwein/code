@@ -41,8 +41,6 @@
 ptr1:   .res 2
 ptr2:   .res 2
 p_tgt:  .res 2
-tmp1:   .res 2
-tmp2:   .res 2
 
 appstart $1000
 
@@ -68,7 +66,7 @@ appstart $1000
       jsr primm
       .asciiz " OK. Reset..."
 
-      ; erase vram for testing purpose
+      ; erase vram for to make sure ROM image will init VRAM correctly
       vdp_vram_w 0
       lda #0
       ldx #>$200 ; 200 pages clear
