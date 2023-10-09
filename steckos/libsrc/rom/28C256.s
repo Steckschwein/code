@@ -28,10 +28,11 @@
 .export rom_sdp_disable
 .export rom_sdp_enable
 .export rom_write_byte_protected
+.export rom_write_byte
 
 .code
 
-ROM_BASE = $4000
+ROM_BASE = $4000 ; we use just one 16k slot to write to rom
 
 rom_write_page:
         rts
@@ -39,15 +40,16 @@ rom_write_page:
 ; in:
 ;   .A    - byte to write
 ;   .X/.Y - rom address (low/high)
+; out:
+;   C=0 on success, C=1 on error
 rom_write_byte_protected:
-        sta __volatile_tmp
-
-        lda ctrl_port+1     ; safe bank reg
-        pha
-
+rom_write_byte:
         stx __volatile_ptr  ; rom address low byte
-;        txa
- ;       jsr hexout_s
+
+        ldx bank1           ; safe bank reg
+        phx
+
+        pha;        sta __volatile_tmp
 
         ldx #$80            ; select first 16k ROM
 
@@ -56,56 +58,71 @@ rom_write_byte_protected:
         bit #$40            ; low/high rom bank ?
         bvc :+
         inx                 ; inc to 2nd 16k ROM
-:       stx ctrl_port+1     ; 16k ROM to slot 1
+:       stx bank1           ; 16k ROM to slot 1
 
-        and #$3f
+        and #$3f            ; map to bank1 address $4000-7fff
         ora #>ROM_BASE      ; offset to bank 1 ($4000)
-        ;jsr hexout_s
         sta __volatile_ptr+1
 
-        txa
-;        jsr hexout_s
+;        jsr rom_sdp_enable
+        pla ; lda __volatile_tmp
 
-        jsr rom_sdp_enable
-
-        lda __volatile_tmp
-        sta (__volatile_ptr)
-:       cmp (__volatile_ptr)
-        bne :-
+        ldy #0  ; timeout
+        sta (__volatile_ptr)  ; write
+@wait:  sys_delay_ms 1
+        dey
+        bne @test
+        sec                   ; C=1 error
+        bra @exit
+@test:  cmp (__volatile_ptr)  ; due to bit 6 toggle, we have to compare twice
+        bne @wait             ; to verify that the expected value is really written
+        cmp (__volatile_ptr)  ;
+        bne @wait
+        clc
 ;        and #1<<6 ; toggle bit?
  ;       eor #1<<6
   ;      bne :-
-        pla
-        sta ctrl_port+1
+@exit:
+        lda (__volatile_ptr)
+        plx
+        stx bank1
+        rts
 
- @exit: rts
 
-
-
+; disable software data protection (sdp)
+;
 ; disable - $aa, $55, $80, $aa, $55, $20
 rom_sdp_disable:
         lda #$00
         jsr _sdp_sequence
         lda #$a0
-        bra _sdp_sequence
-; enable  - $aa, $55, $a0
+        jsr _sdp_sequence
+        sys_delay_ms 50 ; write cycle delay
+        rts
+
+; enable software data protection (sdp)
+; enable sequence- $aa, $55, $a0
 rom_sdp_enable:
         lda #$20
+        jsr _sdp_sequence
+        sys_delay_ms 50   ; write cycle delay
+        rts
+
 _sdp_sequence:
-        ldx ctrl_port+1
+        ldx bank1 ; save bank1
         phx
         ldx #$81
-        stx ctrl_port+1
+        stx bank1
         ldx #$aa
         stx ROM_BASE + ($5555 & $3fff)
         ldx #$80
-        stx ctrl_port+1
+        stx bank1
         ldx #$55
         stx ROM_BASE + $2aaa
         ldx #$81
-        stx ctrl_port+1
+        stx bank1
         eor #$80
         sta ROM_BASE + ($5555 & $3fff)
         plx
-        stx ctrl_port+1
+        stx bank1
         rts

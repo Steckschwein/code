@@ -43,6 +43,8 @@ ROWS=23
 .endif
 
 _vdp_scroll_up:
+      phx
+
       SetVector  (ADDRESS_TEXT_SCREEN+COLS), ptr1            ; +COLS - offset second row
       SetVector  (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr2  ; offset first row as "write adress"
 @l1:
@@ -82,6 +84,8 @@ _vdp_scroll_up:
       vdp_wait_l
       dex
       bne  @l5
+
+      plx
       rts
 
 _inc_cursor_y:

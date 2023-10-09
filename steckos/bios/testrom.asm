@@ -25,10 +25,17 @@
 .include "appstart.inc"
 .include "uart.inc"
 .include "keyboard.inc"
+.include "zeropage.inc"
 
 .autoimport
 
-.export char_out=$8D2E
+.export char_out=vdp_charout
+
+.zeropage
+tmp1:   .res 1
+tmp2:   .res 1
+ptr1:   .res 2
+ptr2:   .res 2
 
 appstart $1000
 
@@ -44,10 +51,41 @@ appstart $1000
       jsr primm
       .byte KEY_LF,"write", KEY_LF,0
 
-      lda #$27
+      jsr rom_sdp_disable
+      lda #$76
       ldx #0
       ldy #0
       jsr rom_write_byte_protected
+      bcc :+
+      jsr primm
+      .asciiz "failed!"
+      bra @sdp_enable
+
+:     jsr hexout_s
+      tya
+      jsr hexout_s
+      lda __volatile_ptr+1
+      jsr hexout_s
+      lda __volatile_ptr
+      jsr hexout
+
+      lda #$45
+      ldx #1
+      ldy #0
+      jsr rom_write_byte_protected
+      bcc :+
+      jsr primm
+      .asciiz "failed!"
+:     jsr hexout_s
+      tya
+      jsr hexout_s
+      lda __volatile_ptr+1
+      jsr hexout_s
+      lda __volatile_ptr
+      jsr hexout
+
+@sdp_enable:
+      jsr rom_sdp_enable
 
       jsr primm
       .byte KEY_LF,"read back", 0
@@ -57,10 +95,10 @@ appstart $1000
      bra @exit
 
 dump:
-      lda ctrl_port+1
+      lda bank1
       pha
       lda #$80
-      sta ctrl_port+1
+      sta bank1
       ldx #0
 @l:
       txa
@@ -80,7 +118,7 @@ dump:
       bne @l
 
       pla
-      sta ctrl_port+1
+      sta bank1
 
       rts
 

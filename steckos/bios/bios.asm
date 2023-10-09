@@ -39,7 +39,7 @@
 startaddr=$0380
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
-      .export __fat_write_dir_entry=fat_write_dir_entry
+.export __fat_write_dir_entry=fat_write_dir_entry
 fat_write_dir_entry:
       rts
 
@@ -188,9 +188,9 @@ do_reset:
       txs
 
       lda #$00
-      sta ctrl_port+0
+      sta bank0
       lda #$01
-      sta ctrl_port+1
+      sta bank1
 
       ; Check zeropage and Memory
 check_zp:
