@@ -20,3 +20,6 @@ clean:
 
 %: %.prg
 	../../xmodem.sh $<
+
+emu: shmup.prg
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload shmup.prg

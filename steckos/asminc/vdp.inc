@@ -206,22 +206,22 @@ ADDRESS_GFX_MC_PATTERN		  = $0000  ; pattern table
 ADDRESS_GFX_MC_SPRITE		  = ADDRESS_GFX_SPRITE	  ; sprite attributes
 ADDRESS_GFX_MC_SPRITE_PATTERN = ADDRESS_GFX_SPRITE_PATTERN	; sprite pattern
 
-ADDRESS_GFX3_SCREEN	=		 ADDRESS_GFX2_SCREEN
-ADDRESS_GFX3_PATTERN  =		 ADDRESS_GFX2_PATTERN
-ADDRESS_GFX3_COLOR	 =		 ADDRESS_GFX2_COLOR
+ADDRESS_GFX3_SCREEN	        =		 ADDRESS_GFX2_SCREEN
+ADDRESS_GFX3_PATTERN        =		 ADDRESS_GFX2_PATTERN
+ADDRESS_GFX3_COLOR	        =		 ADDRESS_GFX2_COLOR
 ADDRESS_GFX3_SPRITE_PATTERN = ADDRESS_GFX2_SPRITE_PATTERN
-ADDRESS_GFX3_SPRITE			= ADDRESS_GFX_SPRITE
-ADDRESS_GFX3_SPRITE_COLOR	= ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
+ADDRESS_GFX3_SPRITE			    = ADDRESS_GFX_SPRITE
+ADDRESS_GFX3_SPRITE_COLOR	  = ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
 
-ADDRESS_GFX6_SCREEN			 = $10000 ; screen
-ADDRESS_GFX6_SPRITE_PATTERN  = $0f000	  ;
-ADDRESS_GFX6_SPRITE			 = $0fa00	  ;
-ADDRESS_GFX6_SPRITE_COLOR	 = ADDRESS_GFX6_SPRITE-$0200
+ADDRESS_GFX6_SCREEN			      = $10000 ; screen
+ADDRESS_GFX6_SPRITE_PATTERN   = $f000	  ;
+ADDRESS_GFX6_SPRITE			      = $fa00	  ;
+ADDRESS_GFX6_SPRITE_COLOR	    = ADDRESS_GFX6_SPRITE-$0200
 
-ADDRESS_GFX7_SCREEN			 = $10000							; 64k RAM, 2nd page
-ADDRESS_GFX7_SPRITE_PATTERN  = $0fa00  ; sprite pattern table
-ADDRESS_GFX7_SPRITE          = $fa00   ; attribute table address
-ADDRESS_GFX7_SPRITE_COLOR    = $f800   ; color table address
+ADDRESS_GFX7_SCREEN			      = $10000	; 64k RAM, 2nd page
+ADDRESS_GFX7_SPRITE_PATTERN   = $f000   ; sprite pattern table
+ADDRESS_GFX7_SPRITE           = $fa00   ; sprite attribute table address
+ADDRESS_GFX7_SPRITE_COLOR     = ADDRESS_GFX7_SPRITE-$0200  ; sprite color table address (“strictly above” the sprite attribute table)
 
 ; long delay with 6+2 = 8µs wait
 MAX_NOPS_8M = 6 * clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
@@ -230,7 +230,7 @@ MAX_NOPS_2M = (2 * clockspeed - 12) / 2; -12 => jsr/rts = 2*6cl = 12cl to substr
 
 ;.define MAX_NOPS_2M 2 * clockspeed
 
-;.macro MAX_NOPS_2M 
+;.macro MAX_NOPS_2M
 ;	(2 * clockspeed - 12) / 2; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
 ;.endmacro
 

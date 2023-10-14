@@ -47,13 +47,13 @@ vdp_init_bytes_gfx7:
 			.byte >(ADDRESS_GFX7_SCREEN>>3) | $1f	; => 00<A16>1 1111 - entw. bank 0 (offset $0000) or 1 (offset $10000)
 			.byte 0
 			.byte 0
-			.byte	>(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
-			.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);
+			.byte	>(ADDRESS_GFX7_SPRITE<<1 | $07)   ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
+			.byte	>(ADDRESS_GFX7_SPRITE_PATTERN>>3) ;
 			.byte %00000000 ; border color
 			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
 			.byte v_reg9_nt ; #R9, set bit to 1 for PAL
-			.byte 0;  #R10
-			.byte (ADDRESS_GFX7_SPRITE >> 14)
+			.byte .hiword(ADDRESS_GFX7_SPRITE_COLOR<<2) ; color table high, a16-14
+			.byte >(ADDRESS_GFX7_SPRITE >> 7)
 			.byte 0;  #R12
 			.byte 0;  #R13
 			.byte <.HIWORD(ADDRESS_GFX7_SCREEN<<2) ; #R14
