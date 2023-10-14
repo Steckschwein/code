@@ -6,7 +6,7 @@ UTIL_XPM_8BIT=sh ../utils/xpm_ca65_8bit.sh
 UTIL_XPM_16BIT=python3 ../utils/xpm_ca65_16bit.py
 
 .PHONY: clean all
-all: dinosaur.prg 
+all: dinosaur.prg
 
 %.res: %.xpm
 	$(UTIL_XPM_16BIT) dinosaur.sprites.xpm > dinosaur.sprites.res
@@ -24,7 +24,7 @@ all: dinosaur.prg
 	$(UTIL_XPM_8BIT) dinosaur.chars.4.4px.xpm > dinosaur.chars.4.4px.res
 	$(UTIL_XPM_8BIT) dinosaur.chars.5.4px.xpm > dinosaur.chars.5.4px.res
 	$(UTIL_XPM_8BIT) dinosaur.chars.6.4px.xpm > dinosaur.chars.6.4px.res
-    
+
 	$(UTIL_XPM_8BIT) dinosaur.chars.1.xmas.xpm > dinosaur.chars.1.xmas.res
 	$(UTIL_XPM_8BIT) dinosaur.chars.1.4px.xmas.xpm > dinosaur.chars.1.4px.xmas.res
 	$(UTIL_XPM_8BIT) dinosaur.chars.2.xmas.xpm > dinosaur.chars.2.xmas.res
@@ -35,15 +35,21 @@ all: dinosaur.prg
 	$(UTIL_XPM_8BIT) dinosaur.chars.4.4px.xmas.xpm > dinosaur.chars.4.4px.xmas.res
 
 clean:
-	rm -f *.prg *.labels *.res 
+	rm -f *.prg *.labels *.res
 
 gfx.res: *.res
 
 %.o: %.asm *.res
-	ca65 $(INCLUDES) $(@:.o=.asm)
+	ca65 -g $(INCLUDES) $(@:.o=.asm)
 
 %.prg: %.o $(LIBS)
-	ld65 $< $(LDFLAGS) -o $@
+	ld65 $< --dbgfile $(basename $<).dbg -m $(basename $<).map $(LDFLAGS) -o $@
+
+%.dis: %.prg
+	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 dinosaur: all
 	../../xmodem.sh dinosaur.prg
+
+emu: dinosaur.prg
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload dinosaur.prg

@@ -62,9 +62,8 @@ __automount:
     jsr primm
     .byte "mount error (",0
     pla
-    and #$0f
-    ora #'0'
-    jsr krn_chrout
+err_code_exit:
+    jsr hexout_s
     jsr primm
     .byte ")",CODE_LF,0
 exit:
@@ -89,8 +88,5 @@ sdcard_err_init:
     jsr primm
     .byte "init failed! (",0
     pla
-    jsr hexout_s
-    jsr primm
-    .byte ")",CODE_LF,0
-    rts
+    bra err_code_exit
 sdcard_retry: .res 1,1; initial with 1, during boot only one try

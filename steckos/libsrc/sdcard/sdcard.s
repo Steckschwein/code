@@ -137,9 +137,7 @@ init_clk:
 			beq @l3
 			jmp @exit
 @l3:
-
 ;			bne @exit
-
 			; is this $aa? we're done if not
 			jsr spi_r_byte
 			cmp #$aa
@@ -148,7 +146,6 @@ init_clk:
 			; init card using ACMD41 and parameter $40000000
 			lda #$40
 			sta sd_cmd_param
-
 @l5:
 			lda #cmd55
 			jsr sd_cmd
@@ -156,7 +153,6 @@ init_clk:
 			cmp #$01
 			bne @exit
 			; Init failed
-
 
 			lda #acmd41
 			jsr sd_cmd
@@ -256,7 +252,7 @@ sd_cmd:
 ; C = 0 on success, C = 1 on error, A = error code
 ;---------------------------------------------------------------------
 sd_cmd_response_wait:
-			ldy #(1+sd_cmd_response_retries)
+			ldy #sd_cmd_response_retries
 @l:		dey
 			beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
 			jsr spi_r_byte

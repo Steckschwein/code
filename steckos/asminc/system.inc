@@ -34,10 +34,10 @@ clockspeed  = 8	; in Mhz
 
 ctrl_port	= $0230
 
-bank0 = ctrl_port+0
-bank1 = ctrl_port+1
-bank2 = ctrl_port+2
-bank3 = ctrl_port+3
+slot0 = ctrl_port+0
+slot1 = ctrl_port+1
+slot2 = ctrl_port+2
+slot3 = ctrl_port+3
 
 CODE_LF  = $0a ; line feed
 

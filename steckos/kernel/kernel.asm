@@ -75,9 +75,9 @@ kern_init:
     stz flags
 
     lda #$03  ; enable RAM below kernel
-    sta bank2
+    sta slot2
 
-;    jsr rtc_irq0
+    jsr rtc_irq0
 
     cli
 
@@ -168,8 +168,8 @@ do_irq:
     ; opl isr
 
 @check_spi_rtc:
-    jsr rtc_irq0_ack
-    bcc @check_spi_keyboard
+      jsr rtc_irq0_ack
+      bcc @check_spi_keyboard
  ;   lda #Cyan<<4|Cyan
  ;   jsr vdp_bgcolor
 ;  sys_delay_ms 5

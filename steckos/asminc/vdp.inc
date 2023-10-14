@@ -48,10 +48,10 @@ v_reg1_16k      = 1<<7
 v_reg1_display_on  = 1<<6
 v_reg1_int        = 1<<5
 
-v_reg1_m1      = 1<<4
-v_reg1_m2      = 1<<3
-v_reg1_spr_size   = 1<<1
-v_reg1_spr_mag    = 1<<0
+v_reg1_m1         = 1<<4
+v_reg1_m2         = 1<<3
+v_reg1_spr_size   = 1<<1 ; 1: sprite size 16x16, 0: 8x8 sprite
+v_reg1_spr_mag    = 1<<0 ; 1: scale (magnify) sprite double size
 
 v_reg8_BW      = 1<<0  ; 0/1 grayscale off/on
 v_reg8_SPD       = 1<<1  ; 0/1 sprites enabled/disabled
@@ -219,8 +219,9 @@ ADDRESS_GFX6_SPRITE           = $0fa00    ;
 ADDRESS_GFX6_SPRITE_COLOR     = ADDRESS_GFX6_SPRITE-$0200
 
 ADDRESS_GFX7_SCREEN           = $10000              ; 64k RAM, 2nd page
-ADDRESS_GFX7_SPRITE           = ADDRESS_GFX_SPRITE
-ADDRESS_GFX7_SPRITE_PATTERN   = ADDRESS_GFX1_SPRITE_PATTERN
+ADDRESS_GFX7_SPRITE_PATTERN   = $0fa00  ; sprite pattern table
+ADDRESS_GFX7_SPRITE           = $fa00   ; attribute table address
+ADDRESS_GFX7_SPRITE_COLOR     = $f800   ; color table address
 
 ; long delay with 6+2 = 8µs wait
 MAX_NOPS_8M = 6 * clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
