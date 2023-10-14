@@ -42,9 +42,9 @@ vdp_gfx7_on:
 			jmp vdp_init_reg
 
 vdp_init_bytes_gfx7:
-			.byte v_reg0_m5|v_reg0_m4|v_reg0_m3									; reg0 mode bits
+			.byte v_reg0_m5|v_reg0_m4|v_reg0_m3									        ; reg0 mode bits
 			.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 				; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-			.byte >(ADDRESS_GFX7_SCREEN>>3) | $1f	; => 00<A16>1 1111 - entw. bank 0 (offset $0000) or 1 (offset $10000)
+			.byte >(ADDRESS_GFX7_SCREEN>>3 | $3f)	; => 00<A16>1 1111 - entw. bank 0 (offset $0000) or 1 (offset $10000)
 			.byte 0
 			.byte 0
 			.byte	>(ADDRESS_GFX7_SPRITE<<1 | $07)   ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
@@ -52,7 +52,7 @@ vdp_init_bytes_gfx7:
 			.byte %00000000 ; border color
 			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
 			.byte v_reg9_nt ; #R9, set bit to 1 for PAL
-			.byte .hiword(ADDRESS_GFX7_SPRITE_COLOR<<2) ; color table high, a16-14
+			.byte 0
 			.byte >(ADDRESS_GFX7_SPRITE >> 7)
 			.byte 0;  #R12
 			.byte 0;  #R13
