@@ -174,8 +174,8 @@ isr:
 @is_vblank:
  	vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
  	vdp_wait_s
-	bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
- 	bpl @is_vblank_end  ; VDP IRQ flag set?
+	bit a_vreg              ; Check VDP interrupt. IRQ is acknowledged by reading.
+ 	bpl @is_vblank_end      ; VDP IRQ flag set?
 
 	inc frame_cnt
 	jsr script_step
@@ -189,7 +189,7 @@ isr:
 @is_vblank_end:
 	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 already
 
-	jsr fetchkey
+  jsr fetchkey
 
 @exit:
 	restore
