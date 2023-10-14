@@ -13,8 +13,14 @@ appstart $1000
     copypointer user_isr, save_isr
     SetVector isr, user_isr
 
-    lda #255
-    sta x_pos
+  ;  lda #255
+  ;  sta sprite_1_x
+  ;  lda #225
+  ;  sta sprite_2_x
+  ;  lda #195
+  ;  sta sprite_3_x
+  ;  lda #165
+  ;  sta sprite_4_x
 
     jsr gfxui_on
 
@@ -77,28 +83,43 @@ gfxui_off:
 
 isr:
   bit  a_vreg
-  bpl  isr_end
+  bmi @go
+  jmp  isr_end
+@go:
   lda  #%00011100
   jsr vdp_bgcolor
 
-  ; vdp_vram_w ADDRESS_GFX7_SPRITE
-  ; lda #<sprite_attr
-  ; ldy #>sprite_attr
-  ; ldx #(sprite_attr_end - sprite_attr)
-  ; jsr vdp_memcpys
+  vdp_vram_w ADDRESS_GFX7_SPRITE
+  lda #<sprite_attr
+  ldy #>sprite_attr
+  ldx #(sprite_attr_end - sprite_attr)
+  jsr vdp_memcpys
 
+  ldx sprite_1_x
+  lda sintable,x
+  sta sprite_1_y
+  dec sprite_1_x
 
-  ldx x_pos
-  bne @set_pos 
-  lda #255
-  sta x_pos
-@set_pos:
-  lda sintable,x 
-  stx sprite_attr+1
-  sta sprite_attr+0
-  dec x_pos
+  ldx sprite_2_x
+  lda sintable,x
+  sta sprite_2_y
+  dec sprite_2_x
 
+  ldx sprite_3_x
+  lda sintable,x
+  sta sprite_3_y
+  dec sprite_3_x
 
+  ldx sprite_4_x
+  lda sintable,x
+  sta sprite_4_y
+  dec sprite_4_x
+
+  vdp_vram_w ADDRESS_GFX7_SPRITE
+  lda #<sprite_attr
+  ldy #>sprite_attr
+  ldx #(sprite_attr_end - sprite_attr)
+  jsr vdp_memcpys
 
   lda  #0
   jsr  vdp_bgcolor
@@ -109,27 +130,27 @@ isr_end:
 .data
 sprite_attr:
 sprite_attr_1:
-  sprite_y: .byte 50
-  sprite_x: .byte 50
+  sprite_1_y: .byte 0
+  sprite_1_x: .byte 255
   pattern:  .byte 0
   .byte 0
 sprite_attr_2:
-  sprite_2_y: .byte 70
-  sprite_2_x: .byte 50
+  sprite_2_y: .byte 0
+  sprite_2_x: .byte 205
   pattern_2:  .byte 0
   .byte 0
 sprite_attr_3:
-  sprite_3_y: .byte 90
-  sprite_3_x: .byte 50
+  sprite_3_y: .byte 0
+  sprite_3_x: .byte 145
   pattern_3:  .byte 0
   .byte 0
 sprite_attr_4:
-  sprite_4_y: .byte 110
-  sprite_4_x: .byte 50
+  sprite_4_y: .byte 0
+  sprite_4_x: .byte 95
   pattern_4:  .byte 0
   .byte 0
 
-  ;.byte SPRITE_OFF+8  ; all other sprites off
+  .byte SPRITE_OFF+8  ; all other sprites off
 sprite_attr_end:
 
 sprite_pattern:
@@ -332,4 +353,3 @@ sintable:
 
 .bss
 save_isr: .res 2
-x_pos: .res 1
