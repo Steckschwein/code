@@ -219,8 +219,9 @@ ADDRESS_GFX6_SPRITE			 = $0fa00	  ;
 ADDRESS_GFX6_SPRITE_COLOR	 = ADDRESS_GFX6_SPRITE-$0200
 
 ADDRESS_GFX7_SCREEN			 = $10000							; 64k RAM, 2nd page
-ADDRESS_GFX7_SPRITE          = ADDRESS_GFX_SPRITE
-ADDRESS_GFX7_SPRITE_PATTERN  = ADDRESS_GFX1_SPRITE_PATTERN
+ADDRESS_GFX7_SPRITE_PATTERN  = $0fa00  ; sprite pattern table
+ADDRESS_GFX7_SPRITE          = $fa00   ; attribute table address
+ADDRESS_GFX7_SPRITE_COLOR    = $f800   ; color table address
 
 ; long delay with 6+2 = 8µs wait
 MAX_NOPS_8M = 6 * clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
