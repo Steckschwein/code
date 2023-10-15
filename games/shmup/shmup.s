@@ -42,13 +42,12 @@ appstart $1000
     ldx #(sprite_attr_end - sprite_attr)
     jsr vdp_memcpys
 
-;    vdp_vram_w ADDRESS_GFX7_SPRITE_PATTERN
- ;   lda #<sprite_pattern
-  ;  ldy #>sprite_pattern
-   ; ldx #(sprite_pattern_end - sprite_pattern)
+    ;lda #<sprite_color
+    ;ldy #>sprite_color
+    ;ldx #sprite_color_end-sprite_color
     ;jsr vdp_memcpys
 
-    sp_pattern 0, ('V'-64)
+    sp_pattern 0, ('V'-64)  ;petscii
     sp_pattern 1, ('C'-64)
     sp_pattern 2, ('F'-64)
     sp_pattern 3, ('B'-64)
@@ -60,17 +59,19 @@ appstart $1000
     lda #SPRITE_OFF+8 ; vram pointer still setup correctly
     sta a_vram
 
-    vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
-;    lda #<sprite_color
- ;   ldy #>sprite_color
-    lda #Light_Blue
-    ldx #8*16
-    jsr vdp_fills
-;    jsr vdp_memcpys
-
     cli
 
-    keyin
+    stz sp_color
+
+:   keyin
+    cmp #KEY_ESCAPE
+    beq @exit
+    cmp #'n'
+    bne :-
+    inc sp_color
+
+    bra :-
+@exit:
 
     jsr gfxui_off
 
@@ -88,7 +89,7 @@ gfxui_on:
   vdp_sreg v_reg8_VR, v_reg8
   vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
 
-  ldy #$0f
+  ldy #0
   jsr vdp_mode7_blank
 
   rts
@@ -116,6 +117,12 @@ isr:
 @go:
   lda  #%00011100
   jsr vdp_bgcolor
+
+  vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
+  lda sp_color
+  ldx #(16*8)
+  jsr vdp_fills
+
 
   ldx sprite_1_x
   lda sintable,x
@@ -442,4 +449,5 @@ font:
 .include "../demo/2x2_font.inc"
 
 .bss
+sp_color: .res 1
 save_isr: .res 2

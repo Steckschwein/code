@@ -180,6 +180,23 @@ Magenta		      =$0d ;200 90	198 	"C85AC6" (Purple)
 Gray            =$0e ;204 204 204	"CCCCCC"
 White           =$0f ;255 255 255	"white"
 
+GFX7_Black        =$00
+GFX7_Blue         =$01
+GFX7_Red          =$02
+GFX7_Magenta      =$03
+GFX7_Green        =$04
+GFX7_Cyan         =$05
+GFX7_Yellow       =$06
+GFX7_Gray         =$07
+GFX7_Orange       =$08
+GFX7_LightBlue    =$09
+GFX7_LightRed     =$0a
+GFX7_LightMagenta =$0b
+GFX7_LightGreen   =$0c
+GFX7_LightCyan    =$0d
+GFX7_LightYellow  =$0e
+GFX7_White        =$0f
+
 WRITE_ADDRESS=$40
 
 ADDRESS_GFX_SPRITE			  =$1e00
