@@ -77,7 +77,7 @@ kern_init:
     lda #$03  ; enable RAM below kernel
     sta slot2
 
-    jsr rtc_irq0
+;    jsr rtc_irq0
 
     cli
 
@@ -141,7 +141,6 @@ do_irq:
 
 ; system interrupt handler
 ; handle keyboard input and text screen refresh
-@irq:
     save
 
     cld ;clear decimal flag, maybe an app has modified it during execution
@@ -151,28 +150,28 @@ do_irq:
     bit a_vreg ; vdp irq ?
     bpl @check_via
     jsr textui_update_screen  ; update text ui
-    bra @check_spi_keyboard
+;    lda #Dark_Yellow
+;    jsr vdp_bgcolor
 
 @check_via:
     bit via1ifr    ; Interrupt from VIA?
     bpl @check_opl
+;    lda #Light_Red
+;    jsr vdp_bgcolor
     ; via irq handling code
-    bra @check_spi_keyboard
+    ;
 
 @check_opl:
     bit opl_stat  ; IRQ from OPL?
     bpl @check_spi_rtc
-;    lda #Light_Yellow<<4|Light_Yellow
-;    jsr vdp_bgcolor
-    bra @check_spi_keyboard
-    ; opl isr
+;   lda #Light_Yellow<<4|Light_Yellow
+;   jsr vdp_bgcolor
 
 @check_spi_rtc:
-      jsr rtc_irq0_ack
-      bcc @check_spi_keyboard
- ;   lda #Cyan<<4|Cyan
- ;   jsr vdp_bgcolor
-;  sys_delay_ms 5
+;    jsr rtc_irq0_ack
+ ;   bcc @check_spi_keyboard
+  ;  lda #Cyan<<4|Cyan
+   ; jsr vdp_bgcolor
 
 @check_spi_keyboard:
     jsr fetchkey        ; fetch key (to satisfy the IRQ of the avr)
@@ -193,8 +192,8 @@ do_irq:
     jsr __automount
 
 @exit:
-    ;lda #Medium_Green<<4|Black
-    ;jsr vdp_bgcolor
+;    lda #Medium_Green<<4|Black
+;    jsr vdp_bgcolor
 
     restore
     rti
