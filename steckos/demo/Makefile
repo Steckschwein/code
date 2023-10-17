@@ -1,5 +1,5 @@
 CA65FLAGS=--include-dir ../asminc --include-dir ../kernel -D_DEBUG
-LDFLAGS=--config ../prg.ld65.cfg -m $@.map ../lib/steckschwein.a
+LDFLAGS=--config ../prg.ld65.cfg -m $@.map ../lib/steckschwein.a ../../progs/edlib/edlib.o
 ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 
 .PHONY: all clean plasma
@@ -32,3 +32,6 @@ clean:
 
 %: %.prg
 	../../xmodem.sh $<
+
+%.emu: %.prg
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $<

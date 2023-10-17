@@ -23,6 +23,7 @@
 .setcpu "65c02"
 .include "kernel_jumptable.inc"
 .include "vdp.inc"
+.include "ym3812.inc"
 .include "rtc.inc"
 .include "common.inc"
 .include "zeropage.inc"
@@ -30,6 +31,8 @@
 .include "appstart.inc"
 
 .autoimport
+
+.export d00file
 
 appstart $1000
 
@@ -41,6 +44,7 @@ sin_tab_ptr:     .res 2
 rline:      .res 1
 frame_cnt:     .res 1
 script_state:  .res 1
+sound_state:  .res 1
 save_isr:    .res 2
 sin_tab_offs:    .res 1
 rbar_y: .res 1
@@ -89,6 +93,9 @@ pause_cnt: .res 1
   bne @loop
 
   sei
+
+  jsr init
+
   copypointer save_isr, SYS_VECTOR_IRQ
   vdp_sreg v_reg25_wait, v_reg25
   vdp_sreg 0, v_reg15
@@ -165,6 +172,10 @@ init:
 
   stz frame_cnt
   stz pause_cnt
+  stz text_color
+  stz sound_state
+
+  jsr opl2_init ; reset
 
   rts
 
@@ -195,41 +206,51 @@ isr:
   sta rline
   ldy #v_reg19
   vdp_sreg
-  bra @exit
+  bra @sound
 
 @is_vblank:
-   vdp_sreg 0, v_reg15      ; 0 - set status register selection to S#0
-   vdp_wait_s
-  bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
-   bpl @is_vblank_end  ; VDP IRQ flag set?
+    vdp_sreg 0, v_reg15      ; 0 - set status register selection to S#0
+    vdp_wait_s
+    bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
+    bpl @is_vblank_end  ; VDP IRQ flag set?
 
-  inc frame_cnt
-  jsr script_step
+    inc frame_cnt
+    jsr script_step
 
-  vdp_vram_w ADDRESS_GFX3_SCREEN+11*32
-  ldx #2*32
-  lda #<text_scroll_buf
-  ldy #>text_scroll_buf
-  jsr vdp_memcpys
+    vdp_vram_w ADDRESS_GFX3_SCREEN+11*32
+    ldx #2*32
+    lda #<text_scroll_buf
+    ldy #>text_scroll_buf
+    jsr vdp_memcpys
 
 @is_vblank_end:
-  vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 already
+    vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 already
+
+@sound:
+    bit opl_stat
+    bpl @exit
+    jsr jch_fm_play
+    jsr opl2_delay_data
+		ldx #opl2_reg_ctrl
+		lda #$80	; ack IRQ
+		jsr opl2_reg_write
 
 @exit:
-  restore
-  rti
+    restore
+    rti
 
 nexttoken:
-  inc16 p_script
-  lda (p_script)
-  rts
+    inc16 p_script
+    lda (p_script)
+    rts
 
 script_step:
   lda pause_cnt ; in pause?
   beq :+
   dec pause_cnt
   rts
-:  lda (p_script)
+:
+  lda (p_script)
   cmp #SCRIPT_TEXT
   bne :+
   jsr script_text
@@ -239,11 +260,13 @@ script_step:
   jsr nexttoken
   sta pause_cnt
   jmp @next
-:  cmp #SCRIPT_R25
+:
+  cmp #SCRIPT_R25
   bne :+
   vdp_sreg v_reg25_msk | v_reg25_wait, v_reg25
   jmp @next
-:   cmp #SCRIPT_RBAR_MOVE
+:
+  cmp #SCRIPT_RBAR_MOVE
   bne :+
   lda rbar_y
   cmp #TEXT_Y_OFFSET
@@ -254,29 +277,39 @@ script_step:
 @rbar_move:
   dec rbar_y
   rts
-:   cmp #SCRIPT_RBAR_ON
+:
+  cmp #SCRIPT_RBAR_ON
   bne :+
   lda blend_rbar_offset
   bmi @next
   jsr blend_rbar
   dec blend_rbar_offset
   rts
-:   cmp #SCRIPT_RBAR_OFF
+:
+  cmp #SCRIPT_RBAR_OFF
   bne :+
   lda blend_rbar_offset
   cmp #.sizeof(rbar_colors)>>1-1
   beq @next
   inc blend_rbar_offset
   jmp blend_rbar_off
-:   cmp #SCRIPT_RBAR_SINE
+:
+  cmp #SCRIPT_RBAR_SINE
   bne :+
   jsr script_rbar_sine
   jmp @next
-: cmp #SCRIPT_TEXT_COLOR
+:
+  cmp #SCRIPT_TEXT_COLOR
   bne :+
   jsr nexttoken
   sta text_color
   bra @next
+:
+  cmp #SCRIPT_SOUND_ON
+  bne :+
+  jsr sound_init
+  bra @next
+
 :
   cmp #SCRIPT_RESET
   bne :+
@@ -423,9 +456,26 @@ blend_rbar:
   sta rbar_colors+7,x
   rts
 
+sound_init:
+    jsr jch_fm_init
+		freq=70
+		t2cycles=320
+		lda #($ff-(1000000 / freq / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
+  	ldx #opl2_reg_t2	; t2 timer value
+    jsr opl2_reg_write
+		ldx #opl2_reg_ctrl ;reset
+		lda #$80
+		jsr opl2_reg_write
+		lda #$42 ; t1 disable, t2 enable and start
+		jsr opl2_reg_write
+    rts
+
 .data
 font:
   .include "2x2_font.inc"
+
+d00file:
+  .incbin "PJO_INS8.D00"
 
 .repeat 32, n
   .charmap $40+n, n
@@ -442,6 +492,7 @@ SCRIPT_RBAR_OFF = $87
 SCRIPT_RBAR_MOVE = $88
 SCRIPT_RBAR_SINE = $89
 SCRIPT_TEXT_COLOR = $8a
+SCRIPT_SOUND_ON = $8b
 
 TEXT_Y_OFFSET=87
 
@@ -460,7 +511,8 @@ script:
 .endif
 .ifndef DEBUG
   .byte SCRIPT_TEXT_COLOR, Gray<<4|Transparent
-  .byte  SCRIPT_TEXT, "  STECKSCHWEIN  ", SCRIPT_PAUSE, _3s
+  .byte SCRIPT_TEXT, "  STECKSCHWEIN  ", SCRIPT_PAUSE, _3s
+  .byte SCRIPT_SOUND_ON
   .byte SCRIPT_TEXT, "... OH, NICE    ", SCRIPT_PAUSE, _2s
   .byte SCRIPT_TEXT, "A 2X2 CHAR FONT ", SCRIPT_PAUSE, _2s
   .byte SCRIPT_TEXT, "BORING...       ", SCRIPT_PAUSE, _2s
@@ -570,44 +622,3 @@ sin_tab_short:
 .byte 244
 .byte 244
 sin_tab_short_end:
-
-sin_tab:
-    .byte  5
-    .byte  10
-    .byte  14
-    .byte  19
-    .byte  24
-    .byte  28
-    .byte  32
-    .byte  36
-    .byte  40
-    .byte  43
-    .byte  46
-    .byte  48
-    .byte  51
-    .byte  53
-    .byte  54
-    .byte  55
-    .byte  56
-    .byte  56
-    .byte  56
-    .byte  55
-    .byte  54
-    .byte  53
-    .byte  51
-    .byte  48
-    .byte  46
-    .byte  43
-    .byte  40
-    .byte  36
-    .byte  32
-    .byte  28
-    .byte  24
-    .byte  19
-    .byte  14
-    .byte  10
-    .byte  5
-    ;PI = 3.14159265358979323846
-    ;  .byte sin(float(.i) * 5 * PI/180)*56 + 0.5
-    .byte  $ff
-sin_tab_end:
