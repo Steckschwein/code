@@ -251,8 +251,8 @@ _out_ptr_string:
 		bne _out_ptr_string
 		bra _out_end
 _out_ptr_number:
-		lda #'$'									; number in hex with preceeding $
-		jsr asmunit_chrout
+;		lda #'$'									; number in hex with preceeding $
+;		jsr asmunit_chrout
 		ldy tst_bytes
 		dey
 _out_ptr_loop:									; big endian, for better readability
@@ -290,6 +290,10 @@ _hexout_sep:
 		pla
 _hexout:
 		pha
+    pha
+    lda #'$'
+		jsr asmunit_chrout
+    pla
 		lsr
 		lsr
 		lsr

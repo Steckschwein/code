@@ -38,3 +38,16 @@ We use as much open source tools as possible, such as
 
 The repository contains the source for the system firmware, the steckOS "operating system", test and demo programs, galasm source for the address decoder.
 The KiCAD project files for schematics and layout can be found in the "hardware" repository.
+
+### Prepare SD card ###
+```
+$ sudo mkfs.fat -S 4096 /dev/sda1
+$ sudo fsck /dev/sda1
+$ cp -r dist/* /media/...
+
+```
+
+### Building SD image ###
+```
+$ make clean dist img
+```

@@ -20,8 +20,8 @@
 .import fetchkey
 
 .export read_block=sd_read_block
-;.export debug_chrout=vdp_charout
 .export char_out=vdp_charout
+.export debug_chrout=vdp_charout
 ;.export char_out=uart_tx
 ;.import uart_tx
 .export crc16_lo=BUFFER_0
@@ -118,8 +118,8 @@ _delay_10ms:
 
 _keyboard_cmd_status:
       print_dot
-      ldy #50
-:   dey
+      ldy #100
+:     dey
       bmi :+
       phy
       ldy #5
@@ -264,10 +264,10 @@ boot_from_card:
       jsr fat_mount
       beq @findfile
       pha
-      print "mount error "
+      print "mount error ("
       pla
       jsr hexout_s
-      println ""
+      println ")"
       bra do_upload
 @findfile:
       ldy #0

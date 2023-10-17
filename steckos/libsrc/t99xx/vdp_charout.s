@@ -167,41 +167,34 @@ vdp_set_addr:        ; set the vdp vram adress, write A to vram
 .endif
 
 .ifdef CHAR6x8
-v_l=tmp1
-v_h=tmp2
 vdp_set_addr:      ; set the vdp vram adress, write A to vram
-    stz v_h
-    lda crs_y
-    asl
-    asl
-    asl        ; crs_y*8
+      stz crs_ptr+1
+      lda crs_y
+      asl
+      asl
+      asl             ; y*8
+      sta crs_ptr
 
-.ifdef COLS80
-    ; crs_y*64 + crs_y*16 (crs_ptr) => y*80
-    asl        ; y*16
-    sta v_l
-    rol v_h         ; save carry if overflow
-.else
-    ; crs_y*32 + crs_y*8  (crs_ptr) => y*40
-    sta v_l      ; save
-.endif
+      asl             ; y*16
+      rol crs_ptr+1
+      asl             ; y*32
+      rol crs_ptr+1
 
-    asl
-    rol v_h       ; save carry if overflow
-    asl        ;
-    rol v_h      ; save carry if overflow
-    clc
-    adc v_l
+      adc crs_ptr
+      bcc :+
+      inc crs_ptr+1
+      clc             ; y*40
+:
+  .ifdef COLS80      ; y*80 = y*40 *2
+      asl
+      rol crs_ptr+1
+  .endif
+      adc crs_x
+      sta a_vreg
 
-    bcc @l1
-    inc v_h      ; overflow inc page count
-    clc        ;
-@l1:
-    adc crs_x    ; add x to address
-    sta a_vreg
-    lda #(WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
-    adc v_h      ; add carry and page to address high byte
-    vdp_wait_s 4
-    sta a_vreg
-    rts
+      lda #(WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
+      adc crs_ptr+1  ; add carry and page to address high byte
+      vdp_wait_s 4
+      sta a_vreg
+      rts
 .endif

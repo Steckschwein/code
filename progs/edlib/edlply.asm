@@ -32,11 +32,7 @@
 .include "errno.inc"
 .include "appstart.inc"
 
-.import vdp_bgcolor
-.import hexout_s
-.import jch_fm_init, jch_fm_play
-.import jch_fm_set_volume
-.import opl2_detect, opl2_init, opl2_reg_write
+.autoimport
 
 .export d00file
 .export char_out=krn_chrout

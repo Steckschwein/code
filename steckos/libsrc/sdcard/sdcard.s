@@ -59,8 +59,7 @@ sdcard_detect:
 ; Init SD Card
 ; Destructive: A, X, Y
 ;
-;	out:  Z=1 on success, Z=0 otherwise
-;
+;	out:  Z=1 on success, Z=0 otherwise and A=<error>
 ;---------------------------------------------------------------------
 sdcard_init:
       lda #spi_device_sdcard
@@ -68,6 +67,9 @@ sdcard_init:
       beq @init
       rts
 @init:
+      php
+      sei
+
 		; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
 
@@ -138,9 +140,7 @@ init_clk:
 			beq @l3
 			jmp @exit
 @l3:
-
 ;			bne @exit
-
 			; is this $aa? we're done if not
 			jsr spi_r_byte
 			cmp #$aa
@@ -149,7 +149,6 @@ init_clk:
 			; init card using ACMD41 and parameter $40000000
 			lda #$40
 			sta sd_cmd_param
-
 @l5:
 			lda #cmd55
 			jsr sd_cmd
@@ -157,7 +156,6 @@ init_clk:
 			cmp #$01
 			bne @exit
 			; Init failed
-
 
 			lda #acmd41
 			jsr sd_cmd
@@ -197,7 +195,7 @@ init_clk:
 
 			;pla
 			and #%01000000
-			bne @l9
+			bne @exit_ok
 @cmd16:
 			jsr sd_param_init
 
@@ -211,10 +209,10 @@ init_clk:
 			jsr sd_cmd
 			;debug "CMD16"
 @exit_ok:
-@l9:
-	; SD card init successful
-			lda #$00
+			lda #0	    ; SD card init successful
 @exit:
+      plp
+      cmp #0
 			jmp sd_deselect_card
 
 _sys_delay_4us:
@@ -261,7 +259,7 @@ sd_cmd_response_wait:
 @l:		dey
 			beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
 			jsr spi_r_byte
-			debug "sd_cm_wt"
+;			debug "sd_cm_wt"
 			bmi @l
 			debug "sd_cm_wt_e"
       clc
@@ -284,6 +282,9 @@ sd_exit:
 ;	A - A = 0 on success, error code otherwise
 ;---------------------------------------------------------------------
 sd_read_block:
+      php
+      sei
+
       jsr sd_select_card
 
 			jsr sd_cmd_lba
@@ -291,6 +292,11 @@ sd_read_block:
 			jsr sd_cmd
 			bne @exit
 			jsr fullblock
+      jsr sd_deselect_card
+
+      plp
+      cmp #0
+      rts
 
 @exit: 	; fall through to sd_deselect_card
 

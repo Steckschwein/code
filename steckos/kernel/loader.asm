@@ -33,8 +33,8 @@ p_tgt:    .res 2
 
 appstart $1000
 
-   lda #$31 ; enable RAM at bank3
-   sta bank3
+   lda #$31 ; enable RAM at slot3
+   sta slot3
 
    sei ; no irq if we upload from kernel to avoid clash
    ; copy kernel code to kernel_start

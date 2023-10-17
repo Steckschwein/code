@@ -30,10 +30,6 @@
 .include "errno.inc"
 .include "appstart.inc"
 
-.import vdp_bgcolor
-.import hexout_s
-.import jch_fm_init, jch_fm_play
-.import opl2_detect, opl2_init, opl2_reg_write
 .autoimport
 
 .export d00file
@@ -224,7 +220,6 @@ player_isr:
 		bne @opl_ack
 		jsr jch_fm_play
 @opl_ack:
-    jsr opl2_delay_data
 		ldx #opl2_reg_ctrl
 		lda #$80	; ack IRQ
 		jsr opl2_reg_write
