@@ -70,6 +70,14 @@ pause_cnt: .res 1
   cli
 
 @loop:
+  bit sound_state
+  bvc :+
+  lda sound_state
+  and #$3f
+  beq :+
+  jsr jch_fm_play
+  dec sound_state
+:
   lda script_state
   bpl @loop
   and #$7f
@@ -192,11 +200,15 @@ isr:
   lda #v_reg7
   vdp_wait_s 2
   sta a_vreg
+  lda #$40
+  trb sound_state
   lda rline
   inc
   inx
   cpx #<.sizeof(rbar_colors)
   bne @set_hline
+  lda #$40
+  tsb sound_state
   lda #$80
   tsb script_state ; set flag, raster bar end
   ldx #0 ; reset color ix
@@ -206,7 +218,7 @@ isr:
   sta rline
   ldy #v_reg19
   vdp_sreg
-  bra @sound
+  jmp @opl_ack
 
 @is_vblank:
     vdp_sreg 0, v_reg15      ; 0 - set status register selection to S#0
@@ -226,16 +238,24 @@ isr:
 @is_vblank_end:
     vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 already
 
-@sound:
+@opl_ack:
     bit opl_stat
     bpl @exit
-    jsr jch_fm_play
+  ;  lda #Cyan<<4|Cyan
+ ;   jsr vdp_bgcolor
     jsr opl2_delay_data
 		ldx #opl2_reg_ctrl
 		lda #$80	; ack IRQ
 		jsr opl2_reg_write
+    inc sound_state
+
+    bit sound_state
+    bpl @exit
+    jsr sound_fade_off
 
 @exit:
+;    lda #Black<<4|Black
+;    jsr vdp_bgcolor
     restore
     rti
 
@@ -309,7 +329,12 @@ script_step:
   bne :+
   jsr sound_init
   bra @next
-
+:
+  cmp #SCRIPT_SOUND_FADE_OFF
+  bne :+
+  lda #$80
+  sta sound_state
+  bra @next
 :
   cmp #SCRIPT_RESET
   bne :+
@@ -456,8 +481,20 @@ blend_rbar:
   sta rbar_colors+7,x
   rts
 
+sound_fade_off:
+    lda fm_master_volume
+    cmp #OPL_VOLUME_MIN
+    bne :+
+    stz sound_state
+    dec
+:   inc
+    sta fm_master_volume
+:   rts
+
 sound_init:
     jsr jch_fm_init
+    lda #OPL_VOLUME_MAX
+    sta fm_master_volume
 		freq=70
 		t2cycles=320
 		lda #($ff-(1000000 / freq / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
@@ -467,8 +504,7 @@ sound_init:
 		lda #$80
 		jsr opl2_reg_write
 		lda #$42 ; t1 disable, t2 enable and start
-		jsr opl2_reg_write
-    rts
+		jmp opl2_reg_write
 
 .data
 font:
@@ -493,6 +529,7 @@ SCRIPT_RBAR_MOVE = $88
 SCRIPT_RBAR_SINE = $89
 SCRIPT_TEXT_COLOR = $8a
 SCRIPT_SOUND_ON = $8b
+SCRIPT_SOUND_FADE_OFF = $8c
 
 TEXT_Y_OFFSET=87
 
@@ -507,6 +544,7 @@ script:
 .ifdef DEBUG
   ;.byte SCRIPT_RBAR_ON, SCRIPT_RBAR_MOVE, SCRIPT_SCROLL, 4
   ;.byte SCRIPT_TEXT_COLOR, Transparent<<4|Black, SCRIPT_SCROLL_SINE
+  .byte SCRIPT_SOUND_ON
   .byte SCRIPT_TEXT_COLOR, Gray<<4|Transparent, SCRIPT_RBAR_ON, SCRIPT_RBAR_MOVE, SCRIPT_SCROLL, 2, SCRIPT_PAUSE, 1
 .endif
 .ifndef DEBUG
@@ -549,6 +587,7 @@ script:
   .byte SCRIPT_SCROLL, 2, "  ", SCRIPT_SCROLL, 4, "                ", SCRIPT_SCROLL, 1, "TO BE CONTINUED...                "
   .byte $1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f
   .byte SCRIPT_PAUSE, _3s, SCRIPT_RBAR_OFF
+  .byte SCRIPT_SOUND_FADE_OFF
   .byte SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_RESET
 
 vdp_init_bytes:  ; vdp init table - MODE G3

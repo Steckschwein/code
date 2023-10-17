@@ -79,6 +79,7 @@ SRCDIRS +=  keyboard
 SRCDIRS +=  lcd
 SRCDIRS +=  debug
 SRCDIRS +=  xmodem
+SRCDIRS +=  edlib
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS)

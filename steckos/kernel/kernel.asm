@@ -27,6 +27,7 @@
 .include "kernel.inc"
 .include "vdp.inc"
 .include "via.inc"
+.include "spi.inc"
 .include "ym3812.inc"
 .include "keyboard.inc"
 
@@ -150,22 +151,22 @@ do_irq:
     bit a_vreg ; vdp irq ?
     bpl @check_via
     jsr textui_update_screen  ; update text ui
-;    lda #Dark_Yellow
-;    jsr vdp_bgcolor
+    lda #Dark_Yellow
+    jsr vdp_bgcolor
 
 @check_via:
     bit via1ifr    ; Interrupt from VIA?
     bpl @check_opl
-;    lda #Light_Red
-;    jsr vdp_bgcolor
+    lda #Light_Green
+    jsr vdp_bgcolor
     ; via irq handling code
     ;
 
 @check_opl:
     bit opl_stat  ; IRQ from OPL?
     bpl @check_spi_rtc
-;   lda #Light_Yellow<<4|Light_Yellow
-;   jsr vdp_bgcolor
+    lda #Light_Yellow<<4|Light_Yellow
+    jsr vdp_bgcolor
 
 @check_spi_rtc:
 ;    jsr rtc_irq0_ack
@@ -192,8 +193,17 @@ do_irq:
     jsr __automount
 
 @exit:
-;    lda #Medium_Green<<4|Black
-;    jsr vdp_bgcolor
+		lda via1portb
+    and #spi_device_deselect
+    cmp #spi_device_deselect
+    beq :+
+    lda #Medium_Red<<4|Medium_Red
+    jsr vdp_bgcolor
+    sys_delay_us 128
+
+:
+    lda #Medium_Green<<4|Black
+    jsr vdp_bgcolor
 
     restore
     rti

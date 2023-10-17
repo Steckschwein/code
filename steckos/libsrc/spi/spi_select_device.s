@@ -43,10 +43,7 @@ spi_select_device:
 		sei ;critical section start
 		pha
 
-; check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
-; out:
-;   Z=1 not busy, Z=0 spi is busy and A=#EBUSY
-spi_isbusy:
+    ; check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
 		lda via1portb
     and #spi_device_deselect
     cmp #spi_device_deselect

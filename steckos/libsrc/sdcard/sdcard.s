@@ -59,7 +59,7 @@ sdcard_detect:
 ; Init SD Card
 ; Destructive: A, X, Y
 ;
-;	out:  Z=1 on success, Z=0 otherwise
+;	out:  Z=1 on success, Z=0 otherwise and A=<error>
 ;---------------------------------------------------------------------
 sdcard_init:
       lda #spi_device_sdcard
@@ -67,6 +67,9 @@ sdcard_init:
       beq @init
       rts
 @init:
+      php
+      sei
+
 		; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
 
@@ -192,7 +195,7 @@ init_clk:
 
 			;pla
 			and #%01000000
-			bne @l9
+			bne @exit_ok
 @cmd16:
 			jsr sd_param_init
 
@@ -206,10 +209,10 @@ init_clk:
 			jsr sd_cmd
 			;debug "CMD16"
 @exit_ok:
-@l9:
-	    ; SD card init successful
-			lda #$00
+			lda #0	    ; SD card init successful
 @exit:
+      plp
+      cmp #0
 			jmp sd_deselect_card
 
 _sys_delay_4us:
@@ -279,6 +282,9 @@ sd_exit:
 ;	A - A = 0 on success, error code otherwise
 ;---------------------------------------------------------------------
 sd_read_block:
+      php
+      sei
+
       jsr sd_select_card
 
 			jsr sd_cmd_lba
@@ -286,6 +292,11 @@ sd_read_block:
 			jsr sd_cmd
 			bne @exit
 			jsr fullblock
+      jsr sd_deselect_card
+
+      plp
+      cmp #0
+      rts
 
 @exit: 	; fall through to sd_deselect_card
 
