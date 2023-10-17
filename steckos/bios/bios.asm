@@ -45,7 +45,7 @@ fat_write_dir_entry:
 
 memcheck:
       ldx #0    ; start bank 0
-      bit ctrl_port+3 ; bank 4 RAM?
+      bit slot3 ; bank 4 RAM?
       bpl @starthigh
       lda #>$4300 ; start bank 0, but skip zp
       bra @check_page0
@@ -188,9 +188,9 @@ do_reset:
       txs
 
       lda #$00
-      sta bank0
+      sta slot0
       lda #$01
-      sta bank1
+      sta slot1
 
       ; Check zeropage and Memory
 check_zp:
