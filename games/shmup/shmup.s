@@ -42,11 +42,6 @@ appstart $1000
     ldx #(sprite_attr_end - sprite_attr)
     jsr vdp_memcpys
 
-    ;lda #<sprite_color
-    ;ldy #>sprite_color
-    ;ldx #sprite_color_end-sprite_color
-    ;jsr vdp_memcpys
-
     sp_pattern 0, ('V'-64)  ;petscii
     sp_pattern 1, ('C'-64)
     sp_pattern 2, ('F'-64)
@@ -61,7 +56,8 @@ appstart $1000
 
     cli
 
-    stz sp_color
+    lda #GFX7_Cyan
+    sta sp_color
 
 :   keyin
     cmp #KEY_ESCAPE
@@ -122,7 +118,6 @@ isr:
   lda sp_color
   ldx #(16*8)
   jsr vdp_fills
-
 
   ldx sprite_1_x
   lda sintable,x
