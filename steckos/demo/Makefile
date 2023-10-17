@@ -25,7 +25,8 @@ clean:
 	ca65 $(CA65FLAGS) $(ASM_INCLUDE) $(@:.o=.asm)
 
 stsdemo.prg: stsdemo.o ../lib/steckschwein.a
-	ld65 $< $(LDFLAGS) ../../progs/edlib/edlib.o -o $@
+	ld65 $< $(LDFLAGS) -o $@
+
 %.prg: %.o ../lib/steckschwein.a
 	ld65 $< $(LDFLAGS) -o $@
 

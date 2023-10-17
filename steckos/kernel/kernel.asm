@@ -151,8 +151,8 @@ do_irq:
     bit a_vreg ; vdp irq ?
     bpl @check_via
     jsr textui_update_screen  ; update text ui
-    lda #Dark_Yellow
-    jsr vdp_bgcolor
+;    lda #Dark_Yellow
+ ;   jsr vdp_bgcolor
 
 @check_via:
     bit via1ifr    ; Interrupt from VIA?
@@ -165,8 +165,8 @@ do_irq:
 @check_opl:
     bit opl_stat  ; IRQ from OPL?
     bpl @check_spi_rtc
-    lda #Light_Yellow<<4|Light_Yellow
-    jsr vdp_bgcolor
+;    lda #Light_Yellow<<4|Light_Yellow
+ ;   jsr vdp_bgcolor
 
 @check_spi_rtc:
 ;    jsr rtc_irq0_ack
