@@ -40,13 +40,16 @@ clean:
 gfx.res: *.res
 
 %.o: %.asm *.res
-	ca65 $(INCLUDES) $(@:.o=.asm)
+	ca65 -g $(INCLUDES) $(@:.o=.asm)
 
 %.prg: %.o $(LIBS)
-	ld65 $< $(LDFLAGS) -o $@
+	ld65 $< --dbgfile $(basename $<).dbg -m $(basename $<).map $(LDFLAGS) -o $@
+
+%.dis: %.prg
+	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
 dinosaur: all
 	../../xmodem.sh dinosaur.prg
 
 emu: dinosaur.prg
-	steckschwein-emu -rom ../../steckos/bios.bin
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload dinosaur.prg

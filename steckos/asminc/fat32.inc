@@ -38,12 +38,12 @@ fat_file_too_large      = $11
 ; partition entry
 ;--------------------------------------------------------------------------------------
 .struct PartitionEntry
-   Bootflag   .byte
-   CHSBegin   .byte 3
-   TypeCode   .byte
-   CHSEnd      .byte 3
-   LBABegin   .dword
-   NumSectors   .dword
+    Bootflag    .byte
+    CHSBegin    .byte 3
+    TypeCode    .byte
+    CHSEnd      .byte 3
+    LBABegin    .dword
+    NumSectors  .dword
 .endstruct
 
 PartType_FAT32        = $0b
@@ -108,7 +108,7 @@ PartType_FAT32_LBA    = $0c
 
 ; struct VolumeID like found on FAT-media (bootsector)
 .struct F32_VolumeID
-   JmpToBoot   .byte 3     ; JMP command to bootstrap code ( in x86-world )
+   JmpToBoot    .byte 3     ; JMP command to bootstrap code ( in x86-world )
    OEMName      .byte 8     ; OEM name/version (E.g. "IBM  3.3", "IBM 20.0", "MSDOS5.0", "MSWIN4.0".
                        ; Various format utilities leave their own name, like "CH-FOR18".
                        ; Sometimes just garbage. Microsoft recommends "MSWIN4.1".)
@@ -171,10 +171,10 @@ DIR_Entry_Deleted            = $e5
 ;--------------------------------------------------------------------------------------
 
 .struct Seek
-    Whence	.byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
+    Whence  .byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
                     ; SEEK_CUR - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
                     ; SEEK_END - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
-    Offset	.dword
+    Offset  .dword
 .endstruct
 
 .macro _is_file_open
@@ -193,7 +193,7 @@ DIR_Entry_Deleted            = $e5
     DirEntryLBA      .dword; LBA of the block where the dir entry of the file is located
     DirEntryPos      .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
     offset           .byte;  7Bit block number of the CurrentCluster (SecPerClus)
-;	TODO FIXME offset .word;	(2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
+;  TODO FIXME offset .word;  (2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
     seek_pos         .dword ; seek position within the opened file
 ;   flags            .byte; file open flags
 .endstruct

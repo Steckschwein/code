@@ -26,11 +26,9 @@
 .include "uart.inc"
 .include "keyboard.inc"
 
-.import primm
-.import hexout
-.import hexout_s
-
+.autoimport
 .export char_out=uart_tx
+;.export char_out=$8D37
 
 .zeropage
       bank_nr:    .res 1
@@ -295,17 +293,6 @@ reg_dump:
       jsr hexout_s
       ply
       plx
-      rts
-
-uart_tx:
-      pha
-      lda #lsr_THRE
-@l0:
-      bit uart_cpb+uart_lsr
-      beq @l0
-
-      pla
-      sta uart_cpb+uart_rxtx
       rts
 
 .data

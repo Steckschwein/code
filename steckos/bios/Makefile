@@ -19,8 +19,6 @@ clean:
 
 bios.asm: version.inc
 
-%.o: %.asm
-	ca65 --target none $(CA65FLAGS) $(DEFINES) $<
 
 version.inc:
 	echo -n ".byte \"`git log -1 --format="%t (%cd)" --date=format-local:%Y/%m/%d\ %H:%M:%S`\"" > version.inc
@@ -32,23 +30,26 @@ bios.bin: $(OBJS) $(LIBS) bios.inc version.inc
 bios.dis: bios.bin
 	dcc6502 -o 0x8000 -m 0x7fff -d -n -c $< > $@
 
-loader: loader.prg
-	../../xmodem.sh loader.prg
+%.o: %.asm
+	ca65 --target none $(CA65FLAGS) $(DEFINES) $<
 
-loader.o: loader.asm bios.bin
-	ca65 --target none $(CA65FLAGS) $<
-
-loader.prg: loader.o
-	ld65 -C ../prg.ld65.cfg -m loader.map loader.o $(LIBS) -o loader.prg
+%.prg: %.o
+	ld65 -C ../prg.ld65.cfg -m $(basename $<).map $< $(LIBS) -o $@
 
 %.dis: %.bin
 	dcc6502 -o 0x0300 -d -n -c $< > $@
 
-transfer: loader.bin
-	../../transfer.py -s 0x0300 loader.bin
+%: %.prg
+	../../xmodem.sh $<
+
+bios: bios.bin
+	../../xmodem.sh bios.bin
+
+mettwurst: mettwurst.prg
+	../../xmodem.sh mettwurst.prg
 
 emu: bios.bin
-	steckschwein-emu -rom $< -debug 0xc8ae
+	steckschwein-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg
 
 burn: bios.bin
 	minipro --device AT28C256 --write bios.bin -s

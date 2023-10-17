@@ -12,7 +12,6 @@
 
 appstart $1000
     jsr joystick_on
-
 loop:
     jsr krn_getkey
     cmp #KEY_ESCAPE

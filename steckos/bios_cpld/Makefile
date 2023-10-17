@@ -44,9 +44,6 @@ bios.dis: bios.bin
 loader: loader.prg
 	../../xmodem.sh loader.prg
 
-transfer: loader.bin
-	../../transfer.py -s 0x0300 loader.bin
-
 emu: bios.bin
 	steckschwein-emu -rom $< -debug 0xc8ae
 
