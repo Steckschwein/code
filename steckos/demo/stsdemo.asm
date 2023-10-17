@@ -71,7 +71,7 @@ pause_cnt: .res 1
 
 @loop:
   bit sound_state
-  bvc :+
+  bvs :+
   lda sound_state
   and #$3f
   beq :+
@@ -96,7 +96,6 @@ pause_cnt: .res 1
   stz text_color  ; reset
 
 : jsr fetchkey
-  bcc @loop
   cmp #KEY_ESCAPE
   bne @loop
 
@@ -188,37 +187,32 @@ init:
   rts
 
 isr:
-  save
+    save
 
-  lda a_vreg  ; check bit 0 of S#1
-  ror
-  bcc @is_vblank
-
-  ldx rbar_colors_ix
-  lda rbar_colors,x
-  sta a_vreg
-  lda #v_reg7
-  vdp_wait_s 2
-  sta a_vreg
-  lda #$40
-  trb sound_state
-  lda rline
-  inc
-  inx
-  cpx #<.sizeof(rbar_colors)
-  bne @set_hline
-  lda #$40
-  tsb sound_state
-  lda #$80
-  tsb script_state ; set flag, raster bar end
-  ldx #0 ; reset color ix
-  lda rbar_y ; init
+    lda a_vreg  ; check bit 0 of S#1
+    ror
+    bcc @is_vblank
+    ldx rbar_colors_ix
+    lda rbar_colors,x
+    sta a_vreg
+    lda #v_reg7
+    vdp_wait_s 2
+    sta a_vreg
+    lda rline
+    inc
+    inx
+    cpx #<.sizeof(rbar_colors)
+    bne @set_hline
+    lda #$80
+    tsb script_state ; set flag, raster bar end
+    ldx #0 ; reset color ix
+    lda rbar_y  ; init
 @set_hline:
-  stx rbar_colors_ix
-  sta rline
-  ldy #v_reg19
-  vdp_sreg
-  jmp @opl_ack
+    stx rbar_colors_ix
+    sta rline
+    ldy #v_reg19
+    vdp_sreg
+    bra @opl_ack
 
 @is_vblank:
     vdp_sreg 0, v_reg15      ; 0 - set status register selection to S#0
@@ -241,12 +235,11 @@ isr:
 @opl_ack:
     bit opl_stat
     bpl @exit
-  ;  lda #Cyan<<4|Cyan
- ;   jsr vdp_bgcolor
-    jsr opl2_delay_data
-		ldx #opl2_reg_ctrl
+  	lda #opl2_reg_ctrl
+    sta opl_sel
+		jsr opl2_delay_register
 		lda #$80	; ack IRQ
-		jsr opl2_reg_write
+		sta opl_data
     inc sound_state
 
     bit sound_state
@@ -254,8 +247,6 @@ isr:
     jsr sound_fade_off
 
 @exit:
-;    lda #Black<<4|Black
-;    jsr vdp_bgcolor
     restore
     rti
 
@@ -495,9 +486,8 @@ sound_init:
     jsr jch_fm_init
     lda #OPL_VOLUME_MAX
     sta fm_master_volume
-		freq=70
 		t2cycles=320
-		lda #($ff-(1000000 / freq / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
+		lda #($ff-(1000000 / fps / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
   	ldx #opl2_reg_t2	; t2 timer value
     jsr opl2_reg_write
 		ldx #opl2_reg_ctrl ;reset
@@ -564,6 +554,7 @@ script:
   .byte "AND NOW 4PX/FRAME ... ", SCRIPT_SCROLL, 4
   .byte "SIMPLE THING WITH THE R#27 REGISTER OF THE V9958         "
   .byte SCRIPT_SCROLL, 2, "OK, 2PX IS FAST ENOUGH.                ", SCRIPT_PAUSE, _3s
+.endif
   .byte SCRIPT_RBAR_ON
   .byte "OHO... GOOD OLD RASTER BAR ;)  ", SCRIPT_PAUSE, _5s
   .byte "WE USE THE VDP R#19 HLINE INTERRUPT REGISTER HERE...             "
@@ -571,7 +562,6 @@ script:
   .byte "SAME HEIGHT AS THE TEXT ", SCRIPT_SCROLL, 2, "WOULD BE NICE!                 ", SCRIPT_RBAR_MOVE, SCRIPT_TEXT_COLOR, Black<<4|Transparent, SCRIPT_SCROLL, 4
   .byte "THX!       ", SCRIPT_PAUSE, _3s, SCRIPT_SCROLL, 2
   .byte "WE JUST CHANGED THE VDP COLOR RAM TO BLACK FOR BETTER READABILITY.                ", SCRIPT_SCROLL, 2
-.endif
   .byte "HEY, LET'S TRY TO INVERT THE COLORS. WE CAN SET THE CHAR COLOR TO TRANSPARENT."
   .byte SCRIPT_TEXT_COLOR, Transparent<<4|Black, "   ", SCRIPT_PAUSE, _1s
   .byte "NOW WE CAN SEE THE BACKGROUND COLORS SET BY THE RASTER BAR AS CHAR COLOR :)  ", SCRIPT_PAUSE, _3s
