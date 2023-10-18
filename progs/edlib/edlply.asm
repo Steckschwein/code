@@ -79,8 +79,7 @@ main:
 		SetVector player_isr, user_isr
 
 		freq=70
-		t2cycles=275
-		lda #($ff-(1000000 / freq / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
+		lda #($ff-(1000000 / freq / OPL_INTERVAL_US_TIMER2))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
 		sta t2_value
 		jsr set_timer_t2
 
