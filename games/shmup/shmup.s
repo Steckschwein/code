@@ -42,30 +42,30 @@ appstart $1000
     ldx #(sprite_attr_end - sprite_attr)
     jsr vdp_memcpys
 
-    sp_pattern 0, ('V'-64)  ;petscii
-    sp_pattern 1, ('C'-64)
-    sp_pattern 2, ('F'-64)
-    sp_pattern 3, ('B'-64)
+    vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
+    lda #GFX7_LightYellow
+    ldx #(16*8)
+    jsr vdp_fills
 
-    sp_pattern 4, '2'
-    sp_pattern 5, '0'
-    sp_pattern 6, '2'
-    sp_pattern 7, '3'
+    ;sp_pattern 3, ('B'-64)
+    sp_pattern 0, '0'
+    sp_pattern 1, '1'
+    sp_pattern 2, '2'
+    sp_pattern 3, '3'
+
+    sp_pattern 4, '4'
+    sp_pattern 5, '5'
+    sp_pattern 6, '6'
+    sp_pattern 7, '7'
     lda #SPRITE_OFF+8 ; vram pointer still setup correctly
     sta a_vram
 
     cli
 
-    lda #GFX7_Cyan
-    sta sp_color
 
 :   keyin
     cmp #KEY_ESCAPE
     beq @exit
-    cmp #'n'
-    bne :-
-    inc sp_color
-
     bra :-
 @exit:
 
@@ -104,7 +104,7 @@ gfxui_off:
 
   rts
 
-SP_OFFS_Y = 100
+SP_OFFS_Y = 10
 
 isr:
   bit  a_vreg
@@ -114,23 +114,24 @@ isr:
   lda  #%00011100
   jsr vdp_bgcolor
 
-  vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
-  lda sp_color
-  eor #$80
-  ldx #(16*8)
-  jsr vdp_fills
+  jsr sprity_mc_spriteface
 
+  lda  #0
+  jsr  vdp_bgcolor
+isr_end:
+  rts
+
+sprity_mc_spriteface:
   ldx sprite_1_x
   lda sintable,x
-  lsr
   clc
   adc #SP_OFFS_Y
   sta sprite_1_y
   dec sprite_1_x
 
+
   ldx sprite_2_x
   lda sintable,x
-  lsr
   clc
   adc #SP_OFFS_Y
   sta sprite_2_y
@@ -138,7 +139,6 @@ isr:
 
   ldx sprite_3_x
   lda sintable,x
-  lsr
   clc
   adc #SP_OFFS_Y
   sta sprite_3_y
@@ -146,7 +146,6 @@ isr:
 
   ldx sprite_4_x
   lda sintable,x
-  lsr
   clc
   adc #SP_OFFS_Y
   sta sprite_4_y
@@ -154,7 +153,6 @@ isr:
 
   ldx sprite_5_x
   lda sintable,x
-  lsr
   clc
   adc #SP_OFFS_Y
   sta sprite_5_y
@@ -162,7 +160,6 @@ isr:
 
   ldx sprite_6_x
   lda sintable,x
-  lsr
   clc
   adc #SP_OFFS_Y
   sta sprite_6_y
@@ -170,7 +167,6 @@ isr:
 
   ldx sprite_7_x
   lda sintable,x
-  lsr
   clc
   adc #SP_OFFS_Y
   sta sprite_7_y
@@ -178,7 +174,6 @@ isr:
 
   ldx sprite_8_x
   lda sintable,x
-  lsr
   clc
   adc #SP_OFFS_Y
   sta sprite_8_y
@@ -190,57 +185,47 @@ isr:
   ldx #(sprite_attr_end - sprite_attr)
   jsr vdp_memcpys
 
-  lda  #0
-  jsr  vdp_bgcolor
-isr_end:
   rts
+
 
 
 .data
 sprite_attr:
-sprite_attr_1:
   sprite_1_y: .byte 0
   sprite_1_x: .byte 95
   pattern:  .byte 0
   .byte 0
-sprite_attr_2:
   sprite_2_y: .byte 0
   sprite_2_x: .byte 105
   pattern_2:  .byte 4
   .byte 0
-sprite_attr_3:
   sprite_3_y: .byte 0
   sprite_3_x: .byte 115
   pattern_3:  .byte 8
   .byte 0
-sprite_attr_4:
   sprite_4_y: .byte 0
   sprite_4_x: .byte 125
   pattern_4:  .byte 12
   .byte 0
-sprite_attr_5:
   sprite_5_y: .byte 0
   sprite_5_x: .byte 145
   pattern_5:  .byte 16
   .byte 0
-sprite_attr_6:
   sprite_6_y: .byte 0
   sprite_6_x: .byte 155
   pattern_6:  .byte 20
   .byte 0
-sprite_attr_7:
   sprite_7_y: .byte 0
   sprite_7_x: .byte 165
   pattern_7:  .byte 24
   .byte 0
-sprite_attr_8:
   sprite_8_y: .byte 0
   sprite_8_x: .byte 175
   pattern_8:  .byte 28
   .byte 0
-
-
   .byte SPRITE_OFF+8  ; all other sprites off
+
+
 sprite_attr_end:
 
 sintable:
