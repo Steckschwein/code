@@ -781,12 +781,22 @@ load_highscore:
     lda #<filename
     ldx #>filename
     ldy #O_RDONLY
-    jsr krn_open
-    bne :+ ; not found or other error, dont care...
-    SetVector score_value_high, read_blkptr
-    jsr krn_read
-    jsr krn_close
-:    rts
+    jsr krn_open     ; X contains fd
+    bne @notfound    ; not found or other error, dont care...
+    ldy #0
+:   jsr krn_fread_byte
+    bcs @eof
+    sta score_value_high,y
+    iny
+    cpy #3
+    bne :-
+@eof:
+    jmp krn_close
+@notfound:
+    stz score_value_high
+    stz score_value_high+1
+    stz score_value_high+2
+    rts
 
 init_vram:
     jsr isXmas
