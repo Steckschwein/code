@@ -23,10 +23,18 @@ dist/*
 *.kicad_pcb-bak
 *.map
 steckos/kernel/kernel_jumptable.inc
+steckos/bios/bios_call.inc
 steckos/kernel/symbols.txt
 steckos/clib/libwrk
+steckos/clib/lib/*
 steckos/*/version.inc
 steckos/lib/steckschwein-kernel.lib
+steckos/lib/*
 firmware/glue/decoder_html
+steckos.img
+asmunit/asmunit.a
 
 
+asmunit/test.asmunit.o.dbg
+progs/ehbasic_65c02/101bcg/
+steckos/demo/plasma/plasma.s

@@ -34,9 +34,6 @@ prompt  = $af
 ; SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 80 ;TODO maybe too small?
 
-bufptr			= ptr1
-pathptr			= ptr2
-p_history   = ptr3
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
@@ -44,58 +41,58 @@ p_history   = ptr3
 ;---------------------------------------------------------------------------------------------------------
 
 .export char_out=krn_chrout
-.import hexout
 
 .zeropage
-ptr1:   .res 2
-ptr2:   .res 2
-ptr3:   .res 2
+bufptr:         .res 2
+pathptr:        .res 2
+p_history:      .res 2
 tmp1:   .res 1
 tmp2:   .res 1
 
-appstart $e400
-.code
+.import hexout
+.import kernel_start
+
+appstart $e200
+.export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly
+
 init:
-      jsr krn_primm
-      .byte "steckOS shell  "
-      .include "version.inc"
-      .byte $0a,0
+        jsr krn_primm
+        .byte "steckOS shell  "
+        .include "version.inc"
+        .byte CODE_LF,0
 exit_from_prg:
-      cld
-      jsr	krn_textui_init
+        cld
+        jsr	krn_textui_init
 
-      ldx #BUF_SIZE
-:     stz tmpbuf,x
-      dex
-      bpl :-
+        ldx #BUF_SIZE
+:       stz tmpbuf,x
+        dex
+        bpl :-
 
-      SetVector exit_from_prg, retvec
-      SetVector buf, bufptr
-      SetVector buf, paramptr ; set param to empty buffer
-      SetVector PATH, pathptr
+        SetVector exit_from_prg, retvec
+        SetVector buf, bufptr
+        SetVector buf, paramptr ; set param to empty buffer
+        SetVector PATH, pathptr
 mainloop:
-      jsr krn_primm
-      .byte $0a, '[', 0
-      ; output current path
-      lda #<cwdbuf
-      ldx #>cwdbuf
-      ldy #cwdbuf_size
-      jsr krn_getcwd
-      bne @nocwd
+        jsr krn_primm
+        .byte CODE_LF, '[', 0
+        ; output current path
+        lda #<cwdbuf
+        ldx #>cwdbuf
+        ldy #cwdbuf_size
+        jsr krn_getcwd
+        bne @nocwd
 
-      lda #<cwdbuf
-      ldx #>cwdbuf
-      jsr krn_strout
-      bra @prompt
+        lda #<cwdbuf
+        ldx #>cwdbuf
+        jsr krn_strout
+        bra @prompt
 @nocwd:
-         lda #'?'
-         jsr char_out
-@prompt:
-         lda #']'
-         jsr char_out
-        ; output prompt character
-        lda #prompt
+        lda #'?'
         jsr char_out
+@prompt:
+        jsr krn_primm
+        .byte ']', prompt, 0
 
         lda crs_x
         sta crs_x_prompt
@@ -104,7 +101,7 @@ mainloop:
         ldy #0
         jsr terminate
 
-		; put input into buffer until return is pressed
+	; put input into buffer until return is pressed
 inputloop:
         ; jsr screensaver_settimeout  ;reset timeout
 @l_input:
@@ -184,93 +181,91 @@ parse:
         cmp #' '
         bne @l3
         inc cmdptr
-;        bcc @l1
- ;       inc cmdptr+1
         bra @l1
 @l3:
         copypointer cmdptr, paramptr
 
-		; find begin of parameter (everything behind the command word, separated by space)
-		; first, fast forward until space or abort if null (no parameters then)
+        ; find begin of parameter (everything behind the command word, separated by space)
+        ; first, fast forward until space or abort if null (no parameters then)
 @l4:
-      lda (paramptr)
-      beq @l7
-      cmp #' '
-      beq @l5
-      inc paramptr
-      bra @l4
+        lda (paramptr)
+        beq @l7
+        cmp #' '
+        beq @l5
+        inc paramptr
+        bra @l4
 @l5:
-		; space found.. fast forward until non space or null
+	; space found.. fast forward until non space or null
 @l6:
-      lda (paramptr)
-      beq @l7
-      cmp #$20
-      bne @l7
-      inc paramptr
-      bra @l6
+        lda (paramptr)
+        beq @l7
+        cmp #$20
+        bne @l7
+        inc paramptr
+        bra @l6
 @l7:
-      SetVector buf, bufptr
+        SetVector buf, bufptr
 
-      jsr terminate
+        jsr terminate
 
 compare:
-      ; compare
-      ldx #$00
+        ; compare
+        ldx #$00
 @l1:	ldy #$00
 @l2:	lda (cmdptr),y
 
-      ; if not, there is a terminating null
-      bne @l3
+        ; if not, there is a terminating null
+        bne @l3
 
-      cmp cmdlist,x
-      beq cmdfound
+        cmp cmdlist,x
+        beq cmdfound
 
-      ; command string in buffer is terminated with $20 if there are cmd line arguments
+        ; command string in buffer is terminated with $20 if there are cmd line arguments
 
 @l3:
-      cmp #$20
-      bne @l4
+        cmp #$20
+        bne @l4
 
-      cmp cmdlist,x
-      bne cmdfound
+        cmp cmdlist,x
+        bne cmdfound
 
 @l4:
-      ; make lowercase
-      ora #$20
+        ; make lowercase
+        ora #$20
 
-      cmp cmdlist,x
-      bne @l5	; difference. this isnt the command were looking for
+        cmp cmdlist,x
+        bne @l5	; difference. this isnt the command were looking for
 
-      iny
-      inx
+        iny
+        inx
 
-      bra @l2
+        bra @l2
 
       ; next cmdlist entry
 @l5:
-		inx
-		lda cmdlist,x
-		bne @l5
-		inx
-		inx
-		inx
+	inx
+	lda cmdlist,x
+	bne @l5
+        inx
+	inx
+	inx
 
-		lda cmdlist,x
-		cmp #$ff
-		beq try_exec
-		bra @l1
+	lda cmdlist,x
+	cmp #$ff
+	beq try_exec
+	bra @l1
 
 cmdfound:
-      inx
-      jmp (cmdlist,x) ; 65c02 FTW!!
+        crlf
+        inx
+        jmp (cmdlist,x) ; 65c02 FTW!!
 
 try_exec:
-      lda (bufptr)
-      beq @l1
+        lda (bufptr)
+        beq @l1
 
-      lda #$0a
-      jsr char_out
-      jmp exec
+        crlf
+        jmp exec
 
 @l1:	jmp mainloop
 
@@ -333,7 +328,7 @@ history_peek:
         rts
 
 history_push:
-        lda #$0a
+        lda #CODE_LF
         ;jsr char_out
 
         tya
@@ -346,7 +341,7 @@ history_push:
         dex
         bpl :-
 
-        lda #$0a
+        lda #CODE_LF
         ;jsr char_out
 
         lda p_history   ; new end
@@ -356,72 +351,71 @@ history_push:
         rts
 
 printbuf:
-		ldy #$01
-		sty crs_x
-		jsr krn_textui_update_crs_ptr
+        ldy #$01
+        sty crs_x
+        jsr krn_textui_update_crs_ptr
 
-		ldy #$00
+        ldy #$00
 @l1:	lda (bufptr),y
-		beq @l2
-		sta buf,y
-		jsr char_out
-		iny
-		bra @l1
+        beq @l2
+        sta buf,y
+        jsr char_out
+        iny
+        bra @l1
 @l2:	rts
 
 
 cmdlist:
+        .byte "cd",0
+        .word cd
 
-		.byte "cd",0
-		.word cd
-
-		.byte "up",0
-		.word krn_upload
+        .byte "up",0
+        .word krn_upload
 
 .ifdef DEBUG
-		.byte "dump",0
-		.word dump
+        .byte "dump",0
+	.word dump
 .endif
-		; End of list
-		.byte $ff
+	; End of list
+	.byte $ff
 
 .ifdef DEBUG
 
 atoi:
-		cmp #'9'+1
-		bcc @l1 	; 0-9?
-		; must be hex digit
-		adc #$08
-		and #$0f
-		rts
+	cmp #'9'+1
+	bcc @l1 	; 0-9?
+	; must be hex digit
+	adc #$08
+	and #$0f
+	rts
 
-@l1:		sec
-		sbc #$30
-		rts
+@l1:	sec
+	sbc #$30
+	rts
 .endif
 
 
 errmsg:
-		;TODO FIXME maybe use oserror() from cc65 lib
-		cmp #$f1
-		bne @l1
+	;TODO FIXME maybe use oserror() from cc65 lib
+	cmp #$f1
+	bne @l1
 
-		jsr krn_primm
-		.byte $0a,"invalid command",$0a,$00
-		jmp mainloop
+	jsr krn_primm
+	.byte CODE_LF,"invalid command",CODE_LF,$00
+	jmp mainloop
 
 @l1:
-    cmp #$f2
-		bne @l2
+        cmp #$f2
+	bne @l2
 
-		jsr krn_primm
-		.byte $0a,"invalid directory",$0a,$00
-		jmp mainloop
+	jsr krn_primm
+	.byte CODE_LF,"invalid directory",CODE_LF,$00
+	jmp mainloop
 
 @l2:
-		jsr krn_primm
-		.byte $0a,"unknown error",$0a,$00
-		jmp mainloop
+	jsr krn_primm
+	.byte CODE_LF,"unknown error",CODE_LF,$00
+	jmp mainloop
 
 mode_toggle:
         lda video_mode
@@ -430,82 +424,81 @@ mode_toggle:
         jsr krn_textui_setmode
         jmp mainloop
 cd:
-      lda paramptr
-      ldx paramptr+1
-      jsr krn_chdir
-      beq @l2
-      lda #$f2 ; invalid dir
-      jmp errmsg
+        lda paramptr
+        ldx paramptr+1
+        jsr krn_chdir
+        beq @l2
+        jmp errmsg
 @l2:
-      jmp mainloop
+        jmp mainloop
 
 exec:
-		lda cmdptr
-		ldx cmdptr+1    ; cmdline in a/x
-		jsr krn_execv   ; return A with errorcode
-		bne @l1         ; error? try different path
-		jmp mainloop
+	lda cmdptr
+	ldx cmdptr+1    ; cmdline in a/x
+	jsr krn_execv   ; return A with errorcode
+	bne @l1         ; error? try different path
+	jmp mainloop
 
 @l1:
-		stz tmp2
+	stz tmp2
 @try_path:
-		ldx #0
-		ldy tmp2
+	ldx #0
+	ldy tmp2
 @cp_path:
-		lda (pathptr), y
-		beq @check_path
-		cmp #':'
-		beq @cp_next
-		sta tmpbuf,x
-		inx
-		iny
-		bne @cp_path
-		lda #$f0
-		jmp errmsg
+        lda (pathptr), y
+	beq @check_path
+	cmp #':'
+	beq @cp_next
+	sta tmpbuf,x
+	inx
+	iny
+	bne @cp_path
+	lda #$f0
+	jmp errmsg
 @check_path:    ;PATH end reached and nothing to prefix
-		cpy tmp2
-		bne @cp_next_piece  ;end of path, no iny
-		lda #$f1        ;nothing found, "Invalid command"
-		jmp errmsg
+	cpy tmp2
+	bne @cp_next_piece  ;end of path, no iny
+	lda #$f1        ;nothing found, "Invalid command"
+	jmp errmsg
 @cp_next:
-		iny
+	iny
 @cp_next_piece:
-		sty tmp2        ;safe PATH offset, 4 next try
-		stz	tmp1
-		ldy #0
+	sty tmp2        ;safe PATH offset, 4 next try
+	stz	tmp1
+	ldy #0
 @cp_loop:
-		lda (cmdptr),y
-		beq @l3
-		cmp #'.'
-		bne	@cp_loop_1
-		stx	tmp1
+	lda (cmdptr),y
+	beq @l3
+	cmp #'.'
+	bne	@cp_loop_1
+	stx	tmp1
 @cp_loop_1:
-		cmp #' '		;end of program name?
-		beq @l3
-		sta tmpbuf,x
-		iny
-		inx
-		bne @cp_loop
+	cmp #' '		;end of program name?
+	beq @l3
+	sta tmpbuf,x
+	iny
+	inx
+	bne @cp_loop
 @l3:
-      lda tmp1
-      bne	@l4
-      ldy #0
+        lda tmp1
+        bne	@l4
+        ldy #0
 @l5:
-      lda	PRGEXT,y
-      beq @l4
-      sta tmpbuf,x
-      inx
-      iny
-      bne	@l5
+        lda	PRGEXT,y
+        beq @l4
+        sta tmpbuf,x
+        inx
+        iny
+        bne	@l5
 @l4:
-      stz tmpbuf,x
+        stz tmpbuf,x
 
-      lda #<tmpbuf
-      ldx #>tmpbuf    ; cmdline in a/x
-      jsr krn_execv   ; return A with errorcode
-      bne @try_path
-      lda #$fe
-      jmp errmsg
+        lda #<tmpbuf
+        ldx #>tmpbuf    ; cmdline in a/x
+        jsr krn_execv   ; return A with errorcode
+        bne @try_path
+        lda #$fe
+        jmp errmsg
 
 
 .ifdef DEBUG
@@ -515,98 +508,98 @@ dumpvec_end   	= dumpvec
 dumpvec_start 	= dumpvec+2
 
 dump:
-		stz dumpvec+1
-		stz dumpvec+2
-		stz dumpvec+3
+        stz dumpvec+1
+        stz dumpvec+2
+        stz dumpvec+3
 
-		ldy #$00
-		ldx #$03
+        ldy #$00
+        ldx #$03
 @l1:
-		lda (paramptr),y
-		beq @l2
+        lda (paramptr),y
+        beq @l2
 
-		jsr atoi
-		asl
-		asl
-		asl
-		asl
-		sta dumpvec,x
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta dumpvec,x
 
-		iny
-		lda (paramptr),y
-		beq @l2
-		jsr atoi
-		ora dumpvec,x
-		sta dumpvec,x
-		dex
-		iny
-		cpy #$04
-		bne @l1
+        iny
+        lda (paramptr),y
+        beq @l2
+        jsr atoi
+        ora dumpvec,x
+        sta dumpvec,x
+        dex
+        iny
+        cpy #$04
+        bne @l1
 
-		iny
-		bra @l1
+        iny
+        bra @l1
 
 @l2:	cpy #$00
-		bne @l3
+        bne @l3
 
-		printstring "parameter error"
+        printstring "parameter error"
 
-		bra @l8
+        bra @l8
 @l3:
-		crlf
-		lda dumpvec_start+1
-		jsr hexout
-		lda dumpvec_start
-		jsr hexout
-		lda #':'
-		jsr char_out
-		lda #' '
-		jsr char_out
+        crlf
+        lda dumpvec_start+1
+        jsr hexout
+        lda dumpvec_start
+        jsr hexout
+        lda #':'
+        jsr char_out
+        lda #' '
+        jsr char_out
 
-		ldy #$00
+        ldy #$00
 @l4:
-      lda (dumpvec_start),y
-		jsr hexout
-		lda #' '
-		jsr char_out
-		iny
-		cpy #$08
-		bne @l4
+        lda (dumpvec_start),y
+        jsr hexout
+        lda #' '
+        jsr char_out
+        iny
+        cpy #$08
+        bne @l4
 
-		lda #' '
-		jsr char_out
+        lda #' '
+        jsr char_out
 
-		ldy #$00
+        ldy #$00
 @l5:	lda (dumpvec_start),y
-		cmp #$19
-		bcs @l6
-		lda #'.'
+        cmp #$19
+        bcs @l6
+        lda #'.'
 @l6:	jsr char_out
-		iny
-		cpy #$08
-		bne @l5
+        iny
+        cpy #$08
+        bne @l5
 
-		lda dumpvec_start+1
-		cmp dumpvec_end+1
-		bne @l7
-		lda dumpvec_start
-		cmp dumpvec_end
-		beq @l8
-		bcs @l8
+        lda dumpvec_start+1
+        cmp dumpvec_end+1
+        bne @l7
+        lda dumpvec_start
+        cmp dumpvec_end
+        beq @l8
+        bcs @l8
 
 @l7:
-		jsr krn_getkey
-		cmp #$03
-		beq @l8
-		clc
-		lda dumpvec_start
+        jsr krn_getkey
+        cmp #$03
+        beq @l8
+        clc
+        lda dumpvec_start
 
-		adc #$08
-		sta dumpvec_start
-		lda dumpvec_start+1
-		adc #$00
-		sta dumpvec_start+1
-		bra @l3
+        adc #$08
+        sta dumpvec_start
+        lda dumpvec_start+1
+        adc #$00
+        sta dumpvec_start+1
+        bra @l3
 
 @l8:	jmp mainloop
 .endif

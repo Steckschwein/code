@@ -1,4 +1,4 @@
-LIBS=../tools/lib/toollib.a ../lib/steckschwein.a
+LIBS=../lib/steckschwein.a
 CAFLAGS=-I ../asminc -I ../kernel
 LDFLAGS=-C ../prg.ld65.cfg
 
@@ -18,10 +18,10 @@ version.inc:
 	ca65 --target none $(DEBUG) $(CAFLAGS) $<
 
 shell.prg: version.inc shell.o $(LIBS)
-	ld65 $(LDFLAGS) -o shell.prg shell.o $(LIBS)
+	ld65 $(LDFLAGS) -m shell.map -o shell.prg shell.o $(LIBS)
 
 shell: shell.prg
-	../../transfer.py shell.prg
+	../../xmodem.sh shell.prg
 
 %.dis: %.prg
 	dcc6502 -o 0xd7fe -d -n -c $< > $@

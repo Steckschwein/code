@@ -39,20 +39,16 @@
 
 .importzp __volatile_tmp
 
-; external deps - block layer
-.import read_block, write_block
 ; TODO FIXME - encapsulate within sd layer
 .import sd_read_multiblock
 
-
 ;lib internal api
-.import __fat_read_cluster_block_and_select
 .import __fat_isroot
 .import __fat_read_block
 .import __fat_init_fd
 .import __fat_free_fd
 .import __fat_alloc_fd
-.import __fat_set_fd_attr_direntry
+.import __fat_set_fd_attr_dirlba
 .import __fat_open_path
 .import __fat_find_first
 .import __fat_find_first_mask
@@ -66,17 +62,17 @@
 
 .import string_fat_name, fat_name_string, put_char
 .import string_fat_mask
-.import dirname_mask_matcher, cluster_nr_matcher
+.import dirname_mask_matcher
 .import path_inverse
 
 .export fat_read_block
 .export fat_fopen
-.export fat_fread ; TODO FIXME update exec, use fat_fread / fat_fread_byte
+.export fat_fread
 .export fat_fread_byte
 .export fat_read
 .export fat_fseek
 .export fat_find_first, fat_find_next
-.export fat_close_all, fat_close, fat_getfilesize
+.export fat_close_all, fat_close
 
 ;.ifdef TEST_EXPORT TODO FIXME - any ideas?
 .export __fat_init_fdarea
@@ -103,9 +99,9 @@ __fat_fseek:
 		;in:
 		;	X - offset into fd_area
 		;out:
-		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 if EOF reached and A=0 (EOK)
+		;	C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 fat_fread_byte:
-		_is_file_open l_exit_einval
+		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 		lda #EOK
@@ -124,19 +120,14 @@ fat_fread_byte:
 l_read_h:
 		inc read_blkptr+1
 l_read:
-		ldy fd_area+F32_fd::seek_pos+0, x
+		ldy fd_area+F32_fd::seek_pos+0,x
 		lda (read_blkptr),y
 		_inc32_x fd_area+F32_fd::seek_pos
 		clc
 		rts
-l_exit_einval:
-		lda #EINVAL
-		sec
-     	rts
 
-
-    	;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. the file size and blocks must be checked
-    	;
+    ;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. the file size and blocks must be checked
+    ;
 		;	read n blocks from file denoted by the given FD and maintains FD.offset
 		;in:
 		;	X - offset into fd_area
@@ -146,7 +137,7 @@ l_exit_einval:
 		;	C=0 on success and A=0 (EOK), C=1 and A=error code otherwise
 		; 	Y - number of blocks which where successfully read
 fat_fread:
-		_is_file_open l_exit_einval
+		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		sty krn_tmp3										; safe requested block number
 		stz krn_tmp2										; init counter
@@ -175,30 +166,24 @@ fat_fread:
 		;	X	- offset into fd_area
 		;	read_blkptr has to be set to target address - TODO FIXME ptr. parameter
 		;out:
-		;	C=0 on success (A=0), C=1 on error and A=error code or EOC reached and A=0 otherwise
+		;	C=0 on success, C=1 on error and A=error code or EOC reached and A=0 otherwise
 fat_read_block:
-		_is_file_open @l_exit_einval
+		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
 		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB + BPB::SecPerClus  	; last block of cluster reached?
 		bne @l_read											 		; no, go on reading...
 
-		copypointer read_blkptr, krn_ptr1	; backup read_blkptr
 		jsr __fat_next_cln						; select next cluster within chain
-		pha
-		copypointer krn_ptr1, read_blkptr	; restore read_blkptr
-		pla
-		bcs @l_exit									; exit on error (C=1)
-
+		bcs @l_exit									; exit on error or EOC (C=1)
 @l_read:
 		jsr __calc_lba_addr
 		jsr __fat_read_block
 		bne @l_exit_err
 		inc fd_area+F32_fd::offset+0,x		; inc block counter
 		clc ; exit success C=0
+		lda #EOK
 		rts
-@l_exit_einval:
-		lda #EINVAL
 @l_exit_err:
 		sec
 @l_exit:
@@ -216,7 +201,8 @@ fat_read:
 		beq @l_exit					; if Z=0, no blocks to read. we return with "EOK", 0 bytes read
 		jsr __calc_lba_addr
 		jsr sd_read_multiblock
-		rts
+		cmp #0
+    rts
 @l_err_exit:
 		lda #EINVAL
 @l_exit:
@@ -234,7 +220,7 @@ fat_read:
 		;		O_EXCL		= $80
 		; out:
 		;	.X - index into fd_area of the opened file
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+		;	C=0 on success (A=0), C=1 and A=error code otherwise
 fat_fopen:
 		sty __volatile_tmp				; save open flag
 		ldy #FD_INDEX_CURRENT_DIR		; use current dir fd as start directory
@@ -242,33 +228,37 @@ fat_fopen:
 		bne @l_error
 		lda fd_area + F32_fd::Attr, x
 		and #DIR_Attr_Mask_Dir			; regular file or directory?
-		beq @l_exit_ok						; not dir, ok
+		beq @l_atime						; not dir, update atime if desired, exit ok
 		lda #EISDIR							; was directory, we must not free any fd
-		rts									; exit with error "Is a directory"
+		bra @l_exit_err					; exit with error "Is a directory"
 @l_error:
 		cmp #ENOENT							; no such file or directory ?
-		bne @l_exit							; other error, then exit
+		bne @l_exit_err					; other error, then exit
 		lda __volatile_tmp				; check if we should create a new file
 		and #O_CREAT | O_WRONLY | O_APPEND
 		bne :+
 		lda #ENOENT							; nothing set, exit with ENOENT
+@l_exit_err:
+		sec
 		rts
-:
-		debug "r+"
+
+:		debug "r+"
 		copypointer dirptr, krn_ptr2
 		jsr string_fat_name				; build fat name upon input string (filenameptr)
-		bne @l_exit
+		bne @l_exit_err
 		jsr __fat_alloc_fd				; alloc a fd for the new file we want to create to make sure we get one before
-		bne @l_exit							; we do any sd block writes which may result in various errors
+		bne @l_exit_err					; we do any sd block writes which may result in various errors
 
 		lda #DIR_Attr_Mask_Archive		; create as regular file with archive bit set
-		jsr __fat_set_fd_attr_direntry; update dir lba addr and dir entry number within fd
+		jsr __fat_set_fd_attr_dirlba	; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
 		jsr __fat_write_dir_entry		; create dir entry at current dirptr
-		beq @l_exit_ok
-		jmp fat_close						; free the allocated file descriptor regardless of any errors
+		bcc @l_exit_ok
+		jmp fat_close						; free the allocated file descriptor if there where errors, C=1 and A are preserved
+@l_atime:
+;		jsr __fat_set_direntry_timedate
+;		lda #EOK								; A=0 (EOK)
+		clc
 @l_exit_ok:
-		lda #EOK								; A=0 (EOK)
-@l_exit:
 		debug "fop"
 		rts
 
@@ -288,19 +278,6 @@ __fat_init_fdarea:
 		;	X - offset into fd_area
 fat_close = __fat_free_fd
 
-		; get size of file in fd
-		; in:
-		;	x - fd offset
-		; out:
-		;	.A - filesize lo
-		;	.X - filesize hi
-fat_getfilesize:
-		lda fd_area + F32_fd::FileSize + 0, x
-		pha
-		lda fd_area + F32_fd::FileSize + 1, x
-		tax
-		pla
-		rts
 
 		; find first dir entry
 		; in:

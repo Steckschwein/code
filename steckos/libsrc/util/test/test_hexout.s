@@ -25,11 +25,11 @@
 	assertOut "9F"
 	assertA $9f
 
-    test_name "hexout cycles"
+	test_name "hexout cycles"
 
 	lda	#$9f
-    resetCycles
-    jsr hexout
-    assertCycles 131  ; pass
+ 	resetCycles
+ 	jsr hexout
+ 	assertCycles 131  ; pass
 
 	brk

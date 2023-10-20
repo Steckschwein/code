@@ -5,18 +5,13 @@
 ; unsigned char kbhit (void);
 ;
 
-		  .export			_kbhit
-		  .import			_cgetc
+    .include "asminc/zeropage.inc"
+
+    .export			_kbhit
 		  
 .proc	_kbhit
 
-		  ldx	  #0				  ; High byte of return is always zero
-		  jsr	  _cgetc		  
-		  beq	  L9
-		  lda	  #1
-L9:	  rts
-
+        ldx #0				  ; High byte of return is always zero
+        lda key
+        rts
 .endproc
-
-
-

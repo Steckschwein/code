@@ -32,6 +32,7 @@
 .ifdef TEXTUI_PRIMM
 .import textui_primm
 .endif
+.import char_out
 
 ;----------------------------------------------------------------------------------------------
 ; Output string on active output device
@@ -85,7 +86,7 @@ PSICHO:	lda	  (krn_ptr3)			  ; Get the next string character
 		bra	  PSINB			  ; back around
 PSIX1:	inc	  krn_ptr3				 ;
 		bne	  PSIX2			  ;
-		inc	  krn_ptr3+1.export char_out=krn_chrout				 ; account for page crossing
+		inc	  krn_ptr3+1
 PSIX2:
 		jmp	  (krn_ptr3)			  ; return to byte following final NULL
 .endif

@@ -9,6 +9,7 @@
 		  .include "time.inc"
 		  .include "kernel/kernel_jumptable.inc"
 		  .include "asminc/rtc.inc"
+		  .include "asminc/spi.inc"
 
 		  .import pushax, steaxspidx, incsp1, incsp3, return0
 		  .importzp ptr1, tmp1, tmp2
@@ -19,7 +20,8 @@
 .proc _clock_gettime
 		  jsr pushax				 ; save *tp ptr
 
-		  jsr	krn_spi_select_rtc
+		  lda #spi_device_rtc
+		  jsr krn_spi_select_device
 
 		  lda #rtc_read
 		  jsr krn_spi_rw_byte

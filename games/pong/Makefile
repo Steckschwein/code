@@ -1,4 +1,4 @@
-LIBS=../../steckos/lib/steckschwein.a # ../../steckos/tools/lib/toollib.a
+LIBS=../../steckos/lib/steckschwein.a
 CA65FLAGS=-I ../../steckos/asminc -I ../../steckos/kernel
 LDFLAGS=-C ../../steckos/prg.ld65.cfg $(LIBS)
 
@@ -16,4 +16,4 @@ clean:
 	ld65 $< $(LDFLAGS) -o $@
 
 %: %.prg
-	../../transfer.py $< -s 0x1000
+	../../xmodem.sh $<

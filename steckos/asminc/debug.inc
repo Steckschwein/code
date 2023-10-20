@@ -28,6 +28,11 @@
 .import _debugdump
 .import _debugdirentry
 
+.macro dbg
+   sei       ; disable interrupt to avoid further isr during debug
+   .byte $db ; break to debugger (emulator)
+.endmacro
+
 .macro debugdirentry
 .if .defined(debug_enabled)
 	jsr _debugdirentry

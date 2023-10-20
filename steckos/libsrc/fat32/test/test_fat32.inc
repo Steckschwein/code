@@ -9,7 +9,8 @@
 .include "zeropage.inc"
 
 .import asmunit_chrout
-.export chrout=asmunit_chrout
+
+.export debug_chrout=asmunit_chrout
 
 ; fat32 geometry
 .define FAT_LBA 	$297e
@@ -72,7 +73,6 @@
 .macro fat32_dir_entry _8_3_name, _8_3_ext, attr, cl, fsize
 	.assert .strlen(_8_3_name) = 8, error, "file name size"
 	.assert .strlen(_8_3_ext) = 3, error, "ext size"
-
 	.byte _8_3_name		; 8 byte
 	.byte	_8_3_ext			; 3 byte
 	.byte attr				; attr
@@ -90,12 +90,47 @@
 		assertMemory address, .sizeof(F32DirEntry)
 .endmacro
 
-.macro load_block lba, address
+.macro store_block_if lba, address, lbl_ok
+		cmp32_ne lba_addr, lba, :+
+		lda #<address
+		ldy #>address
+		jsr store_test_data
+		jmp lbl_ok
+:
+.endmacro
+
+.macro init_block src, dst
+		lda #<src
+		sta write_blkptr
+		lda #>src
+		sta write_blkptr+1
+		lda #<dst
+		ldy #>dst
+		jsr store_test_data
+.endmacro
+
+.macro data_writer
+	.local @cp
+store_test_data:
+		sta test_data_ptr+0
+		sty test_data_ptr+1
+		ldy #0
+		jsr @cp
+		inc write_blkptr+1	; leave with same sideeffect as sdcard block impl. write_blkptr is incremented
+		inc test_data_ptr+1
+@cp:	lda (write_blkptr),y
+		sta (test_data_ptr),y
+		iny
+		bne @cp
+		rts
+.endmacro
+
+.macro load_block_if lba, address, lbl_ok
 		cmp32_ne lba_addr, lba, :+
 		lda #<address
 		ldy #>address
 		jsr load_test_data
-		dec read_blkptr+1
+		jmp lbl_ok
 :
 .endmacro
 

@@ -32,14 +32,14 @@
 ;		.X - length of init table, corresponds to start register R#.X
 ;		.A/.Y - pointer to vdp init table
 vdp_init_reg:
-    php
-    sei
+	php
+	sei
 
 	sta vdp_ptr
 	sty vdp_ptr+1
 	txa			; x length of init table
 	tay
-	ora #$80		; bit 7 = 1 => register write
+	ora #$80	; bit 7 = 1 => register write
 	tax
 @l:
 	vdp_wait_s 4
@@ -52,9 +52,9 @@ vdp_init_reg:
 	bpl @l 		;3c
 
 .ifdef V9958
-    vdp_sreg 0, v_reg23	; reset vertical scroll
+   	vdp_sreg 0, v_reg23	; reset vertical scroll
 	vdp_sreg v_reg25_wait, v_reg25	; enable V9958 /WAIT pin
 .endif
 
-    plp
+   	plp
 	rts

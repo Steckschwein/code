@@ -21,6 +21,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.include "system.inc"
+
 ; TODO FIXME replace with errno.inc from cc65 api
 fat_bad_block_signature      = $01
 fat_invalid_partition_type   = $02
@@ -36,12 +38,12 @@ fat_file_too_large      = $11
 ; partition entry
 ;--------------------------------------------------------------------------------------
 .struct PartitionEntry
-   Bootflag   .byte
-   CHSBegin   .byte 3
-   TypeCode   .byte
-   CHSEnd      .byte 3
-   LBABegin   .dword
-   NumSectors   .dword
+    Bootflag    .byte
+    CHSBegin    .byte 3
+    TypeCode    .byte
+    CHSEnd      .byte 3
+    LBABegin    .dword
+    NumSectors  .dword
 .endstruct
 
 PartType_FAT32        = $0b
@@ -79,7 +81,7 @@ PartType_FAT32_LBA    = $0c
    BootSectCpy .word    ; 50-51
    Reserved3   .byte 12 ; 52-63
    PhysDrvNum  .byte    ; 64
-   Reserved4   .byte    ; 65 - bit 7-2 0, bit 0 "dirty flag"
+   Reserved4   .byte    ; 65/$41 - bit 7-2 0, bit 0 "dirty flag"
    ExtBootSig  .byte    ; 66
    VolumeID    .dword   ; 67-70
    VolumeLabel .byte 11 ; 71-82
@@ -98,7 +100,7 @@ PartType_FAT32_LBA    = $0c
    SectsPerFAT .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
 .endstruct
 
-; struct VolumeID like we keep in in memory
+; struct VolumeID like we keep it in memory
 .struct VolumeID
    BPB      .tag BPB
    EBPB     .tag EBPB
@@ -106,7 +108,7 @@ PartType_FAT32_LBA    = $0c
 
 ; struct VolumeID like found on FAT-media (bootsector)
 .struct F32_VolumeID
-   JmpToBoot   .byte 3     ; JMP command to bootstrap code ( in x86-world )
+   JmpToBoot    .byte 3     ; JMP command to bootstrap code ( in x86-world )
    OEMName      .byte 8     ; OEM name/version (E.g. "IBM  3.3", "IBM 20.0", "MSDOS5.0", "MSWIN4.0".
                        ; Various format utilities leave their own name, like "CH-FOR18".
                        ; Sometimes just garbage. Microsoft recommends "MSWIN4.1".)
@@ -169,15 +171,19 @@ DIR_Entry_Deleted            = $e5
 ;--------------------------------------------------------------------------------------
 
 .struct Seek
-    Whence	.byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
+    Whence  .byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
                     ; SEEK_CUR - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
                     ; SEEK_END - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
-    Offset	.dword
+    Offset  .dword
 .endstruct
 
-.macro _is_file_open _label
+.macro _is_file_open
    bit fd_area + F32_fd::CurrentCluster+3, x ; is open
-   bmi _label
+   bpl :+
+   lda #EINVAL
+   sec
+   rts
+:
 .endmacro
 
 .struct F32_fd
@@ -186,7 +192,8 @@ DIR_Entry_Deleted            = $e5
     Attr             .byte  ; file attributes (mirror of attributes from dir entry)
     DirEntryLBA      .dword; LBA of the block where the dir entry of the file is located
     DirEntryPos      .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
-    offset           .byte;  7Bit block number of the CurrentCluster chain (SecPerClus)
+    offset           .byte;  7Bit block number of the CurrentCluster (SecPerClus)
+;  TODO FIXME offset .word;  (2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
     seek_pos         .dword ; seek position within the opened file
 ;   flags            .byte; file open flags
 .endstruct
@@ -202,23 +209,24 @@ FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size   ; temp dir always go to fd #1
 ;BS_VolLab      = 43
 ;BS_FilSysType   = 54   ; One of the strings “FAT12 ”, “FAT16 ”, or “FAT ”.
 
-FAT_EOC         = $0fffffff   ; end of cluster chain marker
+FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
+; memory locations for fat32 driver
+;
 volumeID              = $0308 ; address of VolumeID
 cluster_begin_lba     = volumeID + .sizeof(VolumeID) ; begin of cluster area (4 byte)
 fat_lba_begin         = cluster_begin_lba + 4; (2 byte) begin of fat area - TODO FIXME we assume 16bit are sufficient since fat is placed at the beginning of the device
 fat2_lba_begin        = fat_lba_begin + 2   ; (2 byte) end of first fat and begin of 2nd fat (mirror) area - TODO FIXME we assume 16bit ...
 fat_fsinfo_lba        = fat2_lba_begin + 2; (4 byte)
 fat_tmp_dw            = fat_fsinfo_lba + 4; (4 byte) internallly used tmp
-fat_tmp_dw2           = fat_tmp_dw + 4; (4 byte) internallly used tmp
-fat_tmp_fd            = fat_tmp_dw2 + 4; (1 byte); internallly used fd
-filename_buf          = fat_tmp_fd + 1 ; (13 byte, 8.3 + \0) file name buffer
+filename_buf          = fat_tmp_dw + 4; (13 byte, 8.3 + \0) file name buffer
 fat_dirname_mask      = filename_buf + 13; (11 byte, fat32 name and ext)
 fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector
 
-sd_blocksize          = $200
 fd_area               = $0380 ; File descriptor area until $0400
 fd_area_end           = $0400
-sd_blktarget          = $0400
-block_data            = sd_blktarget ; $0400-$5ff
-block_fat             = block_data+sd_blocksize ; $0600-$07ff
+
+sd_blocksize          = $200  ; block size
+sd_blktarget          = BUFFER_0
+block_data            = BUFFER_0 ; $0400-$5ff
+block_fat             = BUFFER_2 ; $0600-$07ff

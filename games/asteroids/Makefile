@@ -1,6 +1,6 @@
 CA65FLAGS=-I ../../steckos/asminc -I ../../steckos/kernel
 LDFLAGS=--config ../../steckos/prg.ld65.cfg
-LIBS=../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a ../../steckos/tools/lib/toollib.a
+LIBS=../../asmunit/asmunit.a
 UTIL_XPM_8BIT=sh ../utils/xpm_ca65_8bit.sh
 UTIL_XPM_16BIT=python3 ../utils/xpm_ca65_16bit.py
 all: asteroids.prg
@@ -28,7 +28,7 @@ asteroids.prg: asteroids.o intro.o scoreboard.o halloffame.o
 	ld65 -o $@ $(LDFLAGS) $^ $(LIBS)
 
 asteroids: asteroids.prg
-	../../transfer.py -s 0x1000 $@
+	../../xmodem.sh $@
 
 emu: asteroids.prg
 	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $^

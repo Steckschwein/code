@@ -22,10 +22,6 @@
 .ifndef _COMMON_INC_
   _COMMON_INC_ = 1
 
-.macro dbg
-   .byte $db ; break to debugger (emulator)
-.endmacro
-
 .macro SetVector word, addr
 			lda #<word
 			sta addr
@@ -168,7 +164,7 @@
 
 .macro m_memcpy src, dest, n
    .local @l
-   .assert n<$80, error, "n must not >=$80"
+   .assert n<=$80, error, "n must not >=$80"
    ldy #n-1
 @l:
    lda src,y
@@ -299,6 +295,15 @@
 		  bne :+		;2/3cl
 		  dec word+1 ; 3cl
 :		 dec word	; 3cl
+.endmacro
+
+.macro cmp16 op1, op2, _label
+	lda op1+0
+	cmp op2+0
+	bne _label
+	lda op1+1
+	cmp op2+1
+	bne _label
 .endmacro
 
 .endif  ; _COMMON_INC_

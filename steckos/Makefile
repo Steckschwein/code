@@ -7,7 +7,6 @@ clean:
 	(cd demo; make clean)
 	(cd tools; make clean)
 	(cd shell; make clean)
-	(cd tools/lib; make clean)
 	(cd clib/libsrc; make clean)
 	(cd bios; make clean)
 	(cd kernel; make clean)
@@ -18,14 +17,10 @@ build:
 	(cd kernel; make )
 	(cd bios; make )
 	(cd clib/libsrc; make )
-	(cd tools/lib; make )
 	(cd shell; make )
 	(cd tools; make )
 	(cd demo; make )
 
 test:
+	(cd libsrc; make test)
 	(cd kernel; make test)
-	(cd tools; make test)
-
-img: build
-	./mkimg.sh

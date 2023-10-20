@@ -36,7 +36,7 @@ appstart $1000
 
 		;TODO -p support by using krn_opendir and call krn_mkdir on "does not exist error"
 		jsr krn_mkdir
-		beq @exit
+		bcc @exit
 		;TODO FIXME maybe use oserror() from cc65 lib
 		pha
 		jsr krn_primm

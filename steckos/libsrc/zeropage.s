@@ -12,7 +12,7 @@
 ; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
 .exportzp cmdptr    = $d6
 .exportzp paramptr  = $d8
-.exportzp retvec    = $da
+.export retvec    = $fff8
 
 ; TEXTUI
 .exportzp crs_ptr   = $e0
@@ -37,7 +37,6 @@
 ; SDCARD/storage block pointer
 .exportzp read_blkptr  	= $f4
 .exportzp write_blkptr 	= $f6
-.exportzp sd_tmp		= $f8
 
 ; spi shift register location
 .exportzp spi_sr        = $f9

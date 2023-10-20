@@ -36,12 +36,12 @@
 
 .globalzp filenameptr, dirptr
 .globalzp read_blkptr, write_blkptr
-.globalzp sd_tmp
 
 .globalzp cmdptr
 .globalzp paramptr
-.globalzp retvec
 .globalzp flags
+
+.global retvec
 
 ; custom isr, aligned with v-blank, called by kernel on each frame
 user_isr	  = $028a

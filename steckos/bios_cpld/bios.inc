@@ -1,0 +1,10 @@
+.setcpu "65c02"
+
+.include "system.inc"
+.include "common.inc"
+.include "uart.inc"
+.include "zeropage.inc"
+.include "debug.inc"
+.include "vdp.inc"
+.include "ym3812.inc"
+.include "via.inc"

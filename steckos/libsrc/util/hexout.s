@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.export hexout_s
 .export hexout
 
 .import char_out
@@ -30,14 +31,19 @@
 ;		A - the byte to convert
 ;	out:
 ;		-
-hexout: ;
+hexout_s:
         pha
-		pha
+        lda #'$'
+        jsr char_out
+        pla
+hexout:
+        pha
+        pha
 
-		lsr     ; msb first
-		lsr
-		lsr
-		lsr
+        lsr     ; msb first
+        lsr
+        lsr
+        lsr
         ; https://twitter.com/adumont/status/1381857942467702785
         sed
         cmp #$0a
@@ -52,7 +58,8 @@ hexout: ;
         cmp #$0a
         adc #$30
         cld
+_out:
         jsr char_out
 
         pla
-		rts
+        rts

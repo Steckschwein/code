@@ -23,101 +23,51 @@
 .include "vdp.inc"
 
 .import vdp_init_reg
-.import vdp_fill
-.import vdp_nopslide_8m
+.import vdp_cmd_hmmv
 
-.export vdp_gfx6_on, vdp_mode6_on
-.export vdp_gfx6_blank
-.export vdp_gfx6_set_pixel
+.export vdp_mode6_on
+.export vdp_mode6_blank
 
 .importzp vdp_ptr, vdp_tmp
 .code
 ;
-;	gfx 6 - 512x192/212px, 16colors, sprite mode 2
+;  gfx 6 - 512x192/212px, 16colors, sprite mode 2
 ;
 vdp_mode6_on:
-vdp_gfx6_on:
-			lda #<vdp_init_bytes_gfx6
-			ldy #>vdp_init_bytes_gfx6
-		ldx #<(vdp_init_bytes_gfx6_end-vdp_init_bytes_gfx6)-1
-			jmp vdp_init_reg
+    lda #<vdp_init_bytes_gfx6
+    ldy #>vdp_init_bytes_gfx6
+    ldx #<(vdp_init_bytes_gfx6_end-vdp_init_bytes_gfx6)-1
+    jmp vdp_init_reg
 
 vdp_init_bytes_gfx6:
-			.byte v_reg0_m5|v_reg0_m3												; reg0 mode bits
-			.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 			; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-		.byte $7f	; => 0<A16>11 1111 - either bank 0 oder 1 (64k)
-			.byte	$0
-			.byte $0
-		.byte	>(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
-			.byte	>(ADDRESS_GFX6_SPRITE_PATTERN>>3);  
-			.byte	Black
-			.byte v_reg8_VR	| v_reg8_SPD; VR - 64k VRAM TODO FIXME aware of max vram (bios)
-			.byte 0; NTSC/262, PAL/313 => v_reg9_nt | v_reg9_ln
-		.byte 0
-		.byte <.hiword(ADDRESS_GFX6_SPRITE<<1); sprite attribute high
-		.byte 0;  #R11
-		.byte 0;  #R12
-		.byte 0;  #R13		
+    .byte v_reg0_m5|v_reg0_m3                        ; reg0 mode bits
+    .byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int       ; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
+    .byte $3f  ; => 0<A16>11 1111 - either bank 0 oder 1 (64k)
+    .byte $0
+    .byte $0
+    .byte  >(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
+    .byte  >(ADDRESS_GFX6_SPRITE_PATTERN>>3);
+    .byte  Black
+    .byte v_reg8_SPD | v_reg8_VR  ; SPD - sprite disabled, VR - 64k VRAM  - R#8
+    .byte v_reg9_nt | v_reg9_ln ; NTSC/262, PAL/313 => v_reg9_nt | v_reg9_ln
+    .byte 0
+    .byte <.hiword(ADDRESS_GFX6_SPRITE<<1); sprite attribute high
+    .byte 0;  #R11
+    .byte 0;  #R12
+    .byte 0;  #R13
+    .byte <.HIWORD(ADDRESS_GFX6_SCREEN<<2) ; #R14
 vdp_init_bytes_gfx6_end:
 
 ;
-; blank gfx mode with black
-; 	A - color to fill 4|4 Bit
-vdp_gfx6_blank:		; 64K
-  tax
-  vdp_vram_w ADDRESS_GFX6_SCREEN
-  txa
-  ;lda #Black<<4|Black
-	ldx #192
-	jmp vdp_fill
+; blank gfx mode 6 with given color
+; .Y - color to fill 4|4 Bit
+vdp_mode6_blank:    ; 64K
+  lda #<_cmd_hmmv_data
+  ldx #>_cmd_hmmv_data
+  jmp vdp_cmd_hmmv
 
-;	set pixel to gfx2 mode screen
-;
-;	X - x coordinate [0..ff]
-;	Y - y coordinate [0..bf]
-;	A - color [0..f]
-;
-; 	VRAM ADDRESS = 8(INT(X DIV 2)) + 256(INT(Y DIV 8)) + (Y MOD 8)
-vdp_gfx6_set_pixel:
-		beq vdp_gfx6_set_pixel_e	; 0 - not set, leave blank
-;		sta tmp1					; otherwise go on and set pixel
-		; calculate low byte vram adress
-		txa						;2
-		and	#$f8
-		sta	vdp_tmp
-		tya
-		and	#$07
-		ora	vdp_tmp
-		sta	a_vreg	;4 set vdp vram address low byte
-		sta	vdp_tmp	;3 safe vram low byte
-
-		; high byte vram address - div 8, result is vram address "page" $0000, $0100, ...
-		tya						;2
-		lsr						;2
-		lsr						;2
-		lsr						;2
-		sta	a_vreg				;set vdp vram address high byte
-		ora #WRITE_ADDRESS		;2 adjust for write
-		tay						;2 safe vram high byte for write in y
-
-		txa						;2 set the appropriate bit
-		and	#$07				;2
-		tax						;2
-		lda	bitmask,x			;4
-		ora	a_vram				;4 read current byte in vram and OR with new pixel
-		tax						;2 or value to x
-		nop						;2
-		nop						;2
-		nop						;2
-		lda	vdp_tmp			;2
-		sta a_vreg
-		tya						;2
-		nop						;2
-		nop						;2
-		sta	a_vreg
-		vnops
-		stx a_vram	;set vdp vram address high byte
-vdp_gfx6_set_pixel_e:
-		rts
-bitmask:
-	.byte $80,$40,$20,$10,$08,$04,$02,$01
+_cmd_hmmv_data:
+  .word 0 ;x #36/#37
+  .word (ADDRESS_GFX6_SCREEN>>8) ;y - from page offset
+  .word 512 ; len x #40/#41
+  .word 212 ; len y #42/#43

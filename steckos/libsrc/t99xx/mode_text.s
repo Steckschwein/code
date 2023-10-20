@@ -42,26 +42,28 @@
 
 .code
 
-; blank screen
+; blank screen and color vram
 vdp_text_blank:
-		vdp_vram_w ADDRESS_TEXT_SCREEN
-		ldx #8
-		lda #' '
-		jsr vdp_fill
-		vdp_vram_w ADDRESS_TEXT_COLOR
-		lda #0
-		ldx #0
-		jmp vdp_fills
+	vdp_vram_w ADDRESS_TEXT_SCREEN
+	ldx #8
+	lda #' '
+	jsr vdp_fill
+	ldx #72 ; 26.5*80 = 2120 => 2120 - 2048 = 72 bytes left to clear
+	jsr vdp_fills
+	vdp_vram_w ADDRESS_TEXT_COLOR
+	lda #0
+	ldx #0
+	jmp vdp_fills
 ;
 ;	text mode - 40x24/80x24 character mode, 2 colors
 ;	.A - color settings (#R07)
 vdp_text_on:
-    
+
     php
     sei
 
 	pha ; push color
-	
+
     lda #<vdp_text_init_bytes
 	ldy #>vdp_text_init_bytes
 	ldx #(vdp_text_init_bytes_end-vdp_text_init_bytes-1)

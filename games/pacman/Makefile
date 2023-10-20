@@ -1,6 +1,6 @@
 DEBUG=-D__DEBUG
 DEBUG+=-D__NO_SOUND
-DEBUG+=-D__NO_BOOT
+#DEBUG+=-D__NO_BOOT
 DEBUG+=-D__NO_INTRO
 
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
@@ -14,7 +14,7 @@ OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.ai.o pacman.game.o pacman.syst
 
 CA65FLAGS_STS=-D__STECKSCHWEIN__ -I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel $(DEBUG)
 OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.sts.o pacman.sound.sts.o
-LIBS_STS=../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a ../../steckos/tools/lib/toollib.a
+LIBS_STS=../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a
 LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map
 
 CA65FLAGS_C64=-t c64 -I $(CC65_HOME)/asminc $(DEBUG)
@@ -81,8 +81,8 @@ test.%: test.%.bin
 pacman.prg: $(OBJS_STS) $(LIBS)
 	ld65 -o $@ $(LDFLAGS_STS) $(OBJS_STS) $(LIBS_STS)
 
-pacman: pacman.prg
-	steckschwein-emu -rom ../../steckos/kernel/kernel.bin,0xe800 -upload $<
+#pacman: pacman.prg
+#	steckschwein-emu -rom ../../steckos/kernel/kernel.bin,0xe800 -upload $<
 
 pacman64.prg: $(OBJS_C64) $(LIBS_C64)
 	ld65 -o $@ $(LDFLAGS_C64) $(OBJS_C64) $(LIBS_C64)
@@ -98,4 +98,4 @@ pacman64.dis: pacman64.prg
 	dcc6502 -o 0x7ff -d -n -c $< > $@
 
 %: %.prg
-	../../transfer.py $<
+	../../xmodem.sh $<

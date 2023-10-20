@@ -23,12 +23,10 @@
 .include "vdp.inc"
 
 .import vdp_init_reg
-.import vdp_nopslide_8m
 .import vdp_fill
 
 .export vdp_mc_on
 .export vdp_mc_blank
-.export vdp_mc_set_pixel
 .export vdp_mc_init_screen
 
 .importzp vdp_tmp
@@ -47,8 +45,8 @@ vdp_mc_on:
 ; init mc screen
 ;
 vdp_mc_init_screen:
-            php
-            sei ; critical section vdp access
+         php
+         sei ; critical section vdp access
 
 			vdp_vram_w ADDRESS_GFX_MC_SCREEN
 			stz vdp_tmp
@@ -72,90 +70,23 @@ vdp_mc_init_screen:
 			adc #32
 			sta vdp_tmp+1
 			bra @l1
-@le:		
-            plp
-            rts
+@le:
+			plp
+			rts
 
 ;
 ; blank multi color mode, set all pixel to black
 ; 	A - color to blank
 ;
 vdp_mc_blank:
-			vdp_sreg <ADDRESS_GFX_MC_PATTERN, WRITE_ADDRESS+>ADDRESS_GFX_MC_PATTERN
-			ldx #(1536/256)
+			php
+			sei
+			vdp_vram_w ADDRESS_GFX_MC_PATTERN
 			lda #0
-			jmp vdp_fill
-
-;	set pixel to mc screen
-;
-;	X - x coordinate [0..3f]
-;	Y - y coordinate [0..2f]
-;	A - color [0..f]
-;
-; 	VRAM ADDRESS = 8(INT(X DIV 2)) + 256(INT(Y DIV 8)) + (Y MOD 8)
-;	!!! NOTE !!! mc screen vram adress is assumed to be at $0000 (ADDRESS_GFX_MC_PATTERN)
-;
-vdp_mc_set_pixel:
-		phx
-		phy
-
-		and #$0f				;only the 16 colors
-		sta vdp_tmp+1		;safe color
-
-		txa
-		and #$3e				; x div 2 * 8 => x div 2 * 2 * 2 * 2 => lsr, asl, asl, asl => lsr,asl = and #3e ($3f - x boundary), asl, asl
-		asl
-		asl
-		sta vdp_tmp
-
-		tya
-		and	#$07				; y mod 8
-		ora	vdp_tmp				; with x
-		sta	a_vreg				;4 set vdp vram address low byte
-		sta	vdp_tmp				;3 safe vram address low byte for write
-
-		; high byte vram address - div 8, result is vram address "page" $0000, $0100, ... until $05ff
-		tya						;2
-		lsr						;2
-		lsr						;2
-		lsr						;2
-		ora #(>.LOWORD(ADDRESS_GFX_MC_PATTERN) & $3f)
-		vdp_wait_s 5
-		sta	a_vreg				;set vdp vram address high byte
-		ora #WRITE_ADDRESS | (>.LOWORD(ADDRESS_GFX_MC_PATTERN) & $3f) ;2 adjust for write
-
-		tay						;2 safe vram high byte for write in y
-
-		txa						;2
-		bit #1					;3 test color shift required, upper nibble?
-		beq l1					;2/3
-
-		lda #$f0				;2
-		bra l2					;3
-l1:		lda vdp_tmp+1				;3
-		asl						;2
-		asl						;2
-		asl						;2
-		asl						;2
-		sta vdp_tmp+1
-		lda #$0f
-l2:
-		vdp_wait_l 14
-		and a_vram
-		ora vdp_tmp+1
-
-		ldx vdp_tmp				;3
-		vdp_wait_l 5
-		stx	a_vreg				;4 setup write address
-		vdp_wait_s
-		sty a_vreg
-		vdp_wait_l
-		sta a_vram
-
-		ply
-		plx
-
-		rts
+			ldx #(1536/256)
+			jsr vdp_fill
+			plp
+			rts
 
 vdp_init_bytes_mc:
 			.byte 0;
@@ -168,5 +99,4 @@ vdp_init_bytes_mc:
 			.byte	Black
 			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
 			.byte v_reg9_nt ; #R9, set bit 1 to 1 for PAL
-
 vdp_init_bytes_mc_end:

@@ -35,7 +35,8 @@ debug_enabled=1
 		brk
 
 mock_read_block:
-		load_block LBA_BEGIN, block_root_cl ; load root cl block
+		load_block_if LBA_BEGIN, block_root_cl, @exit ; load root cl block
+@exit:
 		rts ; fail "mock read_block";  lba_addr
 
 mock_not_implemented:

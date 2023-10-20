@@ -34,4 +34,4 @@ fig6502.bin: fig6502.a
 	acme -v -f plain --cpu 65c02 -o $@ $<
 
 transfer: all
-	../transfer.py tetris.bin	
+	../xmodem.sh tetris.bin	

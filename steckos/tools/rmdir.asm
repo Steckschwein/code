@@ -35,7 +35,7 @@ appstart $1000
     	ldx paramptr+1
 
     	jsr krn_rmdir
-		bne @errmsg
+		bcs @errmsg
 
 		jsr krn_primm
 		.byte $0a," rmdir ok",$00

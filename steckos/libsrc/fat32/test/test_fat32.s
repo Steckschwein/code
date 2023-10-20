@@ -22,7 +22,6 @@
 
 ; -------------------
 		setup "__fat_alloc_fd"
-    	jsr __fat_init_fdarea
 		jsr __fat_alloc_fd
 		assertX (2*FD_Entry_Size); expect x point to first fd entry which is 2*FD_Entry_Size, cause the first 2 entries are reserved
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::CurrentCluster
@@ -31,7 +30,6 @@
 
 ; -------------------
 		setup "__fat_alloc_fd with error"
-    	jsr __fat_init_fdarea
     	ldy #FD_Entries_Max-2 ; -2 => 2 entries for cd and temp dir
 :
 		jsr __fat_alloc_fd
@@ -109,8 +107,8 @@
 		ldy #1
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread
-		assertCarry 0; ok
 		assertA EOK
+		assertCarry 0; ok
 		assertX (1*FD_Entry_Size)
 		assertY 1
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $16a * 1 = $6968
@@ -212,26 +210,26 @@
 
 ; -------------------
 		setup "fat_fopen O_RDONLY"
-		jsr __fat_init_fdarea
 
 		ldy #O_RDONLY
 		lda #<test_file_name_1
 		ldx #>test_file_name_1
 		jsr fat_fopen
 		assertA EOK
+		assertCarry 0
 		assertX FD_Entry_Size*2
 		assertDirEntry block_data+2*DIR_Entry_Size ; offset see below
 			fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
 
 ; -------------------
 		setup "fat_fopen O_RWONLY"
-		jsr __fat_init_fdarea
 
 		ldy #O_RDONLY
 		lda #<test_file_name_2
 		ldx #>test_file_name_2
 		jsr fat_fopen
 		assertA EOK
+		assertCarry 0
 		assertX FD_Entry_Size*2
 		assertDirEntry block_data+3*DIR_Entry_Size ; offset see below
 			fat32_dir_entry_file "FILE02  ", "TXT", $0a, 12
@@ -316,6 +314,7 @@
 
 
 setUp:
+	jsr __fat_init_fdarea
 	set_sec_per_cl SEC_PER_CL
 	set32 volumeID + VolumeID::EBPB + EBPB::RootClus, ROOT_CL
 	set32 fat_lba_begin, FAT_LBA		;fat lba to
@@ -329,7 +328,6 @@ setUp:
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::offset, 0
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, $1000
-;	fd_entry_file fd_area+(1*FD_Entry_Size)
 
 	rts
 
@@ -351,14 +349,13 @@ debug_enabled=1
 
 mock_read_block:
 		debug32 "mock_read_block", lba_addr
-		cpx #(2*FD_Entry_Size)
-		bcc :+
-		inc read_blkptr+1	; same behavior as real implementation
+		cpx #(1*FD_Entry_Size)
+		bcs :+
 		lda #EINVAL
 		rts
 :
 		; defaults to dir entry data
-		load_block LBA_BEGIN, block_root_cl ; load root cl block
+		load_block_if LBA_BEGIN, block_root_cl, @exit ; load root cl block
 
 		; fat block $2980 read?
 		cmp32_ne lba_addr, $2980, :+
@@ -369,10 +366,10 @@ mock_read_block:
 			set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), FAT_EOC
 :
 		; data block read?
-		load_block (LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2 + 0), test_block_data
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2 + 0), test_block_data, @exit
 
-@exit:
 		inc read_blkptr+1 ; => same behavior as real block read implementation
+@exit:
 		lda #EOK
 		rts
 
@@ -392,4 +389,4 @@ test_block_data:
 	.byte "2nd half block"
 
 .bss
-data_read: .res 8*512, 0
+data_read: .res 8*sd_blocksize, 0

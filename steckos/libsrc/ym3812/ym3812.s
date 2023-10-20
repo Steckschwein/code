@@ -23,8 +23,10 @@
 .setcpu "65c02"
 
 .include "ym3812.inc"
+.include "debug.inc"
 
-.export opl2_init, opl2_delay_data, opl2_delay_register, opl2_reg_write
+.export opl2_init, opl2_delay_data, opl2_delay_register
+.export opl2_reg_write
 .export _opl2_init=opl2_init
 
 ;----------------------------------------------------------------------------------------------
@@ -36,40 +38,49 @@
 opl2_init:
 		php
 		sei
-		ldx #4
-		lda #$60
-		jsr opl2_reg_write
-		lda #$80
-		jsr opl2_reg_write
-		
-		ldx #8
+
 		lda #0
-@l:
-		jsr opl2_reg_write
+		tax
+@l:		jsr _opl2_reg_write
 		inx
-		cpx #$f6					 ; until reg 245
 		bne @l
-		
+
+		ldx #opl2_reg_ctrl
+		lda #$60	; disable timer 1 & 2 IRQ
+		jsr _opl2_reg_write
+
+		lda #$80	; reset irq
+		jsr _opl2_reg_write
+
+		ldx #opl2_reg_test
+		lda #(1<<5) 	; enable WS
+		jsr _opl2_reg_write
+
 		plp
 		rts
 
-;
+opl2_reg_write:
+		php
+		sei
+    jsr _opl2_reg_write
+		plp
+		rts
+
 ;	in:
 ;		 .X - opl2 register select
 ;		 .A - opl2 data
-opl2_reg_write:
-		jsr opl2_delay_register
+_opl2_reg_write:
 		stx opl_sel
 		jsr opl2_delay_register
 		sta opl_data
-		jmp opl2_delay_data
-
-opl2_delay_data: ; 23000ns - 3300ns => 8Mhz/125ns => 157cl => 12cl (jsr/rts) + 145cl (73 nop)
-.repeat opl2_data_delay
+opl2_delay_data:
+.repeat opl2_delay_data_cnt
 		nop
 .endrepeat
-opl2_delay_register: ; 3300 ns => 8Mhz/125ns => 26cl => 12cl (jsr/rts) + 14cl (7 nop)
-.repeat opl2_reg_delay
+opl2_delay_register:
+.if(opl2_delay_register_cnt>0)
+	.repeat opl2_delay_register_cnt
 		nop
-.endrepeat
+	.endrepeat
+.endif
 		rts

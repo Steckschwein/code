@@ -28,40 +28,14 @@
 .include "spi.inc"
 .include "errno.inc"
 
-.code
-
 .export spi_select_device
-.export spi_select_device_n
+.export spi_set_device
+.export spi_replace_device
 
-; select spi device upon ordinal number given in A
-;	in:
-;		A = [0..2]
-;		 0 - SDCARD
-;		 1 - KEYBOARD
-;		 2 - RTC
-;	out:
-;		@see spi_select_device below
-device_n:
-	.byte spi_device_sdcard
-	.byte spi_device_keyboard
-	.byte spi_device_rtc
-spi_select_device_n:
-		and #$03
-		cmp #3
-		bne :+
-		lda #EINVAL
-		rts
-:		phx
-		tax
-		lda device_n,x
-		plx
-
+.code
 ; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
 ; in:
-;	A = spi device - one of
-;		spi_device_sdcard	=   %00011100 ;spi device number 1110??? (SPI_SS1)
-;		spi_device_keyboard =   %00011010 ;spi device number 1101??? (SPI_SS2)
-;		spi_device_rtc		=   %00010110 ;spi device number 1011??? (SPI_SS3)
+;	A = spi device, one of devuces see spi.inc
 ; out:
 ;	Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
 spi_select_device:
@@ -69,22 +43,37 @@ spi_select_device:
 		sei ;critical section start
 		pha
 
-		;check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
-		;	Z=1 not busy, Z=0 spi is busy and A=#EBUSY
-spi_isbusy:
+    ; check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
 		lda via1portb
-        and #%00011110
-        cmp #%00011110
+    and #spi_device_deselect
+    cmp #spi_device_deselect
 		bne @l_exit		;busy, leave section, device could not be selected
 
 		pla
 		sta via1portb
 
 		plp
-		lda #EOK			;exit ok
+		lda #EOK	;exit ok
 		rts
+
 @l_exit:
 		pla
-		plp				;restore P (interrupt flag)
+		plp				  ;restore P (interrupt flag)
 		lda #EBUSY
 		rts
+
+
+; in:
+;   A - device to select
+; out:
+;   X - previous selected device if any, the "deselect device" otherwise
+spi_replace_device:
+    pha
+		lda via1portb
+    and #spi_device_deselect
+    tax
+    pla
+spi_set_device:
+    and #spi_device_deselect
+		sta via1portb
+    rts

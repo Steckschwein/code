@@ -327,7 +327,7 @@ void init_nvram()
 {
       cprintf("Setting to default values ... ");
 	 	n.version 		= 0;
-	 	memcpy(n.filename, "loader.bin\0", 11);
+	 	memcpy(n.filename, "loader.prg\0", 11);
 
 	 	n.uart_baudrate = 0x01; // 115200 baud
 	 	n.uart_lsr		= UART_DATA_BITS8|UART_PARITY_NONE|UART_STOP_BITS1; // 8N1

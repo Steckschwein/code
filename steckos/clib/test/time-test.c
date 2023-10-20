@@ -1,8 +1,8 @@
 #include <conio.h>
 #include <time.h>
-#include "../include/spi.h"
-#include "../include/rtc.h"
-#include "include/time.cc65_2_17.h"
+#include "spi.h"
+#include "rtc.h"
+#include "time.cc65_2_17.h"
 
 void set_clock()
 {

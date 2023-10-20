@@ -45,7 +45,7 @@ vdp_bgcolor:
 ; .A/.Y - value / register
 vdp_set_sreg:
 vdp_set_reg:
-	vdp_wait_s 5 ; 6cl already wasted by jsr
+	vdp_wait_s 6 ; 6cl already wasted by jsr
 	sta a_vreg
 	vdp_wait_s
 	sty a_vreg

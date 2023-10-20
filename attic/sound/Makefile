@@ -7,15 +7,15 @@ all: imfplayer.bin
 clean:
 	rm -f *.bin
 soundtest: soundtest.bin
-	../transfer.py soundtest.bin
+	../xmodem.sh soundtest.bin
 
 synth: synth.bin
-	../transfer.py synth.bin    
+	../xmodem.sh synth.bin    
     
 imfplayer: imfplayer.bin
-	../transfer.py imfplayer.bin    
+	../xmodem.sh imfplayer.bin    
 
 transfer: all
-#	../transfer.py synth.bin
-#	../transfer.py soundtest.bin
-	../transfer.py imfplayer.bin 
+#	../xmodem.sh synth.bin
+#	../xmodem.sh soundtest.bin
+	../xmodem.sh imfplayer.bin 

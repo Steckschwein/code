@@ -20,71 +20,73 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 .ifdef DEBUG_AUTOMOUNT
-		debug_enabled=1
+    debug_enabled=1
 .endif
 
-		.export __automount
-		.export __automount_init
-		
-		.import primm
-		.import sdcard_init
-		.import sdcard_detect
-		.import fat_mount
-		.import krn_chrout
-		
-		.include "system.inc"
-		.include "via.inc"
-		.include "vdp.inc"
-		
-		.include "debug.inc"
+    .export __automount
+    .export __automount_init
+
+    .import primm
+    .import sdcard_init
+    .import sdcard_detect
+    .import fat_mount
+    .import krn_chrout
+    .import hexout_s
+
+    .include "system.inc"
+    .include "via.inc"
+    .include "vdp.inc"
+
+    .include "debug.inc"
 .code
 
-MOUNT_RETRIES=6
+MOUNT_RETRIES=8
 
 __automount_init:
-		jsr sdcard_detect
-		bne sdcard_err_detect
+    jsr sdcard_detect
+    bne sdcard_err_detect
 __automount:
-		jsr sdcard_detect
-		bne reset_retry	  ; no card, reset retry and exit
-		lda sdcard_retry	 ; should we try?
-		beq exit				; no, exit
-		
-		jsr sdcard_init	  ; yes, try init
-		debug8 "init", sdcard_retry
-		bne sdcard_err_init
+    jsr sdcard_detect
+    bne reset_retry     ; no card, reset retry and exit
+    lda sdcard_retry    ; should we try?
+    beq exit            ; no, exit
+
+    jsr sdcard_init     ; yes, try init
+    debug8 "init", sdcard_retry
+    bne sdcard_err_init
 @mount:
-		stz sdcard_retry	 ; ok, no further retries
-		jsr fat_mount
-		beq exit				; init and mount ok, exit
-		pha
-		jsr primm
-		.byte "mount error (",0
-		pla
-		and #$0f
-		ora #'0'
-		jsr krn_chrout
-		jsr primm
-		.byte ")",CODE_LF,0
+    stz sdcard_retry   ; ok, no further retries
+    jsr fat_mount
+    beq exit      ; init and mount ok, exit
+    pha
+    jsr primm
+    .byte "mount error (",0
+    pla
+err_code_exit:
+    jsr hexout_s
+    jsr primm
+    .byte ")",CODE_LF,0
 exit:
-		rts
+    rts
 msg_sdcard:
-		jsr primm
-		.byte "SD card ",0
-		rts
+    jsr primm
+    .byte "SD card ",0
+    rts
 sdcard_err_detect:
-		jsr msg_sdcard
-		jsr primm
-		.byte "not found!",CODE_LF,0
+    jsr msg_sdcard
+    jsr primm
+    .byte "not found!",CODE_LF,0
 reset_retry:
-		lda #MOUNT_RETRIES				  ; yes, try init and mount otherwise
-		sta sdcard_retry
-		rts
-sdcard_err_init:			 
-		dec sdcard_retry  ; dec retry
-		bne exit			; .. and exit
-		jsr msg_sdcard	 ; or fail if retries exhausted
-		jsr primm
-		.byte "init failed!",CODE_LF,0
-		rts
+    lda #MOUNT_RETRIES          ; yes, try init and mount otherwise
+    sta sdcard_retry
+    rts
+sdcard_err_init:
+    dec sdcard_retry  ; dec retry
+    bne exit      ; .. and exit
+    pha
+    jsr msg_sdcard   ; or fail if retries exhausted
+    jsr primm
+    .byte "init failed! (",0
+    pla
+    bra err_code_exit
 sdcard_retry: .res 1,1; initial with 1, during boot only one try

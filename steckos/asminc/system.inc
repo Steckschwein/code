@@ -30,52 +30,58 @@ IRQ_VIA			= 1<<5		; irq from VIA (6522)
 IRQ_IO0			= 1<<4		; i/o port 0
 ;...
 
-clockspeed  = 8	; in Mhz
+clockspeed  = 10	; in Mhz
 
 ctrl_port	= $0230
 
-ROM_OFF = 1<<0
-BANK_SEL0 = 1<<1
-BANK_SEL1 = 1<<2
-BANK0 = 0
-BANK1 = BANK_SEL0
-BANK2 = BANK_SEL1
-BANK3 = BANK_SEL1 | BANK_SEL0
+slot0 = ctrl_port+0
+slot1 = ctrl_port+1
+slot2 = ctrl_port+2
+slot3 = ctrl_port+3
 
 CODE_LF  = $0a ; line feed
+
+; address constants of RAM addresses which can be used as buffers or kind of
+; !!! ATTENTION: if used together with fat read/write be aware that this buffers are used and may override your data
+BUFFER_0 = $0400
+BUFFER_1 = BUFFER_0 + $0100
+BUFFER_2 = BUFFER_1 + $0100
+BUFFER_3 = BUFFER_2 + $0100
 
 SYS_VECTOR_NMI = $fffa
 SYS_VECTOR_RESET = $fffc
 SYS_VECTOR_IRQ = $fffe
 
-.macro sys_delay_us micros
-    .local @0,@1,@2
-    .local cnt
-    cnt = (micros * clockspeed)
-    .assert cnt >= 0, error, "micros to small!"
-    .assert (>.HIWORD(cnt)) = 0, error, "micros to large!"
-    php
-    pha
-    phx
-    phy
-    lda #1+<.HIWORD(cnt)
-@0:	ldx #>cnt
-@1: ldy #<cnt ; ~6cl inner loop
-@2: dey
-    nop
-	bne @2
-    dex
-    bne @1
-    dec a
-    bne @0
-    ply
-    plx
-    pla
-    plp
+.macro crlf
+  lda #CODE_LF		;\n already does the carriage return
+  jsr char_out
 .endmacro
 
 .macro sys_delay_ms millis
 	sys_delay_us (millis * 1000)
+.endmacro
+
+.macro sys_delay_us micros
+      .local @l1,@l2,@l3
+      .assert (micros * clockspeed) >= 0, error, "micros to small!"
+      .assert (>.HIWORD(micros * clockspeed)) = 0, error, "micros to large!"
+      php
+      pha
+      phx
+      phy
+      lda #1+<.HIWORD(micros * clockspeed / 5)
+@l1:  ldx #1+>(micros * clockspeed / 5)
+@l2:  ldy #1+<(micros * clockspeed / 5) ; ~5cl inner loop
+@l3:  dey
+      bne @l3
+      dex
+      bne @l2
+      dec
+      bne @l1
+      ply
+      plx
+      pla
+      plp
 .endmacro
 
 .endif

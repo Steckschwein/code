@@ -21,17 +21,21 @@
 ; SOFTWARE.
 
 .include "zeropage.inc"
-.import spi_r_byte, spi_deselect, spi_select_device
+.include "spi.inc"
+
+.import spi_r_byte
+.import spi_deselect
+.import spi_select_device
+.import spi_replace_device
+.import spi_set_device
+
 .export getkey, fetchkey
 
 .code
-
-spi_device_keyboard=%00011010
-
 ; Select Keyboard controller on SPI, read one byte
 ;	in: -
 ;	out:
-;		C=1 key was fetched and A= <key code>, C=0 otherwise and A=<error / status code> e.g. #EBUSY
+;		C=1 key was fetched and A=<key code>, C=0 otherwise and A=<error / status code> e.g. #EBUSY
 fetchkey:
 		lda #spi_device_keyboard
 		jsr spi_select_device
@@ -44,22 +48,22 @@ fetchkey:
 
 		plx
 
-		cmp #0
-		beq exit
 		;  TODO FIXME - tradeoff here is that we override a possible previously stored key anyway
 		sta key
+    sec
 		rts
+
 
 ; get byte from keyboard buffer
 ;	in: -
 ;	out:
 ;		C=1 key was pressed and A=<key code>, C=0 otherwise
 getkey:
-        lda key
-        beq exit
-        stz key
-        sec
-        rts
+    lda key
+    beq exit
+    stz key
+    sec
+    rts
 exit:
-        clc
-        rts
+    clc
+    rts

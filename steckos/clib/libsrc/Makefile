@@ -7,6 +7,8 @@ DEFINES+=-DV9958
 
 .SUFFIXES:
 
+$(if $(value CC65_HOME),,$(error CC65_HOME environment variable is not set!))
+
 ifdef CMD_EXE
   DIRLIST = $(strip $(foreach dir,$1,$(wildcard $(dir))))
   MKDIR = mkdir $(subst /,\,$1)
@@ -51,17 +53,18 @@ SRCDIRS += ym3812
 SRCDIRS += vdp
 SRCDIRS += opl2
 SRCDIRS += util
+SRCDIRS += sdcard
 SRCDIRS +=  $(CC65_HOME)/libsrc/conio     	\
 			$(CC65_HOME)/libsrc/runtime	 	\
 			$(CC65_HOME)/libsrc/zlib		\
 			$(CC65_HOME)/libsrc/common \
    	        $(CC65_HOME)/libsrc/zlib
-	#		$(CC65_HOME)/libsrc/serial   \
-	#		$(CC65_HOME)/libsrc/tgi      \
-#            $(CC65_HOME)/libsrc/dbg      \
- #           $(CC65_HOME)/libsrc/em       \
-  #          $(CC65_HOME)/libsrc/joystick \
-   #         $(CC65_HOME)/libsrc/mouse    \
+#		$(CC65_HOME)/libsrc/serial   \
+#		$(CC65_HOME)/libsrc/tgi      \
+#       $(CC65_HOME)/libsrc/dbg      \
+#       $(CC65_HOME)/libsrc/em       \
+#       $(CC65_HOME)/libsrc/joystick \
+#       $(CC65_HOME)/libsrc/mouse    \
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS)
@@ -78,6 +81,7 @@ CA65 := $(if $(wildcard ../bin/ca65*),../bin/ca65,ca65)
 CC65 := $(if $(wildcard ../bin/cc65*),../bin/cc65,cc65)
 LD65 := $(if $(wildcard ../bin/ld65*),../bin/ld65,ld65)
 
+# set from environment
 # export CC65_HOME := $(abspath ..)
 
 define ASSEMBLE_recipe
