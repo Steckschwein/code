@@ -39,9 +39,16 @@ appstart $1000
     jsr vdp_memcpys
 
     vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
-    lda #GFX7_LightYellow
-    ldx #(16*8)
-    jsr vdp_fills
+    lda #<sprite_color
+    ldy #>sprite_color
+    ldx #(sprite_color_end - sprite_color)
+    jsr vdp_memcpys
+
+    ; vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
+    ; lda #GFX7_LightYellow
+    ; ldx #(16*8)
+    ; jsr vdp_fills
+
 
     ;sp_pattern 3, ('B'-64)
     sp_pattern 0, ('T' - 64)
@@ -150,7 +157,6 @@ sprity_mc_spriteface:
   ; adc #SP_OFFS_Y
   ; sta sprite_1_y
   ; dec sprite_1_x
-
 
   ldx sprite_2_x
   lda sintable,x
@@ -267,9 +273,135 @@ sprite_attr:
   sprite_8_x: .byte 175
   pattern_8:  .byte 28
   .byte 0
-
-
 sprite_attr_end:
+sprite_color:
+; sprite 0
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+  .byte GFX7_LightBlue
+; sprite 1
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+  .byte GFX7_LightRed
+; sprite 1
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+; sprite 1
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen
+; sprite 1
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+; sprite 1
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+; sprite 1
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+  .byte GFX7_LightYellow
+sprite_color_end:
 
 sintable:
 .byte 105, 110, 114, 119, 124, 128, 132, 136
