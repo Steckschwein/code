@@ -2,11 +2,7 @@
 .include "vdp.inc"
 
 .autoimport
-
-;.export char_out=krn_chrout
-
 appstart $1000
-
 
 .macro sp_pattern sp, chr
     vdp_vram_w (ADDRESS_GFX7_SPRITE_PATTERN + (sp*32));
@@ -48,25 +44,51 @@ appstart $1000
     jsr vdp_fills
 
     ;sp_pattern 3, ('B'-64)
-    sp_pattern 0, '0'
-    sp_pattern 1, '1'
-    sp_pattern 2, '2'
-    sp_pattern 3, '3'
-
-    sp_pattern 4, '4'
-    sp_pattern 5, '5'
-    sp_pattern 6, '6'
-    sp_pattern 7, '7'
+    sp_pattern 0, ('T' - 64)
+    sp_pattern 1, ('H' - 64)
+    sp_pattern 2, ('O' - 64)
+    sp_pattern 3, ('M' - 64)
+    sp_pattern 4, ('A' - 64)
+    sp_pattern 5, ('S' - 64)
+    ;sp_pattern 6, '6'
+    ;sp_pattern 7, '7'
     lda #SPRITE_OFF+8 ; vram pointer still setup correctly
     sta a_vram
 
     cli
 
 
-:   keyin
+@loop:
+    keyin
     cmp #KEY_ESCAPE
     beq @exit
-    bra :-
+
+    cmp #KEY_CRSR_UP
+    beq @up
+
+    cmp #KEY_CRSR_DOWN
+    beq @down
+
+    cmp #KEY_CRSR_LEFT
+    beq @left
+
+    cmp #KEY_CRSR_RIGHT
+    beq @right
+
+    bra @loop
+
+@up:
+    dec sprite_1_y
+    bra @loop
+@down:
+    inc sprite_1_y
+    bra @loop
+@left:
+    dec sprite_1_x
+    bra @loop
+@right:
+    inc sprite_1_x
+    bra @loop
 @exit:
 
     jsr gfxui_off
@@ -122,12 +144,12 @@ isr_end:
   rts
 
 sprity_mc_spriteface:
-  ldx sprite_1_x
-  lda sintable,x
-  clc
-  adc #SP_OFFS_Y
-  sta sprite_1_y
-  dec sprite_1_x
+  ; ldx sprite_1_x
+  ; lda sintable,x
+  ; clc
+  ; adc #SP_OFFS_Y
+  ; sta sprite_1_y
+  ; dec sprite_1_x
 
 
   ldx sprite_2_x
@@ -187,6 +209,27 @@ sprity_mc_spriteface:
 
   rts
 
+; hextodec 8bit hex to decimal converter
+; from https://x.com/mrdoornbos/status/1715326394970862020?s=20
+    ; accumulator
+    ; to
+    ; y - hundreds
+    ; x - tens
+    ; a - ones
+hextodec:
+    ldy #$2f 
+    ldx #$3a
+    sec 
+:
+    iny
+    sbc #100
+    bcs :- 
+:
+    dex
+    adc #10
+    bmi :-
+    adc #$2f 
+    rts
 
 
 .data
@@ -215,6 +258,7 @@ sprite_attr:
   sprite_6_x: .byte 155
   pattern_6:  .byte 20
   .byte 0
+  .byte SPRITE_OFF+8  ; all other sprites off
   sprite_7_y: .byte 0
   sprite_7_x: .byte 165
   pattern_7:  .byte 24
@@ -223,7 +267,6 @@ sprite_attr:
   sprite_8_x: .byte 175
   pattern_8:  .byte 28
   .byte 0
-  .byte SPRITE_OFF+8  ; all other sprites off
 
 
 sprite_attr_end:
