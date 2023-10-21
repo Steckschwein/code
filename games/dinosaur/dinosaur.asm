@@ -86,7 +86,7 @@ STATUS_JOY_PRESSED=1<<2
 STATUS_EXIT=1<<7
 
 dinosaur_cap=56
-sprite_empty=92
+sprite_empty=$60
 
 .code
     jsr krn_textui_disable
@@ -228,9 +228,9 @@ scroll_background:
 :    tax
     inc level_script_ptr
     txa
-    beq  @lgen_bg      ;0 - background desert/hills
-    bit #1          ;1 - cacti
-    bne @lgen_cacti    ;2 - otherwise, pterodactyl
+    beq  @lgen_bg     ;0 - background desert/hills
+    bit #1            ;1 - cacti
+    bne @lgen_cacti   ;2 - otherwise, pterodactyl
 
     ;enable pterodactyl
     jsr  enable_pd
@@ -256,9 +256,8 @@ scroll_background:
 @lgen_bg_6:
      SetVector level_bg_6, level_bg_ptr
 @lgen_none:
-    lda  #0
-    sta level_bg_cnt
-    bra  @lgen
+    stz level_bg_cnt
+    bra @lgen
 
 bg_table:
     .word level_bg_1
@@ -333,8 +332,6 @@ set_state:
     SetVector text_game_reload_2, ptr1
     lda  #<(A_GX_SCR + ((Y_OFS_GAME_OVER+3)*32))+14
     ldy  #WRITE_ADDRESS + >(A_GX_SCR+((Y_OFS_GAME_OVER+3)*32))
-;    jsr vdp_print
-;    rts
 
 vdp_print:
     vdp_sreg
@@ -446,7 +443,6 @@ animate_dinosaur:
     SetVector  dino_run_1, ptr1
     bra update_sprite_data
 :   SetVector  dino_run_2, ptr1
-;     bra update_sprite_data
 
 update_sprite_data:
     ldy  #0
@@ -468,7 +464,7 @@ update_sprite_data:
 :
     clc
     adc sprite_tab+0+0*4 ; y dino head
-    sta  sprite_tab+0+4*4 ; y cap sprite
+    sta sprite_tab+0+4*4 ; y cap sprite
 
     iny
     lda  (ptr1),y
@@ -540,24 +536,17 @@ animate_enemy:
 animate_sky:
     ldx  #0
 @l_as_loop:
-    dec  sprite_tab_sky+1,x
-    bne  @l_as_move
-    lda  sprite_tab_sky+3,x
-    tay
-    and  #SPRITE_EC
-    bne  :+
+    dec sprite_tab_sky+1,x
+    bne @l_as_move
+    ldy sprite_tab_sky+1,x
+    lda sprite_tab_sky+3,x
+    eor #SPRITE_EC
+    sta sprite_tab_sky+3,x
+    bpl :+
+    ldy #32
+:   dey
     tya
-    ora  #SPRITE_EC
-    sta  sprite_tab_sky+3,x
-    lda  #32
     sta sprite_tab_sky+1,x
-    bra  @l_as_move
-:      tya
-    and  #<(~SPRITE_EC)
-    sta  sprite_tab_sky+3,x
-    lda  #$ff
-    sta sprite_tab_sky+1,x
-
 @l_as_move:
     inx
     inx
@@ -758,7 +747,7 @@ action_handler:
     SetVector sin_tab, sin_tab_ptr  ;long jump
     rts
 :   lda sin_tab_offs  ;no joy/key pressed after 5 frames, switch to short jump
-    cmp #8
+    cmp #5
     bne :+
     SetVector sin_tab_short, sin_tab_ptr
 :
@@ -849,8 +838,11 @@ init_vram:
     vdp_sreg <A_SP_PAT, WRITE_ADDRESS + >A_SP_PAT
     lda #<sprites
     ldy #>sprites
-    ldx #$04      ; sprite patterns
+    ldx #$03      ; sprite patterns
     jsr vdp_memcpy
+    lda #0
+    ldx #64       ; empty sprite
+    jsr vdp_fills
 
     SetVector text_game_label, ptr1
     lda  #<(A_GX_SCR + (22*32))
@@ -859,7 +851,6 @@ init_vram:
 
 update_vram:
     ;update sprite tab
-    ;SetVector sprite_tab, ptr1
     vdp_sreg <A_SP_ATR, WRITE_ADDRESS + >A_SP_ATR
     lda #<sprite_tab
     ldy #>sprite_tab
@@ -958,7 +949,7 @@ sprite_tab_sky:
     .byte  57,86,52, White
     .byte  15,200,48, White
     .byte  15,216,52, White
-    .byte  $d0  ; end of sprite table
+    .byte  SPRITE_OFF  ; end of sprite table
 sprite_tab_end:
 
 dino_run_1:
@@ -1097,7 +1088,6 @@ sin_tab_short:
 sprites:
 .include "dinosaur.sprites.res"
 .include "dinosaur.sprites.pterodactyl.res"
-.res 32,0 ; the empty sprite
 
 game_chars:
 .include "dinosaur.chars.1.res"
