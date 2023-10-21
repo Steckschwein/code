@@ -228,9 +228,9 @@ scroll_background:
 :    tax
     inc level_script_ptr
     txa
-    beq  @lgen_bg      ;0 - background desert/hills
-    bit #1          ;1 - cacti
-    bne @lgen_cacti    ;2 - otherwise, pterodactyl
+    beq  @lgen_bg     ;0 - background desert/hills
+    bit #1            ;1 - cacti
+    bne @lgen_cacti   ;2 - otherwise, pterodactyl
 
     ;enable pterodactyl
     jsr  enable_pd
@@ -256,9 +256,8 @@ scroll_background:
 @lgen_bg_6:
      SetVector level_bg_6, level_bg_ptr
 @lgen_none:
-    lda  #0
-    sta level_bg_cnt
-    bra  @lgen
+    stz level_bg_cnt
+    bra @lgen
 
 bg_table:
     .word level_bg_1
