@@ -45,7 +45,7 @@ appstart $1000
     jsr vdp_memcpys
 
     ; vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
-    ; lda #GFX7_LightYellow
+    ; lda #GFX7_LightCyan
     ; ldx #(16*8)
     ; jsr vdp_fills
 
@@ -56,6 +56,7 @@ appstart $1000
     sp_pattern 3, ('M' - 64)
     sp_pattern 4, ('A' - 64)
     sp_pattern 5, ('S' - 64)
+    sp_pattern 6, ('X' - 64)
     lda #SPRITE_OFF+8 ; vram pointer still setup correctly
     sta a_vram
 
@@ -63,36 +64,37 @@ appstart $1000
 
 
 @loop:
+    dec sprite_attr + 6 + SPRITE_Y 
     keyin
     cmp #KEY_ESCAPE
     beq @exit
 
-    cmp #KEY_CRSR_UP
-    beq @up
+;     cmp #KEY_CRSR_UP
+;     beq @up
 
-    cmp #KEY_CRSR_DOWN
-    beq @down
+;     cmp #KEY_CRSR_DOWN
+;     beq @down
 
-    cmp #KEY_CRSR_LEFT
-    beq @left
+;     cmp #KEY_CRSR_LEFT
+;     beq @left
 
-    cmp #KEY_CRSR_RIGHT
-    beq @right
+;     cmp #KEY_CRSR_RIGHT
+;     beq @right
 
-    bra @loop
+;     bra @loop
 
-@up:
-    dec sprite_attr + 0 + SPRITE_Y 
-    bra @loop
-@down:
-    inc sprite_attr + 0 + SPRITE_Y
-    bra @loop
-@left:
-    dec sprite_attr + 0 + SPRITE_X 
-    bra @loop
-@right:
-    inc sprite_attr + 0 + SPRITE_X 
-    bra @loop
+; @up:
+;     dec sprite_attr + 6 + SPRITE_Y 
+;     bra @loop
+; @down:
+;     inc sprite_attr + 6 + SPRITE_Y
+;     bra @loop
+; @left:
+;     dec sprite_attr + 6 + SPRITE_X 
+;     bra @loop
+; @right:
+;     inc sprite_attr + 6 + SPRITE_X 
+;     bra @loop
 @exit:
 
     jsr gfxui_off
@@ -141,10 +143,11 @@ isr:
 
   jsr sprity_mc_spriteface
 
+
   lda  #0
   jsr  vdp_bgcolor
 isr_end:
-  rti
+  rts
 
 sprity_mc_spriteface:
   ; ldx sprite_1_x
@@ -155,32 +158,32 @@ sprity_mc_spriteface:
   ; dec sprite_1_x
 
   ; start with sprite 0
-  ldx #0
-:
-  ldy sprite_attr + SPRITE_X,x
-  lda sintable,y
-  clc
-  adc #SP_OFFS_Y
-  sta sprite_attr + SPRITE_Y,x
+;   ldx #0
+; :
+;   ldy sprite_attr + SPRITE_X,x
+;   lda sintable,y
+;   clc
+;   adc #SP_OFFS_Y
+;   sta sprite_attr + SPRITE_Y,x
 
-  dec sprite_attr + SPRITE_X,x
+;   dec sprite_attr + SPRITE_X,x
 
-  ; next sprite
-  ; 4 bytes per sprite attr table entry
-  inx
-  inx
-  inx
-  inx
+;   ; next sprite
+;   ; 4 bytes per sprite attr table entry
+;   inx
+;   inx
+;   inx
+;   inx
 
-  cpx #(4*6)
-  bne :-
-  
+;   cpx #(4*1)
+;   bne :-
+
   vdp_vram_w ADDRESS_GFX7_SPRITE
   lda #<sprite_attr
   ldy #>sprite_attr
   ldx #(sprite_attr_end - sprite_attr)
   jsr vdp_memcpys
-
+   
   rts
 
 ; hextodec 8bit hex to decimal converter
@@ -205,42 +208,41 @@ hextodec:
     adc #$2f 
     rts
 
-
 .data
 sprite_attr:
-  sprite_1_y: .byte 100
-  sprite_1_x: .byte 95
-  pattern:  .byte 0
+  sprite_0_y: .byte 0
+  sprite_0_x: .byte 95
+  pattern_0:  .byte 0
+  .byte 0
+  sprite_1_y: .byte 0
+  sprite_1_x: .byte 105
+  pattern_1:  .byte 4
   .byte 0
   sprite_2_y: .byte 0
-  sprite_2_x: .byte 105
-  pattern_2:  .byte 4
+  sprite_2_x: .byte 115
+  pattern_2:  .byte 8
   .byte 0
   sprite_3_y: .byte 0
-  sprite_3_x: .byte 115
-  pattern_3:  .byte 8
+  sprite_3_x: .byte 125
+  pattern_3:  .byte 12
   .byte 0
   sprite_4_y: .byte 0
-  sprite_4_x: .byte 125
-  pattern_4:  .byte 12
+  sprite_4_x: .byte 145
+  pattern_4:  .byte 16
   .byte 0
   sprite_5_y: .byte 0
-  sprite_5_x: .byte 145
-  pattern_5:  .byte 16
+  sprite_5_x: .byte 155
+  pattern_5:  .byte 20
   .byte 0
   sprite_6_y: .byte 0
-  sprite_6_x: .byte 155
-  pattern_6:  .byte 20
+  sprite_6_x: .byte 165
+  pattern_6:  .byte 24
   .byte 0
-  ; sprite_7_y: .byte 0
-  ; sprite_7_x: .byte 165
-  ; pattern_7:  .byte 24
-  ; .byte 0
-  ; sprite_8_y: .byte 0
-  ; sprite_8_x: .byte 175
-  ; pattern_8:  .byte 28
+  sprite_7_y: .byte SPRITE_OFF+8
+  sprite_7_x: .byte 175
+  pattern_7:  .byte 28
 
-  .byte SPRITE_OFF+8  ; all other sprites off
+  ; .byte SPRITE_OFF+8  ; all other sprites off
 sprite_attr_end:
 sprite_color:
 ; sprite 0
@@ -280,7 +282,7 @@ sprite_color:
   .byte GFX7_LightRed | $20
   .byte GFX7_LightRed | $20
 
-; sprite 1
+; sprite 2
   .byte GFX7_LightYellow | $20
   .byte GFX7_LightYellow | $20
   .byte GFX7_LightYellow | $20
@@ -298,7 +300,7 @@ sprite_color:
   .byte GFX7_LightYellow | $20
   .byte GFX7_LightYellow | $20
   .byte GFX7_LightYellow | $20
-; sprite 1
+; sprite 3
   .byte GFX7_LightGreen
   .byte GFX7_LightGreen
   .byte GFX7_LightGreen
@@ -316,7 +318,7 @@ sprite_color:
   .byte GFX7_LightGreen
   .byte GFX7_LightGreen
   .byte GFX7_LightGreen
-; sprite 1
+; sprite 4
   .byte GFX7_LightYellow
   .byte GFX7_LightYellow
   .byte GFX7_LightYellow
@@ -334,7 +336,7 @@ sprite_color:
   .byte GFX7_LightYellow
   .byte GFX7_LightYellow
   .byte GFX7_LightYellow
-; sprite 1
+; sprite 5
   .byte GFX7_LightYellow
   .byte GFX7_LightYellow
   .byte GFX7_LightYellow
@@ -352,24 +354,24 @@ sprite_color:
   .byte GFX7_LightYellow
   .byte GFX7_LightYellow
   .byte GFX7_LightYellow
-; sprite 1
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
+; sprite 6
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
 
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan
 sprite_color_end:
 
 sintable:
