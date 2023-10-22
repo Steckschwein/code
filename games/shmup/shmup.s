@@ -3,6 +3,7 @@
 
 .autoimport
 appstart $1000
+PLAYER_SPRITE_NR = 6
 
 .macro sp_pattern sp, chr
     vdp_vram_w (ADDRESS_GFX7_SPRITE_PATTERN + (sp*32));
@@ -84,16 +85,16 @@ appstart $1000
     bra @loop
 
 @up:
-    dec sprite_attr + 4*6 + SPRITE_Y 
+    dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_Y 
     bra @loop
 @down:
-    inc sprite_attr + 4*6 + SPRITE_Y
+    inc sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_Y
     bra @loop
 @left:
-    dec sprite_attr + 4*6 + SPRITE_X 
+    dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X 
     bra @loop
 @right:
-    inc sprite_attr + 4*6 + SPRITE_X 
+    inc sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X 
     bra @loop
 @exit:
 
@@ -234,7 +235,7 @@ sprite_attr:
   pattern_5:  .byte 20
   .byte 0
   sprite_6_y: .byte 0
-  sprite_6_x: .byte 165
+  sprite_6_x: .byte 0
   pattern_6:  .byte 24
   .byte 0
   sprite_7_y: .byte SPRITE_OFF+8
