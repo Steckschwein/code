@@ -486,8 +486,8 @@ sound_init:
     jsr jch_fm_init
     lda #OPL_VOLUME_MAX
     sta fm_master_volume
-		t2cycles=320
-		lda #($ff-(1000000 / fps / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
+    sound_play_freq=60
+		lda #($ff-(1000000 / OPL_INTERVAL_US_TIMER2 / sound_play_freq))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
   	ldx #opl2_reg_t2	; t2 timer value
     jsr opl2_reg_write
 		ldx #opl2_reg_ctrl ;reset
@@ -540,10 +540,10 @@ script:
 .ifndef DEBUG
   .byte SCRIPT_TEXT_COLOR, Gray<<4|Transparent
   .byte SCRIPT_TEXT, "  STECKSCHWEIN  ", SCRIPT_PAUSE, _3s
-  .byte SCRIPT_SOUND_ON
   .byte SCRIPT_TEXT, "... OH, NICE    ", SCRIPT_PAUSE, _2s
   .byte SCRIPT_TEXT, "A 2X2 CHAR FONT ", SCRIPT_PAUSE, _2s
   .byte SCRIPT_TEXT, "BORING...       ", SCRIPT_PAUSE, _2s
+  .byte SCRIPT_SOUND_ON
   .byte SCRIPT_TEXT, "LET'S SCROLL IT!", SCRIPT_PAUSE, _1s, SCRIPT_SCROLL, 1, " "
   .byte "        NICE... BUT YOU MAY RECOGNIZE A LITTLE FLICKER AT THE LEFT BORDER. LOOKS A LITTLE ODD! "
   .byte "SORRY, BUT THIS IS THE DEFAULT SOFT SCROLL BEHAVIOR OF THE V9938 CHIP. "
@@ -554,7 +554,6 @@ script:
   .byte "AND NOW 4PX/FRAME ... ", SCRIPT_SCROLL, 4
   .byte "SIMPLE THING WITH THE R#27 REGISTER OF THE V9958         "
   .byte SCRIPT_SCROLL, 2, "OK, 2PX IS FAST ENOUGH.                ", SCRIPT_PAUSE, _3s
-.endif
   .byte SCRIPT_RBAR_ON
   .byte "OHO... GOOD OLD RASTER BAR ;)  ", SCRIPT_PAUSE, _5s
   .byte "WE USE THE VDP R#19 HLINE INTERRUPT REGISTER HERE...             "
@@ -573,11 +572,12 @@ script:
   .byte "AVAILABLE IN THE V9938 ALREADY.                "
   .byte "        ", SCRIPT_SCROLL_SINE
   .byte "SEEMS TO WORK...", SCRIPT_SCROLL, 1, "        ", SCRIPT_SCROLL, 2, "        "
+.endif
   .byte "SO FAR.                 ", SCRIPT_SCROLL_SINE, SCRIPT_SCROLL, 1, "+!+BYE+!+"
   .byte SCRIPT_SCROLL, 2, "  ", SCRIPT_SCROLL, 4, "                ", SCRIPT_SCROLL, 1, "TO BE CONTINUED...                "
+  .byte SCRIPT_SOUND_FADE_OFF
   .byte $1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f
   .byte SCRIPT_PAUSE, _3s, SCRIPT_RBAR_OFF
-  .byte SCRIPT_SOUND_FADE_OFF
   .byte SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_RESET
 
 vdp_init_bytes:  ; vdp init table - MODE G3

@@ -43,7 +43,7 @@ gfx.res: *.res
 	ca65 -g $(INCLUDES) $(@:.o=.asm)
 
 %.prg: %.o $(LIBS)
-	ld65 $< --dbgfile $(basename $<).dbg -m $(basename $<).map $(LDFLAGS) -o $@
+	ld65 $< --dbgfile $(basename $<).dbg -Ln $(basename $<).lbl -m $(basename $<).map $(LDFLAGS) -o $@
 
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@

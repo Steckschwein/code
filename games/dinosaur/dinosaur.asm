@@ -86,7 +86,7 @@ STATUS_JOY_PRESSED=1<<2
 STATUS_EXIT=1<<7
 
 dinosaur_cap=56
-sprite_empty=92
+sprite_empty=$60
 
 .code
     jsr krn_textui_disable
@@ -220,17 +220,17 @@ scroll_background:
     inc  level_bg_cnt
     rts
 @lscript:
-    ldx  level_script_ptr
+    ldx  level_script_ix
     lda  level_script, x
     bpl  :+
-    stz  level_script_ptr
+    stz  level_script_ix
     bra  @lscript
 :    tax
-    inc level_script_ptr
+    inc level_script_ix
     txa
-    beq  @lgen_bg      ;0 - background desert/hills
-    bit #1          ;1 - cacti
-    bne @lgen_cacti    ;2 - otherwise, pterodactyl
+    beq  @lgen_bg     ;0 - background desert/hills
+    bit #1            ;1 - cacti
+    bne @lgen_cacti   ;2 - otherwise, pterodactyl
 
     ;enable pterodactyl
     jsr  enable_pd
@@ -256,9 +256,9 @@ scroll_background:
 @lgen_bg_6:
      SetVector level_bg_6, level_bg_ptr
 @lgen_none:
-    lda  #0
+    lda #0
     sta level_bg_cnt
-    bra  @lgen
+    bra @lgen
 
 bg_table:
     .word level_bg_1
@@ -333,8 +333,6 @@ set_state:
     SetVector text_game_reload_2, ptr1
     lda  #<(A_GX_SCR + ((Y_OFS_GAME_OVER+3)*32))+14
     ldy  #WRITE_ADDRESS + >(A_GX_SCR+((Y_OFS_GAME_OVER+3)*32))
-;    jsr vdp_print
-;    rts
 
 vdp_print:
     vdp_sreg
@@ -393,32 +391,32 @@ button:
 
 
 animate_dinosaur:
-    lda  dinosaur_state
-    bit  #DINOSAUR_JUMP
-    beq  @l_ad_dead
-    SetVector  dino_jump, ptr1
-    jsr update_sprite_data
+    lda dinosaur_state
+    bit #DINOSAUR_JUMP
+    beq @l_ad_dead
     ldy sin_tab_offs
     lda #DINOSAUR_Y-10
     sec
-    sbc  (sin_tab_ptr), y
-    sta  sprite_tab+4*4
-    lda  #DINOSAUR_Y
+    sbc (sin_tab_ptr), y
+    sta sprite_tab+4*4
+    lda #DINOSAUR_Y
     sec
-    sbc  (sin_tab_ptr), y
-    sta  sprite_tab+0*4
-    sta  sprite_tab+2*4
+    sbc (sin_tab_ptr), y
+    sta sprite_tab+0*4
+    sta sprite_tab+2*4
     clc
     adc #16        ;+16px y offset for the lower sprites
-    sta  sprite_tab+1*4
-    sta  sprite_tab+3*4
+    sta sprite_tab+1*4
+    sta sprite_tab+3*4
     iny
-    cmp  #(DINOSAUR_Y+16) ;detect end of sin tab, accu must be dino y+16
-    bne  :+
-    lda  #DINOSAUR_RUN
+    cmp #(DINOSAUR_Y+16) ;detect end of sin tab, accu must be dino y+16
+    bne :+
+    lda #DINOSAUR_RUN
     sta dinosaur_state
-    ldy  #$00
+    ldy #0
 :   sty sin_tab_offs
+    SetVector dino_jump, ptr1
+    jmp update_sprite_data
 @l_ad_exit:
     rts
 @l_ad_dead:
@@ -446,7 +444,6 @@ animate_dinosaur:
     SetVector  dino_run_1, ptr1
     bra update_sprite_data
 :   SetVector  dino_run_2, ptr1
-;     bra update_sprite_data
 
 update_sprite_data:
     ldy  #0
@@ -468,7 +465,7 @@ update_sprite_data:
 :
     clc
     adc sprite_tab+0+0*4 ; y dino head
-    sta  sprite_tab+0+4*4 ; y cap sprite
+    sta sprite_tab+0+4*4 ; y cap sprite
 
     iny
     lda  (ptr1),y
@@ -540,24 +537,17 @@ animate_enemy:
 animate_sky:
     ldx  #0
 @l_as_loop:
-    dec  sprite_tab_sky+1,x
-    bne  @l_as_move
-    lda  sprite_tab_sky+3,x
-    tay
-    and  #SPRITE_EC
-    bne  :+
+    dec sprite_tab_sky+1,x
+    bne @l_as_move
+    ldy sprite_tab_sky+1,x
+    lda sprite_tab_sky+3,x
+    eor #SPRITE_EC
+    sta sprite_tab_sky+3,x
+    bpl :+
+    ldy #32+1
+:   dey
     tya
-    ora  #SPRITE_EC
-    sta  sprite_tab_sky+3,x
-    lda  #32
     sta sprite_tab_sky+1,x
-    bra  @l_as_move
-:      tya
-    and  #<(~SPRITE_EC)
-    sta  sprite_tab_sky+3,x
-    lda  #$ff
-    sta sprite_tab_sky+1,x
-
 @l_as_move:
     inx
     inx
@@ -661,7 +651,7 @@ new_game:
     lda #$05
     sta score_board_cnt
     stz sin_tab_offs
-    stz level_script_ptr
+    stz level_script_ix
     stz frame_cnt
     stz level_bg_cnt
     SetVector level_bg_3, level_bg_ptr
@@ -740,7 +730,7 @@ score_board:
 
 action_handler:
    ;TODO FIXME just for testing
-    jsr fetchkey
+    jsr getkey
     cmp #KEY_CRSR_UP
     beq @up
     cmp #KEY_CRSR_DOWN
@@ -748,23 +738,25 @@ action_handler:
 
     jsr get_joy_status
     and #JOY_UP
-    bne :+
+    bne @short_jump
 @up:
     lda dinosaur_state
-    and #DINOSAUR_JUMP  ;only allow jump, if dinosaur is not already jumping
+    and #DINOSAUR_JUMP  ;only allow jump, if dinosaur is not jumping already
     bne @l_ah_exit
     lda #DINOSAUR_JUMP
     sta dinosaur_state
     SetVector sin_tab, sin_tab_ptr  ;long jump
+;    SetVector sin_tab_short, sin_tab_ptr
     rts
-:   lda sin_tab_offs  ;no joy/key pressed after 5 frames, switch to short jump
-    cmp #8
+@short_jump:
+    lda sin_tab_offs  ;no joy/key pressed after 5 frames, switch to short jump
+    cmp #5
     bne :+
     SetVector sin_tab_short, sin_tab_ptr
 :
-    lda  dinosaur_state
-    and #DINOSAUR_JUMP  ;only allow jump, if dinosaur is not already jumping
-    bne  @l_ah_exit
+    lda dinosaur_state
+    and #DINOSAUR_JUMP  ;only allow other direction, if dinosaur is not jumping already
+    bne @l_ah_exit
     jsr get_joy_status
     and #JOY_DOWN
     bne :+
@@ -786,7 +778,7 @@ load_highscore:
     SetVector score_value_high, read_blkptr
     jsr krn_read
     jsr krn_close
-:    rts
+:   rts
 
 init_vram:
     jsr isXmas
@@ -795,14 +787,14 @@ init_vram:
     sta  sprite_tab_init+4*4+3
 :
     vdp_sreg <A_GX_COL, WRITE_ADDRESS + >A_GX_COL  ;color vram
-    lda  #Light_Blue
-    ldx  #$20
-    jsr  vdp_fills
+    lda #Light_Blue
+    ldx #$20
+    jsr vdp_fills
 
     vdp_sreg <A_GX_SCR, WRITE_ADDRESS + >A_GX_SCR
-    ldx  #$03
-    lda  #CHAR_BLANK          ;fill vram screen with blank
-    jsr  vdp_fill
+    ldx #$03
+    lda #CHAR_BLANK          ;fill vram screen with blank
+    jsr vdp_fill
 
     vdp_sreg <A_GX_PAT_1, WRITE_ADDRESS + >A_GX_PAT_1
     lda #<charset ; init 2 game charset with character set
@@ -823,8 +815,8 @@ init_vram:
     bcc :+
     lda #<game_chars_xmas ; xmas game charset
     ldy #>game_chars_xmas
-:   ldx  #$03
-    jsr  vdp_memcpy
+:   ldx #$03
+    jsr vdp_memcpy
 
     vdp_sreg <(A_GX_PAT_2+GAME_CHAR_OFFS), WRITE_ADDRESS + >(A_GX_PAT_2+GAME_CHAR_OFFS)
     jsr isXmas
@@ -833,23 +825,25 @@ init_vram:
     bcc :+
     lda #<game_chars_4px_xmas
     ldy #>game_chars_4px_xmas
-:   ldx  #$03
-    jsr  vdp_memcpy
+:   ldx #$03
+    jsr vdp_memcpy
 
     vdp_sreg <A_SP_PAT, WRITE_ADDRESS + >A_SP_PAT
     lda #<sprites
     ldy #>sprites
-    ldx #$04      ; sprite patterns
+    ldx #3        ; sprite patterns
     jsr vdp_memcpy
+    lda #0
+    ldx #32       ; empty sprite
+    jsr vdp_fills
 
     SetVector text_game_label, ptr1
-    lda  #<(A_GX_SCR + (22*32))
-    ldy  #WRITE_ADDRESS + >(A_GX_SCR+(22*32))
+    lda #<(A_GX_SCR + (22*32))
+    ldy #WRITE_ADDRESS + >(A_GX_SCR+(22*32))
     jmp vdp_print
 
 update_vram:
     ;update sprite tab
-    ;SetVector sprite_tab, ptr1
     vdp_sreg <A_SP_ATR, WRITE_ADDRESS + >A_SP_ATR
     lda #<sprite_tab
     ldy #>sprite_tab
@@ -948,7 +942,7 @@ sprite_tab_sky:
     .byte  57,86,52, White
     .byte  15,200,48, White
     .byte  15,216,52, White
-    .byte  $d0  ; end of sprite table
+    .byte  SPRITE_OFF  ; end of sprite table
 sprite_tab_end:
 
 dino_run_1:
@@ -1054,40 +1048,38 @@ sin_tab:
     .byte  14
     .byte  10
     .byte  5
-    .byte  $ff
+    .byte  0
     ;PI = 3.14159265358979323846
     ;  .byte sin(float(.i) * 5 * PI/180)*56 + 0.5
 sin_tab_short:
+    .byte  6
+    .byte  12
+    .byte  18
+    .byte  24
+    .byte  29
+    .byte  34
+    .byte  38
+    .byte  42
+    .byte  44
+    .byte  46
+    .byte  48
+    .byte  48
+    .byte  48
+    .byte  46
+    .byte  44
+    .byte  42
+    .byte  38
+    .byte  34
+    .byte  29
+    .byte  24
+    .byte  18
+    .byte  12
+    .byte  6
     .byte  0
-    .byte  6
-    .byte  12
-    .byte  18
-    .byte  24
-    .byte  29
-    .byte  34
-    .byte  38
-    .byte  42
-    .byte  44
-    .byte  46
-    .byte  48
-    .byte  48
-    .byte  48
-    .byte  46
-    .byte  44
-    .byte  42
-    .byte  38
-    .byte  34
-    .byte  29
-    .byte  24
-    .byte  18
-    .byte  12
-    .byte  6
-    .byte  $ff
 
 sprites:
 .include "dinosaur.sprites.res"
 .include "dinosaur.sprites.pterodactyl.res"
-.res 32,0 ; the empty sprite
 
 game_chars:
 .include "dinosaur.chars.1.res"
@@ -1138,7 +1130,7 @@ dinosaur_state:   .res 1
 score_board_cnt:  .res 1
 sin_tab_offs:     .res 1
 level_bg_cnt:     .res 1
-level_script_ptr: .res 1
+level_script_ix:  .res 1
 score_value_high:       .res 3
 sprite_tab_sky_trigger: .res 4
 score_value:            .res 3
