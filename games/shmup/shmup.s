@@ -302,77 +302,77 @@ sprite_color:
   .byte GFX7_LightYellow | $20
   .byte GFX7_LightYellow | $20
 ; sprite 3
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
 
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
-  .byte GFX7_LightGreen
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
 ; sprite 4
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
 
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
 ; sprite 5
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
 
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
-  .byte GFX7_LightYellow
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
 ; sprite 6
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
 
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
-  .byte GFX7_LightCyan
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
 sprite_color_end:
 
 sintable:
