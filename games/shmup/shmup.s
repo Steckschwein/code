@@ -172,6 +172,10 @@ sprity_mc_spriteface:
 
   dec sprite_attr + SPRITE_X,x
 
+  phx
+  p
+  plx
+
   ; next sprite
   ; 4 bytes per sprite attr table entry
   inx
@@ -396,6 +400,8 @@ sintable:
 font:
 .include "../demo/2x2_font.inc"
 
+lookup:
+  .byte 0,16,32,48,64,80,96
 .bss
 sp_color: .res 1
 save_isr: .res 2
