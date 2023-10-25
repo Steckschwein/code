@@ -1,6 +1,7 @@
 .setcpu "65c02"
 .include "vdp.inc"
 .include "common.inc"
+.include "keyboard.inc"
 .include "appstart.inc"
 .include "kernel_jumptable.inc"
 
@@ -17,19 +18,17 @@ appstart $1000
 
 SCREEN_X=256
 SCREEN_Y=200
-MAX_ITER=110
+MAX_ITER=31
 
-      vdp_rgb $40,$20,$40
+;      vdp_rgb $40,$20,$40
       sei
       jsr krn_textui_disable
 
-      lda a_vreg
       jsr vdp_mode7_on
 
       vdp_sreg v_reg9_nt | v_reg9_ln, v_reg9  ; 212px
 
       lda a_vreg
-
       jsr     clear_screen
 
                 lda #00
@@ -297,8 +296,8 @@ skip_inc_hi_xp:
                 lda y_im
                 sta yp
 
+                lda #(SCREEN_Y-1);
                 sec
-                lda #(SCREEN_Y-1); 199
                 sbc yp
                 sta yp_mirrored ;computes mirrored y coordinate for plotting
 
@@ -488,9 +487,11 @@ continue:       lda x_real
 
 ;end:           jmp end
 
-               keyin
-               jsr krn_textui_init
                cli
+:              jsr fetchkey
+               cmp #KEY_ESCAPE
+               bne :-
+               jsr krn_textui_init
                jmp (retvec)
 
 x_loop_jump:   jmp x_loop
@@ -734,7 +735,7 @@ plot:
 
 ; clear bitmap screen
 clear_screen:
-      lda #0
+      ldy #0
       jsr vdp_mode7_blank
 
       rts
@@ -770,7 +771,7 @@ product_sign:    .byte    0
                 ;storage locations for main program
 
 
-
+.bss
 
 i0:              .byte    0,0
 r0:              .byte    0,0
@@ -814,12 +815,14 @@ yp_mirrored:     .byte    0
                 ; 11 = 7
 
 _r=1
-_g=3
-_b=2
+_g=1
+_b=1
 
+.data
 color_table1:
    .repeat MAX_ITER,i
-      vdp_rgb <(_r+(10+i*_r)),<(_g+(10+i*_g)),<(_b+(10+i*_b))
+;      vdp_rgb <((i*_r)),<((i*_g)),<((i*_b))
+      .byte (32+i)
    .endrep
 
                 ; fractal input values tables should be 16 bit in two's complement form - they are 8 bit complement instead
