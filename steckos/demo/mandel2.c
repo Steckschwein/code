@@ -18,7 +18,7 @@ static unsigned char  SCREEN_Y2;
 
 #define MAXCOL     8
 
-#define maxiterations 31
+#define maxiterations 100
 
 #define fpshift (12)
 
@@ -36,6 +36,8 @@ register unsigned char count;
 register signed short xs,ys,xx,yy;
 register signed short x;
 register unsigned char y;
+register unsigned char color;
+
 
         /* calc stepwidth */
         xs=((x2-x1)/(SCREEN_X));
@@ -62,8 +64,9 @@ register unsigned char y;
                     }
                     if(count!=maxiterations)
                     {
-                        vdp_plot(x,y,count);
-                        vdp_plot(x,SCREEN_Y-y,count);
+                        color=count<<2;
+                        vdp_plot(x,y,color);
+                        vdp_plot(x,SCREEN_Y-y,color);
                     }
                 }
         }
@@ -79,7 +82,7 @@ int main (void)
     vdp_blank(0);
 
     /* calc mandelbrot set */
-    mandelbrot(tofp(-2),tofp(-2),tofp(2),tofp(2));
+    mandelbrot(tofp(-1),tofp(-1),tofp(1),tofp(1));
 
     while (!kbhit());
 
