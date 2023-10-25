@@ -480,7 +480,7 @@ sound_fade_off:
     dec
 :   inc
     sta fm_master_volume
-:   rts
+    rts
 
 sound_init:
     jsr jch_fm_init

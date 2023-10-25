@@ -7,7 +7,7 @@
 
 .autoimport
 
-.importzp retvec
+.import retvec
 
 .zeropage
    byteaddr: .res 2  ; = $fc		;fc, fd used

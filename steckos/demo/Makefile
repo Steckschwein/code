@@ -1,5 +1,5 @@
 CA65FLAGS=--include-dir ../asminc --include-dir ../kernel -D_DEBUG
-LDFLAGS=--config ../prg.ld65.cfg -m $@.map ../lib/steckschwein.a
+LDFLAGS=--config ../prg.ld65.cfg -m $(basename $@).map ../lib/steckschwein.a
 ASM_INCLUDE=--include-dir ../steckos/kernel --include-dir ../steckos/asminc
 
 .PHONY: all clean plasma
@@ -23,9 +23,6 @@ clean:
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(ASM_INCLUDE) $(@:.o=.asm)
-
-stsdemo.prg: stsdemo.o ../lib/steckschwein.a
-	ld65 $< $(LDFLAGS) -o $@
 
 %.prg: %.o ../lib/steckschwein.a
 	ld65 $< $(LDFLAGS) -o $@
