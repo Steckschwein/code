@@ -46,6 +46,8 @@ void __fastcall__ vdp_screen (unsigned char mode);
 
 void __fastcall__ vdp_plot (unsigned int x, unsigned char y, unsigned char color);
 
+void __fastcall__ vdp_blank (unsigned char color);
+
 void __fastcall__ vdp_restore(void);
 
 #endif

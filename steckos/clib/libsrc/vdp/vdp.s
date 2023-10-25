@@ -102,6 +102,24 @@ GFX_7_Plot:
     jmp vdp_mode7_set_pixel
 
 
+; void __fastcall__ vdp_blank (unsigned char color);
+.export _vdp_blank
+.proc _vdp_blank
+    tay
+    ldx _vdp_mode
+    jmp (gfx_blank_table,x)
+.endproc
+
+gfx_blank_table:
+    .word gfx_notimplemented  ; 0
+    .word vdp_mode2_blank ; 2
+    .word vdp_mode3_blank ; 2
+    .word vdp_mc_blank; 3
+    .word gfx_notimplemented; 4
+    .word gfx_notimplemented; 5
+    .word vdp_mode6_blank; 6
+    .word vdp_mode7_blank ; 7
+
 ; void __fastcall__ vdp_memcpy (unsigned char *data, unsigned int vramaddress, unsigned char pages);
 ;
 .export _vdp_memcpy

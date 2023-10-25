@@ -11,6 +11,7 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		rstbars.prg \
 		stsdemo.prg \
 		gradient.prg \
+		mandel2.prg \
 		mndlbrot.prg \
 		vdpdemo.prg \
 		plasma
