@@ -12,7 +12,7 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		stsdemo.prg \
 		gradient.prg \
 		mndlbrot.prg \
-		mandel.prg \
+		vdpdemo.prg \
 		plasma
 
 plasma:
