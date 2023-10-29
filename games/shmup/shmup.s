@@ -26,6 +26,7 @@ PLAYER_SPRITE_NR = 6
 .endmacro
 
 .code
+    stz keyb
 
     sei
     copypointer user_isr, save_isr
@@ -65,56 +66,23 @@ PLAYER_SPRITE_NR = 6
 
 
 @loop:
-    keyin
+  lda keyb
 
-    cmp #KEY_CRSR_UP
-    beq @up
+  cmp #KEY_ESCAPE
+  beq @exit
 
-    cmp #KEY_CRSR_DOWN
-    beq @down
+  bra @loop
 
-    cmp #KEY_CRSR_LEFT
-    beq @left
 
-    cmp #KEY_CRSR_RIGHT
-    beq @right
-
-    cmp #KEY_ESCAPE
-    beq @exit
-
-    bra @loop
-
-@up:
-    dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_Y 
-    bra @loop
-@down:
-    inc sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_Y
-    bra @loop
-@left:
-    dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X 
-    beq @toggle_dingsbit
-    bra @loop
-@right:
-    inc sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X 
-    bra @loop
-@toggle_dingsbit:
-    ldx #15
-:
-    lda sprite_color_6,x
-    eor #$80
-    sta sprite_color_6,x
-    dex
-    bne :-
-    bra @loop
 @exit:
 
-    jsr gfxui_off
+  jsr gfxui_off
 
-    sei
-    copypointer save_isr, user_isr
-    cli
+  sei
+  copypointer save_isr, user_isr
+  cli
 
-    jmp (retvec)
+  jmp (retvec)
 
 gfxui_on:
   jsr krn_textui_disable      ;disable textui
@@ -145,6 +113,8 @@ gfxui_off:
 
 SP_OFFS_Y = 10
 
+isr_end:
+  rts
 isr:
   bit  a_vreg
   bpl isr_end
@@ -152,11 +122,75 @@ isr:
   lda  #%00011100
   jsr vdp_bgcolor
 
+  jsr krn_getkey 
+  sta keyb
+
+  cmp #KEY_CRSR_UP
+  beq @up
+
+  cmp #KEY_CRSR_DOWN
+  beq @down
+
+  cmp #KEY_CRSR_LEFT
+  beq @left
+
+  cmp #KEY_CRSR_RIGHT
+  beq @right
+
+  bra @sprites
+
+@up:
+  dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_Y 
+  bra @sprites
+@down:
+  inc sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_Y
+  bra @sprites
+@left:
+  dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X 
+  beq @unset_dingsbit
+  bra @sprites
+@right:
+  inc sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X
+  lda sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X
+  cmp #$ff
+  beq @set_dingsbit
+  bra @sprites
+
+@set_dingsbit:
+  ldx #15
+:
+  lda sprite_color_6,x
+  ora #$80
+  sta sprite_color_6,x
+  dex
+  bne :-
+
+  bra @write_colortable
+
+@unset_dingsbit:
+  ldx #15
+:
+  lda sprite_color_6,x
+  and #%01111111
+  sta sprite_color_6,x
+  dex
+  bne :-
+
+@write_colortable:
+  vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
+  lda #<sprite_color
+  ldy #>sprite_color
+  ldx #(sprite_color_end - sprite_color)
+  jsr vdp_memcpys
+
+@skip:
+
+@sprites:
   jsr sprity_mc_spriteface
 
   lda  #0
   jsr  vdp_bgcolor
-isr_end:
+;isr_end:
   rts
 
 sprity_mc_spriteface:
@@ -172,9 +206,6 @@ sprity_mc_spriteface:
 
   dec sprite_attr + SPRITE_X,x
 
-  phx
-  p
-  plx
 
   ; next sprite
   ; 4 bytes per sprite attr table entry
@@ -192,11 +223,11 @@ sprity_mc_spriteface:
   ldx #(sprite_attr_end - sprite_attr)
   jsr vdp_memcpys
 
-  vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
-  lda #<sprite_color
-  ldy #>sprite_color
-  ldx #(sprite_color_end - sprite_color)
-  jsr vdp_memcpys
+  ; vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
+  ; lda #<sprite_color
+  ; ldy #>sprite_color
+  ; ldx #(sprite_color_end - sprite_color)
+  ; jsr vdp_memcpys
    
   rts
 
@@ -405,3 +436,4 @@ lookup:
 .bss
 sp_color: .res 1
 save_isr: .res 2
+keyb: .res 1
