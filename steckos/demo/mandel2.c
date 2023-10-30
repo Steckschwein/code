@@ -16,9 +16,7 @@ static unsigned char  SCREEN_Y;
 static unsigned short SCREEN_X2;
 static unsigned char  SCREEN_Y2;
 
-#define MAXCOL     8
-
-#define maxiterations 100
+#define maxiterations 50
 
 #define fpshift (12)
 
@@ -44,7 +42,7 @@ register unsigned char color;
         ys=((y2-y1)/(SCREEN_Y));
 
         yy=y1;
-        for(y = 0; y < (SCREEN_Y2); ++y)
+        for(y = 0; y <= (SCREEN_Y2); ++y)
         {
                 yy+=ys; xx=x1;
                 for(x = 0; x < (SCREEN_X); ++x)
@@ -58,13 +56,15 @@ register unsigned char color;
                                 ;++count)
                     {
                             r1 = (mulfp(r,r)-mulfp(i,i))+xx;
-                            /* i = (mulfp(mulfp(r,i),tofp(2)))+yy; */
+                            /*
+                            i = (mulfp(mulfp(r,i),tofp(2)))+yy;
+                            */
                             i = (((signed long)r*i)>>(fpshift-1))+yy;
                             r=r1;
                     }
                     if(count!=maxiterations)
                     {
-                        color=count<<2;
+                        color= count<<2;
                         vdp_plot(x,y,color);
                         vdp_plot(x,SCREEN_Y-y,color);
                     }

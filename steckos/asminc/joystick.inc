@@ -33,9 +33,9 @@ JOY_RIGHT					= 1<<3
 JOY_FIRE					 = 1<<4
 
 .macro joy_off
-  lda #%00000100
-  ora uart_mcr
-  sta uart_mcr
+  lda #uart_mcr_out1
+  ora uart1+uart_mcr
+  sta uart1+uart_mcr
 .endmacro
 
 .macro joy_on ; joysticks on
