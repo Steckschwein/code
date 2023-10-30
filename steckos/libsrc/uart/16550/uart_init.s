@@ -32,7 +32,7 @@ uart_init:
       sta uart1+uart_fcr
 
       stz uart1+uart_ier    ; polled mode (so far)
-      lda #1<<uart_mcr_out1 ; reset DTR, RTS, disable joystick
+      lda #uart_mcr_out1 ; reset DTR, RTS, disable joystick
       sta uart1+uart_mcr
 
       ply
