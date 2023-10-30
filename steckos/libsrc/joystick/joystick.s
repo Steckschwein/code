@@ -26,9 +26,9 @@ _read:
 ;		 joystick on, set via ports and enables joystick via uart port
 ;
 joystick_on:
-		  lda #%11111011
-		  and uart_mcr
-		  sta uart_mcr
+		  lda #<~(uart_mcr_out1)
+		  and uart1+uart_mcr
+		  sta uart1+uart_mcr
 		  ;Port A directions
 		  lda #%11000000 		; via port A - set PA7,6 to output (joystick port select), PA1-5 to input (directions)
 		  sta via1ddra
