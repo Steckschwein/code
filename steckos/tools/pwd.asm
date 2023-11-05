@@ -3,10 +3,13 @@
 .include "appstart.inc"
 
 .import hexout
+.import strout
 
 .export char_out=krn_chrout
-
+.zeropage
+ptr1: .res 2
 appstart $1000
+.code
 		lda	#<buffer
 		ldx #>buffer
 		ldy	#$ff
@@ -15,7 +18,7 @@ appstart $1000
 		lda	#<buffer
 		ldx #>buffer
 		;TODO FIXME use a/x instead of zp location msgptr
-		jsr krn_strout
+		jsr strout
     
 @l2:
     jmp (retvec)

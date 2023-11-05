@@ -56,9 +56,9 @@ krn_chrout:            jmp textui_chrout
 .export krn_putchar
 krn_putchar:          jmp textui_put
 
-.export krn_strout
-krn_strout:            jmp strout
-
+;.export krn_strout
+;_krn_strout:            jmp strout
+.res 3
 .export krn_textui_crsxy
 krn_textui_crsxy:        jmp textui_crsxy
 
