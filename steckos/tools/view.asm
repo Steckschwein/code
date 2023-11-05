@@ -38,12 +38,15 @@ tmp3:	.res 1
 tmp4:	.res 1
 .code
 
+.export char_out=krn_chrout
+
 .import vdp_mode2_on
 .import vdp_mode2_blank
 .import vdp_display_off
 .import vdp_memcpy
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
+.import strout
 
 appstart $1000
 
@@ -82,7 +85,7 @@ main:
 		.asciiz "load error file "
 		lda #<paramptr
 		ldx #>paramptr
-		jsr krn_strout
+		jsr strout
 
 l2:
 		jmp (retvec)

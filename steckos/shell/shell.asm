@@ -42,19 +42,21 @@ BUF_SIZE		= 80 ;TODO maybe too small?
 
 .export char_out=krn_chrout
 
+.import hexout
+.import strout
+.import kernel_start
+
 .zeropage
 bufptr:         .res 2
 pathptr:        .res 2
 p_history:      .res 2
 tmp1:   .res 1
 tmp2:   .res 1
-
-.import hexout
-.import kernel_start
+ptr1:   .res 2
 
 appstart $e200
 .export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly
-
+.code
 init:
         jsr krn_primm
         .byte "steckOS shell  "
@@ -85,7 +87,8 @@ mainloop:
 
         lda #<cwdbuf
         ldx #>cwdbuf
-        jsr krn_strout
+        jsr strout
+
         bra @prompt
 @nocwd:
         lda #'?'
@@ -269,86 +272,86 @@ try_exec:
 
 @l1:	jmp mainloop
 
-history_frwd:
-        lda p_history
-        ;cmp #<(history+$0100)
-        cmp p_history
-        bne @inc_hist_ptr
-        lda p_history+1
-        ;cmp #>(history+$0100)
-        cmp p_history+1
-        bne @inc_hist_ptr
-        rts
-@inc_hist_ptr:
-        lda p_history
-        clc
-        adc #BUF_SIZE
-        sta p_history
-        bra history_peek
+; history_frwd:
+;         lda p_history
+;         ;cmp #<(history+$0100)
+;         cmp p_history
+;         bne @inc_hist_ptr
+;         lda p_history+1
+;         ;cmp #>(history+$0100)
+;         cmp p_history+1
+;         bne @inc_hist_ptr
+;         rts
+; @inc_hist_ptr:
+;         lda p_history
+;         clc
+;         adc #BUF_SIZE
+;         sta p_history
+;         bra history_peek
 
-history_back:
-        lda p_history+1
-        cmp #>history
-        bne @dec_hist_ptr
-        lda p_history
-        cmp #<history
-        bne @dec_hist_ptr
-        rts
-@dec_hist_ptr:
-        sec ;dec hist ptr
-        sbc #BUF_SIZE
-        sta p_history
+; history_back:
+;         lda p_history+1
+;         cmp #>history
+;         bne @dec_hist_ptr
+;         lda p_history
+;         cmp #<history
+;         bne @dec_hist_ptr
+;         rts
+; @dec_hist_ptr:
+;         sec ;dec hist ptr
+;         sbc #BUF_SIZE
+;         sta p_history
 
-history_peek:
-        lda crs_x_prompt
-        sta crs_x
-        jsr krn_textui_update_crs_ptr
+; history_peek:
+;         lda crs_x_prompt
+;         sta crs_x
+;         jsr krn_textui_update_crs_ptr
 
-        ldy #0
-        ldx #BUF_SIZE
-:       lda (p_history), y
-        sta (bufptr), y
-        beq :+
-        jsr char_out
-        iny
-        dex
-        bpl :-
+;         ldy #0
+;         ldx #BUF_SIZE
+; :       lda (p_history), y
+;         sta (bufptr), y
+;         beq :+
+;         jsr char_out
+;         iny
+;         dex
+;         bpl :-
 
-:       phy       ;safe y pos in buffer
-        ldy crs_x ;safe crs_x position after restored cmd to y
+; :       phy       ;safe y pos in buffer
+;         ldy crs_x ;safe crs_x position after restored cmd to y
 
-        lda #' '  ;erase the rest of the line
-:
-        jsr char_out
-        dex
-        bpl :-
-        sty crs_x
-        jsr krn_textui_update_crs_ptr
-        ply       ;restore y buffer index
-        rts
+;         lda #' '  ;erase the rest of the line
+; :
+;         jsr char_out
+;         dex
+;         bpl :-
+;         sty crs_x
+;         jsr krn_textui_update_crs_ptr
+;         ply       ;restore y buffer index
+;         rts
 
-history_push:
-        lda #CODE_LF
-        ;jsr char_out
+; history_push:
+;         lda #CODE_LF
+;         ;jsr char_out
 
-        tya
-        tax
-        ldy #0
-:       lda (bufptr), y
-        sta (p_history), y
-        ;jsr char_out
-        iny
-        dex
-        bpl :-
+;         tya
+;         tax
+;         ldy #0
+; :       lda (bufptr), y
+;         sta (p_history), y
+;         ;jsr char_out
+;         iny
+;         dex
+;         bpl :-
 
-        lda #CODE_LF
-        ;jsr char_out
+;         lda #CODE_LF
+;         ;jsr char_out
 
-        lda p_history   ; new end
-        clc
-        adc #BUF_SIZE
-        sta p_history
-        rts
+;         lda p_history   ; new end
+;         clc
+;         adc #BUF_SIZE
+;         sta p_history
+;         rts
 
 printbuf:
         ldy #$01
