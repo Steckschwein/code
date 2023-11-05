@@ -24,7 +24,10 @@
 .export strout
 
 .import char_out
-.importzp ptr1
+;.importzp ptr1
+
+.zeropage
+_ptr: .res 2
 
 .code
 ;----------------------------------------------------------------------------------------------
@@ -37,13 +40,13 @@
 ;strout = textui_strout
 ;.else
 strout:
-		sta ptr1		;init for output below
-		stx ptr1+1
+		sta _ptr		;init for output below
+		stx _ptr+1
 		pha					  ;save a, y to stack
 		phy
 
 		ldy #$00
-@l1:	lda (ptr1),y
+@l1:	lda (_ptr),y
 		beq @l2
 		jsr char_out
 		iny
