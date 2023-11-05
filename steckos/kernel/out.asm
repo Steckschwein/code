@@ -23,11 +23,11 @@
 .include "kernel.inc"
 
 .code
-.export strout, primm
+.export primm
 
-.ifdef TEXTUI_STROUT
-.import textui_strout
-.endif
+; .ifdef TEXTUI_STROUT
+; .import textui_strout
+; .endif
 
 .ifdef TEXTUI_PRIMM
 .import textui_primm
@@ -40,26 +40,26 @@
 ;	A - lowbyte  of string address
 ;	X - highbyte of string address
 ;----------------------------------------------------------------------------------------------
-.ifdef TEXTUI_STROUT
-strout = textui_strout
-.else
-strout:
-		sta krn_ptr3		;init for output below
-		stx krn_ptr3+1
-		pha					  ;save a, y to stack
-		phy
+; .ifdef TEXTUI_STROUT
+; strout = textui_strout
+; .else
+; strout:
+; 		sta krn_ptr3		;init for output below
+; 		stx krn_ptr3+1
+; 		pha					  ;save a, y to stack
+; 		phy
 
-		ldy #$00
-@l1:	lda (krn_ptr3),y
-		beq @l2
-		jsr char_out
-		iny
-		bne @l1
+; 		ldy #$00
+; @l1:	lda (krn_ptr3),y
+; 		beq @l2
+; 		jsr char_out
+; 		iny
+; 		bne @l1
 
-@l2:	ply					  ;restore a, y
-		pla
-		rts
-.endif
+; @l2:	ply					  ;restore a, y
+; 		pla
+; 		rts
+; .endif
 
 
 
