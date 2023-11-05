@@ -52,7 +52,7 @@ pathptr:        .res 2
 p_history:      .res 2
 tmp1:   .res 1
 tmp2:   .res 1
-ptr1:   .res 2
+;ptr1:   .res 2
 
 appstart $e200
 .export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly

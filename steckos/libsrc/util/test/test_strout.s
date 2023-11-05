@@ -1,9 +1,9 @@
 .include "asmunit.inc" 	; unit test api
 
 .import strout		; uut
-.zeropage
-ptr1: .res 2
-.exportzp ptr1
+;.zeropage
+;ptr1: .res 2
+;.exportzp ptr1
 .code
 
 	test "strout"
