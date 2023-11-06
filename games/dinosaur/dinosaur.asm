@@ -775,8 +775,13 @@ load_highscore:
     ldy #O_RDONLY
     jsr krn_open
     bne :+ ; not found or other error, dont care...
-    SetVector score_value_high, read_blkptr
-    jsr krn_read
+    ;SetVector score_value_high, read_blkptr
+    jsr krn_fread_byte 
+    sta score_value_high + 0
+    jsr krn_fread_byte 
+    sta score_value_high + 1
+    jsr krn_fread_byte 
+    sta score_value_high + 2
     jsr krn_close
 :   rts
 
