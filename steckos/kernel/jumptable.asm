@@ -49,8 +49,6 @@ krn_getkey:             jmp getkey
 
 .export krn_chrout
 krn_chrout:             jmp textui_chrout
-.export krn_putchar
-krn_putchar:            jmp textui_put
 
 .export krn_textui_crsxy
 krn_textui_crsxy:       jmp textui_crsxy
