@@ -1,30 +1,30 @@
-KEY_ENCODED			= $80
+KEY_ENCODED       = $80
 
-KEY_LF				= $0a
-KEY_CR				= $0d
-KEY_RETURN			= $0d
-KEY_BACKSPACE		= $08
+KEY_LF            = $0a
+KEY_CR            = $0d
+KEY_RETURN        = $0d
+KEY_BACKSPACE     = $08
 
-KEY_CTRL_C          = $03
+KEY_CTRL_C        = $03
 
-KEY_CRSR_UP			= $1e	;1 11 10
-KEY_CRSR_DOWN		= $1d	;1 11 11
-KEY_CRSR_RIGHT		= $10	;1 00 00
-KEY_CRSR_LEFT		= $11	;1 00 01
+KEY_CRSR_UP       = $1e  ;1 11 10
+KEY_CRSR_DOWN     = $1d  ;1 11 11
+KEY_CRSR_RIGHT    = $10  ;1 00 00
+KEY_CRSR_LEFT     = $11  ;1 00 01
 
-KEY_ESCAPE			= 27
+KEY_ESCAPE        = 27
 
-KEY_FN1				= $f1
-KEY_FN2				= $f2
-KEY_FN12			 	= $fc
+KEY_FN1           = $f1
+KEY_FN2           = $f2
+KEY_FN12          = $fc
 
-KBD_CMD_LEDS = $ed
+KBD_CMD_LEDS      = $ed
 KBD_CMD_TYPEMATIC = $f3
-KBD_CMD_RESET = $ff
+KBD_CMD_RESET     = $ff
 
-KBD_RET_ACK = $fa
+KBD_RET_ACK       = $fa
 
-KBD_HOST_CMD_PENDING = $ff
+KBD_HOST_CMD_PENDING    = $ff
 KBD_HOST_CMD_STATUS_EOT = $aa
 KBD_HOST_CMD_KBD_STATUS = $01
 KBD_HOST_CMD_CMD_STATUS = $02

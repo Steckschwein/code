@@ -65,6 +65,7 @@
 ;	write_blkptr - set to the address with data we have to write
 ; out:
 ;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+; X - preserved fd
 fat_write:
 		_is_file_open ; otherwise rts C=1 and A=#EINVAL
 
