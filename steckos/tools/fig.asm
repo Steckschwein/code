@@ -35,6 +35,7 @@
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
 .import strout
+.import primm
 
 .zeropage
 ptr1:	.res 2
@@ -77,7 +78,7 @@ main:
 		bra l2
 
 @err:
-		jsr krn_primm
+		jsr primm
 		.asciiz "load error file "
 		lda #<paramptr
 		ldx #>paramptr

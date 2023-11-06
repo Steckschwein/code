@@ -86,8 +86,8 @@ krn_uart_tx:            jmp uart_tx
 .export krn_uart_rx
 krn_uart_rx:            jmp uart_rx
 
-.export krn_primm
-krn_primm:              jmp primm
+;.export krn_primm
+;krn_primm:              jmp primm
 
 .export krn_getcwd
 krn_getcwd:             jmp fat_get_root_and_pwd

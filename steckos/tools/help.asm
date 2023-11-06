@@ -23,11 +23,14 @@
 .include "kernel_jumptable.inc"
 .include "appstart.inc"
 
+.export char_out=krn_chrout
+.import primm 
+
 appstart $1000
 
 .code
 
-    jsr krn_primm
+    jsr primm
     .byte "ll                 - show dir long",$0a
     .byte "ls                 - show dir short",$0a
     .byte "cd <dir>           - change dir",$0a

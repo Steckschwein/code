@@ -20,19 +20,19 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "kernel.inc"
+; .include "kernel.inc"
 
-.code
-.export primm
+; .code
+; .export primm
 
 ; .ifdef TEXTUI_STROUT
 ; .import textui_strout
 ; .endif
 
-.ifdef TEXTUI_PRIMM
-.import textui_primm
-.endif
-.import char_out
+; .ifdef TEXTUI_PRIMM
+; .import textui_primm
+; .endif
+; .import char_out
 
 ;----------------------------------------------------------------------------------------------
 ; Output string on active output device
@@ -68,25 +68,25 @@
 ; jsr primm
 ; .byte "Example Text!",$00
 ;----------------------------------------------------------------------------------------------
-.ifdef TEXTUI_PRIMM
-primm = textui_primm
-.else
-primm:
-		pla						; Get the low part of "return" address
-		sta	  krn_ptr3
-		pla
-		sta	  krn_ptr3+1				 ; Get the high part of "return" address
-		; Note: actually we're pointing one short
-PSINB:	inc	  krn_ptr3				 ; update the pointer
-		bne	  PSICHO			 ; if not, we're pointing to next character
-		inc	  krn_ptr3+1				 ; account for page crossing
-PSICHO:	lda	  (krn_ptr3)			  ; Get the next string character
-		beq	  PSIX1			  ; don't print the final NULL
-		jsr	  char_out		; write it out
-		bra	  PSINB			  ; back around
-PSIX1:	inc	  krn_ptr3				 ;
-		bne	  PSIX2			  ;
-		inc	  krn_ptr3+1
-PSIX2:
-		jmp	  (krn_ptr3)			  ; return to byte following final NULL
-.endif
+; .ifdef TEXTUI_PRIMM
+; primm = textui_primm
+; .else
+; primm:
+; 		pla						; Get the low part of "return" address
+; 		sta	  krn_ptr3
+; 		pla
+; 		sta	  krn_ptr3+1				 ; Get the high part of "return" address
+; 		; Note: actually we're pointing one short
+; PSINB:	inc	  krn_ptr3				 ; update the pointer
+; 		bne	  PSICHO			 ; if not, we're pointing to next character
+; 		inc	  krn_ptr3+1				 ; account for page crossing
+; PSICHO:	lda	  (krn_ptr3)			  ; Get the next string character
+; 		beq	  PSIX1			  ; don't print the final NULL
+; 		jsr	  char_out		; write it out
+; 		bra	  PSINB			  ; back around
+; PSIX1:	inc	  krn_ptr3				 ;
+; 		bne	  PSIX2			  ;
+; 		inc	  krn_ptr3+1
+; PSIX2:
+; 		jmp	  (krn_ptr3)			  ; return to byte following final NULL
+; .endif

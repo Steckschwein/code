@@ -1,6 +1,7 @@
 .include "steckos.inc"
 .include "zeropage.inc"
 .import hexout
+.import primm
 .import xmodem_upload
 .import crc16_table_init
 
@@ -40,7 +41,7 @@ appstart $d000
 
 .code
 XModem:
-			jsr krn_primm
+			jsr primm
 Msg:		.byte	"Begin XMODEM/CRC transfer.", CODE_LF, 0
 
 			jsr xmodem_upload
@@ -48,7 +49,7 @@ Msg:		.byte	"Begin XMODEM/CRC transfer.", CODE_LF, 0
 			jmp (startaddr)
 
 			; no check (carry) required, if we return here then "something" went wrong
-Print_Err:	jsr krn_primm
+Print_Err:	jsr primm
 ErrMsg:		.byte 	"Upload Error!", CODE_LF, 0
 			jmp (retvec)
 			

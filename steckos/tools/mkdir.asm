@@ -27,6 +27,7 @@
 
 .include "appstart.inc"
 .import hexout
+.import primm
 
 .export char_out=krn_chrout
 
@@ -39,7 +40,7 @@ appstart $1000
 		bcc @exit
 		;TODO FIXME maybe use oserror() from cc65 lib
 		pha
-		jsr krn_primm
+		jsr primm
 		.asciiz "Error: "
 		pla
 		jsr hexout

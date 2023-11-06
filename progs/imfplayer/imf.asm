@@ -31,6 +31,7 @@
 appstart $1000
 
 .importzp   ptr1, tmp1
+.export char_out=krn_chrout
 
 .code
 
@@ -43,6 +44,7 @@ delayl    = tmp1
 delayh    = delayl + 1
 
 .import opl2_init, opl2_delay_register
+.import primm
 
 main:
 ;		jmp play
@@ -161,7 +163,7 @@ loop:
 		bra loop
 
 exit:
-        jsr krn_primm
+        jsr primm
 		.byte " done.",$0a,0
 
 		sei
@@ -252,7 +254,7 @@ error:
     and #$0f
     ora #'0'
 	jsr krn_chrout
-	jsr krn_primm
+	jsr primm
 	.asciiz "load error"
 end:
     jsr fclose

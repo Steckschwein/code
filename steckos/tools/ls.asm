@@ -27,6 +27,7 @@
 .include "appstart.inc"
 
 .import hexout
+.import primm
 .import print_filename
 
 .export char_out=krn_chrout
