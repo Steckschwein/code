@@ -8,9 +8,6 @@ krn_mkdir:              jmp fat_mkdir
 .export krn_execv
 krn_execv:              jmp execv
 
-.export krn_uart_rx_nowait
-krn_uart_rx_nowait:     jmp uart_rx_nowait
-
 .export krn_mount
 krn_mount:              jmp fat_mount
 
