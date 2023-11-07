@@ -49,6 +49,8 @@ level_bg_ptr: .res 2
 sin_tab_ptr:  .res 2
 controller1:  .res 3
 controller2:  .res 3
+_i: .res 1
+_j: .res 1
 
 CHAR_BLANK=210
 CHAR_LAST_FG=198    ; last character of foreground (cacti), range 128-198
@@ -95,31 +97,32 @@ sprite_empty=$60
 
     sei
     jsr init_vram
-
     jsr load_highscore
 
     jsr new_game
     lda #STATUS_GAME_OVER
     sta game_state
 
-    jsr update_vram
+;    jsr update_vram
 
-    copypointer user_isr, save_isr
-    SetVector game_isr, user_isr
+;    copypointer user_isr, save_isr
+    copypointer SYS_VECTOR_IRQ, save_isr
+    SetVector game_isr, SYS_VECTOR_IRQ
 
     lda #<vdp_init_gfx
     ldy #>vdp_init_gfx
     ldx #<(vdp_init_gfx_end-vdp_init_gfx)-1
-    jsr  vdp_init_reg
+    jsr vdp_init_reg
 
     cli
 :   lda game_state
     bpl :-
 
     sei
-    copypointer save_isr, user_isr
+;    copypointer save_isr, user_isr
+    copypointer save_isr, SYS_VECTOR_IRQ
     cli
-    jsr  krn_textui_init
+    jsr krn_textui_init
     jsr krn_textui_enable
     jmp (retvec)
 
@@ -149,7 +152,6 @@ vdp_init_gfx:
     .byte Light_Blue
     .byte v_reg8_VR  ; SPD - sprite disabled, VR - 64k VRAM
     .byte v_reg9_nt ;#R9 PAL
-
 vdp_init_gfx_end:
 
 init_screen:        ;draw desert
@@ -307,7 +309,10 @@ detect_collision:
 
 :   lda  #DINOSAUR_DEAD
     sta dinosaur_state
-game_over:
+
+  game_over:
+    jsr update_highscore
+
     jsr get_joy_status
     and #JOY_FIRE    ;if fire is pressed set bit
     beq :+
@@ -353,6 +358,13 @@ get_joy_status:
     plx
     lda controller1+2
     beq snes
+
+    jsr fetchkey
+    cmp #KEY_CRSR_UP
+    beq up
+    cmp #KEY_CRSR_DOWN
+    beq down
+
     lda #JOY_PORT
     jmp joystick_read
 snes:
@@ -479,14 +491,13 @@ animate_enemy:
     lda  enemy_state
     bne  :+
     rts
-
-:      ldx #$0
+:   ldx #$0
 @l_ae_loop:
     lda sprite_tab_enemy+1,x
     sec
-    sbc  #PD_SPEED
+    sbc #PD_SPEED
     bcs @l_ae_attr2  ; no underrun, go on
-    bit  sprite_tab_enemy+3,x ;SPRITE_EC => bit 7
+    bit sprite_tab_enemy+3,x ;SPRITE_EC => bit 7
     bmi @l_ae_attr  ; ec set, do not add 32 px
     clc
     adc #EC_MAX_RIGHT_POS ; offset and EC enabled
@@ -508,7 +519,7 @@ animate_enemy:
     ldx #$08
     bra @l_ae_loop
 
-:      lda  frame_cnt
+:   lda  frame_cnt
     and  #08
     beq  :+
     lda  #PD_PTR
@@ -520,7 +531,8 @@ animate_enemy:
     lda  #PD_PTR+12
     sta  sprite_tab_enemy+2+3*4
     rts
-:      lda  #PD_PTR+16
+:
+    lda  #PD_PTR+16
     sta  sprite_tab_enemy+2
     lda  #PD_PTR+20
     sta  sprite_tab_enemy+2+1*4
@@ -530,37 +542,66 @@ animate_enemy:
     sta  sprite_tab_enemy+2+3*4
     rts
 
-
 animate_sky:
-    ldx  #0
+        stz _i
+        stz _j
 @l_as_loop:
-    dec sprite_tab_sky+1,x
-    bne @l_as_move
-    ldy sprite_tab_sky+1,x
-    lda sprite_tab_sky+3,x
-    eor #SPRITE_EC
-    sta sprite_tab_sky+3,x
-    bpl :+
-    ldy #EC_MAX_RIGHT_POS+1
-:   dey
-    tya
-    sta sprite_tab_sky+1,x
-@l_as_move:
-    inx
-    inx
-    inx
-    inx
-    cpx  #4*2*4; 4 clouds, 2 sprites each shifted?
-    bne  @l_as_loop
-    rts
+        ldx _j
+        lda sprite_tab_sky_trigger,x
+        beq @move
+        lda frame_cnt
+        and #$01
+        bne :+
+        dec sprite_tab_sky_trigger,x
+ :      lda #8
+        jsr @next_x
+        bra @next
+@move:
+        jsr @animate_sky_move
+        jsr @animate_sky_move
+        jsr @update_sprite_tab_sky_trigger
+
+@next:  inc _j
+        lda _j
+        cmp #4 ; 4 clouds, 2 sprites each
+        bne @l_as_loop
+        rts
+@animate_sky_move:
+        ldx _i
+        lda sprite_tab_sky+SPRITE_X,x
+        bne :++
+        lda sprite_tab_sky+SPRITE_C,x
+        eor #SPRITE_EC
+        sta sprite_tab_sky+SPRITE_C,x
+        bmi :+
+        lda #$ff
+        bra :+++
+:       lda #EC_MAX_RIGHT_POS
+:       dec
+:       sta sprite_tab_sky+SPRITE_X,x
+        lda #4
+@next_x:clc
+        adc _i
+        sta _i
+        rts
+
+@update_sprite_tab_sky_trigger:
+        lda sprite_tab_sky+SPRITE_X,x
+        cmp #16 ; 2nd sprite x behind left border
+        bne :+
+        lda sprite_tab_sky+SPRITE_C,x ; and EC set?
+        bpl :+
+        jsr rnd ; rnd trigger value
+        ldx _j
+        sta sprite_tab_sky_trigger,x
+:       rts
 
 game_isr:
     bit  a_vreg
     bpl  game_isr_exit
 
     save
-
-;    lda  #Dark_Yellow
+ ;   lda  #Dark_Yellow
 ;    jsr  vdp_bgcolor
 
     lda  game_state
@@ -575,8 +616,8 @@ game_isr:
     jsr  detect_collision
     jsr  animate_dinosaur
     bra  @l_update_vram
-:
-    jsr fetchkey
+
+:   jsr fetchkey
     cmp #$20   ; space ?
     beq @l_new_game
     cmp #KEY_ESCAPE
@@ -585,9 +626,9 @@ game_isr:
     tsb game_state
     bra @l_update_vram
 :   jsr get_joy_status
-    and  #JOY_FIRE
-    beq  :+
-    lda  game_state
+    and #JOY_FIRE
+    beq :+
+    lda game_state
     and #(!STATUS_JOY_PRESSED)
     sta game_state
     bra @l_update_vram
@@ -607,7 +648,6 @@ game_isr:
     restore
 game_isr_exit:
     rti
-    rts
 
 disable_pd:
     stz  enemy_state
@@ -628,7 +668,7 @@ enable_pd:
     rts
 
 new_game:
-    jsr  init_screen
+    jsr init_screen
 
     ldx #(sprite_tab_init_end-sprite_tab_init-1)
 :   lda sprite_tab_init, x
@@ -654,25 +694,27 @@ new_game:
     stz level_bg_cnt
     SetVector level_bg_3, level_bg_ptr
 
-    ldx  #0
-:   jsr  rnd
-    sta  sprite_tab_sky_trigger,x
-    inx
-    cpx  #4
-    bne :-
+    stz score_value
+    stz score_value+1
+    stz score_value+2
 
+    lda #STATUS_PLAY
+    sta game_state
+    rts
+
+update_highscore:
     lda  score_value      ;set new highscore
     cmp  score_value_high
-    bcc  @l_ng_reset_score
+    bcc  @exit
     bne :+
     lda  score_value+1
     cmp  score_value_high+1
-    bcc  @l_ng_reset_score
+    bcc  @exit
     bne  :+
     lda  score_value+2
     cmp  score_value_high+2
-    bcc  @l_ng_reset_score
-    beq  @l_ng_reset_score
+    bcc  @exit
+    beq  @exit
 :
     lda score_value+2
     sta score_value_high+2
@@ -681,11 +723,12 @@ new_game:
     lda score_value
     sta score_value_high
 
+@save_highscore:
     lda #<filename
     ldx #>filename
     ldy #O_WRONLY
     jsr krn_open
-    bne @l_ng_reset_score
+    bne @exit
     SetVector score_value_high, write_blkptr
     lda #$03
     sta fd_area + 4 + 0,x
@@ -694,14 +737,7 @@ new_game:
     stz fd_area + 4 + 3,x
     jsr krn_write
     jsr krn_close
-
-@l_ng_reset_score:
-    stz  score_value
-    stz  score_value+1
-    stz  score_value+2
-
-    lda  #STATUS_PLAY
-    sta game_state
+@exit:
     rts
 
 score_board:
@@ -722,18 +758,10 @@ score_board:
     bcc  :+
     adc  score_value
     sta  score_value
-:      cld
+:   cld
     rts
 
-
 action_handler:
-   ;TODO FIXME just for testing
-    jsr fetchkey
-    cmp #KEY_CRSR_UP
-    beq @up
-    cmp #KEY_CRSR_DOWN
-    beq @l_ah_duck
-
     jsr get_joy_status
     and #JOY_UP
     bne @short_jump
@@ -744,12 +772,12 @@ action_handler:
     lda #DINOSAUR_JUMP
     sta dinosaur_state
     SetVector sin_tab, sin_tab_ptr  ;long jump
+    rts
 @short_jump:
     lda sin_tab_offs  ;no joy/key pressed after 5 frames, switch to short jump
     cmp #5
     bne @l_ah_duck
     SetVector sin_tab_short, sin_tab_ptr
-    rts
 @l_ah_duck:
     lda dinosaur_state
     and #DINOSAUR_JUMP  ;only allow other direction, if dinosaur is not jumping already
@@ -757,7 +785,6 @@ action_handler:
     jsr get_joy_status
     and #JOY_DOWN
     bne @l_ah_run
-
     lda #DINOSAUR_DUCK
     sta dinosaur_state
     rts
@@ -922,19 +949,18 @@ noEor:
     rts
 
 .data
-
 sprite_tab_enemy_init:
-    .byte  PD_Y    ,PD_X,     PD_PTR+0*4, Dark_Red
+    .byte  PD_Y     ,PD_X,     PD_PTR+0*4, Dark_Red
     .byte  PD_Y+16  ,PD_X,     PD_PTR+1*4, Dark_Red
-    .byte  PD_Y    ,PD_X+16,  PD_PTR+2*4, Dark_Red
+    .byte  PD_Y     ,PD_X+16,  PD_PTR+2*4, Dark_Red
     .byte  PD_Y+16  ,PD_X+16,  PD_PTR+3*4, Dark_Red
 sprite_tab_enemy_init_end:
 sprite_tab_init:
-    .byte  DINOSAUR_Y    ,DINOSAUR_X+16  ,0  , dinosaur_color
-    .byte  DINOSAUR_Y+16  ,DINOSAUR_X+16  ,4  , dinosaur_color
-    .byte  DINOSAUR_Y    ,DINOSAUR_X  ,8    , dinosaur_color
-    .byte  DINOSAUR_Y+16  ,DINOSAUR_X  ,28  , dinosaur_color
-    .byte  DINOSAUR_Y-10  ,DINOSAUR_X+10    , dinosaur_cap, Transparent
+    .byte  DINOSAUR_Y     ,DINOSAUR_X+16  ,0    , dinosaur_color
+    .byte  DINOSAUR_Y+16  ,DINOSAUR_X+16  ,4    , dinosaur_color
+    .byte  DINOSAUR_Y     ,DINOSAUR_X     ,8    , dinosaur_color
+    .byte  DINOSAUR_Y+16  ,DINOSAUR_X     ,28   , dinosaur_color
+    .byte  DINOSAUR_Y-10  ,DINOSAUR_X+10  , dinosaur_cap, Transparent
 sprite_tab_init_end:
 
 sprite_tab:
@@ -942,16 +968,19 @@ sprite_tab:
 sprite_tab_enemy:
     .res 4*4, 0
 sprite_tab_sky:
+    .byte  15,200,48, White
+    .byte  15,216,52, White
     .byte  25,100,48, White
     .byte  25,116,52, White
     .byte  41,30,48, White
     .byte  41,46,52, White
     .byte  57,70,48, White
     .byte  57,86,52, White
-    .byte  15,200,48, White
-    .byte  15,216,52, White
     .byte  SPRITE_OFF  ; end of sprite table
 sprite_tab_end:
+
+sprite_tab_sky_trigger:
+    .byte 0,0,0,0
 
 dino_run_1:
     .byte 0,4,8,12,60
@@ -1140,7 +1169,6 @@ sin_tab_offs:     .res 1
 level_bg_cnt:     .res 1
 level_script_ix:  .res 1
 score_value_high:       .res 3
-sprite_tab_sky_trigger: .res 4
 score_value:            .res 3
 frame_cnt:              .res 1
 save_isr:               .res 2
