@@ -25,29 +25,31 @@
 .include "kernel_jumptable.inc"
 
 .include "appstart.inc"
-.import hexout
-.import primm
+.autoimport
 
 .export char_out=krn_chrout
+.export read_block=krn_sd_read_block
+.export write_block=krn_sd_write_block
+
 
 appstart $1000
 
-    	lda paramptr
-    	ldx paramptr+1
+    lda paramptr
+    ldx paramptr+1
 
-    	jsr krn_rmdir
-		bcs @errmsg
+    jsr fat_rmdir
+    bcs @errmsg
 
-		jsr primm
-		.byte $0a," rmdir ok",$00
+    jsr primm
+    .byte $0a," rmdir ok",$00
 @exit:
-		jmp (retvec)
+    jmp (retvec)
 
 @errmsg:
-		;TODO FIXME maybe use oserror() from cc65 lib
-		pha
-		jsr primm
-		.asciiz "Error: "
-		pla
-		jsr hexout
-		jmp @exit
+    ;TODO FIXME maybe use oserror() from cc65 lib
+    pha
+    jsr primm
+    .asciiz "Error: "
+    pla
+    jsr hexout
+    jmp @exit
