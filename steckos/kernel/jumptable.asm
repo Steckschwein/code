@@ -20,10 +20,6 @@ krn_open:               jmp fat_fopen
 krn_chdir:              jmp fat_chdir
 .export krn_unlink
 krn_unlink:             jmp fat_unlink
-.export krn_rmdir
-krn_rmdir:              jmp fat_rmdir
-.export krn_mkdir
-krn_mkdir:              jmp fat_mkdir
 .export krn_close
 krn_close:              jmp fat_close
 .export krn_close_all
