@@ -43,7 +43,6 @@ appstart $1000
     .byte "rename <from> <to> - rename file",$0a
     .byte "attrib +-a <file>  - set file attribs",$0a
     .byte "up                 - serial upload",$0a
-    .byte "rx                 - xmodem upload",$0a
     .byte "fsinfo             - filesystem info",$0a
     .byte "nvram              - manage nvram",$0a
     .byte "setdate            - set rtc date",$0a
