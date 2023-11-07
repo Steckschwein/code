@@ -24,25 +24,28 @@
 .include "errno.inc"
 .include "kernel.inc"
 .include "kernel_jumptable.inc"
-
+.include "fat32.inc"
 .include "appstart.inc"
-.import hexout
-.import primm
 
+.autoimport
+
+.import dirname_mask_matcher, cluster_nr_matcher
 .export char_out=krn_chrout
+.export read_block=krn_sd_read_block
+.export write_block=krn_sd_write_block
 
 appstart $1000
-      lda paramptr
-    	ldx paramptr+1
+    lda paramptr
+    ldx paramptr+1
 
-		;TODO -p support by using krn_opendir and call krn_mkdir on "does not exist error"
-		jsr krn_mkdir
-		bcc @exit
-		;TODO FIXME maybe use oserror() from cc65 lib
-		pha
-		jsr primm
-		.asciiz "Error: "
-		pla
-		jsr hexout
+    ;TODO -p support by using krn_opendir and call krn_mkdir on "does not exist error"
+    jsr fat_mkdir
+    bcc @exit
+    ;TODO FIXME maybe use oserror() from cc65 lib
+    pha
+    jsr primm
+    .asciiz "Error: "
+    pla
+    jsr hexout
 @exit:
-		jmp (retvec)
+	jmp (retvec)
