@@ -163,17 +163,17 @@ string_trim:
 			;  Z=0 on error, the input string contains invalid chars not allowed within a dos 8.3. file name
 string_fat_name:
 			ldy #0
-		__sfn_ic:
+__sfn_ic:
 			lda (filenameptr), y
 			beq __sfn_mask
 			jsr string_illegalchar
 			bne __sfn_exit
 			iny
 			bne __sfn_ic
-		__sfn_mask:
+__sfn_mask:
 			jsr string_fat_mask				;
 			lda #EOK
-		__sfn_exit:
+__sfn_exit:
 			rts
 
 			; in:

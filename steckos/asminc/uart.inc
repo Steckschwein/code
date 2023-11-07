@@ -37,6 +37,8 @@ uart_lsr		 = 5
 uart_msr		 = 6
 uart_scr		 = 7
 
+uart_mcr_out1 = 1<<2
+
 ; Register bits
 ; interrupt enable register
 ier_ERBI		  = 1<<0 ; Enable received data available

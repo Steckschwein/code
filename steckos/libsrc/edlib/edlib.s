@@ -74,15 +74,13 @@ fm_file_arrdata = ptr7
     ptr6:  .res 2
     ptr7:  .res 2
 
-.import opl2_reg_write
-.import hexout
-.import d00file
-
 .export fm_master_volume
 .export jch_fm_init, jch_fm_play
 .export jch_fm_set_volume
 
 .setcpu "6502"
+
+.autoimport
 
 .code
 ;.pc = $1000 "INIT"

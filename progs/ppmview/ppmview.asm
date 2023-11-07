@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 ;
-; use imagemagick $convert <image> -geometry 256 -colort 256 <image.ppm>
+; use imagemagick $convert <image> -geometry 256 -colors 256 <image.ppm>
 ;
 .setcpu "65c02"
 .include "zeropage.inc"

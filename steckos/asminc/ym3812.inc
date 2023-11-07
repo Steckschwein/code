@@ -30,6 +30,9 @@ OPL_CLK = 3580000 ;Hz
 OPL_VOLUME_MAX=0
 OPL_VOLUME_MIN=$3f
 
+OPL_INTERVAL_US_TIMER1 = 80   ; µs intervall at 3.58Mhz
+OPL_INTERVAL_US_TIMER2 = 320  ; µs intervall at 3.58Mhz
+
 opl_stat = $0240		; status register
 opl_sel  = opl_stat		; register select
 opl_data = opl_stat + 1	; data register (write only)
