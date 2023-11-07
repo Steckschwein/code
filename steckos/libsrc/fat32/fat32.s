@@ -94,7 +94,6 @@ fat_fseek:
 		;out:
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 __fat_fseek:
-		;SetVector block_data, read_blkptr
 		rts
 
 		;in:

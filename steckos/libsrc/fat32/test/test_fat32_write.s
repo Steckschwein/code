@@ -53,6 +53,8 @@ debug_enabled=1
 			fat32_dir_entry_file "TEST01  ", "TST", 0, 0		; 0 - no cluster reserved, file length 0
 		assertFdEntry fd_area + (FD_Entry_Size*2)
 			fd_entry_file 4, LBA_BEGIN, DIR_Attr_Mask_Archive, 0
+		assertDirEntry $0480
+			fat32_dir_entry_file "TEST01  ", "TST", 0, 0		; 0 - no cluster reserved, file length 0
 		jsr fat_close
 
 ; -------------------
