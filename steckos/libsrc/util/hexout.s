@@ -35,11 +35,11 @@ hexout_s:
         pha
         lda #'$'
         jsr char_out
-        pla 
+        pla
 hexout:
         pha
         pha
-        
+
         lsr     ; msb first
         lsr
         lsr

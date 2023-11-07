@@ -94,7 +94,6 @@ fat_fseek:
 		;out:
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 __fat_fseek:
-		;SetVector block_data, read_blkptr
 		rts
 
 		;in:
@@ -121,14 +120,14 @@ fat_fread_byte:
 l_read_h:
 		inc read_blkptr+1
 l_read:
-		ldy fd_area+F32_fd::seek_pos+0, x
+		ldy fd_area+F32_fd::seek_pos+0,x
 		lda (read_blkptr),y
 		_inc32_x fd_area+F32_fd::seek_pos
 		clc
 		rts
 
-    	;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. the file size and blocks must be checked
-    	;
+    ;  TODO FIXME currently we always read until the end of the cluster regardless whether we reached the end of the file. the file size and blocks must be checked
+    ;
 		;	read n blocks from file denoted by the given FD and maintains FD.offset
 		;in:
 		;	X - offset into fd_area
@@ -202,7 +201,8 @@ fat_read:
 		beq @l_exit					; if Z=0, no blocks to read. we return with "EOK", 0 bytes read
 		jsr __calc_lba_addr
 		jsr sd_read_multiblock
-		rts
+		cmp #0
+    rts
 @l_err_exit:
 		lda #EINVAL
 @l_exit:

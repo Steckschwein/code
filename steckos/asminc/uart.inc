@@ -20,6 +20,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.ifndef __UART_INC
+.define	__UART_INC "__UART_INC"
+
 ; UART address and registers
 uart1			  = $0200
 uart_rxtx		 = 0
@@ -33,6 +36,8 @@ uart_mcr		 = 4
 uart_lsr		 = 5
 uart_msr		 = 6
 uart_scr		 = 7
+
+uart_mcr_out1 = 1<<2
 
 ; Register bits
 ; interrupt enable register
@@ -97,3 +102,4 @@ msr_DCD			= 1<<7 ; data carrier detect
 	 lsr  .byte ;$0f ; 1  byte  - uart lcr value , default %00000011 (8N1)
 .endstruct
 
+.endif

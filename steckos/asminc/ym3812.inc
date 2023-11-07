@@ -30,11 +30,14 @@ OPL_CLK = 3580000 ;Hz
 OPL_VOLUME_MAX=0
 OPL_VOLUME_MIN=$3f
 
+OPL_INTERVAL_US_TIMER1 = 80   ; µs intervall at 3.58Mhz
+OPL_INTERVAL_US_TIMER2 = 320  ; µs intervall at 3.58Mhz
+
 opl_stat = $0240		; status register
 opl_sel  = opl_stat		; register select
 opl_data = opl_stat + 1	; data register (write only)
 
-; master clock frequency is 3.58Mhz (~280/285ns) - from VDP Pin 8 which is 1/6 VDP frequency ~21.48Mhz 
+; master clock frequency is 3.58Mhz (~280/285ns) - from VDP Pin 8 which is 1/6 VDP frequency ~21.48Mhz
 opl2_master_clock_freq = 3500000
 opl2_wait_cycles_reg 	= 12 ; 12 * 280/285 = 3360/3428ns
 opl2_wait_cycles_data 	= 84 ; 84 * 280 = 23520/24000ns
@@ -49,6 +52,7 @@ opl2_s_irq		= 1<<7	; timer irq
 opl2_s_irq_t1	= 1<<6	; ... irq cause of t1
 opl2_s_irq_t2	= 1<<5	; ... irq cause of t2
 
+opl2_reg_test = 1
 opl2_reg_t1	= 2
 opl2_reg_t2	= 3
 opl2_reg_ctrl = 4

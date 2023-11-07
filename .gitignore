@@ -37,3 +37,4 @@ asmunit/asmunit.a
 
 asmunit/test.asmunit.o.dbg
 progs/ehbasic_65c02/101bcg/
+steckos/demo/plasma/plasma.s

@@ -58,3 +58,4 @@ sd_card_status_parameter_error  = %01000000
 
 sd_card_error_timeout_busy = $c0
 sd_card_error_timeout = $c1
+sd_card_error_timeout_command = $c2

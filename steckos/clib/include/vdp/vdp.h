@@ -1,5 +1,5 @@
 #ifndef _VDP_H
-#define _VDP_H 
+#define _VDP_H
 
 #define Color_Transparent    0x00
 #define Color_Black          0x01	 //0	0	0		"black"
@@ -40,10 +40,14 @@
 /*                                   Code                                    */
 /*****************************************************************************/
 
-void __fastcall__ vdp_memcpy (unsigned char *data, unsigned int vramaddress, unsigned char pages); 
+void __fastcall__ vdp_memcpy (unsigned char *data, unsigned int vramaddress, unsigned char pages);
 
-void __fastcall__ vdp_init (unsigned char mode);
+void __fastcall__ vdp_screen (unsigned char mode);
+
+void __fastcall__ vdp_plot (unsigned int x, unsigned char y, unsigned char color);
+
+void __fastcall__ vdp_blank (unsigned char color);
 
 void __fastcall__ vdp_restore(void);
 
-#endif 
+#endif

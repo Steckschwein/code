@@ -36,4 +36,4 @@ spi_deselect:
 		sta via1portb
 		pla
 		rts
-        
+

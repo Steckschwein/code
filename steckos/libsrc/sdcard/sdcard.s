@@ -26,6 +26,7 @@
 	debug_enabled=1
 .endif
 
+.include "system.inc"
 .include "common.inc"
 .include "zeropage.inc"
 .include "errno.inc"
@@ -58,36 +59,36 @@ sdcard_detect:
 ; Init SD Card
 ; Destructive: A, X, Y
 ;
-;	out:  Z=1 on success, Z=0 otherwise
-;
+;	out:  Z=1 on success, Z=0 otherwise and A=<error>
 ;---------------------------------------------------------------------
 sdcard_init:
-		lda #spi_device_sdcard
-		jsr spi_select_device
-		beq @init
-		rts
+      lda #spi_device_sdcard
+      jsr spi_select_device
+      beq @init
+      rts
 @init:
+      php
+      sei
+
 		; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
 			ldx #74
 
 			; set ALL CS lines and DO to HIGH
 			lda #%11111110
-			sta via1portb
-
 			tay
 			iny
-
-@l1:
-			sty via1portb
-			sta via1portb
+init_clk:
+      sta via1portb
+      jsr _sys_delay_4us ; 4µs delay => 250Khz
+      sty via1portb
+      jsr _sys_delay_4us
 			dex
-			bne @l1
+			bne init_clk
 
 			jsr sd_select_card
-			beq @next
+			bcc @next
 			jmp @exit
 @next:
-
 			jsr sd_param_init
 
 			; CMD0 needs CRC7 checksum to be correct
@@ -98,7 +99,7 @@ sdcard_init:
 @lcmd:
 			dey
 			bne @l2
-			;debug "sd_i_cmd0_max_retries"
+			debug "sd_i_cmd0_max_retries"
 			jmp @exit
 @l2:
 			; send CMD0 - init SD card to SPI mode
@@ -106,8 +107,8 @@ sdcard_init:
 			phy
 			jsr sd_cmd
 			ply
-			; debug "CMD0"
-			cmp #$01
+;			debug "CMD0"
+:			cmp #$01
 			bne @lcmd
 
 			lda #$01
@@ -123,7 +124,6 @@ sdcard_init:
 			debug32 "CMD8", sd_cmd_param
 
 			jsr sd_param_init
-
 			cmp #$01
 			bne @l5
 			; Invalid Card (or card we can't handle yet)
@@ -140,9 +140,7 @@ sdcard_init:
 			beq @l3
 			jmp @exit
 @l3:
-
 ;			bne @exit
-
 			; is this $aa? we're done if not
 			jsr spi_r_byte
 			cmp #$aa
@@ -151,7 +149,6 @@ sdcard_init:
 			; init card using ACMD41 and parameter $40000000
 			lda #$40
 			sta sd_cmd_param
-
 @l5:
 			lda #cmd55
 			jsr sd_cmd
@@ -159,7 +156,6 @@ sdcard_init:
 			cmp #$01
 			bne @exit
 			; Init failed
-
 
 			lda #acmd41
 			jsr sd_cmd
@@ -199,7 +195,7 @@ sdcard_init:
 
 			;pla
 			and #%01000000
-			bne @l9
+			bne @exit_ok
 @cmd16:
 			jsr sd_param_init
 
@@ -213,11 +209,15 @@ sdcard_init:
 			jsr sd_cmd
 			;debug "CMD16"
 @exit_ok:
-@l9:
-	; SD card init successful
-			lda #$00
+			lda #0	    ; SD card init successful
 @exit:
+      plp
+      cmp #0
 			jmp sd_deselect_card
+
+_sys_delay_4us:
+      sys_delay_us 4
+      rts
 
 ;---------------------------------------------------------------------
 ; Send SD Card Command
@@ -231,12 +231,14 @@ sd_cmd:
 			pha
 			jsr sd_busy_wait
 			pla
+      debug "sd_cmd"
+      ;bcs sd_exit ; from sd_busy_wait
 			; transfer command byte
 			jsr spi_rw_byte
 
 			; transfer parameter buffer
 			ldx #$00
-@l1:	 	lda sd_cmd_param,x
+@l1:	lda sd_cmd_param,x
 			phx
 			jsr spi_rw_byte
 			plx
@@ -250,20 +252,23 @@ sd_cmd:
 ; http://elm-chan.org/docs/mmc/mmc_e.html
 ; out:
 ; A - response of card, for error codes see sdcard.inc. $1F if no valid response within NCR
-; Z=1 - no error
+; C = 0 on success, C = 1 on error, A = error code
 ;---------------------------------------------------------------------
 sd_cmd_response_wait:
 			ldy #sd_cmd_response_retries
 @l:		dey
 			beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
 			jsr spi_r_byte
-			debug "sd_cm_wt"
+;			debug "sd_cm_wt"
 			bmi @l
 			debug "sd_cm_wt_e"
+      clc
 			rts
 sd_block_cmd_timeout:
 			debug "sd_cm_wtt"
-			lda #$1f ; make up error code distinct from possible sd card responses to mark timeout
+			lda #sd_card_error_timeout_command ; make up error code distinct from possible sd card responses to mark timeout
+      sec
+sd_exit:
 			rts
 
 
@@ -277,13 +282,21 @@ sd_block_cmd_timeout:
 ;	A - A = 0 on success, error code otherwise
 ;---------------------------------------------------------------------
 sd_read_block:
-			jsr sd_select_card
+      php
+      sei
+
+      jsr sd_select_card
 
 			jsr sd_cmd_lba
 			lda #cmd17
 			jsr sd_cmd
 			bne @exit
 			jsr fullblock
+      jsr sd_deselect_card
+
+      plp
+      cmp #0
+      rts
 
 @exit: 	; fall through to sd_deselect_card
 
@@ -292,25 +305,24 @@ sd_read_block:
 ; to allow card to deinit
 ;---------------------------------------------------------------------
 sd_deselect_card:
-		pha
-		phy
+      pha
+      phy
 
-		jsr spi_deselect
+      jsr spi_deselect
 
-		ldy #$04
+      ldy #$04
 @l1:
-		jsr spi_r_byte
-		dey
-		bne @l1
+      jsr spi_r_byte
+      dey
+      bne @l1
 
-		ply
-		pla
+      ply
+      pla
 
-		rts
+      rts
 
 fullblock:
 			; wait for sd card data token
-			lda #sd_data_token
 			jsr sd_wait
 			bne @exit
 
@@ -337,17 +349,16 @@ halfblock:
 ;---------------------------------------------------------------------
 ; wait for sd card whatever
 ; in: A - value to wait for
-; out: Z = 1, A = 1 when error (timeout)
+; out: Z = 1, A = 0 on success, A = error (timeout) otherwise
 ;---------------------------------------------------------------------
 sd_wait:
-			sta sd_tmp
 			ldy #sd_data_token_retries
 			ldx #0
 @l1:
 			phx
 			jsr spi_r_byte
 			plx
-			cmp sd_tmp
+			cmp #sd_data_token
 			beq @l2
 			dex
 			bne @l1
@@ -356,12 +367,14 @@ sd_wait:
 
 			lda #sd_card_error_timeout
 			rts
-@l2:		lda #0
+@l2:  lda #0
 			rts
 
 
 ;---------------------------------------------------------------------
-; select sd card, pull CS line to low
+; select sd card, pull CS line to low with busy wait
+; out:
+;   see below
 ;---------------------------------------------------------------------
 sd_select_card:
 			lda #spi_device_sdcard
@@ -369,27 +382,25 @@ sd_select_card:
 			;TODO FIXME race condition here!
 
 ; fall through to sd_busy_wait
-
 ;---------------------------------------------------------------------
 ; wait while sd card is busy
-; Z = 1, A = 1 when error (timeout)
+; C = 0 on success, C = 1 on error (timeout)
 ;---------------------------------------------------------------------
 sd_busy_wait:
 			ldx #$ff
-@l1:	 	lda #$ff
-			dex
-			beq @err
+@l1:  lda #$ff
+      dex
+      beq @err
 
 			phx
 			jsr spi_rw_byte
 			plx
 			cmp #$ff
 			bne @l1
-
-			lda #$00
+      clc
 			rts
-@err:
-			lda #sd_card_error_timeout_busy
+@err: lda #sd_card_error_timeout_busy
+      sec
 			rts
 
 ;---------------------------------------------------------------------

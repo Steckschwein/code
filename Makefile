@@ -18,6 +18,9 @@ build:
 	(cd progs; make)
 	(cd games; make)
 
+test:
+	(cd steckos; make test)
+
 
 dist: build
 	./mkdist.sh

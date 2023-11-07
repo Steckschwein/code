@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 ;
-; use imagemagick $convert <image> -geometry 256 -colort 256 <image.ppm>
+; use imagemagick $convert <image> -geometry 256 -colors 256 <image.ppm>
 ;
 .setcpu "65c02"
 .include "zeropage.inc"
@@ -73,7 +73,7 @@ gfxui_on:
 		jsr vdp_mode7_on			   ;enable gfx7 mode
 		vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
 
-		lda #%00000000
+		ldy #0
 		jsr vdp_mode7_blank
 
 		rts

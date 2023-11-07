@@ -68,7 +68,7 @@ gfx_plot:
       php
       sei
 
-      ldx #36                 ; start at r#36                     
+      ldx #36                 ; start at r#36
       jsr _gfx_prepare_x_y
 
       vdp_sreg 44, v_reg17    ; index to r#44
