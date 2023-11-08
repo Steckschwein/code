@@ -44,6 +44,7 @@ BUF_SIZE		= 80 ;TODO maybe too small?
 
 .import hexout
 .import strout
+.import primm
 .import kernel_start
 
 .zeropage
@@ -52,13 +53,13 @@ pathptr:        .res 2
 p_history:      .res 2
 tmp1:   .res 1
 tmp2:   .res 1
-ptr1:   .res 2
+;ptr1:   .res 2
 
 appstart $e200
 .export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly
 .code
 init:
-        jsr krn_primm
+        jsr primm
         .byte "steckOS shell  "
         .include "version.inc"
         .byte CODE_LF,0
@@ -76,7 +77,7 @@ exit_from_prg:
         SetVector buf, paramptr ; set param to empty buffer
         SetVector PATH, pathptr
 mainloop:
-        jsr krn_primm
+        jsr primm
         .byte CODE_LF, '[', 0
         ; output current path
         lda #<cwdbuf
@@ -94,7 +95,7 @@ mainloop:
         lda #'?'
         jsr char_out
 @prompt:
-        jsr krn_primm
+        jsr primm
         .byte ']', prompt, 0
 
         lda crs_x
@@ -403,7 +404,7 @@ errmsg:
 	cmp #$f1
 	bne @l1
 
-	jsr krn_primm
+	jsr primm
 	.byte CODE_LF,"invalid command",CODE_LF,$00
 	jmp mainloop
 
@@ -411,12 +412,12 @@ errmsg:
         cmp #$f2
 	bne @l2
 
-	jsr krn_primm
+	jsr primm
 	.byte CODE_LF,"invalid directory",CODE_LF,$00
 	jmp mainloop
 
 @l2:
-	jsr krn_primm
+	jsr primm
 	.byte CODE_LF,"unknown error",CODE_LF,$00
 	jmp mainloop
 

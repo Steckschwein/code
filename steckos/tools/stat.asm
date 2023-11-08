@@ -26,7 +26,7 @@
 .include "fat32.inc"
 .include "appstart.inc"
 
-.import print_filename, dpb2ad, print_fat_date, print_fat_time, bin2dual, hexout
+.import print_filename, dpb2ad, print_fat_date, print_fat_time, bin2dual, hexout, primm
 
 .export char_out=krn_chrout
 .zeropage
@@ -88,12 +88,12 @@ l1:
 
 dir_show_entry:
 	pha
-	jsr krn_primm
+	jsr primm
 	.byte "Name: ",$00
 	jsr print_filename
 	crlf
 
-	jsr krn_primm
+	jsr primm
 	.byte "Size: ",$00
 	ldy #F32DirEntry::FileSize +1
 	lda (dirptr),y
@@ -102,7 +102,7 @@ dir_show_entry:
 	lda (dirptr),y
 	jsr dpb2ad
 
-	jsr krn_primm
+	jsr primm
 	.byte "  Cluster#1: ",$00
 
 	ldy #F32DirEntry::FstClusHI+1
@@ -120,12 +120,12 @@ dir_show_entry:
 
 	crlf
 
-	jsr krn_primm
+	jsr primm
 	.byte "Attribute: "
 	.byte "--ADVSHR",$00
 	crlf
 
-	jsr krn_primm
+	jsr primm
 	.byte "           ",$00
 
 	ldy #F32DirEntry::Attr
@@ -135,7 +135,7 @@ dir_show_entry:
 	crlf
 
 
-	jsr krn_primm
+	jsr primm
 	.byte "Created  : ",$00
 	ldy #F32DirEntry::CrtDate
 	jsr print_fat_date
@@ -147,7 +147,7 @@ dir_show_entry:
 	jsr print_fat_time
 	crlf
 
-	jsr krn_primm
+	jsr primm
 	.byte "Modified : ",$00
 	ldy #F32DirEntry::WrtDate
 	jsr print_fat_date

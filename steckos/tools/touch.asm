@@ -27,6 +27,7 @@
 
 .include "appstart.inc"
 .import hexout
+.import primm
 
 .export char_out=krn_chrout
 
@@ -44,7 +45,7 @@ appstart $1000
 		bne @errmsg
 		jsr krn_close
 
-		jsr krn_primm
+		jsr primm
 		.byte $0a," touch ok",$00
 @exit:
 		jmp (retvec)
@@ -52,7 +53,7 @@ appstart $1000
 @errmsg:
 		;TODO FIXME maybe use oserror() from cc65 lib
 		pha
-		jsr krn_primm
+		jsr primm
 		.asciiz "Error: "
 		pla
 		jsr hexout

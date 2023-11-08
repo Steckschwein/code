@@ -29,6 +29,7 @@
 
 .import hexout
 .import hexout_s
+.import primm
 .importzp ptr2, ptr3
 
 .export char_out=krn_chrout
@@ -44,7 +45,7 @@ main:
 	lda #v_reg8
 	sta a_vreg
 
-	jsr krn_primm
+	jsr primm
 	.byte $0a, "Video Mem - Address:",0
 
 	; start from 2nd bank, after text ui
@@ -103,7 +104,7 @@ l2:
 	jmp lbank
 
 l_ok:
-	jsr	krn_primm
+	jsr	primm
 	.asciiz " OK"
 	jmp	(retvec)
 
@@ -113,7 +114,7 @@ l3:	pha            	;save erroneous pattern
 	jsr krn_chrout
 	pla
 	jsr  hexout
-	jsr krn_primm
+	jsr primm
 	.asciiz " FAILED"
 	jmp (retvec)
 

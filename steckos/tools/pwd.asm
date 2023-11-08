@@ -6,8 +6,6 @@
 .import strout
 
 .export char_out=krn_chrout
-.zeropage
-ptr1: .res 2
 appstart $1000
 .code
 		lda	#<buffer

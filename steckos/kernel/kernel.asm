@@ -195,7 +195,7 @@ do_irq:
     jsr __automount
 
 @exit:
-		lda via1portb
+	lda via1portb
     and #spi_device_deselect
     cmp #spi_device_deselect
     beq :+

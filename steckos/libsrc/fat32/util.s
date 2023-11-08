@@ -24,7 +24,7 @@
 	debug_enabled=1
 .endif
 .setcpu "65c02"
-.include	"kernel.inc"
+.include	"zeropage.inc"
 .include	"fat32.inc"
 .include	"errno.inc"
 
