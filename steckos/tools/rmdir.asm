@@ -20,24 +20,17 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
-
-.include "appstart.inc"
+.include "steckos.inc"
 .autoimport
 
 .export char_out=krn_chrout
-.export read_block=krn_sd_read_block
-.export write_block=krn_sd_write_block
-
 
 appstart $1000
 
     lda paramptr
     ldx paramptr+1
 
-    jsr fat_rmdir
+    jsr krn_rmdir
     bcs @errmsg
 
     jsr primm
