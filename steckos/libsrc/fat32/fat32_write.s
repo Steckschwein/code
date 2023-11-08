@@ -61,15 +61,15 @@ fat_write_byte:
 		bcs @l_exit
 
 :		jsr __fat_prepare_access
-    bcc @l_exit
+    bcs @l_exit
 
 		lda __volatile_tmp					; get back byte to write
 		sta (__volatile_ptr)
 ;		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
-;		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
-;:		_inc32_x fd_area+F32_fd::seek_pos
-;l_write_block:
-		jsr __fat_write_block_data			; write block
+		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
+		_inc32_x fd_area+F32_fd::seek_pos
+
+		jsr __fat_write_block_data		; write block
 		bcs @l_exit
 		jmp __fat_update_direntry			; finally update dir entry
 @l_exit:
