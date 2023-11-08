@@ -20,28 +20,23 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "errno.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
-
-.include "appstart.inc"
-.import hexout
+.include "steckos.inc"
+.autoimport
 
 .export char_out=krn_chrout
 
 appstart $1000
-      lda paramptr
-    	ldx paramptr+1
+    lda paramptr
+    ldx paramptr+1
 
-		;TODO -p support by using krn_opendir and call krn_mkdir on "does not exist error"
-		jsr krn_mkdir
-		bcc @exit
-		;TODO FIXME maybe use oserror() from cc65 lib
-		pha
-		jsr krn_primm
-		.asciiz "Error: "
-		pla
-		jsr hexout
+    ;TODO -p support by using krn_opendir and call krn_mkdir on "does not exist error"
+    jsr krn_mkdir
+    bcc @exit
+    ;TODO FIXME maybe use oserror() from cc65 lib
+    pha
+    jsr primm
+    .asciiz "Error: "
+    pla
+    jsr hexout
 @exit:
-		jmp (retvec)
+	jmp (retvec)

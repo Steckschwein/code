@@ -28,6 +28,7 @@
 .export char_out=krn_chrout
 
 .import hexout
+.import primm
 .import print_fat_date, print_fat_time, print_filename
 
 .zeropage
@@ -120,7 +121,7 @@ l1:
 @summary:
     jsr show_bytes_decimal
 
-    jsr krn_primm
+    jsr primm
     .asciiz " bytes in "
 
     stz decimal
@@ -200,7 +201,7 @@ dir_show_entry:
 
 	bit #DIR_Attr_Mask_Dir
 	beq @l
-	jsr krn_primm
+	jsr primm
 	.asciiz "    <DIR> "
 	bra @date				; no point displaying directory size as its always zeros
 							; just print some spaces and skip to date display
@@ -237,7 +238,7 @@ zero_decimal_buf:
 print_filesize:
     lda fsize + 3
     beq :+
-    jsr krn_primm
+    jsr primm
     .asciiz "VERY BIG"
     rts
 :
