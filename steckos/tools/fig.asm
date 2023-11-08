@@ -34,6 +34,7 @@
 .import vdp_memcpy
 .import vdp_mode_sprites_off
 .import vdp_bgcolor
+.import strout
 
 .zeropage
 ptr1:	.res 2
@@ -45,6 +46,7 @@ appstart $1000
 
 content = $2000
 color=content+$1800
+.export char_out=krn_chrout
 
 main:
 		lda paramptr
@@ -79,7 +81,7 @@ main:
 		.asciiz "load error file "
 		lda #<paramptr
 		ldx #>paramptr
-		jsr krn_strout
+		jsr strout
 
 l2:		jmp (retvec)
 
