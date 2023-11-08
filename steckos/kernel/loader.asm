@@ -28,10 +28,13 @@
 
 ; system attribute has to be set on file system
 .zeropage
-p_src:		.res 2
-p_tgt:		.res 2
+p_src:    .res 2
+p_tgt:    .res 2
 
 appstart $1000
+
+   lda #$31 ; enable RAM at slot3
+   sta slot3
 
    sei ; no irq if we upload from kernel to avoid clash
    ; copy kernel code to kernel_start
@@ -59,9 +62,6 @@ loop:
    inc p_tgt+1
    bne loop
 end:
-   lda #$01
-   sta ctrl_port
-
    ; jump to reset vector
    jmp ($fffc)
 

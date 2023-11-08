@@ -38,12 +38,12 @@ fat_file_too_large      = $11
 ; partition entry
 ;--------------------------------------------------------------------------------------
 .struct PartitionEntry
-   Bootflag    .byte
-   CHSBegin    .byte 3
-   TypeCode    .byte
-   CHSEnd      .byte 3
-   LBABegin    .dword
-   NumSectors  .dword
+    Bootflag    .byte
+    CHSBegin    .byte 3
+    TypeCode    .byte
+    CHSEnd      .byte 3
+    LBABegin    .dword
+    NumSectors  .dword
 .endstruct
 
 PartType_FAT32        = $0b
@@ -87,7 +87,7 @@ PartType_FAT32_LBA    = $0c
 
    Version     .word    ; 42-43
    RootClus    .dword   ; 44-47
-   FSInfoSec   .word    ; 48-49  ; 
+   FSInfoSec   .word    ; 48-49  ;
    BootSectCpy .word    ; 50-51
    Reserved3   .byte 12 ; 52-63
    PhysDrvNum  .byte    ; 64
@@ -100,8 +100,8 @@ PartType_FAT32_LBA    = $0c
 
 ; struct VolumeID like found on FAT-media (bootsector)
 .struct F32_VolumeID
-   JmpToBoot   .byte 3     ; JMP command to bootstrap code ( in x86-world )
-   OEMName     .byte 8     ; OEM name/version (E.g. "IBM  3.3", "IBM 20.0", "MSDOS5.0", "MSWIN4.0".
+   JmpToBoot    .byte 3     ; JMP command to bootstrap code ( in x86-world )
+   OEMName      .byte 8     ; OEM name/version (E.g. "IBM  3.3", "IBM 20.0", "MSDOS5.0", "MSWIN4.0".
                        ; Various format utilities leave their own name, like "CH-FOR18".
                        ; Sometimes just garbage. Microsoft recommends "MSWIN4.1".)
                      ; https://www.win.tue.nl/~aeb/linux/fs/fat/fat-1.html
@@ -172,21 +172,22 @@ DIR_Entry_Deleted            = $e5
 ; File descriptor struct
 ;--------------------------------------------------------------------------------------
 .struct Seek
-    Whence	.byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
+    Whence  .byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
                     ; SEEK_CUR - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
                     ; SEEK_END - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
-    Offset	.dword
+    Offset  .dword
 .endstruct
 
 .struct F32_fd
-   CurrentCluster    .dword   ;
-   FileSize          .dword   ;
-   Attr              .byte    ; file attributes (mirror of attributes from dir entry)
-   DirEntryLBA       .dword   ; LBA of the block where the dir entry of the file is located
-   DirEntryPos       .byte    ; block offset within the block (n * DIR_Entry_Size)
-   offset            .byte    ; 7Bit block number of the CurrentCluster (SecPerClus)
-   seek_pos          .dword   ; seek position within the opened file
-   flags             .byte    ; file open flags
+    CurrentCluster   .dword ;
+    FileSize         .dword ;
+    Attr             .byte  ; file attributes (mirror of attributes from dir entry)
+    DirEntryLBA      .dword; LBA of the block where the dir entry of the file is located
+    DirEntryPos      .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
+    offset           .byte;  7Bit block number of the CurrentCluster (SecPerClus)
+;  TODO FIXME offset .word;  (2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
+    seek_pos         .dword ; seek position within the opened file
+;   flags            .byte; file open flags
 .endstruct
 
 FD_Entry_Size         = .sizeof(F32_fd)
@@ -231,11 +232,11 @@ block_fat             = BUFFER_2 ; $0600-$07ff
 .macro _is_file_dir
    pha
    lda fd_area+F32_fd::Attr, x
-   and #DIR_Attr_Mask_Dir		; is directory?
+   and #DIR_Attr_Mask_Dir    ; is directory?
    cmp #DIR_Attr_Mask_Dir
    pla
    bcc :+
    lda #EISDIR
    rts
-:  
+:
 .endmacro

@@ -22,33 +22,82 @@
 
 .include "common.inc"
 .include "system.inc"
+.include "keyboard.inc"
+.include "zeropage.inc"
 .include "appstart.inc"
+.include "xmodem.inc"
+.include "vdp.inc"
+
+.autoimport
+
+.export char_out=vdp_charout
+
+.export crc16_hi = BUFFER_0
+.export crc16_lo = BUFFER_1
+.export crc16_init = crc16_table_init
+.export xmodem_rcvbuffer = BUFFER_2
 
 .zeropage
-p_src:		.res 2
-p_tgt:		.res 2
+ptr1:   .res 2
+ptr2:   .res 2
+p_tgt:  .res 2
 
 appstart $1000
 
-.code
-      SetVector biosdata, p_src
-      SetVector $e000, p_tgt
-      ldy #0
-loop:
-      lda (p_src),y
-      sta (p_tgt),y
-      iny
-      bne loop
-      inc p_src+1
-      inc p_tgt+1
-      bne loop
-      
-      ; rom off
-      lda #$01
-      sta ctrl_port
+      ; enable RAM to load bios into
+      lda #$02
+      sta slot2
+      lda #$03
+      sta slot3
 
-      ;reset
-      jmp ($fffc)
-.data
-biosdata:
-.incbin "bios.bin"
+      lda #<bios_start
+      sta p_tgt
+      lda #>bios_start
+      sta p_tgt+1
+
+      jsr primm
+      .asciiz "BIOS "
+
+      sei
+      lda #<handle_block
+      ldx #>handle_block
+      jsr xmodem_upload_callback
+
+      jsr primm
+      .asciiz " OK. Reset..."
+
+      ; erase vram for to make sure ROM image will init VRAM correctly
+      vdp_vram_w 0
+      lda #0
+      ldx #>$200 ; 200 pages clear
+      jsr vdp_fill
+      lda #0
+      ldx #<$200 ; 200 pages clear
+      jsr vdp_fill
+
+      jmp (SYS_VECTOR_RESET)  ; reset
+
+handle_block:
+      ldy crs_x ; save crs x
+      phy
+      pha
+@copy:
+      lda xmodem_rcvbuffer,x
+      sta (p_tgt)
+      inc p_tgt
+      bne :+
+      inc p_tgt+1
+:     inx
+      cpx #XMODEM_DATA_END
+      bne @copy
+
+      pla
+      jsr hexout_s
+      inc crs_x
+      lda p_tgt+1
+      jsr hexout_s
+      lda p_tgt
+      jsr hexout
+      pla
+      sta crs_x
+      rts

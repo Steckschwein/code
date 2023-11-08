@@ -1,7 +1,12 @@
 TARGET=steckschwein
 TARGET_SYS=none
 
+# if 9958 is used
 DEFINES+=-DV9958
+# enable 80 cols
+DEFINES+=-DCOLS80
+# 6x8 characters
+DEFINES+=-DCHAR6x8
 
 ASMUNIT_VERBOSE=true
 
@@ -14,10 +19,10 @@ DEBUG += -DDEBUG_FAT32_WRITE
 #DEBUG += -DFAT_NOWRITE
 #DEBUG += -DFAT_DUMP_FAT_WRITE
 #DEBUG += -DDEBUG_SDCARD
-#DEBUG += -DDEBUG_DS1306
 #DEBUG += -DDEBUG_SDCARD_READ_MULTIBLOCK
 # debug util
 #DEBUG += -DDEBUG_UTIL
+#DEBUG += -DDEBUG_DS1306
 # all
 # DEBUG += -DDEBUG_FAT32 -DDEBUG_FAT32_DIR -DDEBUG_FAT32_CORE -DDEBUG_FAT32_WRITE
 
@@ -43,7 +48,9 @@ ifeq ($(words $(MAKECMDGOALS)),1)
   endif
 endif
 
-all: ../lib/$(TARGET).a runtests
+all: ../lib/$(TARGET).a
+
+test: runtests
 
 clean:
 	rm -f ../lib/$(TARGET).a
@@ -74,6 +81,7 @@ SRCDIRS +=  keyboard
 SRCDIRS +=  lcd
 SRCDIRS +=  debug
 SRCDIRS +=  xmodem
+SRCDIRS +=  edlib
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS)

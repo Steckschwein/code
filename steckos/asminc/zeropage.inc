@@ -35,7 +35,6 @@
 
 .globalzp filenameptr, dirptr
 .globalzp read_blkptr, write_blkptr
-.globalzp sd_tmp
 
 .globalzp cmdptr
 .globalzp paramptr
@@ -48,7 +47,7 @@
 
 .global lba_addr
 .global blocks
-.global key_char
+.global key
 
 .global crs_ptr
 .global crs_x

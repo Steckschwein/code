@@ -23,14 +23,14 @@
 
 ; enable debug for this module
 .ifdef DEBUG_EXECV
-	debug_enabled=1
+  debug_enabled=1
 .endif
 
 .include "common.inc"
 .include "kernel.inc"
 .include "errno.inc"
 .include "fat32.inc"
-.include "fcntl.inc"	; from ca65 api
+.include "fcntl.inc"  ; from ca65 api
 
 .code
 
@@ -39,43 +39,43 @@
 .export execv
 
 ; in:
-;	A/X - pointer to string with the file path
+;  A/X - pointer to string with the file path
 ; out:
 ;   Z=1 on success, Z=0 and A=<error code> otherwise
 execv:
-			ldy #O_RDONLY
-			jsr fat_fopen					; A/X - pointer to filename
-			bne @l_exit
+      ldy #O_RDONLY
+      jsr fat_fopen         ; A/X - pointer to filename
+      bne @l_exit
 
-			jsr fat_fread_byte	; start address low
-			bcs @l_err_exit
-			sta s_ptr2
-			sta s_ptr3
+      jsr fat_fread_byte  ; start address low
+      bcs @l_err_exit
+      sta s_ptr2
+      sta s_ptr3
 
-			jsr fat_fread_byte ; start address high
-			bcs @l_err_exit
-			sta s_ptr2+1
-			sta s_ptr3+1
+      jsr fat_fread_byte ; start address high
+      bcs @l_err_exit
+      sta s_ptr2+1
+      sta s_ptr3+1
 
-@l:			jsr fat_fread_byte
-			bcs @l_is_eof
-			sta (s_ptr2)
-			inc s_ptr2
-			bne @l
-			inc s_ptr2+1
-			bne @l
+@l:   jsr fat_fread_byte
+      bcs @l_is_eof
+      sta (s_ptr2)
+      inc s_ptr2
+      bne @l
+      inc s_ptr2+1
+      bne @l
 @l_err_exit:
-			jsr fat_close			; close after read to free fd, regardless of error
+      jsr fat_close      ; close after read to free fd, regardless of error
 @l_exit:
-     		debug "exec"
-        	rts
+      debug "exec"
+      rts
 @l_is_eof:
-			cmp #0
-			bne @l
+      cmp #0
+      bne @l
 @l_exec_run:
-			jsr fat_close
-			; we came here using jsr, but will not rts.
-			; get return address from stack to prevent stack corruption
-			pla
-			pla
-			jmp (s_ptr3)
+      jsr fat_close
+      ; we came here using jsr, but will not rts.
+      ; get return address from stack to prevent stack corruption
+      pla
+      pla
+      jmp (s_ptr3)

@@ -65,7 +65,6 @@ fat_fseek:
 		;out:
 		;	Z=1 on success (A=0), Z=0 and A=error code otherwise
 __fat_fseek:
-		;SetVector block_data, read_blkptr
 		rts
 
 ;in:
@@ -85,7 +84,7 @@ fat_fread_byte:
 		bcs @l_exit
 
 		lda (__volatile_ptr)
-		_inc32_x fd_area+F32_fd::seek_pos		
+		_inc32_x fd_area+F32_fd::seek_pos
 		clc
 @l_exit:
 		debug "rd_ex"
@@ -102,7 +101,7 @@ __fat_prepare_access:
 		lda fd_area+F32_fd::offset+0,x
 		cmp volumeID+VolumeID::BPB_SecPerClus  	; last block of cluster reached?
 		bne @l_read_block						; no, go on reading...
-		
+
 		jsr __fat_next_cln		; select next cluster within chain
 		bcs @l_exit				; exit on error or EOC (C=1)
 @l_read_block:
@@ -161,7 +160,7 @@ fat_fopen:
 		bne @l_exit_err
 		jsr __fat_alloc_fd				; alloc a fd for the new file we want to create to make sure we get one before
 		bne @l_exit_err					; we do any sd block writes which may result in various errors
-		
+
 		lda __volatile_tmp				; save file open flags
 		sta fd_area + F32_fd::flags, x
 		lda #DIR_Attr_Mask_Archive		; create as regular file with archive bit set

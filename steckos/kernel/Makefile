@@ -1,6 +1,6 @@
 CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
-OBJS=kernel.o rtc.o out.o exec.o automount.o
+OBJS=kernel.o rtc.o out.o exec.o util.o automount.o jumptable.o
 OBJS+=textui.o
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
@@ -46,7 +46,7 @@ kernel.bin: version.inc $(OBJS) $(LIBS)
 loader.prg: kernel.bin loader.o
 	ld65 $(LDFLAGS) loader.o -o loader.prg
 
-	# -m <kernel start adress - $100 (loader)
+# -m <kernel start adress - $100 (loader)
 dis: loader.prg
 	dcc6502 -o 0xe700 -m 0x1800 -d -n -c loader.prg > loader.dis
 
@@ -63,4 +63,4 @@ test:
 	(cd ../libsrc ; make)
 
 emu: loader.prg
-	steckschwein-emu -scale 2 -rom ../bios/bios.bin -sdcard ../../steckos.img  
+	steckschwein-emu -rom ../bios/bios.bin -upload loader.prg -sdcard ../../steckos.img

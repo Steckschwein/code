@@ -730,7 +730,7 @@ actor_init: ;x,y,init direction,color
 		.byte 64,$a4,	ACT_MOVE|ACT_LEFT
 		.byte 88,$a4, 	ACT_MOVE|ACT_UP
 		.byte 112,$a4,	ACT_MOVE|ACT_DOWN
-		
+
 ;		.byte 136,$a4,	ACT_MOVE|ACT_UP
 			.byte 124,88,	ACT_MOVE|ACT_UP
 

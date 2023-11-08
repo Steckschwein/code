@@ -1,7 +1,8 @@
-.include "../../asminc/via.inc"
-.include "../../asminc/common.inc"
-.include "../../asminc/joystick.inc"
-.include "../../asminc/lcd.inc"
+.include "via.inc"
+.include "common.inc"
+.include "uart.inc"
+.include "joystick.inc"
+.include "lcd.inc"
 .include "../../kernel/kernel.inc"
 
 .export lcd_init_4bit, lcd_send_byte, lcd_command

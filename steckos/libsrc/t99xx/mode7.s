@@ -32,43 +32,43 @@
 
 .code
 ;
-;	gfx 7 - each pixel can be addressed - e.g. for image
+;  gfx 7 - each pixel can be addressed - e.g. for image
 ;
 vdp_mode7_on:
 vdp_gfx7_on:
-			lda #<vdp_init_bytes_gfx7
-			ldy #>vdp_init_bytes_gfx7
-			ldx #<(vdp_init_bytes_gfx7_end-vdp_init_bytes_gfx7)-1
-			jmp vdp_init_reg
+      lda #<vdp_init_bytes_gfx7
+      ldy #>vdp_init_bytes_gfx7
+      ldx #<(vdp_init_bytes_gfx7_end-vdp_init_bytes_gfx7)-1
+      jmp vdp_init_reg
 
 vdp_init_bytes_gfx7:
-			.byte v_reg0_m5|v_reg0_m4|v_reg0_m3									; reg0 mode bits
-			.byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int 				; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-			.byte >(ADDRESS_GFX7_SCREEN>>3) | $1f	; => 00<A16>1 1111 - entw. bank 0 (offset $0000) or 1 (offset $10000)
-			.byte $0
-			.byte $0
-			.byte $ff
-			.byte $3f
-			.byte %00000000 ; border color
-			.byte v_reg8_SPD | v_reg8_VR	; SPD - sprite disabled, VR - 64k VRAM  - R#8
-			.byte v_reg9_nt ; #R9, set bit to 1 for PAL
-			.byte 0;  #R10
-			.byte 0;  #R11
-			.byte 0;  #R12
-			.byte 0;  #R13
-			.byte <.HIWORD(ADDRESS_GFX7_SCREEN<<2) ; #R14
+      .byte v_reg0_m5|v_reg0_m4|v_reg0_m3                  ; reg0 mode bits
+      .byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int         ; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
+      .byte >(ADDRESS_GFX7_SCREEN>>3) | $1f  ; => 00<A16>1 1111 - entw. bank 0 (offset $0000) or 1 (offset $10000)
+      .byte $0
+      .byte $0
+      .byte $ff
+      .byte $3f
+      .byte %00000000 ; border color
+      .byte v_reg8_SPD | v_reg8_VR  ; SPD - sprite disabled, VR - 64k VRAM  - R#8
+      .byte v_reg9_nt ; #R9, set bit to 1 for PAL
+      .byte 0;  #R10
+      .byte 0;  #R11
+      .byte 0;  #R12
+      .byte 0;  #R13
+      .byte <.HIWORD(ADDRESS_GFX7_SCREEN<<2) ; #R14
 vdp_init_bytes_gfx7_end:
 ;
 ; blank gfx mode 7 with
-; 	Y - color to fill in GRB (3+3+2)
+;   Y - color to fill in GRB (3+3+2)
 ;
 vdp_mode7_blank:
-	lda #<_cmd_hmmv_data
-	ldx #>_cmd_hmmv_data
-	jmp vdp_cmd_hmmv
+  lda #<_cmd_hmmv_data
+  ldx #>_cmd_hmmv_data
+  jmp vdp_cmd_hmmv
 
 _cmd_hmmv_data:
-	.word 0 ;x #36/#37
-	.word (ADDRESS_GFX7_SCREEN>>8) ;y - from page offset
-	.word 256 ; len x #40/#41
-	.word 212 ; len y #42/#43
+  .word 0 ;x #36/#37
+  .word (ADDRESS_GFX7_SCREEN>>8) ;y - from page offset
+  .word 256 ; len x #40/#41
+  .word 212 ; len y #42/#43

@@ -130,7 +130,7 @@ debug_enabled=1
 				fat32_dir_entry_file "TST_02CL", "TST", 0, 0	; no cluster reserved yet
 		assertFdEntry fd_area + (FD_Entry_Size*2)
 				fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0, O_RDWR
-				
+
 		;brk
 		lda #'F'
 ;		jsr fat_fread_byte
@@ -149,7 +149,7 @@ debug_enabled=1
 		assertFdEntry fd_area + (FD_Entry_Size*2)
 				fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, 0, O_RDWR
 		assertDirEntry block_data+$80
-				fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 2	; TEST_FILE_CL cluster, filesize 2 
+				fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 2	; TEST_FILE_CL cluster, filesize 2
 
 		lda #'W'
 		jsr fat_write_byte
@@ -159,7 +159,7 @@ debug_enabled=1
 				fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 3, 0, O_RDWR
 		assertDirEntry block_data+$80
 				fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 3	; TEST_FILE_CL cluster, filesize 3
-		
+
 		ldy #2
 :		jsr fat_write_byte
 		assertC 0
@@ -173,7 +173,7 @@ debug_enabled=1
 				fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 256	; TEST_FILE_CL cluster, filesize 3
 
 		jsr fat_close
-		
+
 		ldy #O_RDONLY
 		lda #<test_file_name_2cl
 		ldx #>test_file_name_2cl
@@ -214,7 +214,7 @@ mock_read_block:
 		debug32 "mock_read_block", lba_addr
 		load_block_if LBA_BEGIN, block_root_cl, @ok ; load root cl block
 		load_block_if FS_INFO_LBA, block_fsinfo, @ok
-		
+
 		load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), block_data_00, @ok
 		load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), block_data_01, @ok
 		load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), block_data_02, @ok
@@ -290,7 +290,7 @@ setUp:
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 	set16 fd_area+(0*FD_Entry_Size)+F32_fd::offset, 0
 	set8 fd_area+(0*FD_Entry_Size)+F32_fd::flags, 0
-	
+
 	;setup fd1 as test cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0

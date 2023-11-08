@@ -19,7 +19,8 @@ TOOLS+=\
   nvram.prg\
   od.prg\
   setdate.prg \
-  uname.prg
+  uname.prg \
+	test.prg
 
 
 .PHONY: all clean
@@ -46,3 +47,6 @@ clean:
 
 %: %.prg
 	../../xmodem.sh $<
+
+%.emu: %.prg
+	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -upload $<

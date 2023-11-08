@@ -1,3 +1,24 @@
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
 
 .setcpu "65c02"
 
@@ -6,23 +27,19 @@
 .include "kernel.inc"
 .include "kernel_jumptable.inc"
 .include "ym3812.inc"
-.include "via.inc"
 .include "vdp.inc"
 .include "keyboard.inc"
+.include "errno.inc"
 .include "appstart.inc"
 
-appstart $1000
-
-.code
-.import vdp_bgcolor
-.import hexout
-.import jch_fm_init, jch_fm_play
-.import jch_fm_set_volume
-.import opl2_detect, opl2_init, opl2_reg_write, opl2_reg_write_save
+.autoimport
 
 .export d00file
 .export char_out=krn_chrout
 
+appstart $1000
+
+.code
 main:
 		jsr opl2_detect
 		bcc @load
@@ -31,17 +48,19 @@ main:
 		jmp exit
 @load:
 		jsr loadfile
-		beq :+
+		bcc :+
+    cmp #EOK
+    beq :+
 		pha
 		jsr krn_primm
 		.byte "i/o error occured: ",0
 		pla
-		jsr hexout
+		jsr hexout_s
 		lda #$0a
 		jsr char_out
 		jmp exit
 
-:   	jsr isD00File
+:   jsr isD00File
 		beq :+
 		jsr krn_primm
 		.byte "not a D00 file",$0a,0
@@ -62,8 +81,7 @@ main:
 ;		SetVector player_isr, $fffe
 
 		freq=70
-		t2cycles=275
-		lda #($ff-(1000000 / freq / t2cycles))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
+		lda #($ff-(1000000 / freq / OPL_INTERVAL_US_TIMER2))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
 		sta t2_value
 		jsr set_timer_t2
 
@@ -153,7 +171,7 @@ printMetaData:
 		.byte $0a,"Irq: ",0
 		ldy #8
 		lda d00file,y
-		jsr hexout
+		jsr hexout_s
 ;		jsr krn_primm
 ;		.byte $0a,"Spd: ",0
 ;		ldy #8
@@ -172,15 +190,13 @@ printString:
 
 isD00File:
 		ldy #0
-:
-		lda d00file, y
+:		lda d00file, y
 		cmp d00header,y
 		bne :+
 		iny
 		cpy #6
 		bne :-
-:
-		rts
+:   rts
 d00header:
 		.byte "JCH",$26,$2,$66
 
@@ -189,23 +205,26 @@ loadfile:
 		ldx paramptr+1
 		ldy #O_RDONLY
 		jsr krn_open
-		bne @l_exit
-		stx fd
-		SetVector d00file, read_blkptr
-		jsr krn_read
-		pha
-		ldx fd
-		jsr krn_close
-		pla
-		cmp #0
+    bcs @l_exit
+    SetVector d00file, file_ptr
+:		jsr krn_fread_byte
+    bcs @eof
+    sta (file_ptr)
+    inc file_ptr+0
+    bne :-
+    inc file_ptr+1
+    bra :-
 @l_exit:
-		rts
+    rts
+@eof:
+    jmp krn_close
 
 player_isr:
 		bit opl_stat
 		bpl @vdp     ; bit 6 set? (snd)
 		; do write operations on ym3812 within a user isr directly after reading opl_stat here, "is too hard", we have to delay at least register wait ;)
 		.import opl2_delay_data
+    jsr opl2_delay_data
 
 		lda #Medium_Green<<4|Medium_Red
 		jsr vdp_bgcolor
@@ -230,13 +249,16 @@ player_isr:
 
 		rts
 
+
+.zeropage
+  file_ptr: .res 2
+
 .data
-safe_isr:     .res 2
-player_state: .res 1
-t2_value:     .res 1
-fd:           .res 1
-fm_master_volume: .res 1, $3f
+  safe_isr:     .res 2
+  player_state: .res 1
+  t2_value:     .res 1
+  fd:           .res 1
+  fm_master_volume: .res 1
 
 .bss
-d00file:
-	.res $2000
+  d00file:      .res $4000
