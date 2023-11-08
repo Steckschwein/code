@@ -179,15 +179,14 @@ DIR_Entry_Deleted            = $e5
 .endstruct
 
 .struct F32_fd
-    CurrentCluster   .dword ;
-    FileSize         .dword ;
-    Attr             .byte  ; file attributes (mirror of attributes from dir entry)
-    DirEntryLBA      .dword; LBA of the block where the dir entry of the file is located
-    DirEntryPos      .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
-    offset           .byte;  7Bit block number of the CurrentCluster (SecPerClus)
-;  TODO FIXME offset .word;  (2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
-    seek_pos         .dword ; seek position within the opened file
-;   flags            .byte; file open flags
+   CurrentCluster    .dword   ;
+   FileSize          .dword   ;
+   Attr              .byte    ; file attributes (mirror of attributes from dir entry)
+   DirEntryLBA       .dword   ; LBA of the block where the dir entry of the file is located
+   DirEntryPos       .byte    ; block offset within the block (n * DIR_Entry_Size)
+   offset            .byte    ; 7Bit block number of the CurrentCluster (SecPerClus)
+   seek_pos          .dword   ; seek position within the opened file
+   flags             .byte    ; file open flags
 .endstruct
 
 FD_Entry_Size         = .sizeof(F32_fd)
@@ -232,7 +231,7 @@ block_fat             = BUFFER_2 ; $0600-$07ff
 .macro _is_file_dir
    pha
    lda fd_area+F32_fd::Attr, x
-   and #DIR_Attr_Mask_Dir    ; is directory?
+   and #DIR_Attr_Mask_Dir		; is directory?
    cmp #DIR_Attr_Mask_Dir
    pla
    bcc :+

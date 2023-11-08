@@ -31,9 +31,6 @@ krn_close_all:          jmp fat_close_all
 .export krn_read
 krn_read:            jmp fat_read
 
-.export krn_fread
-krn_fread:             jmp fat_fread
-
 .export krn_find_first
 krn_find_first:        jmp fat_find_first
 .export krn_find_next

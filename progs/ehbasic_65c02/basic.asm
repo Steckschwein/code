@@ -24,7 +24,7 @@
 .import LAB_GFX_SCNCLR
 .import LAB_GFX_SCNWAIT
 
-__APPSTART__ = $b280
+__APPSTART__ = $b100
 appstart __APPSTART__
 
 ;
@@ -7834,7 +7834,7 @@ LAB_CD:
 ;      RTS                      ; return to caller
 
 termstrparam:
-    phy 
+    phy
 
     ; evaluate sting parameter
     jsr LAB_EVEX

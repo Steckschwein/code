@@ -24,11 +24,6 @@
 .endif
 
 .include "kernel.inc"
-.include "vdp.inc"
-.include "via.inc"
-.include "spi.inc"
-.include "ym3812.inc"
-.include "keyboard.inc"
 
 .code
 
@@ -70,7 +65,6 @@ kern_init:
     lda #<nvram
     ldy #>nvram
     jsr read_nvram
-
     jsr uart_init
 
     stz key
@@ -92,10 +86,10 @@ kern_init:
     .byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
     .byte $00
 .else
-        jsr primm
-        .byte CODE_LF, "steckOS kernel "
+    jsr primm
+    .byte CODE_LF, "steckOS kernel "
     .include "version.inc"
-        .byte CODE_LF, 0
+    .byte CODE_LF, 0
 .endif
 
     SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely

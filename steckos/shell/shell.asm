@@ -50,10 +50,9 @@ p_history:      .res 2
 tmp1:   .res 1
 tmp2:   .res 1
 
-.import hexout
-.import kernel_start
+.autoimport
 
-appstart $e200
+appstart __SHELL_START__
 .export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly
 
 init:
