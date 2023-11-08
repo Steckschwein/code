@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+; Copyright (c) 2023 Thomas Woinke, Marko Lauke, www.steckschein.de
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,38 @@
 ; SOFTWARE.
 
 .include "zeropage.inc"
-.include "appstart.inc"
+.export strout
 
-appstart $1000
+.import char_out
+;.importzp ptr1
 
-  jmp (retvec)
+.zeropage
+_ptr: .res 2
+
+.code
+;----------------------------------------------------------------------------------------------
+; Output string on active output device
+; in:
+;	A - lowbyte  of string address
+;	X - highbyte of string address
+;----------------------------------------------------------------------------------------------
+;.ifdef TEXTUI_STROUT
+;strout = textui_strout
+;.else
+strout:
+		sta _ptr		;init for output below
+		stx _ptr+1
+		pha					  ;save a, y to stack
+		phy
+
+		ldy #$00
+@l1:	lda (_ptr),y
+		beq @l2
+		jsr char_out
+		iny
+		bne @l1
+
+@l2:	ply					  ;restore a, y
+		pla
+		rts
+;.endif

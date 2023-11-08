@@ -27,8 +27,13 @@
 .include "fat32.inc"
 .include "appstart.inc"
 
-appstart $1000
+.export char_out=krn_chrout
 
+
+.import primm
+
+appstart $1000
+.code 
 		ldy #$00
 @loop:
 		lda (paramptr),y
@@ -67,7 +72,7 @@ param:
 		stx atr
 		lda atr
 		bne @l5
-		jsr krn_primm
+		jsr primm
 		.byte "invalid attribute",$00
 		jmp (retvec)
 @l5:
@@ -147,11 +152,11 @@ attrib:
 		jmp (retvec)
 
 error:
-		jsr krn_primm
+		jsr primm
 		.asciiz "open error"
 		jmp (retvec)
 wrerror:
-		jsr krn_primm
+		jsr primm
 		.asciiz "write error"
 		jmp (retvec)
 

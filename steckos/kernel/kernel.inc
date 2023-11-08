@@ -33,7 +33,7 @@
 .include "keyboard.inc"
 
 .macro printstring text
-    jsr krn_primm
+    jsr primm
     .byte text
     .byte $0a,$0
 .endmacro

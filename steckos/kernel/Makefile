@@ -1,6 +1,6 @@
 CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
-OBJS=kernel.o rtc.o out.o exec.o automount.o jumptable.o
+OBJS=kernel.o rtc.o exec.o automount.o jumptable.o
 OBJS+=textui.o
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
@@ -24,8 +24,8 @@ DEFINES+=-DDISABLE_INTRO
 #DEBUG += -DDEBUG_AUTOMOUNT
 
 # optimize flags
-OPT += -DTEXTUI_STROUT
-OPT += -DTEXTUI_PRIMM
+#OPT += -DTEXTUI_STROUT
+#OPT += -DTEXTUI_PRIMM
 
 .PHONY: all clean
 all: kernel.bin loader.prg
