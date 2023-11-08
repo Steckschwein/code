@@ -54,16 +54,21 @@ fat_write_byte:
 
 		sta __volatile_tmp
 
-		jsr __fat_prepare_access
+    jsr __fat_is_cln_zero
+    bne :+
+
+    jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster
+		bcs @l_exit
+
+:		jsr __fat_prepare_access
+    bcc @l_exit
 
 		lda __volatile_tmp					; get back byte to write
-		sta (write_blkptr)
-		debug16 "fw_bt >>>", write_blkptr
-
+		sta (__volatile_ptr)
 ;		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
 ;		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
 ;:		_inc32_x fd_area+F32_fd::seek_pos
-l_write_block:
+;l_write_block:
 		jsr __fat_write_block_data			; write block
 		bcs @l_exit
 		jmp __fat_update_direntry			; finally update dir entry
@@ -548,8 +553,10 @@ __fat_write_block:
     rts
 .else
     lda #EOK
+    clc
+    rts
 .endif
-:    sec
+:   sec
     rts
 
 __fat_rtc_high_word:
