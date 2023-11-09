@@ -103,9 +103,6 @@ sprite_empty=$60
     lda #STATUS_GAME_OVER
     sta game_state
 
-;    jsr update_vram
-
-;    copypointer user_isr, save_isr
     copypointer SYS_VECTOR_IRQ, save_isr
     SetVector game_isr, SYS_VECTOR_IRQ
 
@@ -119,7 +116,6 @@ sprite_empty=$60
     bpl :-
 
     sei
-;    copypointer save_isr, user_isr
     copypointer save_isr, SYS_VECTOR_IRQ
     cli
     jsr krn_textui_init
@@ -181,12 +177,12 @@ scroll_background:
     ldy  #v_reg4
     vdp_sreg
     rts
-:    lda  #(A_GX_PAT_2 / $800)
+:   lda  #(A_GX_PAT_2 / $800)
     ldy  #v_reg4
     vdp_sreg
 
     ldx  #$00
-:    lda  screen+1,x
+:   lda  screen+1,x
     sta  screen,x
     lda  screen+32+1,x
     sta  screen+32,x
@@ -601,8 +597,8 @@ game_isr:
     bpl  game_isr_exit
 
     save
- ;   lda  #Dark_Yellow
-;    jsr  vdp_bgcolor
+;    lda  #Dark_Yellow
+ ;   jsr  vdp_bgcolor
 
     lda  game_state
     and  #STATUS_PLAY
@@ -703,18 +699,18 @@ new_game:
     rts
 
 update_highscore:
-    lda  score_value      ;set new highscore
-    cmp  score_value_high
-    bcc  @exit
+    lda score_value      ;set new highscore
+    cmp score_value_high
+    bcc @exit
     bne :+
-    lda  score_value+1
-    cmp  score_value_high+1
-    bcc  @exit
-    bne  :+
-    lda  score_value+2
-    cmp  score_value_high+2
-    bcc  @exit
-    beq  @exit
+    lda score_value+1
+    cmp score_value_high+1
+    bcc @exit
+    bne :+
+    lda score_value+2
+    cmp score_value_high+2
+    bcc @exit
+    beq @exit
 :
     lda score_value+2
     sta score_value_high+2
@@ -728,7 +724,7 @@ update_highscore:
     ldx #>filename
     ldy #O_WRONLY
     jsr krn_open
-    bne @exit
+    bcs @exit
     SetVector score_value_high, write_blkptr
     lda #$03
     sta fd_area + 4 + 0,x
@@ -744,7 +740,7 @@ score_board:
     dec  score_board_cnt  ;every 5 frames update score, which means 10 digits per second
     beq  :+
     rts
-:      lda  #$05
+:   lda  #$05
     sta  score_board_cnt
 
     sed            ;add in decimal mode
@@ -752,12 +748,12 @@ score_board:
     clc
     adc  #$01
     sta score_value+2
-    bcc  :+
-    adc  score_value+1
-    sta  score_value+1
-    bcc  :+
-    adc  score_value
-    sta  score_value
+    bcc :+
+    adc score_value+1
+    sta score_value+1
+    bcc :+
+    adc score_value
+    sta score_value
 :   cld
     rts
 
@@ -799,7 +795,7 @@ load_highscore:
     ldx #>filename
     ldy #O_RDONLY
     jsr krn_open     ; X contains fd
-    bne @notfound    ; not found or other error, dont care...
+    bcs @notfound    ; not found or other error, dont care...
     ldy #0
 :   jsr krn_fread_byte
     bcs @eof
@@ -904,11 +900,11 @@ update_vram:
 
     lda  #' '
     sta a_vram
-    lda  score_value
+    lda score_value
     jsr digit_out
-    lda  score_value+1
+    lda score_value+1
     jsr digits_out
-    lda  score_value+2
+    lda score_value+2
     jsr digits_out
 
     vdp_wait_l

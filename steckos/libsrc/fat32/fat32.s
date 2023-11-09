@@ -93,6 +93,7 @@ fat_fread_byte:
 .export __fat_prepare_access
 __fat_prepare_access:
     ; TODO FIXME - dirty check or alwys read - the block_data may be corrupted if there where a read from another fd in between
+    phy
     lda fd_area+F32_fd::seek_pos+1,x
     and #$01               ; mask
     ora fd_area+F32_fd::seek_pos+0,x  ; and test whether seek_pos is at the begin of a block (multiple of $0200) ?
@@ -118,6 +119,7 @@ __fat_prepare_access:
     sta __volatile_ptr+1
     clc
 @l_exit:
+    ply
     rts
 
 ; in:
@@ -144,8 +146,8 @@ fat_fopen:
     lda #EISDIR            ; was directory, we must not free any fd
   ;  bra @l_exit_err          ; exit with error "Is a directory"
 @l_error:
-    cmp #ENOENT            ; no such file or directory ?
-    bne @l_exit_err          ; other error, then exit
+    cmp #ENOENT               ; no such file or directory ?
+    bne @l_exit_err           ; other error, then exit
     lda __volatile_tmp        ; check if we should create a new file
     and #O_CREAT | O_WRONLY | O_APPEND | O_TRUNC
     bne :+
