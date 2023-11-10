@@ -57,22 +57,21 @@ fat_write_byte:
 
     jsr __fat_is_cln_zero
     bne :+
-
     jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster
 		bcs @l_exit
 
-:		jsr __fat_prepare_access
+:		jsr __fat_prepare_access_read
     bcs @l_exit
 
-		lda __volatile_tmp					; get back byte to write
+		lda __volatile_tmp					      ; get back byte to write
 		sta (__volatile_ptr)
-;		_cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
-		_inc32_x fd_area+F32_fd::FileSize	; also update filesize
-		_inc32_x fd_area+F32_fd::seek_pos
 
-		jsr __fat_write_block_data		; write block
+		_inc32_x fd_area+F32_fd::seek_pos
+		_inc32_x fd_area+F32_fd::FileSize	; filesize +1
+
+		jsr __fat_write_block_data		    ; write block
 		bcs @l_exit
-		jsr __fat_update_direntry			; finally update dir entry
+		jsr __fat_update_direntry			    ; finally update dir entry
 @l_exit:
     ply
 		rts

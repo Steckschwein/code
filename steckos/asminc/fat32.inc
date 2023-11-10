@@ -203,7 +203,6 @@ FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
 ; memory locations for fat32 driver
 volumeID              = $0308 ; address of VolumeID
-
 filename_buf          = volumeID + .sizeof(VolumeID) ; (13 byte, 8.3 + \0) file name buffer
 fat_dirname_mask      = filename_buf + 13; (11 byte, fat32 name and ext)
 fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector

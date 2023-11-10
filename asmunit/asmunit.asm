@@ -307,17 +307,6 @@ asmunit_chrout:
     sta asmunit_char_out
     rts
 
-.bss
-tst_cnt:        .res 1 ; assert/fail counter, used to be more verbose on output
-tst_acc:        .res 1
-tst_xreg:       .res 1
-tst_yreg:       .res 1
-tst_status:     .res 1
-tst_save_ptr:   .res 2
-tst_return_ptr: .res 2
-tst_bytes:      .res 1
-
-
 _l_messages:
 _l_msg_pass:       .byte _l_msg_fail_prefix -_l_msg_pass-1, $0a,"PASS"
 _l_msg_fail_prefix:  .byte _l_msg_fail_suffix - _l_msg_fail_prefix-1, ") FAIL "
@@ -329,3 +318,13 @@ asmunit_l_flag_z0:  .byte _FLAG_Z0
 asmunit_l_flag_z1:  .byte _FLAG_Z1
 asmunit_l_flag_d0:  .byte _FLAG_D0
 asmunit_l_flag_d1:  .byte _FLAG_D1
+
+.bss
+tst_cnt:        .res 1 ; assert/fail counter, used to be more verbose on output
+tst_acc:        .res 1
+tst_xreg:       .res 1
+tst_yreg:       .res 1
+tst_status:     .res 1
+tst_save_ptr:   .res 2
+tst_return_ptr: .res 2
+tst_bytes:      .res 1

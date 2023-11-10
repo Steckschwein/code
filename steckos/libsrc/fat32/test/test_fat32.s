@@ -89,6 +89,65 @@
 		assertA ENOENT
 
 ; -------------------
+		setup "fat_fopen O_RDONLY overflow"
+
+		ldy #O_RDONLY
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_fopen
+		assertA EOK
+		assertCarry 0
+		assertX FD_Entry_Size*2
+		ldy #O_RDONLY
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_fopen
+		assertA EOK
+		assertCarry 0
+		assertX FD_Entry_Size*3
+		ldy #O_RDONLY
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_fopen
+		assertA EOK
+		assertCarry 0
+		assertX FD_Entry_Size*4
+		ldy #O_RDONLY
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_fopen
+		assertA EOK
+		assertCarry 0
+		assertX FD_Entry_Size*5
+		ldy #O_RDONLY
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_fopen
+		assertA EOK
+		assertCarry 0
+		assertX FD_Entry_Size*6
+		ldy #O_RDONLY
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_fopen
+		assertA EOK
+		assertCarry 0
+		assertX FD_Entry_Size*7
+		ldy #O_RDONLY
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_fopen
+		assertA EOK
+		assertCarry 0
+		assertX FD_Entry_Size*8
+		ldy #O_RDONLY
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_fopen
+		assertA EMFILE
+		assertCarry 1
+
+; -------------------
 		setup "fat_fopen O_RDONLY"
 
 		ldy #O_RDONLY
