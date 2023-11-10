@@ -54,7 +54,7 @@ debug_enabled=1
     assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0, O_CREAT
+      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT
     jsr fat_close
 
 ; -------------------
@@ -68,7 +68,7 @@ debug_enabled=1
     assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0, O_WRONLY
+      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_WRONLY
     jsr fat_close
 
 ; -------------------
@@ -82,7 +82,7 @@ debug_enabled=1
     assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0, O_RDWR
+      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR
     jsr fat_close
 
 ; -------------------
@@ -97,66 +97,87 @@ debug_enabled=1
 ; -------------------
     setup "fat_write_byte 1 cluster";
     ldy #O_RDWR
-    lda #<test_file_name_2cl
-    ldx #>test_file_name_2cl
+    lda #<test_file_name_1cl
+    ldx #>test_file_name_1cl
     jsr fat_fopen
     assertA EOK
+    assertC 0
     assertX FD_Entry_Size*2  ; assert FD reserved
 
     assertDirEntry block_data+$80
-        fat32_dir_entry_file "TST_02CL", "TST", 0, 0  ; no cluster reserved yet
+        fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0, O_RDWR
+        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR
 
     jsr fat_fread_byte
     assertA 0
     assertC 1 ; eof expected
+    assertDirEntry block_data+$80
+      fat32_dir_entry_file "TST_01CL", "TST", 0, 0
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR
 
+    ldy #$31
     lda #'F'
     jsr fat_write_byte
     assertC 0
+    assertY $31
     assertX FD_Entry_Size*2  ; assert FD preserved
-    assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, 0, O_RDWR ; TEST_FILE_CL reserved
     assertDirEntry block_data+$80
-        fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 1  ; TEST_FILE_CL cluster reserved, filesize 1
+      fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 1  ; TEST_FILE_CL cluster reserved, filesize 1
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDWR ; TEST_FILE_CL reserved
 
     lda #'T'
     jsr fat_write_byte
     assertC 0
     assertX FD_Entry_Size*2
-    assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, 0, O_RDWR
     assertDirEntry block_data+$80
-        fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 2  ; TEST_FILE_CL cluster, filesize 2
+      fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 2  ; TEST_FILE_CL cluster, filesize 2
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDWR
 
     lda #'W'
+    ldy #$71
+    jsr fat_write_byte
+    assertY $71
+    assertC 0
+    assertX FD_Entry_Size*2  ; assert FD preserved
+    assertDirEntry block_data+$80
+      fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 3  ; TEST_FILE_CL cluster, filesize 3
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 3, O_RDWR
+
+    ldy #252
+:   tya
     jsr fat_write_byte
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
-    assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 3, 0, O_RDWR
-    assertDirEntry block_data+$80
-        fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 3  ; TEST_FILE_CL cluster, filesize 3
-
-    ldy #2
-:    jsr fat_write_byte
-    assertC 0
-    assertX FD_Entry_Size*2  ; assert FD preserved
-    assertY 2
     dey
     bne :-
-    assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 256, 0, O_RDWR
     assertDirEntry block_data+$80
-        fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 256  ; TEST_FILE_CL cluster, filesize 3
+      fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 255  ; TEST_FILE_CL cluster, filesize 255
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 255, O_RDWR
+
+    lda #'0'
+    ldy #$71
+    jsr fat_write_byte
+    assertY $71
+    assertC 0
+    assertX FD_Entry_Size*2  ; assert FD preserved
+    assertDirEntry block_data+$80
+      fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 256  ; TEST_FILE_CL cluster, filesize 256
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 256, O_RDWR
 
     jsr fat_close
 
     ldy #O_RDONLY
-    lda #<test_file_name_2cl
-    ldx #>test_file_name_2cl
+    lda #<test_file_name_1cl
+    ldx #>test_file_name_1cl
     jsr fat_fopen
+    assertC 0
     assertA EOK
     assertX FD_Entry_Size*2  ; assert FD reserved
     jsr fat_fread_byte
@@ -169,6 +190,7 @@ debug_enabled=1
     assertC 0
     assertA 'W'
     jsr fat_close
+
     brk
 
 
@@ -190,7 +212,7 @@ _rtc_ts:
 
 mock_read_block:
     tax ; mock X destruction
-    debug32 "mock_read_block", lba_addr
+    debug32 "mock_read_block lba", lba_addr
     load_block_if LBA_BEGIN, block_root_cl, @ok ; load root cl block
     load_block_if FS_INFO_LBA, block_fsinfo, @ok
 
@@ -267,13 +289,12 @@ setUp:
 
   ;setup fd0 as root cluster
   set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-  set16 fd_area+(0*FD_Entry_Size)+F32_fd::offset, 0
+  set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
   set8 fd_area+(0*FD_Entry_Size)+F32_fd::flags, 0
 
   ;setup fd1 as test cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
-  set16 fd_area+(1*FD_Entry_Size)+F32_fd::offset, 0
   set8 fd_area+(1*FD_Entry_Size)+F32_fd::flags, 0
 
   init_block block_root_cl_init, block_root_cl

@@ -184,7 +184,6 @@ DIR_Entry_Deleted            = $e5
    Attr              .byte    ; file attributes (mirror of attributes from dir entry)
    DirEntryLBA       .dword   ; LBA of the block where the dir entry of the file is located
    DirEntryPos       .byte    ; block offset within the block (n * DIR_Entry_Size)
-   offset            .byte    ; 7Bit block number of the CurrentCluster (SecPerClus)
    seek_pos          .dword   ; seek position within the opened file
    flags             .byte    ; file open flags
 .endstruct
@@ -232,7 +231,7 @@ block_fat             = BUFFER_2 ; $0600-$07ff
    pha
    lda fd_area+F32_fd::Attr, x
    and #DIR_Attr_Mask_Dir		; is directory?
-   cmp #DIR_Attr_Mask_Dir
+   cmp #DIR_Attr_Mask_Dir   ; C=1 if set
    pla
    bcc :+
    lda #EISDIR

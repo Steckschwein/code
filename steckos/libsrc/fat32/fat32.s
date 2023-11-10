@@ -73,53 +73,23 @@ __fat_fseek:
 ;  C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 fat_fread_byte:
 
-    _is_file_open  ; otherwise rts C=1 and A=#EINVAL
+    _is_file_open   ; otherwise rts C=1 and A=#EINVAL
     _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
 
     _cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
     lda #EOK
     rts ; exit - EOK (0) and C=1
 
-:   jsr __fat_prepare_access
+:   phy
+    jsr __fat_prepare_access
     bcs @l_exit
 
     lda (__volatile_ptr)
     _inc32_x fd_area+F32_fd::seek_pos
     clc
 @l_exit:
-    debug "rd_ex"
-    rts
-
-.export __fat_prepare_access
-__fat_prepare_access:
-    ; TODO FIXME - dirty check or alwys read - the block_data may be corrupted if there where a read from another fd in between
-    phy
-    lda fd_area+F32_fd::seek_pos+1,x
-    and #$01               ; mask
-    ora fd_area+F32_fd::seek_pos+0,x  ; and test whether seek_pos is at the begin of a block (multiple of $0200) ?
-    bne @l_read_byte
-
-    lda fd_area+F32_fd::offset+0,x
-    cmp volumeID+VolumeID::BPB_SecPerClus   ; last block of cluster reached?
-    bne @l_read_block                       ; no, go on reading...
-
-    jsr __fat_next_cln    ; select next cluster within chain
-    bcs @l_exit           ; exit on error or EOC (C=1)
-@l_read_block:
-    jsr __calc_lba_addr
-    jsr __fat_read_block_data
-    bcs @l_exit
-    inc fd_area+F32_fd::offset+0,x  ; block number in cluster
-@l_read_byte:
-    lda fd_area+F32_fd::seek_pos+0,x
-    sta __volatile_ptr+0
-    lda fd_area+F32_fd::seek_pos+1,x
-    and #$01
-    ora #>block_data
-    sta __volatile_ptr+1
-    clc
-@l_exit:
     ply
+    debug "rd_ex"
     rts
 
 ; in:
@@ -142,16 +112,15 @@ fat_fopen:
     bne @l_error
     lda fd_area + F32_fd::Attr, x
     and #DIR_Attr_Mask_Dir      ; regular file or directory?
-    beq @l_atime          ; not dir, update atime if desired, exit ok
-    lda #EISDIR            ; was directory, we must not free any fd
-  ;  bra @l_exit_err          ; exit with error "Is a directory"
+    beq @l_atime                ; not dir, update atime if desired, exit ok
+    lda #EISDIR                 ; was directory, we must not free any fd
 @l_error:
-    cmp #ENOENT               ; no such file or directory ?
-    bne @l_exit_err           ; other error, then exit
-    lda __volatile_tmp        ; check if we should create a new file
-    and #O_CREAT | O_WRONLY | O_APPEND | O_TRUNC
+    cmp #ENOENT                 ; no such file or directory ?
+    bne @l_exit_err             ; other error, then exit
+    lda __volatile_tmp          ; check if we should create a new file
+    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)
     bne :+
-    lda #ENOENT            ; no "write" flags set, exit with ENOENT
+    lda #ENOENT                 ; no "write" flags set, exit with ENOENT
 @l_exit_err:
     sec
     rts

@@ -51,6 +51,7 @@
 ; out:
 ;	C=0 on success, C=1 on error and A=<error code>
 fat_write_byte:
+    phy
 
 		sta __volatile_tmp
 
@@ -71,35 +72,36 @@ fat_write_byte:
 
 		jsr __fat_write_block_data		; write block
 		bcs @l_exit
-		jmp __fat_update_direntry			; finally update dir entry
+		jsr __fat_update_direntry			; finally update dir entry
 @l_exit:
+    ply
 		rts
 
 __fat_update_direntry:
-		jsr __fat_read_direntry							; read dir entry, dirptr is set accordingly
-		bne @l_exit
+		jsr __fat_read_direntry							    ; read dir entry, dirptr is set accordingly
+		bcs @l_exit
 
 		jsr __fat_set_direntry_cluster
 		jsr __fat_set_direntry_filesize					; set filesize of directory entry via dirptr
-		jsr __fat_set_direntry_modify_datetime			; set modification time and date
+		jsr __fat_set_direntry_modify_datetime	; set modification time and date
 
-		jsr __fat_write_block_data						; lba_addr is already set from read, see above
+		jsr __fat_write_block_data						  ; lba_addr is already set from read, see above
 @l_exit:
 		debug16 "fw_updt_de", dirptr
 		rts
 
 ; read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
 ; in:
-;	X - file descriptor of the file the directory entry should be read
+;	  X - file descriptor of the file the directory entry should be read
 ; out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;	dirptr pointing to the corresponding directory entry of type F32DirEntry
 __fat_read_direntry:
 		jsr __fat_set_lba_from_fd_dirlba			; setup lba address from fd
-		jsr __fat_read_block_data					; and read the block with the dir entry
-		bne @l_exit
+		jsr __fat_read_block_data					    ; and read the block with the dir entry
+		bcs @l_exit
 
-		lda fd_area + F32_fd::DirEntryPos, x		; setup dirptr
+		lda fd_area + F32_fd::DirEntryPos, x	; setup dirptr
 		asl
 		sta dirptr
 		lda #>block_data
@@ -109,10 +111,10 @@ __fat_read_direntry:
 @l_exit:
     rts
 
-    ; in:
-    ;  X - file descriptor
-    ; out:
-    ;  lba_addr setup with direntry lba
+; in:
+;  X - file descriptor
+; out:
+;  lba_addr setup with direntry lba
 __fat_set_lba_from_fd_dirlba:
     lda fd_area + F32_fd::DirEntryLBA+3 , x        ; set lba addr of dir entry...
     sta lba_addr+3
@@ -127,7 +129,7 @@ __fat_set_lba_from_fd_dirlba:
 
 ; write new timestamp to direntry entry given as dirptr
 ; in:
-;	dirptr
+;	  dirptr
 __fat_set_direntry_modify_datetime:
 		phx
 		jsr rtc_systime_update									; update systime struct
@@ -374,7 +376,7 @@ __fat_free_cluster:
 		bcc @l_exit				; EOC? (C=1) expected here in order to free - TODO FIXME cluster chain during deletion not supported yet
 		lda #1
 		sta s_tmp1
-		lda #0
+		dec
 		bra __fat_update_cluster
 @l_exit:
 		rts

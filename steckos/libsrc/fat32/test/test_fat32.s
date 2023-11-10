@@ -24,7 +24,7 @@
 		assertX (2*FD_Entry_Size); expect x point to first fd entry which is 2*FD_Entry_Size, cause the first 2 entries are reserved
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::CurrentCluster
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::FileSize
-		assert8 0, (2*FD_Entry_Size)+fd_area+F32_fd::offset
+		assert8 0, (2*FD_Entry_Size)+fd_area+F32_fd::seek_pos
 
 ; -------------------
 		setup "__fat_alloc_fd with error"
@@ -70,8 +70,8 @@
 		ldx #(1*FD_Entry_Size)
 		set8 volumeID+VolumeID::BPB_SecPerClus, 8
 		set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * 8)
-		lda #10 ; 10 blocks offset
-		sta fd_area+F32_fd::offset+0,x
+		lda #($02*10) ; 10 blocks offset
+		sta fd_area+F32_fd::seek_pos+1,x
 
 		jsr __calc_lba_addr
 		assertX (1*FD_Entry_Size)
@@ -127,10 +127,9 @@
 		;setup fd2 with test cluster, but 0 filesize
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
-		set8 fd_area+(2*FD_Entry_Size)+F32_fd::offset, 0
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos, 0
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0 ; empty file
-			
+
 		ldx #(2*FD_Entry_Size) ; 0 byte file
 		jsr fat_fread_byte
 		assertCarry 1; expect "error"
@@ -142,7 +141,6 @@
 		setup "fat_fread_byte touched file"
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, 0 ; touched file, no cluster reserved
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
-		set8 fd_area+(2*FD_Entry_Size)+F32_fd::offset, 0
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos, 0
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0
 
@@ -162,7 +160,7 @@
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $16a * 1 = $6968
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset within cluster +1
+		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 
 ; -------------------
 		setup "fat_fread_byte 2 byte 4s/cl"
@@ -176,7 +174,7 @@
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset to 1 block still
+		assert32 2, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 
 ; -------------------
 		setup "fat_fread_byte 4 bytes 4s/cl"
@@ -196,7 +194,7 @@
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset to 1 block still
+		assert32 4, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 
 ; -------------------
 		setup "fat_fread_byte 2 blocks 2s/cl"
@@ -219,7 +217,7 @@
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2, lba_addr
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset to block 1 still
+		assert32 4, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 
 		lda #252
 		sta tmp1
@@ -228,45 +226,40 @@
 		bne :-
 		assertCarry 0; ok
 :		jsr fat_fread_byte
+		assertCarry 0; ok
 		dec tmp1
 		bne :-
-		
-		assertCarry 0; ok
+
 		assertX (1*FD_Entry_Size)
-		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2, lba_addr ; lba +1
+		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2, lba_addr
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster ; - no new cluster selected
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset to block 1 still
-		assert32 $0200, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos ; seek pos at end of first block
+		assert32 $0200, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos ; seek pos at end of begin of next block
 
 		jsr fat_fread_byte
 		assertCarry 0; ok
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2 + 1, lba_addr ; lba +1
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster ; - no new cluster selected
-		assert8 2, fd_area+(1*FD_Entry_Size)+F32_fd::offset ; offset to block 1 still
-		assert32 $0201, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos ; seek pos at end of first block
+		assert32 $0201, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 
-		
+
 ; -------------------
 		setup "fat_fread_byte 4 blocks 2s/cl"
 		set_sec_per_cl 2
 		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, 513 ; setup filesize 513byte
 
-		assert8 0, fd_area+(1*FD_Entry_Size)+F32_fd::offset
 		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA 'F'
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset
 		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 		assertX (1*FD_Entry_Size)
 
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA 'T'
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset
 		assert32 2, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 		assertX (1*FD_Entry_Size)
 
@@ -303,7 +296,6 @@
 		assertCarry 0
 		assertA 'd'
 		assertX (1*FD_Entry_Size)
-		assert8 1, fd_area+(1*FD_Entry_Size)+F32_fd::offset
 		assert32 $103, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 
 :		jsr fat_fread_byte
@@ -314,7 +306,6 @@
 		jsr fat_fread_byte
 		assertCarry 1
 
-		assert8 2, fd_area+(1*FD_Entry_Size)+F32_fd::offset
 		assert32 513, fd_area+(1*FD_Entry_Size)+F32_fd::FileSize
 		assert32 513, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos ; expect position at EOF (filesize)
 
@@ -329,11 +320,10 @@ setUp:
 	;setup fd0 as root cluster
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 	set8 fd_area+(0*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Dir
-	set8 fd_area+(0*FD_Entry_Size)+F32_fd::offset, 0
+	set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
 	;setup fd1 with test cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
-	set8 fd_area+(1*FD_Entry_Size)+F32_fd::offset, 0
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, $1000
 
@@ -405,4 +395,4 @@ test_block_data_4sec_cl:
 	.res 252,0
 
 .bss
-data_read: .res 8*sd_blocksize, 0
+data_read: .res 8*sd_blocksize

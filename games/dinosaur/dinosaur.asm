@@ -725,13 +725,13 @@ update_highscore:
     ldy #O_WRONLY
     jsr krn_open
     bcs @exit
-    SetVector score_value_high, write_blkptr
-    lda #$03
-    sta fd_area + 4 + 0,x
-    stz fd_area + 4 + 1,x
-    stz fd_area + 4 + 2,x
-    stz fd_area + 4 + 3,x
-    jsr krn_write
+    ldy #0
+:   lda score_value_high,y
+    jsr krn_write_byte
+    bcs @exit
+    iny
+    cpy #3
+    bne :-
     jsr krn_close
 @exit:
     rts

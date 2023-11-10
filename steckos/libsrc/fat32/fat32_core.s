@@ -50,7 +50,6 @@
 .export __fat_init_fd
 .export __fat_free_fd
 .export __fat_is_cln_zero
-.export __fat_next_cln
 .export __fat_open_path
 .export __fat_read_block_data
 .export __fat_read_block_fat
@@ -209,6 +208,36 @@ __fat_clone_fd:
 		rts
 
 
+; prepare read/write access by fetching the appropriate block from device
+.export __fat_prepare_access
+__fat_prepare_access:
+    ; TODO FIXME - dirty check or always read - the block_data may be corrupted if a read from another fd happened in between
+;    lda fd_area+F32_fd::seek_pos+1,x
+ ;   and #$01               ; mask
+  ;  ora fd_area+F32_fd::seek_pos+0,x  ; and test whether seek_pos is at the begin of a block (multiple of $0200) ?
+   ; bne @l_read_byte
+
+;    inc fd_area+F32_fd::offset+0,x  ; block number in cluster
+;    lda fd_area+F32_fd::offset+0,x
+;    cmp volumeID+VolumeID::BPB_SecPerClus   ; last block of cluster reached?
+ ;   bne @l_read_block                       ; no, go on reading...
+;    jsr __fat_next_cln    ; select next cluster within chain
+ ;   bcs @l_exit           ; exit on error or EOC (C=1)
+@l_read_block:
+    jsr __calc_lba_addr
+    jsr __fat_read_block_data
+    bcs @l_exit
+@l_read_byte:
+    lda fd_area+F32_fd::seek_pos+0,x
+    sta __volatile_ptr+0
+    lda fd_area+F32_fd::seek_pos+1,x
+    and #$01
+    ora #>block_data
+    sta __volatile_ptr+1
+    clc
+@l_exit:
+    rts
+
 ; update the dir entry position and dir lba_addr of the given file descriptor
 ; in:
 ;	.A - file attr
@@ -333,7 +362,7 @@ __fat_init_fd:
 		stz fd_area+F32_fd::seek_pos+2,x
 		stz fd_area+F32_fd::seek_pos+1,x
 		stz fd_area+F32_fd::seek_pos+0,x
-		stz fd_area+F32_fd::offset+0,x		; init block offset/block counter
+;		stz fd_area+F32_fd::offset+0,x		; init block offset/block counter
 		lda #EOK
 		rts
 
@@ -361,7 +390,7 @@ __fat_is_cln_zero:
 		rts
 
 ; internal read block
-; requires: read_blkptr and lba_addr already calculated
+; requires: lba_addr already calculated
 __fat_read_block_fat:
 		lda #>block_fat
 		bra :+
@@ -404,7 +433,7 @@ __prepare_calc_lba_addr:
 		rts
 
 
-; 		calculate LBA address of first block from cluster number found in file descriptor entry. file descriptor index must be in x
+;   calculate LBA address of first block from cluster number found in file descriptor entry. file descriptor index must be in x
 ;		Note: lba_addr = volumeID+VolumeID::lba_cluster_m2 + (cluster_number * VolumeID_SecPerClus)
 ;		in:
 ;			X - file descriptor index
@@ -415,7 +444,8 @@ __calc_lba_addr:
 
 		;SecPerClus is a power of 2 value, therefore cluster << n, where n is the number of bit set in VolumeID::SecPerClus
 		ldy volumeID+VolumeID::BPB_SecPerClus
-@lm:	tya
+@lm:
+    tya
 		lsr
 		beq @lme	 ; until 1 sector/cluster
 		tay
@@ -428,9 +458,12 @@ __calc_lba_addr:
 		; add volumeID+VolumeID::lba_data and lba_addr => TODO may be an optimization
 		add32 volumeID+VolumeID::lba_data, lba_addr, lba_addr
 
-		clc
-		lda fd_area+F32_fd::offset+0,x			; load the current block counter
-		adc lba_addr+0							; add to lba_addr
+		lda fd_area+F32_fd::seek_pos+1,x	; seek_pos / $200 = block offset within cluster
+    and #$7f                          ; mask "max sec per cluster" which is $80
+    lsr                               ; seek_pos / $200 => is high byte >> 1
+    clc
+;		lda fd_area+F32_fd::offset+0,x	; load the current block counter
+		adc lba_addr+0							    ; add to lba_addr
 		sta lba_addr+0
 		bcc :+
 		.repeat 3, i
@@ -496,7 +529,7 @@ __fat_next_cln:
 		iny
 		lda (read_blkptr), y
 		sta fd_area + F32_fd::CurrentCluster+3, x
-		stz fd_area + F32_fd::offset, x 			; reset block offset here
+;		stz fd_area + F32_fd::offset, x 			; reset block offset here
 		clc ; success
 @l_exit:
 		ply											; use Y to preserve A with return code
@@ -525,7 +558,6 @@ __fat_read_cluster_block_and_select:
 		rts
 @l_clnr_fd:
 		lda fd_area+F32_fd::CurrentCluster+0,x 	; offset within block_fat, clnr<<2 (* 4)
-@l_clnr_page:
 		bit #$40								; clnr within 2nd page of the 512 byte block ?
 		beq @l_clnr
 		inc read_blkptr+1						; yes, set read_blkptr to 2nd page of block_fat

@@ -26,14 +26,14 @@ debug_enabled=1
     ldy #O_CREAT
     lda #<test_file_name_1cl
     ldx #>test_file_name_1cl
+
     jsr fat_fopen
     assertA EOK
     assertX FD_Entry_Size*2  ; assert FD reserved
-
     assertDirEntry block_root_cl+4*DIR_Entry_Size ;expect 4th entry created
       fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; filesize 0 and no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0, O_CREAT
+      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT
 
     ; set file size and write ptr
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (3*sd_blocksize+3)
@@ -60,7 +60,7 @@ debug_enabled=1
     assertDirEntry $0480
         fat32_dir_entry_file "TST_02CL", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, 0, O_CREAT
+        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT
     ; size to 4 blocks + 3 byte ;) - we use 4 SEC_PER_CL - hence a new cluster must be reserved and the chain build
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (4 * sd_blocksize + 3)
 ;    TODO
@@ -93,7 +93,7 @@ _rtc_ts:
 
 mock_read_block:
     tax ; mock X destruction
-    debug32 "mock_read_block", lba_addr
+    debug32 "mock_read_block lba", lba_addr
     load_block_if LBA_BEGIN, block_root_cl, @ok ; load root cl block
     load_block_if FS_INFO_LBA, block_fsinfo, @ok
 
@@ -170,13 +170,12 @@ setUp:
 
   ;setup fd0 as root cluster
   set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-  set16 fd_area+(0*FD_Entry_Size)+F32_fd::offset, 0
+  set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
   set8 fd_area+(0*FD_Entry_Size)+F32_fd::flags, 0
 
   ;setup fd1 as test cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
-  set16 fd_area+(1*FD_Entry_Size)+F32_fd::offset, 0
   set8 fd_area+(1*FD_Entry_Size)+F32_fd::flags, 0
 
   init_block block_root_cl_init, block_root_cl

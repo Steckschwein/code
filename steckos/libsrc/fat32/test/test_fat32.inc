@@ -18,7 +18,7 @@
 .define FS_INFO_LBA 1 ; sector 1
 .define LBA_BEGIN $00006800
 .define SEC_PER_CL 4
-.define ROOT_CL $02 ; 
+.define ROOT_CL $02 ;
 
 .define test_start_cluster	$016a
 
@@ -38,14 +38,13 @@
 	set32 volumeID + VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * sec_per_cl)
 .endmacro
 
-.macro fd_entry_file clnr, dir_entry, dir_lba, attr, filesize, offset, flags
+.macro fd_entry_file clnr, dir_entry, dir_lba, attr, filesize, flags
 	.dword clnr ; CurrentCluster
 	.dword filesize ; FileSize
 	.byte attr ; Attr
 	.dword dir_lba ; DirEntryLBA ; LBA of the block where the dir entry of the file is located
 	.byte dir_entry ; DirEntryPos .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
-	.byte offset ; offset - 7Bit block number within the CurrentCluster
-	.dword filesize ; seek_pos - for write tests, we set seek pos to expected filesize 
+	.dword filesize ; seek_pos - for write tests, we set seek pos to expected filesize
 	.byte flags
 .endmacro
 
