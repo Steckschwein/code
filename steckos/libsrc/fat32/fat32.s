@@ -34,6 +34,7 @@
 .include "rtc.inc"
 .include "errno.inc"  ; from ca65 api
 .include "fcntl.inc"  ; from ca65 api
+.include "stdio.inc"  ; from ca65 api
 
 .include "debug.inc"
 
@@ -47,6 +48,7 @@
 .export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
 
+.export __fat_fseek
 .export __fat_init_fdarea
 
 .code
@@ -54,17 +56,64 @@
     ;  seek n bytes within file denoted by the given FD
     ;in:
     ;  X   - offset into fd_area
-    ;  A/Y - pointer to seek_struct - @see
+    ;  A/Y - pointer to seek_struct - @see fat32.inc
     ;out:
-    ;  Z=1 on success (A=0), Z=0 and A=error code otherwise
+    ;  C=0 on success (A=0), C=1 and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 fat_fseek:
-    rts
 
-    ;in:
-    ;  X   - offset into fd_area
-    ;out:
-    ;  Z=1 on success (A=0), Z=0 and A=error code otherwise
+    _is_file_open   ; otherwise rts C=1 and A=#EINVAL
+    _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
+
+    sta __volatile_ptr
+    sty __volatile_ptr+1
+
+    ldy #Seek::Whence
+    lda (__volatile_ptr),y
+    cmp #SEEK_SET
+    ; TODO support SEEK_CUR, SEEK_END
+    bne @l_exit_err
+
+    ldy #Seek::Offset+3
+    lda (__volatile_ptr),y
+    cmp fd_area+F32_fd::seek_pos+3,x
+    bcs @l_exit_err
+    dey
+    lda (__volatile_ptr),y
+    cmp fd_area+F32_fd::seek_pos+2,x
+    bcs @l_exit_err
+    dey
+    lda (__volatile_ptr),y
+    cmp fd_area+F32_fd::seek_pos+1,x
+    bcs @l_exit_err
+    dey
+    lda (__volatile_ptr),y
+    cmp fd_area+F32_fd::seek_pos+0,x
+    bcs @l_exit_err
+
+    sta fd_area+F32_fd::seek_pos+0,x
+    iny
+    lda (__volatile_ptr),y
+    sta fd_area+F32_fd::seek_pos+1,x
+    iny
+    lda (__volatile_ptr),y
+    sta fd_area+F32_fd::seek_pos+2,x
+    iny
+    lda (__volatile_ptr),y
+    sta fd_area+F32_fd::seek_pos+3,x
+    bra __fat_fseek
+@l_exit_err:
+    lda #EINVAL
+    sec
+    rts
+;in:
+;  X - offset into fd_area
+;out:
+;  C=0 on success (A=0), C=1 and A=error code otherwise
 __fat_fseek:
+;    _cmp32_lt_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize
+;    and volumeID+VolumeID::BPB_SecPerClus ; mask with sec per cluster
+ ;   bne __fat_prepare_access_read         ; if block is not at the beginning of cluster go on read the block
+;    jsr __fat_next_cln    ; select next cluster within chain
     rts
 
 ;in:
@@ -89,7 +138,7 @@ fat_fread_byte:
     clc
 @l_exit:
     ply
-    debug "rd_ex"
+    debug16 "rd_ex", __volatile_ptr
     rts
 
 ; in:
@@ -130,7 +179,7 @@ fat_fopen:
     jsr string_fat_name        ; build fat name upon input string (filenameptr)
     bne @l_exit_err
     jsr __fat_alloc_fd        ; alloc a fd for the new file we want to create to make sure we get one before
-    bne @l_exit_err          ; we do any sd block writes which may result in various errors
+    bcs @l_exit_err          ; we do any sd block writes which may result in various errors
 
     lda __volatile_tmp        ; save file open flags
     sta fd_area + F32_fd::flags, x

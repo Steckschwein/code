@@ -145,6 +145,22 @@
 @l0:	dec val+0
 .endmacro
 
+; C=0 if _s < _t, C=1 otherwise
+.macro _cmp32_lt_x _s, _t
+   lda _s+3, x
+   cmp _t+3, x
+   bcs :+
+   lda _s+2, x
+   cmp _t+2, x
+   bcs :+
+   lda _s+1, x
+   cmp _t+1, x
+   bcs :+
+   lda _s+0, x
+   cmp _t+0, x
+:
+.endmacro
+
 ; Z=1 if equal, Z=0 otherwise and branch to given label
 ;
 .macro _cmp32_x _s, _t, _lbl

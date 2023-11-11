@@ -20,7 +20,7 @@
 .define SEC_PER_CL 4
 .define ROOT_CL $02 ;
 
-.define test_start_cluster	$016a
+.define test_start_cluster $016a
 
 .zeropage
 	tmp1: .res 1

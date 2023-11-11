@@ -247,7 +247,7 @@ fat_mkdir:
 		jsr string_fat_name							; build fat name upon input string (filenameptr) and store them directly to current dirptr!
 		bne @l_exit_err
 		jsr __fat_alloc_fd							; alloc a fd for the new directory - try to allocate a new fd here, right before any fat writes, cause they may fail
-		bne @l_exit_err								; and we want to avoid an error in between the different block writes
+		bcs @l_exit_err								; and we want to avoid an error in between the different block writes
 		lda #DIR_Attr_Mask_Dir						; set type directory
 		jsr __fat_set_fd_attr_dirlba				; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
 		jsr __fat_reserve_cluster					; try to find and reserve next free cluster and store them in fd_area at fd (X)

@@ -38,7 +38,7 @@
 .include "debug.inc"
 
 ; external deps - block layer
-.import read_block
+.autoimport
 
 .export __fat_read_cluster_block_and_select
 .export __fat_find_first
@@ -56,9 +56,6 @@
 .export __fat_set_fd_attr_dirlba
 .export __calc_lba_addr
 .export __inc_lba_address
-
-.import dirname_mask_matcher
-.import string_fat_mask
 
 ; in:
 ;  .X - file descriptor (index into fd_area) of the directory
@@ -213,14 +210,16 @@ __fat_clone_fd:
 __fat_prepare_access:
     ; TODO FIXME - dirty check or always read - the block_data may be corrupted if a read from another fd happened in between
     lda fd_area+F32_fd::seek_pos+1,x
-    and #$01               ; mask
+    and #$01                          ; mask block start
     ora fd_area+F32_fd::seek_pos+0,x  ; and test whether seek_pos is at the begin of a block (multiple of $0200) ?
     bne l_prepare
 
-;    cmp volumeID+VolumeID::BPB_SecPerClus    ; last block of cluster reached?
- ;   bne @l_prepare
-;    jsr __fat_next_cln    ; select next cluster within chain
- ;   bcs @l_exit           ; exit on error or EOC (C=1)
+    lda fd_area+F32_fd::seek_pos+1,x
+    and volumeID+VolumeID::BPB_SecPerClus ; mask with sec per cluster
+    bne __fat_prepare_access_read         ; if block is not at the beginning of cluster go on read the block
+
+    jsr __fat_fseek       ; make sure correct cluster is selected
+    bcs l_exit            ; exit on error or EOC (C=1)
 .export __fat_prepare_access_read
 __fat_prepare_access_read:
     jsr __calc_lba_addr
@@ -278,12 +277,13 @@ __fat_open_file:
     lda #ENOENT
     bra @l_exit
 
-@l1:  ldy #F32DirEntry::Attr
+@l1:
+    ldy #F32DirEntry::Attr
     lda (dirptr),y
     and #DIR_Attr_Mask_Dir     ; directory?
     bne @l2              ; yes, do not allocate a new fd, use index (X) which is already set to FD_INDEX_TEMP_DIR and just update the fd data
     jsr __fat_alloc_fd      ; no, then regular file and we allocate a new fd for them
-    bne @l_exit
+    bcs @l_exit
 @l2:
     ;save 32 bit cluster number from dir entry
     ldy #F32DirEntry::FstClusHI +1
@@ -324,12 +324,13 @@ __fat_open_file:
     rts
 
 
-   ; out:
-   ;  .X - with index to fd_area
-   ;  Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+; out:
+; .X - with index to fd_area
+;  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 __fat_alloc_fd:
     ldx #(2*FD_Entry_Size)              ; skip 2 entries, they're reserved for current and temp dir
-@l1:  lda fd_area + F32_fd::CurrentCluster+3, x
+@l1:
+    lda fd_area + F32_fd::CurrentCluster+3, x
     cmp #$ff  ;#$ff means unused, return current x as offset
     beq __fat_init_fd
 
@@ -340,28 +341,25 @@ __fat_alloc_fd:
     cpx #(FD_Entry_Size*FD_Entries_Max)
     bne @l1
     lda #EMFILE                ; Too many open files, no free file descriptor found
+    sec
     rts
 
-    ; out:
-    ;  x - FD_INDEX_TEMP_DIR offset to fd area
+; out:
+;  x - FD_INDEX_TEMP_DIR offset to fd area
 __fat_open_rootdir:
     ldx #FD_INDEX_TEMP_DIR          ; use fd of the temp directory
     ; in:
     ;  .X - with index to fd_area
 __fat_init_fd:
-    stz fd_area+F32_fd::CurrentCluster+3,x  ; init start cluster with root cluster nr 0 and not RootClus - the RootClus offset is compensated within calc_lba_addr (@see Note)
-    stz fd_area+F32_fd::CurrentCluster+2,x
-    stz fd_area+F32_fd::CurrentCluster+1,x
-    stz fd_area+F32_fd::CurrentCluster+0,x
-    stz fd_area+F32_fd::FileSize+3,x    ; init file size with 0, it's maintained during open
-    stz fd_area+F32_fd::FileSize+2,x
-    stz fd_area+F32_fd::FileSize+1,x
-    stz fd_area+F32_fd::FileSize+0,x
-    stz fd_area+F32_fd::seek_pos+3,x
-    stz fd_area+F32_fd::seek_pos+2,x
-    stz fd_area+F32_fd::seek_pos+1,x
-    stz fd_area+F32_fd::seek_pos+0,x
-    lda #EOK
+    ; init fd with all 0 - note: start cluster with root cluster nr 0 and not RootClus - the RootClus offset is compensated within calc_lba_addr (@see Note)
+    phx
+    lda #FD_Entry_Size
+:   stz fd_area,x
+    inx
+    dec
+    bne :-
+    plx
+    clc
     rts
 
     ; free file descriptor quietly
@@ -441,6 +439,7 @@ __calc_lba_addr:
     jsr __prepare_calc_lba_addr
 
     ;SecPerClus is a power of 2 value, therefore cluster << n, where n is the number of bit set in VolumeID::SecPerClus
+    ; lba_addr multiple of "sec per cluster"
     ldy volumeID+VolumeID::BPB_SecPerClus
 @lm:
     tya
@@ -456,12 +455,12 @@ __calc_lba_addr:
     ; add volumeID+VolumeID::lba_data and lba_addr => TODO may be an optimization
     add32 volumeID+VolumeID::lba_data, lba_addr, lba_addr
 
-    lda fd_area+F32_fd::seek_pos+1,x  ; seek_pos / $200 = block offset within cluster
-    and #$7f                          ; mask "max sec per cluster" which is $80
-    lsr                               ; seek_pos / $200 => is high byte >> 1
+    ; seek_pos / $200 (blocksize) mod "sec per cluster" = block offset within cluster
+    lda fd_area+F32_fd::seek_pos+1,x
+    lsr                                   ; seek_pos / $200 => is seek_pos high byte >> 1
+    and #$7f ; TODO FIXME volumeID+VolumeID::BPB_SecPerClus ; mod "sec per cluster" => and "sec per cluster"-1
     clc
-;    lda fd_area+F32_fd::offset+0,x  ; load the current block counter
-    adc lba_addr+0                  ; add to lba_addr
+    adc lba_addr+0                    ; add to lba_addr
     sta lba_addr+0
     bcc :+
     .repeat 3, i
@@ -527,7 +526,6 @@ __fat_next_cln:
     iny
     lda (read_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+3, x
-;    stz fd_area + F32_fd::offset, x       ; reset block offset here
     clc ; success
 @l_exit:
     ply                      ; use Y to preserve A with return code
