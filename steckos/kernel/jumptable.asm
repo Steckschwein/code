@@ -34,6 +34,8 @@ krn_fread_byte:         jmp fat_fread_byte
 krn_write:              jmp fat_write
 .export krn_write_byte
 krn_write_byte:         jmp fat_write_byte
+.export krn_fseek
+krn_fseek:              jmp fat_fseek
 .export krn_find_first
 krn_find_first:         jmp fat_find_first
 .export krn_find_next

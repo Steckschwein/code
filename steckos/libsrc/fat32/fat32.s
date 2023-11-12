@@ -71,26 +71,33 @@ fat_fseek:
     lda (__volatile_ptr),y
     cmp #SEEK_SET
     ; TODO support SEEK_CUR, SEEK_END
-    bne @l_exit_err
-
-    ldy #Seek::Offset+3
+    beq :+
+@l_exit_err:
+    lda #EINVAL
+    sec
+    rts
+    ; check requested seek pos with FileSize
     lda (__volatile_ptr),y
-    cmp fd_area+F32_fd::seek_pos+3,x
+    cmp fd_area+F32_fd::FileSize+3,x
+    beq :+
     bcs @l_exit_err
-    dey
+:   dey
     lda (__volatile_ptr),y
-    cmp fd_area+F32_fd::seek_pos+2,x
+    cmp fd_area+F32_fd::FileSize+2,x
+    beq :+
     bcs @l_exit_err
-    dey
+:   dey
     lda (__volatile_ptr),y
-    cmp fd_area+F32_fd::seek_pos+1,x
+    cmp fd_area+F32_fd::FileSize+1,x
+    beq :+
     bcs @l_exit_err
-    dey
+:   dey
     lda (__volatile_ptr),y
-    cmp fd_area+F32_fd::seek_pos+0,x
+    cmp fd_area+F32_fd::FileSize+0,x
+    beq :+
     bcs @l_exit_err
-
-    sta fd_area+F32_fd::seek_pos+0,x
+    ; save seek pos
+:   sta fd_area+F32_fd::seek_pos+0,x
     iny
     lda (__volatile_ptr),y
     sta fd_area+F32_fd::seek_pos+1,x
@@ -100,11 +107,6 @@ fat_fseek:
     iny
     lda (__volatile_ptr),y
     sta fd_area+F32_fd::seek_pos+3,x
-    bra __fat_fseek
-@l_exit_err:
-    lda #EINVAL
-    sec
-    rts
 ;in:
 ;  X - offset into fd_area
 ;out:
@@ -114,6 +116,11 @@ __fat_fseek:
 ;    and volumeID+VolumeID::BPB_SecPerClus ; mask with sec per cluster
  ;   bne __fat_prepare_access_read         ; if block is not at the beginning of cluster go on read the block
 ;    jsr __fat_next_cln    ; select next cluster within chain
+
+    ; calculate amount of cluster chain iterations by "seek_pos(3 to 0)" / ($200 * "sec per cluster") => seek_pos(3 to 1) >> 1
+
+    lda fd_area+F32_fd::seek_pos+1,x
+
     rts
 
 ;in:

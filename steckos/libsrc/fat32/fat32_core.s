@@ -458,9 +458,9 @@ __calc_lba_addr:
     ; seek_pos / $200 (blocksize) mod "sec per cluster" = block offset within cluster
     lda fd_area+F32_fd::seek_pos+1,x
     lsr                                   ; seek_pos / $200 => is seek_pos high byte >> 1
-    and #$7f ; TODO FIXME volumeID+VolumeID::BPB_SecPerClus ; mod "sec per cluster" => and "sec per cluster"-1
+    and #$7f ; TODO FIXME volumeID+VolumeID::BPB_SecPerClus-1 ; mod "sec per cluster" => AND ("sec per cluster"-1)
     clc
-    adc lba_addr+0                    ; add to lba_addr
+    adc lba_addr+0                        ; add to lba_addr
     sta lba_addr+0
     bcc :+
     .repeat 3, i
