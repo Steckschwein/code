@@ -37,7 +37,7 @@
 
 .export read_block=sd_read_block
 .export write_block=sd_write_block
-.export char_out=textui_chrout         ; account for page crossing
+.export char_out=ansi_chrout         ; account for page crossing
 
 .export crc16_lo=BUFFER_0
 .export crc16_hi=BUFFER_1

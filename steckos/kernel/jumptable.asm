@@ -5,7 +5,7 @@
 .export krn_getkey
 krn_getkey:             jmp getkey
 .export krn_chrout
-krn_chrout:             jmp textui_chrout
+krn_chrout:             jmp char_out
 .export krn_upload
 krn_upload:             jmp do_upload
 .export krn_execv
