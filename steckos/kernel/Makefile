@@ -2,6 +2,7 @@ CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
 OBJS=kernel.o rtc.o exec.o automount.o jumptable.o
 OBJS+=textui.o
+OBJS+=ansi.o
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
 LDFLAGS_KERNEL=-C kernel.cfg
