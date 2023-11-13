@@ -1,8 +1,7 @@
 .include "kernel.inc"
 
 .export ansi_chrout, ansi_state
-.import textui_chrout, textui_update_crs_ptr
-
+.autoimport
 
 ESCAPE = 27
 CSI	 = '['
@@ -93,7 +92,14 @@ ansi_chrout:
     sta crs_y
     bra @seq_end
 @n5:
+    cmp #'J'
+    bne :+
+    lda #2
+    cmp ansi_param1
+    bne :+
 
+    jmp textui_blank
+:
     ; TODO
     ; Is alphanumeric?
     ; end sequence and execute requested action
