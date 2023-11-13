@@ -80,6 +80,8 @@ kern_init:
     lda #$03  ; enable RAM below kernel
     sta slot2
 
+    stz ansi_state
+
 ;    jsr rtc_irq0
 
     cli

@@ -60,6 +60,9 @@ appstart $e200
 .code
 init:
         jsr primm
+        .byte 27,'[','3','B' ; move cursor down 3 lines
+        ;.byte 27,'[','5','C' ; move cursor left 5 pos
+        
         .byte "steckOS shell  "
         .include "version.inc"
         .byte CODE_LF,0

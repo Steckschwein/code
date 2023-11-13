@@ -1,6 +1,6 @@
 .include "kernel.inc"
 
-.export ansi_chrout
+.export ansi_chrout, ansi_state
 .import textui_chrout, textui_update_crs_ptr
 
 
@@ -84,8 +84,8 @@ ansi_chrout:
 @n4:
     cmp #'H'
     bne @n5
-    ; cmp #'f'
-    ; bne @n5
+    cmp #'f'
+    bne @n5
 
     lda ansi_param1
     sta crs_x
