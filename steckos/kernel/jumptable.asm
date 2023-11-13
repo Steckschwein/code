@@ -48,8 +48,6 @@ krn_textui_init:        jmp  textui_init
 krn_textui_enable:      jmp  textui_enable
 .export krn_textui_disable
 krn_textui_disable:     jmp textui_disable 
-.export krn_display_off
-krn_display_off:        jmp vdp_display_off
 .export krn_textui_crsxy
 krn_textui_crsxy:       jmp textui_crsxy
 .export krn_textui_update_crs_ptr
@@ -63,8 +61,6 @@ krn_textui_crs_onoff:   jmp textui_cursor_onoff
 
 
 ; sd card stuff
-.export krn_init_sdcard
-krn_init_sdcard:        jmp sdcard_init
 .export krn_sd_write_block
 krn_sd_write_block:     jmp sd_write_block
 .export krn_sd_read_block
