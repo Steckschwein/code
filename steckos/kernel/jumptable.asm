@@ -59,13 +59,11 @@ krn_textui_setmode:     jmp textui_setmode
 .export krn_textui_crs_onoff
 krn_textui_crs_onoff:   jmp textui_cursor_onoff
 
-
 ; sd card stuff
 .export krn_sd_write_block
 krn_sd_write_block:     jmp sd_write_block
 .export krn_sd_read_block
 krn_sd_read_block:     jmp sd_read_block
-
 
 ; spi stuff
 .export krn_spi_select_device
