@@ -36,10 +36,10 @@ ansi_chrout:
 @store_csi_byte:
     ; number? $30-$39
     cmp #'0'
-    bcs @n
+    bcs :+
     stz ansi_state
     rts
-@n:
+:
     cmp #'9'+1
     bcc @store
 
@@ -50,48 +50,48 @@ ansi_chrout:
     rts
 @cont:
     cmp #'A' ; cursor up
-    bne @n1
+    bne :+
     lda crs_y
     sec
     sbc ansi_param1
     sta crs_y
     bra @seq_end
-@n1:
+:
     cmp #'B' ; cursor up
-    bne @n2
+    bne :+
     lda crs_y
     clc
     adc ansi_param1
     sta crs_y
     bra @seq_end
-@n2:
+:
     cmp #'C' ; cursor right
-    bne @n3
+    bne :+
     lda crs_x
     sec
     sbc ansi_param1
     sta crs_x
     bra @seq_end
-@n3:
+:
     cmp #'D' ; cursor left
-    bne @n4
+    bne :+
     lda crs_x
     clc
     adc ansi_param1
     sta crs_x
     bra @seq_end
-@n4:
+:
     cmp #'H'
-    bne @n5
+    bne :+
     cmp #'f'
-    bne @n5
+    bne :+
 
     lda ansi_param1
     sta crs_x
     lda ansi_param2
     sta crs_y
     bra @seq_end
-@n5:
+:
     cmp #'J'
     bne :+
     lda #2
