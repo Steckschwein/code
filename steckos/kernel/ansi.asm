@@ -134,10 +134,11 @@ ansi_chrout:
     ply
     plx
     rts
-.bss 
+;.data
+multable:  .byte 0,10,20,30,40,50,60,70,80,90
+
+.bss
 ansi_index:  .res 1
 ansi_state:  .res 1
 ansi_param1: .res 1
 ansi_param2: .res 1
-.data
-multable:  .byte 0,10,20,30,40,50,60,70,80,90
