@@ -53,7 +53,7 @@ main:
 		keyin
 		jsr	gfxui_off
 
-		jsr	krn_display_off			;restore textui
+		jsr	vdp_display_off			;restore textui
 		jsr	krn_textui_init
 		jsr	krn_textui_enable
 		cli

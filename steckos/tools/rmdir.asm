@@ -20,33 +20,29 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
-
-.include "appstart.inc"
-.import hexout
+.include "steckos.inc"
+.autoimport
 
 .export char_out=krn_chrout
 
 appstart $1000
 
-    	lda paramptr
-    	ldx paramptr+1
+    lda paramptr
+    ldx paramptr+1
 
-    	jsr krn_rmdir
-		bcs @errmsg
+    jsr krn_rmdir
+    bcs @errmsg
 
-		jsr krn_primm
-		.byte $0a," rmdir ok",$00
+    jsr primm
+    .byte $0a," rmdir ok",$00
 @exit:
-		jmp (retvec)
+    jmp (retvec)
 
 @errmsg:
-		;TODO FIXME maybe use oserror() from cc65 lib
-		pha
-		jsr krn_primm
-		.asciiz "Error: "
-		pla
-		jsr hexout
-		jmp @exit
+    ;TODO FIXME maybe use oserror() from cc65 lib
+    pha
+    jsr primm
+    .asciiz "Error: "
+    pla
+    jsr hexout
+    jmp @exit

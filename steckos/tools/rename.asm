@@ -25,6 +25,8 @@
 .include "kernel_jumptable.inc"
 .include "fat32.inc"
 .include "appstart.inc"
+.export char_out=krn_chrout
+.import primm
 
 appstart $1000
 
@@ -101,11 +103,11 @@ rename:
 	jmp (retvec)
 
 error:
-	jsr krn_primm
+	jsr primm
 	.asciiz "open error"
 	jmp (retvec)
 wrerror:
-	jsr krn_primm
+	jsr primm
 	.asciiz "write error"
 	jmp (retvec)
 
