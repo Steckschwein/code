@@ -1,24 +1,30 @@
-	.setcpu "65c02"
+;.setcpu "65c02"
 
-	.include "common.inc"
-	.include "zeropage.inc"
+.include "common.inc"
+.include "zeropage.inc"
+.include "asmunit.inc" ; test api
 
-	.import ansi_chrout	; uut
+.import asmunit_chrout
+.export krn_chrout=asmunit_chrout
+.export textui_chrout=asmunit_chrout
+.export textui_update_crs_ptr=dummy
+.export textui_blank=dummy
 
-	.include "asmunit.inc" ; test api
 
-	.import asmunit_chrout
-	.export krn_chrout=asmunit_chrout
-	.export textui_chrout=asmunit_chrout
-	.export textui_update_crs_ptr=dummy
+
+.import ansi_chrout	; uut
+
+.import ansi_state
+.import ansi_index
+.import ansi_param1
+.import ansi_param2
 
 .code
 
-  test_name "ansi_chrout"
+    test_name "ansi_chrout"
 
 	stz ansi_state
-	;stz ansi_index
-
+	
 	lda #'A'
 	sta ansi_index
 	jsr ansi_chrout
@@ -75,5 +81,5 @@
 
 
 	brk
-	dummy:
-		rts
+dummy:
+	rts

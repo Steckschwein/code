@@ -1,6 +1,6 @@
 .include "kernel.inc"
 
-.export ansi_chrout, ansi_state
+.export ansi_chrout, ansi_state, ansi_index, ansi_param1, ansi_param2
 .autoimport
 
 ESCAPE = 27
