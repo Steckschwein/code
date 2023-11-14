@@ -8,6 +8,8 @@
 .include "fat32.inc"
 .include "zeropage.inc"
 
+.include "stdio.inc"  ;ca65 asminc
+
 .import asmunit_chrout
 
 .export debug_chrout=asmunit_chrout
@@ -16,7 +18,7 @@
 .define FAT_LBA 	$297e
 .define FAT2_LBA 	$2b7e
 .define FS_INFO_LBA 1 ; sector 1
-.define LBA_BEGIN $00006800
+.define LBA_BEGIN $6800
 .define SEC_PER_CL 4
 .define ROOT_CL $02 ;
 
@@ -35,11 +37,13 @@
 
 .macro set_sec_per_cl sec_per_cl
 	set8 volumeID + VolumeID::BPB_SecPerClus, sec_per_cl
+	set8 volumeID + VolumeID::BPB_SecPerClusMask , (sec_per_cl-1)
 	set32 volumeID + VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * sec_per_cl)
 .endmacro
 
 .macro fd_entry_file clnr, dir_entry, dir_lba, attr, filesize, flags
-	.dword clnr ; CurrentCluster
+	.dword clnr     ; StartCluster
+	.dword clnr     ; CurrentCluster
 	.dword filesize ; FileSize
 	.byte attr ; Attr
 	.dword dir_lba ; DirEntryLBA ; LBA of the block where the dir entry of the file is located

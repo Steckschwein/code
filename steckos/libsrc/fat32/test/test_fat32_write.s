@@ -303,10 +303,10 @@ setUp:
 
 .data
   test_file_name_1:     .asciiz "test01.tst"
-  test_file_name_1cl:    .asciiz "tst_01cl.tst"
-  test_file_name_2cl:    .asciiz "tst_02cl.tst"
-  test_dir_name_eexist:  .asciiz "dir01"
-  test_dir_name_mkdir:   .asciiz "dir03"
+  test_file_name_1cl:   .asciiz "tst_01cl.tst"
+  test_file_name_2cl:   .asciiz "tst_02cl.tst"
+  test_dir_name_eexist: .asciiz "dir01"
+  test_dir_name_mkdir:  .asciiz "dir03"
 
 block_root_cl_init:
   fat32_dir_entry_dir   "DIR01   ", "   ", 8

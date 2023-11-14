@@ -50,6 +50,7 @@
 .export __fat_init_fd
 .export __fat_free_fd
 .export __fat_is_cln_zero
+.export __fat_next_cln
 .export __fat_open_path
 .export __fat_read_block_data
 .export __fat_read_block_fat
@@ -216,10 +217,10 @@ __fat_prepare_access:
 
     lda fd_area+F32_fd::seek_pos+1,x
     and volumeID+VolumeID::BPB_SecPerClus ; mask with sec per cluster
-    bne __fat_prepare_access_read         ; if block is not at the beginning of cluster go on read the block
+    bne __fat_prepare_access_read         ; if block is not at the beginning of a cluster go on read the block
 
-    jsr __fat_fseek       ; make sure correct cluster is selected
-    bcs l_exit            ; exit on error or EOC (C=1)
+    jsr __fat_fseek_cluster   ; make sure correct cluster is selected
+    bcs l_exit                ; exit on error or EOC (C=1)
 .export __fat_prepare_access_read
 __fat_prepare_access_read:
     jsr __calc_lba_addr
@@ -288,16 +289,20 @@ __fat_open_file:
     ;save 32 bit cluster number from dir entry
     ldy #F32DirEntry::FstClusHI +1
     lda (dirptr),y
+    sta fd_area + F32_fd::StartCluster + 3, x
     sta fd_area + F32_fd::CurrentCluster + 3, x
     dey
     lda (dirptr),y
+    sta fd_area + F32_fd::StartCluster + 2, x
     sta fd_area + F32_fd::CurrentCluster + 2, x
 
     ldy #F32DirEntry::FstClusLO +1
     lda (dirptr),y
+    sta fd_area + F32_fd::StartCluster + 1, x
     sta fd_area + F32_fd::CurrentCluster + 1, x
     dey
     lda (dirptr),y
+    sta fd_area + F32_fd::StartCluster + 0, x
     sta fd_area + F32_fd::CurrentCluster + 0, x
 
     ldy #F32DirEntry::FileSize + 3
@@ -392,12 +397,12 @@ __fat_read_block_fat:
     bra :+
 __fat_read_block_data:
     lda #>block_data
-:    sta read_blkptr+1
+:   sta read_blkptr+1
     stz read_blkptr+0
 ;__fat_read_block:
     phx
     debug32 "fat_rb_lba", lba_addr
-    debug16 "fat_rb_ptr", read_blkptr
+;    debug16 "fat_rb_ptr", read_blkptr
     jsr read_block
     dec read_blkptr+1    ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
     plx
@@ -405,7 +410,7 @@ __fat_read_block_data:
     bne :+
     clc
     rts
-:    sec
+:   sec
     rts
 
     ; in:
@@ -434,13 +439,12 @@ __prepare_calc_lba_addr:
 ;    in:
 ;      X - file descriptor index
 __calc_lba_addr:
-    pha
-
     jsr __prepare_calc_lba_addr
 
     ;SecPerClus is a power of 2 value, therefore cluster << n, where n is the number of bit set in VolumeID::SecPerClus
     ; lba_addr multiple of "sec per cluster"
     ldy volumeID+VolumeID::BPB_SecPerClus
+    debug32 "c lba 0", lba_addr
 @lm:
     tya
     lsr
@@ -450,17 +454,20 @@ __calc_lba_addr:
     rol lba_addr +1
     rol lba_addr +2
     rol lba_addr +3
+    debug32 "c lba 1", lba_addr
     bra @lm
 @lme:
     ; add volumeID+VolumeID::lba_data and lba_addr => TODO may be an optimization
     add32 volumeID+VolumeID::lba_data, lba_addr, lba_addr
 
+    debug32 "c lba 2", lba_addr
+
     ; seek_pos / $200 (blocksize) mod "sec per cluster" = block offset within cluster
     lda fd_area+F32_fd::seek_pos+1,x
-    lsr                                   ; seek_pos / $200 => is seek_pos high byte >> 1
-    and #$7f ; TODO FIXME volumeID+VolumeID::BPB_SecPerClus-1 ; mod "sec per cluster" => AND ("sec per cluster"-1)
+    lsr                                         ; seek_pos / $200 => is seek_pos high byte >> 1
+    and volumeID+VolumeID::BPB_SecPerClusMask   ; mod "sec per cluster" => AND ("sec per cluster"-1)
     clc
-    adc lba_addr+0                        ; add to lba_addr
+    adc lba_addr+0                              ; add to lba_addr
     sta lba_addr+0
     bcc :+
     .repeat 3, i
@@ -470,13 +477,12 @@ __calc_lba_addr:
     .endrepeat
 :
 ;    debug32 "f_lba", lba_addr
-    pla
     rts
 
     ; in:
     ;  X - file descriptor
     ; out:
-    ;  vol->LbaFat + (cluster_nr>>7);// div 128 -> 4 (32bit) * 128 cluster numbers per block (512 bytes)
+    ;  vol->LbaFat + (cluster_nr>>7); => div 128 -> 4 (32bit) * 128 cluster numbers per block (512 bytes)
 __calc_fat_lba_addr:
     ;instead of shift right 7 times in a loop, we copy over the hole byte (same as >>8) - and simply shift left 1 bit (<<1)
     jsr __prepare_calc_lba_addr
@@ -498,7 +504,7 @@ __calc_fat_lba_addr:
     ; add volumeID+VolumeID::lba_fat and lba_addr
     add32 volumeID+VolumeID::lba_fat, lba_addr, lba_addr
 
-    ;debug32 "f_flba", lba_addr
+    debug32 "f_flba", lba_addr
     rts
 
 ; extract next cluster number from the 512 fat block buffer
@@ -543,18 +549,16 @@ __fat_next_cln:
 __fat_read_cluster_block_and_select:
     jsr __calc_fat_lba_addr
     jsr __fat_read_block_fat
-    bne @l_exit
+    bcs @l_exit
     jsr __fat_is_cln_zero          ; is root clnr?
     bne @l_clnr_fd
     lda volumeID + VolumeID::EBPB_RootClus+0
     bra @l_isroot
 @l_exit:
-    sec
-    debug16 "f_rcbs", read_blkptr
     rts
 @l_clnr_fd:
-    lda fd_area+F32_fd::CurrentCluster+0,x   ; offset within block_fat, clnr<<2 (* 4)
-    bit #$40                ; clnr within 2nd page of the 512 byte block ?
+    lda fd_area+F32_fd::CurrentCluster+0,x  ; offset within block_fat, clnr<<2 (* 4)
+    bit #$40                                ; clnr within 2nd page of the 512 byte block ?
     beq @l_clnr
     inc read_blkptr+1            ; yes, set read_blkptr to 2nd page of block_fat
 @l_clnr:

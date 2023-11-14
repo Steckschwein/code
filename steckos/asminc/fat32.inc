@@ -66,15 +66,15 @@ PartType_FAT32_LBA    = $0c
 .endstruct
 
 .struct BPB
-   BytsPerSec  .word ; 11-12  ; 512 usually
-   SecPerClus  .byte ; 13     ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
-   RsvdSecCnt  .word ; 14-15  ; number of reserved sectors
-   NumFATs     .byte ; 16     ; usually 2
-   Reserved    .byte 4 ; 17-20 (max root entries, total logical sectors skipped)
-   Media       .byte   ; 21 ; For removable media, 0xF0 is frequently used.
-               ; The legal values for this field are
-               ; 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
-   SectsPerFAT .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
+   BytsPerSec     .word ; 11-12  ; 512 usually
+   SecPerClus     .byte ; 13     ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
+   RsvdSecCnt     .word ; 14-15  ; number of reserved sectors
+   NumFATs        .byte ; 16     ; usually 2
+   Reserved       .byte 4 ; 17-20 (max root entries, total logical sectors skipped)
+   Media          .byte   ; 21 ; For removable media, 0xF0 is frequently used.
+                  ; The legal values for this field are
+                  ; 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
+   SectsPerFAT    .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
 .endstruct
 
 .struct EBPB
@@ -114,7 +114,8 @@ PartType_FAT32_LBA    = $0c
 
 ; struct VolumeID like we keep it in memory
 .struct VolumeID
-   BPB_SecPerClus    .byte
+   BPB_SecPerClus     .byte
+   BPB_SecPerClusMask .byte ; BPB_SecPerClus-1
    ;BPB_NumFATs       .byte
    EBPB_RootClus     .dword
    EBPB_FATSz32      .dword ; sectors per fat
@@ -122,8 +123,8 @@ PartType_FAT32_LBA    = $0c
    lba_fat           .dword
    lba_fat2          .dword ; mirror fat
    lba_fsinfo        .dword
-   temp_cluster      .dword
    free_cluster      .dword
+   temp_dword        .dword
 .endstruct
 
 ;--------------------------------------------------------------------------------------

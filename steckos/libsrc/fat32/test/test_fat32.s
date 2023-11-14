@@ -1,11 +1,6 @@
-	.include "test_fat32.inc"
+.include "test_fat32.inc"
 
-	.import __calc_lba_addr
-	.import __fat_is_cln_zero
-	.import __fat_init_fdarea
-	.import __fat_alloc_fd
-	.import fat_fopen
-	.import fat_fread_byte
+.autoimport
 
 .code
 ; -------------------
@@ -59,6 +54,7 @@
 		assertX (0*FD_Entry_Size)
 		assert32 LBA_BEGIN, lba_addr
 
+; -------------------
 		setup "__calc_lba_addr with some clnr"
 		ldx #(1*FD_Entry_Size)
 		jsr __calc_lba_addr
@@ -68,7 +64,9 @@
 ; -------------------
 		setup "__calc_lba_addr 8s/cl +10 blocks"
 		ldx #(1*FD_Entry_Size)
+    set_sec_per_cl 8
 		set8 volumeID+VolumeID::BPB_SecPerClus, 8
+		set8 volumeID+VolumeID::BPB_SecPerClusMask, 8-1
 		set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * 8)
 
 		jsr __calc_lba_addr
@@ -81,12 +79,11 @@
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 8 + test_start_cluster * 8 + 7, lba_addr ; expect $68f0 + (clnr * sec/cl) => $67f0 + $16a *8 + 10 = $7347
 
-		lda #$02*10 ; 10 blocks offset
+		lda #$02*2 ; 2 blocks
 		sta fd_area+F32_fd::seek_pos+1,x
 		jsr __calc_lba_addr
 		assertX (1*FD_Entry_Size)
-		assert32 LBA_BEGIN - ROOT_CL * 8 + test_start_cluster * 8 + 10, lba_addr ; expect $68f0 + (clnr * sec/cl) => $67f0 + $16a *8 + 10 = $734a
-
+		assert32 LBA_BEGIN - ROOT_CL * 8 + test_start_cluster * 8 + 2, lba_addr ; expect $68f0 + (clnr * sec/cl) => $67f0 + $16a *8 + 10 = $7342
 
 ; -------------------
 		setup "fat_fopen O_RDONLY ENOENT"
@@ -313,6 +310,7 @@
 ; -------------------
 		setup "fat_fread_byte 3 blocks 2s/cl"
     set_sec_per_cl 2
+
 		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, (512*2+5) ; setup filesize
 		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 
@@ -322,6 +320,9 @@
 		assertA 'B'
 		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 		assertX (1*FD_Entry_Size)
+		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2, lba_addr
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster ; - no new cluster selected
 
 		jsr fat_fread_byte
 		assertCarry 0
@@ -369,6 +370,7 @@
 :		jsr fat_fread_byte
 		assertCarry 0
     cmp32_ne fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, $400, :- ; read until seek pos reached
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 		jsr fat_fread_byte
@@ -397,6 +399,7 @@
 
 		assert32 (512*2+5), fd_area+(1*FD_Entry_Size)+F32_fd::FileSize
 		assert32 (512*2+5), fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos ; expect position at EOF (filesize)
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster+3, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 		jsr fat_fread_byte
@@ -407,14 +410,16 @@
 setUp:
 	jsr __fat_init_fdarea
 	set_sec_per_cl SEC_PER_CL
-	set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
-	set32 volumeID + VolumeID::lba_fat, FAT_LBA		;fat lba
+	set32 volumeID+VolumeID::EBPB_RootClus, ROOT_CL
+	set32 volumeID+VolumeID::lba_fat, FAT_LBA		;fat lba
 
 	;setup fd0 as root cluster
+  set32 fd_area+(0*FD_Entry_Size)+F32_fd::StartCluster, 0
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 	set8 fd_area+(0*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Dir
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
 	;setup fd1 with test cluster
+  set32 fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster, test_start_cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
@@ -448,20 +453,20 @@ mock_read_block:
 		; defaults to dir entry data
 		load_block_if LBA_BEGIN, block_root_cl, @exit ; load root cl block
 
-		; fat block $2980 read?
-		cmp32_ne lba_addr, FAT_LBA+2, :+
+		; fat block of test cluster read?
+		cmp32_ne lba_addr, (FAT_LBA+(test_start_cluster>>7)), :+
 			; ... simulate fat block read, just fill some values which are reached if the fat32 implementation is correct ;)
-			set32 block_fat+((test_start_cluster+0)<<2), (test_start_cluster+3) ; build a fragmented chain
-			set32 block_fat+((test_start_cluster+3)<<2), (test_start_cluster+6)
-			set32 block_fat+((test_start_cluster+6)<<2), FAT_EOC
+			set32 block_fat+((test_start_cluster+0)<<2 & (sd_blocksize-1)), (test_start_cluster+3) ; build a fragmented chain
+			set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), (test_start_cluster+7)
+			set32 block_fat+((test_start_cluster+7)<<2 & (sd_blocksize-1)), FAT_EOC
       jmp @exit_inc
 :
 		; data block read?
 		; - for tests with 2sec/cl
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 0), test_block_data_0_0, @exit
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 1), test_block_data_0_1, @exit
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 0), test_block_data_1_0, @exit
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 1), test_block_data_1_1, @exit
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 0), test_block_data_0_0, @exit  ; block 0, cluster 0
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 1), test_block_data_0_1, @exit  ; block 1, cluster 0
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 0), test_block_data_1_0, @exit  ; block 0, cluster 1
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 1), test_block_data_1_1, @exit  ; block 1, cluster 1
 ;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 0), test_block_data_1_0, @exit
 ;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 1), test_block_data_1_1, @exit
 		; - for tests with 4sec/cl
@@ -489,8 +494,8 @@ test_file_name_enoent:	.asciiz "enoent.tst"
 block_root_cl:
 	fat32_dir_entry_dir  "DIR01   ", "   ", 8
 	fat32_dir_entry_dir  "DIR02   ", "   ", 9
-	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0 ; 0 - no cluster reserved, 0 - size
-	fat32_dir_entry_file "FILE02  ", "TXT", 10, 12	; 10 - 1st cluster nr of file, 12 - byte file size
+	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0 ; 0 - no cluster reserved, 0 size
+	fat32_dir_entry_file "FILE02  ", "TXT", 10, 12	; 10 - 1st cluster nr of file, 12 byte file size
 
 test_block_data_0_0:
   .byte "B0/C0"; block 0, cluster 0

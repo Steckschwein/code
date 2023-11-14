@@ -92,8 +92,11 @@ fat_mount:
     lda #fat_invalid_sector_size
     rts
 
-@l6:  lda block_data + F32_VolumeID::BPB + BPB::SecPerClus
+@l6:
+    lda block_data + F32_VolumeID::BPB + BPB::SecPerClus
     sta volumeID + VolumeID::BPB_SecPerClus
+    dec
+    sta volumeID + VolumeID::BPB_SecPerClusMask
     m_memcpy block_data + F32_VolumeID::EBPB + EBPB::RootClus, volumeID + VolumeID::EBPB_RootClus, 4
     m_memcpy block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::EBPB_FATSz32 , 4
 
@@ -174,7 +177,7 @@ __calc_cluster_begin_lba:
     debug16 "fbuf", filename_buf
 
     ; init file descriptor area
-       ldx #0
+    ldx #0
     jsr __fat_init_fdarea
 
     ; alloc file descriptor for current dir. which is cluster number 0 on fat32 - !!! Note: the RootClus offset is compensated within calc_lba_addr

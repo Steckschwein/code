@@ -1,45 +1,45 @@
-	.include "test_fat32.inc"
+.include "test_fat32.inc"
 
-	.import __calc_lba_addr
-	.import __fat_is_cln_zero
-	.import __fat_init_fdarea
-	.import __fat_alloc_fd
-	.import fat_fopen
-	.import fat_fread_byte
+.autoimport
 
 .code
 
-
 ; -------------------
 		setup "fat_fseek empty file"
-		;setup fd2 with test cluster, but 0 filesize
-		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
-		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
-		set32 fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos, 0
-		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0 ; empty file
+		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, 0 ; empty file
+    set32 test_seek+Seek::Offset, 2
 
-		ldx #(2*FD_Entry_Size) ; 0 byte file
+		ldx #(1*FD_Entry_Size) ; 0 byte file
+    lda #<test_seek
+    ldy #>test_seek
 		jsr fat_fseek
 		assertCarry 1; expect "error"
-		assertA EOF ; EOF
-		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
-		assert32 0, fd_area+1*FD_Entry_Size)+F32_fd::seek_pos
-		assert32 test_start_cluster+3, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
+		assertA EINVAL ; end of file
+		assertX (1*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 		brk
 
+test_seek:
+  .tag Seek
+
 setUp:
+  set8 test_seek+Seek::Whence, SEEK_SET
 	jsr __fat_init_fdarea
 	set_sec_per_cl SEC_PER_CL
 	set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
 	set32 volumeID + VolumeID::lba_fat, FAT_LBA		;fat lba
 
 	;setup fd0 as root cluster
+	set32 fd_area+(0*FD_Entry_Size)+F32_fd::StartCluster, 0
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 	set8 fd_area+(0*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Dir
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
 	;setup fd1 with test cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
+	set32 fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster, test_start_cluster
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, $1000
@@ -72,20 +72,20 @@ mock_read_block:
 		; defaults to dir entry data
 		load_block_if LBA_BEGIN, block_root_cl, @exit ; load root cl block
 
-		; fat block $2980 read?
-		cmp32_ne lba_addr, FAT_LBA+2, :+
+		; fat block of test cluster read?
+		cmp32_ne lba_addr, (FAT_LBA+(test_start_cluster>>7)), :+
 			; ... simulate fat block read, just fill some values which are reached if the fat32 implementation is correct ;)
-			set32 block_fat+((test_start_cluster+0)<<2), (test_start_cluster+3) ; build a fragmented chain
-			set32 block_fat+((test_start_cluster+3)<<2), (test_start_cluster+6)
-			set32 block_fat+((test_start_cluster+6)<<2), FAT_EOC
+			set32 block_fat+((test_start_cluster+0)<<2 & (sd_blocksize-1)), (test_start_cluster+3) ; build a fragmented chain
+			set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), (test_start_cluster+7)
+			set32 block_fat+((test_start_cluster+7)<<2 & (sd_blocksize-1)), FAT_EOC
       jmp @exit_inc
 :
 		; data block read?
 		; - for tests with 2sec/cl
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 0), test_block_data_0_0, @exit
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 1), test_block_data_0_1, @exit
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 0), test_block_data_1_0, @exit
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 1), test_block_data_1_1, @exit
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 0), test_block_data_0_0, @exit  ; block 0, cluster 0
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 1), test_block_data_0_1, @exit  ; block 1, cluster 0
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 0), test_block_data_1_0, @exit  ; block 0, cluster 1
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 1), test_block_data_1_1, @exit  ; block 1, cluster 1
 ;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 0), test_block_data_1_0, @exit
 ;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 1), test_block_data_1_1, @exit
 		; - for tests with 4sec/cl

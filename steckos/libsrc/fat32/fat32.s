@@ -48,7 +48,7 @@
 .export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
 
-.export __fat_fseek
+.export __fat_fseek_cluster
 .export __fat_init_fdarea
 
 .code
@@ -111,17 +111,54 @@ fat_fseek:
 ;  X - offset into fd_area
 ;out:
 ;  C=0 on success (A=0), C=1 and A=error code otherwise
-__fat_fseek:
-;    _cmp32_lt_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize
-;    and volumeID+VolumeID::BPB_SecPerClus ; mask with sec per cluster
- ;   bne __fat_prepare_access_read         ; if block is not at the beginning of cluster go on read the block
-;    jsr __fat_next_cln    ; select next cluster within chain
-
-    ; calculate amount of cluster chain iterations by "seek_pos(3 to 0)" / ($200 * "sec per cluster") => seek_pos(3 to 1) >> 1
-
+__fat_fseek_cluster:
+    ; calculate amount of cluster chain iterations by "seek_pos" / ($200 * "sec per cluster") => (seek_pos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
+    lda fd_area+F32_fd::seek_pos+3,x
+    sta volumeID+VolumeID::temp_dword+2
+    lda fd_area+F32_fd::seek_pos+2,x
+    sta volumeID+VolumeID::temp_dword+1
     lda fd_area+F32_fd::seek_pos+1,x
+    sta volumeID+VolumeID::temp_dword+0
 
+    lda volumeID+VolumeID::BPB_SecPerClus
+@calc_cln:
+    tay
+    lsr volumeID+VolumeID::temp_dword+2
+    ror volumeID+VolumeID::temp_dword+1
+    ror volumeID+VolumeID::temp_dword+0
+    tya
+    lsr
+    bne @calc_cln
+
+    lda fd_area+F32_fd::StartCluster+0,x
+    sta fd_area+F32_fd::CurrentCluster+0,x
+    lda fd_area+F32_fd::StartCluster+1,x
+    sta fd_area+F32_fd::CurrentCluster+1,x
+    lda fd_area+F32_fd::StartCluster+2,x
+    sta fd_area+F32_fd::CurrentCluster+2,x
+    lda fd_area+F32_fd::StartCluster+3,x
+    sta fd_area+F32_fd::CurrentCluster+3,x
+@seek_cln:
+    lda volumeID+VolumeID::temp_dword+2
+    ora volumeID+VolumeID::temp_dword+1
+    ora volumeID+VolumeID::temp_dword+0
+    debug32 "seek cln", volumeID+VolumeID::temp_dword
+    beq @l_exit_ok
+    debug32 "seek cl >", fd_area+F32_fd::CurrentCluster+$17
+    jsr __fat_next_cln
+    bcs @l_exit
+    _dec24 volumeID+VolumeID::temp_dword
+    bra @seek_cln
+@l_exit_ok:
+    debug32 "seek cl <", fd_area+F32_fd::CurrentCluster+$17
+    clc
+@l_exit:
     rts
+@l_exit_err:
+    lda #ENOSYS
+    sec
+    rts
+
 
 ;in:
 ;  X - offset into fd_area
