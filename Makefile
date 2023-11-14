@@ -18,7 +18,7 @@ build:
 	(cd progs; make)
 	(cd games; make)
 
-test:
+test: build
 	(cd steckos; make test)
 
 
