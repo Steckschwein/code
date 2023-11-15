@@ -2,6 +2,8 @@
 
 .autoimport
 
+debug_enabled=1
+
 .code
 ; -------------------
 		setup "__fat_init_fdarea / isOpen"	; test init fd area
@@ -440,8 +442,6 @@ data_loader	; define data loader
 
 mock_not_implemented:
 		fail "mock was called, not implemented yet!"
-
-debug_enabled=1
 
 mock_read_block:
 		debug32 "mock_read_block lba", lba_addr

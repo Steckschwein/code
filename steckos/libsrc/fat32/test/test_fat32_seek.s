@@ -2,6 +2,8 @@
 
 .autoimport
 
+debug_enabled=1
+
 .code
 
 ; -------------------
@@ -14,11 +16,66 @@
     ldy #>test_seek
 		jsr fat_fseek
 		assertCarry 1; expect "error"
-		assertA EINVAL ; end of file
+		assertA EINVAL ; invalid seek offset
 		assertX (1*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
+
+; -------------------
+		setup "fat_fseek filesize"
+		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, (512*3+5)
+    set32 test_seek+Seek::Offset, (512*3+5)
+
+		ldx #(1*FD_Entry_Size)
+    lda #<test_seek
+    ldy #>test_seek
+		jsr fat_fseek
+		assertCarry 1; expect "error"
+		assertA EINVAL ; invalid seek offset
+		assertX (1*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
+
+; -------------------
+		setup "fat_fseek 0 empty file" ;
+		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, 0 ; empty file
+    set32 test_seek+Seek::Offset, 0
+
+		ldx #(1*FD_Entry_Size) ; 0 byte file
+    lda #<test_seek
+    ldy #>test_seek
+		jsr fat_fseek
+		assertCarry 1; expect "error"
+		assertA EINVAL ; invalid seek offset
+		assertX (1*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
+
+; -------------------
+		setup "fat_fseek eof"
+		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, (512*3+5)
+    set32 test_seek+Seek::Offset, (512*3+4)
+
+		ldx #(1*FD_Entry_Size)
+    lda #<test_seek
+    ldy #>test_seek
+		jsr fat_fseek
+		assertCarry 0
+		assertX (1*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert32 (512*3+4), fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
+		assert32 test_start_cluster+3, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
+
+		jsr fat_fread_byte
+		assertCarry 0 ; last byte
+    assertA "1"
+
+		jsr fat_fread_byte
+		assertCarry 1
+    assertA EOK ; eof expected
 
 		brk
 
@@ -28,7 +85,7 @@ test_seek:
 setUp:
   set8 test_seek+Seek::Whence, SEEK_SET
 	jsr __fat_init_fdarea
-	set_sec_per_cl SEC_PER_CL
+	set_sec_per_cl 2
 	set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
 	set32 volumeID + VolumeID::lba_fat, FAT_LBA		;fat lba
 
@@ -59,8 +116,6 @@ data_loader	; define data loader
 
 mock_not_implemented:
 		fail "mock was called, not implemented yet!"
-
-debug_enabled=1
 
 mock_read_block:
 		debug32 "mock_read_block lba", lba_addr

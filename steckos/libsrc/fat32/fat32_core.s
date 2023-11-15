@@ -209,24 +209,30 @@ __fat_clone_fd:
 ; prepare read/write access by fetching the appropriate block from device
 .export __fat_prepare_access
 __fat_prepare_access:
-    ; TODO FIXME - dirty check or always read - the block_data may be corrupted if a read from another fd happened in between
+    ; TODO FIXME - introduce dirty check or do always read - the block_data may be corrupted if a read from another fd happened in between
     lda fd_area+F32_fd::seek_pos+1,x
-    and #$01                          ; mask block start
-    ora fd_area+F32_fd::seek_pos+0,x  ; and test whether seek_pos is at the begin of a block (multiple of $0200) ?
-    bne l_prepare
+    and #$01                              ; mask block start
+    ora fd_area+F32_fd::seek_pos+0,x      ; and test whether seek_pos is at the beginning of a block (multiple of $0200) ?
+    bne l_prepare                         ; no, we can fetch the byte from block_data
+
+    lda fd_area+F32_fd::seek_pos+3,x      ; TODO improve by moving to __fat_next_cln - first call should init the currentcluster from startcluster
+    ora fd_area+F32_fd::seek_pos+2,x
+    ora fd_area+F32_fd::seek_pos+1,x
+    beq __fat_prepare_access_read         ; seek pos is 0 - we are at first block and first cluster (StartCluster), we can skip select the next clnr
 
     lda fd_area+F32_fd::seek_pos+1,x
-    and volumeID+VolumeID::BPB_SecPerClus ; mask with sec per cluster
-    bne __fat_prepare_access_read         ; if block is not at the beginning of a cluster go on read the block
-
-    jsr __fat_fseek_cluster   ; make sure correct cluster is selected
-    bcs l_exit                ; exit on error or EOC (C=1)
+    lsr
+    and volumeID+VolumeID::BPB_SecPerClusMask ; mask with sec per cluster
+    bne __fat_prepare_access_read             ; if block is not at the beginning of a cluster just read the block
+    jsr __fat_next_cln                        ; select next cluster
+    bcs l_exit                                ; exit on error or EOC (C=1)
 .export __fat_prepare_access_read
 __fat_prepare_access_read:
     jsr __calc_lba_addr
     jsr __fat_read_block_data
     bcs l_exit
 l_prepare:
+    .assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
     lda fd_area+F32_fd::seek_pos+0,x
     sta __volatile_ptr+0
     lda fd_area+F32_fd::seek_pos+1,x

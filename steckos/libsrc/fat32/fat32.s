@@ -71,30 +71,35 @@ fat_fseek:
     lda (__volatile_ptr),y
     cmp #SEEK_SET
     ; TODO support SEEK_CUR, SEEK_END
-    beq :+
+    beq @l_filesize
 @l_exit_err:
     lda #EINVAL
     sec
     rts
-    ; check requested seek pos with FileSize
+@l_filesize:
+    ; check requested seek_pos < FileSize
+    ldy #Seek::Offset+3
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+3,x
+    debug16 "fseek 0", __volatile_ptr
     beq :+
     bcs @l_exit_err
 :   dey
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+2,x
+    debug16 "fseek 1", __volatile_ptr
     beq :+
     bcs @l_exit_err
 :   dey
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+1,x
+    debug16 "fseek 2", __volatile_ptr
     beq :+
     bcs @l_exit_err
 :   dey
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+0,x
-    beq :+
+    debug16 "fseek 3", __volatile_ptr
     bcs @l_exit_err
     ; save seek pos
 :   sta fd_area+F32_fd::seek_pos+0,x
@@ -107,6 +112,7 @@ fat_fseek:
     iny
     lda (__volatile_ptr),y
     sta fd_area+F32_fd::seek_pos+3,x
+    debug32 "fseek s", fd_area+F32_fd::seek_pos+$17
 ;in:
 ;  X - offset into fd_area
 ;out:
@@ -144,7 +150,7 @@ __fat_fseek_cluster:
     ora volumeID+VolumeID::temp_dword+0
     debug32 "seek cln", volumeID+VolumeID::temp_dword
     beq @l_exit_ok
-    debug32 "seek cl >", fd_area+F32_fd::CurrentCluster+$17
+    debug32 "seek cl >", fd_area+F32_fd::CurrentCluster+$17 ; $17 => fd_area offset fd=2
     jsr __fat_next_cln
     bcs @l_exit
     _dec24 volumeID+VolumeID::temp_dword
