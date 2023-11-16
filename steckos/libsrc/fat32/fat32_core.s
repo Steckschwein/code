@@ -215,7 +215,7 @@ __fat_prepare_access:
     ora fd_area+F32_fd::seek_pos+0,x      ; and test whether seek_pos is at the beginning of a block (multiple of $0200) ?
     bne l_prepare                         ; no, we can fetch the byte from block_data
 
-    lda fd_area+F32_fd::seek_pos+3,x      ; TODO improve by moving to __fat_next_cln - first call should init the currentcluster from startcluster
+    lda fd_area+F32_fd::seek_pos+3,x      ; TODO improve by moving to __fat_next_cln (encapsulate) - first call to __fat_next_cln should init the currentcluster from startcluster
     ora fd_area+F32_fd::seek_pos+2,x
     ora fd_area+F32_fd::seek_pos+1,x
     beq __fat_prepare_access_read         ; seek pos is 0 - we are at first block and first cluster (StartCluster), we can skip select the next clnr
@@ -578,8 +578,9 @@ __fat_read_cluster_block_and_select:
 __fat_is_cluster_eoc:
     phy
     lda (read_blkptr),y
-    cmp #<FAT_EOC
-    bne @l_neoc
+    and #$f8              ; 0x?FFFFFF8 - 0x?FFFFFFF - eoc compatible check
+    cmp #$f8
+    bcc @l_neoc
     iny
     lda (read_blkptr),y
     cmp #<(FAT_EOC>>8)

@@ -55,7 +55,7 @@ debug_enabled=1
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 ; -------------------
-		setup "fat_fseek eof"
+		setup "fat_fseek to filesize-1"
 		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, (512*3+5)
     set32 test_seek+Seek::Offset, (512*3+4)
 

@@ -81,25 +81,21 @@ fat_fseek:
     ldy #Seek::Offset+3
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+3,x
-    debug16 "fseek 0", __volatile_ptr
     beq :+
     bcs @l_exit_err
 :   dey
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+2,x
-    debug16 "fseek 1", __volatile_ptr
     beq :+
     bcs @l_exit_err
 :   dey
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+1,x
-    debug16 "fseek 2", __volatile_ptr
     beq :+
     bcs @l_exit_err
 :   dey
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+0,x
-    debug16 "fseek 3", __volatile_ptr
     bcs @l_exit_err
     ; save seek pos
 :   sta fd_area+F32_fd::seek_pos+0,x
@@ -112,7 +108,6 @@ fat_fseek:
     iny
     lda (__volatile_ptr),y
     sta fd_area+F32_fd::seek_pos+3,x
-    debug32 "fseek s", fd_area+F32_fd::seek_pos+$17
 ;in:
 ;  X - offset into fd_area
 ;out:
@@ -157,12 +152,8 @@ __fat_fseek_cluster:
     bra @seek_cln
 @l_exit_ok:
     debug32 "seek cl <", fd_area+F32_fd::CurrentCluster+$17
-    clc
+    jmp __fat_prepare_access_read ; TODO - replace with dirty check - see __fat_prepare_access
 @l_exit:
-    rts
-@l_exit_err:
-    lda #ENOSYS
-    sec
     rts
 
 

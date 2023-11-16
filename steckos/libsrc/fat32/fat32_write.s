@@ -57,13 +57,14 @@ fat_write_byte:
 
     jsr __fat_is_cln_zero
     bne :+
-    jsr __fat_reserve_cluster						; otherwise start cluster is root, we try to find a free cluster
+    jsr __fat_reserve_cluster					; otherwise start cluster is root, we try to find a free cluster
 		bcs @l_exit
 
 :		jsr __fat_prepare_access_read
-    bcs @l_exit
+    bcc :+
+    cmp #EOK                          ; EOC
 
-		lda __volatile_tmp					      ; get back byte to write
+: 	lda __volatile_tmp					      ; get back byte to write
 		sta (__volatile_ptr)
 
 		_inc32_x fd_area+F32_fd::seek_pos
