@@ -49,6 +49,15 @@ ansi_chrout:
     dec ansi_state
     rts
 @cont:
+    cmp #'J'
+    bne :+
+    lda #2
+    cmp ansi_param1
+    bne :+
+
+    stz ansi_state
+    jmp textui_blank
+:
     cmp #'A' ; cursor up
     bne :+
     lda crs_y
@@ -91,14 +100,6 @@ ansi_chrout:
     lda ansi_param2
     sta crs_y
     bra @seq_end
-:
-    cmp #'J'
-    bne :+
-    lda #2
-    cmp ansi_param1
-    bne :+
-
-    jmp textui_blank
 :
     ; TODO
     ; Is alphanumeric?
