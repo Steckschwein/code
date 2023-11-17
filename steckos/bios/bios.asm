@@ -34,9 +34,8 @@
       ptr1:       .res 2
       ptr2:       .res 2
       init_step:  .res 1
+      startaddr:  .res 2
 .code
-
-startaddr=$0380
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
 .export __fat_write_dir_entry=fat_write_dir_entry
@@ -262,7 +261,7 @@ zp_stack_ok:
 boot_from_card:
       print "Boot from SD card... "
       jsr fat_mount
-      beq @findfile
+      bcc @findfile
       pha
       print "mount error ("
       pla
@@ -281,7 +280,7 @@ boot_from_card:
       ldx #>nvram
       ldy #O_RDONLY
       jsr fat_fopen          ; A/X - pointer to filename
-      beq @loadfile
+      bcc @loadfile
 @loop_end:
       println " not found."
       bra do_upload
@@ -306,9 +305,8 @@ boot_from_card:
       inc ptr1+1
       bne @l
 @l_is_eof:
-      cmp #0
-      bne @l
       jsr fat_close    ; close after read to free fd, regardless of error
+      cmp #EOK
       beq load_ok
 load_error:
       jsr hexout_s

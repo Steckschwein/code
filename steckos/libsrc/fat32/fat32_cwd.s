@@ -43,9 +43,6 @@
 ;  Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_get_root_and_pwd:
 
-    php
-    sei
-
     sta __volatile_ptr
     stx __volatile_ptr+1
 
@@ -76,14 +73,13 @@ fat_get_root_and_pwd:
     jsr path_inverse                ; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
     lda #EOK                    ; that's it...
 @l_exit:
-    plp
     cmp #EOK
     rts
 l_dot_dot:
     .asciiz ".."
 
-    ; in:
-    ;  dirptr - pointer to dir entry (F32DirEntry)
+; in:
+;  dirptr - pointer to dir entry (F32DirEntry)
 cluster_nr_matcher:
     ldy #F32DirEntry::Name
     lda (dirptr),y

@@ -42,25 +42,21 @@
 ;---------------------------------------------------------------------
 ; Mount FAT32 on Partition 0
 ;---------------------------------------------------------------------
+; out:
+;   C=0 on success, C=1 otherwise with A=<error code>
 fat_mount:
-    ldx #.sizeof(VolumeID)
-:    stz volumeID,x
-    dex
-    bpl :-
-
     ; set lba_addr to $00000000 since we want to read the bootsector
     stz lba_addr + 0
     stz lba_addr + 1
     stz lba_addr + 2
     stz lba_addr + 3
     jsr __fat_read_block_data
-    beq @l0
+    bcc @l0
     rts
-
-@l0:  jsr fat_check_signature
-    beq @l1
+@l0:
+    jsr fat_check_signature
+    bcc @l1
     rts
-
 @l1:  ; Check partition table entry 0 for valid FAT32 signature
     @part0 = block_data + BootSector::Partitions + PartTable::Partition_0
 
@@ -75,11 +71,11 @@ fat_mount:
 
     ; Read FAT Volume ID at LBABegin and Check signature
     jsr __fat_read_block_data
-    beq :+
+    bcc :+
     rts
 
 :   jsr fat_check_signature
-    beq @l4
+    bcc @l4
     rts
 @l4:
     ; Bytes per Sector, must be 512 = $0200
@@ -90,8 +86,8 @@ fat_mount:
     beq @l6
 @invalid:
     lda #fat_invalid_sector_size
+    sec
     rts
-
 @l6:
     lda block_data + F32_VolumeID::BPB + BPB::SecPerClus
     sta volumeID + VolumeID::BPB_SecPerClus
@@ -190,6 +186,10 @@ fat_check_signature:
     bne @l1
     asl ; $aa
     cmp block_data + BootSector::Signature + 1
-    beq @l2
-@l1:  lda #fat_bad_block_signature
-@l2:  rts
+    bne @l1
+    clc
+    rts
+@l1:
+    lda #fat_bad_block_signature
+    sec
+    rts

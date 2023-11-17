@@ -9,6 +9,7 @@
 .include "debug.inc"
 .include "sdcard.inc"
 .include "fat32.inc"
+.include "errno.inc"
 .include "fcntl.inc"
 .include "nvram.inc"
 .include "spi.inc"

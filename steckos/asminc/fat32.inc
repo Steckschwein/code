@@ -123,7 +123,6 @@ PartType_FAT32_LBA    = $0c
    lba_fat           .dword
    lba_fat2          .dword ; mirror fat
    lba_fsinfo        .dword
-   free_cluster      .dword
    temp_dword        .dword
 .endstruct
 
@@ -134,10 +133,10 @@ PartType_FAT32_LBA    = $0c
    Signature1     .byte 4
    Reserved1      .byte $1e0
    Signature2     .byte 4
-   FreeClus       .byte 4   ; amount of free clusters
-   LastClus       .byte 4   ; last known cluster number
-   Reserved2      .byte 11
-   Signature      .word
+   FreeClus       .dword    ; amount of free clusters
+   LastClus       .dword    ; last known cluster number
+   Reserved2      .byte 12
+   Signature      .byte 4
 .endstruct
 ;--------------------------------------------------------------------------------------
 ; FAT32 Directory Entry
@@ -192,8 +191,8 @@ DIR_Entry_Deleted            = $e5
 
 FD_Entry_Size         = .sizeof(F32_fd)
 FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size
-FD_INDEX_CURRENT_DIR  = 0*FD_Entry_Size    ; current dir always go to fd #0
-FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size   ; temp dir always go to fd #1
+FD_INDEX_CURRENT_DIR  = 0*FD_Entry_Size     ; current dir always go to fd #0
+FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size     ; temp dir always go to fd #1
 
 ; TODO: do we need these?
 ;BS_BootSig      = 38
@@ -204,7 +203,7 @@ FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size   ; temp dir always go to fd #1
 FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
 ; memory locations for fat32 driver
-volumeID              = $0308 ; address of VolumeID
+volumeID              = $0308 ; address of VolumeID (@see rtc.inc)
 filename_buf          = volumeID + .sizeof(VolumeID) ; (13 byte, 8.3 + \0) file name buffer
 fat_dirname_mask      = filename_buf + 13; (11 byte, fat32 name and ext)
 fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector

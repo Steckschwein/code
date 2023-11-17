@@ -609,7 +609,7 @@ __fat_rtc_date:
 ;  A - 0x00 free, 0xff EOC
 ;  Y - offset in block
 ;   read_blkptr - points to block_fat either 1st or 2nd page
-__fat_mark_cluster: ; TODO cluster chain support
+__fat_mark_cluster:
     sta (read_blkptr), y
     iny
     sta (read_blkptr), y
