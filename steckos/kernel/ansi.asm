@@ -114,8 +114,6 @@ ansi_chrout:
 :
     cmp #'H'
     bne :+
-    cmp #'f'
-    bne :+
 
     lda ansi_param1
     sta crs_x
