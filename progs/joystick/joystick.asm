@@ -11,6 +11,11 @@
 .export char_out=krn_chrout
 
 appstart $1000
+
+
+		jsr primm
+    .byte 27,"[2J ",0
+
     jsr joystick_on
 loop:
     jsr krn_getkey
@@ -44,10 +49,11 @@ loop:
 @d:	lda #4
 out:
 		jsr hexout_s
-    ldx #0
-    ldy #0
-    jsr krn_textui_crsxy
-    bra loop
+		
+		jsr primm
+		.byte 27,"[3C",0
+
+		bra loop
 exit:
 		jmp (retvec)
 
