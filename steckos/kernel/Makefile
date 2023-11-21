@@ -2,6 +2,7 @@ CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
 OBJS=kernel.o rtc.o exec.o automount.o jumptable.o
 OBJS+=textui.o
+OBJS+=ansi.o
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
 LDFLAGS_KERNEL=-C kernel.cfg
@@ -33,7 +34,7 @@ DEFINES+=-DDISABLE_INTRO
 #OPT += -DTEXTUI_STROUT
 #OPT += -DTEXTUI_PRIMM
 
-.PHONY: all clean
+.PHONY: all clean test
 all: kernel.bin loader.prg
 
 clean:
@@ -63,7 +64,7 @@ test.bin: test.o
 	cl65 --target none --config kernel.cfg test.asm -o test.bin
 
 test:
-	(cd test; make test)
+	(cd test; make all)
 
 ../lib/steckschwein.a:
 	(cd ../libsrc ; make)
