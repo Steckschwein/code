@@ -24,8 +24,7 @@
 .include "steckos.inc"
 .include "fat32.inc"
 
-.import hexout
-.import primm
+.autoimport 
 .export char_out=krn_chrout
 
 appstart $1000
