@@ -20,11 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
+
+.include "steckos.inc"
+; .include "common.inc"
+; .include "kernel.inc"
+; .include "kernel_jumptable.inc"
 .include "fat32.inc"
-.include "appstart.inc"
+; .include "appstart.inc"
 
 .import hexout
 .import primm
@@ -53,7 +55,7 @@ l1:
     bcs @l4
     jsr hexout
     printstring " i/o error"
-    bra @exit
+    jmp @exit
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
@@ -73,12 +75,43 @@ l1:
     dec cnt
     bne @l1
     crlf
-    lda #$03
+    lda #5
     sta cnt
 @l1:
+    ldy #F32DirEntry::Attr
+	lda (dirptr),y
+
+ 	bit #DIR_Attr_Mask_Dir
+	beq :+
+    lda #'['
+    jsr char_out
+    bra @print
+:
+    lda #' '
+    jsr char_out
+
+@print:
     jsr print_filename
+
+    ldy #F32DirEntry::Attr
+	lda (dirptr),y
+
+	bit #DIR_Attr_Mask_Dir
+	beq :+
+    lda #']'
+    jsr char_out
+    bra @pad
+:
+
     lda #' '
     jsr krn_chrout
+@pad:
+    lda #' '
+    jsr krn_chrout
+    lda #' '
+    jsr krn_chrout
+    ; lda #' '
+    ; jsr krn_chrout
 
     dec pagecnt
     bne @l
@@ -99,15 +132,15 @@ l1:
 @l:
     bit flags
     bmi @exit
-    bra @l3
+    jmp @l3
 
 @exit:
     jmp (retvec)
 
 
 pattern:  .byte "*.*",$00
-cnt:      .byte $04
-entries = 23
+cnt:      .byte 6
+entries = 5*24
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
