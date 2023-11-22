@@ -24,12 +24,9 @@
 .include "steckos.inc"
 .include "fat32.inc"
 
-.autoimport
+.import hexout
+.import primm
 .export char_out=krn_chrout
-.zeropage
-tmp1: .res 1
-tmp2: .res 1
-tmp3: .res 2
 
 appstart $1000
 
@@ -52,7 +49,8 @@ l1:
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcc @exit
+    bcs @l4 
+    jmp @exit
 @l4:
     lda (dirptr)
     cmp #$e5
@@ -84,7 +82,14 @@ l1:
     jsr char_out
 
 @print:
-    jsr print_filename
+  
+	ldy #F32DirEntry::Name
+:
+	lda (dirptr),y
+    jsr char_out
+    iny
+    cpy #$0b
+    bne :-
 
     ldy #F32DirEntry::Attr
 	lda (dirptr),y
