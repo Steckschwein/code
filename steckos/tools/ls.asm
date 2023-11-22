@@ -22,16 +22,9 @@
 
 
 .include "steckos.inc"
-; .include "common.inc"
-; .include "kernel.inc"
-; .include "kernel_jumptable.inc"
 .include "fat32.inc"
-; .include "appstart.inc"
 
-.import hexout
-.import primm
-.import print_filename
-
+.autoimport
 .export char_out=krn_chrout
 .zeropage
 tmp1: .res 1
@@ -110,8 +103,6 @@ l1:
     jsr krn_chrout
     lda #' '
     jsr krn_chrout
-    ; lda #' '
-    ; jsr krn_chrout
 
     dec pagecnt
     bne @l
