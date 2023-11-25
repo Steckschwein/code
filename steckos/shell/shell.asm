@@ -40,7 +40,7 @@ BUF_SIZE		= 80 ;TODO maybe too small?
 .zeropage
 bufptr:         .res 2
 pathptr:        .res 2
-p_history:      .res 2
+; p_history:      .res 2
 tmp1:   .res 1
 tmp2:   .res 1
 ;ptr1:   .res 2
@@ -503,7 +503,6 @@ exec:
 
 
 .ifdef DEBUG
-.import hexout
 dumpvec		= $c0
 dumpvec_end   	= dumpvec
 dumpvec_start 	= dumpvec+2
