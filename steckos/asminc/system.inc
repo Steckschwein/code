@@ -23,6 +23,7 @@
 .ifndef _SYSTEM_INC_
   _SYSTEM_INC_ = 1
 
+
 ; @see system.s
 IRQ_VDP			= 1<<7		; irq from video chip
 IRQ_SND			= 1<<6		; irq from sound card (ym3812)
@@ -31,6 +32,8 @@ IRQ_IO0			= 1<<4		; i/o port 0
 ;...
 
 clockspeed  = 10	; in Mhz
+
+shell_start = $8000 ; shell load address
 
 ctrl_port	= $0230
 

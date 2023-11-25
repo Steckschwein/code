@@ -19,17 +19,10 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.setcpu "65c02"
 
-prompt  = $af
+prompt  = '>'
 
-.include "zeropage.inc"
-.include "kernel_jumptable.inc"
-.include "vdp.inc"
-.include "common.inc"
-.include "keyboard.inc"
-.include "rtc.inc"
-.include "appstart.inc"
+.include "steckos.inc"
 
 ; SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE		= 80 ;TODO maybe too small?
@@ -41,11 +34,8 @@ BUF_SIZE		= 80 ;TODO maybe too small?
 ;---------------------------------------------------------------------------------------------------------
 
 .export char_out=krn_chrout
+.autoimport
 
-.import hexout
-.import strout
-.import primm
-.import kernel_start
 
 .zeropage
 bufptr:         .res 2
@@ -55,7 +45,8 @@ tmp1:   .res 1
 tmp2:   .res 1
 ;ptr1:   .res 2
 
-appstart $e200
+appstart shell_start
+
 .export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly
 .code
 init:
