@@ -105,6 +105,8 @@ kern_init:
     jsr __automount_init
     bne do_upload
 
+    lda #30
+    sta slot2
     lda #<filename
     ldx #>filename
     jsr execv
