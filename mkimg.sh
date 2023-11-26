@@ -1,6 +1,6 @@
 #!/bin/bash
-size=256
-sectors_clus=4
+size=128
+sectors_clus=2
 alignment=1048576
 
 img="steckos.img"
