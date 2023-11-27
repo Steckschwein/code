@@ -54,7 +54,7 @@ tmp2:   .res 1
 
 
 appstart __SHELL_START__
-.export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly
+.export __APP_SIZE__=kernel_start-__SHELL_START__ ; adjust __APP_SIZE__ for linker accordingly
 .code
 init:
         jsr primm

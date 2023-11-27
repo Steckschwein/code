@@ -1,23 +1,6 @@
 .include "bios.inc"
 
-.import uart_init
-.import xmodem_upload,crc16_table_init
-.import init_via1
-.import hexout, hexout_s
-.import primm
-.import vdp_init, vdp_detect, vdp_charout
-.import vdp_bgcolor
-.import sdcard_init
-.import sdcard_detect
-.import fat_mount
-.import fat_fopen, fat_fread_byte, fat_close
-.import read_nvram
-.import sd_read_block, sd_write_block
-.import spi_select_device
-.import spi_deselect
-.import spi_rw_byte
-.import spi_r_byte
-.import fetchkey
+.autoimport
 
 .export read_block=sd_read_block
 .export char_out=vdp_charout
@@ -38,8 +21,9 @@
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
-.export __fat_write_dir_entry=fat_write_dir_entry
-fat_write_dir_entry:
+.export write_block
+write_block:
+      clc
       rts
 
 memcheck:

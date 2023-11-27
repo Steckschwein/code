@@ -61,7 +61,7 @@ __fat_opendir_cwd:
 ;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
 __fat_opendir:
 		jsr __fat_open_path
-		bne @l_exit					; exit on error
+		bcs @l_exit					; exit on error
 		lda fd_area + F32_fd::Attr,x
 		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
 		beq @l_exit_close

@@ -53,12 +53,12 @@
 
 .code
 
-    ;  seek n bytes within file denoted by the given FD
-    ;in:
-    ;  X   - offset into fd_area
-    ;  A/Y - pointer to seek_struct - @see fat32.inc
-    ;out:
-    ;  C=0 on success (A=0), C=1 and A=<error code> or C=1 and A=0 (EOK) if EOF reached
+;  seek n bytes within file denoted by the given FD
+;in:
+;  X   - offset into fd_area
+;  A/Y - pointer to seek_struct - @see fat32.inc
+;out:
+;  C=0 on success (A=0), C=1 and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 fat_fseek:
 
     _is_file_open   ; otherwise rts C=1 and A=#EINVAL
@@ -66,6 +66,8 @@ fat_fseek:
 
     sta __volatile_ptr
     sty __volatile_ptr+1
+
+    debug "seek fs"
 
     ldy #Seek::Whence
     lda (__volatile_ptr),y
@@ -98,7 +100,7 @@ fat_fseek:
     cmp fd_area+F32_fd::FileSize+0,x
     bcs @l_exit_err
     ; save seek pos
-:   sta fd_area+F32_fd::seek_pos+0,x
+    sta fd_area+F32_fd::seek_pos+0,x
     iny
     lda (__volatile_ptr),y
     sta fd_area+F32_fd::seek_pos+1,x
@@ -122,36 +124,29 @@ __fat_fseek_cluster:
     sta volumeID+VolumeID::temp_dword+0
 
     lda volumeID+VolumeID::BPB_SecPerClus
-@calc_cln:
+@cl_chain:
     tay
     lsr volumeID+VolumeID::temp_dword+2
     ror volumeID+VolumeID::temp_dword+1
     ror volumeID+VolumeID::temp_dword+0
     tya
     lsr
-    bne @calc_cln
+    bne @cl_chain
 
-    lda fd_area+F32_fd::StartCluster+0,x
-    sta fd_area+F32_fd::CurrentCluster+0,x
-    lda fd_area+F32_fd::StartCluster+1,x
-    sta fd_area+F32_fd::CurrentCluster+1,x
-    lda fd_area+F32_fd::StartCluster+2,x
-    sta fd_area+F32_fd::CurrentCluster+2,x
-    lda fd_area+F32_fd::StartCluster+3,x
-    sta fd_area+F32_fd::CurrentCluster+3,x
 @seek_cln:
     lda volumeID+VolumeID::temp_dword+2
     ora volumeID+VolumeID::temp_dword+1
     ora volumeID+VolumeID::temp_dword+0
-    debug32 "seek cln", volumeID+VolumeID::temp_dword
+    debug32 "seek", volumeID+VolumeID::temp_dword
     beq @l_exit_ok
-    debug32 "seek cl >", fd_area+F32_fd::CurrentCluster+$17 ; $17 => fd_area offset fd=2
+    debug32 "seek >", fd_area+F32_fd::CurrentCluster+$17 ; $17 => fd_area offset fd=2
     jsr __fat_next_cln
+    debug32 "seek nx cl", volumeID+VolumeID::temp_dword
     bcs @l_exit
     _dec24 volumeID+VolumeID::temp_dword
     bra @seek_cln
 @l_exit_ok:
-    debug32 "seek cl <", fd_area+F32_fd::CurrentCluster+$17
+    debug32 "seek <", fd_area+F32_fd::CurrentCluster+$17
     jmp __fat_prepare_access_read ; TODO - replace with dirty check - see __fat_prepare_access
 @l_exit:
     rts
@@ -171,7 +166,7 @@ fat_fread_byte:
     rts ; exit - EOK (0) and C=1
 
 :   phy
-    jsr __fat_prepare_access
+    jsr __fat_prepare_block_access
     bcs @l_exit
 
     lda (__volatile_ptr)
@@ -194,58 +189,47 @@ fat_fread_byte:
 ;    O_EXCL    = $80
 ; out:
 ;  .X - index into fd_area of the opened file
-;  C=0 on success (A=0), C=1 and A=error code otherwise
+;  C=0 on success, C=1 and A=<error code> otherwise
 fat_fopen:
-    sty __volatile_tmp        ; save open flag
+    sty __volatile_tmp           ; save open flag
+    debug8 "ffo vtmp 0", __volatile_tmp
     ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
     jsr __fat_open_path
-    bne @l_error
-    lda fd_area + F32_fd::Attr, x
+    bcs @l_error
+    lda fd_area + F32_fd::Attr,x
     and #DIR_Attr_Mask_Dir      ; regular file or directory?
-    beq @l_atime                ; not dir, update atime if desired, exit ok
+    beq @l_opened               ; exit, file opened
     lda #EISDIR                 ; was directory, we must not free any fd
 @l_error:
     cmp #ENOENT                 ; no such file or directory ?
     bne @l_exit_err             ; other error, then exit
     lda __volatile_tmp          ; check if we should create a new file
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)
-    bne :+
+    bne @l_touch
     lda #ENOENT                 ; no "write" flags set, exit with ENOENT
 @l_exit_err:
     sec
     rts
-
-:   debug "r+"
-    copypointer dirptr, s_ptr2
-    jsr string_fat_name        ; build fat name upon input string (filenameptr)
-    bne @l_exit_err
-    jsr __fat_alloc_fd        ; alloc a fd for the new file we want to create to make sure we get one before
-    bcs @l_exit_err          ; we do any sd block writes which may result in various errors
-
-    lda __volatile_tmp        ; save file open flags
-    sta fd_area + F32_fd::flags, x
-    lda #DIR_Attr_Mask_Archive    ; create as regular file with archive bit set
-    jsr __fat_set_fd_attr_dirlba  ; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
-    jsr __fat_write_dir_entry    ; create dir entry at current dirptr
-    bcc @l_exit_ok
-    jmp fat_close          ; free the allocated file descriptor if there where errors, C=1 and A are preserved
-@l_atime:
+@l_opened:
+;    update atime if desired, exit ok
 ;    jsr __fat_set_direntry_modify_datetime
-;    lda #EOK                ; A=0 (EOK)
+    lda __volatile_tmp
+    debug8 "ffo vtmp 1", __volatile_tmp
+    sta fd_area + F32_fd::flags,x
     clc
-@l_exit_ok:
-    debug "fop"
     rts
+@l_touch:
+    debug "ffo r+"
+    jmp __fat_fopen_touch
+
 
 fat_close_all:
     ldx #(2*FD_Entry_Size)  ; skip first 2 entries, they're reserved for current and temp dir
 __fat_init_fdarea:
-    lda #$ff
-@l1:
-    sta fd_area + F32_fd::CurrentCluster, x
+    stz fd_area,x
     inx
     cpx #(FD_Entry_Size*FD_Entries_Max)
-    bne @l1
+    bne __fat_init_fdarea
     rts
 
     ; free file descriptor quietly

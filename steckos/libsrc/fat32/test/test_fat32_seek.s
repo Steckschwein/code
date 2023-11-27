@@ -19,7 +19,6 @@ debug_enabled=1
 		assertA EINVAL ; invalid seek offset
 		assertX (1*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
-		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 ; -------------------
@@ -35,7 +34,6 @@ debug_enabled=1
 		assertA EINVAL ; invalid seek offset
 		assertX (1*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
-		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 ; -------------------
@@ -51,11 +49,10 @@ debug_enabled=1
 		assertA EINVAL ; invalid seek offset
 		assertX (1*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
-		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 ; -------------------
-		setup "fat_fseek to filesize-1"
+		setup "fat_fseek to filesize-1 2s/cl"
 		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, (512*3+5)
     set32 test_seek+Seek::Offset, (512*3+4)
 
@@ -66,7 +63,6 @@ debug_enabled=1
 		assertCarry 0
 		assertX (1*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert32 (512*3+4), fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
-		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster+3, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 		jsr fat_fread_byte
@@ -79,27 +75,22 @@ debug_enabled=1
 
 		brk
 
-test_seek:
-  .tag Seek
-
 setUp:
-  set8 test_seek+Seek::Whence, SEEK_SET
 	jsr __fat_init_fdarea
 	set_sec_per_cl 2
 	set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
 	set32 volumeID + VolumeID::lba_fat, FAT_LBA		;fat lba
 
 	;setup fd0 as root cluster
-	set32 fd_area+(0*FD_Entry_Size)+F32_fd::StartCluster, 0
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 	set8 fd_area+(0*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Dir
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
 	;setup fd1 with test cluster
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
-	set32 fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster, test_start_cluster
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, $1000
+  set8 fd_area+(1*FD_Entry_Size)+F32_fd::status, FD_FILE_OPEN
 
 	rts
 
@@ -170,6 +161,10 @@ block_root_cl:
 	fat32_dir_entry_dir  "DIR02   ", "   ", 9
 	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0 ; 0 - no cluster reserved, 0 - size
 	fat32_dir_entry_file "FILE02  ", "TXT", 10, 12	; 10 - 1st cluster nr of file, 12 - byte file size
+
+test_seek:
+  .byte SEEK_SET
+  .dword 0
 
 test_block_data_0_0:
   .byte "B0/C0"; block 0, cluster 0

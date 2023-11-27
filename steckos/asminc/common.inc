@@ -214,7 +214,7 @@
 
 .macro m_memset dest, value, n
     .local @l
-    .assert n<$80, error, "n must not >=$80"
+    .assert n<=$80, error, "n must not >=$80"
     ldy #n-1
     lda #value
 @l:  sta dest,y
@@ -223,7 +223,7 @@
 .endmacro
 
 .macro m_memclr dest, n
-    .assert n<$80, error, "n must not >=$80"
+    .assert n<=$80, error, "n must not >=$80"
     .local @l
     ldx #n-1
 @l:    stz dest,x

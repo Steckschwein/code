@@ -179,15 +179,24 @@ DIR_Entry_Deleted            = $e5
 .endstruct
 
 .struct F32_fd
-   StartCluster      .dword   ;
-   CurrentCluster    .dword   ;
-   FileSize          .dword   ;
-   Attr              .byte    ; file attributes (mirror of attributes from dir entry)
-   DirEntryLBA       .dword   ; LBA of the block where the dir entry of the file is located
-   DirEntryPos       .byte    ; block offset within the block (n * DIR_Entry_Size)
-   seek_pos          .dword   ; seek position within the opened file
-   flags             .byte    ; file open flags
+   CurrentCluster   .dword  ;
+   FileSize         .dword  ;
+   Attr             .byte   ; file attributes (mirror of attributes from dir entry)
+   DirEntryLBA      .dword  ; LBA of the block where the dir entry of the file is located
+   DirEntryPos      .byte   ; block offset within the block (n * DIR_Entry_Size)
+   seek_pos         .dword  ; seek position within the opened file
+                            ;    O_RDONLY  = $01
+                            ;    O_WRONLY  = $02
+                            ;    O_RDWR    = $03
+                            ;    O_CREAT    = $10
+                            ;    O_TRUNC    = $20
+                            ;    O_APPEND  = $40
+                            ;    O_EXCL    = $80
+   flags            .byte   ; file open flags
+   status           .byte   ; status - reserved (bit 7), next clnr (bit 6)
 .endstruct
+
+FD_FILE_OPEN  = 1<<7
 
 FD_Entry_Size         = .sizeof(F32_fd)
 FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size
@@ -219,8 +228,8 @@ block_fat             = BUFFER_2 ; $0600-$07ff
 ; macros
 
 .macro _is_file_open
-   bit fd_area + F32_fd::CurrentCluster+3, x ; is open
-   bpl :+
+   bit fd_area + F32_fd::status, x ; is open
+   bmi :+
    lda #EINVAL
    sec
    rts

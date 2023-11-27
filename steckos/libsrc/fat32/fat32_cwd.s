@@ -43,18 +43,21 @@
 ;  Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 fat_get_root_and_pwd:
 
+    php
+    sei
+
     sta __volatile_ptr
     stx __volatile_ptr+1
 
     SetVector block_fat, s_ptr3    ;TODO FIXME - we use the 512 byte fat block buffer as temp space - FTW!
     stz s_tmp3
 
-    jsr __fat_clone_cd_td              ; start from current directory, clone the cd fd
+    jsr __fat_clone_cd_td               ; start from current directory, clone the cd fd
 
 @l_rd_dir:
-    lda #'/'                        ; put the / char to result string
+    lda #'/'                            ; put the / char to result string
     jsr put_char
-    ldx #FD_INDEX_TEMP_DIR                  ; if root, exit to inverse the path string
+    ldx #FD_INDEX_TEMP_DIR              ; if root, exit to inverse the path string
     jsr __fat_is_cln_zero
     beq @l_inverse
     m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, volumeID+VolumeID::temp_dword, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
@@ -73,6 +76,7 @@ fat_get_root_and_pwd:
     jsr path_inverse                ; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
     lda #EOK                    ; that's it...
 @l_exit:
+    plp
     cmp #EOK
     rts
 l_dot_dot:

@@ -1,12 +1,6 @@
 .include "test_fat32.inc"
 
-.import __fat_init_fdarea
-.import fat_fopen
-.import fat_close
-.import fat_write
-.import fat_write_byte
-.import fat_mkdir
-.import fat_fread_byte
+.autoimport
 
 ; mock defines
 .export read_block=mock_read_block
@@ -33,18 +27,20 @@ debug_enabled=1
     assertDirEntry block_root_cl+4*DIR_Entry_Size ;expect 4th entry created
       fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; filesize 0 and no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT
+      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_FILE_OPEN
 
     ; set file size and write ptr
-    set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (3*sd_blocksize+3)
-    SetVector $1234, write_blkptr ; 1234 - just a random pointer to some memory
+    set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (3*sd_blocksize+3) ; 4 blocks must be written
+    SetVector write_target, write_blkptr
     jsr fat_write
 
     assertA EOK
     assertX FD_Entry_Size*2  ; assert FD reserved
-    assert16 $1234+4*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
+    assert16 write_target+4*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
     assertDirEntry block_root_cl+4*DIR_Entry_Size ; expect 4th entry updated
       fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 3*sd_blocksize+3
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (3*sd_blocksize+3), O_CREAT, FD_FILE_OPEN
 
     jsr fat_close
 
@@ -60,11 +56,10 @@ debug_enabled=1
     assertDirEntry $0480
         fat32_dir_entry_file "TST_02CL", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT
+        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_FILE_OPEN
     ; size to 4 blocks + 3 byte ;) - we use 4 SEC_PER_CL - hence a new cluster must be reserved and the chain build
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (4 * sd_blocksize + 3)
-;    TODO
-    SetVector $1234, write_blkptr ; 1234 - just a random pointer to some memory
+    SetVector write_target, write_blkptr
 ;    jsr fat_write
   ;  assertA EOK
 ;    assertX FD_Entry_Size*2  ; assert FD
@@ -91,6 +86,10 @@ _rtc_ts:
     .byte 06 ; tm_wday  .byte    ;
     rts
 
+
+; cluster search will always find $10 cluster
+TEST_FILE_CL=$10
+
 mock_read_block:
     tax ; mock X destruction
     debug32 "mock_read_block lba", lba_addr
@@ -101,7 +100,7 @@ mock_read_block:
     load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), block_data_01, @ok
     load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), block_data_02, @ok
     load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), block_data_03, @ok
-;    cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_read
+
     cmp32_ne lba_addr, FAT_LBA, :+
       ;simulate fat block read
       m_memset block_fat+$000, $ff, $40  ; simulate reserved, next free cluster is TEST_FILE_CL ($10)
@@ -116,9 +115,6 @@ mock_read_block:
 @ok:
     lda #EOK
     rts
-
-; cluster search will always find $10 cluster
-TEST_FILE_CL=$10
 
 mock_write_block:
     tax ; mock destruction of X
@@ -139,7 +135,7 @@ mock_write_block:
     store_block_if FAT_LBA, block_fat_0, @ok
     store_block_if FAT2_LBA, block_fat2_0, @ok
 
-    assert32 FAT_EOC, lba_addr ; fail if we end up here
+    fail "mock write invalid lba called!" ; fail if we end up here !!!
 @dummy_write:
     debug "dummy write"
     inc write_blkptr+1 ; => same behaviour as real block read implementation
@@ -220,3 +216,4 @@ block_data_07:  .res sd_blocksize
 block_data_08:  .res sd_blocksize
 block_data_09:  .res sd_blocksize
 block_data_0a:  .res sd_blocksize
+write_target:

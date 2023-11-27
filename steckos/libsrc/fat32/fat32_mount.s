@@ -178,7 +178,7 @@ __calc_cluster_begin_lba:
 
     ; alloc file descriptor for current dir. which is cluster number 0 on fat32 - !!! Note: the RootClus offset is compensated within calc_lba_addr
     ldx #FD_INDEX_CURRENT_DIR
-    jmp __fat_init_fd
+    jmp __fat_alloc_fd_x
 
 fat_check_signature:
     lda #$55

@@ -18,7 +18,7 @@ fi
 # 65C02: 226a 42 00 ff ff 10110001
 _SP=$(tail -2 $logfile|head -1|cut -d ' ' -f6)
 if [ ! "${_SP}" = "ff" ]; then
-   echo "[ERROR] Stack corruption detected! Either your test or testee are broken. Expect SP=0xff after test was running."
+   echo "[ERROR] Stack corruption detected! Either your test or testee are broken. Expect SP=0xff after test was running, but was 0x${_SP}."
    tail -3 $logfile
    exit 1
 fi
