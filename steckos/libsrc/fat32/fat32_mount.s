@@ -85,7 +85,7 @@ fat_mount:
     rts
 
 :   jsr fat_check_signature
-    beq @l4
+    beq @mount_fat32
     rts
 @mount_fat32:
     ;m_memcpy sd_blktarget+11, volumeID, .sizeof(VolumeID) ; +11 skip first 11 bytes, we are not interested in
