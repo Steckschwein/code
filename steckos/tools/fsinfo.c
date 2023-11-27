@@ -104,7 +104,7 @@ struct F32DirEntry      // https://en.wikipedia.org/wiki/Design_of_the_FAT_file_
 uint8_t buf[512];
 uint32_t fat[128];
 
-int main (int argc, const char* argv[])
+int main (/*int argc, const char* argv[]*/)
 {
   char r;
   uint8_t i=0;
@@ -180,7 +180,7 @@ int main (int argc, const char* argv[])
   printf("Res. sectors   : %d\n", volid->BPB.RsvdSecCnt);
   printf("Bytes/sector   : %d\n", volid->BPB.BytsPerSec);
   printf("Sectors/clus.  : %d\n", volid->BPB.SecPerClus);
-  printf("Cluster size   : %d\n", volid->BPB.SecPerClus * volid->BPB.BytsPerSec);
+  printf("Cluster size   : %u\n", volid->BPB.SecPerClus * volid->BPB.BytsPerSec);
   printf("Number of FATs : %d\n", volid->BPB.NumFATs);
   printf("Active FAT     : %x\n", volid->EBPB.MirrorFlags);
   printf("Sectors/FAT    : %lu\n", volid->EBPB.FATSz32);
@@ -199,6 +199,7 @@ int main (int argc, const char* argv[])
   printf("\nFS size        : %lu\n", partitions[0].NumSectors * BytsPerSec);
   printf("bytes free     : %lu\n", fsinfo->FreeClus * SecPerClus * BytsPerSec);
 
+  /*
   fat_lba = partitions[0].LBABegin + RsvdSecCnt;
 
   for(j=0; j<FATSz32; j++)
@@ -241,6 +242,7 @@ int main (int argc, const char* argv[])
 
   printf("Free clusters (counted) : %lu\n", free);
   printf("Used clusters (counted) : %lu\n", used);
-
+*/
+  
   return EXIT_SUCCESS;
 }

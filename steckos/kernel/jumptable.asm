@@ -5,7 +5,7 @@
 .export krn_getkey
 krn_getkey:             jmp getkey
 .export krn_chrout
-krn_chrout:             jmp textui_chrout
+krn_chrout:             jmp char_out
 .export krn_upload
 krn_upload:             jmp do_upload
 .export krn_execv
@@ -50,12 +50,8 @@ krn_textui_init:        jmp  textui_init
 krn_textui_enable:      jmp  textui_enable
 .export krn_textui_disable
 krn_textui_disable:     jmp textui_disable
-.export krn_textui_crsxy
-krn_textui_crsxy:       jmp textui_crsxy
 .export krn_textui_update_crs_ptr
 krn_textui_update_crs_ptr:  jmp textui_update_crs_ptr
-.export krn_textui_clrscr_ptr
-krn_textui_clrscr_ptr:  jmp textui_blank
 .export krn_textui_setmode
 krn_textui_setmode:     jmp textui_setmode
 .export krn_textui_crs_onoff
