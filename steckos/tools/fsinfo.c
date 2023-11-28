@@ -102,7 +102,7 @@ uint32_t fat[128];
 int main (/*int argc, const char* argv[]*/)
 {
   char r;
-  uint8_t i=0;
+  uint8_t i=0, p=0;
   uint32_t j=0;
 
   uint16_t RsvdSecCnt;
@@ -110,11 +110,10 @@ int main (/*int argc, const char* argv[]*/)
   uint8_t  SecPerClus;
   uint32_t FSInfoSec;
   uint32_t FATSz32;
-  uint16_t Sectors;
   uint32_t TotalSects;
 
 
-  uint32_t fat_lba;
+ // uint32_t fat_lba;
   uint32_t free=0;
   uint32_t used=0;
 
@@ -140,6 +139,7 @@ int main (/*int argc, const char* argv[]*/)
 
   memcpy(partitions, bootsector->partition, sizeof(partitions));
 
+  
   printf("Partition table:\n");
   for (i=0; i<=3; i++)
   {
@@ -155,7 +155,17 @@ int main (/*int argc, const char* argv[]*/)
       partitions[i].LBABegin,
       partitions[i].NumSectors
     );
+    p++;
   }
+  if (p > 0)
+  {
+    printf("%d partitions\n", p);
+  }
+  else
+  {
+    printf("no partitions\n");
+  }
+  
 
   printf("\n");
   r = read_block(buf, partitions[0].LBABegin);
