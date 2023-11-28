@@ -25,7 +25,6 @@
 
 ; TODO FIXME replace with errno.inc from cc65 api
 fat_bad_block_signature      = $01
-fat_invalid_partition_type   = $02
 fat_invalid_sector_size      = $03
 fat_invalid_num_fats      = $04
 fat_open_error         = $05
