@@ -58,25 +58,29 @@ fat_read:
 @l_exit:
     rts
 
-
-
+; NOTE: only max blocks in first cluster are supported
 ; in:
 ;  X - offset into fd_area
 ;  write_blkptr - set to the address with data we have to write
 ; out:
-;  Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;  C - C=0 on success (A=0), C=1 and A=error code otherwise
 fat_write:
 
     _is_file_open     ; otherwise rts C=1 and A=#EINVAL
     _is_file_dir      ; otherwise rts C=1 and A=#EISDIR
 
-    jsr __fat_next_cln            ; next cluster
-    debug "fw_res_cl"
+    jsr __fat_next_cln              ; next cluster
     bcs @l_exit
 @l_write:
-    jsr __calc_blocks              ; calc blocks
-    beq @l_update                  ; Z=1 - no blocks to write, but update dir entry
-    jsr __calc_lba_addr            ; calc lba file payload
+    jsr __calc_blocks               ; calc blocks
+    beq @l_update                   ; Z=1 - no blocks to write
+    lda blocks                      ; > max sec/cl
+    cmp volumeID+VolumeID::BPB_SecPerClus
+    bcc :+
+    beq :+
+    lda #EINVAL
+    rts
+:   jsr __calc_lba_addr             ; calc lba file payload
     debug32 "fat_wr lba", lba_addr
 .ifdef MULTIBLOCK_WRITE
     .warning "SD multiblock writes are EXPERIMENTAL"
@@ -84,7 +88,7 @@ fat_write:
     .import sd_write_multiblock
     jsr sd_write_multiblock
 .else
-@l: debug16 "fat_wr blks", blocks
+@l: debug8 "fat_wr blks", blocks
     debug16 "fat_wr wptr", write_blkptr
     jsr __fat_write_block
     bcs @l_exit
@@ -103,38 +107,24 @@ fat_write:
     sta fd_area + F32_fd::seek_pos + 1,x
     lda fd_area + F32_fd::FileSize + 0,x
     sta fd_area + F32_fd::seek_pos + 0,x
-
-    jmp __fat_update_direntry
+    clc
 @l_exit:
     rts
 
-
-    ; in:
-    ;  X - file descriptor
-    ; out:
-    ;  Z=1 (A=0) if no blocks to read (file has zero length)
-__calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) +1 if filesize LSB is not 0
-    lda fd_area + F32_fd::FileSize + 3,x
-    lsr
-    sta blocks + 2
+; write and sd multi block write only supports max sec/cl - therefore blocks are 8bit
+; in:
+;  X - file descriptor
+; out:
+;  Z=1 (A=0) if no blocks to read (file has zero length)
+__calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) - +1 if filesize & 0xffffff00 != 0
     lda fd_area + F32_fd::FileSize + 2,x
-    ror
-    sta blocks + 1
+    lsr
     lda fd_area + F32_fd::FileSize + 1,x
     ror
-    sta blocks + 0
-    bcs @l1
+    sta blocks
     lda fd_area + F32_fd::FileSize + 0,x
-    beq @l2
-@l1:
+    beq @l_exit
     inc blocks
-    bne @l2
-    inc blocks+1
-    bne @l2
-    inc blocks+2
-@l2:
-    lda blocks+2
-    ora blocks+1
-    ora blocks+0
-    debug16 "__calc_blocks", blocks
+@l_exit:
+    debug8 "__calc_blocks", blocks
     rts

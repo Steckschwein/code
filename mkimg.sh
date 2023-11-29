@@ -9,6 +9,6 @@ fi
 
 truncate -s $((size * (1<<20) )) "${img}"
 parted --machine --script "${img}" mklabel msdos mkpart primary fat32 "${alignment}B" '100%'
-mformat -i "${img}"@@"${alignment}" -F # -t $((size>>20))  #-v "steckos"
+mformat -i "${img}"@@"${alignment}" -F -v STECKOS # -t $((size>>20))  #-v "steckos"
 mcopy -i "${img}"@@"${alignment}" -s dist/* ::/
 

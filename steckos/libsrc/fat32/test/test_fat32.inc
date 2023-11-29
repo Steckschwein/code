@@ -127,7 +127,8 @@ store_test_data:
     jsr @cp
     inc write_blkptr+1  ; leave with same sideeffect as sdcard block impl. write_blkptr is incremented
     inc test_data_ptr+1
-@cp:  lda (write_blkptr),y
+@cp:
+    lda (write_blkptr),y
     sta (test_data_ptr),y
     iny
     bne @cp
@@ -152,7 +153,8 @@ load_test_data:
     jsr @cp
     inc read_blkptr+1
     inc test_data_ptr+1
-@cp:  lda (test_data_ptr),y
+@cp:
+    lda (test_data_ptr),y
     sta (read_blkptr),y
     iny
     bne @cp

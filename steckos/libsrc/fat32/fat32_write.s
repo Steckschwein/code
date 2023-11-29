@@ -51,6 +51,10 @@
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 fat_write_byte:
+
+    _is_file_open   ; otherwise rts C=1 and A=#EINVAL
+    _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
+
     phy
 
     sta __volatile_tmp
@@ -66,17 +70,21 @@ fat_write_byte:
     _inc32_x fd_area+F32_fd::FileSize   ; filesize +1
 
     jsr __fat_write_block_data          ; write block
-    bcs @l_exit
-    jsr __fat_update_direntry           ; finally update dir entry
+
 @l_exit:
     ply
     rts
 
+;    jsr __fat_set_direntry_cluster
+
 __fat_update_direntry:
+    clc
+    lda fd_area + F32_fd::flags,x
+    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; file write access?
+    beq @l_exit
+
     jsr __fat_read_direntry                  ; read dir entry, dirptr is set accordingly
     bcs @l_exit
-
-    jsr __fat_set_direntry_cluster
     jsr __fat_set_direntry_filesize         ; set filesize of directory entry via dirptr
     jsr __fat_set_direntry_modify_datetime  ; set modification time and date
 

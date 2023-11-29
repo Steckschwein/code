@@ -382,7 +382,7 @@ debug_enabled=1
     jsr fat_close
 
 ; -------------------
-    setup "fat_write_byte seek 2049 4s/cl";
+    setup "fat_write seek 2048+512 4s/cl";
 
     ldy #O_RDWR
     lda #<test_file_name_2cl
@@ -403,7 +403,7 @@ debug_enabled=1
 		assertCarry 0
 		assertX (FD_Entry_Size*2); expect X unchanged, and read address still unchanged
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512), O_RDWR, FD_FILE_OPEN, (2048+512)
+        fd_entry_file_seek TEST_FILE_CL2, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512), O_RDWR, FD_FILE_OPEN, (2048+512)
     assertDirEntry block_root_cl+$80
       fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, 0
 
@@ -412,10 +412,9 @@ debug_enabled=1
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_FILE_OPEN,
+        fd_entry_file_seek TEST_FILE_CL2, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDWR, FD_FILE_OPEN, (2048+512+1)
     assertDirEntry block_root_cl+$80
-      fat32_dir_entry_file "TST_02CL", "TST", 0, 0 ; no cluster reserved yet
-
+      fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, (2048+512+1)
 
     jsr fat_close
 
@@ -426,20 +425,22 @@ debug_enabled=1
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD reserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2049, O_RDONLY, FD_FILE_OPEN, 0
+      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_FILE_OPEN, 0
 
-    set32 test_seek+Seek::Offset, (2048+512) ; set to beginn of block 1 in next cluster
+    set32 test_seek+Seek::Offset, (2048+512) ; set to begin of block 1 in next cluster
     lda #<test_seek
     ldy #>test_seek
 		jsr fat_fseek
 		assertCarry 0
 		assertX (FD_Entry_Size*2); expect X unchanged, and read address still unchanged
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_FILE_OPEN, (2048+512)
 
     jsr fat_fread_byte
     assertC 0
-    assertA 0
+    assertA 'X'
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2049, O_RDONLY, FD_FILE_OPEN, 1
+      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_FILE_OPEN, (2048+512+1)
 
     jsr fat_close
 
@@ -542,6 +543,7 @@ mock_not_implemented4:
 
 setUp:
   jsr __fat_init_fdarea
+  set_sec_per_cl SEC_PER_CL
 
   ; fill fat block_fat
   m_memset block_fat_0+$000, $ff, $80  ; simulate reserved
@@ -551,7 +553,6 @@ setUp:
   set32 block_fat_0+(TEST_FILE_CL<<2), 0 ; mark TEST_FILE_CL as free
   set32 block_fat_0+((TEST_FILE_CL2)<<2), 0 ; mark TEST_FILE_CL2 as free
 
-  set_sec_per_cl SEC_PER_CL
   set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
   set32 volumeID + VolumeID::EBPB_FATSz32, (FAT2_LBA - FAT_LBA)
   set32 volumeID+VolumeID::lba_fat, FAT_LBA

@@ -16,13 +16,41 @@ debug_enabled=1
 .code
 
 ; -------------------
-    setup "fat_write O_CREAT 1 cluster"
+    setup "fat_write O_CREAT 1 byte 4s/cl"
     ldy #O_CREAT
     lda #<test_file_name_1cl
     ldx #>test_file_name_1cl
 
     jsr fat_fopen
-    assertA EOK
+    assertCarry 0
+    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertDirEntry block_root_cl+4*DIR_Entry_Size ;expect 4th entry created
+      fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; filesize 0 and no cluster reserved yet
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_FILE_OPEN
+
+    ; set file size and write ptr
+    set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 1; 1 block must be written
+    SetVector write_target, write_blkptr
+    jsr fat_write
+    assertCarry 0
+    assertX FD_Entry_Size*2  ; assert FD reserved
+    assert16 write_target+1*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_CREAT, FD_FILE_OPEN
+    jsr fat_close
+
+    assertDirEntry block_root_cl+4*DIR_Entry_Size ; expect 4th entry updated
+      fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 1
+
+; -------------------
+    setup "fat_write O_CREAT 1536+3 byte 4s/cl"
+    ldy #O_CREAT
+    lda #<test_file_name_1cl
+    ldx #>test_file_name_1cl
+
+    jsr fat_fopen
+    assertCarry 0
     assertX FD_Entry_Size*2  ; assert FD reserved
     assertDirEntry block_root_cl+4*DIR_Entry_Size ;expect 4th entry created
       fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; filesize 0 and no cluster reserved yet
@@ -33,39 +61,41 @@ debug_enabled=1
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (3*sd_blocksize+3) ; 4 blocks must be written
     SetVector write_target, write_blkptr
     jsr fat_write
-
-    assertA EOK
+    assertCarry 0
     assertX FD_Entry_Size*2  ; assert FD reserved
     assert16 write_target+4*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
-    assertDirEntry block_root_cl+4*DIR_Entry_Size ; expect 4th entry updated
-      fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 3*sd_blocksize+3
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (3*sd_blocksize+3), O_CREAT, FD_FILE_OPEN
-
     jsr fat_close
 
+    assertDirEntry block_root_cl+4*DIR_Entry_Size ; expect 4th entry updated
+      fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 3*sd_blocksize+3
+
+
 ; -------------------
-    setup "fat_write O_CREAT 2 cluster";
+    setup "fat_write O_CREAT 2048+3 4s/cl" ; blocks to write > sec/cl => expect write error C=1
     ldy #O_CREAT
     lda #<test_file_name_2cl
     ldx #>test_file_name_2cl
     jsr fat_fopen
-    assertA EOK
+    assertCarry 0
     assertX FD_Entry_Size*2  ; assert FD reserved
 
-    assertDirEntry $0480
+    assertDirEntry block_root_cl+4*DIR_Entry_Size
         fat32_dir_entry_file "TST_02CL", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
         fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_FILE_OPEN
     ; size to 4 blocks + 3 byte ;) - we use 4 SEC_PER_CL - hence a new cluster must be reserved and the chain build
-    set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (4 * sd_blocksize + 3)
+    set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (4 * sd_blocksize + 3) ; size is greater then 1 cl
     SetVector write_target, write_blkptr
-;    jsr fat_write
-  ;  assertA EOK
-;    assertX FD_Entry_Size*2  ; assert FD
-;    assertDirEntry block_data+$80
-;      fat32_dir_entry_file "TST_02CL", "TST", 0, $10
+    jsr fat_write
+    assertCarry 1 ; write failed due to blocks to write > sec/cl => expect write error C=1
+    assertX FD_Entry_Size*2  ; assert FD
+
     jsr fat_close
+
+    assertDirEntry block_root_cl+4*DIR_Entry_Size
+      fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, (4 * sd_blocksize + 3); cluster reserved but no blocks are written, filesize is wrong here!!!
 
     brk
 
@@ -155,6 +185,7 @@ mock_not_implemented4:
 
 setUp:
   jsr __fat_init_fdarea
+  set_sec_per_cl SEC_PER_CL ;4s/cl
 
   set8 volumeID+VolumeID::BPB_SecPerClus, SEC_PER_CL
   set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
@@ -180,17 +211,17 @@ setUp:
 
 .data
   test_file_name_1:     .asciiz "test01.tst"
-  test_file_name_1cl:    .asciiz "tst_01cl.tst"
-  test_file_name_2cl:    .asciiz "tst_02cl.tst"
-  test_dir_name_eexist:  .asciiz "dir01"
-  test_dir_name_mkdir:   .asciiz "dir03"
+  test_file_name_1cl:   .asciiz "tst_01cl.tst"
+  test_file_name_2cl:   .asciiz "tst_02cl.tst"
+  test_dir_name_eexist: .asciiz "dir01"
+  test_dir_name_mkdir:  .asciiz "dir03"
 
-block_root_cl_init:
+block_root_cl_init: ; mock existing files and dirs
   fat32_dir_entry_dir   "DIR01   ", "   ", 8
   fat32_dir_entry_dir   "DIR02   ", "   ", 9
-  fat32_dir_entry_file "FILE01  ", "DAT", 0, 0    ; 0 - no cluster reserved, file length 0
-  fat32_dir_entry_file "FILE02  ", "TXT", $a, 12  ; $a - 1st cluster nr of file, file length 12 byte
-  .res .sizeof(F32DirEntry)*12, 0
+  fat32_dir_entry_file  "FILE01  ", "DAT", 0, 0  ; 0 - no cluster reserved, a "touched" file with length 0
+  fat32_dir_entry_file  "FILE02  ", "TXT", 0, 0
+  .res .sizeof(F32DirEntry)*12, 0 ; free dir entries at 4th position
 
 block_fsinfo_init:
   .byte "RRaA"

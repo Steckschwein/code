@@ -24,7 +24,7 @@
 .import LAB_GFX_SCNCLR
 .import LAB_GFX_SCNWAIT
 
-__APPSTART__ = $b000
+__APPSTART__ = $ac00
 appstart __APPSTART__
 
 ;

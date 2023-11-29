@@ -47,9 +47,11 @@
 
 .export retvec    = $fff8
 
-.export lba_addr  = $0280    ; 4 bytes
-.export blocks    = $0284    ; 3 bytes blocks to read, 3 bytes sufficient to address 4GB -> 4294967296 >> 9 = 8388608 ($800000) max blocks/file
-.export key       = $0287   ; 1 byte keyboard char
+.export lba_addr  = $0280   ; 4 bytes
+.export blocks    = $0284   ; 1 byte - blocks to read with max sec/cl (volumeID+VolumeID::BPB_SecPerClus)
+; $0285 free
+; $0286 free
+.export key       = $0287   ; 1 byte - keyboard char
 
 ; video mode register
 .export video_mode   = $0288

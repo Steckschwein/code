@@ -79,6 +79,8 @@ fat_fseek:
     sec
     rts
 @l_filesize:
+    lda fd_area+F32_fd::flags,x
+;    and #
     ; check requested seek_pos < FileSize
     ldy #Seek::Offset+3
     lda (__volatile_ptr),y
@@ -139,15 +141,15 @@ __fat_fseek_cluster:
     ora volumeID+VolumeID::temp_dword+0
     debug32 "seek", volumeID+VolumeID::temp_dword
     beq @l_exit_ok
-    debug32 "seek >", fd_area+F32_fd::CurrentCluster+$17 ; $17 => fd_area offset fd=2
+    debug32 "seek >", fd_area+(.sizeof(F32_fd)*2)+F32_fd::CurrentCluster
     jsr __fat_next_cln
     debug32 "seek nx cl", volumeID+VolumeID::temp_dword
     bcs @l_exit
     _dec24 volumeID+VolumeID::temp_dword
     bra @seek_cln
 @l_exit_ok:
-    debug32 "seek <", fd_area+F32_fd::CurrentCluster+$17
-    jmp __fat_prepare_access_read ; TODO - replace with dirty check - see __fat_prepare_access
+    debug32 "seek <", fd_area+(.sizeof(F32_fd)*2)+F32_fd::CurrentCluster
+    clc; jmp __fat_prepare_access_read ; TODO - replace with dirty check - see __fat_prepare_access
 @l_exit:
     rts
 
@@ -232,10 +234,14 @@ __fat_init_fdarea:
     bne __fat_init_fdarea
     rts
 
-    ; free file descriptor quietly
-    ; in:
-    ;  X - offset into fd_area
-fat_close = __fat_free_fd
+; close file, update dir entry and free file descriptor quietly
+; in:
+;   X - offset into fd_area
+; out:
+;   C=0 on success, C=1 on error with A=<error code>
+fat_close:
+    jsr __fat_update_direntry
+    jmp __fat_free_fd
 
     ; find first dir entry
     ; in:
