@@ -47,7 +47,11 @@
 .endmacro
 
 .macro fd_entry_file_seek clnr, dir_entry, dir_lba, attr, filesize, flags, status, seekpos
-  .dword clnr       ; StartCluster
+  fd_entry_file_all clnr, dir_entry, dir_lba, attr, filesize, flags, status, seekpos, clnr
+.endmacro
+
+.macro fd_entry_file_all  clnr, dir_entry, dir_lba, attr, filesize, flags, status, seekpos, sclnr
+  .dword sclnr      ; StartCluster
   .dword clnr       ; CurrentCluster
   .dword filesize ; FileSize
   .byte attr ; Attr

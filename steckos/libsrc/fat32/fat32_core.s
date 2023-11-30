@@ -55,6 +55,7 @@
 .export __fat_read_block_data
 .export __fat_read_block_fat
 .export __fat_set_fd_attr_dirlba
+.export __fat_set_fd_start_cluster
 .export __calc_lba_addr
 .export __inc_lba_address
 
@@ -218,7 +219,7 @@ __fat_prepare_block_access:
     lda fd_area+F32_fd::seek_pos+1,x
     and #$01                              ; mask block start
     ora fd_area+F32_fd::seek_pos+0,x      ; and test whether seek_pos is at the beginning of a block (multiple of $0200) ?
-    bne l_prepare ;__fat_prepare_access_read         ; no, we can fetch the byte from block_data
+    bne __fat_prepare_access_read         ; no, we can fetch the byte from block_data
 
     lda fd_area+F32_fd::seek_pos+1,x
     lsr
@@ -298,20 +299,16 @@ __fat_open_file:
     ldy #F32DirEntry::FstClusHI +1
     lda (dirptr),y
     and #$0f      ; cluster nr must be 0x?ffffff7
-    sta fd_area + F32_fd::StartCluster + 3, x
     sta fd_area + F32_fd::CurrentCluster + 3, x
     dey
     lda (dirptr),y
-    sta fd_area + F32_fd::StartCluster + 2, x
     sta fd_area + F32_fd::CurrentCluster + 2, x
 
     ldy #F32DirEntry::FstClusLO +1
     lda (dirptr),y
-    sta fd_area + F32_fd::StartCluster + 1, x
     sta fd_area + F32_fd::CurrentCluster + 1, x
     dey
     lda (dirptr),y
-    sta fd_area + F32_fd::StartCluster + 0, x
     sta fd_area + F32_fd::CurrentCluster + 0, x
 
     ldy #F32DirEntry::FileSize + 3
@@ -330,6 +327,8 @@ __fat_open_file:
     ldy #F32DirEntry::Attr
     lda (dirptr),y
     jsr __fat_set_fd_attr_dirlba
+
+    jsr __fat_set_fd_start_cluster
 
     clc
 @l_exit:
@@ -524,28 +523,18 @@ __calc_fat_lba_addr:
 ; out:
 ;  C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
 __fat_next_cln:
-
-    lda fd_area+F32_fd::seek_pos+3,x     ; seek pos is 0 - we are at first block and first cluster (StartCluster), we skip select the next clnr
-    ora fd_area+F32_fd::seek_pos+2,x
-    ora fd_area+F32_fd::seek_pos+1,x
-    ora fd_area+F32_fd::seek_pos+0,x
-    debug32 "fnxtcln sp", fd_area+(2*.sizeof(F32_fd))+F32_fd::seek_pos
-    clc
-    beq @l_exit
-
     lda read_blkptr
     pha
     lda read_blkptr+1
     pha
 
     jsr __fat_select_next_cln
-
     debug32 "fnxtcln cl <", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster
+
     ply                      ; use Y to preserve A with return code
     sty read_blkptr+1
     ply
     sty read_blkptr
-@l_exit:
     rts
 
 
@@ -557,27 +546,27 @@ __fat_select_next_cln:
     jsr @try_reserve
     bcs @l_exit
 
-    lda fd_area + F32_fd::CurrentCluster+3, x
-    sta fd_area + F32_fd::StartCluster+3, x
-    lda fd_area + F32_fd::CurrentCluster+2, x
-    sta fd_area + F32_fd::StartCluster+2, x
-    lda fd_area + F32_fd::CurrentCluster+1, x
-    sta fd_area + F32_fd::StartCluster+1, x
-    lda fd_area + F32_fd::CurrentCluster+0, x
-    sta fd_area + F32_fd::StartCluster+0, x
-    rts
+    bra __fat_set_fd_start_cluster
+    ; jmp __fat_update_direntry
 
 @l_select_next:
+    lda fd_area+F32_fd::seek_pos+3,x     ; seek pos is 0 - we are at first block and first cluster (StartCluster), we skip select the next clnr
+    ora fd_area+F32_fd::seek_pos+2,x
+    ora fd_area+F32_fd::seek_pos+1,x
+    ora fd_area+F32_fd::seek_pos+0,x
+    debug32 "fat sel sp", fd_area+(2*.sizeof(F32_fd))+F32_fd::seek_pos
+    beq @l_exit_ok
+
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
-    debug "fnxtcln sel"
+    debug "fat sel nxt"
     bcc @l_save_cln
     ;cmp #EOK  ; EOK means EOC (C=1/A=0)
     bne @l_exit
 @try_reserve:
     lda fd_area + F32_fd::flags,x
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; write access?
-    sec         ; prepare EOC (C=1) A=0 (EOK) if we take the branch
-    debug "fnxtcln flg"
+    sec         ; set EOC (C=1) A=0 (EOK) if we take the branch
+    debug "fat sel flg"
     beq @l_exit     ; read access and no cluster reserved yet (empty file) - exit with EOC => C=1/A=EOK (0)
     jmp __fat_reserve_cluster
 
@@ -594,9 +583,23 @@ __fat_select_next_cln:
     iny
     lda (read_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+3, x
+@l_exit_ok:
     clc
 @l_exit:
     rts
+
+
+__fat_set_fd_start_cluster:
+    lda fd_area + F32_fd::CurrentCluster + 3, x
+    sta fd_area + F32_fd::StartCluster + 3, x
+    lda fd_area + F32_fd::CurrentCluster + 2, x
+    sta fd_area + F32_fd::StartCluster + 2, x
+    lda fd_area + F32_fd::CurrentCluster + 1, x
+    sta fd_area + F32_fd::StartCluster + 1, x
+    lda fd_area + F32_fd::CurrentCluster + 0, x
+    sta fd_area + F32_fd::StartCluster + 0, x
+    rts
+
 
 ; in:
 ;  X - file descriptor

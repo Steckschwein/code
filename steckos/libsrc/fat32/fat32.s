@@ -126,14 +126,14 @@ __fat_fseek_cluster:
     sta volumeID+VolumeID::temp_dword+0
 
     lda volumeID+VolumeID::BPB_SecPerClus
-@cl_chain:
+@l_count:
     tay
     lsr volumeID+VolumeID::temp_dword+2
     ror volumeID+VolumeID::temp_dword+1
     ror volumeID+VolumeID::temp_dword+0
     tya
     lsr
-    bne @cl_chain
+    bne @l_count
 
 @seek_cln:
     lda volumeID+VolumeID::temp_dword+2

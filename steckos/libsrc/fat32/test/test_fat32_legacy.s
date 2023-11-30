@@ -38,8 +38,8 @@ debug_enabled=1
     assert16 write_target+1*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_CREAT, FD_FILE_OPEN
-    jsr fat_close
 
+    jsr fat_close
     assertDirEntry block_root_cl+4*DIR_Entry_Size ; expect 4th entry updated
       fat32_dir_entry_file "TST_01CL", "TST", TEST_FILE_CL, 1
 
@@ -66,6 +66,7 @@ debug_enabled=1
     assert16 write_target+4*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (3*sd_blocksize+3), O_CREAT, FD_FILE_OPEN
+
     jsr fat_close
 
     assertDirEntry block_root_cl+4*DIR_Entry_Size ; expect 4th entry updated

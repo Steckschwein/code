@@ -33,16 +33,18 @@
 .include "fcntl.inc"  ; from ca65 api
 .include "debug.inc"
 
-.export fat_mkdir
-.export fat_rmdir
-.export fat_unlink
 .export fat_write_byte
+.export fat_unlink
 
 .export __fat_reserve_cluster
 .export __fat_write_dir_entry
 .export __fat_update_direntry
 .export __fat_write_block
 .export __fat_fopen_touch
+.export __fat_write_block_data
+.export __fat_set_lba_from_fd_dirlba
+.export __fat_unlink
+
 .autoimport
 
 ; in:
@@ -83,7 +85,7 @@ __fat_update_direntry:
 
     jsr __fat_read_direntry                  ; read dir entry, dirptr is set accordingly
     bcs @l_exit
-    jsr __fat_set_direntry_cluster
+    jsr __fat_set_direntry_start_cluster
     jsr __fat_set_direntry_filesize         ; set filesize of directory entry via dirptr
     jsr __fat_set_direntry_modify_datetime  ; set modification time and date
 
@@ -196,7 +198,7 @@ __fat_set_direntry_filesize:
 ; copy cluster number from file descriptor to direntry given as dirptr
 ; in:
 ;  dirptr
-__fat_set_direntry_cluster:
+__fat_set_direntry_start_cluster:
     ldy #F32DirEntry::FstClusHI+1
     lda fd_area + F32_fd::StartCluster+3 , x
     sta (dirptr),y
@@ -211,96 +213,6 @@ __fat_set_direntry_cluster:
     lda fd_area + F32_fd::StartCluster+0 , x
     sta (dirptr),y
     rts
-
-; delete a directory entry denoted by given path in A/X
-;in:
-;  A/X - pointer to the directory path
-; out:
-;  C=0 on success, C=1 and A=error code otherwise
-fat_rmdir:
-    jsr __fat_opendir_cwd
-    bne @l_exit
-    debugdirentry
-    jsr __fat_is_dot_dir
-    beq @l_err_einval
-    jsr __fat_dir_isempty
-    bcs @l_exit
-    jmp __fat_unlink
-@l_err_einval:
-    lda #EINVAL
-    sec
-@l_exit:
-    debug "rmdir"
-    rts
-
-; in:
-;   A/X - pointer to the directory name
-; out:
-;  C=0 on success (A=0), C=1 on error and A=error code otherwise
-fat_mkdir:
-    jsr __fat_opendir_cwd
-    beq @l_exit_eexist                ; open success, dir exists already
-    cmp #ENOENT                       ; we expect 'no such file or directory' error, otherwise a file/dir with same name already exists
-    bne @l_exit_err                   ; exit on other error
-
-    copypointer dirptr, s_ptr2
-    jsr string_fat_name               ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
-    bne @l_exit_err
-    jsr __fat_alloc_fd                ; alloc a fd for the new directory - try to allocate a new fd here, right before any fat writes, cause they may fail
-    bcs @l_exit                       ; and we want to avoid an error in between the different block writes
-    lda #DIR_Attr_Mask_Dir            ; set type directory
-    jsr __fat_set_fd_attr_dirlba      ; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
-    jsr __fat_reserve_cluster         ; try to find and reserve next free cluster and store them in fd_area at fd (X)
-    bcs @l_exit_close                 ; C=1 - fail, exit but close fd
-    jsr __fat_set_lba_from_fd_dirlba  ; setup lba_addr from fd
-    jsr __fat_write_dir_entry         ; create dir entry at current dirptr
-    bcs @l_exit_close
-    jsr __fat_write_newdir_entry      ; write the data of the newly created directory with prepared data from dirptr
-@l_exit_close:
-    jmp __fat_free_fd                 ; A and C are preserved
-@l_exit_eexist:
-    lda #EEXIST                       ; exists already
-@l_exit_err:
-    sec
-@l_exit:
-    debug "fat_mkdir"
-    rts
-
-    ; in:
-    ;  X - file descriptor of directory
-    ; out:
-    ;  C=0 if directory is empty or contains <=2 entries ("." and ".."), C=1 otherwise
-__fat_dir_isempty:
-    phx
-    jsr __fat_count_direntries
-    cmp #3              ; >= 3 dir entries, must be more then only the "." and ".."
-    bcc @l_exit
-    lda #ENOTEMPTY
-@l_exit:
-    plx
-    rts
-
-__fat_count_direntries:
-    stz s_tmp3
-    SetVector @l_all, filenameptr
-    jsr __fat_find_first_mask    ; find within dir given in X
-    bcc @l_exit
-@l_next:
-    lda (dirptr)
-    cmp #DIR_Entry_Deleted
-    beq @l_find_next
-    inc  s_tmp3
-@l_find_next:
-    jsr __fat_find_next
-    bcs  @l_next
-@l_exit:
-    lda s_tmp3
-    debug "f_cnt_d"
-    rts
-@l_all:
-    .asciiz "*.*"
-
-
 
 ; write new dir entry to dirptr and set new end of directory marker
 ; in:
@@ -328,7 +240,6 @@ __fat_fopen_touch:
     rts
 
 
-
 ; write new dir entry to dirptr and set new end of directory marker
 ; in:
 ;  X - file descriptor of the new dir entry within fd_area
@@ -347,10 +258,10 @@ __fat_write_dir_entry:
     ldy #F32DirEntry::CrtTimeMillis
     sta (dirptr), y                        ; ms to 0, ms not supported by rtc
 
+    jsr __fat_set_direntry_start_cluster
+    jsr __fat_set_direntry_filesize
     jsr __fat_set_direntry_modify_datetime
     jsr __fat_set_direntry_create_datetime
-    jsr __fat_set_direntry_cluster
-    jsr __fat_set_direntry_filesize
 
     debug16 "f_w_dp", dirptr
 
@@ -751,30 +662,16 @@ fat_unlink:
     rts
 
 __fat_unlink:
-    jsr __fat_is_cln_zero              ; is root or no clnr assigned yet, file was just touched
+    jsr __fat_is_cln_zero           ; is root or no clnr assigned yet, file was just touched
     beq @l_unlink_direntry          ; ... then we can skip freeing clusters from fat
 
     jsr __fat_free_cluster          ; free cluster, update fsinfo
     bcs @l_exit
 @l_unlink_direntry:
-    jsr __fat_read_direntry          ; read the dir entry
+    jsr __fat_read_direntry         ; read the dir entry
     bne @l_exit
     lda #DIR_Entry_Deleted          ; mark dir entry as deleted ($e5)
     sta (dirptr)
-    jmp __fat_write_block_data        ; write back dir entry
-@l_exit:
-    rts
-
-__fat_is_dot_dir:
-    lda #'.'
-    cmp (dirptr)
-    bne @l_exit
-    ldy #10
-    lda #' '
-@l_next:
-    cmp (dirptr),y
-    bne @l_exit
-    dey
-    bne @l_next
+    jmp __fat_write_block_data      ; write back dir entry
 @l_exit:
     rts
