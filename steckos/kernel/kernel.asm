@@ -77,7 +77,7 @@ kern_init:
     stz key
     stz flags
 
-    lda #$03  ; enable RAM below kernel
+    lda #3  ; enable RAM below kernel
     sta slot2
 
     stz ansi_state
