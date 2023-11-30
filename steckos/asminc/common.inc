@@ -335,4 +335,9 @@
   bne _label
 .endmacro
 
+.macro cmp32 op1, op2, _label
+  cmp16 op1+2, op2+2, _label
+  cmp16 op1+0, op2+0, _label
+.endmacro
+
 .endif  ; _COMMON_INC_

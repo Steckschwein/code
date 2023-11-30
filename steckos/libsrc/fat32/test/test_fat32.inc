@@ -47,7 +47,8 @@
 .endmacro
 
 .macro fd_entry_file_seek clnr, dir_entry, dir_lba, attr, filesize, flags, status, seekpos
-  .dword clnr     ; CurrentCluster
+  .dword clnr       ; StartCluster
+  .dword clnr       ; CurrentCluster
   .dword filesize ; FileSize
   .byte attr ; Attr
   .dword dir_lba ; DirEntryLBA ; LBA of the block where the dir entry of the file is located

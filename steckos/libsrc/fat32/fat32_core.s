@@ -218,7 +218,7 @@ __fat_prepare_block_access:
     lda fd_area+F32_fd::seek_pos+1,x
     and #$01                              ; mask block start
     ora fd_area+F32_fd::seek_pos+0,x      ; and test whether seek_pos is at the beginning of a block (multiple of $0200) ?
-    bne __fat_prepare_access_read         ; no, we can fetch the byte from block_data
+    bne l_prepare ;__fat_prepare_access_read         ; no, we can fetch the byte from block_data
 
     lda fd_area+F32_fd::seek_pos+1,x
     lsr
@@ -254,13 +254,13 @@ l_exit:
 __fat_set_fd_attr_dirlba:
     sta fd_area + F32_fd::Attr, x
 
-     lda lba_addr + 3
+    lda lba_addr + 3
     sta fd_area + F32_fd::DirEntryLBA + 3, x
-     lda lba_addr + 2
+    lda lba_addr + 2
     sta fd_area + F32_fd::DirEntryLBA + 2, x
-     lda lba_addr + 1
+    lda lba_addr + 1
     sta fd_area + F32_fd::DirEntryLBA + 1, x
-     lda lba_addr + 0
+    lda lba_addr + 0
     sta fd_area + F32_fd::DirEntryLBA + 0, x
 
     lda dirptr+1
@@ -298,16 +298,20 @@ __fat_open_file:
     ldy #F32DirEntry::FstClusHI +1
     lda (dirptr),y
     and #$0f      ; cluster nr must be 0x?ffffff7
+    sta fd_area + F32_fd::StartCluster + 3, x
     sta fd_area + F32_fd::CurrentCluster + 3, x
     dey
     lda (dirptr),y
+    sta fd_area + F32_fd::StartCluster + 2, x
     sta fd_area + F32_fd::CurrentCluster + 2, x
 
     ldy #F32DirEntry::FstClusLO +1
     lda (dirptr),y
+    sta fd_area + F32_fd::StartCluster + 1, x
     sta fd_area + F32_fd::CurrentCluster + 1, x
     dey
     lda (dirptr),y
+    sta fd_area + F32_fd::StartCluster + 0, x
     sta fd_area + F32_fd::CurrentCluster + 0, x
 
     ldy #F32DirEntry::FileSize + 3
@@ -520,36 +524,63 @@ __calc_fat_lba_addr:
 ; out:
 ;  C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
 __fat_next_cln:
-    lda read_blkptr
-    pha
-    lda read_blkptr+1
-    pha
 
-    jsr __fat_is_cln_zero
-    bne @l_select_cln
-@l_reserve:
-    lda fd_area + F32_fd::flags,x
-    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; write access?
-    sec         ; prepare EOC (C=1) A=0 (EOK) if we take the branch
-    debug "fnxtcln flg"
-    beq @l_exit ; read access and no cluster reserved yet (empty file) - exit with EOC
-    jsr __fat_reserve_cluster
-    debug "fnxtcln res"
-    bra @l_exit
-@l_select_cln:
     lda fd_area+F32_fd::seek_pos+3,x     ; seek pos is 0 - we are at first block and first cluster (StartCluster), we skip select the next clnr
     ora fd_area+F32_fd::seek_pos+2,x
     ora fd_area+F32_fd::seek_pos+1,x
     ora fd_area+F32_fd::seek_pos+0,x
     debug32 "fnxtcln sp", fd_area+(2*.sizeof(F32_fd))+F32_fd::seek_pos
-    beq @l_exit_ok
+    clc
+    beq @l_exit
+
+    lda read_blkptr
+    pha
+    lda read_blkptr+1
+    pha
+
+    jsr __fat_select_next_cln
+
+    debug32 "fnxtcln cl <", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster
+    ply                      ; use Y to preserve A with return code
+    sty read_blkptr+1
+    ply
+    sty read_blkptr
+@l_exit:
+    rts
+
+
+__fat_select_next_cln:
+
+    jsr __fat_is_cln_zero
+    bne @l_select_next
+
+    jsr @try_reserve
+    bcs @l_exit
+
+    lda fd_area + F32_fd::CurrentCluster+3, x
+    sta fd_area + F32_fd::StartCluster+3, x
+    lda fd_area + F32_fd::CurrentCluster+2, x
+    sta fd_area + F32_fd::StartCluster+2, x
+    lda fd_area + F32_fd::CurrentCluster+1, x
+    sta fd_area + F32_fd::StartCluster+1, x
+    lda fd_area + F32_fd::CurrentCluster+0, x
+    sta fd_area + F32_fd::StartCluster+0, x
+    rts
+
+@l_select_next:
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
     debug "fnxtcln sel"
     bcc @l_save_cln
     ;cmp #EOK  ; EOK means EOC (C=1/A=0)
-    beq @l_reserve  ; reserve if file was opened with r+ or w+
-    sec ; restore error
-    bra @l_exit ; exit
+    bne @l_exit
+@try_reserve:
+    lda fd_area + F32_fd::flags,x
+    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; write access?
+    sec         ; prepare EOC (C=1) A=0 (EOK) if we take the branch
+    debug "fnxtcln flg"
+    beq @l_exit     ; read access and no cluster reserved yet (empty file) - exit with EOC => C=1/A=EOK (0)
+    jmp __fat_reserve_cluster
+
 @l_save_cln:
     ;debug32 "fnxtcln cl >", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster
     lda (read_blkptr), y
@@ -563,14 +594,8 @@ __fat_next_cln:
     iny
     lda (read_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+3, x
-@l_exit_ok:
-    clc ; success
+    clc
 @l_exit:
-    debug32 "fnxtcln cl <", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster
-    ply                      ; use Y to preserve A with return code
-    sty read_blkptr+1
-    ply
-    sty read_blkptr
     rts
 
 ; in:

@@ -96,14 +96,10 @@ fat_mount:
     m_memcpy block_data + F32_VolumeID::EBPB + EBPB::RootClus, volumeID + VolumeID::EBPB_RootClus, 4
     m_memcpy block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::EBPB_FATSz32 , 4
 
-__calc_fat_fsinfo_lba:
     ; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
     add16to32 lba_addr, block_data + F32_VolumeID::EBPB + EBPB::FSInfoSec, volumeID + VolumeID::lba_fsinfo
 
-__calc_fat_lba_begin:
-    ; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
-    ; fat_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors
-    ; fat2_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors + Sectors_Per_FAT
+    ; fat_lba_begin  = Partition_LBA_Begin + Number_of_Reserved_Sectors
 
     ; add number of reserved sectors to calculate fat_lba_begin. also store in cluster_begin_lba for further calculation
     clc
@@ -119,18 +115,17 @@ __calc_fat_lba_begin:
     adc #0
     sta volumeID + VolumeID::lba_data + 2
     sta volumeID + VolumeID::lba_fat + 2
-    ; adc #0 above will never overflow
+    ; adc #0 above will never overflow since RsvdSecCnt are 16bit
     stz volumeID + VolumeID::lba_data + 3
     stz volumeID + VolumeID::lba_fat + 3
 
-    add32 block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::lba_fat, volumeID + VolumeID::lba_fat2
-    ; fall through
+    ; fat2_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors + Sectors_Per_FAT
+    add32 block_data + volumeID + VolumeID::lba_fat, F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::lba_fat2
 
-__calc_cluster_begin_lba:
-    ; Number of FATs. Must be 2
-    ; cluster_begin_lba = fat_lba_begin + (sectors_per_fat * VolumeID::NumFATs (2))
+    ; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
     ldy block_data + F32_VolumeID::BPB + BPB::NumFATs
-@l7:  clc
+@l7:
+    clc
     add32 volumeID + VolumeID::lba_data, block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::lba_data ; add sectors per fat
     dey
     bne @l7
@@ -143,8 +138,8 @@ __calc_cluster_begin_lba:
     lda volumeID + VolumeID::BPB_SecPerClus ; max sec/cluster can be 128, with 2 (BPB_RootClus) * 128 we may subtract max 256
     asl
 
-    sta lba_addr+0      ;  used as tmp
-    stz lba_addr +1      ;  safe carry
+    sta lba_addr+0        ;  used as tmp
+    stz lba_addr +1       ;  safe carry
     rol lba_addr +1
     sec          ;  subtract from volumeID + VolumeID::lba_data
     lda volumeID + VolumeID::lba_data+0

@@ -179,6 +179,7 @@ DIR_Entry_Deleted            = $e5
 .endstruct
 
 .struct F32_fd
+   StartCluster     .dword  ; start cluster of the file (mirror of dir entry)
    CurrentCluster   .dword  ;
    FileSize         .dword  ;
    Attr             .byte   ; file attributes (mirror of attributes from dir entry)
