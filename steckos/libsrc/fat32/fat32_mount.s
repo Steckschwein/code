@@ -198,11 +198,10 @@ __calc_cluster_begin_lba:
     rts
 
 fat_check_signature:
-      lda #$55
-      cmp sd_blktarget + BootSector::Signature
-      bne @l1
-      asl ; $aa
-      cmp sd_blktarget + BootSector::Signature + 1
-      beq @l2
-@l1:  lda #fat_bad_block_signature
-@l2:  rts
+    lda sd_blktarget + BootSector::Signature  
+    asl 
+    cmp sd_blktarget + BootSector::Signature + 1 
+    beq @ok 
+    lda #fat_bad_block_signature 
+@ok:  
+    rts 
