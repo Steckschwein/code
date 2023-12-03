@@ -100,13 +100,13 @@ fat_write:
 .endif
 @l_update:
     lda fd_area + F32_fd::FileSize + 3,x
-    sta fd_area + F32_fd::seek_pos + 3,x
+    sta fd_area + F32_fd::SeekPos + 3,x
     lda fd_area + F32_fd::FileSize + 2,x
-    sta fd_area + F32_fd::seek_pos + 2,x
+    sta fd_area + F32_fd::SeekPos + 2,x
     lda fd_area + F32_fd::FileSize + 1,x
-    sta fd_area + F32_fd::seek_pos + 1,x
+    sta fd_area + F32_fd::SeekPos + 1,x
     lda fd_area + F32_fd::FileSize + 0,x
-    sta fd_area + F32_fd::seek_pos + 0,x
+    sta fd_area + F32_fd::SeekPos + 0,x
     clc
 @l_exit:
     rts

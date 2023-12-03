@@ -216,12 +216,12 @@ __fat_clone_fd:
 .export __fat_prepare_block_access
 __fat_prepare_block_access:
     ; TODO FIXME - introduce dirty check or do always read - the block_data may be corrupted if a read from another fd happened in between
-    lda fd_area+F32_fd::seek_pos+1,x
+    lda fd_area+F32_fd::SeekPos+1,x
     and #$01                              ; mask block start
-    ora fd_area+F32_fd::seek_pos+0,x      ; and test whether seek_pos is at the beginning of a block (multiple of $0200) ?
+    ora fd_area+F32_fd::SeekPos+0,x      ; and test whether SeekPos is at the beginning of a block (multiple of $0200) ?
     bne __fat_prepare_access_read         ; no, we can fetch the byte from block_data
 
-    lda fd_area+F32_fd::seek_pos+1,x
+    lda fd_area+F32_fd::SeekPos+1,x
     lsr
     and volumeID+VolumeID::BPB_SecPerClusMask ; mask with sec per cluster mask
     debug8 "fp ba >", volumeID+VolumeID::BPB_SecPerClusMask
@@ -236,9 +236,9 @@ __fat_prepare_access_read:
     bcs l_exit
 l_prepare:
     .assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
-    lda fd_area+F32_fd::seek_pos+0,x
+    lda fd_area+F32_fd::SeekPos+0,x
     sta __volatile_ptr+0
-    lda fd_area+F32_fd::seek_pos+1,x
+    lda fd_area+F32_fd::SeekPos+1,x
     and #$01
     ora #>block_data
     sta __volatile_ptr+1
@@ -471,9 +471,9 @@ __calc_lba_addr:
 
     debug32 "c lba 2", lba_addr
 
-    ; seek_pos / $200 (blocksize) mod "sec per cluster" = block offset within cluster
-    lda fd_area+F32_fd::seek_pos+1,x
-    lsr                                         ; seek_pos / $200 => is seek_pos high byte >> 1
+    ; SeekPos / $200 (blocksize) mod "sec per cluster" = block offset within cluster
+    lda fd_area+F32_fd::SeekPos+1,x
+    lsr                                         ; SeekPos / $200 => is SeekPos high byte >> 1
     and volumeID+VolumeID::BPB_SecPerClusMask   ; mod "sec per cluster" => AND ("sec per cluster"-1)
     clc
     adc lba_addr+0                              ; add to lba_addr
@@ -528,7 +528,7 @@ __fat_next_cln:
     lda read_blkptr+1
     pha
 
-    jsr __fat_select_next_cln
+    jsr @l_select_next_cln
     debug32 "fnxtcln cl <", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster
 
     ply                      ; use Y to preserve A with return code
@@ -538,7 +538,7 @@ __fat_next_cln:
     rts
 
 
-__fat_select_next_cln:
+@l_select_next_cln:
 
     jsr __fat_is_cln_zero
     bne @l_select_next
@@ -550,12 +550,12 @@ __fat_select_next_cln:
     ; jmp __fat_update_direntry
 
 @l_select_next:
-    lda fd_area+F32_fd::seek_pos+3,x     ; seek pos is 0 - we are at first block and first cluster (StartCluster), we skip select the next clnr
-    ora fd_area+F32_fd::seek_pos+2,x
-    ora fd_area+F32_fd::seek_pos+1,x
-    ora fd_area+F32_fd::seek_pos+0,x
-    debug32 "fat sel sp", fd_area+(2*.sizeof(F32_fd))+F32_fd::seek_pos
-    beq @l_exit_ok
+    lda fd_area+F32_fd::SeekPos+3,x     ; seek pos is 0 - we are at first block and first cluster (StartCluster), we skip select the next clnr
+    ora fd_area+F32_fd::SeekPos+2,x
+    ora fd_area+F32_fd::SeekPos+1,x
+    ora fd_area+F32_fd::SeekPos+0,x
+;    debug32 "fat sel seek", fd_area+(2*.sizeof(F32_fd))+F32_fd::SeekPos
+;    beq @l_exit_ok
 
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
     debug "fat sel nxt"

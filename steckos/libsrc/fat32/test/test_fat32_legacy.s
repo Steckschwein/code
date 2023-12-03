@@ -198,12 +198,12 @@ setUp:
 
   ;setup fd0 as root cluster
   set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-  set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
+  set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
   set8 fd_area+(0*FD_Entry_Size)+F32_fd::flags, 0
 
   ;setup fd1 as test cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
-  set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
+  set32 fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos, 0
   set8 fd_area+(1*FD_Entry_Size)+F32_fd::flags, 0
 
   init_block block_root_cl_init, block_root_cl

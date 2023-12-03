@@ -15,6 +15,7 @@ debug_enabled=1
 
 .code
 
+    jmp single_test
 ; -------------------
     setup "fat_mkdir_eexist"
     lda #<test_dir_name_eexist
@@ -44,7 +45,7 @@ debug_enabled=1
     ldx #>test_file_name_1
     jsr fat_fopen
     assertA EOK
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -58,7 +59,7 @@ debug_enabled=1
     ldx #>test_file_name_1
     jsr fat_fopen
     assertA EOK
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -72,7 +73,7 @@ debug_enabled=1
     ldx #>test_file_name_1
     jsr fat_fopen
     assertA EOK
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -96,7 +97,7 @@ debug_enabled=1
     jsr fat_fopen
     assertA EOK
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertDirEntry block_root_cl+$80
         fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -105,7 +106,7 @@ debug_enabled=1
     ldy #$31
     lda #'F'
     jsr fat_write_byte
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertC 0
     assertY $31 ; preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -121,7 +122,7 @@ debug_enabled=1
     ldx #>test_file_name_1cl
     jsr fat_fopen
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
         fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDONLY, FD_FILE_OPEN, 0
 
@@ -141,7 +142,7 @@ debug_enabled=1
     jsr fat_fopen
     assertA EOK
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
 
     assertDirEntry block_root_cl+$80
         fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; no cluster reserved yet
@@ -174,7 +175,7 @@ debug_enabled=1
     ldx #>test_file_name_1cl
     jsr fat_fopen
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
         fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDONLY, FD_FILE_OPEN, 0
 
@@ -204,7 +205,7 @@ debug_enabled=1
     jsr fat_fopen
     assertA EOK
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
 
     assertDirEntry block_root_cl+$80
         fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; no cluster reserved yet
@@ -289,7 +290,7 @@ debug_enabled=1
     ldx #>test_file_name_1cl
     jsr fat_fopen
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 515, O_RDONLY, FD_FILE_OPEN, 0
 
@@ -313,7 +314,7 @@ debug_enabled=1
     jsr fat_fopen
     assertA EOK
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
         fd_entry_file_seek 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_FILE_OPEN, 0
     assertDirEntry block_root_cl+$80
@@ -358,7 +359,7 @@ debug_enabled=1
     ldx #>test_file_name_2cl
     jsr fat_fopen
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2049, O_RDONLY, FD_FILE_OPEN, 0
 
@@ -371,7 +372,7 @@ debug_enabled=1
     jsr fat_close
 
 ; -------------------
-    brk
+single_test:
     setup "fat_write seek 2048+512 4s/cl";
 
     ldy #O_RDWR
@@ -380,7 +381,7 @@ debug_enabled=1
     jsr fat_fopen
     assertA EOK
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
         fd_entry_file_seek 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_FILE_OPEN, 0
     assertDirEntry block_root_cl+$80
@@ -391,9 +392,9 @@ debug_enabled=1
     ldy #>test_seek
 		jsr fat_fseek
 		assertCarry 0
-		assertX (FD_Entry_Size*2); expect X unchanged, and read address still unchanged
+		assertX (FD_Entry_Size*2) ; assert FD prreserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek TEST_FILE_CL2, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512), O_RDWR, FD_FILE_OPEN, (2048+512)
+        fd_entry_file_all TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512), O_RDWR, FD_FILE_OPEN, (2048+512), TEST_FILE_CL2
 
     lda #'X'
     jsr fat_write_byte
@@ -412,7 +413,7 @@ debug_enabled=1
     ldx #>test_file_name_2cl
     jsr fat_fopen
     assertC 0
-    assertX FD_Entry_Size*2  ; assert FD reserved
+    assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_FILE_OPEN, 0
 
@@ -550,12 +551,12 @@ setUp:
 
   ;setup fd0 as root cluster
   set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-  set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
+  set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
   set8 fd_area+(0*FD_Entry_Size)+F32_fd::flags, 0
 
   ;setup fd1 as test cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
-  set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
+  set32 fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos, 0
   set8 fd_area+(1*FD_Entry_Size)+F32_fd::flags, 0
 
   init_block block_root_cl_init, block_root_cl

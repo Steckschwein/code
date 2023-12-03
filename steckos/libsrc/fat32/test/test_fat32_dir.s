@@ -54,7 +54,7 @@ setUp:
 
 		;setup fd0 (cwd) to root cluster
 		set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-		set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
+		set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
 		rts
 
 .data

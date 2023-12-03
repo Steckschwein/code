@@ -48,7 +48,7 @@
 .export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
 
-.export __fat_fseek_cluster
+;.export __fat_fseek_cluster
 .export __fat_init_fdarea
 
 .code
@@ -67,7 +67,7 @@ fat_fseek:
     sta __volatile_ptr
     sty __volatile_ptr+1
 
-    debug "seek fs"
+    debug "fat fseek"
 
     ldy #Seek::Whence
     lda (__volatile_ptr),y
@@ -80,8 +80,9 @@ fat_fseek:
     rts
 @l_filesize:
     lda fd_area+F32_fd::flags,x
-;    and #
-    ; check requested seek_pos < FileSize
+    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; write access?
+    bne @l_seek ; skip check if r+/w+
+    ; check requested SeekPos < FileSize
     ldy #Seek::Offset+3
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+3,x
@@ -101,30 +102,19 @@ fat_fseek:
     lda (__volatile_ptr),y
     cmp fd_area+F32_fd::FileSize+0,x
     bcs @l_exit_err
-    ; save seek pos
-    sta fd_area+F32_fd::seek_pos+0,x
-    iny
+
+@l_seek:
+    ldy #Seek::Offset+3
     lda (__volatile_ptr),y
-    sta fd_area+F32_fd::seek_pos+1,x
-    iny
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::seek_pos+2,x
-    iny
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::seek_pos+3,x
-;in:
-;  X - offset into fd_area
-;out:
-;  C=0 on success (A=0), C=1 and A=error code otherwise
-__fat_fseek_cluster:
-    ; calculate amount of cluster chain iterations by "seek_pos" / ($200 * "sec per cluster") => (seek_pos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
-    lda fd_area+F32_fd::seek_pos+3,x
     sta volumeID+VolumeID::temp_dword+2
-    lda fd_area+F32_fd::seek_pos+2,x
+    dey
+    lda (__volatile_ptr),y
     sta volumeID+VolumeID::temp_dword+1
-    lda fd_area+F32_fd::seek_pos+1,x
+    dey
+    lda (__volatile_ptr),y
     sta volumeID+VolumeID::temp_dword+0
 
+    ; calculate amount of cluster chain iterations by "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
     lda volumeID+VolumeID::BPB_SecPerClus
 @l_count:
     tay
@@ -135,21 +125,50 @@ __fat_fseek_cluster:
     lsr
     bne @l_count
 
-@seek_cln:
+    ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may feel within seek and may leave with partial reserved clusters which we dont recover
+    ; read fsinfo andcmp temp_dword with fsinfo:FreeClus
+
     lda volumeID+VolumeID::temp_dword+2
     ora volumeID+VolumeID::temp_dword+1
     ora volumeID+VolumeID::temp_dword+0
-    debug32 "seek", volumeID+VolumeID::temp_dword
+    debug32 "seek cnt", volumeID+VolumeID::temp_dword
     beq @l_exit_ok
-    debug32 "seek >", fd_area+(.sizeof(F32_fd)*2)+F32_fd::CurrentCluster
+
+    lda fd_area+F32_fd::StartCluster+3, x
+    sta fd_area+F32_fd::CurrentCluster+3, x
+    lda fd_area+F32_fd::StartCluster+2, x
+    sta fd_area+F32_fd::CurrentCluster+2, x
+    lda fd_area+F32_fd::StartCluster+1, x
+    sta fd_area+F32_fd::CurrentCluster+1, x
+    lda fd_area+F32_fd::StartCluster+0, x
+    sta fd_area+F32_fd::CurrentCluster+0, x
+
+@seek_cln:
+    debug32 "seek >", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
     jsr __fat_next_cln
-    debug32 "seek nx cl", volumeID+VolumeID::temp_dword
     bcs @l_exit
     _dec24 volumeID+VolumeID::temp_dword
-    bra @seek_cln
+    debug32 "seek nx cl", volumeID+VolumeID::temp_dword
+    bne @seek_cln
+
 @l_exit_ok:
-    debug32 "seek <", fd_area+(.sizeof(F32_fd)*2)+F32_fd::CurrentCluster
-    clc; jmp __fat_prepare_access_read ; TODO - replace with dirty check - see __fat_prepare_access
+    ; save new seek pos
+    ldy #Seek::Offset
+    lda (__volatile_ptr),y
+    sta fd_area+F32_fd::SeekPos+0,x
+    iny
+    lda (__volatile_ptr),y
+    sta fd_area+F32_fd::SeekPos+1,x
+    iny
+    lda (__volatile_ptr),y
+    sta fd_area+F32_fd::SeekPos+2,x
+    iny
+    lda (__volatile_ptr),y
+    sta fd_area+F32_fd::SeekPos+3,x
+    debug32 "seek < seek", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+    debug32 "seek < fs", fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
+    debug32 "seek < cl", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+    clc
 @l_exit:
     rts
 
@@ -163,7 +182,7 @@ fat_fread_byte:
     _is_file_open   ; otherwise rts C=1 and A=#EINVAL
     _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
 
-    _cmp32_x fd_area+F32_fd::seek_pos, fd_area+F32_fd::FileSize, :+
+    _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
     lda #EOK
     rts ; exit - EOK (0) and C=1
 
@@ -172,7 +191,7 @@ fat_fread_byte:
     bcs @l_exit
 
     lda (__volatile_ptr)
-    _inc32_x fd_area+F32_fd::seek_pos
+    _inc32_x fd_area+F32_fd::SeekPos
     clc
 @l_exit:
     ply
@@ -198,7 +217,7 @@ fat_fopen:
     ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
     jsr __fat_open_path
     bcs @l_error
-    lda fd_area + F32_fd::Attr,x
+    lda fd_area+F32_fd::Attr,x
     and #DIR_Attr_Mask_Dir      ; regular file or directory?
     beq @l_opened               ; exit, file opened
     lda #EISDIR                 ; was directory, we must not free any fd
@@ -216,12 +235,10 @@ fat_fopen:
 ;    update atime if desired, exit ok
 ;    jsr __fat_set_direntry_modify_datetime
     lda __volatile_tmp
-    debug8 "ffo vtmp 1", __volatile_tmp
-    sta fd_area + F32_fd::flags,x
+    sta fd_area+F32_fd::flags,x
     clc
     rts
 @l_touch:
-    debug "ffo r+"
     jmp __fat_fopen_touch
 
 

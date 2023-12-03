@@ -22,7 +22,7 @@ debug_enabled=1
 		assertX (2*FD_Entry_Size); expect x point to first fd entry which is 2*FD_Entry_Size, cause the first 2 entries are reserved
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::CurrentCluster
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::FileSize
-		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::seek_pos
+		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::SeekPos
 		assert8 $0, (2*FD_Entry_Size)+fd_area+F32_fd::flags
     assert8 $80, (2*FD_Entry_Size)+fd_area+F32_fd::status
 
@@ -78,13 +78,13 @@ debug_enabled=1
 		assert32 LBA_BEGIN - ROOT_CL * 8 + test_start_cluster * 8 + 0, lba_addr ; expect $68f0 + (clnr * sec/cl) => $67f0 + $16a *8 + 10 = $7340
 
 		lda #$02*7 ; 7 blocks offset
-		sta fd_area+F32_fd::seek_pos+1,x
+		sta fd_area+F32_fd::SeekPos+1,x
 		jsr __calc_lba_addr
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 8 + test_start_cluster * 8 + 7, lba_addr ; expect $68f0 + (clnr * sec/cl) => $67f0 + $16a *8 + 10 = $7347
 
 		lda #$02*2 ; 2 blocks
-		sta fd_area+F32_fd::seek_pos+1,x
+		sta fd_area+F32_fd::SeekPos+1,x
 		jsr __calc_lba_addr
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 8 + test_start_cluster * 8 + 2, lba_addr ; expect $68f0 + (clnr * sec/cl) => $67f0 + $16a *8 + 10 = $7342
@@ -158,7 +158,7 @@ debug_enabled=1
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::status, FD_FILE_OPEN
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
-		set32 fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos, 0
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos, 0
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0 ; empty file
 
 		ldx #(2*FD_Entry_Size) ; 0 byte file
@@ -166,7 +166,7 @@ debug_enabled=1
 		assertCarry 1; expect "error"
 		assertA EOK ; EOF
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
-		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
     assert8 FD_FILE_OPEN, fd_area+(2*FD_Entry_Size)+F32_fd::status
 
 ; -------------------
@@ -174,7 +174,7 @@ debug_enabled=1
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::status, FD_FILE_OPEN
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, 0 ; touched file, no cluster reserved
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
-		set32 fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos, 0
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos, 0
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0
 
 		ldx #(2*FD_Entry_Size)
@@ -182,7 +182,7 @@ debug_enabled=1
 		assertCarry 1; expect "error"
 		assertA EOK ; EOF
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
-		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
     assert8 FD_FILE_OPEN, fd_area+(2*FD_Entry_Size)+F32_fd::status
 
 ; -------------------
@@ -194,7 +194,7 @@ debug_enabled=1
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $16a * 1 = $6968
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
     assert8 FD_FILE_OPEN, fd_area+(1*FD_Entry_Size)+F32_fd::status
 
 ; -------------------
@@ -209,7 +209,7 @@ debug_enabled=1
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		assert32 2, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 2, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
     assert8 FD_FILE_OPEN, fd_area+(1*FD_Entry_Size)+F32_fd::status
 
 ; -------------------
@@ -233,7 +233,7 @@ debug_enabled=1
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		assert32 5, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 5, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 
 ; -------------------
 		setup "fat_fread_byte 2 blocks 2s/cl"
@@ -259,7 +259,7 @@ debug_enabled=1
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2, lba_addr
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
-		assert32 5, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 5, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 
 		ldy #251
 :		jsr fat_fread_byte
@@ -274,14 +274,14 @@ debug_enabled=1
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2, lba_addr
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster ; - no new cluster selected
-		assert32 $0200, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos ; seek pos at begin of next block
+		assert32 $0200, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos ; seek pos at begin of next block
 
 		jsr fat_fread_byte
 		assertCarry 0; ok
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2 + 1, lba_addr ; lba +1
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster ; - no new cluster selected
-		assert32 $0201, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 $0201, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 
 
 ; -------------------
@@ -289,13 +289,13 @@ debug_enabled=1
     set_sec_per_cl 2
 
 		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, (512*2+5) ; setup filesize
-		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA 'B'
-		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * 2 + test_start_cluster * 2, lba_addr
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster ; - no new cluster selected
@@ -303,7 +303,7 @@ debug_enabled=1
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA '0'
-		assert32 2, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 2, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 		assertX (1*FD_Entry_Size)
 
 		jsr fat_fread_byte
@@ -331,49 +331,49 @@ debug_enabled=1
 		assertCarry 0
 		assertA 'A'
 		assertX (1*FD_Entry_Size)
-		assert32 $101, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 $101, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 
 :		jsr fat_fread_byte
 		assertCarry 0
-    cmp32_ne fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, $300, :- ; read until seek pos reached
+    cmp32_ne fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos, $300, :- ; read until seek pos reached
 
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA 'B'
 		assertX (1*FD_Entry_Size)
-		assert32 $301, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 $301, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 
 :		jsr fat_fread_byte
 		assertCarry 0
-    cmp32_ne fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, $400, :- ; read until seek pos reached
+    cmp32_ne fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos, $400, :- ; read until seek pos reached
 		assert32 test_start_cluster, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA 'B'
-		assert32 $401, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 $401, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA '0'
-		assert32 $402, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 $402, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA '/'
-		assert32 $403, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 $403, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA 'C'
-		assert32 $404, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 $404, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 		jsr fat_fread_byte
 		assertCarry 0
 		assertA '1'
-		assert32 $405, fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos
+		assert32 $405, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 
 		jsr fat_fread_byte
 		assertCarry 1
 
 		assert32 (512*2+5), fd_area+(1*FD_Entry_Size)+F32_fd::FileSize
-		assert32 (512*2+5), fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos ; expect position at EOF (filesize)
+		assert32 (512*2+5), fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos ; expect position at EOF (filesize)
 		assert32 test_start_cluster+3, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 
 		jsr fat_fread_byte
@@ -391,12 +391,12 @@ setUp:
 	;setup fd0 as root cluster
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 	set8 fd_area+(0*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Dir
-	set32 fd_area+(0*FD_Entry_Size)+F32_fd::seek_pos, 0
+	set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
 	;setup fd1 with test cluster
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::status, FD_FILE_OPEN
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
-	set32 fd_area+(1*FD_Entry_Size)+F32_fd::seek_pos, 0
+	set32 fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos, 0
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::flags, O_RDONLY
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, $1000
 
