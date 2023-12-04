@@ -25,30 +25,5 @@
 .include "zeropage.inc"
 .include "debug.inc"
 
-.macro printstring text
-    jsr primm
-    .byte text
-    .byte $0a,$0
-.endmacro
 
-.macro Copy src, trgt, len
 
-		ldx #len
-:
-		lda src,x
-		sta trgt,x
-		dex
-		bpl :-
-
-.endmacro
-
-.macro toupper
-	cmp #$60 ; Is lowercase?
-	bcc :+
-	and	#$DF
-:
-.endmacro
-
-.macro tolower
-	ora #$20
-.endmacro

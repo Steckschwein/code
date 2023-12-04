@@ -306,4 +306,63 @@
 	bne _label
 .endmacro
 
+.macro printstring text
+    jsr primm
+    .byte text
+    .byte $0a,$0
+.endmacro
+
+.macro Copy src, trgt, len
+
+		ldx #len
+:
+		lda src,x
+		sta trgt,x
+		dex
+		bpl :-
+
+.endmacro
+
+.macro toupper
+	cmp #$60 ; Is lowercase?
+	bcc :+
+	and	#$DF
+:
+.endmacro
+
+.macro tolower
+	ora #$20
+.endmacro
+
+.macro crlf
+  lda #CODE_LF		;\n already does the carriage return
+  jsr char_out
+.endmacro
+
+.macro sys_delay_ms millis
+	sys_delay_us (millis * 1000)
+.endmacro
+
+.macro sys_delay_us micros
+      .local @l1,@l2,@l3
+      .assert (micros * clockspeed) >= 0, error, "micros to small!"
+      .assert (>.HIWORD(micros * clockspeed)) = 0, error, "micros to large!"
+      php
+      pha
+      phx
+      phy
+      lda #1+<.HIWORD(micros * clockspeed / 5)
+@l1:  ldx #1+>(micros * clockspeed / 5)
+@l2:  ldy #1+<(micros * clockspeed / 5) ; ~5cl inner loop
+@l3:  dey
+      bne @l3
+      dex
+      bne @l2
+      dec
+      bne @l1
+      ply
+      plx
+      pla
+      plp
+.endmacro
 .endif  ; _COMMON_INC_

@@ -6,6 +6,7 @@
 .importzp tmp1
 
 .include "asminc/system.inc"
+.include "asminc/common.inc"
 
 .proc __delay_ms
 
