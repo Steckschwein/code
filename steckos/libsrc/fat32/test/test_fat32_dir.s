@@ -48,7 +48,7 @@ setUp:
 		jsr __fat_init_fdarea
 
 		set8  volumeID + VolumeID::BPB  + BPB::SecPerClus, SEC_PER_CL
-		set32 volumeID + VolumeID::EBPB + EBPB::RootClus, ROOT_CL
+		set32 volumeID + VolumeID::BPB + BPB::RootClus, ROOT_CL
 		set32 cluster_begin_lba, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL))
 		set32 fat_lba_begin, FAT_LBA		;fat lba to
 

@@ -81,9 +81,6 @@ PartType_FAT32_LBA    = $0c
    SectsHidden .dword; // 28
    TotalSects  .dword; // 32 Number of sectors
 
-.endstruct
-
-.struct EBPB
    FATSz32     .dword  ; 36-39 ; sectors per FAT
    MirrorFlags .word   ; 40-41; Bits 0-3: number of active FAT (if bit 7 is 1)
                   ; Bits 4-6: reserved
@@ -108,7 +105,6 @@ PartType_FAT32_LBA    = $0c
 ; struct VolumeID like we keep it in memory
 .struct VolumeID
    BPB      .tag BPB
-   EBPB     .tag EBPB
 .endstruct
 
 ; struct VolumeID like found on FAT-media (bootsector)
@@ -119,12 +115,9 @@ PartType_FAT32_LBA    = $0c
                        ; Sometimes just garbage. Microsoft recommends "MSWIN4.1".)
                      ; https://www.win.tue.nl/~aeb/linux/fs/fat/fat-1.html
 
+   ; FAT32 BIOS Parameter Block begins here
    BPB         .tag BPB
 
-   ;Reserved2   .byte 3; 24-35 Placeholder until FAT32 EBPB
-
-   ; FAT32 Extended BIOS Parameter Block begins here
-   EBPB      .tag EBPB
 .endstruct
 
 

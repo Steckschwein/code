@@ -395,7 +395,7 @@ __prepare_calc_lba_addr:
 		jsr	__fat_isroot
 		bne	@l_scl
 		.repeat 4,i
-			lda volumeID + VolumeID::EBPB + EBPB::RootClus + i
+			lda volumeID + VolumeID::BPB + BPB::RootClus + i
 			sta lba_addr + i
 		.endrepeat
 		rts
@@ -552,7 +552,7 @@ __fat_read_cluster_block_and_select:
 		bne @l_exit
 		jsr __fat_isroot							; is root clnr?
 		bne @l_clnr_fd
-		lda volumeID + VolumeID::EBPB + EBPB::RootClus+0
+		lda volumeID + VolumeID::BPB + BPB::RootClus+0
 		bra @l_clnr_page
 @l_exit:
 		sec

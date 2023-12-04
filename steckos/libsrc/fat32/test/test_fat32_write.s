@@ -184,8 +184,8 @@ setUp:
 
 	set8 volumeID+VolumeID::BPB + BPB::SecPerClus, SEC_PER_CL
 	set8 volumeID+VolumeID::BPB + BPB::NumFATs, 2
-	set32 volumeID + VolumeID::EBPB + EBPB::RootClus, ROOT_CL
-	set32 volumeID + VolumeID::EBPB + EBPB::FATSz32, (FAT2_LBA - FAT_LBA)
+	set32 volumeID + VolumeID::BPB + BPB::RootClus, ROOT_CL
+	set32 volumeID + VolumeID::BPB + BPB::FATSz32, (FAT2_LBA - FAT_LBA)
 	set32 cluster_begin_lba, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL))
 	set32 fat_lba_begin, FAT_LBA
 	set32 fat2_lba_begin, FAT2_LBA

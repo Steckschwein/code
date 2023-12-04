@@ -90,7 +90,7 @@ fat_mount:
 @mount_fat32:
     ;m_memcpy sd_blktarget+11, volumeID, .sizeof(VolumeID) ; +11 skip first 11 bytes, we are not interested in
     m_memcpy  sd_blktarget + F32_VolumeID::BPB,   volumeID + VolumeID::BPB,   .sizeof(BPB) ; +11 skip first 11 bytes, we are not interested in
-    m_memcpy  sd_blktarget + F32_VolumeID::EBPB,  volumeID + VolumeID::EBPB,  .sizeof(EBPB) ; +11 skip first 11 bytes, we are not interested in
+    m_memcpy  sd_blktarget + F32_VolumeID::BPB,  volumeID + VolumeID::BPB,  .sizeof(BPB) ; +11 skip first 11 bytes, we are not interested in
 
     ; Bytes per Sector, must be 512 = $0200
     lda volumeID + VolumeID::BPB + BPB::BytsPerSec+0
@@ -103,8 +103,8 @@ fat_mount:
     rts
 @l6:
 __calc_fat_fsinfo_lba:
-    ; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
-    add16 lba_addr, volumeID+ VolumeID::EBPB + EBPB::FSInfoSec, fat_fsinfo_lba
+    ; calc fs_info lba address as cluster_begin_lba + BPB::FSInfoSec
+    add16 lba_addr, volumeID+ VolumeID::BPB + BPB::FSInfoSec, fat_fsinfo_lba
     lda lba_addr+2
     adc #0        ; + C
     sta fat_fsinfo_lba+2
@@ -134,7 +134,7 @@ __calc_fat_lba_begin:
     sta cluster_begin_lba + 3
     sta fat_lba_begin + 3
 
-    add16 volumeID +  VolumeID::EBPB + EBPB::FATSz32, fat_lba_begin, fat2_lba_begin
+    add16 volumeID +  VolumeID::BPB + BPB::FATSz32, fat_lba_begin, fat2_lba_begin
     ; fall through
 
 __calc_cluster_begin_lba:
@@ -144,7 +144,7 @@ __calc_cluster_begin_lba:
 @l7:  clc
     ldx #$00
 @l8:  ror ; get carry flag back
-    lda volumeID + VolumeID::EBPB + EBPB::FATSz32,x ; sectors per fat
+    lda volumeID + VolumeID::BPB + BPB::FATSz32,x ; sectors per fat
     adc cluster_begin_lba,x
     sta cluster_begin_lba,x
     inx
@@ -180,13 +180,13 @@ __calc_cluster_begin_lba:
     sta cluster_begin_lba +3
 
     debug8 "sc/cl", volumeID+VolumeID::BPB + BPB::SecPerClus
-    debug32 "r_cl", volumeID+VolumeID::EBPB + EBPB::RootClus
+    debug32 "r_cl", volumeID+VolumeID::BPB + BPB::RootClus
     debug32 "s_lba", lba_addr
     debug16 "r_sc", volumeID + VolumeID::BPB + BPB::RsvdSecCnt
     debug16 "f_lba", fat_lba_begin
-    debug32 "f_sc", volumeID +  VolumeID::EBPB + EBPB::FATSz32
+    debug32 "f_sc", volumeID +  VolumeID::BPB + BPB::FATSz32
     debug16 "f2_lba", fat2_lba_begin
-    debug16 "fi_sc", volumeID+ VolumeID::EBPB + EBPB::FSInfoSec
+    debug16 "fi_sc", volumeID+ VolumeID::BPB + BPB::FSInfoSec
     debug32 "fi_lba", fat_fsinfo_lba
     debug32 "cl_lba", cluster_begin_lba
     debug16 "fbuf", filename_buf
