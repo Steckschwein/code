@@ -211,7 +211,7 @@ FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
 ; memory locations for fat32 driver
 ;
-volumeID              = $D000 ; address of VolumeID
+volumeID              = $0300 ; address of VolumeID
 
 cluster_begin_lba     = volumeID + .sizeof(VolumeID) ; begin of cluster area (4 byte)
 fat_lba_begin         = cluster_begin_lba + 4; (2 byte) begin of fat area - TODO FIXME we assume 16bit are sufficient since fat is placed at the beginning of the device
