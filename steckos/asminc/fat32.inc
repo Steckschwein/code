@@ -25,7 +25,6 @@
 
 ; TODO FIXME replace with errno.inc from cc65 api
 fat_bad_block_signature      = $01
-fat_invalid_partition_type   = $02
 fat_invalid_sector_size      = $03
 fat_invalid_num_fats      = $04
 fat_open_error         = $05
@@ -66,6 +65,23 @@ PartType_FAT32_LBA    = $0c
 .endstruct
 
 ;BS_VolLab2      = 71
+.struct BPB
+   BytsPerSec  .word ; 11-12  ; 512 usually
+   SecPerClus  .byte ; 13     ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
+   RsvdSecCnt  .word ; 14-15  ; number of reserved sectors
+   NumFATs     .byte ; 16     ; usually 2
+   Reserved    .byte 4 ; 17-20 (max root entries, total logical sectors skipped)
+   Media       .byte   ; 21 ; For removable media, 0xF0 is frequently used.
+               ; The legal values for this field are
+               ; 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
+   SectsPerFAT .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
+   
+   SectsPerTrack .word;    // 24-25 ; Number of sectors per track
+   NumHeads    .word; // 26
+   SectsHidden .dword; // 28
+   TotalSects  .dword; // 32 Number of sectors
+
+.endstruct
 
 .struct EBPB
    FATSz32     .dword  ; 36-39 ; sectors per FAT
@@ -88,17 +104,6 @@ PartType_FAT32_LBA    = $0c
    FSType      .byte 8  ; 83-90
 .endstruct
 
-.struct BPB
-   BytsPerSec  .word ; 11-12  ; 512 usually
-   SecPerClus  .byte ; 13     ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
-   RsvdSecCnt  .word ; 14-15  ; number of reserved sectors
-   NumFATs     .byte ; 16     ; usually 2
-   Reserved    .byte 4 ; 17-20 (max root entries, total logical sectors skipped)
-   Media       .byte   ; 21 ; For removable media, 0xF0 is frequently used.
-               ; The legal values for this field are
-               ; 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
-   SectsPerFAT .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
-.endstruct
 
 ; struct VolumeID like we keep it in memory
 .struct VolumeID
@@ -116,7 +121,7 @@ PartType_FAT32_LBA    = $0c
 
    BPB         .tag BPB
 
-   Reserved2   .byte 12; 24-35 Placeholder until FAT32 EBPB
+   ;Reserved2   .byte 3; 24-35 Placeholder until FAT32 EBPB
 
    ; FAT32 Extended BIOS Parameter Block begins here
    EBPB      .tag EBPB
@@ -213,7 +218,8 @@ FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
 ; memory locations for fat32 driver
 ;
-volumeID              = $0308 ; address of VolumeID
+volumeID              = $D000 ; address of VolumeID
+
 cluster_begin_lba     = volumeID + .sizeof(VolumeID) ; begin of cluster area (4 byte)
 fat_lba_begin         = cluster_begin_lba + 4; (2 byte) begin of fat area - TODO FIXME we assume 16bit are sufficient since fat is placed at the beginning of the device
 fat2_lba_begin        = fat_lba_begin + 2   ; (2 byte) end of first fat and begin of 2nd fat (mirror) area - TODO FIXME we assume 16bit ...

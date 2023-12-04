@@ -66,10 +66,15 @@ fat_mount:
 
     lda @part0 + PartitionEntry::TypeCode
     cmp #PartType_FAT32_LBA
-    beq @l2
-    lda #fat_invalid_partition_type  ; type code not  PartType_FAT32_LBA ($0C)
-    rts
-@l2:
+    beq @load_bpb
+
+    ; partition entry 0 did not contain a valid FAT32 partition signature
+    ; we assume now that the card does not have a MBR boot block, and we already
+    ; have loaded the fat32 bpb
+    bra @mount_fat32
+@load_bpb:
+    ; Partition entry 0 contains a valid FAT32 LBA partition signature
+    ; get the lba address 
     m_memcpy @part0 + PartitionEntry::LBABegin, lba_addr, 4
     debug32 "mnt_lba", lba_addr
 
@@ -80,9 +85,9 @@ fat_mount:
     rts
 
 :   jsr fat_check_signature
-    beq @l4
+    beq @mount_fat32
     rts
-@l4:
+@mount_fat32:
     ;m_memcpy sd_blktarget+11, volumeID, .sizeof(VolumeID) ; +11 skip first 11 bytes, we are not interested in
     m_memcpy  sd_blktarget + F32_VolumeID::BPB,   volumeID + VolumeID::BPB,   .sizeof(BPB) ; +11 skip first 11 bytes, we are not interested in
     m_memcpy  sd_blktarget + F32_VolumeID::EBPB,  volumeID + VolumeID::EBPB,  .sizeof(EBPB) ; +11 skip first 11 bytes, we are not interested in
