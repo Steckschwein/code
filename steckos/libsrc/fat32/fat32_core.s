@@ -438,7 +438,7 @@ __prepare_calc_lba_addr:
     jsr  __fat_is_cln_zero
     bne  @l_scl
     .repeat 4,i
-      lda volumeID + VolumeID::EBPB_RootClus + i
+      lda volumeID + VolumeID::BPB_RootClus + i
       sta lba_addr + i
     .endrepeat
     rts
@@ -607,7 +607,7 @@ __fat_read_cluster_block_and_select:
 ;    jsr __fat_is_cln_zero          ; is root clnr?
  ;   bne @l_clnr_fd
   ;  debug "!!! ZERO !!!"
-   ; lda volumeID + VolumeID::EBPB_RootClus+0
+   ; lda volumeID + VolumeID::BPB_RootClus+0
     ;bra @l_isroot
 @l_clnr_fd:
     lda fd_area+F32_fd::CurrentCluster+0,x  ; offset within block_fat, clnr<<2 (* 4)

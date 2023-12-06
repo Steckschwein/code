@@ -165,7 +165,7 @@ debug_enabled=1
 setUp:
 	jsr __fat_init_fdarea
 	set_sec_per_cl 2
-	set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
+	set32 volumeID + VolumeID::BPB_RootClus, ROOT_CL
 	set32 volumeID + VolumeID::lba_fat, FAT_LBA		;fat lba
 
 	;setup fd0 as root cluster
