@@ -55,17 +55,22 @@ fat_mount:
     rts
 @l0:
     jsr fat_check_signature
-    bcc @l1
+    beq @l1
     rts
 @l1:  ; Check partition table entry 0 for valid FAT32 signature
     @part0 = block_data + BootSector::Partitions + PartTable::Partition_0
 
     lda @part0 + PartitionEntry::TypeCode
     cmp #PartType_FAT32_LBA
-    beq @l2
-    lda #fat_invalid_partition_type  ; type code not  PartType_FAT32_LBA ($0C)
-    rts
-@l2:
+    beq @load_bpb
+
+    ; partition entry 0 did not contain a valid FAT32 partition signature
+    ; we assume now that the card does not have a MBR boot block, and we already
+    ; have loaded the fat32 bpb
+    bra @mount_fat32
+@load_bpb:
+    ; Partition entry 0 contains a valid FAT32 LBA partition signature
+    ; get the lba address
     m_memcpy @part0 + PartitionEntry::LBABegin, lba_addr, 4
     debug32 "mnt_lba", lba_addr
 
@@ -75,9 +80,9 @@ fat_mount:
     rts
 
 :   jsr fat_check_signature
-    bcc @l4
+    beq @mount_fat32
     rts
-@l4:
+@mount_fat32:
     ; Bytes per Sector, must be 512 = $0200
     lda block_data + F32_VolumeID::BPB + BPB::BytsPerSec+0
     bne @invalid
@@ -93,15 +98,14 @@ fat_mount:
     sta volumeID + VolumeID::BPB_SecPerClus
     dec
     sta volumeID + VolumeID::BPB_SecPerClusMask
-    m_memcpy block_data + F32_VolumeID::EBPB + EBPB::RootClus, volumeID + VolumeID::EBPB_RootClus, 4
-    m_memcpy block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::EBPB_FATSz32 , 4
+    m_memcpy block_data + F32_VolumeID::BPB + BPB::RootClus, volumeID + VolumeID::BPB_RootClus, 4
+    m_memcpy block_data + F32_VolumeID::BPB + BPB::FATSz32, volumeID + VolumeID::BPB_FATSz32 , 4
 
-    ; calc fs_info lba address as cluster_begin_lba + EBPB::FSInfoSec
-    add16to32 lba_addr, block_data + F32_VolumeID::EBPB + EBPB::FSInfoSec, volumeID + VolumeID::lba_fsinfo
+    ; calc fs_info lba address as cluster_begin_lba + BPB::FSInfoSec
+    add16to32 lba_addr, block_data + F32_VolumeID::BPB + BPB::FSInfoSec, volumeID + VolumeID::lba_fsinfo
 
     ; fat_lba_begin  = Partition_LBA_Begin + Number_of_Reserved_Sectors
-
-    ; add number of reserved sectors to calculate fat_lba_begin. also store in cluster_begin_lba for further calculation
+    ; add number of reserved sectors to calculate fat_lba_begin. store in volumeID for further calculation
     clc
     lda lba_addr + 0
     adc block_data + F32_VolumeID::BPB + BPB::RsvdSecCnt + 0
@@ -120,13 +124,13 @@ fat_mount:
     stz volumeID + VolumeID::lba_fat + 3
 
     ; fat2_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors + Sectors_Per_FAT
-    add32 block_data + volumeID + VolumeID::lba_fat, F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::lba_fat2
+    add32 block_data + volumeID + VolumeID::lba_fat, F32_VolumeID::BPB + BPB::FATSz32, volumeID + VolumeID::lba_fat2
 
     ; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
     ldy block_data + F32_VolumeID::BPB + BPB::NumFATs
 @l7:
     clc
-    add32 volumeID + VolumeID::lba_data, block_data + F32_VolumeID::EBPB + EBPB::FATSz32, volumeID + VolumeID::lba_data ; add sectors per fat
+    add32 volumeID + VolumeID::lba_data, block_data + F32_VolumeID::BPB + BPB::FATSz32, volumeID + VolumeID::lba_data ; add sectors per fat
     dey
     bne @l7
 
@@ -155,17 +159,14 @@ fat_mount:
     sbc #0
     sta volumeID + VolumeID::lba_data +3
 
-    debug8 "sc/cl", volumeID + VolumeID::BPB_SecPerClus
-    debug32 "r_cl", volumeID + VolumeID::EBPB_RootClus
-    debug32 "f_sc", volumeID + VolumeID::EBPB_FATSz32
-    debug32 "s_lba", lba_addr
-    debug16 "r_sc", block_data + F32_VolumeID::BPB + BPB::RsvdSecCnt
-    debug16 "fi_sc", block_data + F32_VolumeID::EBPB + EBPB::FSInfoSec
-    debug32 "cl_lba", volumeID + VolumeID::lba_data
-    debug32 "fi_lba", volumeID + VolumeID::lba_fsinfo
-    debug16 "f_lba", volumeID + VolumeID::lba_fat
-    debug16 "f2_lba", volumeID + VolumeID::lba_fat2
-    debug16 "fbuf", filename_buf
+    debug8 "sc/cl",   volumeID+VolumeID::BPB_SecPerClus
+    debug32 "r_cl",   volumeID+VolumeID::BPB_RootClus
+    debug32 "f_sc",   volumeID+VolumeID::BPB_FATSz32
+    debug16 "f_lba",  volumeID+VolumeID::lba_fat
+    debug16 "f2_lba", volumeID+VolumeID::lba_fat2
+    debug16 "fi_sc",  volumeID+VolumeID::lba_fsinfo
+    debug32 "cl_lba", volumeID+VolumeID::lba_data
+    debug16 "fbuf",   filename_buf
 
     ; init file descriptor area
     ldx #0
@@ -176,15 +177,10 @@ fat_mount:
     jmp __fat_alloc_fd_x
 
 fat_check_signature:
-    lda #$55
-    cmp block_data + BootSector::Signature
-    bne @l1
-    asl ; $aa
+    lda block_data + BootSector::Signature
+    asl
     cmp block_data + BootSector::Signature + 1
-    bne @l1
-    clc
-    rts
-@l1:
+    beq @ok
     lda #fat_bad_block_signature
-    sec
+@ok:
     rts

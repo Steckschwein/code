@@ -546,8 +546,8 @@ setUp:
   set32 block_fat_0+(TEST_FILE_CL<<2), 0 ; mark TEST_FILE_CL as free
   set32 block_fat_0+(TEST_FILE_CL2<<2), 0 ; mark TEST_FILE_CL2 as free
 
-  set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
-  set32 volumeID + VolumeID::EBPB_FATSz32, (FAT2_LBA - FAT_LBA)
+  set32 volumeID + VolumeID::BPB_RootClus, ROOT_CL
+  set32 volumeID + VolumeID::BPB_FATSz32, (FAT2_LBA - FAT_LBA)
   set32 volumeID+VolumeID::lba_fat, FAT_LBA
   set32 volumeID+VolumeID::lba_fat2, FAT2_LBA
   set32 volumeID+VolumeID::lba_fsinfo, FS_INFO_LBA

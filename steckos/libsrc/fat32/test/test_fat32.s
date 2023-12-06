@@ -24,7 +24,7 @@ debug_enabled=1
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::FileSize
 		assert32 0, (2*FD_Entry_Size)+fd_area+F32_fd::SeekPos
 		assert8 $0, (2*FD_Entry_Size)+fd_area+F32_fd::flags
-    assert8 $80, (2*FD_Entry_Size)+fd_area+F32_fd::status
+    assert8 FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, (2*FD_Entry_Size)+fd_area+F32_fd::status
 
 ; -------------------
 		setup "__fat_alloc_fd with error"
@@ -193,6 +193,7 @@ debug_enabled=1
 		assertA '4' ; see test_block_data_4sec_cl
 		assertX (1*FD_Entry_Size)
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $16a * 1 = $6968
+		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
     assert8 FD_STATUS_FILE_OPEN, fd_area+(1*FD_Entry_Size)+F32_fd::status
@@ -385,7 +386,7 @@ setUp:
   ldx #0
 	jsr __fat_init_fdarea
 	set_sec_per_cl SEC_PER_CL
-	set32 volumeID+VolumeID::EBPB_RootClus, ROOT_CL
+	set32 volumeID+VolumeID::BPB_RootClus, ROOT_CL
 	set32 volumeID+VolumeID::lba_fat, FAT_LBA		;fat lba
 
 	;setup fd0 as root cluster
@@ -393,8 +394,9 @@ setUp:
 	set8 fd_area+(0*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Dir
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
 	;setup fd1 with test cluster
-	set8 fd_area+(1*FD_Entry_Size)+F32_fd::status, FD_STATUS_FILE_OPEN
-  set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
+	set8 fd_area+(1*FD_Entry_Size)+F32_fd::status, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
+  set32 fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster, test_start_cluster
+	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos, 0
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::flags, O_RDONLY

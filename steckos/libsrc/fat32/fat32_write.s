@@ -484,7 +484,7 @@ __fat_write_fat_blocks:
     ; calc fat2 lba_addr = lba_addr+VolumeID::FATSz32
     .repeat 4, i
       lda lba_addr+i
-      adc volumeID+VolumeID::EBPB_FATSz32+i
+      adc volumeID+VolumeID::BPB_FATSz32+i
       sta lba_addr+i
     .endrepeat
     jsr __fat_write_block_fat        ; write to fat mirror (fat2)

@@ -25,7 +25,6 @@
 
 ; TODO FIXME replace with errno.inc from cc65 api
 fat_bad_block_signature      = $01
-fat_invalid_partition_type   = $02
 fat_invalid_sector_size      = $03
 fat_invalid_num_fats      = $04
 fat_open_error         = $05
@@ -65,19 +64,23 @@ PartType_FAT32_LBA    = $0c
    Signature   .word
 .endstruct
 
+;BS_VolLab2      = 71
 .struct BPB
-   BytsPerSec     .word ; 11-12  ; 512 usually
-   SecPerClus     .byte ; 13     ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
-   RsvdSecCnt     .word ; 14-15  ; number of reserved sectors
-   NumFATs        .byte ; 16     ; usually 2
-   Reserved       .byte 4 ; 17-20 (max root entries, total logical sectors skipped)
-   Media          .byte   ; 21 ; For removable media, 0xF0 is frequently used.
-                  ; The legal values for this field are
-                  ; 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
-   SectsPerFAT    .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
-.endstruct
+   BytsPerSec  .word ; 11-12  ; 512 usually
+   SecPerClus  .byte ; 13     ; Sectors per Cluster as power of 2. valid are: 1,2,4,8,16,32,64,128
+   RsvdSecCnt  .word ; 14-15  ; number of reserved sectors
+   NumFATs     .byte ; 16     ; usually 2
+   Reserved    .byte 4 ; 17-20 (max root entries, total logical sectors skipped)
+   Media       .byte   ; 21 ; For removable media, 0xF0 is frequently used.
+               ; The legal values for this field are
+               ; 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
+   SectsPerFAT .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
 
-.struct EBPB
+   SectsPerTrack .word;    // 24-25 ; Number of sectors per track
+   NumHeads    .word; // 26
+   SectsHidden .dword; // 28
+   TotalSects  .dword; // 32 Number of sectors
+
    FATSz32     .dword  ; 36-39 ; sectors per FAT
    MirrorFlags .word   ; 40-41; Bits 0-3: number of active FAT (if bit 7 is 1)
                   ; Bits 4-6: reserved
@@ -106,10 +109,8 @@ PartType_FAT32_LBA    = $0c
                        ; Sometimes just garbage. Microsoft recommends "MSWIN4.1".)
                      ; https://www.win.tue.nl/~aeb/linux/fs/fat/fat-1.html
 
+   ; FAT32 BIOS Parameter Block begins here
    BPB         .tag BPB
-   Reserved2   .byte 12; 24-35 Placeholder until FAT32 EBPB
-   ; FAT32 Extended BIOS Parameter Block begins here
-   EBPB        .tag EBPB
 .endstruct
 
 ; struct VolumeID like we keep it in memory
@@ -117,8 +118,8 @@ PartType_FAT32_LBA    = $0c
   BPB_SecPerClus      .byte
   BPB_SecPerClusMask  .byte ; BPB_SecPerClus-1
   ;BPB_NumFATs        .byte
-  EBPB_RootClus       .dword
-  EBPB_FATSz32        .dword ; sectors per fat
+  BPB_RootClus       .dword
+  BPB_FATSz32        .dword ; sectors per fat
   lba_data            .dword
   lba_data_last       .dword
   lba_fat             .dword
