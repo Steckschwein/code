@@ -90,7 +90,6 @@ fat_mount:
 @mount_fat32:
     ;m_memcpy sd_blktarget+11, volumeID, .sizeof(VolumeID) ; +11 skip first 11 bytes, we are not interested in
     m_memcpy  sd_blktarget + F32_VolumeID::BPB,   volumeID + VolumeID::BPB,   .sizeof(BPB) ; +11 skip first 11 bytes, we are not interested in
-    m_memcpy  sd_blktarget + F32_VolumeID::BPB,  volumeID + VolumeID::BPB,  .sizeof(BPB) ; +11 skip first 11 bytes, we are not interested in
 
     ; Bytes per Sector, must be 512 = $0200
     lda volumeID + VolumeID::BPB + BPB::BytsPerSec+0
