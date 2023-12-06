@@ -114,16 +114,18 @@ PartType_FAT32_LBA    = $0c
 
 ; struct VolumeID like we keep it in memory
 .struct VolumeID
-   BPB_SecPerClus     .byte
-   BPB_SecPerClusMask .byte ; BPB_SecPerClus-1
-   ;BPB_NumFATs       .byte
-   EBPB_RootClus     .dword
-   EBPB_FATSz32      .dword ; sectors per fat
-   lba_data          .dword
-   lba_fat           .dword
-   lba_fat2          .dword ; mirror fat
-   lba_fsinfo        .dword
-   temp_dword        .dword
+  BPB_SecPerClus      .byte
+  BPB_SecPerClusMask  .byte ; BPB_SecPerClus-1
+  ;BPB_NumFATs        .byte
+  EBPB_RootClus       .dword
+  EBPB_FATSz32        .dword ; sectors per fat
+  lba_data            .dword
+  lba_data_last       .dword
+  lba_fat             .dword
+  lba_fat2            .dword ; mirror fat
+  lba_fsinfo          .dword
+  temp_dword          .dword
+  temp_seek           .dword
 .endstruct
 
 ;--------------------------------------------------------------------------------------
@@ -172,9 +174,10 @@ DIR_Entry_Deleted            = $e5
 ; File descriptor struct
 ;--------------------------------------------------------------------------------------
 .struct Seek
-    Whence  .byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
-                    ; SEEK_CUR - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
-                    ; SEEK_END - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
+    ; see fcntl.inc (cc65)
+    Whence  .byte   ; SEEK_CUR (0) - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
+                    ; SEEK_END (1) - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
+                    ; SEEK_SET (2) - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
     Offset  .dword
 .endstruct
 
@@ -197,7 +200,8 @@ DIR_Entry_Deleted            = $e5
    status           .byte   ; status - reserved (bit 7), next clnr (bit 6)
 .endstruct
 
-FD_FILE_OPEN  = 1<<7
+FD_STATUS_FILE_OPEN  = 1<<7
+FD_STATUS_DIRTY      = 1<<6
 
 FD_Entry_Size         = .sizeof(F32_fd)
 FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size

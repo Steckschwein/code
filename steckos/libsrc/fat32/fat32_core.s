@@ -215,26 +215,33 @@ __fat_clone_fd:
 ;   C=0 on success, C=1 on error with A=<error code>
 .export __fat_prepare_block_access
 __fat_prepare_block_access:
-    ; TODO FIXME - introduce dirty check or do always read - the block_data may be corrupted if a read from another fd happened in between
-    lda fd_area+F32_fd::SeekPos+1,x
-    and #$01                              ; mask block start
-    ora fd_area+F32_fd::SeekPos+0,x      ; and test whether SeekPos is at the beginning of a block (multiple of $0200) ?
-    bne __fat_prepare_access_read         ; no, we can fetch the byte from block_data
 
+    bit fd_area+F32_fd::status,x      ; dirty?
+    debug "fp ba >"
+    bvc @l_check_block
+
+    jsr __fat_fseek                   ; yes, then we have to seek
+    bcs @l_exit
+    bra @l_read
+
+@l_check_block:
     lda fd_area+F32_fd::SeekPos+1,x
     lsr
-    and volumeID+VolumeID::BPB_SecPerClusMask ; mask with sec per cluster mask
-    debug8 "fp ba >", volumeID+VolumeID::BPB_SecPerClusMask
-    bne __fat_prepare_access_read             ; if block is not at the beginning of a cluster just read the block
+    debug32 "fp ba 0 >", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+    bcs @l_read                               ; not at block start (multiple of $02??)
+    and volumeID+VolumeID::BPB_SecPerClusMask ; otherwise mask with sec per cluster mask
+    ora fd_area+F32_fd::SeekPos+0,x           ; and test whether SeekPos is at the beginning of a block (multiple of $?200) ?
+    debug8 "fp ba 1 >", volumeID+VolumeID::BPB_SecPerClusMask
+    bne @l_read                               ; if block is not at the beginning of a cluster just read the block
     jsr __fat_next_cln                        ; otherwise select next cluster
     debug "fp ba <"
-    bcs l_exit                                ; exit on error or EOC (C=1)
-.export __fat_prepare_access_read
-__fat_prepare_access_read:
+    bcs @l_exit                                ; exit on error or EOC (C=1)
+
+@l_read:
     jsr __calc_lba_addr
     jsr __fat_read_block_data
-    bcs l_exit
-l_prepare:
+    bcs @l_exit
+@l_prepare_ptr:
     .assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
     lda fd_area+F32_fd::SeekPos+0,x
     sta __volatile_ptr+0
@@ -243,7 +250,7 @@ l_prepare:
     ora #>block_data
     sta __volatile_ptr+1
     clc
-l_exit:
+@l_exit:
     rts
 
 ; update the dir entry position and dir lba_addr of the given file descriptor
@@ -366,8 +373,8 @@ __fat_open_rootdir:
 __fat_init_fd:
     ; init fd with all 0 - note: start cluster with root cluster nr 0 and not RootClus - the RootClus offset is compensated within calc_lba_addr (@see Note)
     phx
-    lda #FD_FILE_OPEN
-    sta fd_area+F32_fd::status,x ; set reserved ($80)
+    lda #FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
+    sta fd_area+F32_fd::status,x ; set reserved (7) and dirty (6)
     lda #FD_Entry_Size-1         ; -1 to avoid override ::status
 :   stz fd_area,x
     inx
@@ -377,9 +384,9 @@ __fat_init_fd:
     clc
     rts
 
-    ; free file descriptor quietly
-    ; in:
-    ;  X - offset into fd_area
+; free file descriptor quietly
+; in:
+;  X - offset into fd_area
 __fat_free_fd:
     debug "fat_free"
     pha
@@ -529,7 +536,7 @@ __fat_next_cln:
     pha
 
     jsr @l_select_next_cln
-    debug32 "fnxtcln cl <", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster
+    debug32 "nxt cln <", fd_area+(FD_Entry_Size*2)+F32_fd::CurrentCluster
 
     ply                      ; use Y to preserve A with return code
     sty read_blkptr+1
@@ -539,36 +546,22 @@ __fat_next_cln:
 
 
 @l_select_next_cln:
-
-    jsr __fat_is_cln_zero
-    bne @l_select_next
-
-    jsr @try_reserve
-    bcs @l_exit
-
-    bra __fat_set_fd_start_cluster
-    ; jmp __fat_update_direntry
-
-@l_select_next:
-    lda fd_area+F32_fd::SeekPos+3,x     ; seek pos is 0 - we are at first block and first cluster (StartCluster), we skip select the next clnr
-    ora fd_area+F32_fd::SeekPos+2,x
-    ora fd_area+F32_fd::SeekPos+1,x
-    ora fd_area+F32_fd::SeekPos+0,x
-;    debug32 "fat sel seek", fd_area+(2*.sizeof(F32_fd))+F32_fd::SeekPos
-;    beq @l_exit_ok
-
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
-    debug "fat sel nxt"
+    debug "sel nxt"
     bcc @l_save_cln
-    ;cmp #EOK  ; EOK means EOC (C=1/A=0)
-    bne @l_exit
-@try_reserve:
+    ;cmp #EOK   ; EOK means EOC (C=1/A=0)
+    bne @l_exit ; other error, then exit
+
     lda fd_area + F32_fd::flags,x
-    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; write access?
-    sec         ; set EOC (C=1) A=0 (EOK) if we take the branch
-    debug "fat sel flg"
-    beq @l_exit     ; read access and no cluster reserved yet (empty file) - exit with EOC => C=1/A=EOK (0)
-    jmp __fat_reserve_cluster
+    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; is write access?
+    debug "sel nxt flg"
+    sec ; read access and next cluster is EOC - exit C=1/A=EOK (0) (EOC)
+    beq @l_exit
+    jsr __fat_reserve_cluster ; otherwise try to reserve
+    bcs @l_exit
+    bra @l_exit
+    ;TODO chain
+
 
 @l_save_cln:
     ;debug32 "fnxtcln cl >", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster
@@ -583,7 +576,6 @@ __fat_next_cln:
     iny
     lda (read_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+3, x
-@l_exit_ok:
     clc
 @l_exit:
     rts

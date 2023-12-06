@@ -14,7 +14,6 @@
 debug_enabled=1
 
 .code
-
     jmp single_test
 ; -------------------
     setup "fat_mkdir_eexist"
@@ -49,7 +48,7 @@ debug_enabled=1
     assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_FILE_OPEN
+      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
     jsr fat_close
 
 ; -------------------
@@ -63,7 +62,7 @@ debug_enabled=1
     assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_WRONLY, FD_FILE_OPEN
+      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_WRONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
     jsr fat_close
 
 ; -------------------
@@ -77,7 +76,7 @@ debug_enabled=1
     assertDirEntry (block_root_cl+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_FILE_OPEN
+      fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
     jsr fat_close
 
 ; -------------------
@@ -101,7 +100,7 @@ debug_enabled=1
     assertDirEntry block_root_cl+$80
         fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_FILE_OPEN
+        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
 
     ldy #$31
     lda #'F'
@@ -110,7 +109,7 @@ debug_enabled=1
     assertC 0
     assertY $31 ; preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDWR, FD_FILE_OPEN
+        fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDWR, FD_STATUS_FILE_OPEN
 
     jsr fat_close
 
@@ -124,13 +123,13 @@ debug_enabled=1
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDONLY, FD_FILE_OPEN, 0
+        fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0
 
     jsr fat_fread_byte
     assertC 0
     assertA 'F'
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDONLY, FD_FILE_OPEN
+        fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDONLY, FD_STATUS_FILE_OPEN
 
     jsr fat_close
 
@@ -147,7 +146,7 @@ debug_enabled=1
     assertDirEntry block_root_cl+$80
         fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_FILE_OPEN
+        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
 
     ldy #$31
     lda #'F'
@@ -156,14 +155,14 @@ debug_enabled=1
     assertY $31
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDWR, FD_FILE_OPEN ; TEST_FILE_CL reserved
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDWR, FD_STATUS_FILE_OPEN ; TEST_FILE_CL reserved
 
     lda #'T'
     jsr fat_write_byte
     assertC 0
     assertX FD_Entry_Size*2
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDWR, FD_FILE_OPEN
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDWR, FD_STATUS_FILE_OPEN
 
     jsr fat_close
 
@@ -177,19 +176,19 @@ debug_enabled=1
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDONLY, FD_FILE_OPEN, 0
+        fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0
 
     jsr fat_fread_byte
     assertC 0
     assertA 'F'
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDONLY, FD_FILE_OPEN, 1
+        fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDONLY, FD_STATUS_FILE_OPEN, 1
 
     jsr fat_fread_byte
     assertC 0
     assertA 'T'
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDONLY, FD_FILE_OPEN, 2
+        fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDONLY, FD_STATUS_FILE_OPEN, 2
 
     jsr fat_fread_byte
     assertC 1
@@ -210,7 +209,7 @@ debug_enabled=1
     assertDirEntry block_root_cl+$80
         fat32_dir_entry_file "TST_01CL", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_FILE_OPEN
+        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
 
     ldy #$31
     lda #'F'
@@ -219,14 +218,14 @@ debug_enabled=1
     assertY $31
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDWR, FD_FILE_OPEN ; TEST_FILE_CL reserved
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDWR, FD_STATUS_FILE_OPEN ; TEST_FILE_CL reserved
 
     lda #'T'
     jsr fat_write_byte
     assertC 0
     assertX FD_Entry_Size*2
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDWR, FD_FILE_OPEN
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2, O_RDWR, FD_STATUS_FILE_OPEN
 
     lda #'W'
     ldy #$71
@@ -235,7 +234,7 @@ debug_enabled=1
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 3, O_RDWR, FD_FILE_OPEN
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 3, O_RDWR, FD_STATUS_FILE_OPEN
 
     ldy #252
 :   tya
@@ -245,7 +244,7 @@ debug_enabled=1
     dey
     bne :-
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 255, O_RDWR, FD_FILE_OPEN
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 255, O_RDWR, FD_STATUS_FILE_OPEN
 
     lda #'0'
     ldy #$71
@@ -254,7 +253,7 @@ debug_enabled=1
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 256, O_RDWR, FD_FILE_OPEN
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 256, O_RDWR, FD_STATUS_FILE_OPEN
 
     ldy #0
 :   tya
@@ -265,7 +264,7 @@ debug_enabled=1
     bne :-
 
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 512, O_RDWR, FD_FILE_OPEN
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 512, O_RDWR, FD_STATUS_FILE_OPEN
 
     lda #'X'
     jsr fat_write_byte
@@ -278,7 +277,7 @@ debug_enabled=1
     assertC 0
 
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 515, O_RDWR, FD_FILE_OPEN
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 515, O_RDWR, FD_STATUS_FILE_OPEN
 
     jsr fat_close
 
@@ -292,7 +291,7 @@ debug_enabled=1
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 515, O_RDONLY, FD_FILE_OPEN, 0
+      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 515, O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0
 
     jsr fat_fread_byte
     assertC 0
@@ -316,7 +315,7 @@ debug_enabled=1
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_FILE_OPEN, 0
+        fd_entry_file_seek 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0
     assertDirEntry block_root_cl+$80
       fat32_dir_entry_file "TST_02CL", "TST", 0, 0 ; no cluster reserved yet
 
@@ -339,14 +338,14 @@ debug_enabled=1
     bne :-
 
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2048, O_RDWR, FD_FILE_OPEN ; TEST_FILE_CL reserved
+      fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2048, O_RDWR, FD_STATUS_FILE_OPEN ; TEST_FILE_CL reserved
 
     lda #'X'
     jsr fat_write_byte
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_all TEST_FILE_CL2, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2049, O_RDWR, FD_FILE_OPEN, 2049, TEST_FILE_CL ; TEST_FILE_CL2 selected, TEST_FILE_CL start cluster
+      fd_entry_file_all TEST_FILE_CL2, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2049, O_RDWR, FD_STATUS_FILE_OPEN, 2049, TEST_FILE_CL ; TEST_FILE_CL2 selected, TEST_FILE_CL start cluster
 
     jsr fat_close
 
@@ -361,13 +360,13 @@ debug_enabled=1
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2049, O_RDONLY, FD_FILE_OPEN, 0
+      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2049, O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0
 
     jsr fat_fread_byte
     assertC 0
     assertA 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2049, O_RDONLY, FD_FILE_OPEN, 1
+      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 2049, O_RDONLY, FD_STATUS_FILE_OPEN, 1
 
     jsr fat_close
 
@@ -383,25 +382,25 @@ single_test:
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_FILE_OPEN, 0
+        fd_entry_file_seek 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0
     assertDirEntry block_root_cl+$80
       fat32_dir_entry_file "TST_02CL", "TST", 0, 0 ; no cluster reserved yet
 
-    set32 test_seek+Seek::Offset, (2048+512) ; set to beginn of block 1 in next cluster
+    set32 test_seek+Seek::Offset, (2048+512) ; set to begin of block 1 in next cluster
     lda #<test_seek
     ldy #>test_seek
 		jsr fat_fseek
 		assertCarry 0
 		assertX (FD_Entry_Size*2) ; assert FD prreserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_all TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512), O_RDWR, FD_FILE_OPEN, (2048+512), TEST_FILE_CL2
+        fd_entry_file_all 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, (2048+512), 0
 
     lda #'X'
     jsr fat_write_byte
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file_seek TEST_FILE_CL2, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDWR, FD_FILE_OPEN, (2048+512+1)
+        fd_entry_file_all TEST_FILE_CL2, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDWR, FD_STATUS_FILE_OPEN, (2048+512+1), TEST_FILE_CL
 
     jsr fat_close
 
@@ -415,22 +414,26 @@ single_test:
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_FILE_OPEN, 0
+      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0
 
     set32 test_seek+Seek::Offset, (2048+512) ; set to begin of block 1 in next cluster
     lda #<test_seek
     ldy #>test_seek
 		jsr fat_fseek
 		assertCarry 0
-		assertX (FD_Entry_Size*2); expect X unchanged, and read address still unchanged
+		assertX (FD_Entry_Size*2) ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_FILE_OPEN, (2048+512)
+      fd_entry_file_all TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, (2048+512), TEST_FILE_CL
 
     jsr fat_fread_byte
     assertC 0
     assertA 'X'
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_seek TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_FILE_OPEN, (2048+512+1)
+      fd_entry_file_all TEST_FILE_CL2, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_STATUS_FILE_OPEN, (2048+512+1), TEST_FILE_CL
+
+    jsr fat_fread_byte
+    assertC 1
+    assertA EOK
 
     jsr fat_close
 
@@ -541,7 +544,7 @@ setUp:
   m_memset block_fat_0+$100, $ff, $80
   m_memset block_fat_0+$180, $ff, $80
   set32 block_fat_0+(TEST_FILE_CL<<2), 0 ; mark TEST_FILE_CL as free
-  set32 block_fat_0+((TEST_FILE_CL2)<<2), 0 ; mark TEST_FILE_CL2 as free
+  set32 block_fat_0+(TEST_FILE_CL2<<2), 0 ; mark TEST_FILE_CL2 as free
 
   set32 volumeID + VolumeID::EBPB_RootClus, ROOT_CL
   set32 volumeID + VolumeID::EBPB_FATSz32, (FAT2_LBA - FAT_LBA)

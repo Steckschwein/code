@@ -155,7 +155,7 @@ debug_enabled=1
 ; -------------------
 		setup "fat_fread_byte empty file"
 		;setup fd2 with test cluster, but 0 filesize
-		set8 fd_area+(2*FD_Entry_Size)+F32_fd::status, FD_FILE_OPEN
+		set8 fd_area+(2*FD_Entry_Size)+F32_fd::status, FD_STATUS_FILE_OPEN
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos, 0
@@ -167,11 +167,11 @@ debug_enabled=1
 		assertA EOK ; EOF
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
-    assert8 FD_FILE_OPEN, fd_area+(2*FD_Entry_Size)+F32_fd::status
+    assert8 FD_STATUS_FILE_OPEN, fd_area+(2*FD_Entry_Size)+F32_fd::status
 
 ; -------------------
 		setup "fat_fread_byte touched file"
-		set8 fd_area+(2*FD_Entry_Size)+F32_fd::status, FD_FILE_OPEN
+		set8 fd_area+(2*FD_Entry_Size)+F32_fd::status, FD_STATUS_FILE_OPEN
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster, 0 ; touched file, no cluster reserved
 		set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos, 0
@@ -183,7 +183,7 @@ debug_enabled=1
 		assertA EOK ; EOF
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
-    assert8 FD_FILE_OPEN, fd_area+(2*FD_Entry_Size)+F32_fd::status
+    assert8 FD_STATUS_FILE_OPEN, fd_area+(2*FD_Entry_Size)+F32_fd::status
 
 ; -------------------
 		setup "fat_fread_byte 1 byte 4s/cl"
@@ -195,7 +195,7 @@ debug_enabled=1
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $16a * 1 = $6968
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-    assert8 FD_FILE_OPEN, fd_area+(1*FD_Entry_Size)+F32_fd::status
+    assert8 FD_STATUS_FILE_OPEN, fd_area+(1*FD_Entry_Size)+F32_fd::status
 
 ; -------------------
 		setup "fat_fread_byte 2 byte 4s/cl"
@@ -210,7 +210,7 @@ debug_enabled=1
 		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL, lba_addr
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 		assert32 2, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-    assert8 FD_FILE_OPEN, fd_area+(1*FD_Entry_Size)+F32_fd::status
+    assert8 FD_STATUS_FILE_OPEN, fd_area+(1*FD_Entry_Size)+F32_fd::status
 
 ; -------------------
 		setup "fat_fread_byte 4 bytes 4s/cl"
@@ -393,7 +393,7 @@ setUp:
 	set8 fd_area+(0*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Dir
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
 	;setup fd1 with test cluster
-	set8 fd_area+(1*FD_Entry_Size)+F32_fd::status, FD_FILE_OPEN
+	set8 fd_area+(1*FD_Entry_Size)+F32_fd::status, FD_STATUS_FILE_OPEN
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
 	set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 	set32 fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos, 0

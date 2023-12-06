@@ -15,10 +15,11 @@ debug_enabled=1
     lda #<test_seek
     ldy #>test_seek
 		jsr fat_fseek
-		assertCarry 1; expect "error"
-		assertA EINVAL ; invalid seek offset
+		assertCarry 0; no error
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
-		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+		assert32 2, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
+		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
 
 ; -------------------
@@ -30,10 +31,11 @@ debug_enabled=1
     lda #<test_seek
     ldy #>test_seek
 		jsr fat_fseek
-		assertCarry 1; expect "error"
-		assertA EINVAL ; invalid seek offset
+		assertCarry 0
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
-		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+		assert32 512*3+5, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+		assert32 512*3+5, fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
+		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
 
 ; -------------------
@@ -45,10 +47,11 @@ debug_enabled=1
     lda #<test_seek
     ldy #>test_seek
 		jsr fat_fseek
-		assertCarry 1; expect "error"
-		assertA EINVAL ; invalid seek offset
+		assertCarry 0
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
 		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+		assert32 0, fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
+		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::StartCluster
 		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
 
 ; -------------------
@@ -62,13 +65,96 @@ debug_enabled=1
 		jsr fat_fseek
 		assertCarry 0
 		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert32 (512*3+5), fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
 		assert32 (512*3+4), fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
 		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::StartCluster
-		assert32 test_start_cluster+3, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
 
 		jsr fat_fread_byte
 		assertCarry 0 ; last byte
-    assertA "1"
+    assertA '1'
+
+		jsr fat_fread_byte
+		assertCarry 1
+    assertA EOK ; eof expected
+
+
+; -------------------
+		setup "fat_fseek to end of 2nd cl 2s/cl"
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, (512*4+5)
+    set32 test_seek+Seek::Offset, (512*3+511)
+
+		ldx #(2*FD_Entry_Size)
+    lda #<test_seek
+    ldy #>test_seek
+		jsr fat_fseek
+		assertCarry 0
+		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert32 (512*3+511), fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+		assert32 (512*4+5), fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
+		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::StartCluster
+		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+
+		jsr fat_fread_byte
+		assertCarry 0
+		assert32 test_start_cluster+3, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+
+		jsr fat_fread_byte
+		assertCarry 0
+    assertA 'B'
+		assert32 test_start_cluster+7, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+
+		jsr fat_fread_byte
+		assertCarry 0
+    assertA '0'
+		jsr fat_fread_byte
+		assertCarry 0
+    assertA '/'
+		jsr fat_fread_byte
+		assertCarry 0
+    assertA 'C'
+		jsr fat_fread_byte
+		assertCarry 0
+    assertA '2'
+
+		jsr fat_fread_byte
+		assertCarry 1
+    assertA EOK ; eof expected
+
+
+; -------------------
+		setup "fat_fseek to start next cl 2s/cl"
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, (512*2+5)
+    set32 test_seek+Seek::Offset, (512*2)
+
+		ldx #(2*FD_Entry_Size)
+    lda #<test_seek
+    ldy #>test_seek
+		jsr fat_fseek
+		assertCarry 0
+		assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
+		assert32 (512*2), fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+		assert32 (512*2+5), fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
+		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::StartCluster
+		assert32 test_start_cluster, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+
+		jsr fat_fread_byte
+		assertCarry 0
+		assert32 test_start_cluster+3, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+
+    assertA 'B'
+		jsr fat_fread_byte
+		assertCarry 0
+    assertA '0'
+		jsr fat_fread_byte
+		assertCarry 0
+    assertA '/'
+		jsr fat_fread_byte
+		assertCarry 0
+    assertA 'C'
+		jsr fat_fread_byte
+		assertCarry 0
+    assertA '1'
 
 		jsr fat_fread_byte
 		assertCarry 1
@@ -92,7 +178,7 @@ setUp:
 	set8 fd_area+(2*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
 	set32 fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos, 0
 	set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, $1000
-  set8 fd_area+(2*FD_Entry_Size)+F32_fd::status, FD_FILE_OPEN
+  set8 fd_area+(2*FD_Entry_Size)+F32_fd::status, FD_STATUS_FILE_OPEN
   set8 fd_area+(2*FD_Entry_Size)+F32_fd::flags, O_RDONLY
 
 	rts
@@ -135,7 +221,7 @@ mock_read_block:
 		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 1), test_block_data_0_1, @exit  ; block 1, cluster 0
 		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 0), test_block_data_1_0, @exit  ; block 0, cluster 1
 		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 1), test_block_data_1_1, @exit  ; block 1, cluster 1
-;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 0), test_block_data_1_0, @exit
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+7) * 2 + 0), test_block_data_2_0, @exit
 ;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 1), test_block_data_1_1, @exit
 		; - for tests with 4sec/cl
 		load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL + 0), test_block_data_4sec_cl, @exit
@@ -170,24 +256,29 @@ test_seek:
   .dword 0
 
 test_block_data_0_0:
-  .byte "B0/C0"; block 0, cluster 0
-	.res 256-5,0
+  .byte "B0/C0",0; block 0, cluster 0
+	.res 256-6,0
   .byte "A"
 	.res 256-1,0
 test_block_data_0_1:
-  .byte "B1/C0"; block 1, cluster 0
-	.res 256-5,0
+  .byte "B1/C0",1; block 1, cluster 0
+	.res 256-6,0
   .byte "B"
 	.res 256-1,0
 test_block_data_1_0:
-  .byte "B0/C1"; block 0, cluster 1
-	.res 256-5,0
+  .byte "B0/C1",2; block 0, cluster 1
+	.res 256-6,0
   .byte "C"
 	.res 256-1,0
 test_block_data_1_1:
-  .byte "B1/C1"; block 1, cluster 1
-	.res 256-5,0
+  .byte "B1/C1","%"; block 1, cluster 1
+	.res 256-6,0
   .byte "D"
+	.res 256-1,0
+test_block_data_2_0:
+  .byte "B0/C2","&"; block 0, cluster 2
+	.res 256-6,0
+  .byte "E"
 	.res 256-1,0
 
 test_block_data_4sec_cl:

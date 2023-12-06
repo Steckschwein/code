@@ -48,7 +48,7 @@
 .export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
 
-;.export __fat_fseek_cluster
+.export __fat_fseek
 .export __fat_init_fdarea
 
 .code
@@ -67,91 +67,12 @@ fat_fseek:
     sta __volatile_ptr
     sty __volatile_ptr+1
 
-    debug "fat fseek"
-
     ldy #Seek::Whence
     lda (__volatile_ptr),y
+    debug "fat fseek"
     cmp #SEEK_SET
     ; TODO support SEEK_CUR, SEEK_END
-    beq @l_filesize
-@l_exit_err:
-    lda #EINVAL
-    sec
-    rts
-@l_filesize:
-    lda fd_area+F32_fd::flags,x
-    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; write access?
-    bne @l_seek ; skip check if r+/w+
-    ; check requested SeekPos < FileSize
-    ldy #Seek::Offset+3
-    lda (__volatile_ptr),y
-    cmp fd_area+F32_fd::FileSize+3,x
-    beq :+
-    bcs @l_exit_err
-:   dey
-    lda (__volatile_ptr),y
-    cmp fd_area+F32_fd::FileSize+2,x
-    beq :+
-    bcs @l_exit_err
-:   dey
-    lda (__volatile_ptr),y
-    cmp fd_area+F32_fd::FileSize+1,x
-    beq :+
-    bcs @l_exit_err
-:   dey
-    lda (__volatile_ptr),y
-    cmp fd_area+F32_fd::FileSize+0,x
-    bcs @l_exit_err
-
-@l_seek:
-    ldy #Seek::Offset+3
-    lda (__volatile_ptr),y
-    sta volumeID+VolumeID::temp_dword+2
-    dey
-    lda (__volatile_ptr),y
-    sta volumeID+VolumeID::temp_dword+1
-    dey
-    lda (__volatile_ptr),y
-    sta volumeID+VolumeID::temp_dword+0
-
-    ; calculate amount of cluster chain iterations by "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
-    lda volumeID+VolumeID::BPB_SecPerClus
-@l_count:
-    tay
-    lsr volumeID+VolumeID::temp_dword+2
-    ror volumeID+VolumeID::temp_dword+1
-    ror volumeID+VolumeID::temp_dword+0
-    tya
-    lsr
-    bne @l_count
-
-    ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may feel within seek and may leave with partial reserved clusters which we dont recover
-    ; read fsinfo andcmp temp_dword with fsinfo:FreeClus
-
-    lda volumeID+VolumeID::temp_dword+2
-    ora volumeID+VolumeID::temp_dword+1
-    ora volumeID+VolumeID::temp_dword+0
-    debug32 "seek cnt", volumeID+VolumeID::temp_dword
-    beq @l_exit_ok
-
-    lda fd_area+F32_fd::StartCluster+3, x
-    sta fd_area+F32_fd::CurrentCluster+3, x
-    lda fd_area+F32_fd::StartCluster+2, x
-    sta fd_area+F32_fd::CurrentCluster+2, x
-    lda fd_area+F32_fd::StartCluster+1, x
-    sta fd_area+F32_fd::CurrentCluster+1, x
-    lda fd_area+F32_fd::StartCluster+0, x
-    sta fd_area+F32_fd::CurrentCluster+0, x
-
-@seek_cln:
-    debug32 "seek >", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
-    jsr __fat_next_cln
-    bcs @l_exit
-    _dec24 volumeID+VolumeID::temp_dword
-    debug32 "seek nx cl", volumeID+VolumeID::temp_dword
-    bne @seek_cln
-
-@l_exit_ok:
+    bne @l_exit_err
     ; save new seek pos
     ldy #Seek::Offset
     lda (__volatile_ptr),y
@@ -165,11 +86,70 @@ fat_fseek:
     iny
     lda (__volatile_ptr),y
     sta fd_area+F32_fd::SeekPos+3,x
-    debug32 "seek < seek", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
-    debug32 "seek < fs", fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
-    debug32 "seek < cl", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+
+    lda #FD_STATUS_DIRTY                 ; set dirty - @see __fat_prepare_block_access
+    ora fd_area+F32_fd::status,x
+    sta fd_area+F32_fd::status,x
+
+    lda #EOK
+    clc
+    rts
+@l_exit_err:
+    lda #EINVAL
+    sec
+    rts
+
+__fat_fseek:
+    debug "seek >"
+    ; calculate amount of clusters required for requested seek position - "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
+    lda fd_area+F32_fd::SeekPos+3,x
+    sta volumeID+VolumeID::temp_dword+2
+    lda fd_area+F32_fd::SeekPos+2,x
+    sta volumeID+VolumeID::temp_dword+1
+    lda fd_area+F32_fd::SeekPos+1,x
+    sta volumeID+VolumeID::temp_dword+0
+
+    lda volumeID+VolumeID::BPB_SecPerClus
+:   tay
+    lsr volumeID+VolumeID::temp_dword+2
+    ror volumeID+VolumeID::temp_dword+1
+    ror volumeID+VolumeID::temp_dword+0
+    tya
+    lsr
+    bne :-
+
+    jsr __fat_ensure_start_cluster
+    bcs @l_exit
+    lda fd_area+F32_fd::StartCluster+3, x
+    sta fd_area+F32_fd::CurrentCluster+3, x
+    lda fd_area+F32_fd::StartCluster+2, x
+    sta fd_area+F32_fd::CurrentCluster+2, x
+    lda fd_area+F32_fd::StartCluster+1, x
+    sta fd_area+F32_fd::CurrentCluster+1, x
+    lda fd_area+F32_fd::StartCluster+0, x
+    sta fd_area+F32_fd::CurrentCluster+0, x
+
+    ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may fail within seek and leave with partial reserved clusters we dont recover (yet)
+    ; read fsinfo andcmp temp_dword with fsinfo:FreeClus
+    lda volumeID+VolumeID::temp_dword+2
+    ora volumeID+VolumeID::temp_dword+1
+    ora volumeID+VolumeID::temp_dword+0
+    debug32 "seek cnt", volumeID+VolumeID::temp_dword
+    beq @l_exit_ok
+@seek_cln:
+    jsr __fat_next_cln
+    bcs @l_exit
+    _dec24 volumeID+VolumeID::temp_dword
+    debug32 "seek nxt", volumeID+VolumeID::temp_dword
+    bne @seek_cln
+@l_exit_ok:
+    lda #<~FD_STATUS_DIRTY                 ; clear dirty
+    and fd_area+F32_fd::status,x
+    sta fd_area+F32_fd::status,x
     clc
 @l_exit:
+    debug32 "seek < seek", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+    debug32 "seek < cl", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
     rts
 
 
