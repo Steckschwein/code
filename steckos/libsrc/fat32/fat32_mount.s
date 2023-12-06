@@ -45,6 +45,12 @@
 ; out:
 ;   C=0 on success, C=1 otherwise with A=<error code>
 fat_mount:
+    lda #$ff
+    sta volumeID+VolumeID::lba_data_last+0
+    sta volumeID+VolumeID::lba_data_last+1
+    sta volumeID+VolumeID::lba_data_last+2
+    sta volumeID+VolumeID::lba_data_last+3
+
     ; set lba_addr to $00000000 since we want to read the bootsector
     stz lba_addr + 0
     stz lba_addr + 1
@@ -99,7 +105,7 @@ fat_mount:
     dec
     sta volumeID + VolumeID::BPB_SecPerClusMask
     m_memcpy block_data + F32_VolumeID::BPB + BPB::RootClus, volumeID + VolumeID::BPB_RootClus, 4
-    m_memcpy block_data + F32_VolumeID::BPB + BPB::FATSz32, volumeID + VolumeID::BPB_FATSz32 , 4
+    m_memcpy block_data + F32_VolumeID::BPB + BPB::FATSz32, volumeID + VolumeID::BPB_FATSz32, 4
 
     ; calc fs_info lba address as cluster_begin_lba + BPB::FSInfoSec
     add16to32 lba_addr, block_data + F32_VolumeID::BPB + BPB::FSInfoSec, volumeID + VolumeID::lba_fsinfo

@@ -394,11 +394,11 @@ __fat_free_fd:
     pla
     rts
 
-    ; check whether cluster of fd is the root cluster number - 0x00000000 (not VolumeID::RootClus due to lba calc optimization)
-    ; in:
-    ;  X - file descriptor
-    ; out:
-    ;  Z=1 if it is the root cluster, Z=0 otherwise
+; check whether cluster of fd is the root cluster number - 0x00000000 (not VolumeID::RootClus due to lba calc optimization)
+; in:
+;  X - file descriptor
+; out:
+;  Z=1 if it is the root cluster, Z=0 otherwise
 __fat_is_cln_zero:
     lda fd_area+F32_fd::CurrentCluster+3,x        ; check whether start cluster is the root dir cluster nr (0x00000000) as initial set by fat_alloc_fd
     ora fd_area+F32_fd::CurrentCluster+2,x
@@ -408,6 +408,8 @@ __fat_is_cln_zero:
 
 ; internal read block
 ; requires: lba_addr already calculated
+; out:
+;   C=0 on success, C=1 on error
 __fat_read_block_fat:
     lda #>block_fat
     bra :+
@@ -415,18 +417,35 @@ __fat_read_block_data:
     lda #>block_data
 :   sta read_blkptr+1
     stz read_blkptr+0
-;__fat_read_block:
+
+    debug32 "fat_rb lba", lba_addr
+    debug32 "fat_rb lba_last", volumeID+VolumeID::lba_data_last
+    cmp32 volumeID+VolumeID::lba_data_last, lba_addr, @l_read
+    bra @l_exit
+
+@l_read:
     phx
-    debug32 "fat_rb_lba", lba_addr
 ;    debug16 "fat_rb_ptr", read_blkptr
     jsr read_block
     dec read_blkptr+1    ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
     plx
-    cmp #0          ; TODO FIXME inverse api result C=0 on error, C=1 on success to avoid waste of cylce on result dispatching here and "everywhere"
-    bne :+
+    cmp #0
+    bne @l_exit_err
+
+    lda lba_addr+0
+    sta volumeID+VolumeID::lba_data_last+0
+    lda lba_addr+1
+    sta volumeID+VolumeID::lba_data_last+1
+    lda lba_addr+2
+    sta volumeID+VolumeID::lba_data_last+2
+    lda lba_addr+3
+    sta volumeID+VolumeID::lba_data_last+3
+
+@l_exit:
     clc
     rts
-:   sec
+@l_exit_err:
+    sec
     rts
 
     ; in:

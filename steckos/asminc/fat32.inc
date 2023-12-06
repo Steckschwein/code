@@ -117,16 +117,14 @@ PartType_FAT32_LBA    = $0c
 .struct VolumeID
   BPB_SecPerClus      .byte
   BPB_SecPerClusMask  .byte ; BPB_SecPerClus-1
-  ;BPB_NumFATs        .byte
-  BPB_RootClus       .dword
-  BPB_FATSz32        .dword ; sectors per fat
+  BPB_RootClus        .dword
+  BPB_FATSz32         .dword ; sectors per fat
   lba_data            .dword
   lba_data_last       .dword
   lba_fat             .dword
   lba_fat2            .dword ; mirror fat
   lba_fsinfo          .dword
   temp_dword          .dword
-  temp_seek           .dword
 .endstruct
 
 ;--------------------------------------------------------------------------------------
@@ -218,7 +216,7 @@ FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size     ; temp dir always go to fd #1
 FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
 ; memory locations for fat32 driver
-volumeID              = $0308 ; address of VolumeID (@see rtc.inc)
+volumeID              = $0300 ; address of VolumeID (@see rtc.inc)
 filename_buf          = volumeID + .sizeof(VolumeID) ; (13 byte, 8.3 + \0) file name buffer
 fat_dirname_mask      = filename_buf + 13; (11 byte, fat32 name and ext)
 fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector

@@ -536,7 +536,7 @@ mock_not_implemented4:
 
 setUp:
   jsr __fat_init_fdarea
-  set_sec_per_cl SEC_PER_CL
+  init_volume_id SEC_PER_CL
 
   ; fill fat block_fat
   m_memset block_fat_0+$000, $ff, $80  ; simulate reserved
@@ -545,12 +545,6 @@ setUp:
   m_memset block_fat_0+$180, $ff, $80
   set32 block_fat_0+(TEST_FILE_CL<<2), 0 ; mark TEST_FILE_CL as free
   set32 block_fat_0+(TEST_FILE_CL2<<2), 0 ; mark TEST_FILE_CL2 as free
-
-  set32 volumeID + VolumeID::BPB_RootClus, ROOT_CL
-  set32 volumeID + VolumeID::BPB_FATSz32, (FAT2_LBA - FAT_LBA)
-  set32 volumeID+VolumeID::lba_fat, FAT_LBA
-  set32 volumeID+VolumeID::lba_fat2, FAT2_LBA
-  set32 volumeID+VolumeID::lba_fsinfo, FS_INFO_LBA
 
   ;setup fd0 as root cluster
   set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0

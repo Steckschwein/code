@@ -68,10 +68,7 @@ debug_enabled=1
 ; -------------------
 		setup "__calc_lba_addr 8s/cl +10 blocks"
 		ldx #(1*FD_Entry_Size)
-    set_sec_per_cl 8
-		set8 volumeID+VolumeID::BPB_SecPerClus, 8
-		set8 volumeID+VolumeID::BPB_SecPerClusMask, 8-1
-		set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * 8)
+    init_volume_id 8
 
 		jsr __calc_lba_addr
 		assertX (1*FD_Entry_Size)
@@ -238,7 +235,7 @@ debug_enabled=1
 
 ; -------------------
 		setup "fat_fread_byte 2 blocks 2s/cl"
-		set_sec_per_cl 2
+		init_volume_id 2
 
 		ldx #(1*FD_Entry_Size)
 		jsr fat_fread_byte
@@ -287,7 +284,7 @@ debug_enabled=1
 
 ; -------------------
 		setup "fat_fread_byte 3 blocks 2s/cl"
-    set_sec_per_cl 2
+    init_volume_id 2
 
 		set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, (512*2+5) ; setup filesize
 		assert32 0, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
@@ -385,9 +382,7 @@ debug_enabled=1
 setUp:
   ldx #0
 	jsr __fat_init_fdarea
-	set_sec_per_cl SEC_PER_CL
-	set32 volumeID+VolumeID::BPB_RootClus, ROOT_CL
-	set32 volumeID+VolumeID::lba_fat, FAT_LBA		;fat lba
+	init_volume_id SEC_PER_CL
 
 	;setup fd0 as root cluster
 	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0

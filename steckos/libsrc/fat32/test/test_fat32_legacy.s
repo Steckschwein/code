@@ -186,15 +186,7 @@ mock_not_implemented4:
 
 setUp:
   jsr __fat_init_fdarea
-  set_sec_per_cl SEC_PER_CL ;4s/cl
-
-  set8 volumeID+VolumeID::BPB_SecPerClus, SEC_PER_CL
-  set32 volumeID + VolumeID::BPB_RootClus, ROOT_CL
-  set32 volumeID + VolumeID::BPB_FATSz32, (FAT2_LBA - FAT_LBA)
-  set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL))
-  set32 volumeID+VolumeID::lba_fat, FAT_LBA
-  set32 volumeID+VolumeID::lba_fat2, FAT2_LBA
-  set32 volumeID+VolumeID::lba_fsinfo, FS_INFO_LBA
+  init_volume_id SEC_PER_CL ;4s/cl
 
   ;setup fd0 as root cluster
   set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
