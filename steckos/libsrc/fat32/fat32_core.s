@@ -78,7 +78,7 @@ __fat_find_first:
 ff_l3:
     SetVector block_data, dirptr      ; dirptr to begin of target buffer
     jsr __fat_read_block_data
-    bne ff_exit
+    bcs ff_exit
 ff_l4:
     lda (dirptr)
     beq ff_exit                ; first byte of dir entry is $00 (end of directory)
@@ -133,6 +133,7 @@ ff_end:
 ;  Note: regardless of return value, the dirptr points to the last visited directory entry and the corresponding lba_addr is set to the block where the dir entry resides.
 ;      furthermore the filenameptr points to the last inspected path fragment of the given input path
 __fat_open_path:
+    stp
     sta s_ptr1
     stx s_ptr1+1           ; save path arg given in a/x
 
@@ -389,9 +390,7 @@ __fat_init_fd:
 ;  X - offset into fd_area
 __fat_free_fd:
     debug "fat_free"
-    pha
     stz fd_area + F32_fd::status,x
-    pla
     rts
 
 ; check whether cluster of fd is the root cluster number - 0x00000000 (not VolumeID::RootClus due to lba calc optimization)

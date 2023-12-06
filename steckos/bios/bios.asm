@@ -289,7 +289,9 @@ boot_from_card:
       inc ptr1+1
       bne @l
 @l_is_eof:
+      pha
       jsr fat_close    ; close after read to free fd, regardless of error
+      pla
       cmp #EOK
       beq load_ok
 load_error:

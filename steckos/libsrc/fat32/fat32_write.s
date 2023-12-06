@@ -118,18 +118,14 @@ __fat_set_fd_filesize:
 __fat_update_direntry:
     lda fd_area+F32_fd::flags,x
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; file write access?
-    beq @l_exit_err
+    beq @l_exit ; no, read access we skip update
 
     jsr __fat_read_direntry                  ; read dir entry, dirptr is set accordingly
     bcs @l_exit
     jsr __fat_set_direntry_start_cluster
     jsr __fat_set_direntry_filesize         ; set filesize of directory entry via dirptr
     jsr __fat_set_direntry_modify_datetime  ; set modification time and date
-
     jmp __fat_write_block_data              ; lba_addr is already set from read, see above
-@l_exit_err:
-    lda #EBADF
-    sec
 @l_exit:
     rts
 

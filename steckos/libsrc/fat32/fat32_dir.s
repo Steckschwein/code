@@ -71,7 +71,7 @@ __fat_opendir:
 		rts
 @l_exit_close:
 		lda #ENOTDIR				; error "Not a directory"
-		jmp __fat_free_fd			; not a directory, so we opened a file. just close them immediately and free the allocated fd
+		jmp __fat_free_fd		; not a directory, so we opened a file. just close them immediately and free the allocated fd
 
 
 ;in:

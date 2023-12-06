@@ -39,13 +39,14 @@
 .export execv
 
 ; in:
-;  A/X - pointer to string with the file path
+;   A/X - pointer to string with the file path
 ; out:
-;   Z=1 on success, Z=0 and A=<error code> otherwise
+;   executes program with given path (A/X), C=1 and A=<error code> on error
 execv:
+      stp
       ldy #O_RDONLY
       jsr fat_fopen         ; A/X - pointer to filename
-      bne @l_exit
+      bcs @l_exit
 
       jsr fat_fread_byte  ; start address low
       bcs @l_err_exit
@@ -70,10 +71,12 @@ execv:
       debug "exec"
       rts
 @l_is_eof:
-      cmp #0
-      bne @l
-@l_exec_run:
+      pha
       jsr fat_close
+      pla
+      cmp #0
+      bne @l_err_exit
+@l_exec_run:
       ; we came here using jsr, but will not rts.
       ; get return address from stack to prevent stack corruption
       pla
