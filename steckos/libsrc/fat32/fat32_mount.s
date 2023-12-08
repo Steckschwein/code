@@ -46,10 +46,10 @@
 ;   C=0 on success, C=1 otherwise with A=<error code>
 fat_mount:
     lda #$ff
-    sta volumeID+VolumeID::lba_data_last+0
-    sta volumeID+VolumeID::lba_data_last+1
-    sta volumeID+VolumeID::lba_data_last+2
-    sta volumeID+VolumeID::lba_data_last+3
+    sta volumeID+VolumeID::lba_addr_last+0
+    sta volumeID+VolumeID::lba_addr_last+1
+    sta volumeID+VolumeID::lba_addr_last+2
+    sta volumeID+VolumeID::lba_addr_last+3
 
     ; set lba_addr to $00000000 since we want to read the bootsector
     stz lba_addr + 0
@@ -130,13 +130,12 @@ fat_mount:
     stz volumeID + VolumeID::lba_fat + 3
 
     ; fat2_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors + Sectors_Per_FAT
-    add32 block_data + volumeID + VolumeID::lba_fat, F32_VolumeID::BPB + BPB::FATSz32, volumeID + VolumeID::lba_fat2
+    add32 volumeID + VolumeID::lba_fat, volumeID + VolumeID::BPB_FATSz32, volumeID + VolumeID::lba_fat2
 
     ; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
     ldy block_data + F32_VolumeID::BPB + BPB::NumFATs
 @l7:
-    clc
-    add32 volumeID + VolumeID::lba_data, block_data + F32_VolumeID::BPB + BPB::FATSz32, volumeID + VolumeID::lba_data ; add sectors per fat
+    add32 volumeID + VolumeID::lba_data, volumeID + VolumeID::BPB_FATSz32, volumeID + VolumeID::lba_data ; add sectors per fat
     dey
     bne @l7
 
@@ -166,14 +165,13 @@ fat_mount:
     sta volumeID + VolumeID::lba_data +3
 
     debug8 "sc/cl",   volumeID+VolumeID::BPB_SecPerClus
-    debug32 "r_cl",   volumeID+VolumeID::BPB_RootClus
-    debug32 "f_sc",   volumeID+VolumeID::BPB_FATSz32
-    debug16 "f_lba",  volumeID+VolumeID::lba_fat
-    debug16 "f2_lba", volumeID+VolumeID::lba_fat2
-    debug16 "fi_sc",  volumeID+VolumeID::lba_fsinfo
-    debug32 "cl_lba", volumeID+VolumeID::lba_data
+    debug32 "root cl",   volumeID+VolumeID::BPB_RootClus
+    debug32 "fat sz",   volumeID+VolumeID::BPB_FATSz32
+    debug32 "fat lba",  volumeID+VolumeID::lba_fat
+    debug32 "fat2_lba", volumeID+VolumeID::lba_fat2
+    debug32 "fi sc",  volumeID+VolumeID::lba_fsinfo
+    debug32 "data lba", volumeID+VolumeID::lba_data
     debug16 "fbuf",   filename_buf
-
     ; init file descriptor area
     ldx #0
     jsr __fat_init_fdarea

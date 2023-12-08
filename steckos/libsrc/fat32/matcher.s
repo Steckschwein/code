@@ -40,7 +40,7 @@
 dirname_mask_matcher:
     ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) - 1
 __dmm:
-    lda fat_dirname_mask, y
+    lda volumeID+VolumeID::fat_dirname_mask, y
     cmp #'?'
     beq __dmm_next
     cmp (dirptr), y
@@ -53,13 +53,13 @@ __dmm_neq:
     clc
     rts
 
-    ; build 11 byte fat file name (8.3) as used within dir entries
-    ; in:
-    ;  filenameptr pointer to input string to convert to fat file name mask
-    ;  s_ptr2 pointer to result of fat file name mask
-    ; out:
-    ;  C=1 if input was too large (>255 byte), C=0 otherwise
-    ;  Z=1 if input was empty string, Z=0 otherwise
+; build 11 byte fat file name (8.3) as used within dir entries
+; in:
+;  filenameptr pointer to input string to convert to fat file name mask
+;  s_ptr2 pointer to result of fat file name mask
+; out:
+;  C=1 if input was too large (>255 byte), C=0 otherwise
+;  Z=1 if input was empty string, Z=0 otherwise
 string_fat_mask:
     jsr string_trim        ; trim input
     bcs __tfm_exit          ; C=1, overflow

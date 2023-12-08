@@ -120,11 +120,13 @@ PartType_FAT32_LBA    = $0c
   BPB_RootClus        .dword
   BPB_FATSz32         .dword ; sectors per fat
   lba_data            .dword
-  lba_data_last       .dword
   lba_fat             .dword
-  lba_fat2            .dword ; mirror fat
+  lba_fat2            .dword ; mirror fat lba
   lba_fsinfo          .dword
   temp_dword          .dword
+  fat_dirname_mask    .byte 11  ; (11 byte, fat32 name and ext)
+  fat_vec_matcher     .addr     ; (2 byte) jump vector
+  lba_addr_last       .dword ; last lba_addr
 .endstruct
 
 ;--------------------------------------------------------------------------------------
@@ -218,11 +220,9 @@ FAT_EOC  = $0fffffff   ; end of cluster chain marker
 ; memory locations for fat32 driver
 volumeID              = $0300 ; address of VolumeID (@see rtc.inc)
 filename_buf          = volumeID + .sizeof(VolumeID) ; (13 byte, 8.3 + \0) file name buffer
-fat_dirname_mask      = filename_buf + 13; (11 byte, fat32 name and ext)
-fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector
-.assert fat_vec_matcher+2 <= fd_area, error, "fat metadata overflow!"
 
-fd_area               = fat_vec_matcher+2 ; File descriptor area until $0400
+.assert filename_buf+13 <= fd_area, error, "fat metadata overflow!"
+fd_area               = filename_buf+13 ; File descriptor area until $0400
 fd_area_end           = $0400
 
 sd_blocksize          = $200  ; block size

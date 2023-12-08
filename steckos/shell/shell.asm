@@ -59,12 +59,12 @@ appstart __SHELL_START__
 init:
         jsr primm
         ;.byte 27,"[2J "
-        
+
         ;.byte 27,"[3B" ; move cursor down 3 lines
-        
+
         .byte "steckOS shell  "
     ;    .byte 27,"[5D" ; move cursor left 5 pos
-     
+
         .include "version.inc"
         .byte CODE_LF,0
 exit_from_prg:
@@ -408,22 +408,22 @@ errmsg:
   cmp #$f1
   bne @l1
 
-	jsr primm
-	.byte CODE_LF,"invalid command",CODE_LF,$00
-	jmp mainloop
+  jsr primm
+  .byte CODE_LF,"invalid command",CODE_LF,$00
+  jmp mainloop
 
 @l1:
   cmp #$f2
   bne @l2
 
-	jsr primm
-	.byte CODE_LF,"invalid directory",CODE_LF,$00
-	jmp mainloop
+  jsr primm
+  .byte CODE_LF,"invalid directory",CODE_LF,$00
+  jmp mainloop
 
 @l2:
-	jsr primm
-	.byte CODE_LF,"unknown error",CODE_LF,$00
-	jmp mainloop
+  jsr primm
+  .byte CODE_LF,"unknown error",CODE_LF,$00
+  jmp mainloop
 
 mode_toggle:
         lda video_mode
@@ -444,7 +444,7 @@ exec:
         lda cmdptr
         ldx cmdptr+1    ; cmdline in a/x
         jsr krn_execv   ; return A with errorcode
-        bne @l1         ; error? try different path
+        bcs @l1         ; error? try different path
         jmp mainloop
 
 @l1:
@@ -504,7 +504,7 @@ exec:
         lda #<tmpbuf
         ldx #>tmpbuf    ; cmdline in a/x
         jsr krn_execv   ; return A with errorcode
-        bne @try_path
+        bcs @try_path
         lda #$fe
         jmp errmsg
 

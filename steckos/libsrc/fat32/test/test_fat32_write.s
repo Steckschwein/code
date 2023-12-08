@@ -14,7 +14,7 @@
 debug_enabled=1
 
 .code
-    jmp single_test
+    ;jmp single_test
 ; -------------------
     setup "fat_mkdir_eexist"
     lda #<test_dir_name_eexist
@@ -372,6 +372,7 @@ debug_enabled=1
 
 ; -------------------
 single_test:
+    brk ;TODO
     setup "fat_write seek 2048+512 4s/cl";
 
     ldy #O_RDWR

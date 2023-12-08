@@ -43,18 +43,18 @@
 ; out:
 ;   executes program with given path (A/X), C=1 and A=<error code> on error
 execv:
-      stp
       ldy #O_RDONLY
       jsr fat_fopen         ; A/X - pointer to filename
-      bcs @l_exit
+      bcc :+
+      rts
 
-      jsr fat_fread_byte  ; start address low
-      bcs @l_err_exit
+:     jsr fat_fread_byte  ; start address low
+      bcs @l_exit_close
       sta s_ptr2
       sta s_ptr3
 
       jsr fat_fread_byte ; start address high
-      bcs @l_err_exit
+      bcs @l_exit_close
       sta s_ptr2+1
       sta s_ptr3+1
 
@@ -66,10 +66,9 @@ execv:
       inc s_ptr2+1
       bne @l
 @l_err_exit:
-      jsr fat_close      ; close after read to free fd, regardless of error
-@l_exit:
-      debug "exec"
-      rts
+      sec
+@l_exit_close:
+      jmp fat_close      ; close after read to free fd, regardless of error
 @l_is_eof:
       pha
       jsr fat_close

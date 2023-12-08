@@ -8,6 +8,6 @@ if [ -e ${img} ] ; then
 fi
 
 truncate -s $size ${img}
-mkfs -t fat -F 32 -s 2 ${img} -n "STECKO"
+mkfs -t fat -F 32 -s 2 ${img} -n "STECKOS 2_0"
 mcopy -i ${img} -s dist/* ::/
 

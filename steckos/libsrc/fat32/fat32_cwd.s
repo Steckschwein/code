@@ -66,7 +66,7 @@ fat_get_root_and_pwd:
     ldy #FD_INDEX_TEMP_DIR                  ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
     jsr __fat_opendir
     bne @l_exit
-    SetVector cluster_nr_matcher, fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
+    SetVector cluster_nr_matcher, volumeID+VolumeID::fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
     jsr __fat_find_first                    ; and call find first to find the entry with that cluster number we saved in temp_dword before we did the cd ".."
     bcc @l_exit
     jsr fat_name_string                    ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
