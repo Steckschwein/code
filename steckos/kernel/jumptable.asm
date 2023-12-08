@@ -28,12 +28,14 @@ krn_mkdir:              jmp fat_mkdir
 krn_close:              jmp fat_close
 .export krn_close_all
 krn_close_all:          jmp fat_close_all
-.export krn_fread
-krn_fread:              jmp fat_fread
 .export krn_fread_byte
 krn_fread_byte:         jmp fat_fread_byte
 .export krn_write
 krn_write:              jmp fat_write
+.export krn_write_byte
+krn_write_byte:         jmp fat_write_byte
+.export krn_fseek
+krn_fseek:              jmp fat_fseek
 .export krn_find_first
 krn_find_first:         jmp fat_find_first
 .export krn_find_next
@@ -47,7 +49,7 @@ krn_textui_init:        jmp  textui_init
 .export krn_textui_enable
 krn_textui_enable:      jmp  textui_enable
 .export krn_textui_disable
-krn_textui_disable:     jmp textui_disable 
+krn_textui_disable:     jmp textui_disable
 .export krn_textui_update_crs_ptr
 krn_textui_update_crs_ptr:  jmp textui_update_crs_ptr
 .export krn_textui_setmode

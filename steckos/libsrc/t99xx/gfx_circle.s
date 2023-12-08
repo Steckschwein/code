@@ -28,7 +28,6 @@
 .import vdp_wait_cmd
 
 .importzp __volatile_ptr
-.importzp __volatile_tmp
 
 .export gfx_circle
 

@@ -40,10 +40,10 @@
 .import vdp_bgcolor
 
 .import fopen
-.import fread
+.import fread_byte
 .import fclose
 
-.export ppm_data
+;.export ppm_data
 .export ppm_width
 .export ppm_height
 
@@ -75,22 +75,13 @@ _i:     .res 1
 		bne @io_error
 		stx fd
 
-		jsr read_blocks
-		bne @io_error
-
-		jsr ppm_parse_header					; .Y - return with offset to first data byte
-		bne @ppm_error
-		sty _offs
-
-		jsr load_image ; timing critical
-		bne @io_error
-
-		clc
-		bra @close_exit
-
-@ppm_error:
+		jsr ppm_parse_header
+		bcc @ppm_ok
         ldx #0
         bra @error
+@ppm_ok:
+		jsr load_image ; timing critical
+		bcc @close_exit
 @io_error:
         tax
         lda #0
@@ -110,26 +101,6 @@ _i:     .res 1
 		rts
 .endproc
 
-read_blocks:
-		SetVector ppm_data, read_blkptr
-		stz _error
-		ldx fd
-		ldy #BLOCK_BUFFER
-		jsr fread
-		bcs @l_error
-		tya
-		asl
-		sta _pages
-		SetVector ppm_data, read_blkptr ; reset ptr to begin of buffer
-		lda #EOK
-;		clc ; cleared by asl above
-		rts
-@l_error:
-		sta _error	; save error
-		stz _pages
-		sec
-		rts
-
 load_image:
 		stz cols
 		stz rows
@@ -138,31 +109,20 @@ load_image:
         sei ;critical section, avoid vdp irq here
 
 		jsr set_screen_addr	; initial vram address
-		ldy _offs ; .Y - data offset
-		jsr blocks_to_vram
-
+		jsr copy_to_vram
+		bcs @l_err
         plp
-		lda _error ; on any error
+		clc
+		rts
+@l_err:
+        plp
+		sec
 		rts
 
 next_byte:
-		clc ; no error
-		lda (read_blkptr),y
-		iny
-		bne @l_exit
-		inc read_blkptr+1
-		dec _pages
-		bne @l_exit
-		pha ;save last byte from above
-		jsr read_blocks
-		bne @l_exit_restore
-		ldy #0
-@l_exit_restore:
-		pla
-@l_exit:
-		rts
+		jmp fread_byte
 
-blocks_to_vram:
+copy_to_vram:
 		jsr rgb_bytes_to_grb
 		bcs @exit
 		sta a_vram
@@ -170,13 +130,14 @@ blocks_to_vram:
 		inc cols
 		lda cols
 		cmp ppm_width
-		bne blocks_to_vram
+		bne copy_to_vram
 		stz cols
 		jsr set_screen_addr	; adjust vram address to cols/rows
 		inc rows
 		lda rows
 		cmp ppm_height
-		bne blocks_to_vram
+		bne copy_to_vram
+		clc
 @exit:
 		rts
 
@@ -227,63 +188,54 @@ set_screen_addr:
 		rts
 
 ppm_parse_header:
-		lda #'P'
-		cmp ppm_data
+		jsr next_byte
+		bcs @l_invalid_ppm
+		cmp #'P'
 		bne @l_invalid_ppm
-		lda ppm_data+1
+		jsr next_byte
+		bcs @l_invalid_ppm
 		cmp #'3'
 		beq :+
 		cmp #'6'
 		bne @l_invalid_ppm
-
-:		ldy #2 ;skip "P3/P6"
 		jsr parse_string
-
-		jsr parse_until_size	;skip until <width> <height>
-		jsr parse_int	;width
+:
+		jsr parse_until_size	;not, skip until <width> <height>
+		jsr parse_int			;try parse ppm width
 		cmp #<MAX_WIDTH
 		bcc @l_invalid_ppm ;
 		sta ppm_width
-
-		jsr parse_int	;height
+		
+		jsr parse_int0	;height
 		cmp #MAX_HEIGHT+1
 		bcs @l_invalid_ppm
         sta ppm_height
-		sty _offs ;safe y offset, to check how many chars are consumed during parse
 
-		jsr parse_int	;depth
-		cmp #COLOR_DEPTH
+		jsr parse_int0	;color depth
+		cpy #3
 		bne @l_invalid_ppm
-		tya
-		sec
-		sbc _offs
-		cmp #4+1 ; check that 3 digits + 1 delimiter was parsed, so number is <=3 digits
-		bcs @l_invalid_ppm
-		lda #0
+		clc
 		rts
+
 @l_invalid_ppm:
-        lda #$ff
         sec
 		rts
 
-parse_until_size:
-		lda ppm_data, y
-		cmp #'#'				; skip comments
-		bne @l
-		jsr parse_string
-		bra parse_until_size
-@l:
+; C=0 parse ok, C=1 on error
+parse_int0:
+		jsr next_byte
+		bcc parse_int
 		rts
-
 parse_int:
+		ldy #0
 		stz _i
 @l_toi:
-		lda ppm_data, y
 		cmp #'0'
-		bcc @l_end
+		bcc @l_exit
 		cmp #'9'+1
-		bcs @l_end
-		pha		;n*10 => n*2 + n*8
+		bcs @l_exit
+
+		pha		;(n-1)*10 + n => (n-1)*2 + (n-1)*8 + n
 		lda _i
 		asl
 		sta _i
@@ -293,34 +245,39 @@ parse_int:
 		sta _i
 		pla
 		sec
-		sbc #'0'
+		sbc #'0' ; make numeric
 		clc
 		adc _i
 		sta _i
 		iny
-		bne @l_toi
-@l_end:
-		iny
+		phy
+		jsr next_byte
+		ply
+		bcc @l_toi ; C=1 on error
+@l_exit:
 		lda _i
 		rts
 
+parse_until_size:
+		jsr next_byte
+		bcs @l
+		cmp #'#'				; skip comments
+		bne @l
+		jsr parse_string
+		bra parse_until_size
+@l:		rts
+
 parse_string:
-;		ldx #0
-@l0:	lda ppm_data, y
-		cmp #$20		; < $20 - control characters are treat as whitespace
+@l0:	jsr next_byte
+		bcs @le ; C=1 on error
+		cmp #$20		; < $20 - control characters are treat as string delimiter
 		bcc @le
-		iny
-		bne @l0
-@le:	iny
-		rts
+		bcs @l0
+@le:	rts
 
 .bss
-_offs: 	.res 1
-_error:	.res 1
-_pages:	.res 1
 cols:   .res 1
 rows:   .res 1
 fd:     .res 1
 ppm_width:  .res 1
 ppm_height: .res 1
-ppm_data:    .res BLOCK_BUFFER * $200

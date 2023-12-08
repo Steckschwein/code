@@ -24,7 +24,7 @@
 .import LAB_GFX_SCNCLR
 .import LAB_GFX_SCNWAIT
 
-__APPSTART__ = $b280
+__APPSTART__ = $b100
 appstart __APPSTART__
 
 ;
@@ -1371,17 +1371,20 @@ LAB_LIST
       BCC   LAB_14BD          ; branch if next character numeric (LIST n..)
       BEQ   LAB_14BD          ; branch if next character [NULL] (LIST)
 
+
       CMP   #TK_MINUS         ; compare with token for -
       BNE   LAB_14A6          ; exit if not - (LIST -m)
 
                               ; LIST [[n][-m]]
                               ; this bit sets the n , if present, as the start and end
 LAB_14BD
+
       JSR   LAB_GFPN          ; get fixed-point number into temp integer
       JSR   LAB_SSLN          ; search BASIC for temp integer line number
                               ; (pointer in Baslnl/Baslnh)
       JSR   LAB_GBYT          ; scan memory
       BEQ   LAB_14D4          ; branch if no more characters
+
 
                               ; this bit checks the - is present
       CMP   #TK_MINUS         ; compare with token for -
@@ -1397,7 +1400,7 @@ LAB_14D4
       LDA   Itempl            ; get temporary integer low byte
       ORA   Itemph            ; OR temporary integer high byte
       BNE   LAB_14E2          ; branch if start set
-
+foo_list
       LDA   #$FF              ; set for -1
       STA   Itempl            ; set temporary integer low byte
       STA   Itemph            ; set temporary integer high byte
@@ -7611,23 +7614,23 @@ LAB_2D05
      ; JMP     LAB_1319         ; cleanup and Return to BASIC
 
 openfile:
-   jsr termstrparam
-   jsr krn_open
-   bne io_error
-   stx _fd
-   rts
+      jsr termstrparam
+      jsr krn_open
+      bcs io_error
+      stx _fd
+      rts
 
 io_error_close:
-    jsr krn_close
+      jsr krn_close
 io_error:
-    ldx #$24 ; "Generate "File not found error"
-    jmp LAB_XERR
+      ldx #$24 ; "Generate "File not found error"
+      jmp LAB_XERR
 
 LAB_SAVE:
       rts
 
 LAB_LOAD:
-      lda #O_RDONLY
+      ldy #O_RDONLY
       jsr openfile
 
       lda #<fread_wrapper
@@ -7642,25 +7645,25 @@ LAB_LOAD:
       JMP   LAB_1319 ; reset and return
 
 fread_wrapper:
-    phx
-    phy
-    ldx _fd
-    jsr krn_fread_byte
-    bcs @eof
-    cmp #KEY_LF ; replace with "basic end of line"
-    bne :+
-    lda #KEY_CR
-:   ply
-    plx
-    cmp #0
-    rts
+      phx
+      phy
+      ldx _fd
+      jsr krn_fread_byte
+      bcs @eof
+      cmp #KEY_LF ; replace with "basic end of line"
+      bne :+
+      lda #KEY_CR
+:     ply
+      plx
+      cmp #0
+      rts
 @eof:
-    jsr krn_close
+      jsr krn_close
 
-    jsr init_iovectors
+      jsr init_iovectors
 
-    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-    jmp     LAB_1319         ; cleanup and Return to BASIC
+      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+      jmp     LAB_1319         ; cleanup and Return to BASIC
 
 init_iovectors:
       lda #<krn_chrout
@@ -7831,6 +7834,8 @@ LAB_CD:
 ;      RTS                      ; return to caller
 
 termstrparam:
+    phy
+
     ; evaluate sting parameter
     jsr LAB_EVEX
     jsr LAB_EVST
@@ -7847,6 +7852,7 @@ termstrparam:
     lda str_pl
     ldx str_ph
 
+    ply
     rts
 
 ; system dependant I/O vectors

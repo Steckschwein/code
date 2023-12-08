@@ -77,6 +77,8 @@ main:
 		sei
     	copypointer user_isr, safe_isr
 		SetVector player_isr, user_isr
+;		copypointer $fffe, safe_isr
+;		SetVector player_isr, $fffe
 
 		freq=70
 		lda #($ff-(1000000 / freq / OPL_INTERVAL_US_TIMER2))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value

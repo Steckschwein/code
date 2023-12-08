@@ -24,6 +24,13 @@
 .include "system.inc"
 .include "zeropage.inc"
 .include "debug.inc"
+.include "common.inc"
+.include "spi.inc"
+.include "vdp.inc"
+.include "via.inc"
+.include "rtc.inc"
+.include "ym3812.inc"
+.include "keyboard.inc"
 
 
 

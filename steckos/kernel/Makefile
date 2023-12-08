@@ -19,12 +19,6 @@ DEFINES+=-DDISABLE_INTRO
 #DEBUG += -DDEBUG_KERNEL
 # debug rtc updates by kernel
 #DEBUG += -DDEBUG_RTC
-# debug util
-#DEBUG += -DDEBUG_UTIL
-# dump fat blocks on write
-#DEBUG += -DFAT_DUMP_FAT_WRITE
-# do not write anything (metadata)
-#DEBUG += -DFAT_NOWRITE
 #DEBUG += -DV9958
 #DEBUG += -DDEBUG_EXECV
 #DEBUG += -DDEBUG_SPI
@@ -70,4 +64,4 @@ test:
 	(cd ../libsrc ; make)
 
 emu: loader.prg
-	steckschwein-emu -rom ../bios/bios.bin -upload loader.prg -sdcard ../../steckos.img
+	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img # -upload ../shell/shell.prg # loader.prg

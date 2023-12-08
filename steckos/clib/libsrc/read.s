@@ -45,7 +45,7 @@
 		jsr krn_fread_byte
 		bcs @eof
 
-:		sta (ptr1)	; save byte
+		sta (ptr1)	; save byte
 
 		inc ptr1
 		bne @r0

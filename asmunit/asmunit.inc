@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 .ifndef __ASSERTION_INC
-.define	__ASSERTION_INC "__ASSERTION_INC"
+.define  __ASSERTION_INC "__ASSERTION_INC"
 .setcpu "65c02"
 
 .define _FLAG_C0 "C=0"
@@ -33,12 +33,12 @@
 .define _FLAG_N0 "N=0"
 .define _FLAG_N1 "N=1"
 
-.define	_EXPECT_MAX_LENGTH 255
+.define  _EXPECT_MAX_LENGTH 255
 
-.define _FORMAT_STRING 1<<7 	; bit 7 set output string, number otherwise
-.define _FORMAT_MEMORY 1<<6	; bit 6 set output memory as hex
+.define _FORMAT_STRING 1<<7   ; bit 7 set output string, number otherwise
+.define _FORMAT_MEMORY 1<<6  ; bit 6 set output memory as hex
 
-.define _MODE_ASSERT_EQ 0		;
+.define _MODE_ASSERT_EQ 0    ;
 .define _MODE_ASSERT_LEQ 1<<0 ; assert input with less or equal (<=) the expectation
 .define _MODE_FAIL 1<<1
 .define _MODE_TESTNAME 1<<2
@@ -50,135 +50,135 @@ _tst_inp_ptr=$2
 asmunit_addr_instrument = $0202
 
 .macro cmp16_ne address, _16Bit, _label
-	lda address+0
-	cmp #<_16Bit
-	bne _label
-	lda address+1
-	cmp #>_16Bit
-	bne _label
+  lda address+0
+  cmp #<_16Bit
+  bne _label
+  lda address+1
+  cmp #>_16Bit
+  bne _label
 .endmacro
 
 .macro cmp32_ne address, _32Bit, _label
-	cmp16_ne address+0, (_32Bit & $ffff), _label
-	cmp16_ne address+2, (_32Bit>>16), _label
+  cmp16_ne address+0, (_32Bit & $ffff), _label
+  cmp16_ne address+2, (_32Bit>>16), _label
 .endmacro
 
 .macro cmp32_eq address, _32Bit, _label
-	cmp16_ne address+0, (_32Bit & $ffff), :+
-	cmp16_ne address+2, (_32Bit>>16), :+
-	jmp _label
+  cmp16_ne address+0, (_32Bit & $ffff), :+
+  cmp16_ne address+2, (_32Bit>>16), :+
+  jmp _label
 :
 .endmacro
 
 .macro set8 address, _8bit
-	lda #<_8bit
-	sta address
+  lda #<_8bit
+  sta address
 .endmacro
 
 .macro set16 _address, _16bit
-	lda #<_16bit
-	sta _address+0
-	lda #>_16bit
-	sta _address+1
+  lda #<_16bit
+  sta _address+0
+  lda #>_16bit
+  sta _address+1
 .endmacro
 
 .macro set32 _address, _32Bit
-	set16 _address+0, (_32Bit & $ffff)
-	set16 _address+2, (_32Bit>>16)
+  set16 _address+0, (_32Bit & $ffff)
+  set16 _address+2, (_32Bit>>16)
 .endmacro
 
 .macro _message label, mode
-	.import asmunit_assert
-	.local @labelAddress
-	.assert .strlen(label) <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
-	jsr asmunit_assert
-	.byte mode | _FORMAT_STRING
-	.word @labelAddress
-	.byte .strlen(label)
+  .import asmunit_assert
+  .local @labelAddress
+  .assert .strlen(label) <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
+  jsr asmunit_assert
+  .byte mode | _FORMAT_STRING
+  .word @labelAddress
+  .byte .strlen(label)
 @labelAddress: .byte label
 .endmacro
 
 .macro test_begin label
-	test_name label
+  test_name label
 .endmacro
 
 .macro test_end
-	brk
+  brk
 .endmacro
 
 .macro test_name label
-	test label
+  test label
 .endmacro
 
 .macro test label
-	_message .concat("[", label, "]"), _MODE_TESTNAME
+  _message .concat("[", label, "]"), _MODE_TESTNAME
     .import tst_cnt ; reset assertion counter
-	 lda #1
-	 sta tst_cnt
+   lda #1
+   sta tst_cnt
 .endmacro
 
 .macro fail message
-	_message message, _MODE_FAIL
+  _message message, _MODE_FAIL
 .endmacro
 
 .macro assertX expect
-	.import tst_xreg
-	assert8 expect, tst_xreg
+  .import tst_xreg
+  assert8 expect, tst_xreg
 .endmacro
 
 .macro assertY expect
- 	.import tst_yreg
-	assert8 expect, tst_yreg
+   .import tst_yreg
+  assert8 expect, tst_yreg
 .endmacro
 
 .macro assertA expect
-	.import tst_acc
-	assert8 expect, tst_acc
+  .import tst_acc
+  assert8 expect, tst_acc
 .endmacro
 
 .macro assertCPU expect
-	.import tst_status
-	assert8 expect, tst_status
+  .import tst_status
+  assert8 expect, tst_status
 .endmacro
 
 .macro assert8 expect8, address
-	.import asmunit_assert
-	jsr asmunit_assert
-	.byte _MODE_ASSERT_EQ
-	.word address
-	.byte 1
-	.byte expect8
+  .import asmunit_assert
+  jsr asmunit_assert
+  .byte _MODE_ASSERT_EQ
+  .word address
+  .byte 1
+  .byte expect8
 .endmacro
 
 .macro assert16 expect16, address
-	.import asmunit_assert
-	jsr asmunit_assert
-	.byte _MODE_ASSERT_EQ
-	.word address
-	.byte 2
-	.word expect16
+  .import asmunit_assert
+  jsr asmunit_assert
+  .byte _MODE_ASSERT_EQ
+  .word address
+  .byte 2
+  .word expect16
 .endmacro
 
 .macro assert32 expect32, address
-	.import asmunit_assert
-	jsr asmunit_assert
-	.byte _MODE_ASSERT_EQ
-	.word address
-	.byte 4
-	.dword expect32
+  .import asmunit_assert
+  jsr asmunit_assert
+  .byte _MODE_ASSERT_EQ
+  .word address
+  .byte 4
+  .dword expect32
 .endmacro
 
 .macro asmunit_assertFlag labelAddress, labelSymbol
-	.import asmunit_assert
-	jsr asmunit_assert
-	.byte _MODE_ASSERT_EQ | _FORMAT_STRING
-	.word labelAddress
-	.byte .strlen(labelSymbol)
-	.byte labelSymbol
+  .import asmunit_assert
+  jsr asmunit_assert
+  .byte _MODE_ASSERT_EQ | _FORMAT_STRING
+  .word labelAddress
+  .byte .strlen(labelSymbol)
+  .byte labelSymbol
 .endmacro
 
 .macro _pass
-	assert8 1, *+2	; always true... cuz of the .byte 1 in the assert8 macro - FTW!
+  assert8 1, *+2  ; always true... cuz of the .byte 1 in the assert8 macro - FTW!
 .endmacro
 
 ;
@@ -186,22 +186,22 @@ asmunit_addr_instrument = $0202
 ; assertD 1 => expect decimal mode is set
 ;
 .macro assertD expect
-	fail "TODO not implemented yet!!!"
-	.assert expect = 0 || expect = 1, error, "Invalid expect, must be 0 or 1!"
-	.if expect
-		.import asmunit_l_flag_d0
-		 asmunit_assertFlag asmunit_l_flag_d0, _FLAG_D1 ; force a fail here
-	.else
-		.import asmunit_l_flag_d1
-		 asmunit_assertFlag asmunit_l_flag_d1, _FLAG_D0
-	.endif
-;		bra :++
-;:		_pass
+  fail "TODO not implemented yet!!!"
+  .assert expect = 0 || expect = 1, error, "Invalid expect, must be 0 or 1!"
+  .if expect
+    .import asmunit_l_flag_d0
+     asmunit_assertFlag asmunit_l_flag_d0, _FLAG_D1 ; force a fail here
+  .else
+    .import asmunit_l_flag_d1
+     asmunit_assertFlag asmunit_l_flag_d1, _FLAG_D0
+  .endif
+;    bra :++
+;:    _pass
 :
 .endmacro
 
 .macro assertCarry expect
-	assertC expect
+  assertC expect
 .endmacro
 
 ;
@@ -209,17 +209,17 @@ asmunit_addr_instrument = $0202
 ; assertCarry 1 => expect carry set
 ;
 .macro assertC expect
-	.assert expect = 0 || expect = 1, error, "Invalid expect, must be 0 or 1!"
-	.local @l_pass,@l_exit
+  .assert expect = 0 || expect = 1, error, "Invalid expect, must be 0 or 1!"
+  .local @l_pass,@l_exit
   .if expect
-		bcs @l_pass
-		.import asmunit_l_flag_c0
-		asmunit_assertFlag asmunit_l_flag_c0, _FLAG_C1 ; force a fail by compare inverse
-	.else
-		bcc @l_pass
-		.import asmunit_l_flag_c1
-		asmunit_assertFlag asmunit_l_flag_c1, _FLAG_C0 ; force a fail by compare inverse
-	.endif
+    bcs @l_pass
+    .import asmunit_l_flag_c0
+    asmunit_assertFlag asmunit_l_flag_c0, _FLAG_C1 ; force a fail by compare inverse
+  .else
+    bcc @l_pass
+    .import asmunit_l_flag_c1
+    asmunit_assertFlag asmunit_l_flag_c1, _FLAG_C0 ; force a fail by compare inverse
+  .endif
       bra @l_exit
 @l_pass:
       _pass
@@ -227,7 +227,7 @@ asmunit_addr_instrument = $0202
 .endmacro
 
 .macro assertZero expect
-	assertZ expect
+  assertZ expect
 .endmacro
 
 ;
@@ -244,7 +244,7 @@ asmunit_addr_instrument = $0202
   .else
       bne @l_pass
       .import asmunit_l_flag_z1
-      asmunit_assertFlag asmunit_l_flag_z1, _FLAG_Z0	; force a fail by compare inverse
+      asmunit_assertFlag asmunit_l_flag_z1, _FLAG_Z0  ; force a fail by compare inverse
   .endif
       bra @l_exit
 @l_pass:
@@ -253,72 +253,72 @@ asmunit_addr_instrument = $0202
 .endmacro
 
 ;
-;	assertMemory <input>, <length>
-;		.byte ... ; <length> expected bytes
+;  assertMemory <input>, <length>
+;    .byte ... ; <length> expected bytes
 ;
 .macro assertMemory address, length
-	.import asmunit_assert
-	.assert length <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
-	jsr asmunit_assert
-	.byte _MODE_ASSERT_EQ | _FORMAT_MEMORY
-	.word address ; address of expected value
-	.byte length
+  .import asmunit_assert
+  .assert length <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
+  jsr asmunit_assert
+  .byte _MODE_ASSERT_EQ | _FORMAT_MEMORY
+  .word address ; address of expected value
+  .byte length
 .endmacro
 
 ;
-;	assertString <expect>, <input>
+;  assertString <expect>, <input>
 ;
 .macro assertString expect, address
-	.assert .strlen(expect) <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
-	.import asmunit_assert
-	jsr asmunit_assert
-	.byte _MODE_ASSERT_EQ | _FORMAT_STRING
-	.word address
-	.byte .strlen(expect)
-	.byte expect
+  .assert .strlen(expect) <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit!"
+  .import asmunit_assert
+  jsr asmunit_assert
+  .byte _MODE_ASSERT_EQ | _FORMAT_STRING
+  .word address
+  .byte .strlen(expect)
+  .byte expect
 .endmacro
 
 .macro assertOut expect
-	.assert .strlen(expect) <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit of test output buffer!"
+  .assert .strlen(expect) <= _EXPECT_MAX_LENGTH, error, "Expectation argument exceeds limit of test output buffer!"
 
-	.import asmunit_assert
-	.import asmunit_char_out_buffer
-	.import asmunit_char_out_ix
+  .import asmunit_assert
+  .import asmunit_char_out_buffer
+  .import asmunit_char_out_ix
 
-	stz asmunit_char_out_ix		; reset asmunit_char_out_buffer	before test - TODO FIXME maybe a dedicated macro?!?
-	jsr asmunit_assert
-	.byte _MODE_ASSERT_EQ | _FORMAT_STRING
-	.word asmunit_char_out_buffer
-	.byte .strlen(expect)
-	.byte expect
+  stz asmunit_char_out_ix    ; reset asmunit_char_out_buffer  before test - TODO FIXME maybe a dedicated macro?!?
+  jsr asmunit_assert
+  .byte _MODE_ASSERT_EQ | _FORMAT_STRING
+  .word asmunit_char_out_buffer
+  .byte .strlen(expect)
+  .byte expect
 .endmacro
 
 ;
 ; functional testing
 ;
 .macro resetCycles
-	stz asmunit_addr_instrument	; write a #1 to <asmunit_addr_instrument>, it's hooked by the py65 memory observer and will update the internal cycle counter to the current cycle counter
+  stz asmunit_addr_instrument  ; write a #1 to <asmunit_addr_instrument>, it's hooked by the py65 memory observer and will update the internal cycle counter to the current cycle counter
 .endmacro
 
 .macro assertCycles cycles
-	.import asmunit_assert
-	lda asmunit_addr_instrument	; write a #0 will result in write the current cycle counter to memory we can assert afterwards - the cycle counter is the difference from current - last one
-	jsr asmunit_assert
-	.byte _MODE_ASSERT_LEQ			; compare cycles less or equal
-	.word asmunit_addr_instrument+1 ; addr of cycle counter
-	.byte 4
-	; cycles are stored in big endian, since we want to compare from MSB down to LSB to achieve "measured cycles <= expected cycles"
-	.byte >.HIWORD(cycles)
-	.byte <.HIWORD(cycles)
-	.byte >.LOWORD(cycles)
-	.byte <.LOWORD(cycles)
+  .import asmunit_assert
+  lda asmunit_addr_instrument  ; write a #0 will result in write the current cycle counter to memory we can assert afterwards - the cycle counter is the difference from current - last one
+  jsr asmunit_assert
+  .byte _MODE_ASSERT_LEQ      ; compare cycles less or equal
+  .word asmunit_addr_instrument+1 ; addr of cycle counter
+  .byte 4
+  ; cycles are stored in big endian, since we want to compare from MSB down to LSB to achieve "measured cycles <= expected cycles"
+  .byte >.HIWORD(cycles)
+  .byte <.HIWORD(cycles)
+  .byte >.LOWORD(cycles)
+  .byte <.LOWORD(cycles)
 
 .endmacro
 
 asmunit_char_out_io=$0200
 
 .macro dumpReg
-	;TODO
+  ;TODO
 .endmacro
 
 .endif

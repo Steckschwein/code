@@ -75,7 +75,7 @@ PartType_FAT32_LBA    = $0c
                ; The legal values for this field are
                ; 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, and 0xFF.
    SectsPerFAT .word   ; 22-23 ; Number of sectors per FAT. 0 for fat32
-   
+
    SectsPerTrack .word;    // 24-25 ; Number of sectors per track
    NumHeads    .word; // 26
    SectsHidden .dword; // 28
@@ -90,7 +90,7 @@ PartType_FAT32_LBA    = $0c
 
    Version     .word    ; 42-43
    RootClus    .dword   ; 44-47
-   FSInfoSec   .word    ; 48-49
+   FSInfoSec   .word    ; 48-49  ;
    BootSectCpy .word    ; 50-51
    Reserved3   .byte 12 ; 52-63
    PhysDrvNum  .byte    ; 64
@@ -99,12 +99,6 @@ PartType_FAT32_LBA    = $0c
    VolumeID    .dword   ; 67-70
    VolumeLabel .byte 11 ; 71-82
    FSType      .byte 8  ; 83-90
-.endstruct
-
-
-; struct VolumeID like we keep it in memory
-.struct VolumeID
-   BPB      .tag BPB
 .endstruct
 
 ; struct VolumeID like found on FAT-media (bootsector)
@@ -117,11 +111,23 @@ PartType_FAT32_LBA    = $0c
 
    ; FAT32 BIOS Parameter Block begins here
    BPB         .tag BPB
-
 .endstruct
 
-
-
+; struct VolumeID like we keep it in memory
+.struct VolumeID
+  BPB_SecPerClus      .byte
+  BPB_SecPerClusMask  .byte ; BPB_SecPerClus-1
+  BPB_RootClus        .dword
+  BPB_FATSz32         .dword ; sectors per fat
+  lba_data            .dword
+  lba_fat             .dword
+  lba_fat2            .dword ; mirror fat lba
+  lba_fsinfo          .dword
+  temp_dword          .dword
+  fat_dirname_mask    .byte 11  ; (11 byte, fat32 name and ext)
+  fat_vec_matcher     .addr     ; (2 byte) jump vector
+  lba_addr_last       .dword ; last lba_addr
+.endstruct
 
 ;--------------------------------------------------------------------------------------
 ; FAT32 FSInfo Sector Offsets
@@ -130,10 +136,10 @@ PartType_FAT32_LBA    = $0c
    Signature1     .byte 4
    Reserved1      .byte $1e0
    Signature2     .byte 4
-   FreeClus       .byte 4   ; amount of free clusters
-   LastClus       .byte 4   ; last known cluster number
-   Reserved2      .byte 11
-   Signature      .word
+   FreeClus       .dword    ; amount of free clusters
+   LastClus       .dword    ; last known cluster number
+   Reserved2      .byte 12
+   Signature      .byte 4
 .endstruct
 ;--------------------------------------------------------------------------------------
 ; FAT32 Directory Entry
@@ -164,42 +170,44 @@ DIR_Attr_Mask_Archive   = 1<<5;
 DIR_Attr_Mask_LongFilename   = 1<<0 | 1<<1 | 1<<2 | 1<<3;
 DIR_Entry_Size               = .sizeof(F32DirEntry)
 DIR_Entry_Deleted            = $e5
+
 ;--------------------------------------------------------------------------------------
 ; File descriptor struct
 ;--------------------------------------------------------------------------------------
-
 .struct Seek
-    Whence  .byte   ; SEEK_SET - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
-                    ; SEEK_CUR - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
-                    ; SEEK_END - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
+    ; see fcntl.inc (cc65)
+    Whence  .byte   ; SEEK_CUR (0) - OFFSET is relative to the current file position.  OFFSET can meaningfully be either positive or negative.
+                    ; SEEK_END (1) - OFFSET is relative to the current end of file.  OFFSET can meaningfully be either positive (to increase the size of the file) or negative.
+                    ; SEEK_SET (2) - OFFSET is the absolute file position (an offset from the beginning of the file) desired.  OFFSET must be positive.
     Offset  .dword
 .endstruct
 
-.macro _is_file_open
-   bit fd_area + F32_fd::CurrentCluster+3, x ; is open
-   bpl :+
-   lda #EINVAL
-   sec
-   rts
-:
-.endmacro
-
 .struct F32_fd
-    CurrentCluster   .dword ;
-    FileSize         .dword ;
-    Attr             .byte  ; file attributes (mirror of attributes from dir entry)
-    DirEntryLBA      .dword; LBA of the block where the dir entry of the file is located
-    DirEntryPos      .byte;  block offset within the block (DirEntryPos * DIR_Entry_Size)
-    offset           .byte;  7Bit block number of the CurrentCluster (SecPerClus)
-;  TODO FIXME offset .word;  (2bt) 9Bit (MSB) offset within block, 7Bit (LSB) block number of the CurrentCluster
-    seek_pos         .dword ; seek position within the opened file
-;   flags            .byte; file open flags
+   StartCluster     .dword  ; start cluster of the file (mirror of dir entry)
+   CurrentCluster   .dword  ;
+   FileSize         .dword  ;
+   Attr             .byte   ; file attributes (mirror of attributes from dir entry)
+   DirEntryLBA      .dword  ; LBA of the block where the dir entry of the file is located
+   DirEntryPos      .byte   ; block offset within the block (n * DIR_Entry_Size)
+   SeekPos          .dword  ; seek position within the opened file
+                            ;    O_RDONLY  = $01
+                            ;    O_WRONLY  = $02
+                            ;    O_RDWR    = $03
+                            ;    O_CREAT    = $10
+                            ;    O_TRUNC    = $20
+                            ;    O_APPEND  = $40
+                            ;    O_EXCL    = $80
+   flags            .byte   ; file open flags
+   status           .byte   ; status - reserved (bit 7), next clnr (bit 6)
 .endstruct
+
+FD_STATUS_FILE_OPEN  = 1<<7
+FD_STATUS_DIRTY      = 1<<6
 
 FD_Entry_Size         = .sizeof(F32_fd)
 FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size
-FD_INDEX_CURRENT_DIR  = 0*FD_Entry_Size    ; current dir always go to fd #0
-FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size   ; temp dir always go to fd #1
+FD_INDEX_CURRENT_DIR  = 0*FD_Entry_Size     ; current dir always go to fd #0
+FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size     ; temp dir always go to fd #1
 
 ; TODO: do we need these?
 ;BS_BootSig      = 38
@@ -210,22 +218,36 @@ FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size   ; temp dir always go to fd #1
 FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
 ; memory locations for fat32 driver
-;
-volumeID              = $0300 ; address of VolumeID
+volumeID              = $0300 ; address of VolumeID (@see rtc.inc)
+filename_buf          = volumeID + .sizeof(VolumeID) ; (13 byte, 8.3 + \0) file name buffer
 
-cluster_begin_lba     = volumeID + .sizeof(VolumeID) ; begin of cluster area (4 byte)
-fat_lba_begin         = cluster_begin_lba + 4; (2 byte) begin of fat area - TODO FIXME we assume 16bit are sufficient since fat is placed at the beginning of the device
-fat2_lba_begin        = fat_lba_begin + 2   ; (2 byte) end of first fat and begin of 2nd fat (mirror) area - TODO FIXME we assume 16bit ...
-fat_fsinfo_lba        = fat2_lba_begin + 2; (4 byte)
-fat_tmp_dw            = fat_fsinfo_lba + 4; (4 byte) internallly used tmp
-filename_buf          = fat_tmp_dw + 4; (13 byte, 8.3 + \0) file name buffer
-fat_dirname_mask      = filename_buf + 13; (11 byte, fat32 name and ext)
-fat_vec_matcher       = fat_dirname_mask + 11; (2 byte) jump vector
-
-fd_area               = $0380 ; File descriptor area until $0400
+.assert filename_buf+13 <= fd_area, error, "fat metadata overflow!"
+fd_area               = filename_buf+13 ; File descriptor area until $0400
 fd_area_end           = $0400
 
 sd_blocksize          = $200  ; block size
-sd_blktarget          = BUFFER_0
 block_data            = BUFFER_0 ; $0400-$5ff
 block_fat             = BUFFER_2 ; $0600-$07ff
+
+; macros
+
+.macro _is_file_open
+   bit fd_area + F32_fd::status, x ; is open
+   bmi :+
+   lda #EINVAL
+   sec
+   rts
+:
+.endmacro
+
+.macro _is_file_dir
+   pha
+   lda fd_area+F32_fd::Attr, x
+   and #DIR_Attr_Mask_Dir		; is directory?
+   cmp #DIR_Attr_Mask_Dir   ; C=1 if set
+   pla
+   bcc :+
+   lda #EISDIR
+   rts
+:
+.endmacro
