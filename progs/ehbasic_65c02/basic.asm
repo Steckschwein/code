@@ -15,14 +15,12 @@
 .exportzp Itempl, Itemph
 
 .export char_out=krn_chrout
+.export read_block=krn_sd_read_block
+.export write_block=krn_sd_write_block
 
-.import gfx_mode
-.import LAB_GFX_PLOT
-.import LAB_GFX_POINT
-.import LAB_GFX_LINE
-.import LAB_GFX_CIRCLE
-.import LAB_GFX_SCNCLR
-.import LAB_GFX_SCNWAIT
+
+.autoimport
+
 
 __APPSTART__ = $b100
 appstart __APPSTART__
@@ -7627,7 +7625,27 @@ io_error:
       jmp LAB_XERR
 
 LAB_SAVE:
-      rts
+      jsr termstrparam
+      
+      ldy #O_CREAT
+      jsr krn_open
+      bcs io_error
+      stx _fd
+      
+      ; lda #<krn_write_byte
+      ; sta VEC_OUT
+      ; lda #>krn_write_byte
+      ; sta VEC_OUT+1
+
+      jsr LAB_LIST
+
+      jsr krn_close
+
+      jsr init_iovectors
+
+      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+      jmp     LAB_1319         ; cleanup and Return to BASIC
+
 
 LAB_LOAD:
       ldy #O_RDONLY
