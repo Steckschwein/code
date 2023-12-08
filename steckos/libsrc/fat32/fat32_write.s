@@ -440,7 +440,7 @@ __fat_write_block_data:
 .ifdef FAT_DUMP_FAT_WRITE
     debugdump "fat_wb dmp", block_fat
 .endif
-:    lda write_blkptr
+:   lda write_blkptr
     pha
     lda write_blkptr+1
     pha
