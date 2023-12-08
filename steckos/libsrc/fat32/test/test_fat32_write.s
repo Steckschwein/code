@@ -306,6 +306,8 @@ debug_enabled=1
 
 
 ; -------------------
+    brk ;TODO write chain
+
     setup "fat_write_byte 2049 byte 4s/cl";
     ldy #O_RDWR
     lda #<test_file_name_2cl
@@ -319,7 +321,7 @@ debug_enabled=1
     assertDirEntry block_root_cl+$80
       fat32_dir_entry_file "TST_02CL", "TST", 0, 0 ; no cluster reserved yet
 
-    ldy #0
+    ldy #0  ; write 2048 byte
 :   tya
     jsr fat_write_byte
     jsr fat_write_byte
@@ -372,7 +374,6 @@ debug_enabled=1
 
 ; -------------------
 single_test:
-    brk ;TODO
     setup "fat_write seek 2048+512 4s/cl";
 
     ldy #O_RDWR
@@ -477,7 +478,7 @@ mock_read_block:
     load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), block_data_01, @ok
     load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), block_data_02, @ok
     load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), block_data_03, @ok
-    ; 2nd cluster
+    ; 2nd cluster blocks
     load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL2)+0), block_data_10, @ok
     load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL2)+1), block_data_11, @ok
     load_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL2)+2), block_data_12, @ok
@@ -504,17 +505,12 @@ mock_write_block:
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), block_data_01, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), block_data_02, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), block_data_03, @ok
-    ; 2nd cluster
+    ; 2nd cluster blocks
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL2)+0), block_data_10, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL2)+1), block_data_11, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL2)+2), block_data_12, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL2)+3), block_data_13, @ok
-;    cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_write
-;    cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), @dummy_write
-;    cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), @dummy_write
-;    cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), @dummy_write
-;    cmp32_eq lba_addr, FAT_LBA, @dummy_write
-;    cmp32_eq lba_addr, FAT2_LBA, @dummy_write
+
     store_block_if (FAT_LBA+(TEST_FILE_CL>>7)), block_fat_0, @ok
     store_block_if (FAT2_LBA+(TEST_FILE_CL>>7)), block_fat2_0, @ok
 
@@ -539,7 +535,7 @@ setUp:
   jsr __fat_init_fdarea
   init_volume_id SEC_PER_CL
 
-  ; fill fat block_fat
+  ; fill fat block
   m_memset block_fat_0+$000, $ff, $80  ; simulate reserved
   m_memset block_fat_0+$080, $ff, $80
   m_memset block_fat_0+$100, $ff, $80

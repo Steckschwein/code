@@ -66,7 +66,7 @@ fat_write_byte:
     bcs @l_exit
 
     lda __volatile_tmp                  ; get back byte to write
-    debug "fwr bt"
+    debug "f_wr byte"
     sta (__volatile_ptr)
 
     _inc32_x fd_area+F32_fd::SeekPos    ; seek+1
