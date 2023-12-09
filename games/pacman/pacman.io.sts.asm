@@ -43,7 +43,7 @@ io_joystick_read:
 		  lda joystick_port
 		  jmp joystick_read
 
-io_getkey=getkey
+io_getkey=krn_getkey
 
 io_player_direction:
 		beq @joystick

@@ -59,7 +59,7 @@ PAL_COLOR = 0;
 	bpl :-
 	and #$7f
 	sta script_state
-	jsr getkey
+	jsr krn_getkey
 	cmp #KEY_ESCAPE
 	bne :-
 

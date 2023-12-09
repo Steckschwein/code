@@ -312,7 +312,7 @@ detect_collision:
     jsr get_joy_status
     and #JOY_FIRE    ;if fire is pressed set bit
     beq :+
-    jsr getkey
+    jsr krn_getkey
     cmp #$20   ; space ?
     bne :++
 :   lda #STATUS_JOY_PRESSED | STATUS_GAME_OVER
