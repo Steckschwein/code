@@ -597,20 +597,19 @@ __fat_find_free_cluster:
     cmp32 volumeID+VolumeID::lba_fat2, lba_addr, @next_block ; end of fat reached?
     lda #ENOSPC        ; yes, answer ENOSPC () - "No space left on device"
 @l_exit_err:
-    debug32 "free_cl", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster ; almost the 3rd entry
     rts
 @l_found_hb: ; found in "high" block (2nd page of the sd_blocksize)
     lda #>(block_fat+$100)  ; set read_blkptr to begin 2nd page of fat_buffer - @see __fat_mark_free_cluster
     sta read_blkptr+1
     lda #$40          ; adjust clnr with +$40 (256 / 4 byte/clnr) clusters since it was found in 2nd page
 @l_found_lb:          ; A=0 here if called from branch above
+    debug "fat find cl"
     sta fd_area+F32_fd::CurrentCluster+0, x
     tya
     lsr            ; offset Y>>2 (div 4) - 32 bit clnr
     lsr
     adc fd_area+F32_fd::CurrentCluster+0, x  ; C=0 here always, y is multiple of 4
     sta fd_area+F32_fd::CurrentCluster+0, x  ; safe clnr
-    debug32 "fat_fcc_cl", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster ; hart debug 3rd fd entry
 
     ; calc the cluster number with clnr = (block number * 512) / 4 + (Y / 4) => (lba_addr - volumeID+VolumeID::lba_fat) << 7+(Y>>2)
     ; to avoid the <<7, we simply <<8 and do one ror - FTW!
@@ -632,6 +631,7 @@ __fat_find_free_cluster:
     lda #0          ; exit found
     sta fd_area+F32_fd::CurrentCluster+3, x
     clc ; found, C=0 success
+    debug32 "fat find cl <", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster ; hart debug 3rd fd entry
     rts
 
 ; unlink a file denoted by given path in A/X

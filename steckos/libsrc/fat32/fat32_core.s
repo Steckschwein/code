@@ -295,7 +295,7 @@ __fat_prepare_block_access:
     bne @l_read                               ; if block is not at the beginning of a cluster just read the block
     jsr __fat_next_cln                        ; otherwise select next cluster
     debug "fp ba <"
-    bcs @l_exit                                ; exit on error or EOC (C=1)
+    bcs @l_exit                               ; exit on error or EOC (C=1)
 
 @l_read:
     jsr __calc_lba_addr
