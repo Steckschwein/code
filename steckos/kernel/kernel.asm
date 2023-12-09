@@ -31,7 +31,8 @@
 
 .export read_block=sd_read_block
 .export write_block=sd_write_block
-.export char_out=ansi_chrout         ; account for page crossing
+; .export char_out=ansi_chrout         ; account for page crossing
+.export char_out=uart_tx
 
 .export crc16_lo=BUFFER_0
 .export crc16_hi=BUFFER_1
@@ -39,23 +40,30 @@
 .export xmodem_rcvbuffer=BUFFER_2
 .export xmodem_startaddress=startaddr
 
-.export debug_chrout=textui_chrout         ; account for page crossing
+.export debug_chrout=chrout         ; account for page crossing
 
 .export do_upload
+.export getkey
+.export chrout
 
 nvram = $1000
 
 kern_init:
-    ; copy trampolin code for ml monitor entry to ram
-    ldx #$00
-@copy:
-    lda trampolin_code,x
-    sta trampolin,x
-    inx
-    cpx #(trampolin_code_end - trampolin_code)
-    bne @copy
+;     ; copy trampolin code for ml monitor entry to ram
+;     ldx #$00
+; @copy:
+;     lda trampolin_code,x
+;     sta trampolin,x
+;     inx
+;     cpx #(trampolin_code_end - trampolin_code)
+;     bne @copy
 
     SetVector user_isr_default, user_isr
+
+    SetVector uart_getkey, getkey_vec
+    SetVector uart_tx, chrout_vec
+
+
     jsr textui_init0
 
     jsr init_via1
@@ -74,6 +82,8 @@ kern_init:
     sta slot2
 
     stz ansi_state
+
+
 
 ;    jsr rtc_irq0
 
@@ -261,7 +271,13 @@ trampolin_code:
   ;jmp $f000
 trampolin_code_end:
 
+getkey:
+    jmp (getkey_vec)
+chrout:
+    jmp (chrout_vec)
 
+getkey_vec: .word 0
+chrout_vec: .word 0
 .segment "VECTORS"
 ; $FFF8/$FFF9 RETVEC
 .word 0
