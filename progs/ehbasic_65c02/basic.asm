@@ -7624,30 +7624,41 @@ io_error:
       ldx #$24 ; "Generate "File not found error"
       jmp LAB_XERR
 
+; we need to wrap krn_write_byte in order to get the file descriptor
+; into X first
+fwrite_wrapper:
+      save
+
+      ldx _fd
+      jsr krn_write_byte
+
+      restore
+      rts 
+
 LAB_SAVE:
-      phx
-      pha
       jsr termstrparam
       ldy #O_CREAT
       jsr krn_open
       bcs io_error
       stx _fd
 
-    ; lda #<krn_write_byte
-    ; sta VEC_OUT
-    ; lda #>krn_write_byte
-    ; sta VEC_OUT+1
-    ; jsr krn_close
-      pla
-      plx
-      ;jsr LAB_LIST
-      jsr LAB_14BD
-      rts
+      ; set output vector to filesystem wrapper
+      lda #<fwrite_wrapper
+      sta VEC_OUT
+      lda #>fwrite_wrapper
+      sta VEC_OUT+1
 
-      ; jsr init_iovectors
+      ; list program
+      sec ; set carry to make LIST do anything
+      jsr LAB_14BD ; jump into LIST routine
 
-      ; SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-      ; jmp     LAB_1319         ; cleanup and Return to BASIC
+      ldx _fd
+      jsr krn_close
+
+      jsr init_iovectors
+
+      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+      jmp     LAB_1319         ; cleanup and Return to BASIC
 
 
 LAB_LOAD:
