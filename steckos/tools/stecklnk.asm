@@ -63,7 +63,7 @@ appstart $1000
       jmp (retvec)
 
 :     jsr primm
-      .byte "OK", KEY_LF
+      .byte "OK", KEY_LF, 0
 
       jsr primm
       .asciiz "SD Image "
@@ -82,6 +82,7 @@ handle_block:
       ldy crs_x ; save crs x
       phy
       pha
+
 @copy:
       lda xmodem_rcvbuffer,x
       sta (p_tgt)
@@ -102,6 +103,11 @@ handle_block:
       lda #4
       sta bcnt
 
+      SetVector sd_block, write_blkptr
+;      jsr sd_write_block
+      _inc32 lba_addr
+@l_exit:
+
       pla
       lda lba_addr+3
       jsr hexout_s
@@ -113,13 +119,6 @@ handle_block:
       jsr hexout
       pla
       sta crs_x
-
-      SetVector sd_block, write_blkptr
-      jsr sd_write_block
-
-      _inc32 lba_addr
-
-@l_exit:
       rts
 
 .bss
