@@ -19,9 +19,8 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.setcpu "65c02"
 
-prompt  = $af
+prompt  = '>'
 
 .include "zeropage.inc"
 .include "kernel_jumptable.inc"
@@ -58,15 +57,15 @@ appstart __SHELL_START__
 .code
 init:
         jsr primm
-        ;.byte 27,"[2J "
+        ; .byte 27,"[2J "
 
-        ;.byte 27,"[3B" ; move cursor down 3 lines
+        ; .byte 27,"[3B" ; move cursor down 3 lines
 
         .byte "steckOS shell  "
-    ;    .byte 27,"[5D" ; move cursor left 5 pos
+;        .byte 27,"[5D" ; move cursor left 5 pos
 
         .include "version.inc"
-        .byte CODE_LF,0
+        .byte CODE_CR, CODE_LF,0
 exit_from_prg:
         cld
         jsr  krn_textui_init
@@ -81,8 +80,9 @@ exit_from_prg:
         SetVector buf, paramptr ; set param to empty buffer
         SetVector PATH, pathptr
 mainloop:
+
         jsr primm
-        .byte CODE_LF, '[', 0
+        .byte CODE_CR, CODE_LF, '[', 0
         ; output current path
         lda #<cwdbuf
         ldx #>cwdbuf
@@ -123,6 +123,11 @@ inputloop:
 
         cmp #KEY_BACKSPACE
         beq backspace
+        
+        cmp #KEY_DEL
+        beq backspace
+
+
 
         cmp #KEY_ESCAPE
         beq escape
@@ -149,6 +154,8 @@ line_end:
         bra inputloop
 
 backspace:
+        lda #KEY_BACKSPACE
+        jsr char_out
         cpy #$00
         beq inputloop
         dey
