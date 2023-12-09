@@ -17,7 +17,7 @@ appstart $1000
 		ldx #>buffer
 		;TODO FIXME use a/x instead of zp location msgptr
 		jsr strout
-    
+
 @l2:
     jmp (retvec)
 

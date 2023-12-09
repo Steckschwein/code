@@ -163,22 +163,39 @@ SPRITE_OFF=$d0   ; in 192 line mode +8 ($d8) in 212 line mode
 
 SPRITE_EC=1<<7  ;early clock bit
 
-Transparent     =$00
-Black           =$01  ;0  0  0    "black"
-Medium_Green    =$02 ;35  203  50    "23
-Light_Green     =$03  ;96  221  108
-Dark_Blue       =$04 ;84  78  255    "544EFF"
-Light_Blue      =$05 ;125 112 255  "7D70FF"
-Dark_Red        =$06 ;210 84  66    "D25442"
-Cyan            =$07 ;69 232  255    (Aqua Blue)
-Medium_Red      =$08 ;250 89  72     "FA5948"
-Light_Red       =$09 ;255 124 108  "FF7C6C"
-Dark_Yellow     =$0a ;211 198 60    "D3C63C"
-Light_Yellow    =$0b ;229 210 109  "E5D26D"
-Dark_Green      =$0c ;35 178  44
-Magenta         =$0d ;200 90  198   "C85AC6" (Purple)
-Gray            =$0e ;204 204 204  "CCCCCC"
-White           =$0f ;255 255 255  "white"
+Transparent	    =$00
+Black	          =$01	;0	0	0		"black"
+Medium_Green	  =$02 ;35	203	50		"23
+Light_Green	    =$03	;96	221	108
+Dark_Blue       =$04 ;84	78	255		"544EFF"
+Light_Blue      =$05 ;125 112 255	"7D70FF"
+Dark_Red        =$06 ;210 84	66		"D25442"
+Cyan            =$07 ;69 232	255		(Aqua Blue)
+Medium_Red	    =$08 ;250 89	72 		"FA5948"
+Light_Red       =$09 ;255 124 108	"FF7C6C"
+Dark_Yellow     =$0a ;211 198 60		"D3C63C"
+Light_Yellow    =$0b ;229 210 109	"E5D26D"
+Dark_Green      =$0c ;35 178	44
+Magenta		      =$0d ;200 90	198 	"C85AC6" (Purple)
+Gray            =$0e ;204 204 204	"CCCCCC"
+White           =$0f ;255 255 255	"white"
+
+GFX7_Black        =$00
+GFX7_Blue         =$01
+GFX7_Red          =$02
+GFX7_Magenta      =$03
+GFX7_Green        =$04
+GFX7_Cyan         =$05
+GFX7_Yellow       =$06
+GFX7_Gray         =$07
+GFX7_Orange       =$08
+GFX7_LightBlue    =$09
+GFX7_LightRed     =$0a
+GFX7_LightMagenta =$0b
+GFX7_LightGreen   =$0c
+GFX7_LightCyan    =$0d
+GFX7_LightYellow  =$0e
+GFX7_White        =$0f
 
 WRITE_ADDRESS=$40
 
@@ -206,22 +223,22 @@ ADDRESS_GFX_MC_PATTERN        = $0000  ; pattern table
 ADDRESS_GFX_MC_SPRITE         = ADDRESS_GFX_SPRITE    ; sprite attributes
 ADDRESS_GFX_MC_SPRITE_PATTERN = ADDRESS_GFX_SPRITE_PATTERN  ; sprite pattern
 
-ADDRESS_GFX3_SCREEN           = ADDRESS_GFX2_SCREEN
-ADDRESS_GFX3_PATTERN          = ADDRESS_GFX2_PATTERN
-ADDRESS_GFX3_COLOR            = ADDRESS_GFX2_COLOR
-ADDRESS_GFX3_SPRITE_PATTERN   = ADDRESS_GFX2_SPRITE_PATTERN
-ADDRESS_GFX3_SPRITE           = ADDRESS_GFX_SPRITE
-ADDRESS_GFX3_SPRITE_COLOR     = ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
+ADDRESS_GFX3_SCREEN	        =		 ADDRESS_GFX2_SCREEN
+ADDRESS_GFX3_PATTERN        =		 ADDRESS_GFX2_PATTERN
+ADDRESS_GFX3_COLOR	        =		 ADDRESS_GFX2_COLOR
+ADDRESS_GFX3_SPRITE_PATTERN = ADDRESS_GFX2_SPRITE_PATTERN
+ADDRESS_GFX3_SPRITE			    = ADDRESS_GFX_SPRITE
+ADDRESS_GFX3_SPRITE_COLOR	  = ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
 
-ADDRESS_GFX6_SCREEN           = $10000 ; screen
-ADDRESS_GFX6_SPRITE_PATTERN   = $0f000    ;
-ADDRESS_GFX6_SPRITE           = $0fa00    ;
-ADDRESS_GFX6_SPRITE_COLOR     = ADDRESS_GFX6_SPRITE-$0200
+ADDRESS_GFX6_SCREEN			      = $10000 ; screen
+ADDRESS_GFX6_SPRITE_PATTERN   = $f000	  ;
+ADDRESS_GFX6_SPRITE			      = $fa00	  ;
+ADDRESS_GFX6_SPRITE_COLOR	    = ADDRESS_GFX6_SPRITE-$0200
 
-ADDRESS_GFX7_SCREEN           = $10000              ; 64k RAM, 2nd page
-ADDRESS_GFX7_SPRITE_PATTERN   = $0fa00  ; sprite pattern table
-ADDRESS_GFX7_SPRITE           = $fa00   ; attribute table address
-ADDRESS_GFX7_SPRITE_COLOR     = $f800   ; color table address
+ADDRESS_GFX7_SCREEN			      = $10000	; 64k RAM, 2nd page
+ADDRESS_GFX7_SPRITE_PATTERN   = $f000   ; sprite pattern table
+ADDRESS_GFX7_SPRITE           = $fa00   ; sprite attribute table address
+ADDRESS_GFX7_SPRITE_COLOR     = ADDRESS_GFX7_SPRITE-$0200  ; sprite color table address (“strictly below the sprite attribute table -$200)
 
 ; long delay with 6+2 = 8µs wait
 MAX_NOPS_8M = 6 * clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
@@ -231,7 +248,7 @@ MAX_NOPS_2M = (2 * clockspeed - 12) / 2; -12 => jsr/rts = 2*6cl = 12cl to substr
 ;.define MAX_NOPS_2M 2 * clockspeed
 
 ;.macro MAX_NOPS_2M
-;  (2 * clockspeed - 12) / 2; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
+;	(2 * clockspeed - 12) / 2; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
 ;.endmacro
 
 .macro m_vdp_nopslide

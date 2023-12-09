@@ -50,7 +50,7 @@ vdp_memcpy:
 		dex				 ;2
 		bne @l1			;3
 		rts
-		
+
 ;	input:
 ;  	.X	 - amount of bytes to copy
 ;	.A/.Y - pointer to data
@@ -65,4 +65,3 @@ vdp_memcpys:
 		dex				 ;2
 		bne	@0				 ;3
 		rts
-		
