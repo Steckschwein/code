@@ -353,6 +353,8 @@
 .endmacro
 
 .macro crlf
+  lda #CODE_CR
+  jsr char_out
   lda #CODE_LF		;\n already does the carriage return
   jsr char_out
 .endmacro
