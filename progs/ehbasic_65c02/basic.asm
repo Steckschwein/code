@@ -7627,25 +7627,21 @@ io_error:
 LAB_SAVE:
       phx
       pha
-      ; jsr termstrparam
-      pla 
-      plx 
-      ; ldy #O_CREAT
-      ; jsr krn_open
-      ; bcs io_error
-      ; stx _fd
-      
-      ; lda #<krn_write_byte
-      ; sta VEC_OUT
-      ; lda #>krn_write_byte
-      ; sta VEC_OUT+1
-      ; jsr krn_close
+      jsr termstrparam
+      ldy #O_CREAT
+      jsr krn_open
+      bcs io_error
+      stx _fd
 
-      ; lda #0
-      ; ldx #0
-      ; ldy #0
-      jsr LAB_LIST
-      ; LAB_14BD
+    ; lda #<krn_write_byte
+    ; sta VEC_OUT
+    ; lda #>krn_write_byte
+    ; sta VEC_OUT+1
+    ; jsr krn_close
+      pla
+      plx
+      ;jsr LAB_LIST
+      jsr LAB_14BD
       rts
 
       ; jsr init_iovectors
