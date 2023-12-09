@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "system.inc"
+.include "common.inc"
 
 .importzp __volatile_ptr, __volatile_tmp
 .autoimport
