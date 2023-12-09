@@ -22,15 +22,16 @@
 
 .include "xmodem.inc"
 .include "steckos.inc"
+.include "fcntl.inc"
 
 .autoimport
 
 .export char_out=krn_chrout
 
-.export crc16_hi = BUFFER_0
-.export crc16_lo = BUFFER_1
+.export crc16_hi = crc16_h
+.export crc16_lo = crc16_l
 .export crc16_init = crc16_table_init
-.export xmodem_rcvbuffer = sd_block
+.export xmodem_rcvbuffer = xmbuffer
 
 .zeropage
 ptr1:   .res 2
@@ -39,44 +40,36 @@ p_tgt:  .res 2
 
 appstart $1000
 
-      lda #<sd_block
-      sta p_tgt
-      lda #>sd_block
-      sta p_tgt+1
-      lda #4
-      sta bcnt
 
-      stz lba_addr+0
-      stz lba_addr+1
-      stz lba_addr+2
-      stz lba_addr+3
+    	lda paramptr
+    	ldx paramptr+1
+      ldy #O_CREAT
+      jsr krn_open
+      bcs @l_exit_err
+      stx fd
 
       jsr primm
-      .asciiz "SD Init ... "
-      jsr sdcard_init
-      beq :+
+      .byte KEY_LF, "Stecklink ", 0
+
+      lda #<handle_block
+      ldx #>handle_block
+      jsr xmodem_upload_callback
+
+      ldx fd
+      jsr krn_close
+
+@l_exit:
+      jmp (retvec)
+
+@l_exit_err:
       pha
       jsr primm
       .asciiz "Error "
       pla
       jsr hexout_s
-      jmp (retvec)
+      bra @l_exit
 
-:     jsr primm
-      .byte "OK", KEY_LF, 0
 
-      jsr primm
-      .asciiz "SD Image "
-
-;      sei
-      lda #<handle_block
-      ldx #>handle_block
-      jsr xmodem_upload_callback
-
-      jsr primm
-      .asciiz " OK. Reset..."
-
-      jmp (SYS_VECTOR_RESET)  ; reset
 
 handle_block:
       ldy crs_x ; save crs x
@@ -85,42 +78,24 @@ handle_block:
 
 @copy:
       lda xmodem_rcvbuffer,x
-      sta (p_tgt)
-      inc p_tgt
-      bne :+
-      inc p_tgt+1
-:     inx
+      phx
+      ldx fd
+      jsr krn_write_byte
+      plx
+      bcs @l_exit
+      inx
       cpx #XMODEM_DATA_END
       bne @copy
 
-      dec bcnt
-      bne @l_exit
-
-      lda #<sd_block
-      sta p_tgt
-      lda #>sd_block
-      sta p_tgt+1
-      lda #4
-      sta bcnt
-
-      SetVector sd_block, write_blkptr
-;      jsr sd_write_block
-      _inc32 lba_addr
 @l_exit:
 
       pla
-      lda lba_addr+3
-      jsr hexout_s
-      lda lba_addr+2
-      jsr hexout
-      lda lba_addr+1
-      jsr hexout
-      lda lba_addr+0
-      jsr hexout
       pla
       sta crs_x
       rts
 
 .bss
-  bcnt: .res 1
-  sd_block: .res 512
+  fd: .res 1
+  crc16_l: .res 256
+  crc16_h: .res 256
+  xmbuffer: .res XMODEM_RECV_BUFFER
