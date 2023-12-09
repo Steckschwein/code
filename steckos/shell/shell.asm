@@ -29,10 +29,11 @@ prompt  = $af
 .include "common.inc"
 .include "keyboard.inc"
 .include "rtc.inc"
+.include "debug.inc"
 .include "appstart.inc"
 
 ; SCREENSAVER_TIMEOUT_MINUTES=2
-BUF_SIZE		= 80 ;TODO maybe too small?
+BUF_SIZE    = 80 ;TODO maybe too small?
 
 
 ;---------------------------------------------------------------------------------------------------------
@@ -42,10 +43,7 @@ BUF_SIZE		= 80 ;TODO maybe too small?
 
 .export char_out=krn_chrout
 
-.import hexout
-.import strout
-.import primm
-.import kernel_start
+.autoimport
 
 .zeropage
 bufptr:         .res 2
@@ -53,19 +51,25 @@ pathptr:        .res 2
 p_history:      .res 2
 tmp1:   .res 1
 tmp2:   .res 1
-;ptr1:   .res 2
 
-appstart $e200
-.export __APP_SIZE__=kernel_start-__APP_START__ ; adjust __APP_SIZE__ for linker accordingly
+
+appstart __SHELL_START__
+.export __APP_SIZE__=kernel_start-__SHELL_START__ ; adjust __APP_SIZE__ for linker accordingly
 .code
 init:
         jsr primm
+        ;.byte 27,"[2J "
+
+        ;.byte 27,"[3B" ; move cursor down 3 lines
+
         .byte "steckOS shell  "
+    ;    .byte 27,"[5D" ; move cursor left 5 pos
+
         .include "version.inc"
         .byte CODE_LF,0
 exit_from_prg:
         cld
-        jsr	krn_textui_init
+        jsr  krn_textui_init
 
         ldx #BUF_SIZE
 :       stz tmpbuf,x
@@ -105,7 +109,7 @@ mainloop:
         ldy #0
         jsr terminate
 
-	; put input into buffer until return is pressed
+  ; put input into buffer until return is pressed
 inputloop:
         ; jsr screensaver_settimeout  ;reset timeout
 @l_input:
@@ -178,7 +182,7 @@ parse:
 
         ; find begin of command word
 @l1:
-        lda (cmdptr)	; skip non alphanumeric stuff
+        lda (cmdptr)  ; skip non alphanumeric stuff
         bne @l2
         jmp mainloop
 @l2:
@@ -199,7 +203,7 @@ parse:
         inc paramptr
         bra @l4
 @l5:
-	; space found.. fast forward until non space or null
+  ; space found.. fast forward until non space or null
 @l6:
         lda (paramptr)
         beq @l7
@@ -213,10 +217,10 @@ parse:
         jsr terminate
 
 compare:
-        ; compare
+      ; compare
         ldx #$00
-@l1:	ldy #$00
-@l2:	lda (cmdptr),y
+@l1:    ldy #$00
+@l2:  lda (cmdptr),y
 
         ; if not, there is a terminating null
         bne @l3
@@ -238,7 +242,7 @@ compare:
         ora #$20
 
         cmp cmdlist,x
-        bne @l5	; difference. this isnt the command were looking for
+        bne @l5  ; difference. this isnt the command were looking for
 
         iny
         inx
@@ -247,17 +251,17 @@ compare:
 
       ; next cmdlist entry
 @l5:
-	inx
-	lda cmdlist,x
-	bne @l5
         inx
-	inx
-	inx
+        lda cmdlist,x
+        bne @l5
+        inx
+        inx
+        inx
 
-	lda cmdlist,x
-	cmp #$ff
-	beq try_exec
-	bra @l1
+        lda cmdlist,x
+        cmp #$ff
+        beq try_exec
+        bra @l1
 
 cmdfound:
         crlf
@@ -271,7 +275,7 @@ try_exec:
         crlf
         jmp exec
 
-@l1:	jmp mainloop
+@l1:  jmp mainloop
 
 ; history_frwd:
 ;         lda p_history
@@ -360,13 +364,13 @@ printbuf:
         jsr krn_textui_update_crs_ptr
 
         ldy #$00
-@l1:	lda (bufptr),y
+@l1:  lda (bufptr),y
         beq @l2
         sta buf,y
         jsr char_out
         iny
         bra @l1
-@l2:	rts
+@l2:  rts
 
 
 cmdlist:
@@ -378,48 +382,48 @@ cmdlist:
 
 .ifdef DEBUG
         .byte "dump",0
-	.word dump
+  .word dump
 .endif
-	; End of list
-	.byte $ff
+  ; End of list
+  .byte $ff
 
 .ifdef DEBUG
 
 atoi:
-	cmp #'9'+1
-	bcc @l1 	; 0-9?
-	; must be hex digit
-	adc #$08
-	and #$0f
-	rts
+  cmp #'9'+1
+  bcc @l1   ; 0-9?
+  ; must be hex digit
+  adc #$08
+  and #$0f
+  rts
 
-@l1:	sec
-	sbc #$30
-	rts
+@l1:  sec
+  sbc #$30
+  rts
 .endif
 
 
 errmsg:
-	;TODO FIXME maybe use oserror() from cc65 lib
-	cmp #$f1
-	bne @l1
+  ;TODO FIXME maybe use oserror() from cc65 lib
+  cmp #$f1
+  bne @l1
 
-	jsr primm
-	.byte CODE_LF,"invalid command",CODE_LF,$00
-	jmp mainloop
+  jsr primm
+  .byte CODE_LF,"invalid command",CODE_LF,$00
+  jmp mainloop
 
 @l1:
-        cmp #$f2
-	bne @l2
+  cmp #$f2
+  bne @l2
 
-	jsr primm
-	.byte CODE_LF,"invalid directory",CODE_LF,$00
-	jmp mainloop
+  jsr primm
+  .byte CODE_LF,"invalid directory",CODE_LF,$00
+  jmp mainloop
 
 @l2:
-	jsr primm
-	.byte CODE_LF,"unknown error",CODE_LF,$00
-	jmp mainloop
+  jsr primm
+  .byte CODE_LF,"unknown error",CODE_LF,$00
+  jmp mainloop
 
 mode_toggle:
         lda video_mode
@@ -437,79 +441,79 @@ cd:
         jmp mainloop
 
 exec:
-	lda cmdptr
-	ldx cmdptr+1    ; cmdline in a/x
-	jsr krn_execv   ; return A with errorcode
-	bne @l1         ; error? try different path
-	jmp mainloop
+        lda cmdptr
+        ldx cmdptr+1    ; cmdline in a/x
+        jsr krn_execv   ; return A with errorcode
+        bcs @l1         ; error? try different path
+        jmp mainloop
 
 @l1:
-	stz tmp2
+  stz tmp2
 @try_path:
-	ldx #0
-	ldy tmp2
+  ldx #0
+  ldy tmp2
 @cp_path:
         lda (pathptr), y
-	beq @check_path
-	cmp #':'
-	beq @cp_next
-	sta tmpbuf,x
-	inx
-	iny
-	bne @cp_path
-	lda #$f0
-	jmp errmsg
+  beq @check_path
+  cmp #':'
+  beq @cp_next
+  sta tmpbuf,x
+  inx
+  iny
+  bne @cp_path
+  lda #$f0
+  jmp errmsg
 @check_path:    ;PATH end reached and nothing to prefix
-	cpy tmp2
-	bne @cp_next_piece  ;end of path, no iny
-	lda #$f1        ;nothing found, "Invalid command"
-	jmp errmsg
+  cpy tmp2
+  bne @cp_next_piece  ;end of path, no iny
+  lda #$f1        ;nothing found, "Invalid command"
+  jmp errmsg
 @cp_next:
-	iny
+  iny
 @cp_next_piece:
-	sty tmp2        ;safe PATH offset, 4 next try
-	stz	tmp1
-	ldy #0
+  sty tmp2        ;safe PATH offset, 4 next try
+  stz  tmp1
+  ldy #0
 @cp_loop:
-	lda (cmdptr),y
-	beq @l3
-	cmp #'.'
-	bne	@cp_loop_1
-	stx	tmp1
+  lda (cmdptr),y
+  beq @l3
+  cmp #'.'
+  bne  @cp_loop_1
+  stx  tmp1
 @cp_loop_1:
-	cmp #' '		;end of program name?
-	beq @l3
-	sta tmpbuf,x
-	iny
-	inx
-	bne @cp_loop
+  cmp #' '    ;end of program name?
+  beq @l3
+  sta tmpbuf,x
+  iny
+  inx
+  bne @cp_loop
 @l3:
         lda tmp1
-        bne	@l4
+        bne  @l4
         ldy #0
 @l5:
-        lda	PRGEXT,y
+        lda  PRGEXT,y
         beq @l4
         sta tmpbuf,x
         inx
         iny
-        bne	@l5
+        bne  @l5
 @l4:
         stz tmpbuf,x
 
         lda #<tmpbuf
         ldx #>tmpbuf    ; cmdline in a/x
         jsr krn_execv   ; return A with errorcode
-        bne @try_path
+        bcs @try_path
         lda #$fe
         jmp errmsg
 
 
 .ifdef DEBUG
 .import hexout
-dumpvec		= $c0
-dumpvec_end   	= dumpvec
-dumpvec_start 	= dumpvec+2
+dumpvec    = $c0
+dumpvec_end     = dumpvec
+dumpvec_start   = dumpvec+2
 
 dump:
         stz dumpvec+1
@@ -543,7 +547,7 @@ dump:
         iny
         bra @l1
 
-@l2:	cpy #$00
+@l2:  cpy #$00
         bne @l3
 
         printstring "parameter error"
@@ -574,11 +578,11 @@ dump:
         jsr char_out
 
         ldy #$00
-@l5:	lda (dumpvec_start),y
+@l5:  lda (dumpvec_start),y
         cmp #$19
         bcs @l6
         lda #'.'
-@l6:	jsr char_out
+@l6:  jsr char_out
         iny
         cpy #$08
         bne @l5
@@ -605,7 +609,7 @@ dump:
         sta dumpvec_start+1
         bra @l3
 
-@l8:	jmp mainloop
+@l8:  jmp mainloop
 .endif
 
 ; screensaver_loop:

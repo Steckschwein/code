@@ -1,23 +1,6 @@
 .include "bios.inc"
 
-.import uart_init
-.import xmodem_upload,crc16_table_init
-.import init_via1
-.import hexout, hexout_s
-.import primm
-.import vdp_init, vdp_detect, vdp_charout
-.import vdp_bgcolor
-.import sdcard_init
-.import sdcard_detect
-.import fat_mount
-.import fat_fopen, fat_fread_byte, fat_close
-.import read_nvram
-.import sd_read_block, sd_write_block
-.import spi_select_device
-.import spi_deselect
-.import spi_rw_byte
-.import spi_r_byte
-.import fetchkey
+.autoimport
 
 .export read_block=sd_read_block
 .export char_out=vdp_charout
@@ -34,13 +17,13 @@
       ptr1:       .res 2
       ptr2:       .res 2
       init_step:  .res 1
+      startaddr:  .res 2
 .code
 
-startaddr=$0380
-
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
-.export __fat_write_dir_entry=fat_write_dir_entry
-fat_write_dir_entry:
+.export write_block
+write_block:
+      clc
       rts
 
 memcheck:
@@ -262,7 +245,7 @@ zp_stack_ok:
 boot_from_card:
       print "Boot from SD card... "
       jsr fat_mount
-      beq @findfile
+      bcc @findfile
       pha
       print "mount error ("
       pla
@@ -281,7 +264,7 @@ boot_from_card:
       ldx #>nvram
       ldy #O_RDONLY
       jsr fat_fopen          ; A/X - pointer to filename
-      beq @loadfile
+      bcc @loadfile
 @loop_end:
       println " not found."
       bra do_upload
@@ -306,9 +289,10 @@ boot_from_card:
       inc ptr1+1
       bne @l
 @l_is_eof:
-      cmp #0
-      bne @l
+      pha
       jsr fat_close    ; close after read to free fd, regardless of error
+      pla
+      cmp #EOK
       beq load_ok
 load_error:
       jsr hexout_s

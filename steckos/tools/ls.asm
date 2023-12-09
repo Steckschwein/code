@@ -20,21 +20,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
+
+.include "steckos.inc"
 .include "fat32.inc"
-.include "appstart.inc"
 
-.import hexout
-.import primm
-.import print_filename
-
+.autoimport 
 .export char_out=krn_chrout
-.zeropage
-tmp1: .res 1
-tmp2: .res 1
-tmp3: .res 2
 
 appstart $1000
 
@@ -53,11 +44,12 @@ l1:
     bcs @l4
     jsr hexout
     printstring " i/o error"
-    bra @exit
+    jmp @exit
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcc @exit
+    bcs @l4 
+    jmp @exit
 @l4:
     lda (dirptr)
     cmp #$e5
@@ -73,10 +65,46 @@ l1:
     dec cnt
     bne @l1
     crlf
-    lda #$03
+    lda #5
     sta cnt
 @l1:
-    jsr print_filename
+    ldy #F32DirEntry::Attr
+	lda (dirptr),y
+
+ 	bit #DIR_Attr_Mask_Dir
+	beq :+
+    lda #'['
+    jsr char_out
+    bra @print
+:
+    lda #' '
+    jsr char_out
+
+@print:
+  
+	ldy #F32DirEntry::Name
+:
+	lda (dirptr),y
+    jsr char_out
+    iny
+    cpy #$0b
+    bne :-
+
+    ldy #F32DirEntry::Attr
+	lda (dirptr),y
+
+	bit #DIR_Attr_Mask_Dir
+	beq :+
+    lda #']'
+    jsr char_out
+    bra @pad
+:
+
+    lda #' '
+    jsr krn_chrout
+@pad:
+    lda #' '
+    jsr krn_chrout
     lda #' '
     jsr krn_chrout
 
@@ -99,15 +127,15 @@ l1:
 @l:
     bit flags
     bmi @exit
-    bra @l3
+    jmp @l3
 
 @exit:
     jmp (retvec)
 
 
 pattern:  .byte "*.*",$00
-cnt:      .byte $04
-entries = 23
+cnt:      .byte 6
+entries = 5*24
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries

@@ -168,32 +168,32 @@ vdp_set_addr:        ; set the vdp vram adress, write A to vram
 
 .ifdef CHAR6x8
 vdp_set_addr:      ; set the vdp vram adress, write A to vram
-      stz crs_ptr+1
+      stz vdp_ptr+1
       lda crs_y
       asl
       asl
       asl             ; y*8
-      sta crs_ptr
+      sta vdp_ptr
 
       asl             ; y*16
-      rol crs_ptr+1
+      rol vdp_ptr+1
       asl             ; y*32
-      rol crs_ptr+1
+      rol vdp_ptr+1
 
-      adc crs_ptr
+      adc vdp_ptr
       bcc :+
-      inc crs_ptr+1
+      inc vdp_ptr+1
       clc             ; y*40
 :
   .ifdef COLS80      ; y*80 = y*40 *2
       asl
-      rol crs_ptr+1
+      rol vdp_ptr+1
   .endif
       adc crs_x
       sta a_vreg
 
       lda #(WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
-      adc crs_ptr+1  ; add carry and page to address high byte
+      adc vdp_ptr+1  ; add carry and page to address high byte
       vdp_wait_s 4
       sta a_vreg
       rts

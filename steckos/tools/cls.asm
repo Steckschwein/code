@@ -19,37 +19,19 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
+.include "kernel.inc"
+.include "kernel_jumptable.inc"
+.include "appstart.inc"
 
-.include "steckos.inc"
-.include "fcntl.inc"	; @see
-
-.autoimport
 .export char_out=krn_chrout
+.import primm 
 
 appstart $1000
 
-	lda (paramptr)	; empty string?
-	bne @l_touch
-	lda #$99
-	bra @errmsg
-@l_touch:
-	lda paramptr
-	ldx paramptr+1
-	ldy #O_CREAT
-	jsr krn_open
-	bcs @errmsg
+.code
 
+    jsr primm
+    .byte 27,"[2J "
+    .byte $00
 
-	jsr krn_close
-
-@exit:
-	jmp (retvec)
-
-@errmsg:
-	;TODO FIXME maybe use oserror() from cc65 lib
-	pha
-	jsr primm
-	.asciiz "Error: "
-	pla
-	jsr hexout
-	jmp @exit
+    jmp (retvec)

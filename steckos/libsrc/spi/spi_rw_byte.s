@@ -38,14 +38,14 @@
 ; Destructive: A,X,Y
 ;----------------------------------------------------------------------------------------------
 spi_rw_byte:
-		sta spi_sr	; zu transferierendes byte im akku retten
+		sta spi_sr		; zu transferierendes byte im akku retten
 
 		ldx #$08
 
 		lda via1portb	; Port laden
-		and #$fe		  ; SPICLK loeschen
+		and #$fe		; SPICLK loeschen
 
-		asl				; Nach links rotieren, damit das bit nachher an der richtigen stelle steht
+		asl				; Nach links schieben, damit das bit nachher an der richtigen stelle steht
 		tay		 		; bunkern
 
 @l:	rol spi_sr
