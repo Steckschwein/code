@@ -22,7 +22,7 @@
 .autoimport
 
 
-__APPSTART__ = $b100
+__APPSTART__ = $8000
 appstart __APPSTART__
 
 ;
@@ -7625,26 +7625,33 @@ io_error:
       jmp LAB_XERR
 
 LAB_SAVE:
-      jsr termstrparam
-      
-      ldy #O_CREAT
-      jsr krn_open
-      bcs io_error
-      stx _fd
+      phx
+      pha
+      ; jsr termstrparam
+      pla 
+      plx 
+      ; ldy #O_CREAT
+      ; jsr krn_open
+      ; bcs io_error
+      ; stx _fd
       
       ; lda #<krn_write_byte
       ; sta VEC_OUT
       ; lda #>krn_write_byte
       ; sta VEC_OUT+1
+      ; jsr krn_close
 
+      ; lda #0
+      ; ldx #0
+      ; ldy #0
       jsr LAB_LIST
+      ; LAB_14BD
+      rts
 
-      jsr krn_close
+      ; jsr init_iovectors
 
-      jsr init_iovectors
-
-      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-      jmp     LAB_1319         ; cleanup and Return to BASIC
+      ; SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+      ; jmp     LAB_1319         ; cleanup and Return to BASIC
 
 
 LAB_LOAD:
