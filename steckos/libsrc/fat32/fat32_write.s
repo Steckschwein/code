@@ -606,13 +606,13 @@ __fat_find_free_cluster:
 @l_found_lb:          ; A=0 here if called from branch above
     sta fd_area+F32_fd::CurrentCluster+0, x
     tya
-    lsr            ; offset Y>>2 (div 4, 32 bit clnr)
+    lsr            ; offset Y>>2 (div 4) - 32 bit clnr
     lsr
     adc fd_area+F32_fd::CurrentCluster+0, x  ; C=0 here always, y is multiple of 4
     sta fd_area+F32_fd::CurrentCluster+0, x  ; safe clnr
-    debug32 "fat_fcc_cl", fd_area+(2*.sizeof(F32_fd)) +F32_fd::CurrentCluster ; hart debug 3rd fd entry
+    debug32 "fat_fcc_cl", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster ; hart debug 3rd fd entry
 
-    ; calc the cluster number with clnr = (block number * 512) / 4+(Y / 4) => (lba_addr - volumeID+VolumeID::lba_fat) << 7+(Y>>2)
+    ; calc the cluster number with clnr = (block number * 512) / 4 + (Y / 4) => (lba_addr - volumeID+VolumeID::lba_fat) << 7+(Y>>2)
     ; to avoid the <<7, we simply <<8 and do one ror - FTW!
     sec
     lda lba_addr+0
@@ -642,7 +642,7 @@ __fat_find_free_cluster:
 fat_unlink:
     ldy #O_RDONLY
     jsr fat_fopen    ; try to open as regular file
-    bne @l_exit
+    bcs @l_exit
     jsr __fat_unlink
     debug "unlnk"
     jmp __fat_free_fd
@@ -650,14 +650,14 @@ fat_unlink:
     rts
 
 __fat_unlink:
-    jsr __fat_is_cln_zero           ; is root or no clnr assigned yet, file was just touched
+    jsr __fat_is_cln_zero           ; no clnr assigned yet, file was just touched
     beq @l_unlink_direntry          ; ... then we can skip freeing clusters from fat
 
     jsr __fat_free_cluster          ; free cluster, update fsinfo
     bcs @l_exit
 @l_unlink_direntry:
     jsr __fat_read_direntry         ; read the dir entry
-    bne @l_exit
+    bcs @l_exit
     lda #DIR_Entry_Deleted          ; mark dir entry as deleted ($e5)
     sta (dirptr)
     jmp __fat_write_block_data      ; write back dir entry

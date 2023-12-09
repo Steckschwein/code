@@ -32,20 +32,18 @@
 
 appstart $1000
 
-    	lda paramptr
-    	ldx paramptr+1
+    lda paramptr
+    ldx paramptr+1
 
-    	jsr krn_unlink
-		bne @errmsg
-
+    jsr krn_unlink
+    bne @errmsg
 @exit:
-		jmp (retvec)
-
+    jmp (retvec)
 @errmsg:
-		;TODO FIXME maybe use oserror() from cc65 lib
-		pha
-		jsr primm
-		.asciiz "Error: "
-		pla
-		jsr hexout
-		jmp @exit
+    ;TODO FIXME maybe use oserror() from cc65 lib
+    pha
+    jsr primm
+    .asciiz "Error: "
+    pla
+    jsr hexout
+    bra @exit

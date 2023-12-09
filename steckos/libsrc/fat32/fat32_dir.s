@@ -47,17 +47,16 @@
 ;in:
 ;	A/X - pointer to string with the file path
 ;out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
 __fat_opendir_cwd:
 		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
-
 ; open directory by given path starting from directory given as file descriptor
 ; in:
 ;	A/X - pointer to string with the file path
 ;	Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
 ; out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
 __fat_opendir:
 		jsr __fat_open_path
@@ -66,26 +65,28 @@ __fat_opendir:
 		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
 		beq @l_exit_close
 		lda #EOK						; ok
+    clc
 @l_exit:
-		debug "fod"
 		rts
 @l_exit_close:
 		lda #ENOTDIR				; error "Not a directory"
-		jmp __fat_free_fd		; not a directory, so we opened a file. just close them immediately and free the allocated fd
+    sec
+    jmp __fat_free_fd		; not a directory, so we opened a file. just close them immediately and free the allocated fd
 
 
 ;in:
 ;	A/X - pointer to string with the file path
 ;out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
 fat_chdir:
 		jsr __fat_opendir_cwd
-		bne @l_exit
+		bcs @l_exit
 		ldy #FD_INDEX_TEMP_DIR		  ; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
 		ldx #FD_INDEX_CURRENT_DIR
 		jsr __fat_clone_fd				; therefore we can simply clone the temp dir to current dir fd - FTW!
 		lda #EOK						; ok
+    clc
 @l_exit:
 		debug "fcd"
 		rts

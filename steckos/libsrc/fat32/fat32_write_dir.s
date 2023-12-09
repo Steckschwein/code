@@ -45,7 +45,7 @@
 ;  C=0 on success, C=1 and A=error code otherwise
 fat_rmdir:
     jsr __fat_opendir_cwd
-    bne @l_exit
+    bcs @l_exit
     debugdirentry
     jsr __fat_is_dot_dir
     beq @l_err_einval
@@ -65,7 +65,7 @@ fat_rmdir:
 ;  C=0 on success (A=0), C=1 on error and A=error code otherwise
 fat_mkdir:
     jsr __fat_opendir_cwd
-    beq @l_exit_eexist                ; open success, dir exists already
+    bcc @l_exit_eexist                ; open success, dir exists already
     cmp #ENOENT                       ; we expect 'no such file or directory' error, otherwise a file/dir with same name already exists
     bne @l_exit_err                   ; exit on other error
 
