@@ -11,7 +11,7 @@ LDFLAGS_PRG=-C ../../prg.ld65.cfg
 
 .PHONY: all clean
 
-all: test.util test.textui textui.test.prg
+all: test.ansi test.textui 
 
 clean:
 	rm -f *.prg *.bin *.o *.dis *.log

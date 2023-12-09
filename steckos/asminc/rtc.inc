@@ -36,7 +36,7 @@
 
 ;----------------------------------------------------------------------------
 ; last known timestamp with date set to 1970-01-01
-rtc_systime_t = $0300
+rtc_systime_t = $02a0
 
 ; read rtc
 rtc_read = 0

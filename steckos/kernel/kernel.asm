@@ -23,13 +23,7 @@
   debug_enabled=1
 .endif
 
-.include "common.inc"
 .include "kernel.inc"
-.include "vdp.inc"
-.include "via.inc"
-.include "spi.inc"
-.include "ym3812.inc"
-.include "keyboard.inc"
 
 .code
 
@@ -37,7 +31,7 @@
 
 .export read_block=sd_read_block
 .export write_block=sd_write_block
-.export char_out=textui_chrout         ; account for page crossing
+.export char_out=ansi_chrout         ; account for page crossing
 
 .export crc16_lo=BUFFER_0
 .export crc16_hi=BUFFER_1
@@ -71,14 +65,15 @@ kern_init:
     lda #<nvram
     ldy #>nvram
     jsr read_nvram
-
     jsr uart_init
 
     stz key
     stz flags
 
-    lda #$03  ; enable RAM below kernel
+    lda #2  ; enable RAM below kernel
     sta slot2
+
+    stz ansi_state
 
 ;    jsr rtc_irq0
 
@@ -93,10 +88,10 @@ kern_init:
     .byte $d4,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$cd,$be,$0a
     .byte $00
 .else
-        jsr primm
-        .byte CODE_LF, "steckOS kernel "
+    jsr primm
+    .byte CODE_LF, "steckOS kernel "
     .include "version.inc"
-        .byte CODE_LF, 0
+    .byte CODE_LF, 0
 .endif
 
     SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
@@ -195,7 +190,7 @@ do_irq:
     jsr __automount
 
 @exit:
-		lda via1portb
+    lda via1portb
     and #spi_device_deselect
     cmp #spi_device_deselect
     beq :+

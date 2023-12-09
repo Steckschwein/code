@@ -6,8 +6,6 @@
 .import strout
 
 .export char_out=krn_chrout
-.zeropage
-ptr1: .res 2
 appstart $1000
 .code
 		lda	#<buffer
@@ -19,7 +17,7 @@ appstart $1000
 		ldx #>buffer
 		;TODO FIXME use a/x instead of zp location msgptr
 		jsr strout
-    
+
 @l2:
     jmp (retvec)
 

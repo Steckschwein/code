@@ -25,6 +25,8 @@
 .include "kernel_jumptable.inc"
 .include "fat32.inc"
 .include "appstart.inc"
+.export char_out=krn_chrout
+.import primm
 
 appstart $1000
 
@@ -93,7 +95,7 @@ rename:
 	bpl @l
 
 	; set write pointer accordingly and
-	SetVector sd_blktarget, write_blkptr
+	SetVector block_data, write_blkptr
 
 	; just write back the block. lba_address still contains the right address
 	jsr krn_sd_write_block
@@ -101,11 +103,11 @@ rename:
 	jmp (retvec)
 
 error:
-	jsr krn_primm
+	jsr primm
 	.asciiz "open error"
 	jmp (retvec)
 wrerror:
-	jsr krn_primm
+	jsr primm
 	.asciiz "write error"
 	jmp (retvec)
 

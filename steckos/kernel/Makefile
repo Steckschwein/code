@@ -1,7 +1,8 @@
 CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
-OBJS=kernel.o rtc.o out.o exec.o util.o automount.o jumptable.o
+OBJS=kernel.o rtc.o exec.o automount.o jumptable.o
 OBJS+=textui.o
+OBJS+=ansi.o
 ASM_INCLUDE=../asminc
 LIBS=../lib/steckschwein.a
 LDFLAGS_KERNEL=-C kernel.cfg
@@ -18,22 +19,16 @@ DEFINES+=-DDISABLE_INTRO
 #DEBUG += -DDEBUG_KERNEL
 # debug rtc updates by kernel
 #DEBUG += -DDEBUG_RTC
-# debug util
-#DEBUG += -DDEBUG_UTIL
-# dump fat blocks on write
-#DEBUG += -DFAT_DUMP_FAT_WRITE
-# do not write anything (metadata)
-#DEBUG += -DFAT_NOWRITE
 #DEBUG += -DV9958
 #DEBUG += -DDEBUG_EXECV
 #DEBUG += -DDEBUG_SPI
 #DEBUG += -DDEBUG_AUTOMOUNT
 
 # optimize flags
-OPT += -DTEXTUI_STROUT
-OPT += -DTEXTUI_PRIMM
+#OPT += -DTEXTUI_STROUT
+#OPT += -DTEXTUI_PRIMM
 
-.PHONY: all clean
+.PHONY: all clean test
 all: kernel.bin loader.prg
 
 clean:
@@ -63,10 +58,10 @@ test.bin: test.o
 	cl65 --target none --config kernel.cfg test.asm -o test.bin
 
 test:
-	(cd test; make test)
+	(cd test; make all)
 
 ../lib/steckschwein.a:
 	(cd ../libsrc ; make)
 
 emu: loader.prg
-	steckschwein-emu -rom ../bios/bios.bin -upload loader.prg -sdcard ../../steckos.img
+	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img # -upload ../shell/shell.prg # loader.prg

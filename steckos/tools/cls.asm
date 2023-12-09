@@ -19,10 +19,19 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
-.include "zeropage.inc"
+.include "kernel.inc"
+.include "kernel_jumptable.inc"
 .include "appstart.inc"
+
+.export char_out=krn_chrout
+.import primm 
 
 appstart $1000
 
-  jmp (retvec)
+.code
+
+    jsr primm
+    .byte 27,"[2J "
+    .byte $00
+
+    jmp (retvec)

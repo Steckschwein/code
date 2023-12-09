@@ -25,9 +25,7 @@
 .endif
 
 .include "kernel.inc"
-.include "rtc.inc"
-.include "spi.inc"
-.include "via.inc"
+
 .import spi_rw_byte, spi_r_byte, spi_deselect, spi_select_device
 .import rtc_systime_update
 .import rtc_write_reg

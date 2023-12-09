@@ -43,7 +43,7 @@ appstart $1000
 main:
 		jsr opl2_detect
 		bcc @load
-		jsr krn_primm
+		jsr primm
 		.byte "YM3526/YM3812 not available!",$0a,0
 		jmp exit
 @load:
@@ -52,7 +52,7 @@ main:
     cmp #EOK
     beq :+
 		pha
-		jsr krn_primm
+		jsr primm
 		.byte "i/o error occured: ",0
 		pla
 		jsr hexout_s
@@ -62,12 +62,12 @@ main:
 
 :   jsr isD00File
 		beq :+
-		jsr krn_primm
+		jsr primm
 		.byte "not a D00 file",$0a,0
 		jmp exit
 
 :
-		jsr krn_primm
+		jsr primm
 		.byte "edlib player v0.2 (somewhat optimized) by mr.mouse/xentax july 2017@",$0a,0
 		jsr printMetaData
 
@@ -77,6 +77,8 @@ main:
 		sei
     	copypointer user_isr, safe_isr
 		SetVector player_isr, user_isr
+;		copypointer $fffe, safe_isr
+;		SetVector player_isr, $fffe
 
 		freq=70
 		lda #($ff-(1000000 / freq / OPL_INTERVAL_US_TIMER2))	; 1s => 1.000.000µs / 70 (Hz) / 320µs = counter value => timer is incremental, irq on overflow so we have to $ff - counter value
@@ -99,10 +101,10 @@ main:
 		eor player_state
 		sta player_state
 		beq :+
-		jsr krn_primm
+		jsr primm
 		.byte "Pause...",$0a,0
 		bra @keyin
-:		jsr krn_primm
+:		jsr primm
 		.byte "Play...",$0a,0
 		bra @keyin
 @key_min:
@@ -157,20 +159,20 @@ set_timer_t2:
     jmp opl2_reg_write
 
 printMetaData:
-		jsr krn_primm
+		jsr primm
 		.asciiz "Name: "
 		ldy #$0b
 		jsr printString
-		jsr krn_primm
+		jsr primm
 		.byte $0a,"Composer: ",0
 		ldy #$2b
 		jsr printString
-		jsr krn_primm
+		jsr primm
 		.byte $0a,"Irq: ",0
 		ldy #8
 		lda d00file,y
 		jsr hexout_s
-;		jsr krn_primm
+;		jsr primm
 ;		.byte $0a,"Spd: ",0
 ;		ldy #8
 ;		lda d00file,y

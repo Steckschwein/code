@@ -7,6 +7,7 @@
 appstart $1000
 
 .import hexout
+.import primm
 
 .export char_out=krn_chrout
 
@@ -15,7 +16,7 @@ main:
 	jsr krn_getkey
   bcc @0
 	pha
-	jsr krn_primm
+	jsr primm
 	.byte $0a,"0x",0
 	pla
 	jsr	hexout

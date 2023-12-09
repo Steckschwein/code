@@ -24,31 +24,13 @@
 .include "system.inc"
 .include "zeropage.inc"
 .include "debug.inc"
+.include "common.inc"
+.include "spi.inc"
+.include "vdp.inc"
+.include "via.inc"
+.include "rtc.inc"
+.include "ym3812.inc"
+.include "keyboard.inc"
 
-.macro printstring text
-    jsr krn_primm
-    .byte text
-    .byte $0a,$0
-.endmacro
 
-.macro Copy src, trgt, len
 
-		ldx #len
-:
-		lda src,x
-		sta trgt,x
-		dex
-		bpl :-
-
-.endmacro
-
-.macro toupper
-	cmp #$60 ; Is lowercase?
-	bcc :+
-	and	#$DF
-:
-.endmacro
-
-.macro tolower
-	ora #$20
-.endmacro

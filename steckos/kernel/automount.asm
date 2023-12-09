@@ -57,7 +57,7 @@ __automount:
 @mount:
     stz sdcard_retry   ; ok, no further retries
     jsr fat_mount
-    beq exit      ; init and mount ok, exit
+    bcc exit      ; init and mount ok, exit
     pha
     jsr primm
     .byte "mount error (",0
