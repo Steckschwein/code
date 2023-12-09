@@ -137,9 +137,9 @@ __fat_open_path:
     stx s_ptr1+1           ; save path arg given in a/x
 
     ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the current dir (Y parameter!), maybe we will run into an error
-    jsr __fat_clone_fd      ; Y is given as param
+    jsr __fat_clone_fd        ; Y is given as param
 
-    ldy #0              ; trim wildcard at the beginning
+    ldy #0                    ; trim wildcard at the beginning
 @l1:
     lda (s_ptr1), y
     cmp #' '
@@ -373,6 +373,7 @@ __fat_init_fd:
     phx
     lda #FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
     sta fd_area+F32_fd::status,x ; set reserved (7) and dirty (6)
+
     lda #FD_Entry_Size-1         ; -1 to avoid override ::status
 :   stz fd_area,x
     inx

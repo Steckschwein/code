@@ -91,8 +91,8 @@
 
 ; fat32 dir entry - $20 byte
 .macro fat32_dir_entry _8_3_name, _8_3_ext, attr, cl, fsize
-  .assert .strlen(_8_3_name) = 8, error, "file name size"
-  .assert .strlen(_8_3_ext) = 3, error, "ext size"
+  .assert .strlen(_8_3_name) = 8, error, "file name size!"
+  .assert .strlen(_8_3_ext) = 3, error, "ext size!"
   .byte _8_3_name      ; 8 byte
   .byte _8_3_ext      ; 3 byte
   .byte attr        ; attr

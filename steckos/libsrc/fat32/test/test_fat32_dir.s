@@ -5,7 +5,7 @@
 ; mock defines
 .export read_block=mock_read_block
 .export write_block=mock_write_block
-.export __rtc_systime_update=mock_not_implemented
+.export rtc_systime_update=mock_rtc
 .export cluster_nr_matcher=mock_not_implemented
 .export fat_name_string=mock_not_implemented
 .export path_inverse=mock_not_implemented
@@ -38,6 +38,15 @@ debug_enabled=1
 		jsr fat_mkdir
 		assertCarry 0
 		assertA EOK
+    assertDirEntry block_root_cl+4*DIR_Entry_Size
+      fat32_dir_entry_dir "DIR001  ", "   ", TEST_FILE_CL
+    assertDirEntry block_data_00+0*DIR_Entry_Size
+      fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL
+    assertDirEntry block_data_00+1*DIR_Entry_Size
+      fat32_dir_entry_dir "..      ", "   ", 0
+
+    assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $10, block_fsinfo+F32FSInfo::LastClus
 
 		brk
 
@@ -47,6 +56,10 @@ TEST_FILE_CL2=$19
 
 data_loader  ; define data loader
 data_writer ; define data writer
+
+mock_rtc:
+    m_memcpy  _rtc_ts, rtc_systime_t, 8
+    rts
 
 mock_read_block:
     tax ; mock destruction of X
@@ -87,6 +100,14 @@ setUp:
 		jsr __fat_init_fdarea
     init_volume_id SEC_PER_CL
 
+    ; fill fat block
+    m_memset block_fat_0+$000, $ff, $80  ; simulate reserved
+    m_memset block_fat_0+$080, $ff, $80
+    m_memset block_fat_0+$100, $ff, $80
+    m_memset block_fat_0+$180, $ff, $80
+    set32 block_fat_0+(TEST_FILE_CL<<2), 0 ; mark TEST_FILE_CL as free
+    set32 block_fat_0+(TEST_FILE_CL2<<2), 0 ; mark TEST_FILE_CL2 as free
+
 		;setup fd0 (cwd) to root cluster
 		set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 		set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
@@ -100,7 +121,7 @@ setUp:
 	test_dir_name_1: .asciiz "dir01"
 	test_dir_name_2: .asciiz "dir02"
 	test_dir_name_enoent: .asciiz "enoent"
-  test_dir_name_new: .asciiz "dir new"
+  test_dir_name_new: .asciiz "dir001"
 
 block_root_cl_init:
 	fat32_dir_entry_dir 	"DIR01   ", "   ", 8
@@ -117,6 +138,16 @@ block_fsinfo_init:
   .dword $02
   .res 12,0
   .byte 0,0,$55,$aa
+
+_rtc_ts:
+    .byte 34  ; tm_sec  .byte    ;0-59
+    .byte 22  ; tm_min  .byte    ;0-59
+    .byte 11  ; tm_hour  .byte   ;0-23
+    .byte 10  ; m_mday  .byte    ;1-31
+    .byte 03  ; tm_mon  .byte    ;0-11 0-jan, 11-dec
+    .byte 120; tm_year  .word  70  ;years since 1900
+    .byte 06 ; tm_wday  .byte    ;
+    rts
 
 .bss
 block_fat_0:    .res sd_blocksize

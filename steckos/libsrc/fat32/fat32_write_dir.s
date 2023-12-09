@@ -64,11 +64,13 @@ fat_rmdir:
 ; out:
 ;  C=0 on success (A=0), C=1 on error and A=error code otherwise
 fat_mkdir:
+    debug32 "mkdir 0", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
     jsr __fat_opendir_cwd
     bcc @l_exit_eexist                ; open success, dir exists already
     cmp #ENOENT                       ; we expect 'no such file or directory' error, otherwise a file/dir with same name already exists
     bne @l_exit_err                   ; exit on other error
 
+    debug32 "mkdir 1", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
     copypointer dirptr, s_ptr2
     jsr string_fat_name               ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
     bne @l_exit_err
@@ -78,7 +80,7 @@ fat_mkdir:
     jsr __fat_set_fd_attr_dirlba      ; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
     jsr __fat_reserve_cluster         ; try to find and reserve next free cluster and store them in fd_area at fd (X)
     bcs @l_exit_close                 ; C=1 - fail, exit but close fd
-    jsr __fat_set_fd_start_cluster
+    jsr __fat_set_fd_start_cluster    ; set start cluster to fd
     jsr __fat_set_lba_from_fd_dirlba  ; setup lba_addr from fd
     jsr __fat_write_dir_entry         ; create dir entry at current dirptr
     bcs @l_exit_close
@@ -144,7 +146,7 @@ __fat_write_newdir_entry:
     cpy #.sizeof(F32DirEntry)
     bne @l_dir_cp
 
-    ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)     ; erase name and build the "." and ".." entries with space
+    ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)-1   ; erase name and build the "." and ".." entries with space
     lda #$20
 @l_clr_name:
     sta block_data, y                                    ; 1st dir entry
@@ -156,8 +158,8 @@ __fat_write_newdir_entry:
     sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::Name+0        ; 2nd entry ".."
     sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::Name+1
 
-    ldy #FD_INDEX_TEMP_DIR                                  ; due to fat_opendir/fat_open within fat_mkdir the fd of temp dir (FD_INDEX_TEMP_DIR) represents the last visited directory which must be the parent of this one ("..") - FTW!
-    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
+    ldy #FD_INDEX_TEMP_DIR                                          ; due to fat_opendir/fat_open within fat_mkdir the fd of temp dir (FD_INDEX_TEMP_DIR) represents the last visited directory which must be the parent of this one ("..") - FTW!
+    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster  ; we can simpyl take over the cluster from parent to write the ".."
     lda fd_area+F32_fd::CurrentCluster+0,y
     sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusLO+0
     lda fd_area+F32_fd::CurrentCluster+1,y

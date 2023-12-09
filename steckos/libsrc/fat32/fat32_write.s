@@ -70,8 +70,8 @@ fat_write_byte:
     sta (__volatile_ptr)
 
     _inc32_x fd_area+F32_fd::SeekPos    ; seek+1
-    jsr __fat_set_fd_filesize
 
+    jsr __fat_set_fd_filesize
     jsr __fat_write_block_data          ; write block
 @l_exit:
     ply
@@ -265,10 +265,11 @@ __fat_fopen_touch:
     sta fd_area+F32_fd::flags, x
     lda #DIR_Attr_Mask_Archive    ; create as regular file with archive bit set
     jsr __fat_set_fd_attr_dirlba  ; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
-    jsr __fat_write_dir_entry    ; create dir entry at current dirptr
+    jsr __fat_write_dir_entry     ; create dir entry at current dirptr
     bcc @l_exit
     jmp fat_close               ; free the allocated file descriptor if there where errors, C=1 and A are preserved
 @l_exit_err:
+    lda #EINVAL
     sec
 @l_exit:
     debug "fop touch"
@@ -282,16 +283,15 @@ __fat_fopen_touch:
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 __fat_write_dir_entry:
-
     lda fd_area+F32_fd::Attr, x
-    ldy #F32DirEntry::Attr                    ; store attribute
+    ldy #F32DirEntry::Attr              ; store attribute
     sta (dirptr), y
 
     lda #0
-    ldy #F32DirEntry::Reserved                  ; unused
+    ldy #F32DirEntry::Reserved          ; unused
     sta (dirptr), y
     ldy #F32DirEntry::CrtTimeMillis
-    sta (dirptr), y                        ; ms to 0, ms not supported by rtc
+    sta (dirptr), y                     ; ms to 0, ms not supported by rtc
 
     jsr __fat_set_direntry_start_cluster
     jsr __fat_set_direntry_filesize
@@ -310,13 +310,13 @@ __fat_write_dir_entry:
     bcc @l2
     inc s_ptr1+1
 @l2:
-    lda s_ptr1+1               ; end of block reached? :/ edge-case, we have to create the end-of-directory entry at the next block
+    lda s_ptr1+1                ; end of block reached? :/ edge-case, we have to create the end-of-directory entry at the next block
     cmp #>(block_data+sd_blocksize)
     beq @l_new_block            ; yes, prepare new block
-    lda #0                  ; mark EOD
+    lda #0                      ; mark EOD
     sta (s_ptr1)
     bra @l_eod
-@l_new_block:                  ; new dir entry
+@l_new_block:                   ; new dir entry
     jsr __fat_write_block_data        ; write the current block with the updated dir entry first
     bcs @l_exit
 

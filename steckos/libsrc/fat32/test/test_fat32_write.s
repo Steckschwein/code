@@ -458,16 +458,6 @@ test_seek:
   .byte SEEK_SET
   .dword 0
 
-_rtc_ts:
-    .byte 34  ; tm_sec  .byte    ;0-59
-    .byte 22  ; tm_min  .byte    ;0-59
-    .byte 11  ; tm_hour  .byte   ;0-23
-    .byte 10  ; m_mday  .byte    ;1-31
-    .byte 03  ; tm_mon  .byte    ;0-11 0-jan, 11-dec
-    .byte 120; tm_year  .word  70  ;years since 1900
-    .byte 06 ; tm_wday  .byte    ;
-    rts
-
 mock_read_block:
     tax ; mock X destruction
     debug32 "mock_read_block lba", lba_addr
@@ -580,6 +570,16 @@ block_fsinfo_init:
   .dword $02
   .res 12,0
   .byte 0,0,$55,$aa
+
+_rtc_ts:
+    .byte 34  ; tm_sec  .byte    ;0-59
+    .byte 22  ; tm_min  .byte    ;0-59
+    .byte 11  ; tm_hour  .byte   ;0-23
+    .byte 10  ; m_mday  .byte    ;1-31
+    .byte 03  ; tm_mon  .byte    ;0-11 0-jan, 11-dec
+    .byte 120; tm_year  .word  70  ;years since 1900
+    .byte 06 ; tm_wday  .byte    ;
+    rts
 
 .bss
 block_fat_0:    .res sd_blocksize

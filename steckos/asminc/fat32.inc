@@ -168,6 +168,7 @@ DIR_Attr_Mask_Dir       = 1<<4;
 DIR_Attr_Mask_Archive   = 1<<5;
 
 DIR_Attr_Mask_LongFilename   = 1<<0 | 1<<1 | 1<<2 | 1<<3;
+
 DIR_Entry_Size               = .sizeof(F32DirEntry)
 DIR_Entry_Deleted            = $e5
 
