@@ -49,7 +49,7 @@ appstart $1000
       stx fd
 
       jsr primm
-      .byte KEY_LF, "Stecklink ", 0
+      .byte "Stecklink ", 0
 
       lda #<handle_block
       ldx #>handle_block
@@ -70,7 +70,6 @@ appstart $1000
       bra @l_exit
 
 
-
 handle_block:
       ldy crs_x ; save crs x
       phy
@@ -83,16 +82,28 @@ handle_block:
       jsr krn_write_byte
       plx
       bcs @l_exit
+      _inc32 bytes
       inx
       cpx #XMODEM_DATA_END
       bne @copy
 
 @l_exit:
+      lda bytes+3
+      jsr hexout_s
+      lda bytes+2
+      jsr hexout
+      lda bytes+1
+      jsr hexout
+      lda bytes+0
+      jsr hexout
 
       pla
       pla
       sta crs_x
-      rts
+      jmp krn_textui_update_crs_ptr
+
+.data
+  bytes: .res 4, 0
 
 .bss
   fd: .res 1

@@ -197,7 +197,6 @@ do_irq:
     lda #Medium_Red<<4|Medium_Red
     jsr vdp_bgcolor
     sys_delay_us 128
-
 :
     lda #Medium_Green<<4|Black
     jsr vdp_bgcolor
