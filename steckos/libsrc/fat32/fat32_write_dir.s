@@ -130,12 +130,12 @@ __fat_count_direntries:
 
 ; create the "." and ".." entry of the new directory
 ; in:
-;  .X - the file descriptor into fd_area of the the new dir entry
-;  dirptr - set to current dir entry within block_data
+;   .X - the file descriptor into fd_area of the the new dir entry
+;   dirptr - set to current dir entry within block_data
 ; out:
-;  C=0 on success, C=1 otherwise and A=error code
+;   C=0 on success, C=1 otherwise and A=error code
 __fat_write_newdir_entry:
-    ldy #F32DirEntry::Attr                                          ; copy from (dirptr), start with F32DirEntry::Attr, the name is skipped and overwritten below
+    ldy #F32DirEntry::Attr                                          ; we just copy data of the new dir entry (dirptr) to easily have create time, mod time etc.
 @l_dir_cp:
     lda (dirptr), y
     sta block_data+0*.sizeof(F32DirEntry), y                        ; 1st dir entry
@@ -144,19 +144,19 @@ __fat_write_newdir_entry:
     cpy #.sizeof(F32DirEntry)
     bne @l_dir_cp
 
-    ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)  -1      ; erase name and build the "." and ".." entries
+    ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)     ; erase name and build the "." and ".." entries with space
     lda #$20
 @l_clr_name:
     sta block_data, y                                    ; 1st dir entry
     sta block_data+1*.sizeof(F32DirEntry), y             ; 2nd dir entry
     dey
-    bne @l_clr_name
+    bpl @l_clr_name
     lda #'.'
     sta block_data+0*.sizeof(F32DirEntry)+F32DirEntry::Name+0        ; 1st entry "."
     sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::Name+0        ; 2nd entry ".."
     sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::Name+1
 
-    ldy #FD_INDEX_TEMP_DIR                          ; due to fat_opendir/fat_open within fat_mkdir the fd of temp dir (FD_INDEX_TEMP_DIR) represents the last visited directory which must be the parent of this one ("..") - FTW!
+    ldy #FD_INDEX_TEMP_DIR                                  ; due to fat_opendir/fat_open within fat_mkdir the fd of temp dir (FD_INDEX_TEMP_DIR) represents the last visited directory which must be the parent of this one ("..") - FTW!
     debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
     lda fd_area+F32_fd::CurrentCluster+0,y
     sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusLO+0
