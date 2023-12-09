@@ -23,13 +23,15 @@
 .include "zeropage.inc"
 .include "spi.inc"
 
-.import spi_r_byte
-.import spi_deselect
-.import spi_select_device
-.import spi_replace_device
-.import spi_set_device
+; .import spi_r_byte
+; .import spi_deselect
+; .import spi_select_device
+; .import spi_replace_device
+; .import spi_set_device
 
-.export getkey, fetchkey
+.autoimport
+
+.export kbd_getkey, fetchkey
 
 .code
 ; Select Keyboard controller on SPI, read one byte
@@ -58,12 +60,15 @@ fetchkey:
 ;	in: -
 ;	out:
 ;		C=1 key was pressed and A=<key code>, C=0 otherwise
-getkey:
-    lda key
-    beq exit
-    stz key
-    sec
-    rts
+kbd_getkey:
+;     lda key
+;     beq exit
+;     stz key
+;     sec
+;     rts
 exit:
     clc
     rts
+
+
+
