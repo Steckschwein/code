@@ -152,7 +152,8 @@ int main(int argc, char **argv)
                     break;
                 line[b] = '\0';
             }
-            puts(line);
+            printf("%s\r\n", line);
+            
         }
         puts("");
     }
