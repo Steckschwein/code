@@ -78,8 +78,8 @@ int main (int argc, const char* argv[])
 
     if (n.crc7 != crc)
     {
-        cprintf("NVRAM CRC7 mismatch - CRC: %0x, NVRAM: %0x\n", crc, n.crc7);
-        cprintf("Please init with\n  nvram init\n");
+        cprintf("NVRAM CRC7 mismatch - CRC: %0x, NVRAM: %0x\r\n", crc, n.crc7);
+        cprintf("Please init with\r\n  nvram init\r\n");
     }
 
 	if (strcmp(argv[1], "filename") == 0)
@@ -114,6 +114,23 @@ int main (int argc, const char* argv[])
         }
 		cprintf("%ld\r\n", lookup_divisor(n.uart_baudrate));
 	}
+    else if (strcmp(argv[1], "div") == 0)
+	{
+        if (argc == 3)
+        {
+			unsigned char divisor = atol(argv[2]);
+			if (divisor == 0)
+			{
+				cprintf("Invalid baudrate\r\n");
+				return 1;
+			}
+
+			n.uart_baudrate = divisor;
+		    write_nvram();
+        }
+		cprintf("%ld\r\n", n.uart_baudrate);
+	}    
+    
 	else if (strcmp(argv[1], "line") == 0)
 	{
         if (argc == 3)
@@ -122,7 +139,7 @@ int main (int argc, const char* argv[])
             lsr = make_line_byte((unsigned char *)argv[3]);
             if (lsr == 0xff)
             {
-                cprintf("Parameter error\n");
+                cprintf("Parameter error\r\n");
                 return EXIT_FAILURE;
             }
             n.uart_lsr = lsr;
@@ -151,7 +168,7 @@ int main (int argc, const char* argv[])
    }
 	else if (strcmp(argv[1], "list") == 0)
 	{
-		cprintf("OS filename     : %.11s\nUART baud rate  : %ld\nUART line conf  : %c%c%c\nKeyboard ($%02x)  : %dHz/%dms\nCRC             : $%02x\n",
+		cprintf("OS filename     : %.11s\r\nUART baud rate  : %ld\r\nUART line conf  : %c%c%c\r\nKeyboard ($%02x)  : %dHz/%dms\r\nCRC             : $%02x\n",
 			n.filename,
 			lookup_divisor(n.uart_baudrate),
 			get_databits(n.uart_lsr),
@@ -305,7 +322,7 @@ void read_nvram()
 void usage()
 {
 	cprintf(
-        "set/get nvram values\nusage:\nnvram filename|baudrate|line|keyboard [<value>]\nnvram list|init\n"
+        "set/get nvram values\r\nusage:\r\nnvram filename|baudrate|line|keyboard [<value>]\r\nnvram list|init\n"
 	);
 }
 

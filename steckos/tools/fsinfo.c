@@ -125,20 +125,20 @@ int main (/*int argc, const char* argv[]*/)
   r = read_block(buf, 0);
   if (r != 0)
   {
-    printf("E: %d\n", r);
+    printf("E: %d\r\n", r);
     return EXIT_FAILURE;
   }
 
   if (!bootsector->signature[0] == 0x55 || !bootsector->signature[1] == 0xaa)
   {
-    printf("Block signature error\n");
+    printf("Block signature error\r\n");
     return EXIT_FAILURE;
   }
 
   memcpy(partitions, bootsector->partition, sizeof(partitions));
 
   
-  printf("Partition table:\n");
+  printf("Partition table:\r\n");
   for (i=0; i<=3; i++)
   {
     if (partitions[i].TypeCode == 0)
@@ -146,7 +146,7 @@ int main (/*int argc, const char* argv[]*/)
       continue;
     }
     printf(
-      "# Boot Type   LBABegin NumSectors \n%1d %4x  $%02x %10lu %10lu\n",
+      "# Boot Type   LBABegin NumSectors \r\n%1d %4x  $%02x %10lu %10lu\r\n",
       i,
       partitions[i].Bootflag,
       partitions[i].TypeCode,
@@ -157,19 +157,19 @@ int main (/*int argc, const char* argv[]*/)
   }
   if (p > 0)
   {
-    printf("%d partitions\n", p);
+    printf("%d partitions\r\n", p);
   }
   else
   {
-    printf("no partitions\n");
+    printf("no partitions\r\n");
   }
   
 
-  printf("\n");
+  printf("\r\n");
   r = read_block(buf, partitions[0].LBABegin);
   if (r != 0)
   {
-    printf("E: %d\n", r);
+    printf("E: %d\r\n", r);
     return EXIT_FAILURE;
   }
 
@@ -180,32 +180,32 @@ int main (/*int argc, const char* argv[]*/)
   FATSz32    = volid->FATSz32;
   FSInfoSec  = partitions[0].LBABegin + volid->FSInfoSec;
 
-  printf("FS type        : %.*s\n", 8, volid->FSType);
-  printf("OEM name       : %.*s\n", 8, volid->OEMName);
-  printf("Volume Label   : %.*s\n", 11, volid->VolumeLabel);
-  printf("Res. sectors   : %d\n", volid->RsvdSecCnt);
-  printf("Bytes/sector   : %d\n", volid->BytsPerSec);
-  printf("Sectors/clus.  : %d\n", volid->SecPerClus);
-  printf("Cluster size   : %u\n", volid->SecPerClus * volid->BytsPerSec);
-  printf("Number of FATs : %d\n", volid->NumFATs);
-  printf("Active FAT     : %x\n", volid->MirrorFlags);
-  printf("Sectors/FAT    : %lu\n", volid->FATSz32);
-  printf("TotalSectors   : %lu\n", TotalSects);
-  printf("FSInfoSec      : %lu\n", FSInfoSec);
+  printf("FS type        : %.*s\r\n", 8, volid->FSType);
+  printf("OEM name       : %.*s\r\n", 8, volid->OEMName);
+  printf("Volume Label   : %.*s\r\n", 11, volid->VolumeLabel);
+  printf("Res. sectors   : %d\r\n", volid->RsvdSecCnt);
+  printf("Bytes/sector   : %d\r\n", volid->BytsPerSec);
+  printf("Sectors/clus.  : %d\r\n", volid->SecPerClus);
+  printf("Cluster size   : %u\r\n", volid->SecPerClus * volid->BytsPerSec);
+  printf("Number of FATs : %d\r\n", volid->NumFATs);
+  printf("Active FAT     : %x\r\n", volid->MirrorFlags);
+  printf("Sectors/FAT    : %lu\r\n", volid->FATSz32);
+  printf("TotalSectors   : %lu\r\n", TotalSects);
+  printf("FSInfoSec      : %lu\r\n", FSInfoSec);
 
   r = read_block(buf, FSInfoSec);
   if (r != 0)
   {
-    printf("E: %d\n", r);
+    printf("E: %d\r\n", r);
     return EXIT_FAILURE;
   }
 
-  printf("Free clusters  : %lu\n", fsinfo->FreeClus);
-  printf("Last cluster   : %lu\n", fsinfo->LastClus);
+  printf("Free clusters  : %lu\r\n", fsinfo->FreeClus);
+  printf("Last cluster   : %lu\r\n", fsinfo->LastClus);
 
-  printf("fs bytes       : %lu\n", TotalSects * BytsPerSec);
+  printf("fs bytes       : %lu\r\n", TotalSects * BytsPerSec);
  
-  printf("bytes free     : %lu\n", fsinfo->FreeClus * SecPerClus * BytsPerSec);
+  printf("bytes free     : %lu\r\n", fsinfo->FreeClus * SecPerClus * BytsPerSec);
 
   /*
   fat_lba = partitions[0].LBABegin + RsvdSecCnt;
@@ -215,7 +215,7 @@ int main (/*int argc, const char* argv[]*/)
     r = read_block((uint8_t *)fat, fat_lba);
     if (r != 0)
     {
-      printf("E: %d\n", r);
+      printf("E: %d\r\n", r);
       return EXIT_FAILURE;
     }
 
@@ -248,8 +248,8 @@ int main (/*int argc, const char* argv[]*/)
     fat_lba++;
   }
 
-  printf("Free clusters (counted) : %lu\n", free);
-  printf("Used clusters (counted) : %lu\n", used);
+  printf("Free clusters (counted) : %lu\r\n", free);
+  printf("Used clusters (counted) : %lu\r\n", used);
 */
   
   return EXIT_SUCCESS;

@@ -154,7 +154,7 @@ line_end:
         bra inputloop
 
 backspace:
-        lda #KEY_BACKSPACE
+        lda #KEY_DEL
         jsr char_out
         cpy #$00
         beq inputloop
@@ -227,7 +227,7 @@ compare:
       ; compare
         ldx #$00
 @l1:    ldy #$00
-@l2:  lda (cmdptr),y
+@l2:    lda (cmdptr),y
 
         ; if not, there is a terminating null
         bne @l3
