@@ -81,10 +81,10 @@ ff_l3:
     bcs ff_exit
 ff_l4:
     lda (dirptr)
-    beq ff_exit                ; first byte of dir entry is $00 (end of directory)
+    beq ff_exit                 ; first byte of dir entry is $00 (end of directory)
 @l5:
-    ldy #F32DirEntry::Attr          ; else check if long filename entry
-    lda (dirptr),y               ; we are only going to filter those here (or maybe not?)
+    ldy #F32DirEntry::Attr      ; else check if long filename entry
+    lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
     cmp #DIR_Attr_Mask_LongFilename
     beq __fat_find_next
 
@@ -105,11 +105,11 @@ __fat_find_next:
 @l6:
     .assert <(block_data + sd_blocksize) = $00, error, "block_data isn't aligned on a RAM page boundary"
     lda dirptr+1
-    cmp #>(block_data + sd_blocksize)  ; end of block reached?
-    bcc ff_l4              ; no, process entry
+    cmp #>(block_data + sd_blocksize)   ; end of block reached?
+    bne ff_l4                           ; no, process entry
     dec blocks
-    beq @ff_eoc                ; end of cluster reached?
-    jsr __inc_lba_address        ; increment lba address to read next block
+    beq @ff_eoc                         ; end of cluster reached?
+    jsr __inc_lba_address               ; increment lba address to read next block
     bra ff_l3
 @ff_eoc:
     ldx #FD_INDEX_TEMP_DIR        ; TODO FIXME dont know if this is a good idea... FD_INDEX_TEMP_DIR was setup above and following the cluster chain is done with the FD_INDEX_TEMP_DIR to not clobber the FD_INDEX_CURRENT_DIR
@@ -184,7 +184,6 @@ __fat_open_path:
     rts
 @l_openfile:
     stz filename_buf, x      ;\0 terminate the current path fragment
-    ; fall through
 
 ;in:
 ;  filenameptr - ptr to the filename

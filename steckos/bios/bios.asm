@@ -227,6 +227,11 @@ zp_stack_ok:
       ;jsr memcheck
 
       jsr keyboard_init
+
+      jsr fetchkey
+      bcc @sdcard
+      jsr hexout_s
+
 @sdcard:
       jsr sdcard_detect
       beq @sdcard_init

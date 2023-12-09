@@ -38,8 +38,8 @@ debug_enabled=1
 		jsr fat_mkdir
 		assertCarry 0
 		assertA EOK
-    assertDirEntry block_root_cl+4*DIR_Entry_Size
-      fat32_dir_entry_dir "DIR001  ", "   ", TEST_FILE_CL
+    assertDirEntry block_root_cl_00+14*DIR_Entry_Size
+      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL
     assertDirEntry block_data_00+0*DIR_Entry_Size
       fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL
     assertDirEntry block_data_00+1*DIR_Entry_Size
@@ -47,6 +47,53 @@ debug_enabled=1
 
     assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
     assert32 $10, block_fsinfo+F32FSInfo::LastClus
+
+; -------------------
+		setup "fat_mkdir end of block (4s/cl)"
+    setMemory block_root_cl_00+14*DIR_Entry_Size, DIR_Entry_Size
+      fat32_dir_entry_dir "DIR0D   ", "   ", 0
+
+		lda #<test_dir_name_new
+		ldx #>test_dir_name_new
+		jsr fat_mkdir
+		assertCarry 0
+		assertA EOK
+    assertDirEntry block_root_cl_00+15*DIR_Entry_Size  ; expect add end of 1st block
+      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL
+    assert8 0, block_root_cl_01+0*DIR_Entry_Size  ; expect eod at begin of 2nd block
+
+    assertDirEntry block_data_00+0*DIR_Entry_Size
+      fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL
+    assertDirEntry block_data_00+1*DIR_Entry_Size
+      fat32_dir_entry_dir "..      ", "   ", 0
+
+    assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $10, block_fsinfo+F32FSInfo::LastClus
+
+; -------------------
+		setup "fat_mkdir within next cl (4s/cl)"
+    setMemory block_root_cl_00+14*DIR_Entry_Size, DIR_Entry_Size
+      fat32_dir_entry_dir "DIR0D   ", "   ", 0
+    setMemory block_root_cl_00+15*DIR_Entry_Size, DIR_Entry_Size
+      fat32_dir_entry_dir "DIR0E   ", "   ", 0
+
+		lda #<test_dir_name_new
+		ldx #>test_dir_name_new
+		jsr fat_mkdir
+		assertCarry 0
+		assertA EOK
+    assertDirEntry block_root_cl_01+0*DIR_Entry_Size  ; expect add begin of 2nd block
+      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL
+    assertDirEntry block_data_00+0*DIR_Entry_Size
+      fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL
+    assertDirEntry block_data_00+1*DIR_Entry_Size
+      fat32_dir_entry_dir "..      ", "   ", 0
+
+    assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $10, block_fsinfo+F32FSInfo::LastClus
+
+; -------------------
+;		setup "fat_mkdir end of last block in cl (4s/cl)"
 
 		brk
 
@@ -64,7 +111,9 @@ mock_rtc:
 mock_read_block:
     tax ; mock destruction of X
     debug32 "mock_read_block lba", lba_addr
-		load_block_if LBA_BEGIN, block_root_cl, @ok ; load root cl block
+		load_block_if (LBA_BEGIN+0), block_root_cl_00, @ok ; load root cl block
+    load_block_if (LBA_BEGIN+1), block_root_cl_01, @ok ;
+
     load_block_if (FAT_LBA+(TEST_FILE_CL>>7)), block_fat_0, @ok
     load_block_if FS_INFO_LBA, block_fsinfo, @ok
 
@@ -77,7 +126,9 @@ mock_write_block:
     tax ; mock destruction of X
     debug32 "mock_write_block lba", lba_addr
     debug16 "mock_write_block wptr", write_blkptr
-    store_block_if LBA_BEGIN, block_root_cl, @ok ; write root cl block
+    store_block_if (LBA_BEGIN+0), block_root_cl_00, @ok
+    store_block_if (LBA_BEGIN+1), block_root_cl_01, @ok
+
     store_block_if FS_INFO_LBA, block_fsinfo, @ok ;
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), block_data_00, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), block_data_01, @ok
@@ -112,7 +163,9 @@ setUp:
 		set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
 		set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
 
-    init_block block_root_cl_init, block_root_cl
+    init_block block_root_cl_init_00, block_root_cl_00
+    init_block block_root_cl_init_01, block_root_cl_01
+
     init_block block_fsinfo_init, block_fsinfo
 		rts
 
@@ -121,14 +174,29 @@ setUp:
 	test_dir_name_1: .asciiz "dir01"
 	test_dir_name_2: .asciiz "dir02"
 	test_dir_name_enoent: .asciiz "enoent"
-  test_dir_name_new: .asciiz "dir001"
+  test_dir_name_new: .asciiz "dirtest"
 
-block_root_cl_init:
-	fat32_dir_entry_dir 	"DIR01   ", "   ", 8
-	fat32_dir_entry_dir 	"DIR02   ", "   ", 9
+block_root_cl_init_00:
+	fat32_dir_entry_dir 	"DIR00   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR01   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR02   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR03   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR04   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR05   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR06   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR07   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR08   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR09   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR0A   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR0B   ", "   ", 0
+	fat32_dir_entry_dir 	"DIR0C   ", "   ", 0
 	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0		; 0 - no cluster reserved, file length 0
-	fat32_dir_entry_file "FILE02  ", "TXT", 10, 12	; $a - 1st cluster nr of file, file length 12 byte
-  .res 512-(4*DIR_Entry_Size),0
+  .res DIR_Entry_Size,0
+  .res DIR_Entry_Size,0
+
+block_root_cl_init_01:
+  .res 512,0
+
 
 block_fsinfo_init:
   .byte "RRaA"
@@ -150,10 +218,14 @@ _rtc_ts:
     rts
 
 .bss
+block_fsinfo:   .res sd_blocksize
 block_fat_0:    .res sd_blocksize
 block_fat2_0:   .res sd_blocksize
-block_root_cl:  .res sd_blocksize
-block_fsinfo:   .res sd_blocksize
+block_root_cl_00:  .res sd_blocksize
+block_root_cl_01:  .res sd_blocksize
+block_root_cl_02:  .res sd_blocksize
+block_root_cl_03:  .res sd_blocksize
+
 block_data_00:  .res sd_blocksize
 block_data_01:  .res sd_blocksize
 block_data_02:  .res sd_blocksize

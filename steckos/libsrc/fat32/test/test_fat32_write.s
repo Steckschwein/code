@@ -439,7 +439,7 @@ single_test:
 
     jsr fat_close
 
-    brk
+    test_end
 
 
 data_loader  ; define data loader

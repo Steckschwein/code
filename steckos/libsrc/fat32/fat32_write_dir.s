@@ -64,13 +64,12 @@ fat_rmdir:
 ; out:
 ;  C=0 on success (A=0), C=1 on error and A=error code otherwise
 fat_mkdir:
-    debug32 "mkdir 0", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
     jsr __fat_opendir_cwd
     bcc @l_exit_eexist                ; open success, dir exists already
     cmp #ENOENT                       ; we expect 'no such file or directory' error, otherwise a file/dir with same name already exists
     bne @l_exit_err                   ; exit on other error
 
-    debug32 "mkdir 1", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
+    debug16 "mkdir 1", dirptr
     copypointer dirptr, s_ptr2
     jsr string_fat_name               ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
     bne @l_exit_err
@@ -160,6 +159,7 @@ __fat_write_newdir_entry:
 
     ldy #FD_INDEX_TEMP_DIR                                          ; due to fat_opendir/fat_open within fat_mkdir the fd of temp dir (FD_INDEX_TEMP_DIR) represents the last visited directory which must be the parent of this one ("..") - FTW!
     debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster  ; we can simpyl take over the cluster from parent to write the ".."
+    debug32 "cd_sln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster  ; we can simpyl take over the cluster from parent to write the ".."
     lda fd_area+F32_fd::CurrentCluster+0,y
     sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusLO+0
     lda fd_area+F32_fd::CurrentCluster+1,y

@@ -70,6 +70,18 @@ asmunit_addr_instrument = $0202
 :
 .endmacro
 
+.macro setMemory address, length
+  .local @src
+  .assert length <= $80, error, "length must be 0..$80!"
+  ldx #length-1
+: lda @src,x
+  sta address,x
+  dex
+  bpl :-
+  bra @src+length
+@src:
+.endmacro
+
 .macro set8 address, _8bit
   lda #<_8bit
   sta address
