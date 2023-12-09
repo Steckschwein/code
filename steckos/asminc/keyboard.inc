@@ -29,6 +29,7 @@ KEY_LF            = $0a
 KEY_CR            = $0d
 KEY_RETURN        = $0d
 KEY_BACKSPACE     = $08
+KEY_DEL           = $7F
 
 KEY_CTRL_C        = $03
 
