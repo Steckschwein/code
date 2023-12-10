@@ -57,12 +57,12 @@ DIR* __fastcall__ opendir (register const char* name)
 
             // Skip directory header entry
             //dir->current_entry = 1;
-			memcpy(&dir->name, name, 8+3+1);
+          memcpy(&dir->name, name, 8+3+1);
 
-//			cprintf("%s", dir->name);
+  			  cprintf("%s", dir->name);
 
-            // Return success
-            return dir;
+          // Return success
+          return dir;
         }
         // EOF: Most probably no directory file at all
         if (_oserror == 0) {

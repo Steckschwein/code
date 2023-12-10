@@ -39,7 +39,6 @@ appstart $1000
 	jsr krn_open
 	bcs @errmsg
 
-
 	jsr krn_close
 
 @exit:

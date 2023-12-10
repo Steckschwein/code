@@ -212,8 +212,6 @@ fat_fopen:
     sec
     rts
 @l_opened:
-;    update atime if desired, exit ok
-;    jsr __fat_set_direntry_modify_datetime
     lda __volatile_tmp
     sta fd_area+F32_fd::flags,x
     clc

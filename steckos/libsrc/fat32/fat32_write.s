@@ -125,6 +125,7 @@ __fat_update_direntry:
     jsr __fat_set_direntry_start_cluster
     jsr __fat_set_direntry_filesize         ; set filesize of directory entry via dirptr
     jsr __fat_set_direntry_modify_datetime  ; set modification time and date
+
     jmp __fat_write_block_data              ; lba_addr is already set from read, see above
 @l_exit:
     rts
@@ -310,10 +311,10 @@ __fat_write_dir_entry:
     bcc @l2
     inc s_ptr1+1
 @l2:
-    lda s_ptr1+1               ; end of block reached? :/ edge-case, we have to create the end-of-directory entry at the next block
+    lda s_ptr1+1                ; end of block reached? :/ edge-case, we have to create the end-of-directory entry at the next block
     cmp #>(block_data+sd_blocksize)
     beq @l_new_block            ; yes, prepare new block
-    lda #0                  ; mark EOD
+    lda #0                      ; mark EOD
     sta (s_ptr1)
     bra @l_eod
 @l_new_block:                  ; new dir entry
