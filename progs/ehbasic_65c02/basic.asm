@@ -15,16 +15,14 @@
 .exportzp Itempl, Itemph
 
 .export char_out=krn_chrout
+.export read_block=krn_sd_read_block
+.export write_block=krn_sd_write_block
 
-.import gfx_mode
-.import LAB_GFX_PLOT
-.import LAB_GFX_POINT
-.import LAB_GFX_LINE
-.import LAB_GFX_CIRCLE
-.import LAB_GFX_SCNCLR
-.import LAB_GFX_SCNWAIT
 
-__APPSTART__ = $a000
+.autoimport
+
+
+__APPSTART__ = $8000
 appstart __APPSTART__
 
 ;
@@ -7626,8 +7624,42 @@ io_error:
       ldx #$24 ; "Generate "File not found error"
       jmp LAB_XERR
 
-LAB_SAVE:
+; we need to wrap krn_write_byte in order to get the file descriptor
+; into X first
+fwrite_wrapper:
+      save
+
+      ldx _fd
+      jsr krn_write_byte
+
+      restore
       rts
+
+LAB_SAVE:
+      jsr termstrparam
+      ldy #O_CREAT
+      jsr krn_open
+      bcs io_error
+      stx _fd
+
+      ; set output vector to filesystem wrapper
+      lda #<fwrite_wrapper
+      sta VEC_OUT
+      lda #>fwrite_wrapper
+      sta VEC_OUT+1
+
+      ; list program
+      sec ; set carry to make LIST do anything
+      jsr LAB_14BD ; jump into LIST routine
+
+      ldx _fd
+      jsr krn_close
+
+      jsr init_iovectors
+
+      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+      jmp     LAB_1319         ; cleanup and Return to BASIC
+
 
 LAB_LOAD:
       ldy #O_RDONLY
