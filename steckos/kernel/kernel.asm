@@ -31,8 +31,7 @@
 
 .export read_block=sd_read_block
 .export write_block=sd_write_block
-; .export char_out=ansi_chrout         ; account for page crossing
-.export char_out=uart_tx
+.export char_out=ansi_chrout         ; account for page crossing
 
 .export crc16_lo=BUFFER_0
 .export crc16_hi=BUFFER_1
@@ -60,8 +59,6 @@ kern_init:
 
     SetVector user_isr_default, user_isr
 
-    SetVector uart_getkey, getkey_vec
-    SetVector uart_tx, chrout_vec
 
 
     jsr textui_init0
@@ -74,6 +71,9 @@ kern_init:
     ldy #>nvram
     jsr read_nvram
     jsr uart_init
+    
+    SetVector kbd_getkey, getkey_vec
+    SetVector ansi_chrout, chrout_vec
 
     stz key
     stz flags

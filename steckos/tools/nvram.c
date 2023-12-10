@@ -42,6 +42,7 @@ struct nvram
     unsigned char uart_baudrate;
     unsigned char uart_lsr;
     unsigned char keyboard_tm;
+    unsigned char mainframe_mode;
     unsigned char crc7;
 };
 
@@ -130,7 +131,6 @@ int main (int argc, const char* argv[])
         }
 		cprintf("%ld\r\n", n.uart_baudrate);
 	}    
-    
 	else if (strcmp(argv[1], "line") == 0)
 	{
         if (argc == 3)
@@ -152,8 +152,8 @@ int main (int argc, const char* argv[])
             get_stopbits(n.uart_lsr)
         );
 	}
-   else if (!strcmp(argv[1], "keyboard"))
-	{
+    else if (!strcmp(argv[1], "keyboard"))
+    {
       if (argc == 3)
       {
          n.keyboard_tm = atoi(argv[2]) & 0x7f;
@@ -165,19 +165,30 @@ int main (int argc, const char* argv[])
          get_kbrd_repeat(n.keyboard_tm),
          get_kbrd_delay(n.keyboard_tm)
 		);
-   }
+    }
+    else if (strcmp(argv[1], "mainframe") == 0)
+    {
+        if (argc == 3)
+        {
+            n.mainframe_mode = atoi(argv[2]);
+            write_nvram();
+
+        }
+
+    }
 	else if (strcmp(argv[1], "list") == 0)
 	{
-		cprintf("OS filename     : %.11s\r\nUART baud rate  : %ld\r\nUART line conf  : %c%c%c\r\nKeyboard ($%02x)  : %dHz/%dms\r\nCRC             : $%02x\n",
+		cprintf("OS filename     : %.11s\r\nUART baud rate  : %ld\r\nUART line conf  : %c%c%c\r\nKeyboard ($%02x)  : %dHz/%dms\r\nMainframe mode: %d\r\nCRC             : $%02x\n",
 			n.filename,
 			lookup_divisor(n.uart_baudrate),
 			get_databits(n.uart_lsr),
 			get_parity(n.uart_lsr),
 			get_stopbits(n.uart_lsr),
-         n.keyboard_tm,
-         get_kbrd_repeat(n.keyboard_tm),
-         get_kbrd_delay(n.keyboard_tm),
-         n.crc7
+            n.keyboard_tm,
+            get_kbrd_repeat(n.keyboard_tm),
+            get_kbrd_delay(n.keyboard_tm),
+            n.mainframe_mode,
+            n.crc7
 		);
 	}
 	else if (strcmp(argv[1], "init") == 0)
@@ -290,10 +301,10 @@ unsigned char make_line_byte(unsigned char * line)
 
 void write_nvram()
 {
-   unsigned char *p = (unsigned char *)&n;
-   n.crc7 = crc7((unsigned char *)&n, sizeof(struct nvram)-1);
+    unsigned char *p = (unsigned char *)&n;
+    n.crc7 = crc7((unsigned char *)&n, sizeof(struct nvram)-1);
 
-   spi_select(RTC);
+    spi_select(RTC);
 
 	spi_write(0x20|0x80);
 
@@ -307,9 +318,9 @@ void write_nvram()
 
 void read_nvram()
 {
-   unsigned char *p = (unsigned char *)&n;
-   spi_select(RTC);
-   spi_write(0x20);
+    unsigned char *p = (unsigned char *)&n;
+    spi_select(RTC);
+    spi_write(0x20);
 
 	for(i = 0; i<sizeof(n); i++)
 	{
@@ -342,17 +353,17 @@ unsigned long int lookup_divisor(unsigned char div)
 }
 void init_nvram()
 {
-      cprintf("Setting to default values ... ");
-	 	n.version 		= 0;
-	 	memcpy(n.filename, "loader.prg\0", 11);
+    cprintf("Setting to default values ... ");
+    n.version 		= 0;
+    memcpy(n.filename, "loader.prg\0", 11);
 
-	 	n.uart_baudrate = 0x01; // 115200 baud
-	 	n.uart_lsr		= UART_DATA_BITS8|UART_PARITY_NONE|UART_STOP_BITS1; // 8N1
+    n.uart_baudrate = 0x01; // 115200 baud
+    n.uart_lsr		= UART_DATA_BITS8|UART_PARITY_NONE|UART_STOP_BITS1; // 8N1
 
-      n.keyboard_tm = 0x20 ; // 30 Zeichen / 500ms
-
-	 	write_nvram();
-	 	cprintf("done.\r\n");
+    n.keyboard_tm = 0x20 ; // 30 Zeichen / 500ms
+    n.mainframe_mode = 0;
+    write_nvram();
+    cprintf("done.\r\n");
 }
 
 unsigned char lookup_baudrate(unsigned long int baud)

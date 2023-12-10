@@ -61,11 +61,11 @@ fetchkey:
 ;	out:
 ;		C=1 key was pressed and A=<key code>, C=0 otherwise
 kbd_getkey:
-;     lda key
-;     beq exit
-;     stz key
-;     sec
-;     rts
+    lda key
+    beq exit
+    stz key
+    sec
+    rts
 exit:
     clc
     rts

@@ -1,7 +1,5 @@
 .export read_nvram
-.import spi_rw_byte, print_crlf, primm
-.import nvram_defaults
-.import crc7
+.autoimport
 .include "system.inc"
 .include "common.inc"
 .include "spi.inc"
@@ -42,20 +40,22 @@ read_nvram:
 	lda #%01111110
 	sta via1portb
 
-	 lda __volatile_ptr
-	 ldy __volatile_ptr+1
-	 ldx #.sizeof(nvram)-1
-	 jsr crc7
+	lda __volatile_ptr
+	ldy __volatile_ptr+1
+	ldx #.sizeof(nvram)-1
+	jsr crc7
 
-	 cmp #0
-	 beq @copy_defaults
+	cmp #0
+	beq @copy_defaults
 
-	 ldy #nvram::crc7
-	 cmp (__volatile_ptr),y
-	 beq @exit
+	ldy #nvram::crc7
+	cmp (__volatile_ptr),y
+	beq @exit
 
-	 jsr primm
-	 .byte "NVRAM: CRC error.", KEY_LF, 0
+	lda #'X'
+	jsr char_out
+	jsr primm
+	.byte "NVRAM: CRC error.", KEY_LF, 0
 
 @copy_defaults:
 	 ldy #.sizeof(nvram)-1
