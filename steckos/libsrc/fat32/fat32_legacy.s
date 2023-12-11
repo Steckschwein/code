@@ -90,7 +90,7 @@ fat_write:
 .else
 @l: debug8 "fat_wr blks", blocks
     debug16 "fat_wr wptr", write_blkptr
-    jsr __fat_write_block
+    jsr __fat_write_block_data
     bcs @l_exit
     jsr __inc_lba_address              ; increment lba address to write next block
     inc write_blkptr+1

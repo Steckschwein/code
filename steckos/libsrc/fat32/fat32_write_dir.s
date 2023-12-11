@@ -83,6 +83,8 @@ fat_mkdir:
     jsr __fat_set_lba_from_fd_dirlba  ; setup lba_addr from fd
     jsr __fat_write_dir_entry         ; create dir entry at current dirptr
     bcs @l_exit_close
+    jsr __fat_read_direntry
+    bcs @l_exit_close
     jsr __fat_write_newdir_entry      ; write the data of the newly created directory with prepared data from dirptr
 @l_exit_close:
     jmp __fat_free_fd                 ; A and C are preserved
@@ -132,71 +134,78 @@ __fat_count_direntries:
 ; create the "." and ".." entry of the new directory
 ; in:
 ;   .X - the file descriptor into fd_area of the the new dir entry
-;   dirptr - set to current dir entry within block_data
+;   dirptr - set to dir entry within block_data buffer
 ; out:
 ;   C=0 on success, C=1 otherwise and A=error code
 __fat_write_newdir_entry:
-    ldy #F32DirEntry::Attr                                          ; we just copy data of the new dir entry (dirptr) to easily have create time, mod time etc.
+
+    jsr __fat_erase_block_fat
+
+    ldy #F32DirEntry::Attr                                         ; copy data of the dir entry (dirptr) created beforehand to easily take over create time, mod time etc., cluster nr
 @l_dir_cp:
     lda (dirptr), y
-    sta block_data+0*.sizeof(F32DirEntry), y                        ; 1st dir entry
-    sta block_data+1*.sizeof(F32DirEntry), y                        ; 2nd dir entry
+    debug16 "f wr nd", dirptr
+    sta block_fat+0*.sizeof(F32DirEntry), y                        ; 1st dir entry
+    sta block_fat+1*.sizeof(F32DirEntry), y                        ; 2nd dir entry
     iny
     cpy #.sizeof(F32DirEntry)
     bne @l_dir_cp
 
-    ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)-1   ; erase name and build the "." and ".." entries with space
+    ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) -1  ; erase name and build the "." and ".." entries with space
     lda #$20
 @l_clr_name:
-    sta block_data, y                                    ; 1st dir entry
-    sta block_data+1*.sizeof(F32DirEntry), y             ; 2nd dir entry
+    sta block_fat+0*.sizeof(F32DirEntry), y                        ; 1st dir entry
+    sta block_fat+1*.sizeof(F32DirEntry), y                        ; 2nd dir entry
     dey
     bpl @l_clr_name
     lda #'.'
-    sta block_data+0*.sizeof(F32DirEntry)+F32DirEntry::Name+0        ; 1st entry "."
-    sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::Name+0        ; 2nd entry ".."
-    sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::Name+1
+    sta block_fat+0*.sizeof(F32DirEntry)+F32DirEntry::Name+0        ; 1st entry "."
+    sta block_fat+1*.sizeof(F32DirEntry)+F32DirEntry::Name+0        ; 2nd entry ".."
+    sta block_fat+1*.sizeof(F32DirEntry)+F32DirEntry::Name+1
 
     ldy #FD_INDEX_TEMP_DIR                                          ; due to fat_opendir/fat_open within fat_mkdir the fd of temp dir (FD_INDEX_TEMP_DIR) represents the last visited directory which must be the parent of this one ("..") - FTW!
     debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster  ; we can simpyl take over the cluster from parent to write the ".."
     debug32 "cd_sln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster  ; we can simpyl take over the cluster from parent to write the ".."
     lda fd_area+F32_fd::CurrentCluster+0,y
-    sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusLO+0
+    sta block_fat+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusLO+0
     lda fd_area+F32_fd::CurrentCluster+1,y
-    sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusLO+1
+    sta block_fat+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusLO+1
     lda fd_area+F32_fd::CurrentCluster+2,y
-    sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusHI+0
+    sta block_fat+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusHI+0
     lda fd_area+F32_fd::CurrentCluster+3,y
-    sta block_data+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusHI+1
-
-    ldy #$7f
-    lda #$00
-@l_1st_block:
-    sta block_data+2*.sizeof(F32DirEntry), y                ; all dir entries, but "." and ".." (+2), are set to 0
-    sta block_data+$080, y
-    sta block_data+$100, y
-    sta block_data+$180, y
-    dey
-    bpl @l_1st_block
+    sta block_fat+1*.sizeof(F32DirEntry)+F32DirEntry::FstClusHI+1
 
     jsr __calc_lba_addr
-    jsr __fat_write_block_data
+    jsr __fat_write_block_fat
     bcs @l_exit
 
-    m_memset block_data, 0, 2*.sizeof(F32DirEntry)              ; now erase the "." and ".." entries too
-    ldy volumeID+ VolumeID:: BPB_SecPerClus              ; Y = VolumeID::SecPerClus - reamining blocks of the cluster with empty dir entries
-    debug32 "er_d", lba_addr
-    bra @l_remain_blocks_e
-@l_remain_blocks:
-    jsr __inc_lba_address                        ; next block within cluster
-    jsr __fat_write_block_data
+    jsr __fat_erase_block_fat
+    ldy volumeID+ VolumeID:: BPB_SecPerClusMask     ; Y = VolumeID::SecPerClus-1 - reamining blocks of the cluster with empty dir entries
+    debug32 "mkdr er", lba_addr
+    beq @l_exit
+@l_erase:
+    jsr __inc_lba_address                           ; next block within cluster
+    jsr __fat_write_block_fat
     bcs @l_exit
-@l_remain_blocks_e:
     dey
-    bne @l_remain_blocks                          ; write until 0 (VolumeID::SecPerClus) reached
+    bne @l_erase                                    ; all blocks written?
+
 @l_exit:
     debug "fat_wr_nd"
     rts
+
+
+__fat_erase_block_fat:
+    ldy #0                      ; safely, fill the new dir block with 0 to mark end-of-directory
+    tya
+@l_erase:
+    sta block_fat+$000, y
+    sta block_fat+$100, y
+    iny
+    bne @l_erase
+    rts
+
+
 
 __fat_is_dot_dir:
     lda #'.'

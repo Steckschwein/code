@@ -189,7 +189,7 @@ DIR_Entry_Deleted            = $e5
    FileSize         .dword  ;
    Attr             .byte   ; file attributes (mirror of attributes from dir entry)
    DirEntryLBA      .dword  ; LBA of the block where the dir entry of the file is located
-   DirEntryPos      .byte   ; block offset within the block (n * DIR_Entry_Size)
+   DirEntryPos      .byte   ; block offset "n" where n * DIR_Entry_Size/2 within the block - as an optimization we store the position as half of DIR_Entry_Size
    SeekPos          .dword  ; seek position within the opened file
                             ;    O_RDONLY  = $01
                             ;    O_WRONLY  = $02

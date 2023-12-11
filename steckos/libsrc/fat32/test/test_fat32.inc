@@ -81,6 +81,10 @@
   .word (year-1980)<<9 | month<<5 | day
 .endmacro
 
+.macro setDirEntry address
+  setMemory address, DIR_Entry_Size
+.endmacro
+
 .macro fat32_dir_entry_dir _8_3_name, _8_3_ext, cl
   fat32_dir_entry _8_3_name, _8_3_ext, DIR_Attr_Mask_Dir, cl, 0
 .endmacro

@@ -40,12 +40,12 @@
 .export __fat_ensure_start_cluster
 .export __fat_write_dir_entry
 .export __fat_update_direntry
-.export __fat_write_block
 .export __fat_fopen_touch
 .export __fat_write_block_data
+.export __fat_write_block_fat
 .export __fat_set_lba_from_fd_dirlba
 .export __fat_unlink
-
+.export __fat_read_direntry
 .autoimport
 
 ; in:
@@ -131,13 +131,13 @@ __fat_update_direntry:
 
 ; read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
 ; in:
-;    X - file descriptor of the file the directory entry should be read
+;   X - file descriptor of the file the directory entry should be read
 ; out:
-;    C - C=0 on success (A=0), C=1 and A=<error code> otherwise
-;  dirptr pointing to the corresponding directory entry of type F32DirEntry
+;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
+;   dirptr pointing to the corresponding directory entry of type F32DirEntry
 __fat_read_direntry:
     jsr __fat_set_lba_from_fd_dirlba      ; setup lba address from fd
-    jsr __fat_read_block_data              ; and read the block with the dir entry
+    jsr __fat_read_block_data             ; and read the block with the dir entry
     bcs @l_exit
 
     lda fd_area+F32_fd::DirEntryPos, x  ; setup dirptr
@@ -146,7 +146,6 @@ __fat_read_direntry:
     lda #>block_data
     adc #0 ;+Carry
     sta dirptr+1
-    lda #EOK
 @l_exit:
     rts
 
@@ -298,46 +297,48 @@ __fat_write_dir_entry:
     jsr __fat_set_direntry_modify_datetime
     jsr __fat_set_direntry_create_datetime
 
-    debug16 "f_w_dp", dirptr
+    debug16 "fat wr dirent", dirptr
 
     ;TODO FIXME duplicate code here! - @see __fat_find_next:
     lda dirptr+1
     sta s_ptr1+1
-    lda dirptr                          ; create the end of directory entry
+    lda dirptr                  ; create the end of directory entry
     clc
     adc #DIR_Entry_Size
     sta s_ptr1
     bcc @l2
     inc s_ptr1+1
 @l2:
-    lda s_ptr1+1                ; end of block reached? :/ edge-case, we have to create the end-of-directory entry at the next block
+    lda s_ptr1+1                ; end of block reached? we have to create the end-of-directory entry at the next block
     cmp #>(block_data+sd_blocksize)
     beq @l_new_block            ; yes, prepare new block
     lda #0                      ; mark EOD
     sta (s_ptr1)
     bra @l_eod
 @l_new_block:                   ; new dir entry
-    jsr __fat_write_block_data        ; write the current block with the updated dir entry first
+    jsr __fat_write_block_data  ; write the current block with the updated dir entry first
     bcs @l_exit
 
-    ldy #0                  ; safely, fill the new dir block with 0 to mark end-of-directory
+    jsr __fat_erase_block_data
+    ;TODO FIXME test end of cluster, if so reserve a new one, update cluster chain for directory ;)
+    debug32 "eod_lba", lba_addr
+    debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
+    jsr __inc_lba_address                    ; increment lba address to write to next block
+@l_eod:
+    jsr __fat_write_block_data               ; write the updated dir entry to device
+@l_exit:
+    debug "f_wde"
+    rts
+
+__fat_erase_block_data:
+    ldy #0                      ; safely, fill the new dir block with 0 to mark end-of-directory
     tya
 @l_erase:
     sta block_data+$000, y
     sta block_data+$100, y
     iny
     bne @l_erase
-    ;TODO FIXME test end of cluster, if so reserve a new one, update cluster chain for directory ;)
-    debug32 "eod_lba", lba_addr
-    debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
-    jsr __inc_lba_address                    ; increment lba address to write to next block
-@l_eod:
-    ;TODO FIXME erase the rest of the block, currently 0 is assumed
-    jsr __fat_write_block_data                  ; write the updated dir entry to device
-@l_exit:
-    debug "f_wde"
     rts
-
 
 ; free cluster and maintain the fsinfo block
 ; in:
@@ -453,7 +454,6 @@ __fat_write_block_data:
     rts
 :   sty write_blkptr+1
     stz write_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
-__fat_write_block:
 .ifndef FAT_NOWRITE
     debug32 "f_wr lba", lba_addr
     debug16 "f_wr wpt", write_blkptr
