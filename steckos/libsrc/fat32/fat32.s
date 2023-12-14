@@ -120,6 +120,14 @@ __fat_fseek:
 
     jsr __fat_ensure_start_cluster
     bcs @l_exit
+    lda fd_area+F32_fd::StartCluster+3, x
+    sta fd_area+F32_fd::CurrentCluster+3, x
+    lda fd_area+F32_fd::StartCluster+2, x
+    sta fd_area+F32_fd::CurrentCluster+2, x
+    lda fd_area+F32_fd::StartCluster+1, x
+    sta fd_area+F32_fd::CurrentCluster+1, x
+    lda fd_area+F32_fd::StartCluster+0, x
+    sta fd_area+F32_fd::CurrentCluster+0, x
 
     ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may fail within seek and leave with partial reserved clusters we dont recover (yet)
     ; read fsinfo andcmp temp_dword with fsinfo:FreeClus
@@ -161,6 +169,9 @@ fat_fread_byte:
 :   phy
     jsr __fat_prepare_block_access
     bcs @l_exit
+
+    sta __volatile_ptr
+    sty __volatile_ptr+1
 
     lda (__volatile_ptr)
     _inc32_x fd_area+F32_fd::SeekPos

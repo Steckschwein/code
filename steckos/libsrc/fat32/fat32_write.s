@@ -65,6 +65,9 @@ fat_write_byte:
     jsr __fat_prepare_block_access
     bcs @l_exit
 
+    sta __volatile_ptr
+    sty __volatile_ptr+1
+
     lda __volatile_tmp                  ; get back byte to write
     debug "f_wr byte"
     sta (__volatile_ptr)
@@ -383,12 +386,8 @@ __fat_free_cluster:
 ; out:
 ;  C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
 __fat_ensure_start_cluster:
-    clc
     jsr __fat_is_start_cln_zero
-    lda fd_area+F32_fd::StartCluster+3, x
-    ora fd_area+F32_fd::StartCluster+2, x
-    ora fd_area+F32_fd::StartCluster+1, x
-    ora fd_area+F32_fd::StartCluster+0, x
+    clc ; exit with success, if we take the branch
     bne @l_exit
 
     lda fd_area + F32_fd::flags,x
@@ -400,14 +399,6 @@ __fat_ensure_start_cluster:
     bcs @l_exit
     jsr __fat_set_fd_start_cluster
 @l_exit:
-    lda fd_area+F32_fd::StartCluster+3, x
-    sta fd_area+F32_fd::CurrentCluster+3, x
-    lda fd_area+F32_fd::StartCluster+2, x
-    sta fd_area+F32_fd::CurrentCluster+2, x
-    lda fd_area+F32_fd::StartCluster+1, x
-    sta fd_area+F32_fd::CurrentCluster+1, x
-    lda fd_area+F32_fd::StartCluster+0, x
-    sta fd_area+F32_fd::CurrentCluster+0, x
     debug32 "sel strt cl <", fd_area+(FD_Entry_Size*2)+F32_fd::CurrentCluster
     rts
 
@@ -478,21 +469,32 @@ __fat_update_cluster:
 
 ; return C=0 on success, C=1 otherwise and A=error code
 __fat_write_block_fat:
-    phy
-    ldy #>block_fat
+    lda #>block_fat
     bra :+
 __fat_write_block_data:
-    phy
-    ldy #>block_data
+    lda #>block_data
 .ifdef FAT_DUMP_FAT_WRITE
     debugdump "fat_wb dmp", block_fat
 .endif
-:   lda write_blkptr
-    pha
-    lda write_blkptr+1
-    pha
 
-    sty write_blkptr+1
+:   pha
+
+    debug32 "fat_wb lba", lba_addr
+    debug32 "fat_wb lba last", volumeID+VolumeID::lba_addr_last
+    cmp32 volumeID+VolumeID::lba_addr_last, lba_addr, @l_write
+
+    pla
+    clc
+    rts
+
+@l_write:
+    pla
+    phy
+    ldy write_blkptr
+    phy
+    ldy write_blkptr+1
+    phy
+    sta write_blkptr+1
     stz write_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
 .ifndef FAT_NOWRITE
     debug32 "f_wr lba", lba_addr
@@ -504,17 +506,16 @@ __fat_write_block_data:
     lda #EOK
     clc
 .endif
-
     ply
     sty write_blkptr+1
     ply
     sty write_blkptr
     ply
     cmp #EOK
-    bne :+
-    clc
-    rts
-:   sec
+    bne @l_exit_err
+    jmp __fat_save_lba_addr
+@l_exit_err:
+    sec
     rts
 
 

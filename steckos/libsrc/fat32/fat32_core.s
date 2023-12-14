@@ -59,6 +59,7 @@
 .export __fat_set_fd_attr_dirlba
 .export __fat_set_fd_dirlba
 .export __fat_set_fd_start_cluster
+.export __fat_save_lba_addr
 .export __calc_lba_addr
 .export __inc_lba_address
 
@@ -283,6 +284,7 @@ __fat_clone_fd:
 ;   .X - file descriptor
 ; out:
 ;   C=0 on success, C=1 on error with A=<error code>
+;   A/Y pointer to access data for read/write
 .export __fat_prepare_block_access
 __fat_prepare_block_access:
 
@@ -291,8 +293,8 @@ __fat_prepare_block_access:
     bvc @l_check_block
 
     jsr __fat_fseek                   ; yes, then we have to seek
-    bcs @l_exit
-    bra @l_read
+    bcc @l_read
+    rts
 
 @l_check_block:
     lda fd_area+F32_fd::SeekPos+1,x
@@ -313,12 +315,13 @@ __fat_prepare_block_access:
     bcs @l_exit
 @l_prepare_ptr:
     .assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
-    lda fd_area+F32_fd::SeekPos+0,x
-    sta __volatile_ptr+0
     lda fd_area+F32_fd::SeekPos+1,x
     and #$01
     ora #>block_data
-    sta __volatile_ptr+1
+    ;sta __volatile_ptr+1
+    tay
+    lda fd_area+F32_fd::SeekPos+0,x
+    ;sta __volatile_ptr+0
     clc
 @l_exit:
     rts
@@ -437,7 +440,8 @@ __fat_read_block_data:
     debug32 "fat_rb lba", lba_addr
     debug32 "fat_rb lba last", volumeID+VolumeID::lba_addr_last
     cmp32 volumeID+VolumeID::lba_addr_last, lba_addr, @l_read
-    bra @l_exit
+    clc
+    rts
 
 @l_read:
     phx
@@ -445,9 +449,12 @@ __fat_read_block_data:
     jsr read_block
     dec read_blkptr+1    ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
     plx
-    cmp #0
-    bne @l_exit_err
+    cmp #EOK
+    beq __fat_save_lba_addr
+    sec
+    rts
 
+__fat_save_lba_addr:
     lda lba_addr+0
     sta volumeID+VolumeID::lba_addr_last+0
     lda lba_addr+1
@@ -456,12 +463,7 @@ __fat_read_block_data:
     sta volumeID+VolumeID::lba_addr_last+2
     lda lba_addr+3
     sta volumeID+VolumeID::lba_addr_last+3
-
-@l_exit:
-    clc
-    rts
-@l_exit_err:
-    sec
+    clc ; success
     rts
 
     ; in:
@@ -615,6 +617,7 @@ __fat_next_cln:
     clc
 @l_exit:
     rts
+
 
 
 __fat_set_fd_start_cluster:
