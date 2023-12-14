@@ -60,7 +60,7 @@ __fat_opendir_cwd:
 ;	  X - index into fd_area of the opened directory
 __fat_opendir:
 		jsr __fat_open_path
-		bcs @l_exit					; exit on error
+		bcs @l_exit					    ; exit on error
 		lda fd_area + F32_fd::Attr,x
 		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
 		beq @l_exit_close
@@ -83,7 +83,7 @@ fat_chdir:
 		bcs @l_exit
     ldy #FD_INDEX_TEMP_DIR		; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
 		ldx #FD_INDEX_CURRENT_DIR
-		jsr __fat_clone_fd				; therefore we can simply clone the fd from open to current dir fd - FTW!
+		jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
     clc
 @l_exit:
 		debug "fat chdir <"

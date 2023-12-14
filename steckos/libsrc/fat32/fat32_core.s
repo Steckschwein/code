@@ -52,6 +52,7 @@
 .export __fat_is_cln_zero
 .export __fat_next_cln
 .export __fat_open_path
+.export __fat_open_rootdir
 .export __fat_read_block_data
 .export __fat_read_block_fat
 .export __fat_set_fd_attr_dirlba
@@ -139,23 +140,16 @@ __fat_open_path:
 
     ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the current dir (Y parameter!), maybe we will run into an error
     jsr __fat_clone_fd        ; Y is given as param
-;    stp
+
     ldy #0                    ; trim wildcard at the beginning
 @l1:
     lda (s_ptr1), y
-    cmp #' '
-    bne @l2
+    cmp #' '+1
+    bcs @l2
     iny
     bne @l1
     bra @l_err_einval    ; overflow, >255 chars
-@l2:  ;  starts with '/' ? - we simply cd root first
-    cmp #'/'
-    bne @l31
-    jsr __fat_open_rootdir
-    iny
-    lda  (s_ptr1), y    ;end of input?
-    beq  @l_exit        ;yes, so it was just the '/', exit with A=0
-@l31:
+@l2:
     SetVector filename_buf, filenameptr  ; filenameptr to filename_buf
 @l3:  ;  parse input path fragments into filename_buf try to change dirs accordingly
     ldx #0
@@ -170,22 +164,33 @@ __fat_open_path:
     sta filename_buf, x
     iny
     inx
-    cpx #8+1+3    +1    ; buffer overflow ? - only 8.3 file support yet
+    cpx #8+1+3 + 1          ; buffer overflow ? - only 8.3 file support yet
     bne @l_parse_1
     bra @l_err_einval
 @l_open_dir:
-    stz filename_buf, x      ; \0 terminate the current path fragment
-    jsr __fat_open_file      ; return with X as offset into fd_area with new allocated file descriptor
+    cpx #0                  ; empty string, we came from '/' match
+    bne :+
+    ldx #FD_INDEX_TEMP_DIR  ; use fd of the temp directory
+    jsr __fat_open_rootdir
+    bcc @l_next
+
+:   stz filename_buf, x     ; \0 terminate the current path fragment
+    jsr __fat_open_file     ; return with X as offset into fd_area with new allocated file descriptor
     bcs @l_exit
+@l_next:
     iny
-    bne  @l3                 ;overflow - <path argument> exceeds 255 chars
+    bne @l3                 ;overflow - <path argument> exceeds 255 chars
 @l_err_einval:
     lda  #EINVAL
     sec
 @l_exit:
     rts
 @l_openfile:
-    stz filename_buf, x      ;\0 terminate the current path fragment
+    cpx #0                  ; empty string, then we're done
+    bne :+
+    clc
+    rts
+:   stz filename_buf, x      ;\0 terminate the current path fragment
 
 ;in:
 ;  filenameptr - ptr to the filename
@@ -368,7 +373,10 @@ __fat_alloc_fd_x:
 ;   .X - FD_INDEX_TEMP_DIR offset to fd area
 ;   C=0 on success
 __fat_open_rootdir:
-    ldx #FD_INDEX_TEMP_DIR          ; use fd of the temp directory
+    jsr __fat_init_fd
+    lda #DIR_Attr_Mask_Dir
+    sta fd_area + F32_fd::Attr,x
+    rts
 ; in:
 ;  .X - with index to fd_area
 __fat_init_fd:
