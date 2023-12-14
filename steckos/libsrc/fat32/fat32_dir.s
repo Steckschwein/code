@@ -44,27 +44,26 @@
 .code
 
 ; open directory by given path starting from current directory
-;in:
-;	A/X - pointer to string with the file path
-;out:
-;	C - C=0 on success (A=0), C=1 and A=<error code> otherwise
-;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
+; in:
+;	  A/X - pointer to string with the file path
+; out:
+;	  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
+;	  X - index into fd_area of the opened directory
 __fat_opendir_cwd:
 		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
 ; open directory by given path starting from directory given as file descriptor
 ; in:
-;	A/X - pointer to string with the file path
-;	Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
+;   A/X - pointer to string with the file path
+;	  Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
 ; out:
-;	C - C=0 on success (A=0), C=1 and A=error code otherwise
-;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
+;	  C - C=0 on success (A=0), C=1 and A=error code otherwise
+;	  X - index into fd_area of the opened directory
 __fat_opendir:
 		jsr __fat_open_path
 		bcs @l_exit					; exit on error
 		lda fd_area + F32_fd::Attr,x
 		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
 		beq @l_exit_close
-		lda #EOK						; ok
     clc
 @l_exit:
 		rts
@@ -82,11 +81,10 @@ __fat_opendir:
 fat_chdir:
 		jsr __fat_opendir_cwd
 		bcs @l_exit
-		ldy #FD_INDEX_TEMP_DIR		  ; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
+    ldy #FD_INDEX_TEMP_DIR		; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
 		ldx #FD_INDEX_CURRENT_DIR
-		jsr __fat_clone_fd				; therefore we can simply clone the temp dir to current dir fd - FTW!
-		lda #EOK						; ok
+		jsr __fat_clone_fd				; therefore we can simply clone the fd from open to current dir fd - FTW!
     clc
 @l_exit:
-		debug "fcd"
+		debug "fat chdir <"
 		rts

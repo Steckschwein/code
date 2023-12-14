@@ -56,7 +56,7 @@ fat_rmdir:
     lda #EINVAL
     sec
 @l_exit:
-    debug "rmdir"
+    debug "rmdir <"
     rts
 
 ; in:
@@ -69,20 +69,20 @@ fat_mkdir:
     cmp #ENOENT                       ; we expect 'no such file or directory' error, otherwise a file/dir with same name already exists
     bne @l_exit_err                   ; exit on other error
 
-    debug16 "mkdir 1", dirptr
-    copypointer dirptr, s_ptr2
-    jsr string_fat_name               ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
-    bne @l_exit_err
+    debug16 "fat mkdir >", dirptr
+
+    jsr __fat_write_dir_entry         ; create and write new dir entry
+    bcs @l_exit_close
+
     jsr __fat_alloc_fd                ; alloc a fd for the new directory - try to allocate a new fd here, right before any fat writes, cause they may fail
     bcs @l_exit                       ; and we want to avoid an error in between the different block writes
     lda #DIR_Attr_Mask_Dir            ; set type directory
-    jsr __fat_set_fd_attr_dirlba      ; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
+    sta fd_area+F32_fd::Attr, x
     jsr __fat_reserve_cluster         ; try to find and reserve next free cluster and store them in fd_area at fd (X)
     bcs @l_exit_close                 ; C=1 - fail, exit but close fd
     jsr __fat_set_fd_start_cluster    ; set start cluster to fd
     jsr __fat_set_lba_from_fd_dirlba  ; setup lba_addr from fd
-    jsr __fat_write_dir_entry         ; create dir entry at current dirptr
-    bcs @l_exit_close
+
     jsr __fat_read_direntry
     bcs @l_exit_close
     jsr __fat_write_newdir_entry      ; write the data of the newly created directory with prepared data from dirptr
@@ -93,7 +93,7 @@ fat_mkdir:
 @l_exit_err:
     sec
 @l_exit:
-    debug "fat_mkdir"
+    debug "fat mkdir <"
     rts
 
     ; in:

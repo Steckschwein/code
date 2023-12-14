@@ -42,6 +42,8 @@
 
 MOUNT_RETRIES=8
 
+; out:
+;   C=0 on success, C=1 otherwise
 __automount_init:
     jsr sdcard_detect
     bne sdcard_err_detect
@@ -66,6 +68,7 @@ err_code_exit:
     jsr hexout_s
     jsr primm
     .byte ")",CODE_LF,0
+    sec
 exit:
     rts
 msg_sdcard:

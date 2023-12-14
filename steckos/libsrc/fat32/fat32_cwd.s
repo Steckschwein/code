@@ -52,7 +52,9 @@ fat_get_root_and_pwd:
     SetVector block_fat, s_ptr3    ;TODO FIXME - we use the 512 byte fat block buffer as temp space - FTW!
     stz s_tmp3
 
-    jsr __fat_clone_cd_td               ; start from current directory, clone the cd fd
+    ldy #FD_INDEX_CURRENT_DIR
+    ldx #FD_INDEX_TEMP_DIR
+    jsr __fat_clone_fd                  ; start from current directory, clone the cd fd
 
 @l_rd_dir:
     lda #'/'                            ; put the / char to result string
@@ -63,9 +65,9 @@ fat_get_root_and_pwd:
     m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, volumeID+VolumeID::temp_dword, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
     lda #<l_dot_dot
     ldx #>l_dot_dot
-    ldy #FD_INDEX_TEMP_DIR                  ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
+    ldy #FD_INDEX_TEMP_DIR              ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
     jsr __fat_opendir
-    bne @l_exit
+    bcs @l_exit
     SetVector cluster_nr_matcher, volumeID+VolumeID::fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
     jsr __fat_find_first                    ; and call find first to find the entry with that cluster number we saved in temp_dword before we did the cd ".."
     bcc @l_exit

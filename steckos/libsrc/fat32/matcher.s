@@ -48,7 +48,7 @@ __dmm:
 __dmm_next:
     dey
     bpl __dmm
-    rts ;exit, C=! here from cmp above
+    rts ;exit, C=1 here from cmp above
 __dmm_neq:
     clc
     rts
@@ -67,7 +67,7 @@ string_fat_mask:
 
     stz s_tmp1
     ldy #0
-  __tfn_mask_input:
+__tfn_mask_input:
     sty s_tmp2
     ldy s_tmp1
     lda (filenameptr), y
@@ -83,23 +83,23 @@ string_fat_mask:
     bne __tfn_mask_fill_blank  ; no, fill section
     cmp  (s_ptr2)        ; otherwise check whether we already captured a "." as first char
     beq __tfn_mask_char_l2
-  __tfn_mask_fill_blank:
+__tfn_mask_fill_blank:
     lda #' '
     bra __tfn_mask_fill
-  __tfn_mask_qm:
+__tfn_mask_qm:
     cmp #'?'
     bne __tfn_mask_star
     sec                ; save only 1 char in fill
     bra __tfn_mask_fill_l1
-  __tfn_mask_star:
+__tfn_mask_star:
     cmp #'*'
     bne __tfn_mask_char
     lda #'?'
-  __tfn_mask_fill:
+__tfn_mask_fill:
     clc
-  __tfn_mask_fill_l1:
+__tfn_mask_fill_l1:
     ldy s_tmp2
-  __tfn_mask_fill_l2:
+__tfn_mask_fill_l2:
     sta (s_ptr2), y
     iny
     bcs __tfn_mask_input      ; C=1, then go on next char
@@ -107,21 +107,23 @@ string_fat_mask:
     beq __tfn_mask_input    ; go on with extension
     cpy #8+3
     bne __tfn_mask_fill_l2
-  __tfm_exit:
+    clc
+__tfm_exit:
     rts
-  __tfn_mask_char:
+__tfn_mask_char:
     cmp #'a' ; Is lowercase?
     bcc __tfn_mask_char_l1
     cmp #'z'+1
     bcs __tfn_mask_char_l1
     and #$DF
-  __tfn_mask_char_l1:
+__tfn_mask_char_l1:
     ldy s_tmp2
-  __tfn_mask_char_l2:
+__tfn_mask_char_l2:
     sta (s_ptr2), y
     iny
     cpy #8+3
     bne __tfn_mask_input
+    clc
     rts
 
     ; trim string, remove leading and trailing white space
@@ -159,39 +161,42 @@ string_trim:
 ;  filenameptr with input string to convert to fat file name mask
 ;  s_ptr2 with pointer where the fat file name mask should be stored
 ; out:
-;  Z=1 on success and s_ptr2 with the pointer of the mask build upon input string
-;  Z=0 on error, the input string contains invalid chars not allowed within a dos 8.3. file name
+;  C=0 on success and s_ptr2 with the pointer of the mask build upon input string
+;  C=1 on error, the input string contains invalid chars not allowed within a dos 8.3. file name
 string_fat_name:
+      phx
       ldy #0
 __sfn_ic:
       lda (filenameptr), y
       beq __sfn_mask
       jsr string_illegalchar
-      bne __sfn_exit
+      bcs __sfn_exit
       iny
       bne __sfn_ic
 __sfn_mask:
       jsr string_fat_mask        ;
-      lda #EOK
 __sfn_exit:
+      plx
       rts
 
-      ; in:
-      ;  A - char to check whether it is legal to build a fat file name or extension
-      ; out:
-      ;  Z=1 on success, Z=0 otherwise which input char is invalid
+; in:
+;  A - char to check whether it is legal to build a fat file name or extension
+; out:
+;  C=0 on success, C=1 otherwise which means input char is invalid
 string_illegalchar:
       ldx #(__illegalchars_end - __illegalchars) -1          ; x to length(blacklist)-1
-    __illegalchar_l1:
+__illegalchar_l1:
       cmp __illegalchars, x
       beq __illegalchar_ex
       dex
       bpl __illegalchar_l1
-      lda #EOK
+      clc
       rts
-    __illegalchar_ex:
+__illegalchar_ex:
       lda #EINVAL
+      sec
       rts
-    __illegalchars:
-      .byte "?*+,/:;<=>\[]|",'"',127
-    __illegalchars_end:
+__illegalchars:
+      .byte "?*+,/:;<=>\[\|",'"',127
+__illegalchars_end:
+

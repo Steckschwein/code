@@ -306,7 +306,7 @@ debug_enabled=1
 
 
 ; -------------------
-    brk ;TODO write chain
+    brk ;TODO write and maintain cluster chain
 
     setup "fat_write_byte 2049 byte 4s/cl";
     ldy #O_RDWR
@@ -505,9 +505,6 @@ mock_write_block:
     store_block_if (FAT2_LBA+(TEST_FILE_CL>>7)), block_fat2_0, @ok
 
     fail "write lba not handled!"
-@dummy_write:
-    debug "dummy write"
-    inc write_blkptr+1 ; => same behaviour as real block read implementation
 @ok:
     lda #EOK
     rts

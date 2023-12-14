@@ -120,14 +120,6 @@ __fat_fseek:
 
     jsr __fat_ensure_start_cluster
     bcs @l_exit
-    lda fd_area+F32_fd::StartCluster+3, x
-    sta fd_area+F32_fd::CurrentCluster+3, x
-    lda fd_area+F32_fd::StartCluster+2, x
-    sta fd_area+F32_fd::CurrentCluster+2, x
-    lda fd_area+F32_fd::StartCluster+1, x
-    sta fd_area+F32_fd::CurrentCluster+1, x
-    lda fd_area+F32_fd::StartCluster+0, x
-    sta fd_area+F32_fd::CurrentCluster+0, x
 
     ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may fail within seek and leave with partial reserved clusters we dont recover (yet)
     ; read fsinfo andcmp temp_dword with fsinfo:FreeClus
@@ -212,8 +204,6 @@ fat_fopen:
     sec
     rts
 @l_opened:
-;    update atime if desired, exit ok
-;    jsr __fat_set_direntry_modify_datetime
     lda __volatile_tmp
     sta fd_area+F32_fd::flags,x
     clc
@@ -248,10 +238,7 @@ fat_close:
     ;  Z=1 on success (A=0), Z=0 and A=error code otherwise
     ;  C=1 if found and dirptr is set to the dir entry found (requires Z=1), C=0 otherwise
 fat_find_first:
-    txa                    ; use the given fd as source (Y)
-    tay
-    ldx #FD_INDEX_TEMP_DIR          ; we use the temp dir with a copy of given fd, cause F32_fd::CurrentCluster is adjusted if end of cluster is reached
-    jsr __fat_clone_fd
+    jsr __fat_clone_fd_temp_fd
     jmp __fat_find_first_mask
 
 fat_find_next = __fat_find_next

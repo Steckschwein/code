@@ -96,7 +96,7 @@ kern_init:
 
     SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
     jsr __automount_init
-    bne do_upload
+    bcs do_upload
 
     lda #<filename
     ldx #>filename

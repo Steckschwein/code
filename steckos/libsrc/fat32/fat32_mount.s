@@ -50,6 +50,7 @@ fat_mount:
     sta volumeID+VolumeID::lba_addr_last+1
     sta volumeID+VolumeID::lba_addr_last+2
     sta volumeID+VolumeID::lba_addr_last+3
+    sta volumeID+VolumeID::LastClus
 
     ; set lba_addr to $00000000 since we want to read the bootsector
     stz lba_addr + 0
