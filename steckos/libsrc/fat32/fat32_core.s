@@ -50,6 +50,7 @@
 .export __fat_clone_fd_temp_fd
 .export __fat_free_fd
 .export __fat_is_cln_zero
+.export __fat_is_start_cln_zero
 .export __fat_next_cln
 .export __fat_open_path
 .export __fat_open_rootdir
@@ -408,10 +409,17 @@ __fat_free_fd:
 ; out:
 ;  Z=1 if it is the root cluster, Z=0 otherwise
 __fat_is_cln_zero:
-    lda fd_area+F32_fd::CurrentCluster+3,x        ; check whether start cluster is the root dir cluster nr (0x00000000) as initial set by fat_alloc_fd
+    lda fd_area+F32_fd::CurrentCluster+3,x      ; check whether current cluster is the root dir cluster nr (0x00000000) as initial set by fat_alloc_fd
     ora fd_area+F32_fd::CurrentCluster+2,x
     ora fd_area+F32_fd::CurrentCluster+1,x
     ora fd_area+F32_fd::CurrentCluster+0,x
+    rts
+
+__fat_is_start_cln_zero:
+    lda fd_area+F32_fd::StartCluster+3,x        ; check whether start cluster is the root dir cluster nr (0x00000000) as initial set by fat_alloc_fd
+    ora fd_area+F32_fd::StartCluster+2,x
+    ora fd_area+F32_fd::StartCluster+1,x
+    ora fd_area+F32_fd::StartCluster+0,x
     rts
 
 ; internal read block

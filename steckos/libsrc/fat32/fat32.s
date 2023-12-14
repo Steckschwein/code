@@ -230,13 +230,13 @@ fat_close:
     jsr __fat_update_direntry
     jmp __fat_free_fd
 
-    ; find first dir entry
-    ; in:
-    ;  X - file descriptor (index into fd_area) of the directory
-    ;  filenameptr  - with file name to search
-    ; out:
-    ;  Z=1 on success (A=0), Z=0 and A=error code otherwise
-    ;  C=1 if found and dirptr is set to the dir entry found (requires Z=1), C=0 otherwise
+; find first dir entry
+; in:
+;   X - file descriptor (index into fd_area) of the directory
+;   filenameptr  - with file name to search
+; out:
+;   Z=1 on success (A=0), Z=0 and A=error code otherwise
+;   C=1 if found and dirptr is set to the dir entry found (requires Z=1), C=0 otherwise
 fat_find_first:
     jsr __fat_clone_fd_temp_fd
     jmp __fat_find_first_mask

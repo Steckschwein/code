@@ -384,6 +384,7 @@ __fat_free_cluster:
 ;  C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
 __fat_ensure_start_cluster:
     clc
+    jsr __fat_is_start_cln_zero
     lda fd_area+F32_fd::StartCluster+3, x
     ora fd_area+F32_fd::StartCluster+2, x
     ora fd_area+F32_fd::StartCluster+1, x

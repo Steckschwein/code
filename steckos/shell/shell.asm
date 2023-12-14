@@ -89,7 +89,7 @@ mainloop:
         ldx #>cwdbuf
         ldy #cwdbuf_size
         jsr krn_getcwd
-        bne @nocwd
+        bcs @nocwd
 
         lda #<cwdbuf
         ldx #>cwdbuf

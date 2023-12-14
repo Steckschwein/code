@@ -37,10 +37,10 @@
 .autoimport
 
 ;in:
-;  A/X - pointer to zp location with .sizeof(CWD)
+;  A/X - address to write the current work directory string into
 ;  Y  - size of result buffer
 ;out:
-;  Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;  C - C=0 on success (A=0), C=1 and A=error code otherwise
 fat_get_root_and_pwd:
 
     php
@@ -49,18 +49,19 @@ fat_get_root_and_pwd:
     sta __volatile_ptr
     stx __volatile_ptr+1
 
-    SetVector block_fat, s_ptr3    ;TODO FIXME - we use the 512 byte fat block buffer as temp space - FTW!
+    SetVector $0800, s_ptr3
     stz s_tmp3
 
     ldy #FD_INDEX_CURRENT_DIR
     ldx #FD_INDEX_TEMP_DIR
     jsr __fat_clone_fd                  ; start from current directory, clone the cd fd
 
+    ;stp
 @l_rd_dir:
     lda #'/'                            ; put the / char to result string
     jsr put_char
     ldx #FD_INDEX_TEMP_DIR              ; if root, exit to inverse the path string
-    jsr __fat_is_cln_zero
+    jsr __fat_is_start_cln_zero
     beq @l_inverse
     m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, volumeID+VolumeID::temp_dword, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
     lda #<l_dot_dot
@@ -69,23 +70,27 @@ fat_get_root_and_pwd:
     jsr __fat_opendir
     bcs @l_exit
     SetVector cluster_nr_matcher, volumeID+VolumeID::fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
-    jsr __fat_find_first                    ; and call find first to find the entry with that cluster number we saved in temp_dword before we did the cd ".."
+    jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in temp_dword before we did the cd ".."
     bcc @l_exit
-    jsr fat_name_string                    ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
-    bra @l_rd_dir                      ; go on with bottom up walk until root is reached
+    jsr fat_name_string                 ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
+    bra @l_rd_dir                       ; go on with bottom up walk until root is reached
 @l_inverse:
-    copypointer __volatile_ptr, s_ptr2        ; __volatile_ptr is the pointer to the result string, given by the caller (eg. pwd.prg)
-    jsr path_inverse                ; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
-    lda #EOK                    ; that's it...
+    copypointer __volatile_ptr, s_ptr2  ; __volatile_ptr is the pointer to the result string, given by the caller (eg. pwd.prg)
+    jsr path_inverse                    ; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
+    plp
+    clc
+    rts
 @l_exit:
     plp
-    cmp #EOK
+    sec
     rts
 l_dot_dot:
     .asciiz ".."
 
 ; in:
-;  dirptr - pointer to dir entry (F32DirEntry)
+;   dirptr - pointer to dir entry (F32DirEntry)
+; out:
+;   C=0 not found, C=1 found
 cluster_nr_matcher:
     ldy #F32DirEntry::Name
     lda (dirptr),y

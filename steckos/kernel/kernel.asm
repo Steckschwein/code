@@ -172,7 +172,7 @@ do_irq:
    ; jsr vdp_bgcolor
 
 @check_spi_keyboard:
-    jsr fetchkey        ; fetch key (to satisfy the IRQ of the avr)
+    jsr fetchkey        ; fetch key
     bcc @system
     cmp #KEY_CTRL_C     ; was it ctrl c?
     bne @system  ; no
