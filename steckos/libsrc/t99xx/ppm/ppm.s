@@ -72,7 +72,7 @@ _i:     .res 1
 
 		ldy #O_RDONLY
 		jsr fopen
-		bne @io_error
+		bcs @io_error
 		stx fd
 
 		jsr ppm_parse_header
