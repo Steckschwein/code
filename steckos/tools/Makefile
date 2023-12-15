@@ -6,7 +6,7 @@ LDFLAGS=-C ../prg.ld65.cfg -m $<.map $(LIBS)
 
 #TOOLS=ls.prg ll.prg stat.prg fsinfo.prg attrib.prg rename.prg help.prg view.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg keycode.prg fig.prg vramtest.prg wozmon.prg rx.prg
 
-TOOLS=cls.prg ls.prg ll.prg stat.prg attrib.prg rename.prg help.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg keycode.prg vramtest.prg wozmon.prg 
+TOOLS=cls.prg ls.prg ll.prg stat.prg attrib.prg rename.prg help.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg keycode.prg vramtest.prg wozmon.prg hellorld.prg
 # c tools
 TOOLS+=\
   banner.prg \
