@@ -10,14 +10,8 @@ if [ -e ${img} ] ; then
 fi
 
 truncate -s $size ${img}
-mkfs -t fat -F 32 -s 2 ${img} # -n "STECKOS 2_0"
-#mcopy -i ${img} -s dist/* ::/
+mkfs -t fat -F 32 -s 2  ${img} -n "STECKOS 2_0"
 
-
-
-#for i in steckos demo games progs basic ; do
-    #mmd -i ${img} ::/steckos
-#done 
 
 mmd -i ${img} ::/steckos ::/demo ::/games ::/progs ::/basic
 
