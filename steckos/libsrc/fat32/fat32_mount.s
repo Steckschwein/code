@@ -50,7 +50,6 @@ fat_mount:
     sta volumeID+VolumeID::lba_addr_last+1
     sta volumeID+VolumeID::lba_addr_last+2
     sta volumeID+VolumeID::lba_addr_last+3
-    sta volumeID+VolumeID::LastClus
 
     ; set lba_addr to $00000000 since we want to read the bootsector
     stz lba_addr + 0
@@ -113,34 +112,30 @@ fat_mount:
 
     ; fat_lba_begin  = Partition_LBA_Begin + Number_of_Reserved_Sectors
     ; add number of reserved sectors to calculate fat_lba_begin. store in volumeID for further calculation
-    clc
-    lda lba_addr + 0
-    adc block_data + F32_VolumeID::BPB + BPB::RsvdSecCnt + 0
-    sta volumeID + VolumeID::lba_data + 0
-    sta volumeID + VolumeID::lba_fat + 0
-    lda lba_addr + 1
-    adc block_data + F32_VolumeID::BPB + BPB::RsvdSecCnt + 1
-    sta volumeID + VolumeID::lba_data + 1
-    sta volumeID + VolumeID::lba_fat + 1
-    lda lba_addr + 2
-    adc #0
-    sta volumeID + VolumeID::lba_data + 2
-    sta volumeID + VolumeID::lba_fat + 2
-    ; adc #0 above will never overflow since RsvdSecCnt are 16bit
-    stz volumeID + VolumeID::lba_data + 3
-    stz volumeID + VolumeID::lba_fat + 3
+    add16to32 lba_addr, block_data + F32_VolumeID::BPB + BPB::RsvdSecCnt, volumeID + VolumeID::lba_fat
 
-    ; fat2_lba_begin = Partition_LBA_Begin + Number_of_Reserved_Sectors + Sectors_Per_FAT
+    ; fat2_lba_begin = fta_lba_behin + Sectors_Per_FAT
     add32 volumeID + VolumeID::lba_fat, volumeID + VolumeID::BPB_FATSz32, volumeID + VolumeID::lba_fat2
 
     ; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
     ldy block_data + F32_VolumeID::BPB + BPB::NumFATs
-@l7:
-    add32 volumeID + VolumeID::lba_data, volumeID + VolumeID::BPB_FATSz32, volumeID + VolumeID::lba_data ; add sectors per fat
-    dey
-    bne @l7
+    cpy #2
+    bcs @l7
+    lda #fat_invalid_num_fats
+    sec
+    rts
 
-    ; performance optimization - the RootClus offset is compensated within calc_lba_addr
+@l7:
+    ; number of fats is at least 2 here
+    add32 volumeID + VolumeID::lba_fat, volumeID + VolumeID::BPB_FATSz32, volumeID + VolumeID::lba_data
+    dey
+    ; we have to add "n" times FATSz32 to calc the data lba
+@loop:
+    add32 volumeID + VolumeID::lba_data, volumeID + VolumeID::BPB_FATSz32, volumeID + VolumeID::lba_data
+    dey
+    bne @loop
+
+    ; performance optimization - the RootClus offset is compensated within calc_lba_addr - we avoid the substraction of the RootClus from lba_data on each calculation
     ; cluster_begin_lba_m2 = cluster_begin_lba - (VolumeID::RootClus*VolumeID::SecPerClus)
     ; cluster_begin_lba_m2 = cluster_begin_lba - (2 * sec/cluster) = cluster_begin_lba - (sec/cluster << 1)
 

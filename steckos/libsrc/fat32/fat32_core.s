@@ -284,7 +284,7 @@ __fat_clone_fd:
 ;   .X - file descriptor
 ; out:
 ;   C=0 on success, C=1 on error with A=<error code>
-;   A/Y pointer to access data for read/write
+;   A/Y pointer to data block for read/write access
 .export __fat_prepare_block_access
 __fat_prepare_block_access:
 
@@ -292,7 +292,7 @@ __fat_prepare_block_access:
     debug "fp ba >"
     bvc @l_check_block
 
-    jsr __fat_fseek                   ; yes, then we have to seek
+    jsr __fat_fseek                   ; yes, then we have to seek first to ensure correct cluster is selected
     bcc @l_read
     rts
 
@@ -510,7 +510,7 @@ __calc_lba_addr:
     debug32 "c lba 1", lba_addr
     bra @lm
 @lme:
-    ; add volumeID+VolumeID::lba_data and lba_addr => TODO may be an optimization
+
     add32 volumeID+VolumeID::lba_data, lba_addr, lba_addr
 
     debug32 "c lba 2", lba_addr
