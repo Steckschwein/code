@@ -30,3 +30,7 @@ PROGS=$(find progs -name "*.prg")
 mcopy -i ${img} $PROGS $TARGET/progs/
 
 mcopy -i ${img} progs/ehbasic_65c02/demo/* $TARGET/basic
+
+if [ -d "../local" ] ; then
+	mcopy -s  -i ${img} ../local/* $TARGET/
+fi
