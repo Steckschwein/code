@@ -72,6 +72,10 @@ __fat_find_first_mask:
 ; out:
 ;  C=1 if dir entry was found with dirptr pointing to that entry, C=0 otherwise
 __fat_find_first:
+    stz fd_area+F32_fd::SeekPos+3,x
+    stz fd_area+F32_fd::SeekPos+2,x
+    stz fd_area+F32_fd::SeekPos+1,x
+    stz fd_area+F32_fd::SeekPos+0,x
     lda volumeID+VolumeID::BPB_SecPerClus
     sta blocks
     jsr __calc_lba_addr
@@ -366,6 +370,10 @@ __fat_alloc_fd_x:
 ;   C=0 on success
 __fat_open_rootdir:
     ldx #FD_INDEX_TEMP_DIR          ; use fd of the temp directory
+    jsr __fat_init_fd
+    lda #DIR_Attr_Mask_Dir
+    sta fd_area + F32_fd::Attr,x
+    rts
 ; in:
 ;  .X - with index to fd_area
 __fat_init_fd:
@@ -374,7 +382,7 @@ __fat_init_fd:
     lda #FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
     sta fd_area+F32_fd::status,x ; set reserved (7) and dirty (6)
     lda #FD_Entry_Size-1         ; -1 to avoid override ::status
-:   stz fd_area,x
+:   stz fd_area, x
     inx
     dec
     bne :-
@@ -657,9 +665,9 @@ __fat_read_cluster_block_and_select:
     beq @l_exit
 @l_neoc:
     clc
-    ply
     lda #EOK ; carry denotes EOC state
 @l_exit:
+    ply
     rts
 
 __inc_lba_address:
