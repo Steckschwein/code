@@ -60,8 +60,11 @@
 .export __fat_set_fd_dirlba
 .export __fat_set_fd_start_cluster
 .export __fat_save_lba_addr
+.export __fat_set_root_clus_lba_addr
 .export __calc_lba_addr
+.export __fat_shift_lba_addr
 .export __inc_lba_address
+
 
 ; in:
 ;  .X - file descriptor (index into fd_area) of the directory
@@ -71,11 +74,67 @@ __fat_find_first_mask:
     SetVector (volumeID+VolumeID::fat_dirname_mask), s_ptr2  ; build fat dir entry mask from user input
     jsr string_fat_mask
     SetVector dirname_mask_matcher, volumeID+VolumeID::fat_vec_matcher
+
 ; in:
-;  .X - file descriptor (index into fd_area) of the directory
+;  .X - file descriptor (index into fd_area) of the directory to search
 ; out:
 ;  C=1 if dir entry was found with dirptr pointing to that entry, C=0 otherwise
 __fat_find_first:
+    jsr __fat_clone_fd_temp_fd      ; clone given directory (.X) fd to tmp fd and set new fd (.X)
+    jsr __fat_set_fd_start_cluster  ; set start cluster to current
+
+__ff_loop:
+    jsr __fat_prepare_block_access  ; C=1 on error or EOC, exit
+    bcs __ff_exit
+    sta dirptr
+    sty dirptr+1
+
+__ff_match:
+    lda (dirptr)
+    beq __ff_exit               ; first byte of dir entry is $00 (end of directory)
+
+    ldy #F32DirEntry::Attr      ; else check if long filename entry
+    lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
+    cmp #DIR_Attr_Mask_LongFilename
+    beq __fat_find_next
+
+    jsr __fat_matcher       ; call matcher strategy
+    bcs __ff_end            ; if C=1 we had a match
+; in:
+;  X - directory fd index into fd_area
+; out:
+;  C=1 on success (A=0), C=0 and A=error code otherwise
+__fat_find_next:
+    lda dirptr
+    clc
+    adc #DIR_Entry_Size
+    sta dirptr
+    bcc :+
+    inc dirptr+1
+:   .assert <(block_data + sd_blocksize) = $00, error, "block_data isn't aligned on a RAM page boundary"
+    lda dirptr+1
+    cmp #>(block_data + sd_blocksize)   ; end of block reached?
+    bne __ff_match                      ; no, process next entry
+    clc
+    lda fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+1 ; adjust seek pos +512 (one sector) - __fat_prepare_block_access will do the rest
+    adc #2
+    sta fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+1
+    lda fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+2
+    adc #0
+    sta fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+2
+    lda fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+3
+    adc #0
+    sta fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+3
+    bra __ff_loop
+__ff_exit:
+    clc                                 ; we are at the end, nothing found C=0 and return
+    debug "ffex"
+__ff_end:
+    rts
+
+
+
+OBSOLETE__fat_find_first:
     lda volumeID+VolumeID::BPB_SecPerClus
     sta blocks
     jsr __calc_lba_addr
@@ -98,7 +157,7 @@ ff_l4:
 ;  X - directory fd index into fd_area
 ; out:
 ;  C=1 on success (A=0), C=0 and A=error code otherwise
-__fat_find_next:
+OBSOLETE__fat_find_next:
     lda dirptr
     clc
     adc #DIR_Entry_Size
@@ -116,7 +175,7 @@ __fat_find_next:
 
     ldx #FD_INDEX_TEMP_DIR              ; FD_INDEX_TEMP_DIR was setup above and following the cluster chain is done with the FD_INDEX_TEMP_DIR to not clobber the FD_INDEX_CURRENT_DIR
     jsr __fat_next_cln                  ; select next cluster
-    bcc __fat_find_first                ; C=0 go on with next cluster
+    bcc OBSOLETE__fat_find_first                ; C=0 go on with next cluster
     ; C=1 on error or EOC, exit
 ff_exit:
     clc                                 ; we are at the end, nothing found C=0 and return
@@ -140,7 +199,7 @@ __fat_open_path:
     sta s_ptr1
     stx s_ptr1+1              ; save path arg given in a/x
 
-    ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the current dir (Y parameter!), maybe we will run into an error
+    ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
     jsr __fat_clone_fd        ; Y is given as param
 
     ldy #0                    ; trim wildcard at the beginning
@@ -219,17 +278,17 @@ __fat_open_file:
     ldy #F32DirEntry::FstClusHI +1
     lda (dirptr),y
     and #$0f      ; cluster nr must be 0x?ffffff7
-    sta fd_area + F32_fd::CurrentCluster + 3, x
+    sta fd_area + F32_fd::StartCluster + 3, x
     dey
     lda (dirptr),y
-    sta fd_area + F32_fd::CurrentCluster + 2, x
+    sta fd_area + F32_fd::StartCluster + 2, x
 
     ldy #F32DirEntry::FstClusLO +1
     lda (dirptr),y
-    sta fd_area + F32_fd::CurrentCluster + 1, x
+    sta fd_area + F32_fd::StartCluster + 1, x
     dey
     lda (dirptr),y
-    sta fd_area + F32_fd::CurrentCluster + 0, x
+    sta fd_area + F32_fd::StartCluster + 0, x
 
     ldy #F32DirEntry::FileSize + 3
     lda (dirptr),y
@@ -282,6 +341,7 @@ __fat_clone_fd:
 ; prepare read/write access by fetching the appropriate block from device
 ; in:
 ;   .X - file descriptor
+;   .Y -
 ; out:
 ;   C=0 on success, C=1 on error with A=<error code>
 ;   A/Y pointer to data block for read/write access
@@ -299,7 +359,7 @@ __fat_prepare_block_access:
 @l_check_block:
     lda fd_area+F32_fd::SeekPos+1,x
     lsr
-    debug32 "fp ba 0 >", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+    debug32 "fp ba 0 >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
     bcs @l_read                               ; not at block start (multiple of $02??)
     and volumeID+VolumeID::BPB_SecPerClusMask ; otherwise mask with sec per cluster mask
     ora fd_area+F32_fd::SeekPos+0,x           ; and test whether SeekPos is at the beginning of a block (multiple of $?200) ?
@@ -380,11 +440,21 @@ __fat_open_rootdir:
     jsr __fat_init_fd
     lda #DIR_Attr_Mask_Dir
     sta fd_area + F32_fd::Attr,x
+    lda volumeID + VolumeID::BPB_RootClus+0
+    sta fd_area + F32_fd::StartCluster+0,x
+    lda volumeID + VolumeID::BPB_RootClus+1
+    sta fd_area + F32_fd::StartCluster+1,x
+    lda volumeID + VolumeID::BPB_RootClus+2
+    sta fd_area + F32_fd::StartCluster+2,x
+    lda volumeID + VolumeID::BPB_RootClus+3
+    sta fd_area + F32_fd::StartCluster+3,x
     rts
+
+
 ; in:
 ;  .X - with index to fd_area
 __fat_init_fd:
-    ; init fd with all 0 - note: start cluster with root cluster nr 0 and not RootClus - the RootClus offset is compensated within calc_lba_addr (@see Note)
+    ; init fd with all 0 - Note: start cluster with root cluster nr 0 and not RootClus - the RootClus offset is compensated within calc_lba_addr (@see Note)
     phx
     lda #FD_Entry_Size
 :   stz fd_area,x
@@ -473,13 +543,14 @@ __fat_save_lba_addr:
     ;  A - with bit 0-7 of lba address
 __prepare_calc_lba_addr:
     jsr  __fat_is_cln_zero
-    bne  @l_scl
+    bne  l_scl
+__fat_set_root_clus_lba_addr:
     .repeat 4,i
       lda volumeID + VolumeID::BPB_RootClus + i
       sta lba_addr + i
     .endrepeat
     rts
-@l_scl:
+l_scl:
     .repeat 4,i
       lda fd_area + F32_fd::CurrentCluster + i,x
       sta lba_addr + i
@@ -487,29 +558,33 @@ __prepare_calc_lba_addr:
     rts
 
 
-; calculate LBA address of first block from cluster number found in file descriptor entry. file descriptor index must be in x
-; Note: lba_addr = volumeID+VolumeID::lba_cluster_m2 + (cluster_number * VolumeID_SecPerClus)
-; in:
-;   .X - file descriptor index
-__calc_lba_addr:
-    jsr __prepare_calc_lba_addr
-
+__fat_shift_lba_addr:
     ;SecPerClus is a power of 2 value, therefore cluster << n, where n is the number of bit set in VolumeID::SecPerClus
     ; lba_addr multiple of "sec per cluster"
-    ldy volumeID+VolumeID::BPB_SecPerClus
+    ldy volumeID+VolumeID::BPB_SecPerClusCount
     debug32 "c lba 0", lba_addr
-@lm:
-    tya
-    lsr
-    beq @lme   ; until 1 sector/cluster
-    tay
-    asl lba_addr +0
+    beq @l_exit   ; count 0 (1 sector/cluster), no shift necessary
+
+:   asl lba_addr +0
     rol lba_addr +1
     rol lba_addr +2
     rol lba_addr +3
     debug32 "c lba 1", lba_addr
-    bra @lm
-@lme:
+    dey
+    bne :-
+@l_exit:
+    rts
+
+
+; calculate LBA address of first block from cluster number found in file descriptor entry. file descriptor index must be in x
+; Note: lba_addr = volumeID+VolumeID::lba_cluster_m2 + (cluster_number * VolumeID::SecPerClus)
+; in:
+;   .X - file descriptor index
+__calc_lba_addr:
+
+    jsr __prepare_calc_lba_addr
+
+    jsr __fat_shift_lba_addr
 
     add32 volumeID+VolumeID::lba_data, lba_addr, lba_addr
 
@@ -618,19 +693,16 @@ __fat_next_cln:
 @l_exit:
     rts
 
-
-
 __fat_set_fd_start_cluster:
-    lda fd_area + F32_fd::CurrentCluster + 3, x
-    sta fd_area + F32_fd::StartCluster + 3, x
-    lda fd_area + F32_fd::CurrentCluster + 2, x
-    sta fd_area + F32_fd::StartCluster + 2, x
-    lda fd_area + F32_fd::CurrentCluster + 1, x
-    sta fd_area + F32_fd::StartCluster + 1, x
-    lda fd_area + F32_fd::CurrentCluster + 0, x
-    sta fd_area + F32_fd::StartCluster + 0, x
+    lda fd_area+F32_fd::StartCluster+3, x
+    sta fd_area+F32_fd::CurrentCluster+3, x
+    lda fd_area+F32_fd::StartCluster+2, x
+    sta fd_area+F32_fd::CurrentCluster+2, x
+    lda fd_area+F32_fd::StartCluster+1, x
+    sta fd_area+F32_fd::CurrentCluster+1, x
+    lda fd_area+F32_fd::StartCluster+0, x
+    sta fd_area+F32_fd::CurrentCluster+0, x
     rts
-
 
 ; in:
 ;  X - file descriptor

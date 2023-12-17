@@ -49,7 +49,7 @@ fat_get_root_and_pwd:
     sta __volatile_ptr
     stx __volatile_ptr+1
 
-    SetVector $0800, s_ptr3
+    SetVector $0800, s_ptr3             ; TODO FIXME !!!
     stz s_tmp3
 
     ldy #FD_INDEX_CURRENT_DIR

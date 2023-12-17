@@ -117,6 +117,7 @@ PartType_FAT32_LBA    = $0c
 .struct VolumeID
   BPB_SecPerClus      .byte
   BPB_SecPerClusMask  .byte ; BPB_SecPerClus-1
+  BPB_SecPerClusCount .byte ; pre calculated counter from BPB_SecPerClus bit set - e.g. $00 => 0, $01 => 1, $02 => 2, $04 => 3 ...
   BPB_RootClus        .dword
   BPB_FATSz32         .dword ; sectors per fat
   lba_data            .dword

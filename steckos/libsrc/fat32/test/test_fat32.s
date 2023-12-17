@@ -100,6 +100,7 @@ debug_enabled=1
 		setup "fat_fopen O_RDONLY overflow"
 
     ldy #FD_Entries_Max-2 ; -2 => 2 entries for cd and temp dir
+    .assert FD_Entries_Max > 2, error, "too few file descriptors available :/"
 :   phy
 		ldy #O_RDONLY
 		lda #<test_file_name_1

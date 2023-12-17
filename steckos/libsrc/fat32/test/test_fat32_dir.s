@@ -13,6 +13,11 @@
 
 debug_enabled=1
 
+; cluster search will find following clustes
+TEST_FILE_CL  =$00000010
+TEST_FILE_CL2 =$00000019
+
+
 .code
 
 ; -------------------
@@ -161,11 +166,6 @@ debug_enabled=1
 
 		test_end
 
-
-; cluster search will find following clustes
-TEST_FILE_CL=$10
-TEST_FILE_CL2=$19
-
 data_loader  ; define data loader
 data_writer ; define data writer
 
@@ -232,9 +232,8 @@ setUp:
     set32 block_fat_0+(TEST_FILE_CL2<<2), 0 ; mark TEST_FILE_CL2 as free
 
 		;setup fd0 (cwd) to root cluster
-		set32 fd_area+(0*FD_Entry_Size)+F32_fd::StartCluster, 0
-		set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-		set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
+    ldx #FD_INDEX_CURRENT_DIR
+    jsr __fat_open_rootdir
 
     init_block block_root_dir_init_00, block_root_dir_00
     init_block block_empty          , block_root_dir_01

@@ -45,17 +45,12 @@
 ; out:
 ;   C=0 on success, C=1 otherwise with A=<error code>
 fat_mount:
-    lda #$ff
-    sta volumeID+VolumeID::lba_addr_last+0
-    sta volumeID+VolumeID::lba_addr_last+1
-    sta volumeID+VolumeID::lba_addr_last+2
-    sta volumeID+VolumeID::lba_addr_last+3
+
+    m_memclr volumeID, .sizeof(VolumeID)
+    m_memset volumeID+VolumeID::lba_addr_last, $ff, 4
 
     ; set lba_addr to $00000000 since we want to read the bootsector
-    stz lba_addr + 0
-    stz lba_addr + 1
-    stz lba_addr + 2
-    stz lba_addr + 3
+    m_memclr lba_addr, 4
     jsr __fat_read_block_data
     bcc @l0
     rts
@@ -68,12 +63,10 @@ fat_mount:
 
     lda @part0 + PartitionEntry::TypeCode
     cmp #PartType_FAT32_LBA
-    beq @load_bpb
-
+    bne @mount_fat32
     ; partition entry 0 did not contain a valid FAT32 partition signature
     ; we assume now that the card does not have a MBR boot block, and we already
     ; have loaded the fat32 bpb
-    bra @mount_fat32
 @load_bpb:
     ; Partition entry 0 contains a valid FAT32 LBA partition signature
     ; get the lba address
@@ -104,6 +97,14 @@ fat_mount:
     sta volumeID + VolumeID::BPB_SecPerClus
     dec
     sta volumeID + VolumeID::BPB_SecPerClusMask
+
+    lda volumeID + VolumeID::BPB_SecPerClus
+:   lsr
+    beq @l7
+    inc volumeID + VolumeID::BPB_SecPerClusCount
+    bra :-
+
+@l7:
     m_memcpy block_data + F32_VolumeID::BPB + BPB::RootClus, volumeID + VolumeID::BPB_RootClus, 4
     m_memcpy block_data + F32_VolumeID::BPB + BPB::FATSz32, volumeID + VolumeID::BPB_FATSz32, 4
 
@@ -120,56 +121,50 @@ fat_mount:
     ; cluster_begin_lba = Partition_LBA_Begin + Number_of_Reserved_Sectors + (Number_of_FATs * Sectors_Per_FAT) -  (2 * sec/cluster);
     ldy block_data + F32_VolumeID::BPB + BPB::NumFATs
     cpy #2
-    bcs @l7
+    bcs @l8
     lda #fat_invalid_num_fats
     sec
     rts
-
-@l7:
+@l8:
     ; number of fats is at least 2 here
     add32 volumeID + VolumeID::lba_fat, volumeID + VolumeID::BPB_FATSz32, volumeID + VolumeID::lba_data
     dey
-    ; we have to add "n" times FATSz32 to calc the data lba
-@loop:
+@loop:  ; we have to add "n" times FATSz32 to calc the data lba
     add32 volumeID + VolumeID::lba_data, volumeID + VolumeID::BPB_FATSz32, volumeID + VolumeID::lba_data
     dey
     bne @loop
 
     ; performance optimization - the RootClus offset is compensated within calc_lba_addr - we avoid the substraction of the RootClus from lba_data on each calculation
-    ; cluster_begin_lba_m2 = cluster_begin_lba - (VolumeID::RootClus*VolumeID::SecPerClus)
-    ; cluster_begin_lba_m2 = cluster_begin_lba - (2 * sec/cluster) = cluster_begin_lba - (sec/cluster << 1)
+    ; lba_cluster_m2 = cluster_begin_lba - (VolumeID::RootClus * VolumeID::SecPerClus)
+    jsr __fat_set_root_clus_lba_addr  ; root cluster to lba_addr
+    jsr __fat_shift_lba_addr          ; * sec/cl
 
-    ;TODO FIXME we assume 2 here instead of using the value in VolumeID::RootClus
-    lda volumeID + VolumeID::BPB_SecPerClus ; max sec/cluster can be 128, with 2 (BPB_RootClus) * 128 we may subtract max 256
-    asl
-
-    sta lba_addr+0        ;  used as tmp
-    stz lba_addr +1       ;  safe carry
-    rol lba_addr +1
     sec          ;  subtract from volumeID + VolumeID::lba_data
     lda volumeID + VolumeID::lba_data+0
     sbc lba_addr+0
     sta volumeID + VolumeID::lba_data+0
-    lda volumeID + VolumeID::lba_data +1
+    lda volumeID + VolumeID::lba_data+1
     sbc lba_addr +1
-    sta volumeID + VolumeID::lba_data +1
-    lda volumeID + VolumeID::lba_data +2
-    sbc #0
-    sta volumeID + VolumeID::lba_data +2
-    lda volumeID + VolumeID::lba_data +3
-    sbc #0
-    sta volumeID + VolumeID::lba_data +3
+    sta volumeID + VolumeID::lba_data+1
+    lda volumeID + VolumeID::lba_data+2
+    sbc lba_addr +2
+    sta volumeID + VolumeID::lba_data+2
+    lda volumeID + VolumeID::lba_data+3
+    sbc lba_addr +3
+    sta volumeID + VolumeID::lba_data+3
 
     debug8 "sc/cl",   volumeID+VolumeID::BPB_SecPerClus
+    debug8 "sc/msk",   volumeID+VolumeID::BPB_SecPerClusMask
+    debug8 "sc/cnt",   volumeID+VolumeID::BPB_SecPerClusCount
     debug32 "root cl",   volumeID+VolumeID::BPB_RootClus
+    debug32 "fi sc",  volumeID+VolumeID::lba_fsinfo
     debug32 "fat sz",   volumeID+VolumeID::BPB_FATSz32
     debug32 "fat lba",  volumeID+VolumeID::lba_fat
     debug32 "fat2_lba", volumeID+VolumeID::lba_fat2
-    debug32 "fi sc",  volumeID+VolumeID::lba_fsinfo
     debug32 "data lba", volumeID+VolumeID::lba_data
     debug16 "fbuf",   filename_buf
-    ; init file descriptor area
-    ldx #0
+
+    ldx #0  ; init file descriptor area
     jsr __fat_init_fdarea
 
     ; alloc file descriptor for current dir. which is cluster number 0 on fat32 - !!! Note: the RootClus offset is compensated within calc_lba_addr

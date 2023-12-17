@@ -70,7 +70,6 @@ fat_mkdir:
     bne @l_exit_err                   ; exit on other error
 
     debug16 "fat mkdir >", dirptr
-
     jsr __fat_write_dir_entry         ; create and write new dir entry
     bcs @l_exit_close
 
@@ -78,10 +77,10 @@ fat_mkdir:
     bcs @l_exit                       ; and we want to avoid an error in between the different block writes
     lda #DIR_Attr_Mask_Dir            ; set type directory
     sta fd_area+F32_fd::Attr, x
-    jsr __fat_reserve_cluster         ; try to find and reserve next free cluster and store them in fd_area at fd (X)
-    bcs @l_exit_close                 ; C=1 - fail, exit but close fd
-    jsr __fat_set_fd_start_cluster    ; set start cluster to fd
-    jsr __fat_set_lba_from_fd_dirlba  ; setup lba_addr from fd
+
+ ;   jsr __fat_open_start_cluster    ; try to find and reserve next free cluster and store them in fd_area at fd (X)
+  ;  bcs @l_exit_close                 ; C=1 - fail, exit but close fd
+;    jsr __fat_set_lba_from_fd_dirlba  ; setup lba_addr from fd
 
     jsr __fat_read_direntry
     bcs @l_exit_close

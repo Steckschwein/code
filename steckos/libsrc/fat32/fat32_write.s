@@ -37,7 +37,7 @@
 .export fat_unlink
 
 .export __fat_reserve_cluster
-.export __fat_ensure_start_cluster
+.export __fat_open_start_cluster
 .export __fat_write_dir_entry
 .export __fat_update_direntry
 .export __fat_fopen_touch
@@ -264,7 +264,6 @@ __fat_set_direntry_start_cluster:
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 __fat_fopen_touch:
-
 ;    copypointer dirptr, s_ptr2
  ;   jsr string_fat_name         ; build fat name upon input string (filenameptr)
   ;  bne @l_exit_err
@@ -296,6 +295,9 @@ __fat_fopen_touch:
 __fat_write_dir_entry:
 
     debug16 "fat wr dirent >", dirptr
+    sec
+    jsr __fat_prepare_block_access
+
     jsr __fat_prepare_dir_entry
     bcs @l_exit
 
@@ -385,21 +387,28 @@ __fat_free_cluster:
 
 ; out:
 ;  C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
-__fat_ensure_start_cluster:
+__fat_open_start_cluster:
     jsr __fat_is_start_cln_zero
-    clc ; exit with success, if we take the branch
+    clc ; success, if we take the branch - the start cluster is not zero, we must not reserve one
     bne @l_exit
 
     lda fd_area + F32_fd::flags,x
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; write access?
     sec         ; set EOC (C=1) A=0 (EOK) if we take the branch
-    debug "sel strt cl flg"
+    debug "open strt cl flg >"
     beq @l_exit     ; read access and no cluster reserved yet (empty file) - exit with EOC => C=1/A=EOK (0)
     jsr __fat_reserve_cluster
     bcs @l_exit
-    jsr __fat_set_fd_start_cluster
+    lda fd_area + F32_fd::CurrentCluster + 3, x ; reserve cluster stores at CurrentCluster, we have to copy over
+    sta fd_area + F32_fd::StartCluster + 3, x
+    lda fd_area + F32_fd::CurrentCluster + 2, x
+    sta fd_area + F32_fd::StartCluster + 2, x
+    lda fd_area + F32_fd::CurrentCluster + 1, x
+    sta fd_area + F32_fd::StartCluster + 1, x
+    lda fd_area + F32_fd::CurrentCluster + 0, x
+    sta fd_area + F32_fd::StartCluster + 0, x
 @l_exit:
-    debug32 "sel strt cl <", fd_area+(FD_Entry_Size*2)+F32_fd::CurrentCluster
+    debug32 "open strt cl <", fd_area+(FD_Entry_Size*2)+F32_fd::CurrentCluster
     rts
 
 
