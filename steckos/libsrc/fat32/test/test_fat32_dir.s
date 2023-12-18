@@ -220,8 +220,11 @@ mock_not_implemented:
 		fail "mock!"
 
 setUp:
-		jsr __fat_init_fdarea
     init_volume_id SEC_PER_CL
+		jsr __fat_init_fdarea
+		;setup fd0 (cwd) to root cluster
+    ldx #FD_INDEX_CURRENT_DIR
+    jsr __fat_open_rootdir
 
     ; fill fat block
     m_memset block_fat_0+$000, $ff, $80  ; simulate reserved
@@ -230,10 +233,6 @@ setUp:
     m_memset block_fat_0+$180, $ff, $80
     set32 block_fat_0+(TEST_FILE_CL<<2), 0 ; mark TEST_FILE_CL as free
     set32 block_fat_0+(TEST_FILE_CL2<<2), 0 ; mark TEST_FILE_CL2 as free
-
-		;setup fd0 (cwd) to root cluster
-    ldx #FD_INDEX_CURRENT_DIR
-    jsr __fat_open_rootdir
 
     init_block block_root_dir_init_00, block_root_dir_00
     init_block block_empty          , block_root_dir_01

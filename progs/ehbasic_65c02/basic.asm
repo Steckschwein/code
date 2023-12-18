@@ -7636,12 +7636,9 @@ fwrite_wrapper:
       rts
 
 LAB_SAVE:
-      jsr termstrparam
       ldy #O_CREAT
-      jsr krn_open
-      bcs io_error
-      stx _fd
-
+      jsr openfile 
+      
       ; set output vector to filesystem wrapper
       lda #<fwrite_wrapper
       sta VEC_OUT

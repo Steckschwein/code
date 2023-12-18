@@ -223,6 +223,7 @@ STATUS = $48
 SPNT = $49
 
 do_nmi:
+  stp
   sta ACC
   stx XREG
   sty YREG

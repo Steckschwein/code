@@ -54,11 +54,14 @@
 .export __fat_next_cln
 .export __fat_open_path
 .export __fat_open_rootdir
+.export __fat_prepare_block_access
+.export __fat_prepare_block_access_read
 .export __fat_read_block_data
 .export __fat_read_block_fat
+.export __fat_seek_next_dirent
 .export __fat_set_fd_attr_dirlba
 .export __fat_set_fd_dirlba
-.export __fat_set_fd_start_cluster
+.export __fat_set_fd_start_cluster_seek_pos
 .export __fat_save_lba_addr
 .export __fat_set_root_clus_lba_addr
 .export __calc_lba_addr
@@ -81,10 +84,10 @@ __fat_find_first_mask:
 ;  C=1 if dir entry was found with dirptr pointing to that entry, C=0 otherwise
 __fat_find_first:
     jsr __fat_clone_fd_temp_fd      ; clone given directory (.X) fd to tmp fd and set new fd (.X)
-    jsr __fat_set_fd_start_cluster  ; set start cluster to current
+    jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current
 
 __ff_loop:
-    jsr __fat_prepare_block_access  ; C=1 on error or EOC, exit
+    jsr __fat_prepare_block_access_read  ; C=1 on error or EOC, exit
     bcs __ff_exit
     sta dirptr
     sty dirptr+1
@@ -104,28 +107,20 @@ __ff_match:
 ;  X - directory fd index into fd_area
 ; out:
 ;  C=1 on success (A=0), C=0 and A=error code otherwise
-__fat_find_next:
-    lda dirptr
-    clc
-    adc #DIR_Entry_Size
-    sta dirptr
-    bcc :+
-    inc dirptr+1
-:   .assert <(block_data + sd_blocksize) = $00, error, "block_data isn't aligned on a RAM page boundary"
-    lda dirptr+1
-    cmp #>(block_data + sd_blocksize)   ; end of block reached?
-    bne __ff_match                      ; no, process next entry
-    clc
-    lda fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+1 ; adjust seek pos +512 (one sector) - __fat_prepare_block_access will do the rest
-    adc #2
-    sta fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+1
-    lda fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+2
-    adc #0
-    sta fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+2
-    lda fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+3
-    adc #0
-    sta fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos+3
-    bra __ff_loop
+__fat_find_next:  ; TODO optimization - iterate with dirptr until end of block instead of calling __fat_prepare_block_access_read each time
+;    lda dirptr
+;    clc
+ ;   adc #DIR_Entry_Size
+  ;  sta dirptr
+;    bcc :+
+ ;   inc dirptr+1
+;:   .assert <(block_data + sd_blocksize) = $00, error, "block_data isn't aligned on a RAM page boundary"
+;    lda dirptr+1
+ ;   cmp #>(block_data + sd_blocksize)   ; end of block reached?
+  ;  bne __ff_match                      ; no, process next entry
+    jsr __fat_seek_next_dirent
+    debug32 "ff nxt seek <", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
+    bcc __ff_loop
 __ff_exit:
     clc                                 ; we are at the end, nothing found C=0 and return
     debug "ffex"
@@ -133,6 +128,20 @@ __ff_end:
     rts
 
 
+__fat_seek_next_dirent:
+    lda fd_area+F32_fd::SeekPos+0,x
+    adc #DIR_Entry_Size
+    sta fd_area+F32_fd::SeekPos+0,x
+    lda fd_area+F32_fd::SeekPos+1,x
+    adc #0
+    sta fd_area+F32_fd::SeekPos+1,x
+    lda fd_area+F32_fd::SeekPos+2,x
+    adc #0
+    sta fd_area+F32_fd::SeekPos+2,x
+    lda fd_area+F32_fd::SeekPos+3,x
+    adc #0
+    sta fd_area+F32_fd::SeekPos+3,x
+    rts
 
 OBSOLETE__fat_find_first:
     lda volumeID+VolumeID::BPB_SecPerClus
@@ -309,7 +318,7 @@ __fat_open_file:
 
     jsr __fat_set_fd_dirlba
 
-    jsr __fat_set_fd_start_cluster
+    jsr __fat_set_fd_start_cluster_seek_pos
 @l_exit:
     ply
     rts
@@ -338,37 +347,47 @@ __fat_clone_fd:
     rts
 
 
+__fat_prepare_block_access_read:
+    clc
 ; prepare read/write access by fetching the appropriate block from device
 ; in:
-;   .X - file descriptor
-;   .Y -
+;   X - file descriptor
+;   C - C=0 read access, C=1 write access
 ; out:
 ;   C=0 on success, C=1 on error with A=<error code>
 ;   A/Y pointer to data block for read/write access
-.export __fat_prepare_block_access
 __fat_prepare_block_access:
 
     bit fd_area+F32_fd::status,x      ; dirty?
     debug "fp ba >"
     bvc @l_check_block
 
-    jsr __fat_fseek                   ; yes, then we have to seek first to ensure correct cluster is selected
+    jsr __fat_fseek_cluster           ; yes, then we have to seek first to ensure correct cluster is selected, Carry is given as param
     bcc @l_read
     rts
 
 @l_check_block:
+    php ; save carry
+
     lda fd_area+F32_fd::SeekPos+1,x
     lsr
     debug32 "fp ba 0 >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-    bcs @l_read                               ; not at block start (multiple of $02??)
+    bcs @l_read_restore                       ; not at block start (multiple of $02??)
     and volumeID+VolumeID::BPB_SecPerClusMask ; otherwise mask with sec per cluster mask
-    ora fd_area+F32_fd::SeekPos+0,x           ; and test whether SeekPos is at the beginning of a block (multiple of $?200) ?
-    debug8 "fp ba 1 >", volumeID+VolumeID::BPB_SecPerClusMask
-    bne @l_read                               ; if block is not at the beginning of a cluster just read the block
+    ora fd_area+F32_fd::SeekPos+0,x           ; and test whether SeekPos is at the beginning of a block (multiple of $??00) ?
+    debug "fp ba 1 >"
+    bne @l_read_restore                       ; not at the beginning of a cluster, just read the block
+
+    pla ; restore carry
+    ror
+    debug "fp ba 2 >"
     jsr __fat_next_cln                        ; otherwise select next cluster
     debug "fp ba <"
-    bcs @l_exit                               ; exit on error or EOC (C=1)
+    bcc @l_read                               ; exit on error or EOC (C=1)
+    rts
 
+@l_read_restore:
+    pla
 @l_read:
     jsr __calc_lba_addr
     jsr __fat_read_block_data
@@ -433,8 +452,9 @@ __fat_alloc_fd_x:
     lda #EMFILE                         ; Too many open files, no free file descriptor found
     rts
 
+; in:
+;   .X - fd for open the root directory
 ; out:
-;   .X - FD_INDEX_TEMP_DIR offset to fd area
 ;   C=0 on success
 __fat_open_rootdir:
     jsr __fat_init_fd
@@ -449,7 +469,6 @@ __fat_open_rootdir:
     lda volumeID + VolumeID::BPB_RootClus+3
     sta fd_area + F32_fd::StartCluster+3,x
     rts
-
 
 ; in:
 ;  .X - with index to fd_area
@@ -603,8 +622,7 @@ __calc_lba_addr:
       adc #0
       sta lba_addr+1+i
     .endrepeat
-:
-;    debug32 "f_lba", lba_addr
+:   debug32 "f_lba", lba_addr
     rts
 
 ; in:
@@ -693,7 +711,7 @@ __fat_next_cln:
 @l_exit:
     rts
 
-__fat_set_fd_start_cluster:
+__fat_set_fd_start_cluster_seek_pos:
     lda fd_area+F32_fd::StartCluster+3, x
     sta fd_area+F32_fd::CurrentCluster+3, x
     lda fd_area+F32_fd::StartCluster+2, x
@@ -702,6 +720,11 @@ __fat_set_fd_start_cluster:
     sta fd_area+F32_fd::CurrentCluster+1, x
     lda fd_area+F32_fd::StartCluster+0, x
     sta fd_area+F32_fd::CurrentCluster+0, x
+
+    stz fd_area+F32_fd::SeekPos+3,x
+    stz fd_area+F32_fd::SeekPos+2,x
+    stz fd_area+F32_fd::SeekPos+1,x
+    stz fd_area+F32_fd::SeekPos+0,x
     rts
 
 ; in:

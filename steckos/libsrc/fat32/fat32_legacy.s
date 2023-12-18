@@ -69,7 +69,7 @@ fat_write:
     _is_file_open     ; otherwise rts C=1 and A=#EINVAL
     _is_file_dir      ; otherwise rts C=1 and A=#EISDIR
 
-    jsr __fat_fseek
+    jsr __fat_fseek_cluster
     bcs @l_exit
 @l_write:
     jsr __calc_blocks               ; calc blocks

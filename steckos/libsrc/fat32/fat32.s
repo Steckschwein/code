@@ -48,7 +48,7 @@
 .export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
 
-.export __fat_fseek
+.export __fat_fseek_cluster
 .export __fat_init_fdarea
 
 .code
@@ -99,7 +99,10 @@ fat_fseek:
     sec
     rts
 
-__fat_fseek:
+; in:
+;   X - fd
+;   C - C=0 read access, C=1 write access
+__fat_fseek_cluster:
     debug "seek >"
     ; calculate amount of clusters required for requested seek position - "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
     lda fd_area+F32_fd::SeekPos+3,x
@@ -159,7 +162,8 @@ fat_fread_byte:
     rts ; exit - EOK (0) and C=1
 
 :   phy
-    jsr __fat_prepare_block_access
+
+    jsr __fat_prepare_block_access_read
     bcs @l_exit
 
     sta __volatile_ptr

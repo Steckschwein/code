@@ -62,6 +62,7 @@ fat_write_byte:
 
     sta __volatile_tmp
 
+    sec ; write access
     jsr __fat_prepare_block_access
     bcs @l_exit
 
@@ -295,42 +296,8 @@ __fat_fopen_touch:
 __fat_write_dir_entry:
 
     debug16 "fat wr dirent >", dirptr
-    sec
-    jsr __fat_prepare_block_access
-
-    jsr __fat_prepare_dir_entry
-    bcs @l_exit
-
-    debug16 "fat wr dirent 0", dirptr
-    jsr __fat_set_fd_dirlba           ; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr
-    jsr __fat_create_dir_entry_file
-    bcs @l_exit
-    jsr __fat_write_block_data        ; write the block with the updated dir entry
-
-    lda dirptr                        ; prepare end of directory entry
-    clc
-    adc #DIR_Entry_Size
-    sta dirptr
-    lda dirptr+1
-    adc #0
-    sta dirptr+1
-
-    jsr __fat_prepare_dir_entry   ; make sure valid block is available to write data
-    bcs @l_exit
-    debug16 "fat wr dirent 1", dirptr
-    lda #0                        ; end of directory
-    sta (dirptr)
-    jsr __fat_write_block_data        ; write the end of directory entry to device
-@l_exit:
-    debug32 "eod_lba", lba_addr
-    debug32 "eod_cln", fd_area+FD_INDEX_TEMP_DIR
-    rts
-
-
-__fat_create_dir_entry_file:
     copypointer dirptr, s_ptr2
     jsr string_fat_name                 ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
-    debug16 "fat name", dirptr
     bcs @l_exit
 
     lda fd_area+F32_fd::Attr, x
@@ -341,33 +308,23 @@ __fat_create_dir_entry_file:
     jsr __fat_set_direntry_filesize
     jsr __fat_set_direntry_modify_datetime
     jsr __fat_set_direntry_create_datetime
-    clc
-@l_exit:
-    rts
 
-__fat_prepare_dir_entry:
-    lda dirptr+1                        ; if we reach here with dirptr set to begin of next block,
-    cmp #>(block_data+sd_blocksize)     ; either we are EOC and next cluster must be reserved or just the next block of the cluster
-    bne @l_exit
-    jsr __fat_next_cln                  ; EOC?
-    bcc @l_next                         ; C=0
-    bne @l_exit                         ; other error, exit
-    jsr __fat_reserve_cluster           ; otherwise C=1/Z=1 EOC, we have to reserve a new cluster for dir entry
+    ; TODO performance optimization - skip write if dirptr is not at just one DIR_Entry_Size before block end. so the eod entry will be in the same block and only one write is necessary
+    jsr __fat_write_block_data        ; write the block with the updated dir entry
     bcs @l_exit
 
-@l_erase:
-    ldy #0                      ; safely, fill the new dir block with 0 to mark end-of-directory
-    tya
-:   sta block_data+$000, y
-    sta block_data+$100, y
-    iny
-    bne :-
-@l_next:
-    jsr __calc_lba_addr
-    SetVector block_data, dirptr
+    jsr __fat_seek_next_dirent        ; SeekPos + DIR_Entry_Size
+
+    sec
+    jsr __fat_prepare_block_access
+    sta dirptr+0
+    sty dirptr+1
+    debug16 "fat wr dirent eod", dirptr
+    lda #0                        ; end of directory
+    sta (dirptr)
+    jmp __fat_write_block_data        ; write the end of directory entry to device
 @l_exit:
     rts
-
 
 ; free cluster and maintain the fsinfo block
 ; in:
@@ -490,7 +447,8 @@ __fat_write_block_data:
 
     debug32 "fat_wb lba", lba_addr
     debug32 "fat_wb lba last", volumeID+VolumeID::lba_addr_last
-    cmp32 volumeID+VolumeID::lba_addr_last, lba_addr, @l_write
+    bra @l_write ; TODO dirty check
+    ;cmp32 volumeID+VolumeID::lba_addr_last, lba_addr, @l_write
 
     pla
     clc

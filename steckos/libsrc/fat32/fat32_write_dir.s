@@ -69,7 +69,8 @@ fat_mkdir:
     cmp #ENOENT                       ; we expect 'no such file or directory' error, otherwise a file/dir with same name already exists
     bne @l_exit_err                   ; exit on other error
 
-    debug16 "fat mkdir >", dirptr
+    debug16 "fat mkd >", dirptr
+    debug32 "fat mkd >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
     jsr __fat_write_dir_entry         ; create and write new dir entry
     bcs @l_exit_close
 

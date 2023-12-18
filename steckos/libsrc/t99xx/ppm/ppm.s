@@ -70,10 +70,10 @@ _i:     .res 1
 .proc ppm_load_image
     stz fd
 
-    ldy #O_RDONLY
-    jsr fopen
-    bcs @io_error
-    stx fd
+		ldy #O_RDONLY
+		jsr fopen
+		bcs @io_error
+		stx fd
 
     jsr ppm_parse_header
     bcc @ppm_ok

@@ -64,7 +64,6 @@ __fat_opendir:
 		lda fd_area + F32_fd::Attr,x
 		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
 		beq @l_exit_close
-    clc
 @l_exit:
 		rts
 @l_exit_close:

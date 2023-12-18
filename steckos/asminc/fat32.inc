@@ -204,8 +204,9 @@ DIR_Entry_Deleted            = $e5
    status           .byte   ; status - reserved (bit 7), next clnr (bit 6)
 .endstruct
 
-FD_STATUS_FILE_OPEN  = 1<<7
-FD_STATUS_DIRTY      = 1<<6
+FD_STATUS_FILE_OPEN   = 1<<7    ; if set the file is open, closed otherwise
+FD_STATUS_DIRTY       = 1<<6    ; if set dirty from seek() operation
+;FD_STATUS_WRITE       = 1<<0    ; if set denotes the file (or directory, e.g. mkdir()) is opened with write access
 
 FD_Entry_Size         = .sizeof(F32_fd)
 FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size
