@@ -46,14 +46,6 @@
 nvram = $1000
 
 kern_init:
-    ; copy trampolin code for ml monitor entry to ram
-    ldx #$00
-@copy:
-    lda trampolin_code,x
-    sta trampolin,x
-    inx
-    cpx #(trampolin_code_end - trampolin_code)
-    bne @copy
 
     SetVector user_isr_default, user_isr
     jsr textui_init0
@@ -216,22 +208,84 @@ frame:
 ;----------------------------------------------------------------------------------------------
 ; IO_NMI Routine. Handle NMI
 ;----------------------------------------------------------------------------------------------
-ACC = $45
-XREG = $46
-YREG = $47
-STATUS = $48
-SPNT = $49
-
+.zeropage
+ACC:    .res 1
+XREG:   .res 1
+YREG:   .res 1
+STATUS: .res 1
+PC:     .res 2
+SP:     .res 1
+.code
 do_nmi:
-  sta ACC
-  stx XREG
-  sty YREG
-  pla
-  sta STATUS
-  tsx
-  stx SPNT
+    sta ACC
+    stx XREG
+    sty YREG
+    pla
+    sta STATUS
+    tsx 
+    stx SP 
+    pla
+    sta SP 
+    pla 
+    sta SP+1
 
-  jmp trampolin
+    pha
+    lda SP 
+    pha 
+
+    jsr primm 
+    .byte CODE_LF, "PC   S0 S1 S2 S3 AC XR YR SP NV-BDIZC", CODE_LF,0
+
+    lda SP
+    jsr hexout
+    lda SP+1
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+
+    ldx #0
+:
+    lda slot0,x
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+    inx 
+    cpx #4
+    bne :-
+
+
+    lda ACC
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+
+    lda XREG
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+
+    lda YREG
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+
+    lda SP
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+
+    lda STATUS
+    jsr hexout
+;    rti
+    stp 
+:   bra :-
+
 
 
 do_reset:
@@ -247,20 +301,9 @@ do_reset:
   jmp kern_init
 
 
+
+
 filename: .asciiz "steckos/shell.prg"
-
-; trampolin code to enter ML monitor on NMI
-; this code gets copied to $10 and executed there
-trampolin_code:
-  sei
-  ; switch to ROM bank 1
-  lda #$02
-  sta $0230
-  ; go!
-  brk
-  ;jmp $f000
-trampolin_code_end:
-
 
 .segment "VECTORS"
 ; $FFF8/$FFF9 RETVEC
