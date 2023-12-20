@@ -208,85 +208,106 @@ frame:
 ;----------------------------------------------------------------------------------------------
 ; IO_NMI Routine. Handle NMI
 ;----------------------------------------------------------------------------------------------
+.struct save_status
+SLOT0   .byte
+SLOT1   .byte
+SLOT2   .byte
+SLOT3   .byte
+ACC     .byte
+XREG    .byte
+YREG    .byte
+SP      .byte
+STATUS  .byte
+PC      .word
+.endstruct
+
 .zeropage
-ACC:    .res 1
-XREG:   .res 1
-YREG:   .res 1
-STATUS: .res 1
-PC:     .res 2
-SP:     .res 1
+save_stat: .res   .sizeof(save_status)
 .code
 do_nmi:
-    sta ACC
-    stx XREG
-    sty YREG
-    pla
-    sta STATUS
-    tsx 
-    stx SP 
-    pla
-    sta SP 
-    pla 
-    sta SP+1
+    
+    sta save_stat + save_status::ACC
+    stx save_stat + save_status::XREG
+    sty save_stat + save_status::YREG
+    
+    ; plp
+    ; sta save_stat + save_status::STATUS
 
-    pha
-    lda SP 
-    pha 
+    pla 
+    sta save_stat + save_status::STATUS
+
+    pla
+    sta save_stat + save_status::PC
+    pla 
+    sta save_stat + save_status::PC+1
+
+    tsx 
+    stx save_stat + save_status::SP 
+
+    lda slot0
+    sta save_stat + save_status::SLOT0
+    lda slot1
+    sta save_stat + save_status::SLOT1
+    lda slot2
+    sta save_stat + save_status::SLOT2
+    lda slot3
+    sta save_stat + save_status::SLOT3
+
 
     jsr primm 
     .byte CODE_LF, "PC   S0 S1 S2 S3 AC XR YR SP NV-BDIZC", CODE_LF,0
 
-    lda SP
+    lda save_stat + save_status::PC+1
     jsr hexout
-    lda SP+1
+    lda save_stat + save_status::PC
     jsr hexout
 
     lda #' '
     jsr char_out
 
-    ldx #0
+    ldx #save_status::SLOT0
 :
-    lda slot0,x
+    lda save_stat,x
     jsr hexout
 
     lda #' '
     jsr char_out
     inx 
-    cpx #4
+    cpx #save_status::STATUS
     bne :-
 
 
-    lda ACC
-    jsr hexout
+    ldy save_stat + save_status::STATUS
 
-    lda #' '
+    ldx #0
+@next:
+    tya
+    asl
+    tay
+    bcs @set
+    lda #'0'
+    bra @skip
+@set:
+    
+    lda #'1'
+    ;bra @skip
+@skip:
+    jsr char_out
+    inx 
+    cpx #8
+    bne @next
+
+    lda #CODE_LF
     jsr char_out
 
-    lda XREG
-    jsr hexout
 
-    lda #' '
-    jsr char_out
+    lda save_stat + save_status::PC+1
+    pha 
+    lda save_stat + save_status::PC
+    pha 
 
-    lda YREG
-    jsr hexout
-
-    lda #' '
-    jsr char_out
-
-    lda SP
-    jsr hexout
-
-    lda #' '
-    jsr char_out
-
-    lda STATUS
-    jsr hexout
-;    rti
-    stp 
-:   bra :-
-
-
+    
+    rti
 
 do_reset:
   ; disable interrupt
