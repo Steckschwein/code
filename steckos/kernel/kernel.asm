@@ -223,36 +223,43 @@ PC      .word
 
 .zeropage
 save_stat: .res   .sizeof(save_status)
+atmp: .res 1
 .code
 do_nmi:
-    
+
     sta save_stat + save_status::ACC
     stx save_stat + save_status::XREG
     sty save_stat + save_status::YREG
-    
-    ; plp
-    ; sta save_stat + save_status::STATUS
 
-    pla 
-    sta save_stat + save_status::STATUS
-
-    pla
-    sta save_stat + save_status::PC
-    pla 
-    sta save_stat + save_status::PC+1
+    ; pha 
+    ; phx 
+    ; phy
 
     tsx 
     stx save_stat + save_status::SP 
 
-    lda slot0
-    sta save_stat + save_status::SLOT0
-    lda slot1
-    sta save_stat + save_status::SLOT1
-    lda slot2
-    sta save_stat + save_status::SLOT2
-    lda slot3
-    sta save_stat + save_status::SLOT3
+    ; dex
+    ; dex
+    ; dex
 
+    ; use x indirect addressing to fetch PC and SR from the stack
+    ; while leaving the stack pointer alone
+    lda $0100,x
+    sta save_stat + save_status::STATUS
+
+    dex 
+    lda $0100,x
+    sta save_stat + save_status::PC
+    dex 
+    lda $0100,x
+    sta save_stat + save_status::PC+1
+
+    ldx #3
+:
+    lda slot0,x 
+    sta save_stat + save_status::SLOT0,x 
+    dex 
+    bpl :-
 
     jsr primm 
     .byte CODE_LF, "PC   S0 S1 S2 S3 AC XR YR SP NV-BDIZC", CODE_LF,0
@@ -277,20 +284,17 @@ do_nmi:
     bne :-
 
 
-    ldy save_stat + save_status::STATUS
+    lda save_stat + save_status::STATUS
+    sta atmp
 
     ldx #0
 @next:
-    tya
-    asl
-    tay
+    asl atmp
     bcs @set
     lda #'0'
     bra @skip
-@set:
-    
+@set:    
     lda #'1'
-    ;bra @skip
 @skip:
     jsr char_out
     inx 
@@ -300,12 +304,15 @@ do_nmi:
     lda #CODE_LF
     jsr char_out
 
+    ldx save_stat + save_status::SP 
+    txs 
 
-    lda save_stat + save_status::PC+1
-    pha 
-    lda save_stat + save_status::PC
-    pha 
-
+    ; ply
+    ; plx
+    ; pla 
+    lda save_stat + save_status::ACC
+    ldx save_stat + save_status::XREG
+    ldy save_stat + save_status::YREG
     
     rti
 
