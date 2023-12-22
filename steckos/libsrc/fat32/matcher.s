@@ -126,32 +126,32 @@ __tfn_mask_char_l2:
     clc
     rts
 
-    ; trim string, remove leading and trailing white space
-    ; in:
-    ;  filenameptr with input string to trim
-    ; out:
-    ;  the trimmed string at filenameptr
-    ;  Z=0 and A=length of string, Z=1 if string was trimmed to empty string (A=0)
-    ;  C=1 on string overflow, means input >255 byte
+; trim string, remove leading and trailing white space
+; in:
+;  filenameptr with input string to trim
+; out:
+;  the trimmed string at filenameptr
+;  Z=0 and A=length of string, Z=1 if string was trimmed to empty string (A=0)
+;  C=1 on string overflow, means input >255 byte
 string_trim:
       stz s_tmp1
       stz s_tmp2
-  l_1:
+@l_1:
       ldy  s_tmp1
       inc  s_tmp1
       lda  (filenameptr),  y
-      beq  l_2
+      beq  @l_2
       cmp  #' '+1
-      bcc  l_1          ; skip all chars within 0..32
-  l_2:  ldy  s_tmp2
+      bcc  @l_1          ; skip all chars within 0..32
+@l_2: ldy  s_tmp2
       sta  (filenameptr), y
       cmp  #0          ; was end of string?
-      beq  l_st_ex
+      beq  @l_st_ex
       inc  s_tmp2
-      bne  l_1
+      bne  @l_1
       sec
       rts
-  l_st_ex:
+@l_st_ex:
       clc        ;
       tya        ; length to A
       rts

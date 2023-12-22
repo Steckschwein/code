@@ -122,7 +122,6 @@ __fat_fseek_cluster:
     bne :-
 
     jsr __fat_open_start_cluster
-    bcs @l_exit
 
     ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may fail within seek and leave with partial reserved clusters we dont recover (yet)
     ; read fsinfo andcmp temp_dword with fsinfo:FreeClus
@@ -138,8 +137,8 @@ __fat_fseek_cluster:
     debug32 "seek nxt", volumeID+VolumeID::temp_dword
     bne @seek_cln
 @l_exit_ok:
-    lda #<~FD_STATUS_DIRTY                 ; clear dirty
-    and fd_area+F32_fd::status,x
+    lda fd_area+F32_fd::status,x
+    and #<~FD_STATUS_DIRTY                 ; clear dirty
     sta fd_area+F32_fd::status,x
     clc
 @l_exit:
@@ -243,7 +242,7 @@ fat_close:
 ;   filenameptr  - with file name to search
 ; out:
 ;   Z=1 on success (A=0), Z=0 and A=error code otherwise
-;   C=1 if found and dirptr is set to the dir entry found (requires Z=1), C=0 otherwise
+;   C=0 if found and dirptr is set to the dir entry found (requires Z=1), C=1 otherwise
 fat_find_first:
     jsr __fat_clone_fd_temp_fd
     jmp __fat_find_first_mask

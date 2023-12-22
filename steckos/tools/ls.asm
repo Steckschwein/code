@@ -24,7 +24,7 @@
 .include "steckos.inc"
 .include "fat32.inc"
 
-.autoimport 
+.autoimport
 .export char_out=krn_chrout
 
 appstart $1000
@@ -41,14 +41,14 @@ l1:
 @l2:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
-    bcs @l4
+    bcc @l4
     jsr hexout
     printstring " i/o error"
     jmp @exit
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcs @l4 
+    bcc @l4
     jmp @exit
 @l4:
     lda (dirptr)
@@ -81,7 +81,7 @@ l1:
     jsr char_out
 
 @print:
-  
+
 	ldy #F32DirEntry::Name
 :
 	lda (dirptr),y

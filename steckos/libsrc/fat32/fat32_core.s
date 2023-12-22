@@ -54,6 +54,7 @@
 .export __fat_next_cln
 .export __fat_open_path
 .export __fat_open_rootdir
+.export __fat_open_start_cluster
 .export __fat_prepare_block_access
 .export __fat_prepare_block_access_read
 .export __fat_read_block_data
@@ -72,7 +73,7 @@
 ; in:
 ;  .X - file descriptor (index into fd_area) of the directory
 ; out:
-;   C=1 on success, C=0 and A=<error code>
+;   C=0 on success and entry was found, C=1 and A=<error code> otherwise
 __fat_find_first_mask:
     SetVector (volumeID+VolumeID::fat_dirname_mask), s_ptr2  ; build fat dir entry mask from user input
     jsr string_fat_mask
@@ -81,7 +82,7 @@ __fat_find_first_mask:
 ; in:
 ;  .X - file descriptor (index into fd_area) of the directory to search
 ; out:
-;  C=1 if dir entry was found with dirptr pointing to that entry, C=0 otherwise
+;  C=0 if dir entry was found with dirptr pointing to that entry, C=1 and A=<error code> otherwise or A=EOK if end of directory or EOC
 __fat_find_first:
     jsr __fat_clone_fd_temp_fd      ; clone given directory (.X) fd to tmp fd and set new fd (.X)
     jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current
@@ -94,7 +95,8 @@ __ff_loop:
 
 __ff_match:
     lda (dirptr)
-    beq __ff_exit               ; first byte of dir entry is $00 (end of directory)
+    debug16 "ff match dirptr", dirptr
+    beq __ff_exit_err           ; first byte of dir entry is $00 (end of directory)
 
     ldy #F32DirEntry::Attr      ; else check if long filename entry
     lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
@@ -102,29 +104,28 @@ __ff_match:
     beq __fat_find_next
 
     jsr __fat_matcher       ; call matcher strategy
-    bcs __ff_end            ; if C=1 we had a match
+    bcs __ff_found          ; if C=1 we had a match
 ; in:
 ;  X - directory fd index into fd_area
 ; out:
 ;  C=1 on success (A=0), C=0 and A=error code otherwise
-__fat_find_next:  ; TODO optimization - iterate with dirptr until end of block instead of calling __fat_prepare_block_access_read each time
-;    lda dirptr
-;    clc
- ;   adc #DIR_Entry_Size
-  ;  sta dirptr
-;    bcc :+
- ;   inc dirptr+1
-;:   .assert <(block_data + sd_blocksize) = $00, error, "block_data isn't aligned on a RAM page boundary"
-;    lda dirptr+1
- ;   cmp #>(block_data + sd_blocksize)   ; end of block reached?
-  ;  bne __ff_match                      ; no, process next entry
+__fat_find_next:
     jsr __fat_seek_next_dirent
+    lda fd_area + F32_fd::SeekPos+1,x
+    and #$01
+    ora fd_area + F32_fd::SeekPos+0,x
     debug32 "ff nxt seek <", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-    bcc __ff_loop
+    bne __ff_match ; optimization - iterate with dirptr until end of block instead of calling __fat_prepare_block_access_read each time
+    bra __ff_loop
+__ff_exit_err:
+    lda #ENOENT
+    sec ; nothing found C=1 and return
 __ff_exit:
-    clc                                 ; we are at the end, nothing found C=0 and return
-    debug "ffex"
-__ff_end:
+    debug "ff err <"
+    rts
+__ff_found:
+    clc
+    debug "ff fnd <"
     rts
 
 
@@ -132,9 +133,13 @@ __fat_seek_next_dirent:
     lda fd_area+F32_fd::SeekPos+0,x
     adc #DIR_Entry_Size
     sta fd_area+F32_fd::SeekPos+0,x
+    sta dirptr+0
     lda fd_area+F32_fd::SeekPos+1,x
     adc #0
     sta fd_area+F32_fd::SeekPos+1,x
+    and #$01
+    ora #>block_data
+    sta dirptr+1
     lda fd_area+F32_fd::SeekPos+2,x
     adc #0
     sta fd_area+F32_fd::SeekPos+2,x
@@ -158,7 +163,7 @@ ff_l4:
     ldy #F32DirEntry::Attr      ; else check if long filename entry
     lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
     cmp #DIR_Attr_Mask_LongFilename
-    beq __fat_find_next
+    beq OBSOLETE__fat_find_next
 
     jsr __fat_matcher     ; call matcher strategy
     bcs ff_end            ; if C=1 we had a match
@@ -251,7 +256,7 @@ __fat_open_path:
     iny
     bne @l3                 ;overflow - <path argument> exceeds 255 chars
 @l_err_einval:
-    lda  #EINVAL
+    lda #EINVAL
     sec
 @l_exit:
     rts
@@ -271,20 +276,16 @@ __fat_open_file:
     phy
     ldx #FD_INDEX_TEMP_DIR
     jsr __fat_find_first_mask
-    bcs @l1
-    lda #ENOENT
-    sec
-    bra @l_exit
-@l1:
+    bcs @l_exit
+
     ldy #F32DirEntry::Attr
     lda (dirptr),y
     and #DIR_Attr_Mask_Dir    ; directory?
-    bne @l2                   ; yes, do not allocate a new fd, use index (X) which is already set to FD_INDEX_TEMP_DIR and just update the fd data
+    bne :+                    ; yes, do not allocate a new fd, use index (X) which is already set to FD_INDEX_TEMP_DIR and just update the fd data
     jsr __fat_alloc_fd        ; no, then regular file and we allocate a new fd for them
     bcs @l_exit
-@l2:
     ;save 32 bit cluster number from dir entry
-    ldy #F32DirEntry::FstClusHI +1
+:   ldy #F32DirEntry::FstClusHI +1
     lda (dirptr),y
     and #$0f      ; cluster nr must be 0x?ffffff7
     sta fd_area + F32_fd::StartCluster + 3, x
@@ -382,7 +383,7 @@ __fat_prepare_block_access:
     ror
     debug "fp ba 2 >"
     jsr __fat_next_cln                        ; otherwise select next cluster
-    debug "fp ba <"
+    debug "fp ba 2 <"
     bcc @l_read                               ; exit on error or EOC (C=1)
     rts
 
@@ -397,10 +398,8 @@ __fat_prepare_block_access:
     lda fd_area+F32_fd::SeekPos+1,x
     and #$01
     ora #>block_data
-    ;sta __volatile_ptr+1
     tay
     lda fd_area+F32_fd::SeekPos+0,x
-    ;sta __volatile_ptr+0
     clc
 @l_exit:
     rts
@@ -414,7 +413,6 @@ __fat_prepare_block_access:
 __fat_set_fd_attr_dirlba:
     sta fd_area + F32_fd::Attr, x
 __fat_set_fd_dirlba:
-
     lda lba_addr + 3
     sta fd_area + F32_fd::DirEntryLBA + 3, x
     lda lba_addr + 2
@@ -461,13 +459,13 @@ __fat_open_rootdir:
     lda #DIR_Attr_Mask_Dir
     sta fd_area + F32_fd::Attr,x
     lda volumeID + VolumeID::BPB_RootClus+0
-    sta fd_area + F32_fd::StartCluster+0,x
+;    sta fd_area + F32_fd::StartCluster+0,x
     lda volumeID + VolumeID::BPB_RootClus+1
-    sta fd_area + F32_fd::StartCluster+1,x
+;   sta fd_area + F32_fd::StartCluster+1,x
     lda volumeID + VolumeID::BPB_RootClus+2
-    sta fd_area + F32_fd::StartCluster+2,x
+ ;   sta fd_area + F32_fd::StartCluster+2,x
     lda volumeID + VolumeID::BPB_RootClus+3
-    sta fd_area + F32_fd::StartCluster+3,x
+  ;  sta fd_area + F32_fd::StartCluster+3,x
     rts
 
 ; in:
@@ -678,7 +676,7 @@ __fat_next_cln:
 @l_select_next_cln:
     debug "sel nxt >"
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
-    debug "sel nxt"
+    debug "sel nxt (eoc)"
     bcc @l_save_cln
     ;cmp #EOK   ; EOK means EOC (C=1/A=0)
     bne @l_exit ; other error, then exit
@@ -712,6 +710,12 @@ __fat_next_cln:
     rts
 
 __fat_set_fd_start_cluster_seek_pos:
+    stz fd_area+F32_fd::SeekPos+3,x
+    stz fd_area+F32_fd::SeekPos+2,x
+    stz fd_area+F32_fd::SeekPos+1,x
+    stz fd_area+F32_fd::SeekPos+0,x
+
+__fat_open_start_cluster:
     lda fd_area+F32_fd::StartCluster+3, x
     sta fd_area+F32_fd::CurrentCluster+3, x
     lda fd_area+F32_fd::StartCluster+2, x
@@ -720,11 +724,6 @@ __fat_set_fd_start_cluster_seek_pos:
     sta fd_area+F32_fd::CurrentCluster+1, x
     lda fd_area+F32_fd::StartCluster+0, x
     sta fd_area+F32_fd::CurrentCluster+0, x
-
-    stz fd_area+F32_fd::SeekPos+3,x
-    stz fd_area+F32_fd::SeekPos+2,x
-    stz fd_area+F32_fd::SeekPos+1,x
-    stz fd_area+F32_fd::SeekPos+0,x
     rts
 
 ; in:
@@ -778,6 +777,7 @@ __fat_read_cluster_block_and_select:
 @l_eoc:
     ply
     lda #EOK ; carry denotes EOC state
+    debug "is_eoc <"
 @l_exit:
     rts
 

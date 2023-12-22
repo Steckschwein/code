@@ -63,13 +63,12 @@ __fat_opendir:
 		bcs @l_exit					    ; exit on error
 		lda fd_area + F32_fd::Attr,x
 		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
-		beq @l_exit_close
-@l_exit:
-		rts
-@l_exit_close:
+		bne @l_exit
 		lda #ENOTDIR				; error "Not a directory"
     sec
     jmp __fat_free_fd		; not a directory, so we opened a file. just close them immediately and free the allocated fd
+@l_exit:
+		rts
 
 
 ;in:

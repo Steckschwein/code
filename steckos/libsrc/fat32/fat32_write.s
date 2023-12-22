@@ -37,8 +37,8 @@
 .export fat_unlink
 
 .export __fat_reserve_cluster
-.export __fat_open_start_cluster
-.export __fat_write_dir_entry
+.export __fat_reserve_start_cluster
+.export __fat_add_direntry
 .export __fat_update_direntry
 .export __fat_fopen_touch
 .export __fat_write_block_data
@@ -144,7 +144,7 @@ __fat_read_direntry:
     jsr __fat_read_block_data             ; and read the block with the dir entry
     bcs @l_exit
 
-    lda fd_area+F32_fd::DirEntryPos, x  ; setup dirptr
+    lda fd_area+F32_fd::DirEntryPos, x    ; setup dirptr
     asl
     sta dirptr
     lda #>block_data
@@ -166,7 +166,7 @@ __fat_set_lba_from_fd_dirlba:
     sta lba_addr+1
     lda fd_area+F32_fd::DirEntryLBA+0 , x
     sta lba_addr+0
-    debug32 "fw_slba", lba_addr
+    debug32 "fat set dir lba <", lba_addr
     rts
 
 ; write new timestamp to direntry entry given as dirptr
@@ -274,7 +274,7 @@ __fat_fopen_touch:
  ;   sta fd_area+F32_fd::flags, x
     lda #DIR_Attr_Mask_Archive    ; create as regular file with archive bit set
     sta fd_area+F32_fd::Attr, x
-    jsr __fat_write_dir_entry     ; create dir entry at current dirptr
+    jsr __fat_add_direntry     ; create dir entry at current dirptr
     bcc @l_exit
     ;jsr __fat_set_fd_attr_dirlba  ; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
 
@@ -287,42 +287,40 @@ __fat_fopen_touch:
     rts
 
 
-; write new dir entry to dirptr and set new end of directory marker
+; create a new dir entry at given dirptr and set a new end of directory marker
 ; in:
+;   A - dir entry type - one of DIR_Attr_Mask_Dir, DIR_Attr_Mask_Archive ...
 ;   X - file descriptor of the new dir entry within fd_area
 ;   dirptr - set to current dir entry within block_data
 ; out:
 ;   C=0 on success, C=1 on error and A=<error code>
-__fat_write_dir_entry:
+__fat_add_direntry:
+
+    ldy #F32DirEntry::Attr              ; store type attribute
+    sta (dirptr), y
 
     debug16 "fat wr dirent >", dirptr
     copypointer dirptr, s_ptr2
     jsr string_fat_name                 ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
     bcs @l_exit
 
-    lda fd_area+F32_fd::Attr, x
-    ldy #F32DirEntry::Attr              ; store attribute
-    sta (dirptr), y
-
     jsr __fat_set_direntry_start_cluster
     jsr __fat_set_direntry_filesize
     jsr __fat_set_direntry_modify_datetime
     jsr __fat_set_direntry_create_datetime
 
-    ; TODO performance optimization - skip write if dirptr is not at just one DIR_Entry_Size before block end. so the eod entry will be in the same block and only one write is necessary
+    jsr __fat_set_lba_from_fd_dirlba
     jsr __fat_write_block_data        ; write the block with the updated dir entry
-    bcs @l_exit
-
-    jsr __fat_seek_next_dirent        ; SeekPos + DIR_Entry_Size
-
-    sec
-    jsr __fat_prepare_block_access
-    sta dirptr+0
-    sty dirptr+1
-    debug16 "fat wr dirent eod", dirptr
-    lda #0                        ; end of directory
-    sta (dirptr)
-    jmp __fat_write_block_data        ; write the end of directory entry to device
+    ;bcs @l_exit
+;    jsr __fat_seek_next_dirent        ; SeekPos + DIR_Entry_Size
+ ;   sec                               ; C=1 - write access
+  ;  jsr __fat_prepare_block_access
+   ; sta dirptr
+    ;sty dirptr+1
+    ;debug16 "fat wr dirent eod", dirptr
+    ;lda #0                            ; end of directory
+    ;sta (dirptr)
+    ;jmp __fat_write_block_data        ; write the end of directory entry to device
 @l_exit:
     rts
 
@@ -342,44 +340,38 @@ __fat_free_cluster:
 @l_exit:
     rts
 
+; in:
+;
 ; out:
-;  C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
-__fat_open_start_cluster:
+;   C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
     jsr __fat_is_start_cln_zero
-    clc ; success, if we take the branch - the start cluster is not zero, we must not reserve one
-    bne @l_exit
+    beq :+
+    clc ; success - the start cluster is not zero, we must not reserve one
+    rts
 
-    lda fd_area + F32_fd::flags,x
+:   lda fd_area + F32_fd::flags,x
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; write access?
     sec         ; set EOC (C=1) A=0 (EOK) if we take the branch
     debug "open strt cl flg >"
-    beq @l_exit     ; read access and no cluster reserved yet (empty file) - exit with EOC => C=1/A=EOK (0)
+    bne __fat_reserve_start_cluster     ; write access and no cluster reserved yet (empty file)
+    rts ; exit with EOC => C=1/A=EOK (0)
+; out:
+;  C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
+__fat_reserve_start_cluster:
     jsr __fat_reserve_cluster
     bcs @l_exit
-    lda fd_area + F32_fd::CurrentCluster + 3, x ; reserve cluster stores at CurrentCluster, we have to copy over
+    lda volumeID + VolumeID::LastClus + 3 ; reserve cluster stores at CurrentCluster, we have to copy over
     sta fd_area + F32_fd::StartCluster + 3, x
-    lda fd_area + F32_fd::CurrentCluster + 2, x
+    lda volumeID + VolumeID::LastClus + 2
     sta fd_area + F32_fd::StartCluster + 2, x
-    lda fd_area + F32_fd::CurrentCluster + 1, x
+    lda volumeID + VolumeID::LastClus + 1
     sta fd_area + F32_fd::StartCluster + 1, x
-    lda fd_area + F32_fd::CurrentCluster + 0, x
+    lda volumeID + VolumeID::LastClus + 0
     sta fd_area + F32_fd::StartCluster + 0, x
 @l_exit:
-    debug32 "open strt cl <", fd_area+(FD_Entry_Size*2)+F32_fd::CurrentCluster
+    debug32 "reserve strt cl <", volumeID + VolumeID::LastClus
     rts
 
-
-; find and reserve next free cluster for given FD (.X), maintains the fsinfo block and extends the cluster chain
-; in:
-;  X - the file descriptor into fd_area where the found cluster should be stored
-; out:
-;  C=0 on success and fd::CurrentCluster initialized with the found cluster, C=1 otherwise and A=<error code>
-__fat_extend_clusterchain:
-    jsr __fat_reserve_cluster
-    bcs @l_exit
-
-@l_exit:
-    rts
 
 ; find and reserve next free cluster in given FD (.X), also maintains the fsinfo block
 ; in:
@@ -411,13 +403,13 @@ __fat_update_cluster:
     lda s_tmp1
     bpl :+                      ; +/- fs info cluster number?
     dec s_tmp2 ; 2's complement ($ff)
-    ldy fd_area+F32_fd::CurrentCluster+0,x
+    ldy volumeID+VolumeID::LastClus+0
     sty block_fat+F32FSInfo::LastClus+0
-    ldy fd_area+F32_fd::CurrentCluster+1,x
+    ldy volumeID+VolumeID::LastClus+1
     sty block_fat+F32FSInfo::LastClus+1
-    ldy fd_area+F32_fd::CurrentCluster+2,x
+    ldy volumeID+VolumeID::LastClus+2
     sty block_fat+F32FSInfo::LastClus+2
-    ldy fd_area+F32_fd::CurrentCluster+3,x
+    ldy volumeID+VolumeID::LastClus+3
     sty block_fat+F32FSInfo::LastClus+3
 :   debug32 "fs_info", block_fat+F32FSInfo::FreeClus
     clc
@@ -560,25 +552,14 @@ __fat_mark_cluster:
     sta (read_blkptr), y
     rts
 
-; in:
-;  X - file descriptor
+; try to find a free cluster and store them in volumeId+VolumeID::LastClus
 ; out:
-;   C=0 on success
-;   Y=offset in block_fat of found cluster
-;   lba_addr of the fat block where the found cluster resides
-;   the found cluster is stored within the given file descriptor at fd_area+F32_fd::CurrentCluster,x
-;   C=1 on error, A=<error code>
+;   C=0 on success, Y=offset in block_fat of found cluster. lba_addr of the fat block where the found cluster resides
+;   C=1 on error and A=<error code>
 __fat_find_free_cluster:
     ;TODO improve, use a previously saved lba_addr and/or found cluster number - e.g. from fsinfo
     ; init lba_addr with fat_begin lba addr
-    lda volumeID+VolumeID::lba_fat+3
-    sta lba_addr+3
-    lda volumeID+VolumeID::lba_fat+2
-    sta lba_addr+2
-    lda volumeID+VolumeID::lba_fat+1
-    sta lba_addr+1
-    lda volumeID+VolumeID::lba_fat+0
-    sta lba_addr+0
+    m_memcpy volumeID+VolumeID::lba_fat, lba_addr, 4
 
 @next_block:
     jsr __fat_read_block_fat  ; read fat block
@@ -615,13 +596,13 @@ __fat_find_free_cluster:
     sta read_blkptr+1
     lda #$40          ; adjust clnr with +$40 (256 / 4 byte/clnr) clusters since it was found in 2nd page
 @l_found_lb:          ; A=0 here if called from branch above
-    debug "fat find cl"
-    sta fd_area+F32_fd::CurrentCluster+0, x
+    debug "fat found cl"
+    sta volumeID+VolumeID::LastClus+0
     tya
     lsr            ; offset Y>>2 (div 4) - 32 bit clnr
     lsr
-    adc fd_area+F32_fd::CurrentCluster+0, x  ; C=0 here always, y is multiple of 4
-    sta fd_area+F32_fd::CurrentCluster+0, x  ; safe clnr
+    adc volumeID+VolumeID::LastClus+0  ; C=0 here always, y is multiple of 4
+    sta volumeID+VolumeID::LastClus+0  ; safe clnr
 
     ; calc the cluster number with clnr = (block number * 512) / 4 + (Y / 4) => (lba_addr - volumeID+VolumeID::lba_fat) << 7+(Y>>2)
     ; to avoid the <<7, we simply <<8 and do one ror - FTW!
@@ -632,18 +613,18 @@ __fat_find_free_cluster:
     lda lba_addr+1
     sbc volumeID+VolumeID::lba_fat+1    ; now we have 16bit blocknumber
     lsr            ; clnr = blocks<<7
-    sta fd_area+F32_fd::CurrentCluster+2, x
+    sta volumeID+VolumeID::LastClus+2
     lda s_tmp1        ; restore A
     ror
-    sta fd_area+F32_fd::CurrentCluster+1, x
+    sta volumeID+VolumeID::LastClus+1
     lda #0
-    ror            ; clnr += Y>>2 (offset within block) - already saved in F32_fd::CurrentCluster+0, x s.above
-    adc fd_area+F32_fd::CurrentCluster+0, x
-    sta fd_area+F32_fd::CurrentCluster+0, x
+    ror            ; clnr += Y>>2 (offset within block) - already saved in volumeId+VolumeID::LastClus+0 (s.above)
+    adc volumeID+VolumeID::LastClus+0
+    sta volumeID+VolumeID::LastClus+0
     lda #0          ; exit found
-    sta fd_area+F32_fd::CurrentCluster+3, x
+    sta volumeID+VolumeID::LastClus+3
     clc ; found, C=0 success
-    debug32 "fat find cl <", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster ; hart debug 3rd fd entry
+    debug32 "fat find cl <", volumeID+VolumeID::LastClus
     rts
 
 ; unlink a file denoted by given path in A/X

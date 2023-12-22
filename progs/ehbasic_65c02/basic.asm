@@ -7637,8 +7637,8 @@ fwrite_wrapper:
 
 LAB_SAVE:
       ldy #O_CREAT
-      jsr openfile 
-      
+      jsr openfile
+
       ; set output vector to filesystem wrapper
       lda #<fwrite_wrapper
       sta VEC_OUT
@@ -7739,7 +7739,7 @@ LAB_DIR:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
 
-    bcs @l2_1
+    bcc @l2_1
     bra @end
 @l2_1:
     bcs @l4
@@ -7747,7 +7747,7 @@ LAB_DIR:
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcc @l5
+    bcs @l5
 @l4:
     lda (dirptr)
     cmp #$e5
