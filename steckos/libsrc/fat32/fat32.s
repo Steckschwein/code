@@ -123,8 +123,8 @@ __fat_fseek_cluster:
 
     jsr __fat_open_start_cluster
 
-    ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may fail within seek and leave with partial reserved clusters we dont recover (yet)
-    ; read fsinfo andcmp temp_dword with fsinfo:FreeClus
+    ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may fail within seek and leave with partial reserved clusters and we dont recover (yet)
+    ; read fsinfo and cmp temp_dword with fsinfo:FreeClus
     lda volumeID+VolumeID::temp_dword+2
     ora volumeID+VolumeID::temp_dword+1
     ora volumeID+VolumeID::temp_dword+0
@@ -182,26 +182,26 @@ fat_fread_byte:
 ;    O_RDONLY  = $01
 ;    O_WRONLY  = $02
 ;    O_RDWR    = $03
-;    O_CREAT    = $10
-;    O_TRUNC    = $20
+;    O_CREAT   = $10
+;    O_TRUNC   = $20
 ;    O_APPEND  = $40
 ;    O_EXCL    = $80
 ; out:
-;  .X - index into fd_area of the opened file
-;  C=0 on success, C=1 and A=<error code> otherwise
+;   .X - index into fd_area of the opened file
+;   C=0 on success, C=1 and A=<error code> otherwise
 fat_fopen:
     sty __volatile_tmp           ; save open flag
-    debug8 "ffo vtmp 0", __volatile_tmp
+    debug8 "fopen vtmp", __volatile_tmp
     ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
     jsr __fat_open_path
     bcs @l_error
     lda fd_area+F32_fd::Attr,x
-    and #DIR_Attr_Mask_Dir      ; regular file or directory?
-    beq @l_opened               ; exit, file opened
+    and #DIR_Attr_Mask_Dir      ; file or directory?
+    beq @l_open                 ; no ok, file opened
     lda #EISDIR                 ; was directory, we must not free any fd
 @l_error:
     cmp #ENOENT                 ; no such file or directory ?
-    bne @l_exit_err             ; other error, then exit
+    bne @l_exit_err             ; other error, exit
     lda __volatile_tmp          ; check if we should create a new file
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)
     bne @l_touch
@@ -209,7 +209,7 @@ fat_fopen:
 @l_exit_err:
     sec
     rts
-@l_opened:
+@l_open:
     lda __volatile_tmp
     sta fd_area+F32_fd::flags,x
     clc

@@ -41,6 +41,7 @@
 .export __fat_add_direntry
 .export __fat_update_direntry
 .export __fat_fopen_touch
+.export __fat_write_fat_blocks
 .export __fat_write_block_data
 .export __fat_write_block_fat
 .export __fat_set_lba_from_fd_dirlba
@@ -117,6 +118,54 @@ __fat_set_fd_filesize:
     rts
 
 
+
+; write new dir entry to dirptr and set new end of directory marker
+; in:
+;  X - file descriptor of the new dir entry within fd_area
+;  dirptr to directory entry
+; out:
+;  C=0 on success, C=1 on error and A=<error code>
+__fat_fopen_touch:
+
+    jsr __fat_alloc_fd           ; allocate a dedicated fd for the new directory
+    bcs @l_exit
+
+    jsr __fat_set_fd_dirlba      ; save the dir entry lba and offset to new allocated fd
+
+    lda __volatile_tmp
+    sta fd_area+F32_fd::flags,x
+    lda #DIR_Attr_Mask_Archive   ; create as regular file with archive bit set
+    sta fd_area+F32_fd::Attr,x
+    jsr __fat_add_direntry       ; create dir entry at current dirptr
+
+;    jsr __fat_free_fd            ; free the allocated file descriptor if there where errors, C=1 and A are preserved
+@l_exit:
+    debug "fop touch"
+    rts
+
+; create a new dir entry at given dirptr and set a new end of directory marker
+; in:
+;   A - dir entry type - one of DIR_Attr_Mask_Dir, DIR_Attr_Mask_Archive ...
+;   X - file descriptor of the new dir entry within fd_area
+;   dirptr - set to current dir entry within block_data
+; out:
+;   C=0 on success, C=1 on error and A=<error code>
+__fat_add_direntry:
+
+    ldy #F32DirEntry::Attr              ; store type attribute
+    sta (dirptr), y
+
+    debug16 "fat wr dirent >", dirptr
+    copypointer dirptr, s_ptr2
+    jsr string_fat_name                 ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
+    bcs @l_exit
+
+    jsr __fat_set_lba_from_fd_dirlba
+    jsr __fat_set_direntry_create_datetime
+    bra __fat_update_direntry_write
+@l_exit:
+    rts
+
 ; out:
 ;   C=0 on success, C=1 and A=<error> otherwise
 __fat_update_direntry:
@@ -125,13 +174,17 @@ __fat_update_direntry:
     beq @l_exit ; no, read access we skip update
 
     jsr __fat_read_direntry                  ; read dir entry, dirptr is set accordingly
-    bcs @l_exit
-    jsr __fat_set_direntry_start_cluster
-    jsr __fat_set_direntry_filesize         ; set filesize of directory entry via dirptr
-    jsr __fat_set_direntry_modify_datetime  ; set modification time and date
-    jmp __fat_write_block_data              ; lba_addr is already set from read, see above
+    bcc :+
 @l_exit:
     rts
+
+:   jsr __fat_set_direntry_modify_datetime  ; set modification time and date
+
+__fat_update_direntry_write:
+    jsr __fat_set_direntry_start_cluster
+    jsr __fat_set_direntry_filesize         ; set filesize of directory entry via dirptr
+
+    jmp __fat_write_block_data              ; lba_addr is already set from read, see above
 
 ; read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
 ; in:
@@ -198,6 +251,7 @@ __fat_set_direntry_modify_datetime:
     rts
 
 __fat_set_direntry_create_datetime:
+    jsr __fat_set_direntry_modify_datetime
     lda #0
     ldy #F32DirEntry::Reserved          ; unused
     sta (dirptr), y
@@ -258,71 +312,6 @@ __fat_set_direntry_start_cluster:
     sta (dirptr),y
     rts
 
-; write new dir entry to dirptr and set new end of directory marker
-; in:
-;  X - file descriptor of the new dir entry within fd_area
-;  dirptr to directory entry
-; out:
-;  C=0 on success, C=1 on error and A=<error code>
-__fat_fopen_touch:
-;    copypointer dirptr, s_ptr2
- ;   jsr string_fat_name         ; build fat name upon input string (filenameptr)
-  ;  bne @l_exit_err
-    jsr __fat_alloc_fd          ; alloc a fd for the new file we want to create to make sure we get one before
-    bcs @l_exit                 ; we do any sd block writes which may result in various errors
-;    lda __volatile_tmp          ; save file open flags
- ;   sta fd_area+F32_fd::flags, x
-    lda #DIR_Attr_Mask_Archive    ; create as regular file with archive bit set
-    sta fd_area+F32_fd::Attr, x
-    jsr __fat_add_direntry     ; create dir entry at current dirptr
-    bcc @l_exit
-    ;jsr __fat_set_fd_attr_dirlba  ; update dir lba addr and dir entry number within fd from lba_addr and dir_ptr which where setup during __fat_opendir_cwd from above
-
-    jmp __fat_free_fd            ; free the allocated file descriptor if there where errors, C=1 and A are preserved
-@l_exit_err:
-    lda #EINVAL
-    sec
-@l_exit:
-    debug "fop touch"
-    rts
-
-
-; create a new dir entry at given dirptr and set a new end of directory marker
-; in:
-;   A - dir entry type - one of DIR_Attr_Mask_Dir, DIR_Attr_Mask_Archive ...
-;   X - file descriptor of the new dir entry within fd_area
-;   dirptr - set to current dir entry within block_data
-; out:
-;   C=0 on success, C=1 on error and A=<error code>
-__fat_add_direntry:
-
-    ldy #F32DirEntry::Attr              ; store type attribute
-    sta (dirptr), y
-
-    debug16 "fat wr dirent >", dirptr
-    copypointer dirptr, s_ptr2
-    jsr string_fat_name                 ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
-    bcs @l_exit
-
-    jsr __fat_set_direntry_start_cluster
-    jsr __fat_set_direntry_filesize
-    jsr __fat_set_direntry_modify_datetime
-    jsr __fat_set_direntry_create_datetime
-
-    jsr __fat_set_lba_from_fd_dirlba
-    jsr __fat_write_block_data        ; write the block with the updated dir entry
-    ;bcs @l_exit
-;    jsr __fat_seek_next_dirent        ; SeekPos + DIR_Entry_Size
- ;   sec                               ; C=1 - write access
-  ;  jsr __fat_prepare_block_access
-   ; sta dirptr
-    ;sty dirptr+1
-    ;debug16 "fat wr dirent eod", dirptr
-    ;lda #0                            ; end of directory
-    ;sta (dirptr)
-    ;jmp __fat_write_block_data        ; write the end of directory entry to device
-@l_exit:
-    rts
 
 ; free cluster and maintain the fsinfo block
 ; in:
@@ -360,7 +349,7 @@ __fat_free_cluster:
 __fat_reserve_start_cluster:
     jsr __fat_reserve_cluster
     bcs @l_exit
-    lda volumeID + VolumeID::LastClus + 3 ; reserve cluster stores at CurrentCluster, we have to copy over
+    lda volumeID + VolumeID::LastClus + 3
     sta fd_area + F32_fd::StartCluster + 3, x
     lda volumeID + VolumeID::LastClus + 2
     sta fd_area + F32_fd::StartCluster + 2, x
@@ -382,6 +371,7 @@ __fat_reserve_cluster:
     jsr __fat_find_free_cluster
     bcc :+
     rts
+
 :   lda #$ff
     sta s_tmp1
 ; update cluster

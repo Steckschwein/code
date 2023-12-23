@@ -38,8 +38,7 @@
 .autoimport
 
 .export fat_chdir
-.export __fat_opendir
-.export __fat_opendir_cwd
+.export fat_opendir
 
 .code
 
@@ -49,22 +48,14 @@
 ; out:
 ;	  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;	  X - index into fd_area of the opened directory
-__fat_opendir_cwd:
+fat_opendir:
 		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
-; open directory by given path starting from directory given as file descriptor
-; in:
-;   A/X - pointer to string with the file path
-;	  Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
-; out:
-;	  C - C=0 on success (A=0), C=1 and A=error code otherwise
-;	  X - index into fd_area of the opened directory
-__fat_opendir:
 		jsr __fat_open_path
 		bcs @l_exit					    ; exit on error
 		lda fd_area + F32_fd::Attr,x
 		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
 		bne @l_exit
-		lda #ENOTDIR				; error "Not a directory"
+    lda #ENOTDIR				; error "Not a directory"
     sec
     jmp __fat_free_fd		; not a directory, so we opened a file. just close them immediately and free the allocated fd
 @l_exit:
@@ -77,7 +68,7 @@ __fat_opendir:
 ;	C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
 fat_chdir:
-		jsr __fat_opendir_cwd
+		jsr fat_opendir
 		bcs @l_exit
     ldy #FD_INDEX_TEMP_DIR		; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
 		ldx #FD_INDEX_CURRENT_DIR

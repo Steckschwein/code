@@ -44,7 +44,7 @@
 ; out:
 ;  C=0 on success, C=1 and A=error code otherwise
 fat_rmdir:
-    jsr __fat_opendir_cwd
+    jsr fat_opendir
     bcs @l_exit
     debugdirentry
     jsr __fat_is_dot_dir
@@ -64,15 +64,22 @@ fat_rmdir:
 ; out:
 ;   C=0 on success (A=0), C=1 on error and A=error code otherwise
 fat_mkdir:
-    jsr __fat_opendir_cwd
+    jsr fat_opendir
     bcs :+
     lda #EEXIST                       ; C=0 - open success, file/dir exists already, exit
 @l_exit_err:
     sec
     rts
+
 :   cmp #ENOENT                       ; we expect 'no such file or directory' error
+    beq @l_add_dirent
+    cmp #EOK                          ; or error from open was end of cluster (@see find_first/_next)?
     bne @l_exit_err                   ; exit on other error
 
+    debug "fat mkd pba >"
+    sec                               ; if eoc we have to prepare block access first to write new dir entry
+    jsr __fat_prepare_block_access
+@l_add_dirent:
     debug16 "fat mkd >", dirptr
     debug32 "fat mkd >", fd_area+FD_INDEX_TEMP_DIR+F32_fd::SeekPos
 
@@ -81,10 +88,11 @@ fat_mkdir:
 
     jsr __fat_set_fd_dirlba           ; save the dir entry lba and offset to new allocated fd
 
-    jsr __fat_reserve_start_cluster   ; try to find and reserve a cluster and store them in fd_area with X at F32_fd::StartCluster
+    jsr __fat_reserve_start_cluster   ; reserve a cluster for the new directory and store them in fd_area with X at F32_fd::StartCluster
     bcs @l_exit_close
 
     lda #DIR_Attr_Mask_Dir            ; set type directory
+    sta fd_area+F32_fd::Attr,x
     jsr __fat_add_direntry            ; create and write new directory entry
     bcs @l_exit_close
 

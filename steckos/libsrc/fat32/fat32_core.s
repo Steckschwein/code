@@ -45,7 +45,6 @@
 .export __fat_find_first_mask
 .export __fat_find_next
 .export __fat_alloc_fd
-.export __fat_alloc_fd_x
 .export __fat_clone_fd
 .export __fat_clone_fd_temp_fd
 .export __fat_free_fd
@@ -96,7 +95,7 @@ __ff_loop:
 __ff_match:
     lda (dirptr)
     debug16 "ff match dirptr", dirptr
-    beq __ff_exit_err           ; first byte of dir entry is $00 (end of directory)
+    beq __ff_exit_enoent        ; first byte of dir entry is $00 (end of directory)
 
     ldy #F32DirEntry::Attr      ; else check if long filename entry
     lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
@@ -117,7 +116,7 @@ __fat_find_next:
     debug32 "ff nxt seek <", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
     bne __ff_match ; optimization - iterate with dirptr until end of block instead of calling __fat_prepare_block_access_read each time
     bra __ff_loop
-__ff_exit_err:
+__ff_exit_enoent:
     lda #ENOENT
     sec ; nothing found C=1 and return
 __ff_exit:
@@ -363,31 +362,30 @@ __fat_prepare_block_access:
     debug "fp ba >"
     bvc @l_check_block
 
-    jsr __fat_fseek_cluster           ; yes, then we have to seek first to ensure correct cluster is selected, Carry is given as param
+    jsr __fat_fseek_cluster                   ; yes, then we have to seek first to ensure correct cluster is selected, Carry is given as param for read/write access
     bcc @l_read
     rts
 
 @l_check_block:
-    php ; save carry
+    php ; save carry given as parameter
 
     lda fd_area+F32_fd::SeekPos+1,x
     lsr
     debug32 "fp ba 0 >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-    bcs @l_read_restore                       ; not at block start (multiple of $02??)
+    bcs @l_restore_read                       ; not at block start (multiple of $02??)
     and volumeID+VolumeID::BPB_SecPerClusMask ; otherwise mask with sec per cluster mask
     ora fd_area+F32_fd::SeekPos+0,x           ; and test whether SeekPos is at the beginning of a block (multiple of $??00) ?
     debug "fp ba 1 >"
-    bne @l_read_restore                       ; not at the beginning of a cluster, just read the block
+    bne @l_restore_read                       ; not at the beginning of a cluster, just read the block
 
-    pla ; restore carry
+    pla                                       ; restore carry
     ror
     debug "fp ba 2 >"
-    jsr __fat_next_cln                        ; otherwise select next cluster
+    jsr __fat_next_cln                        ; select next cluster, carry denotes read/write access
     debug "fp ba 2 <"
     bcc @l_read                               ; exit on error or EOC (C=1)
     rts
-
-@l_read_restore:
+@l_restore_read:
     pla
 @l_read:
     jsr __calc_lba_addr
@@ -436,7 +434,7 @@ __fat_set_fd_dirlba:
 ;  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 __fat_alloc_fd:
     ldx #(2*FD_Entry_Size)                    ; skip 2 entries, they're reserved for current and temp dir
-__fat_alloc_fd_x:
+@loop:
     lda fd_area + F32_fd::status,x            ; bit 7 not set means unused, init and return current x as offset
     bpl __fat_init_fd
 
@@ -446,7 +444,7 @@ __fat_alloc_fd_x:
     tax
 
     cpx #(FD_Entry_Size*FD_Entries_Max)
-    bne __fat_alloc_fd_x
+    bne @loop
     lda #EMFILE                         ; Too many open files, no free file descriptor found
     rts
 
@@ -458,14 +456,6 @@ __fat_open_rootdir:
     jsr __fat_init_fd
     lda #DIR_Attr_Mask_Dir
     sta fd_area + F32_fd::Attr,x
-    lda volumeID + VolumeID::BPB_RootClus+0
-;    sta fd_area + F32_fd::StartCluster+0,x
-    lda volumeID + VolumeID::BPB_RootClus+1
-;   sta fd_area + F32_fd::StartCluster+1,x
-    lda volumeID + VolumeID::BPB_RootClus+2
- ;   sta fd_area + F32_fd::StartCluster+2,x
-    lda volumeID + VolumeID::BPB_RootClus+3
-  ;  sta fd_area + F32_fd::StartCluster+3,x
     rts
 
 ; in:
@@ -654,7 +644,8 @@ __calc_fat_lba_addr:
 ; extract next cluster number from the 512 fat block buffer or reserve a new one
 ; unsigned int offs = (clnr << 2 & (BLOCK_SIZE-1));//offset within 512 byte block, cluster nr * 4 (32 Bit) and Bit 8-0 gives the offset
 ; in:
-;  X - file descriptor
+;   X - file descriptor
+;   C - C=0 read access, C=1 write access means extend cluster if EOC
 ; out:
 ;  C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
 __fat_next_cln:
@@ -663,7 +654,43 @@ __fat_next_cln:
     lda read_blkptr+1
     pha
 
+    bcs @l_write            ; read or write access?
+
+    jsr @l_select_next_cln  ; read access, just try to select
+    bra @l_exit
+
+@l_write:
     jsr @l_select_next_cln
+    bcc @l_exit
+   ;cmp #EOK   ; EOK means EOC (C=1/A=0)
+    bne @l_exit ; other error, then exit
+    ; A=0 here
+    debug "fat next cln write >"
+:   jsr __fat_reserve_cluster ; otherwise reserve a cluster
+    bcs @l_exit
+
+    jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
+    bcc @l_exit
+    bne @l_exit
+    debug "fat next cln write"
+
+    phy
+    lda volumeID + VolumeID::LastClus + 0 ;
+    sta (read_blkptr), y
+    iny
+    lda volumeID + VolumeID::LastClus + 1
+    sta (read_blkptr), y
+    iny
+    lda volumeID + VolumeID::LastClus + 2
+    sta (read_blkptr), y
+    iny
+    lda volumeID + VolumeID::LastClus + 3
+    sta (read_blkptr), y
+    ply
+    jsr @l_set_current_cluster
+    jsr __fat_write_fat_blocks
+
+@l_exit:
     debug32 "fat next cln <", fd_area+(FD_Entry_Size*2)+F32_fd::CurrentCluster
 
     ply                      ; use Y to preserve A with return code
@@ -672,27 +699,12 @@ __fat_next_cln:
     sty read_blkptr
     rts
 
-
 @l_select_next_cln:
     debug "sel nxt >"
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
-    debug "sel nxt (eoc)"
-    bcc @l_save_cln
-    ;cmp #EOK   ; EOK means EOC (C=1/A=0)
-    bne @l_exit ; other error, then exit
-
-    lda fd_area + F32_fd::flags,x
-    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; is write access?
-    debug "sel nxt flg"
-    sec ; read access and next cluster is EOC - exit C=1/A=EOK (0) (EOC)
-    beq @l_exit
-    jsr __fat_reserve_cluster ; otherwise try to reserve
-    bcs @l_exit
-    ;TODO update chain
-    sec
-    bra @l_exit
-
-@l_save_cln:
+    debug16 "sel nxt (eoc)", read_blkptr
+    bcs :+
+@l_set_current_cluster:
     ;debug32 "fnxtcln cl >", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster
     lda (read_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+0, x
@@ -705,9 +717,7 @@ __fat_next_cln:
     iny
     lda (read_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+3, x
-    clc
-@l_exit:
-    rts
+:   rts
 
 __fat_set_fd_start_cluster_seek_pos:
     stz fd_area+F32_fd::SeekPos+3,x
