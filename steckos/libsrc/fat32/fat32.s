@@ -69,7 +69,7 @@ fat_fseek:
 
     ldy #Seek::Whence
     lda (__volatile_ptr),y
-    debug "fat fseek"
+    debug "fat fseek >"
     cmp #SEEK_SET
     ; TODO support SEEK_CUR, SEEK_END
     bne @l_exit_err
@@ -104,6 +104,15 @@ fat_fseek:
 ;   C - C=0 read access, C=1 write access
 __fat_fseek_cluster:
     debug "seek >"
+
+    bcc :+  ; read or write access?
+
+    jsr __fat_is_start_cln_zero
+    bne :+
+    jsr __fat_reserve_start_cluster ; start cluster zero, write access, we have to reserve the start cluster
+
+:   jsr __fat_set_fd_start_cluster
+
     ; calculate amount of clusters required for requested seek position - "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
     lda fd_area+F32_fd::SeekPos+3,x
     sta volumeID+VolumeID::temp_dword+2
@@ -112,17 +121,14 @@ __fat_fseek_cluster:
     lda fd_area+F32_fd::SeekPos+1,x
     sta volumeID+VolumeID::temp_dword+0
 
-    lda volumeID+VolumeID::BPB_SecPerClus ; TODO pre calc loop count
-:   tay
-    lsr volumeID+VolumeID::temp_dword+2
+    ldy volumeID+VolumeID::BPB_SecPerClusCount ; Count + 1 cause SeekPos / $200 gives amount of blocks/sectors, so we need at least one iteration
+:   lsr volumeID+VolumeID::temp_dword+2
     ror volumeID+VolumeID::temp_dword+1
     ror volumeID+VolumeID::temp_dword+0
-    tya
-    lsr
-    bne :-
+    dey
+    bpl :-
 
-    jsr __fat_open_start_cluster
-
+@l_seek:
     ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may fail within seek and leave with partial reserved clusters and we dont recover (yet)
     ; read fsinfo and cmp temp_dword with fsinfo:FreeClus
     lda volumeID+VolumeID::temp_dword+2
@@ -194,17 +200,22 @@ fat_fopen:
     debug8 "fopen vtmp", __volatile_tmp
     ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
     jsr __fat_open_path
-    bcs @l_error
+    bcs @l_not_open
     lda fd_area+F32_fd::Attr,x
     and #DIR_Attr_Mask_Dir      ; file or directory?
-    beq @l_open                 ; no ok, file opened
+    beq @l_open                 ; ok, file opened
     lda #EISDIR                 ; was directory, we must not free any fd
-@l_error:
+@l_not_open:
+    debug "fat open err"
+    cmp #EOK                    ; or error from open was end of cluster (@see find_first/_next)?
+    beq @l_add_dirent           ; EOC, C=1 go on with write check
     cmp #ENOENT                 ; no such file or directory ?
-    bne @l_exit_err             ; other error, exit
-    lda __volatile_tmp          ; check if we should create a new file
+    bne @l_exit_err
+    clc                         ; C=0 to skip prepare block below
+@l_add_dirent:
+    lda __volatile_tmp          ; check write access
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)
-    bne @l_touch
+    bne @l_touch                ; if so, we create a new file
     lda #ENOENT                 ; no "write" flags set, exit with ENOENT
 @l_exit_err:
     sec
@@ -212,7 +223,6 @@ fat_fopen:
 @l_open:
     lda __volatile_tmp
     sta fd_area+F32_fd::flags,x
-    clc
     rts
 @l_touch:
     jmp __fat_fopen_touch

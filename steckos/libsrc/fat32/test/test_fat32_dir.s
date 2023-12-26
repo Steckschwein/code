@@ -14,8 +14,8 @@
 debug_enabled=1
 
 ; cluster search will find following clustes
-TEST_FILE_CL  =$00000010
-TEST_FILE_CL2 =$00000019
+TEST_FILE_CL=$10
+TEST_FILE_CL2=$19
 
 
 .code
@@ -189,6 +189,12 @@ TEST_FILE_CL2 =$00000019
       fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL2
     assertDirEntry block_data_cl19_00+1*DIR_Entry_Size
       fat32_dir_entry_dir "..      ", "   ", 0 ; root cluster
+
+    assert32 TEST_FILE_CL,  block_fat_0+(ROOT_CL<<2 & (sd_blocksize-1)); assert cl chain for root directory - root ($02) => $10
+    assert32 FAT_EOC,       block_fat_0+(TEST_FILE_CL<<2 & (sd_blocksize-1))
+
+    assert32 TEST_FILE_CL,  block_fat2_0+(ROOT_CL<<2 & (sd_blocksize-1)); assert cl chain for root directory - root ($02) => $10
+    assert32 FAT_EOC,       block_fat2_0+(TEST_FILE_CL<<2 & (sd_blocksize-1))
 
     assert32 $fe, block_fsinfo+F32FSInfo::FreeClus
     assert32 TEST_FILE_CL2, block_fsinfo+F32FSInfo::LastClus

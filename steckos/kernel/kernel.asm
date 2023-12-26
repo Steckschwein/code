@@ -223,7 +223,6 @@ STATUS = $48
 SPNT = $49
 
 do_nmi:
-  stp
   sta ACC
   stx XREG
   sty YREG
@@ -248,7 +247,7 @@ do_reset:
   jmp kern_init
 
 
-filename: .asciiz "steckos/shell.prg"
+filename: .asciiz "/steckos/shell.prg"
 
 ; trampolin code to enter ML monitor on NMI
 ; this code gets copied to $10 and executed there

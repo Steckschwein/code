@@ -4,6 +4,10 @@
 
 debug_enabled=1
 
+; cluster search will find following clustes
+TEST_FILE_CL=$10
+TEST_FILE_CL2=$19
+
 .code
 ; -------------------
 		setup "__fat_init_fdarea / isOpen"	; test init fd area
@@ -139,8 +143,8 @@ debug_enabled=1
 		jsr fat_fopen
 		assertCarry 0
 		assertX 2*FD_Entry_Size
-		assertDirEntry block_data+3*DIR_Entry_Size ; offset see below
-			fat32_dir_entry_file "FILE02  ", "TXT", $0a, 12
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file_all 5, 3*DIR_Entry_Size>>1, LBA_BEGIN, DIR_Attr_Mask_Archive, 12, O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0, 5
 
 ; -------------------
 		setup "fat_fread_byte with error"
@@ -195,6 +199,30 @@ debug_enabled=1
 		assert32 $16a, fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster
 		assert32 1, fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
     assert8 FD_STATUS_FILE_OPEN, fd_area+(1*FD_Entry_Size)+F32_fd::status
+
+
+; -------------------
+		setup "fat open and read 1 byte 4s/cl"
+
+    set32 block_fat_0+(ROOT_CL<<2 & (sd_blocksize-1)), (TEST_FILE_CL) ; the cl chain for root directory - root ($02) => $10
+    set32 block_fat_0+(TEST_FILE_CL<<2 & (sd_blocksize-1)), FAT_EOC
+
+    ldy #O_RDONLY
+		lda #<test_file_name_2
+    ldx #>test_file_name_2
+    jsr fat_fopen
+		assertCarry 0; ok
+		assertX (2*FD_Entry_Size)
+
+		jsr fat_fread_byte
+		assertCarry 0; ok
+		assertA 'B'
+		assertX (2*FD_Entry_Size)
+		assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + 5 * SEC_PER_CL, lba_addr ; expect $67fe + (clnr * sec/cl) => $67fe + $16a * 1 = $6968
+		assert32 5, fd_area+(2*FD_Entry_Size)+F32_fd::StartCluster
+		assert32 5, fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+		assert32 1, fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+    assert8 FD_STATUS_FILE_OPEN, fd_area+(2*FD_Entry_Size)+F32_fd::status
 
 ; -------------------
 		setup "fat_fread_byte 2 byte 4s/cl"
@@ -381,24 +409,35 @@ debug_enabled=1
 		brk
 
 setUp:
-  ldx #0
-	jsr __fat_init_fdarea
-	init_volume_id SEC_PER_CL
+    init_volume_id SEC_PER_CL
+    jsr __fat_init_fdarea
+    ;setup fd0 (cwd) to root cluster
+    ldx #FD_INDEX_CURRENT_DIR
+    jsr __fat_open_rootdir
 
-	;setup fd0 as root cluster
-	set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-	set8 fd_area+(0*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Dir
-	set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
-	;setup fd1 with test cluster
-	set8 fd_area+(1*FD_Entry_Size)+F32_fd::status, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
-  set32 fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster, test_start_cluster
-	set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
-	set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
-	set32 fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos, 0
-	set8 fd_area+(1*FD_Entry_Size)+F32_fd::flags, O_RDONLY
-	set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, $1000
+    ; fill fat block
+    m_memset block_fat_0+$000, $ff, $80  ; simulate reserved
+    m_memset block_fat_0+$080, $ff, $80
+    m_memset block_fat_0+$100, $ff, $80
+    m_memset block_fat_0+$180, $ff, $80
+    set32 block_fat_0+(TEST_FILE_CL<<2), 0 ; mark TEST_FILE_CL as free
+    set32 block_fat_0+(TEST_FILE_CL2<<2), 0 ; mark TEST_FILE_CL2 as free
 
-	rts
+    init_block block_root_dir_init_00, block_root_dir_00
+    init_block block_empty          , block_root_dir_01
+    init_block block_empty          , block_root_dir_02
+    init_block block_empty          , block_root_dir_03
+
+    ;setup fd1 with test cluster
+    set8 fd_area+(1*FD_Entry_Size)+F32_fd::status, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
+    set32 fd_area+(1*FD_Entry_Size)+F32_fd::StartCluster, test_start_cluster
+    set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
+    set8 fd_area+(1*FD_Entry_Size)+F32_fd::Attr, DIR_Attr_Mask_Archive
+    set32 fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos, 0
+    set8 fd_area+(1*FD_Entry_Size)+F32_fd::flags, O_RDONLY
+    set32 fd_area+(1*FD_Entry_Size)+F32_fd::FileSize, $1000
+
+    rts
 
 .export read_block=mock_read_block
 .export __rtc_systime_update=   mock_not_implemented
@@ -410,6 +449,7 @@ setUp:
 .export put_char=               mock_not_implemented
 
 data_loader	; define data loader
+data_writer
 
 mock_not_implemented:
 		fail "mock was called, not implemented yet!"
@@ -422,11 +462,15 @@ mock_read_block:
 		rts
 :
 		; defaults to dir entry data
-		load_block_if LBA_BEGIN, block_root_cl, @exit ; load root cl block
+		load_block_if (LBA_BEGIN+0), block_root_dir_00, @ok ; load root cl block
+    load_block_if (LBA_BEGIN+1), block_root_dir_01, @ok ;
+
+
+		load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + 5 * SEC_PER_CL + 0), test_block_data_0_0 , @ok
 
 		; fat block of test cluster read?
 		cmp32_ne lba_addr, (FAT_LBA+(test_start_cluster>>7)), :+
-			; ... simulate fat block read, just fill some values which are reached if the fat32 implementation is correct ;)
+			; ... simulate fat block read - fill fat values on the fly
 			set32 block_fat+((test_start_cluster+0)<<2 & (sd_blocksize-1)), (test_start_cluster+3) ; build a fragmented chain
 			set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), (test_start_cluster+7)
 			set32 block_fat+((test_start_cluster+7)<<2 & (sd_blocksize-1)), FAT_EOC
@@ -434,26 +478,19 @@ mock_read_block:
 :
 		; data block read?
 		; - for tests with 2sec/cl
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 0), test_block_data_0_0, @exit  ; block 0, cluster 0
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 1), test_block_data_0_1, @exit  ; block 1, cluster 0
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 0), test_block_data_1_0, @exit  ; block 0, cluster 1
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 1), test_block_data_1_1, @exit  ; block 1, cluster 1
-;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 0), test_block_data_1_0, @exit
-;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 1), test_block_data_1_1, @exit
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 0), test_block_data_0_0, @ok  ; block 0, cluster 0
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 1), test_block_data_0_1, @ok  ; block 1, cluster 0
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 0), test_block_data_1_0, @ok  ; block 0, cluster 1
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 1), test_block_data_1_1, @ok  ; block 1, cluster 1
+;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 0), test_block_data_1_0, @ok
+;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 1), test_block_data_1_1, @ok
 		; - for tests with 4sec/cl
-		load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL + 0), test_block_data_4sec_cl, @exit
+		load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL + 0), test_block_data_4sec_cl, @ok
 
-    ; end up here is no valid data
-    ldy #0
-:   tya
-    sta block_data+$000,y
-    sta block_data+$100,y
-    iny
-    bne :-
-
+    fail "read lba not handled!"
 @exit_inc:
 		inc read_blkptr+1 ; => same behavior as real block read implementation
-@exit:
+@ok:
 		lda #EOK
 		rts
 
@@ -462,11 +499,12 @@ test_file_name_1: .asciiz "file01.dat"
 test_file_name_2: .asciiz "file02.txt"
 test_file_name_enoent:	.asciiz "enoent.tst"
 
-block_root_cl:
+block_root_dir_init_00:
 	fat32_dir_entry_dir  "DIR01   ", "   ", 8
 	fat32_dir_entry_dir  "DIR02   ", "   ", 9
 	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0 ; 0 - no cluster reserved, 0 size
-	fat32_dir_entry_file "FILE02  ", "TXT", 10, 12	; 10 - 1st cluster nr of file, 12 byte file size
+	fat32_dir_entry_file "FILE02  ", "TXT", 5, 12	; 5 - 1st cluster nr of file, 12 byte file size
+  .res 12*DIR_Entry_Size, 0
 
 test_block_data_0_0:
   .byte "B0/C0"; block 0, cluster 0
@@ -493,5 +531,18 @@ test_block_data_4sec_cl:
 	.byte "4s/cl"
 	.res 250,0
 
+block_empty:
+  .res 512,0
+
 .bss
+block_fsinfo:   .res sd_blocksize
+
+block_fat_0:    .res sd_blocksize
+block_fat2_0:   .res sd_blocksize
+
+block_root_dir_00:  .res sd_blocksize
+block_root_dir_01:  .res sd_blocksize
+block_root_dir_02:  .res sd_blocksize
+block_root_dir_03:  .res sd_blocksize
+
 data_read: .res 8*sd_blocksize

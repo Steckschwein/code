@@ -183,7 +183,7 @@ __fat_write_new_direntry:
     lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+3
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+1
 
-    jsr __fat_set_fd_start_cluster_seek_pos
+    jsr __fat_set_fd_start_cluster
     jsr __calc_lba_addr
     jsr __fat_write_block_fat
     bcs @l_exit

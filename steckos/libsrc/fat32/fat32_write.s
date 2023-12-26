@@ -122,12 +122,16 @@ __fat_set_fd_filesize:
 ; write new dir entry to dirptr and set new end of directory marker
 ; in:
 ;  X - file descriptor of the new dir entry within fd_area
+;  C - C=1 to indicate EOC
 ;  dirptr to directory entry
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 __fat_fopen_touch:
 
-    jsr __fat_alloc_fd           ; allocate a dedicated fd for the new directory
+    bcc :+
+    jsr __fat_prepare_block_access    ; write access - if eoc we have to prepare block access first to write new dir entry
+
+:   jsr __fat_alloc_fd           ; allocate a dedicated fd for the new directory
     bcs @l_exit
 
     jsr __fat_set_fd_dirlba      ; save the dir entry lba and offset to new allocated fd
@@ -137,8 +141,6 @@ __fat_fopen_touch:
     lda #DIR_Attr_Mask_Archive   ; create as regular file with archive bit set
     sta fd_area+F32_fd::Attr,x
     jsr __fat_add_direntry       ; create dir entry at current dirptr
-
-;    jsr __fat_free_fd            ; free the allocated file descriptor if there where errors, C=1 and A are preserved
 @l_exit:
     debug "fop touch"
     rts
@@ -330,20 +332,7 @@ __fat_free_cluster:
     rts
 
 ; in:
-;
-; out:
-;   C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
-    jsr __fat_is_start_cln_zero
-    beq :+
-    clc ; success - the start cluster is not zero, we must not reserve one
-    rts
-
-:   lda fd_area + F32_fd::flags,x
-    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; write access?
-    sec         ; set EOC (C=1) A=0 (EOK) if we take the branch
-    debug "open strt cl flg >"
-    bne __fat_reserve_start_cluster     ; write access and no cluster reserved yet (empty file)
-    rts ; exit with EOC => C=1/A=EOK (0)
+;   X - fd
 ; out:
 ;  C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
 __fat_reserve_start_cluster:
