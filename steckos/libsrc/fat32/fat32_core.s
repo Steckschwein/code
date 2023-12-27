@@ -46,7 +46,6 @@
 .export __fat_find_next
 .export __fat_alloc_fd
 .export __fat_clone_fd
-.export __fat_clone_fd_temp_fd
 .export __fat_free_fd
 .export __fat_is_cln_zero
 .export __fat_is_start_cln_zero
@@ -83,7 +82,6 @@ __fat_find_first_mask:
 ; out:
 ;  C=0 if dir entry was found with dirptr pointing to that entry, C=1 and A=<error code> otherwise or A=EOK if end of directory or EOC
 __fat_find_first:
-    jsr __fat_clone_fd_temp_fd      ; clone given directory (.X) fd to tmp fd and set new fd (.X)
     jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos
 
 __ff_loop:
@@ -107,14 +105,14 @@ __ff_match:
 ; in:
 ;  X - directory fd index into fd_area
 ; out:
-;  C=1 on success (A=0), C=0 and A=error code otherwise
+;  C=0 on success (A=0), C=1 and A=<error code> otherwise
 __fat_find_next:
     jsr __fat_seek_next_dirent
     lda fd_area + F32_fd::SeekPos+1,x
     and #$01
     ora fd_area + F32_fd::SeekPos+0,x
     debug32 "ff nxt seek <", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-    bne __ff_match ; optimization - we iterate with dirptr until end of block instead of calling __fat_prepare_block_access_read each time
+    bne __ff_match
     bra __ff_loop
 __ff_exit_enoent:
     lda #ENOENT
@@ -129,6 +127,7 @@ __ff_found:
 
 
 __fat_seek_next_dirent:
+    clc
     lda fd_area+F32_fd::SeekPos+0,x
     adc #DIR_Entry_Size
     sta fd_area+F32_fd::SeekPos+0,x
@@ -274,11 +273,6 @@ __fat_open_file:
     ply
     rts
 
-__fat_clone_fd_temp_fd:
-    txa                     ; use the given fd as source (Y)
-    tay
-    ldx #FD_INDEX_TEMP_DIR  ; we use the temp dir with a copy of given fd, cause F32_fd::CurrentCluster is adjusted if end of cluster is reached
-
 ; clone source file descriptor with offset y into fd_area to target fd with x
 ; in:
 ;   Y - source file descriptor (offset into fd_area)
@@ -298,6 +292,8 @@ __fat_clone_fd:
     rts
 
 
+__fat_prepare_block_access_read:
+    clc
 ; prepare read/write access by fetching the appropriate block from device
 ; in:
 ;   X - file descriptor
@@ -305,9 +301,6 @@ __fat_clone_fd:
 ; out:
 ;   C=0 on success, C=1 on error with A=<error code>
 ;   A/Y pointer to data block for read/write access
-__fat_prepare_block_access_read:
-    clc
-
 __fat_prepare_block_access:
 
     bit fd_area+F32_fd::status,x      ; dirty?
@@ -656,6 +649,10 @@ __fat_set_fd_start_cluster_seek_pos:
     stz fd_area+F32_fd::SeekPos+2,x
     stz fd_area+F32_fd::SeekPos+1,x
     stz fd_area+F32_fd::SeekPos+0,x
+
+    lda fd_area+F32_fd::status,x
+    ora #FD_STATUS_DIRTY
+    sta fd_area+F32_fd::status,x
 
 __fat_set_fd_start_cluster:
     lda fd_area+F32_fd::StartCluster+3, x

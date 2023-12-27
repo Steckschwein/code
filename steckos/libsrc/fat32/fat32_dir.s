@@ -70,7 +70,7 @@ fat_opendir:
 fat_chdir:
 		jsr fat_opendir
 		bcs @l_exit
-    ldy #FD_INDEX_TEMP_DIR		; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
+    ldy #FD_INDEX_TEMP_DIR		; open dir success, the temp dir fd is now set to the found dir
 		ldx #FD_INDEX_CURRENT_DIR
 		jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
     clc

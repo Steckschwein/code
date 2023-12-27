@@ -7738,16 +7738,12 @@ LAB_DIR:
 
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
-
-    bcc @l2_1
-    bra @end
-@l2_1:
-    bcs @l4
-    bra @l5
+    bcs @end
+    bra @l4
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcs @l5
+    bcs @end
 @l4:
     lda (dirptr)
     cmp #$e5
@@ -7770,7 +7766,7 @@ LAB_DIR:
     jsr LAB_CRLF
 
     bra @l3
-@l5:
+
 @end:
     ply
     plx

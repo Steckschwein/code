@@ -49,7 +49,7 @@ fat_get_root_and_pwd:
     sta __volatile_ptr
     stx __volatile_ptr+1
 
-    SetVector $0800, s_ptr3             ; TODO FIXME !!!
+    SetVector block_fat, s_ptr3             ; TODO FIXME !!!
     stz s_tmp3
 
     ldy #FD_INDEX_CURRENT_DIR
@@ -57,6 +57,7 @@ fat_get_root_and_pwd:
     jsr __fat_clone_fd                  ; start from current directory, clone the cd fd
 
 @l_rd_dir:
+    stp
     lda #'/'                            ; put the / char to result string
     jsr put_char
     ldx #FD_INDEX_TEMP_DIR              ; if root, exit to inverse the path string

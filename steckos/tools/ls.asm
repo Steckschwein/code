@@ -69,10 +69,10 @@ l1:
     sta cnt
 @l1:
     ldy #F32DirEntry::Attr
-	lda (dirptr),y
+    lda (dirptr),y
 
- 	bit #DIR_Attr_Mask_Dir
-	beq :+
+    bit #DIR_Attr_Mask_Dir
+    beq :+
     lda #'['
     jsr char_out
     bra @print
@@ -82,19 +82,19 @@ l1:
 
 @print:
 
-	ldy #F32DirEntry::Name
+  ldy #F32DirEntry::Name
 :
-	lda (dirptr),y
+  lda (dirptr),y
     jsr char_out
     iny
     cpy #$0b
     bne :-
 
     ldy #F32DirEntry::Attr
-	lda (dirptr),y
+  lda (dirptr),y
 
-	bit #DIR_Attr_Mask_Dir
-	beq :+
+  bit #DIR_Attr_Mask_Dir
+  beq :+
     lda #']'
     jsr char_out
     bra @pad
