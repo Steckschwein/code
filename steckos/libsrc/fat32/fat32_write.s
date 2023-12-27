@@ -60,17 +60,17 @@ fat_write_byte:
     _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
 
     phy
-
-    sta __volatile_tmp
+    pha
 
     sec ; write access
     jsr __fat_prepare_block_access
-    bcs @l_exit
 
-    sta __volatile_ptr
+    sta __volatile_ptr                  ; A/Y pointer to data block
     sty __volatile_ptr+1
 
-    lda __volatile_tmp                  ; get back byte to write
+    pla                                 ; get back byte to write
+    bcs @l_exit                         ; C=1 prepare above was an error, exit
+
     debug "f_wr byte"
     sta (__volatile_ptr)
 
@@ -84,7 +84,7 @@ fat_write_byte:
 
 
 __fat_set_fd_filesize:
-    debug32 "seek > fs", fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
+    debug32 "fd fsize >", fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
     lda fd_area+F32_fd::FileSize+3,x
     cmp fd_area+F32_fd::SeekPos+3,x
     bcc @l_set3
@@ -114,35 +114,40 @@ __fat_set_fd_filesize:
     lda fd_area+F32_fd::SeekPos+0,x
     sta fd_area+F32_fd::FileSize+0,x
 @l_exit:
-    debug32 "seek < fs", fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
+    debug32 "fd fsize <", fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
     rts
 
 
 
 ; write new dir entry to dirptr and set new end of directory marker
 ; in:
-;  X - file descriptor of the new dir entry within fd_area
-;  C - C=1 to indicate EOC
-;  dirptr to directory entry
+;   X - file descriptor of the new dir entry within fd_area
+;   Y - file open flags - see fat_fopen
+;   C - C=1 if called from EOC
+;   dirptr to directory entry
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 __fat_fopen_touch:
 
+    debug "fop touch >"
     bcc :+
+    phy
     jsr __fat_prepare_block_access    ; write access - if eoc we have to prepare block access first to write new dir entry
+    ply
+    bcs @l_exit
 
 :   jsr __fat_alloc_fd           ; allocate a dedicated fd for the new directory
     bcs @l_exit
 
     jsr __fat_set_fd_dirlba      ; save the dir entry lba and offset to new allocated fd
 
-    lda __volatile_tmp
+    tya
     sta fd_area+F32_fd::flags,x
     lda #DIR_Attr_Mask_Archive   ; create as regular file with archive bit set
     sta fd_area+F32_fd::Attr,x
     jsr __fat_add_direntry       ; create dir entry at current dirptr
 @l_exit:
-    debug "fop touch"
+    debug "fop touch <"
     rts
 
 ; create a new dir entry at given dirptr and set a new end of directory marker

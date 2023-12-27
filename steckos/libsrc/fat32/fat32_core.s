@@ -84,7 +84,7 @@ __fat_find_first_mask:
 ;  C=0 if dir entry was found with dirptr pointing to that entry, C=1 and A=<error code> otherwise or A=EOK if end of directory or EOC
 __fat_find_first:
     jsr __fat_clone_fd_temp_fd      ; clone given directory (.X) fd to tmp fd and set new fd (.X)
-    jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current
+    jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos
 
 __ff_loop:
     jsr __fat_prepare_block_access_read
@@ -114,13 +114,13 @@ __fat_find_next:
     and #$01
     ora fd_area + F32_fd::SeekPos+0,x
     debug32 "ff nxt seek <", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-    bne __ff_match ; optimization - iterate with dirptr until end of block instead of calling __fat_prepare_block_access_read each time
+    bne __ff_match ; optimization - we iterate with dirptr until end of block instead of calling __fat_prepare_block_access_read each time
     bra __ff_loop
 __ff_exit_enoent:
     lda #ENOENT
     sec ; nothing found C=1 and return
 __ff_exit:
-    debug "ff err <"
+    debug "ff exit <"
     rts
 __ff_found:
     clc
@@ -223,7 +223,7 @@ __fat_open_path:
 ;  X - index into fd_area of the opened file
 ;  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 __fat_open_file:
-    ;phy
+    phy
     ldx #FD_INDEX_TEMP_DIR
     jsr __fat_find_first_mask
     bcs @l_exit
@@ -269,9 +269,9 @@ __fat_open_file:
 
     jsr __fat_set_fd_dirlba
 
-    jmp __fat_set_fd_start_cluster_seek_pos
+    jsr __fat_set_fd_start_cluster_seek_pos
 @l_exit:
-    ;ply
+    ply
     rts
 
 __fat_clone_fd_temp_fd:
@@ -298,8 +298,6 @@ __fat_clone_fd:
     rts
 
 
-__fat_prepare_block_access_read:
-    clc
 ; prepare read/write access by fetching the appropriate block from device
 ; in:
 ;   X - file descriptor
@@ -307,6 +305,9 @@ __fat_prepare_block_access_read:
 ; out:
 ;   C=0 on success, C=1 on error with A=<error code>
 ;   A/Y pointer to data block for read/write access
+__fat_prepare_block_access_read:
+    clc
+
 __fat_prepare_block_access:
 
     bit fd_area+F32_fd::status,x      ; dirty?
@@ -324,8 +325,7 @@ __fat_prepare_block_access:
     debug "fp ba 1 >"
     bne @l_restore_read                       ; not at the beginning of a cluster, just read the block
 
-    pla                                       ; restore carry
-    ror
+    plp                                       ; restore carry
     debug "fp ba 2 >"
     jsr __fat_next_cln                        ; select next cluster, carry denotes read/write access
     debug "fp ba 2 <"
@@ -598,14 +598,8 @@ __calc_fat_lba_addr:
 ; out:
 ;  C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
 __fat_next_cln:
-    lda read_blkptr
-;    pha
-    lda read_blkptr+1
- ;   pha
-;    bcs @l_write            ; read or write access?
 
     bcc @l_select_next_cln  ; read access, just try to select
- ;   bra @l_exit
 
 @l_write:
     jsr @l_select_next_cln
@@ -619,9 +613,8 @@ __fat_next_cln:
 
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
   ;  bcc @l_exit
-    bne @l_exit ; not EOC
+    bne @l_exit ; other error, then exit
     debug "f n cl w"
-;    phy
     lda volumeID + VolumeID::LastClus + 0 ;
     sta (read_blkptr), y
     iny
@@ -636,21 +629,12 @@ __fat_next_cln:
 
     jsr __fat_write_fat_blocks    ; write fat block with updated chain
     bcs @l_exit
-;    ply
-;    jsr @l_set_current_cluster
-;@l_exit:
-
-    ;ply                      ; use Y to preserve A with return code
-;    sty read_blkptr+1
-    ;ply
- ;   sty read_blkptr
- ;   rts
 
 @l_select_next_cln:
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
     debug16 "sel nxt (eoc)", read_blkptr
     bcs @l_exit
-    ;debug32 "fnxtcln cl >", fd_area+(2*.sizeof(F32_fd))+F32_fd::CurrentCluster
+
     lda (read_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+0, x
     iny
@@ -665,6 +649,7 @@ __fat_next_cln:
 @l_exit:
     debug32 "fat next cln <", fd_area+(FD_Entry_Size*2)+F32_fd::CurrentCluster
     rts
+
 
 __fat_set_fd_start_cluster_seek_pos:
     stz fd_area+F32_fd::SeekPos+3,x

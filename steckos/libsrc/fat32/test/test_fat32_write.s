@@ -18,6 +18,7 @@ TEST_FILE_CL10=$10
 TEST_FILE_CL19=$19
 
 .code
+;    jmp single_test
 ; -------------------
     setup "fat_fopen O_RDWR EISDIR"
     ldy #O_RDWR
@@ -469,7 +470,9 @@ TEST_FILE_CL19=$19
 
     jsr fat_close
 
+
 ; -------------------
+single_test:
     setup "fat_write seek 2048+512 4s/cl";
 
     ldy #O_RDWR
@@ -489,7 +492,7 @@ TEST_FILE_CL19=$19
     ldy #>test_seek
 		jsr fat_fseek
 		assertC 0
-		assertX (FD_Entry_Size*2) ; assert FD prreserved
+		assertX FD_Entry_Size*2 ; assert FD prreserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
         fd_entry_file_all 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, (2048+512), 0
 
@@ -512,14 +515,14 @@ TEST_FILE_CL19=$19
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_seek TEST_FILE_CL10, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0
+      fd_entry_file_all TEST_FILE_CL10, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0, TEST_FILE_CL10
 
     set32 test_seek+Seek::Offset, (2048+512) ; set to begin of block 1 in next cluster
     lda #<test_seek
     ldy #>test_seek
 		jsr fat_fseek
 		assertC 0
-		assertX (FD_Entry_Size*2) ; assert FD preserved
+		assertX FD_Entry_Size*2 ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file_all TEST_FILE_CL10, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (2048+512+1), O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, (2048+512), TEST_FILE_CL10
 
@@ -531,7 +534,7 @@ TEST_FILE_CL19=$19
 
     jsr fat_fread_byte
     assertC 1
-    assertA EOK
+    assertA EOK ; eoc
 
     jsr fat_close
 

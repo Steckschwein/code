@@ -87,12 +87,13 @@ fat_fseek:
     lda (__volatile_ptr),y
     sta fd_area+F32_fd::SeekPos+3,x
 
-    lda #FD_STATUS_DIRTY                 ; set dirty - @see __fat_prepare_block_access
-    ora fd_area+F32_fd::status,x
+    lda fd_area+F32_fd::status,x
+    ora #FD_STATUS_DIRTY                 ; set dirty - @see __fat_prepare_block_access
     sta fd_area+F32_fd::status,x
 
     lda #EOK
     clc
+    debug "fat fseek <"
     rts
 @l_exit_err:
     lda #EINVAL
@@ -103,13 +104,15 @@ fat_fseek:
 ;   X - fd
 ;   C - C=0 read access, C=1 write access
 __fat_fseek_cluster:
-    debug "seek >"
+    debug "seek cl >"
 
+    stz __volatile_tmp
     bcc :+  ; read or write access?
 
     jsr __fat_is_start_cln_zero
     bne :+
     jsr __fat_reserve_start_cluster ; start cluster zero, write access, we have to reserve the start cluster
+    inc __volatile_tmp  ; save write access, set bit 0
 
 :   jsr __fat_set_fd_start_cluster
 
@@ -137,6 +140,8 @@ __fat_fseek_cluster:
     debug32 "seek cnt", volumeID+VolumeID::temp_dword
     beq @l_exit_ok
 @seek_cln:
+    lda __volatile_tmp
+    lsr ; restore carry
     jsr __fat_next_cln
     bcs @l_exit
     _dec24 volumeID+VolumeID::temp_dword
@@ -148,8 +153,8 @@ __fat_fseek_cluster:
     sta fd_area+F32_fd::status,x
     clc
 @l_exit:
-    debug32 "seek < seek", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
-    debug32 "seek < cl", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+    debug32 "seek pos <", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+    debug32 "seek cl <", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
     rts
 
 
@@ -173,8 +178,8 @@ fat_fread_byte:
 
     sta __volatile_ptr
     sty __volatile_ptr+1
-
     lda (__volatile_ptr)
+
     _inc32_x fd_area+F32_fd::SeekPos
     clc
 @l_exit:
@@ -196,10 +201,11 @@ fat_fread_byte:
 ;   .X - index into fd_area of the opened file
 ;   C=0 on success, C=1 and A=<error code> otherwise
 fat_fopen:
-    sty __volatile_tmp           ; save open flag
-    debug8 "fopen vtmp", __volatile_tmp
+    phy                          ; save open flag
+    debug "fopen >"
     ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
     jsr __fat_open_path
+    ply
     bcs @l_not_open
     lda fd_area+F32_fd::Attr,x
     and #DIR_Attr_Mask_Dir      ; file or directory?
@@ -213,15 +219,15 @@ fat_fopen:
     bne @l_exit_err
     clc                         ; C=0 to skip prepare block below
 @l_add_dirent:
-    lda __volatile_tmp          ; check write access
-    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)
+    tya                         ; get open flags
+    bit #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)  ; check write access
     bne @l_touch                ; if so, we create a new file
     lda #ENOENT                 ; no "write" flags set, exit with ENOENT
 @l_exit_err:
     sec
     rts
 @l_open:
-    lda __volatile_tmp
+    tya
     sta fd_area+F32_fd::flags,x
     rts
 @l_touch:
