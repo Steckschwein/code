@@ -38,7 +38,7 @@
 .code
 ;in:
 ;  A/X - address to write the current work directory string into
-;  Y  - size of result buffer
+;  Y  - size of result buffer/string
 ;out:
 ;  C - C=0 on success (A=0), C=1 and A=error code otherwise
 fat_get_root_and_pwd:
@@ -48,9 +48,7 @@ fat_get_root_and_pwd:
 
     sta __volatile_ptr
     stx __volatile_ptr+1
-
-    SetVector $800, s_ptr3              ; TODO FIXME !!!
-    stz s_tmp3
+    sty s_tmp3
 
     ldy #FD_INDEX_CURRENT_DIR
     ldx #FD_INDEX_TEMP_DIR
@@ -61,7 +59,7 @@ fat_get_root_and_pwd:
     jsr put_char
     ldx #FD_INDEX_TEMP_DIR              ; if root, exit to inverse the path string
     jsr __fat_is_start_cln_zero
-    beq @l_inverse
+    beq @l_path_trim
     m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, __matcher_cln, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
     lda #<l_dot_dot
     ldx #>l_dot_dot
@@ -73,9 +71,8 @@ fat_get_root_and_pwd:
     bcs @l_exit
     jsr fat_name_string                 ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
     bra @l_rd_dir                       ; go on with bottom up walk until root is reached
-@l_inverse:
-    copypointer __volatile_ptr, s_ptr2  ; __volatile_ptr is the pointer to the result string, given by the caller (eg. pwd.prg)
-    jsr path_inverse                    ; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
+@l_path_trim:
+    jsr path_trim                       ; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
     plp
     clc
     rts
@@ -116,77 +113,53 @@ cluster_nr_matcher:
 @l_found:
     rts
 
+path_trim:
+    ldy #0
+:   phy
+    ldy s_tmp3
+    lda (__volatile_ptr),y
+    ply
+    sta (__volatile_ptr),y
+    cmp #0
+    beq @l_exit
+    inc s_tmp3
+    iny
+    bne :-
+@l_exit:
+    rts
+
   ; fat name to string (by reference)
   ; in:
-  ;  dirptr    - pointer to directory entry (F32DirEntry)
-  ;  s_ptr3    - pointer to result string
-  ;  s_tmp3    - length or offset in result string denoted by s_ptr3
+  ;  dirptr         - pointer to directory entry (F32DirEntry)
+  ;  __volatile_ptr - pointer to result string
+  ;  s_tmp3         - length or offset in result string denoted by s_ptr3
 fat_name_string:
-  stz s_tmp1
-l_next:
-  ldy s_tmp1
-  cpy #11
-  beq l_exit
-  inc s_tmp1
-  lda (dirptr), y
+  ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)
+@l_next:
+  dey
+  lda (dirptr),y
   cmp #' '
-  beq l_next
-  cpy #8
-  bne fns_ca
+  beq @l_next
+  cpy #.sizeof(F32DirEntry::Name)
+  bne :+
   pha
   lda #'.'
   jsr put_char
   pla
-fns_ca:
-  jsr put_char
-  bra l_next
-
-put_char:
-  ldy s_tmp3
-  sta (s_ptr3), y
-  inc s_tmp3
-l_exit:
+: jsr put_char
+  bne @l_next
   rts
 
-  ; recursive inverse a path string where each path segment is separated by a '/'
-  ; in:
-  ;  s_ptr2 - pointer to the result string
-  ;  s_ptr3 - pointer to originary path we have to inverse
-  ; out:
-  ;  Y - length of the result string (s_ptr2)
-  ;
-  ; sample: foo/bar/baz is converted to baz/bar/foo
-  ;
-path_inverse:
-    stz s_tmp1
-    stz s_tmp2
-    ldy #0
-    jsr l_inv
-    iny
-    lda #0
-    sta (s_ptr2),y
-    rts
-l_inv:
-    lda (s_ptr3),y
-    iny
-    cpy s_tmp3
-    beq l_seg
-    cmp #'/'
-    bne l_inv
-    phy
-    jsr l_inv
-    ply
-    sty s_tmp1
-l_seg:
-    ldy s_tmp1
-    inc s_tmp1
-    lda (s_ptr3),y
-    ldy s_tmp2
-    inc s_tmp2
-    sta (s_ptr2),y
-    cmp #'/'
-    bne l_seg
-    rts
+put_char:
+  phy
+  ldy s_tmp3
+  beq @l_exit
+  dey
+  sty s_tmp3
+  sta (__volatile_ptr),y
+@l_exit:
+  ply
+  rts
 
 .bss
 __matcher_cln: .res 4
