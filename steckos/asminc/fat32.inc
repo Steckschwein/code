@@ -125,10 +125,10 @@ PartType_FAT32_LBA    = $0c
   lba_fat2            .dword ; mirror fat lba
   lba_fsinfo          .dword
   LastClus            .dword ; mirror of fsinfo LastClus - used for free cluster search
-  temp_dword          .dword
-  fat_dirname_mask    .byte 11  ; (11 byte, fat32 name and ext)
-  fat_vec_matcher     .addr     ; (2 byte) jump vector
   lba_addr_last       .dword ; last lba_addr
+  temp_dword          .dword
+  fat_vec_matcher     .addr     ; (2 byte) jump vector
+  fat_dirname_mask    .byte 11  ; (11 byte, fat32 name and ext)
 .endstruct
 
 ;--------------------------------------------------------------------------------------

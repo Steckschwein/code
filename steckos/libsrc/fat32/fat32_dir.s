@@ -40,9 +40,11 @@
 .export fat_chdir
 .export fat_opendir
 
+.export __fat_opendir
+
 .code
 
-; open directory by given path starting from current directory
+; open directory by given path starting from directory given as file descriptor
 ; in:
 ;	  A/X - pointer to string with the file path
 ; out:
@@ -50,6 +52,9 @@
 ;	  X - index into fd_area of the opened directory
 fat_opendir:
 		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
+; in:
+;	  Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
+__fat_opendir:
 		jsr __fat_open_path
 		bcs @l_exit					    ; exit on error
 		lda fd_area + F32_fd::Attr,x

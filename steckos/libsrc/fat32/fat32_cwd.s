@@ -30,12 +30,12 @@
 .include "errno.inc"
 .include "debug.inc"
 
-.code
 
 .export fat_get_root_and_pwd
 
 .autoimport
 
+.code
 ;in:
 ;  A/X - address to write the current work directory string into
 ;  Y  - size of result buffer
@@ -49,7 +49,7 @@ fat_get_root_and_pwd:
     sta __volatile_ptr
     stx __volatile_ptr+1
 
-    SetVector block_fat, s_ptr3             ; TODO FIXME !!!
+    SetVector $800, s_ptr3              ; TODO FIXME !!!
     stz s_tmp3
 
     ldy #FD_INDEX_CURRENT_DIR
@@ -57,17 +57,16 @@ fat_get_root_and_pwd:
     jsr __fat_clone_fd                  ; start from current directory, clone the cd fd
 
 @l_rd_dir:
-    stp
     lda #'/'                            ; put the / char to result string
     jsr put_char
     ldx #FD_INDEX_TEMP_DIR              ; if root, exit to inverse the path string
     jsr __fat_is_start_cln_zero
     beq @l_inverse
-    m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, volumeID+VolumeID::temp_dword, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
+    m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, __matcher_cln, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
     lda #<l_dot_dot
     ldx #>l_dot_dot
     ldy #FD_INDEX_TEMP_DIR              ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
-    jsr fat_opendir
+    jsr __fat_opendir
     bcs @l_exit
     SetVector cluster_nr_matcher, volumeID+VolumeID::fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
     jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in temp_dword before we did the cd ".."
@@ -97,19 +96,19 @@ cluster_nr_matcher:
     cmp #DIR_Entry_Deleted
     beq @l_notfound
     ldy #F32DirEntry::FstClusLO+0
-    lda volumeID+VolumeID::temp_dword+0
+    lda __matcher_cln+0
     cmp (dirptr),y
     bne @l_notfound
     ldy #F32DirEntry::FstClusLO+1
-    lda volumeID+VolumeID::temp_dword+1
+    lda __matcher_cln+1
     cmp (dirptr),y
     bne @l_notfound
     ldy #F32DirEntry::FstClusHI+0
-    lda volumeID+VolumeID::temp_dword+2
+    lda __matcher_cln+2
     cmp (dirptr),y
     bne @l_notfound
     ldy #F32DirEntry::FstClusHI+1
-    lda volumeID+VolumeID::temp_dword+3
+    lda __matcher_cln+3
     cmp (dirptr),y
     beq @l_found
 @l_notfound:
@@ -121,7 +120,7 @@ cluster_nr_matcher:
   ; in:
   ;  dirptr    - pointer to directory entry (F32DirEntry)
   ;  s_ptr3    - pointer to result string
-  ;  s_tmp3    - length or offset in result string denoted by s_ptr1
+  ;  s_tmp3    - length or offset in result string denoted by s_ptr3
 fat_name_string:
   stz s_tmp1
 l_next:
@@ -188,3 +187,6 @@ l_seg:
     cmp #'/'
     bne l_seg
     rts
+
+.bss
+__matcher_cln: .res 4
