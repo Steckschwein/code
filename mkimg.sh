@@ -26,11 +26,11 @@ mcopy -i ${img}  steckos/demo/*.prg $TARGET/demo/
 GAMES="games/dinosaur/dinosaur.prg games/pong/pong.prg games/microchess/mchess.prg"
 mcopy -i ${img} $GAMES $TARGET/games/
 
-PROGS=$(find progs -name "*.prg") 
+PROGS=$(find progs -name "*.prg")
 mcopy -i ${img} $PROGS $TARGET/progs/
 
 mcopy -i ${img} progs/ehbasic_65c02/demo/* $TARGET/basic
 
 if [ -d "../local" ] ; then
-	mcopy -s  -i ${img} ../local/* $TARGET/
+	mcopy -s -n -v -i ${img} ../local/* $TARGET/
 fi

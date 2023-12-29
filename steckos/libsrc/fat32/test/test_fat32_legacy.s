@@ -16,7 +16,9 @@ debug_enabled=1
 .code
 
 ; -------------------
+
     setup "fat_write O_CREAT 1 byte 4s/cl"
+test_end
     ldy #O_CREAT
     lda #<test_file_name_1cl
     ldx #>test_file_name_1cl

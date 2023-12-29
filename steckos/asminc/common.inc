@@ -177,7 +177,7 @@
 
 .macro m_memcpy src, dest, n
    .local @l
-   .assert n<=$80, error, "n must not >=$80"
+   .assert n<=$80, error, "n must not > $80"
    ldy #n-1
 @l:
    lda src,y
@@ -188,7 +188,7 @@
 
 .macro m_memcpy2ptr src, ptr, n
     .local @l
-    .assert n<$80, error, "n must not >=$80"
+    .assert n<=$80, error, "n must not > $80"
     ldy #n-1
 @l:  lda src,y
     sta (ptr),y
@@ -198,19 +198,19 @@
 
 .macro m_memset dest, value, n
     .local @l
-    .assert n<=$80, error, "n must not >=$80"
+    .assert n<=$80, error, "n must not > $80"
     ldy #n-1
     lda #value
-@l:  sta dest,y
+@l: sta dest,y
     dey
     bpl @l
 .endmacro
 
 .macro m_memclr dest, n
-    .assert n<=$80, error, "n must not >=$80"
+    .assert n<=$80, error, "n must not > $80"
     .local @l
     ldx #n-1
-@l:    stz dest,x
+@l: stz dest,x
     dex
     bpl @l
 
