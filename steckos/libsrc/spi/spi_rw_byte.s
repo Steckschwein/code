@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 .ifdef DEBUG_SPI; enable debug for this module
-	debug_enabled=1
+  debug_enabled=1
 .endif
 
 .include "via.inc"
@@ -38,26 +38,26 @@
 ; Destructive: A,X,Y
 ;----------------------------------------------------------------------------------------------
 spi_rw_byte:
-		sta spi_sr		; zu transferierendes byte im akku retten
+    sta spi_sr    ; zu transferierendes byte im akku retten
 
-		ldx #$08
+    ldx #$08
 
-		lda via1portb	; Port laden
-		and #$fe		; SPICLK loeschen
+    lda via1portb   ; Port laden
+    and #$fe        ; SPICLK loeschen
 
-		asl				; Nach links schieben, damit das bit nachher an der richtigen stelle steht
-		tay		 		; bunkern
+    asl             ; Nach links schieben, damit das bit nachher an der richtigen stelle steht
+    tay             ; bunkern
 
-@l:	rol spi_sr
-		tya				; portinhalt
-		ror				; datenbit reinschieben
+@l: rol spi_sr
+    tya             ; portinhalt
+    ror             ; datenbit reinschieben
 
-		sta via1portb	; ab in den port
-    inc via1portb	; takt an
-		sta via1portb	; takt aus
+    sta via1portb   ; ab in den port
+    inc via1portb   ; takt an
+    sta via1portb   ; takt aus
 
-		dex
-		bne @l			  ; schon acht mal?
+    dex
+    bne @l          ; schon acht mal?
 
-		lda via1sr		; Schieberegister auslesen
-		rts
+    lda via1sr      ; Schieberegister auslesen
+    rts

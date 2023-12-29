@@ -34,15 +34,13 @@ appstart $1000
 		ldx paramptr+1
 
 		jsr krn_unlink
-		bne @errmsg
-
+		bcs @errmsg
 @exit:
-		jmp (retvec)
-
+    jmp (retvec)
 @errmsg:
 		pha
 		jsr primm
 		.asciiz "Error: "
 		pla
 		jsr hexout
-		jmp @exit
+		bra @exit

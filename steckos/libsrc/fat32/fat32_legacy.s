@@ -69,7 +69,7 @@ fat_write:
     _is_file_open     ; otherwise rts C=1 and A=#EINVAL
     _is_file_dir      ; otherwise rts C=1 and A=#EISDIR
 
-    jsr __fat_fseek
+    jsr __fat_fseek_cluster
     bcs @l_exit
 @l_write:
     jsr __calc_blocks               ; calc blocks
@@ -90,7 +90,7 @@ fat_write:
 .else
 @l: debug8 "fat_wr blks", blocks
     debug16 "fat_wr wptr", write_blkptr
-    jsr __fat_write_block
+    jsr __fat_write_block_data
     bcs @l_exit
     jsr __inc_lba_address              ; increment lba address to write next block
     inc write_blkptr+1
