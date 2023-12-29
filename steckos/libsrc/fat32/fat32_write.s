@@ -642,7 +642,7 @@ __fat_find_free_cluster:
 fat_unlink:
     ldy #O_RDONLY
     jsr fat_fopen    ; try to open as regular file
-    bne @l_exit
+    bcs @l_exit
     jsr __fat_unlink
     debug "unlnk"
     jmp __fat_free_fd
