@@ -66,7 +66,7 @@ int main(void)
                     goto done;
 
                 case 'r':
-                    seekdir (D, E->d_off);
+//                    seekdir (D, E->d_off);
                     break;
 
                 case 's':
