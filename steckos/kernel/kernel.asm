@@ -221,26 +221,15 @@ STATUS  .byte
 PC      .word
 .endstruct
 
-.zeropage
-save_stat: .res   .sizeof(save_status)
-atmp: .res 1
+
 .code
 do_nmi:
-
     sta save_stat + save_status::ACC
     stx save_stat + save_status::XREG
     sty save_stat + save_status::YREG
 
-    ; pha 
-    ; phx 
-    ; phy
-
     tsx 
     stx save_stat + save_status::SP 
-
-    ; dex
-    ; dex
-    ; dex
 
     ; use x indirect addressing to fetch PC and SR from the stack
     ; while leaving the stack pointer alone
@@ -307,13 +296,10 @@ do_nmi:
     ldx save_stat + save_status::SP 
     txs 
 
-    ; ply
-    ; plx
-    ; pla 
     lda save_stat + save_status::ACC
     ldx save_stat + save_status::XREG
     ldy save_stat + save_status::YREG
-    
+
     rti
 
 do_reset:
@@ -351,3 +337,6 @@ filename: .asciiz "/steckos/shell.prg"
 
 .bss
 startaddr:  .res 2
+; .zeropage
+save_stat: .res   .sizeof(save_status)
+atmp: .res 1
