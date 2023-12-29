@@ -7633,14 +7633,11 @@ fwrite_wrapper:
       jsr krn_write_byte
 
       restore
-      rts 
+      rts
 
 LAB_SAVE:
-      jsr termstrparam
       ldy #O_CREAT
-      jsr krn_open
-      bcs io_error
-      stx _fd
+      jsr openfile
 
       ; set output vector to filesystem wrapper
       lda #<fwrite_wrapper
@@ -7741,16 +7738,12 @@ LAB_DIR:
 
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
-
-    bcs @l2_1
-    bra @end
-@l2_1:
-    bcs @l4
-    bra @l5
+    bcs @end
+    bra @l4
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcc @l5
+    bcs @end
 @l4:
     lda (dirptr)
     cmp #$e5
@@ -7773,7 +7766,7 @@ LAB_DIR:
     jsr LAB_CRLF
 
     bra @l3
-@l5:
+
 @end:
     ply
     plx

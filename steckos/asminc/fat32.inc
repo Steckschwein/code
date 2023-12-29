@@ -117,16 +117,18 @@ PartType_FAT32_LBA    = $0c
 .struct VolumeID
   BPB_SecPerClus      .byte
   BPB_SecPerClusMask  .byte ; BPB_SecPerClus-1
+  BPB_SecPerClusCount .byte ; pre calculated counter from BPB_SecPerClus bit set - e.g. $00 => 0, $01 => 1, $02 => 2, $04 => 3 ...
   BPB_RootClus        .dword
   BPB_FATSz32         .dword ; sectors per fat
   lba_data            .dword
   lba_fat             .dword
   lba_fat2            .dword ; mirror fat lba
   lba_fsinfo          .dword
-  temp_dword          .dword
-  fat_dirname_mask    .byte 11  ; (11 byte, fat32 name and ext)
-  fat_vec_matcher     .addr     ; (2 byte) jump vector
+  LastClus            .dword ; mirror of fsinfo LastClus - used for free cluster search
   lba_addr_last       .dword ; last lba_addr
+  temp_dword          .dword
+  fat_vec_matcher     .addr     ; (2 byte) jump vector
+  fat_dirname_mask    .byte 11  ; (11 byte, fat32 name and ext)
 .endstruct
 
 ;--------------------------------------------------------------------------------------
@@ -168,6 +170,7 @@ DIR_Attr_Mask_Dir       = 1<<4;
 DIR_Attr_Mask_Archive   = 1<<5;
 
 DIR_Attr_Mask_LongFilename   = 1<<0 | 1<<1 | 1<<2 | 1<<3;
+
 DIR_Entry_Size               = .sizeof(F32DirEntry)
 DIR_Entry_Deleted            = $e5
 
@@ -188,7 +191,7 @@ DIR_Entry_Deleted            = $e5
    FileSize         .dword  ;
    Attr             .byte   ; file attributes (mirror of attributes from dir entry)
    DirEntryLBA      .dword  ; LBA of the block where the dir entry of the file is located
-   DirEntryPos      .byte   ; block offset within the block (n * DIR_Entry_Size)
+   DirEntryPos      .byte   ; block offset "n" where n * DIR_Entry_Size/2 within the block - as an optimization we store the position as half of DIR_Entry_Size
    SeekPos          .dword  ; seek position within the opened file
                             ;    O_RDONLY  = $01
                             ;    O_WRONLY  = $02
@@ -201,8 +204,9 @@ DIR_Entry_Deleted            = $e5
    status           .byte   ; status - reserved (bit 7), next clnr (bit 6)
 .endstruct
 
-FD_STATUS_FILE_OPEN  = 1<<7
-FD_STATUS_DIRTY      = 1<<6
+FD_STATUS_FILE_OPEN   = 1<<7    ; if set the file is open, closed otherwise
+FD_STATUS_DIRTY       = 1<<6    ; if set dirty from seek() operation
+;FD_STATUS_WRITE       = 1<<0    ; if set denotes the file (or directory, e.g. mkdir()) is opened with write access
 
 FD_Entry_Size         = .sizeof(F32_fd)
 FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size

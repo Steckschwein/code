@@ -79,7 +79,7 @@ rename:
 	SetVector filename, filenameptr
 	ldx #FD_INDEX_CURRENT_DIR
 	jsr krn_find_first
-	bcs @go
+	bcc @go
 	printstring "i/o error"
 
 	jmp (retvec)

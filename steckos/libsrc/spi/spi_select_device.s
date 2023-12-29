@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 .ifdef DEBUG_SPI; enable debug for this module
-	debug_enabled=1
+  debug_enabled=1
 .endif
 
 ;.include "kernel.inc"
@@ -29,51 +29,33 @@
 .include "errno.inc"
 
 .export spi_select_device
-.export spi_set_device
-.export spi_replace_device
 
 .code
 ; select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
 ; in:
-;	A = spi device, one of devuces see spi.inc
+;  A = spi device, one of devuces see spi.inc
 ; out:
-;	Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
+;  Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
 spi_select_device:
-		php
-		sei ;critical section start
-		pha
+    php
+    sei ;critical section start
+    pha
 
     ; check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
-		lda via1portb
+    lda via1portb
     and #spi_device_deselect
     cmp #spi_device_deselect
-		bne @l_exit		;busy, leave section, device could not be selected
+    bne @l_exit    ;busy, leave section, device could not be selected
 
-		pla
-		sta via1portb
+    pla
+    sta via1portb
 
-		plp
-		lda #EOK	;exit ok
-		rts
+    plp
+    lda #EOK  ;exit ok
+    rts
 
 @l_exit:
-		pla
-		plp				  ;restore P (interrupt flag)
-		lda #EBUSY
-		rts
-
-
-; in:
-;   A - device to select
-; out:
-;   X - previous selected device if any, the "deselect device" otherwise
-spi_replace_device:
-    pha
-		lda via1portb
-    and #spi_device_deselect
-    tax
     pla
-spi_set_device:
-    and #spi_device_deselect
-		sta via1portb
+    plp          ;restore P (interrupt flag)
+    lda #EBUSY
     rts

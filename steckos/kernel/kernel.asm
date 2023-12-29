@@ -96,7 +96,7 @@ kern_init:
 
     SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
     jsr __automount_init
-    bne do_upload
+    bcs do_upload
 
     lda #<filename
     ldx #>filename
@@ -154,8 +154,8 @@ do_irq:
 @check_via:
     bit via1ifr    ; Interrupt from VIA?
     bpl @check_opl
-    lda #Light_Green
-    jsr vdp_bgcolor
+;    lda #Light_Green
+ ;   jsr vdp_bgcolor
     ; via irq handling code
     ;
 
@@ -163,16 +163,16 @@ do_irq:
     bit opl_stat  ; IRQ from OPL?
     bpl @check_spi_rtc
 ;    lda #Light_Yellow<<4|Light_Yellow
- ;   jsr vdp_bgcolor
+;    jsr vdp_bgcolor
 
 @check_spi_rtc:
-;    jsr rtc_irq0_ack
- ;   bcc @check_spi_keyboard
-  ;  lda #Cyan<<4|Cyan
-   ; jsr vdp_bgcolor
+    jsr rtc_irq0_ack
+    bcc @check_spi_keyboard
+;    lda #Cyan<<4|Cyan
+;    jsr vdp_bgcolor
 
 @check_spi_keyboard:
-    jsr fetchkey        ; fetch key (to satisfy the IRQ of the avr)
+    jsr fetchkey        ; fetch key
     bcc @system
     cmp #KEY_CTRL_C     ; was it ctrl c?
     bne @system  ; no
@@ -247,7 +247,7 @@ do_reset:
   jmp kern_init
 
 
-filename: .asciiz "steckos/shell.prg"
+filename: .asciiz "/steckos/shell.prg"
 
 ; trampolin code to enter ML monitor on NMI
 ; this code gets copied to $10 and executed there

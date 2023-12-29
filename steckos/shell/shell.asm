@@ -46,9 +46,10 @@ BUF_SIZE    = 80 ;TODO maybe too small?
 .autoimport
 
 .zeropage
+msg_ptr:  .res 2
 bufptr:         .res 2
 pathptr:        .res 2
-p_history:      .res 2
+;p_history:      .res 2
 tmp1:   .res 1
 tmp2:   .res 1
 
@@ -88,7 +89,7 @@ mainloop:
         ldx #>cwdbuf
         ldy #cwdbuf_size
         jsr krn_getcwd
-        bne @nocwd
+        bcs @nocwd
 
         lda #<cwdbuf
         ldx #>cwdbuf
@@ -403,11 +404,55 @@ atoi:
 .endif
 
 
+msg_EOK:        .asciiz "No error"
+msg_ENOENT:     .asciiz "No such file or directory"
+msg_ENOMEM:     .asciiz "Out of memory"
+msg_EACCES:     .asciiz "Permission denied"
+msg_ENODEV:     .asciiz "No such device"
+msg_EMFILE:     .asciiz "Too many open files"
+msg_EBUSY:      .asciiz "Device or resource busy"
+msg_EINVAL:     .asciiz "Invalid argument (0x07)"
+msg_ENOSPC:     .asciiz "No space left on device (0x08)"
+msg_EEXIST:     .asciiz "File exists"
+msg_EAGAIN:     .asciiz "Try again (0x0a)"
+msg_EIO:        .asciiz "I/O error"
+msg_EINTR:      .asciiz "Interrupted system call"
+msg_ENOSYS:     .asciiz "Function not implemented"
+msg_ESPIPE:     .asciiz "Illegal seek"
+msg_ERANGE:     .asciiz "Range error"
+msg_EBADF:      .asciiz "Bad file number"
+msg_ENOEXEC:    .asciiz "Exec format error"
+msg_EISDIR:     .asciiz "Is a directory"
+msg_ENOTDIR:    .asciiz "Not a directory"
+msg_ENOTEMPTY:  .asciiz "Directory not empty"
+
+errors:
+.addr msg_EOK
+.addr msg_ENOENT
+.addr msg_ENOMEM
+.addr msg_EACCES
+.addr msg_ENODEV
+.addr msg_EMFILE
+.addr msg_EBUSY
+.addr msg_EINVAL
+.addr msg_ENOSPC
+.addr msg_EEXIST
+.addr msg_EAGAIN
+.addr msg_EIO
+.addr msg_EINTR
+.addr msg_ENOSYS
+.addr msg_ESPIPE
+.addr msg_ERANGE
+.addr msg_EBADF
+.addr msg_ENOEXEC
+.addr msg_EISDIR
+.addr msg_ENOTDIR
+.addr msg_ENOTEMPTY
+
 errmsg:
   ;TODO FIXME maybe use oserror() from cc65 lib
   cmp #$f1
   bne @l1
-
   jsr primm
   .byte CODE_LF,"invalid command",CODE_LF,$00
   jmp mainloop
@@ -415,14 +460,34 @@ errmsg:
 @l1:
   cmp #$f2
   bne @l2
-
   jsr primm
   .byte CODE_LF,"invalid directory",CODE_LF,$00
   jmp mainloop
 
 @l2:
+  cmp #$15
+  bcs @l_unknown
+  asl
+  tax
+  lda errors,x
+  sta msg_ptr
+  lda errors+1,x
+  sta msg_ptr+1
+  ldy #0
+: lda (msg_ptr),y
+  beq @l_exit
+  jsr char_out
+  iny
+  bne :-
+@l_unknown:
+  pha
   jsr primm
-  .byte CODE_LF,"unknown error",CODE_LF,$00
+  .asciiz "unknown error "
+  pla
+  jsr hexout_s
+@l_exit:
+  lda #CODE_LF
+  jsr char_out
   jmp mainloop
 
 mode_toggle:
@@ -435,7 +500,7 @@ cd:
         lda paramptr
         ldx paramptr+1
         jsr krn_chdir
-        beq @l2
+        bcc @l2
         jmp errmsg
 @l2:
         jmp mainloop
@@ -453,7 +518,7 @@ exec:
   ldx #0
   ldy tmp2
 @cp_path:
-        lda (pathptr), y
+  lda (pathptr), y
   beq @check_path
   cmp #':'
   beq @cp_next
@@ -632,9 +697,9 @@ dump:
 ; l_exit:
 ;         rts
 
-PATH:             .asciiz "./:/steckos/:/progs/"
-PRGEXT:           .asciiz ".PRG"
-; screensaver_prg:  .asciiz "/steckos/unrclock.prg"
+PATH: .asciiz "./:/steckos/:/progs/"
+PRGEXT: .asciiz ".PRG"
+; screensaver_prg: .asciiz "/steckos/unrclock.prg"
 ; screensaver_rtc:  .res 1
 
 .bss
