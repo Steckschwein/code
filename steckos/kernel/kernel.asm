@@ -333,18 +333,6 @@ do_reset:
 
 filename: .asciiz "/steckos/shell.prg"
 
-; trampolin code to enter ML monitor on NMI
-; this code gets copied to $10 and executed there
-trampolin_code:
-  sei
-  ; switch to ROM bank 1
-  lda #$02
-  sta $0230
-  ; go!
-  brk
-  ;jmp $f000
-trampolin_code_end:
-
 
 .segment "VECTORS"
 ; $FFF8/$FFF9 RETVEC
