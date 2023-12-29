@@ -154,8 +154,8 @@ do_irq:
 @check_via:
     bit via1ifr    ; Interrupt from VIA?
     bpl @check_opl
-    lda #Light_Green
-    jsr vdp_bgcolor
+;    lda #Light_Green
+ ;   jsr vdp_bgcolor
     ; via irq handling code
     ;
 
@@ -163,13 +163,13 @@ do_irq:
     bit opl_stat  ; IRQ from OPL?
     bpl @check_spi_rtc
 ;    lda #Light_Yellow<<4|Light_Yellow
- ;   jsr vdp_bgcolor
+;    jsr vdp_bgcolor
 
 @check_spi_rtc:
-;    jsr rtc_irq0_ack
- ;   bcc @check_spi_keyboard
-  ;  lda #Cyan<<4|Cyan
-   ; jsr vdp_bgcolor
+    jsr rtc_irq0_ack
+    bcc @check_spi_keyboard
+;    lda #Cyan<<4|Cyan
+;    jsr vdp_bgcolor
 
 @check_spi_keyboard:
     jsr fetchkey        ; fetch key

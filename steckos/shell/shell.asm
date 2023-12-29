@@ -518,7 +518,7 @@ exec:
   ldx #0
   ldy tmp2
 @cp_path:
-        lda (pathptr), y
+  lda (pathptr), y
   beq @check_path
   cmp #':'
   beq @cp_next

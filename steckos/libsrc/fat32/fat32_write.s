@@ -163,7 +163,7 @@ __fat_add_direntry:
     sta (dirptr), y
 
     debug16 "fat wr dirent >", dirptr
-    copypointer dirptr, s_ptr2
+    copypointer dirptr, s_ptr2          ; TODO use dirptr directly
     jsr string_fat_name                 ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
     bcs @l_exit
 
@@ -479,11 +479,11 @@ __fat_write_fat_blocks:
 
 __fat_rtc_high_word:
     lsr
-    ror  s_tmp2
+    ror s_tmp2
     lsr
-    ror  s_tmp2
+    ror s_tmp2
     lsr
-    ror  s_tmp2
+    ror s_tmp2
     ora s_tmp1
     tax
     rts

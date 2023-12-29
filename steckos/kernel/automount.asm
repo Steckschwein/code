@@ -23,21 +23,22 @@
     debug_enabled=1
 .endif
 
-    .export __automount
-    .export __automount_init
+.export __automount
+.export __automount_init
 
-    .import primm
-    .import sdcard_init
-    .import sdcard_detect
-    .import fat_mount
-    .import krn_chrout
-    .import hexout_s
+.import primm
+.import sdcard_init
+.import sdcard_detect
+.import fat_mount
+.import krn_chrout
+.import hexout_s
 
-    .include "system.inc"
-    .include "via.inc"
-    .include "vdp.inc"
+.include "system.inc"
+.include "via.inc"
+.include "vdp.inc"
 
-    .include "debug.inc"
+.include "debug.inc"
+
 .code
 
 MOUNT_RETRIES=8

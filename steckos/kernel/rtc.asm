@@ -21,28 +21,26 @@
 ; SOFTWARE.
 
 .ifdef DEBUG_RTC; enable debug for this module
-	debug_enabled=1
+  debug_enabled=1
 .endif
 
 .include "kernel.inc"
 
-.import spi_rw_byte, spi_r_byte, spi_deselect, spi_select_device
-.import rtc_systime_update
-.import rtc_write_reg
+.autoimport
 
 .export init_rtc
 
 .code
 
 init_rtc:
-	; disable RTC interrupts
-	; Select SPI SS for RTC
-	lda #spi_device_rtc
-	sta via1portb
+  ; disable RTC interrupts
+  ; Select SPI SS for RTC
+  lda #spi_device_rtc
+  sta via1portb
   ldx #rtc_reg_ctrl
-	lda #0  ; disable WP (Write Protect)
-	jsr rtc_write_reg
+  lda #0  ; disable WP (Write Protect)
+  jsr rtc_write_reg
   ldx #rtc_reg_ctrl
-	lda #0  ; disable INT0, INT1
-	jsr rtc_write_reg
+  lda #0  ; disable INT0, INT1
+  jsr rtc_write_reg
   jmp spi_deselect

@@ -178,6 +178,7 @@ fat_fread_byte:
 
     sta __volatile_ptr
     sty __volatile_ptr+1
+
     lda (__volatile_ptr)
 
     _inc32_x fd_area+F32_fd::SeekPos

@@ -108,12 +108,13 @@ __ff_match:
 ;  C=0 on success (A=0), C=1 and A=<error code> otherwise
 __fat_find_next:
     jsr __fat_seek_next_dirent
-    lda fd_area + F32_fd::SeekPos+1,x
-    and #$01
-    ora fd_area + F32_fd::SeekPos+0,x
     debug32 "ff nxt seek <", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-    bne __ff_match
-    bra __ff_loop
+    .assert >block_data & $01 = 0, error, "block_data address must be $0200 aligned!"
+    lda dirptr+1 ; block start?
+    and #$01
+    ora dirptr
+    beq __ff_loop
+    bra __ff_match
 __ff_exit_enoent:
     lda #ENOENT
     sec ; nothing found C=1 and return
