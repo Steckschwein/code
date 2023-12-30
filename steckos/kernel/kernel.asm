@@ -337,6 +337,5 @@ filename: .asciiz "/steckos/shell.prg"
 
 .bss
 startaddr:  .res 2
-; .zeropage
 save_stat: .res   .sizeof(save_status)
 atmp: .res 1
