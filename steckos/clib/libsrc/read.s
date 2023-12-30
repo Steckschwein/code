@@ -1,7 +1,7 @@
 ;
 ;
 ;
-; int __fastcall__ read(int fd,void *buf,int count)
+; int __fastcall__ read(int fd, void *buf, int count)
 
     .include "fcntl.inc"
     .include "errno.inc"
@@ -21,17 +21,17 @@
 
 .proc  _read
     sta ptr3
-    eor #$FF      ; the count argument
+    eor #$FF        ; the count argument
     sta ptr2
     txa
     sta ptr3+1
     eor #$FF
     sta ptr2+1      ; Remember -count-1
 
-    jsr popptr1    ; get pointer to buf
+    jsr popptr1     ; get pointer to buf
 
-    jsr popax      ; the fd handle
-    cpx #0        ; high byte must be 0
+    jsr popax       ; the fd handle
+    cpx #0          ; high byte must be 0
     bne invalidfd
 
     tax            ; fd to x
@@ -67,12 +67,6 @@
     tax
     pla
     rts
-
-; Error entry: Device not present
-
-devnotpresent:
-      lda    #ENODEV
-      jmp    __directerrno  ; Sets _errno, clears _oserror, returns -1
 
 ; Error entry: The given file descriptor is not valid or not open
 
