@@ -54,6 +54,8 @@ fat_get_root_and_pwd:
     ldx #FD_INDEX_TEMP_DIR
     jsr __fat_clone_fd                  ; start from current directory, clone the cd fd
 
+    lda #0
+    jsr put_char                        ; \0 terminated end of buffer
 @l_rd_dir:
     lda #'/'                            ; put the / char to result string
     jsr put_char
