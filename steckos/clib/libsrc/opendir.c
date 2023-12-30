@@ -46,31 +46,14 @@ DIR* __fastcall__ opendir (register const char* name)
     /* Open directory file */
     if ((dir->fd = open (name, O_RDONLY)) != -1) {
 
-        /* Read directory key block
-        if (read (dir->fd,
-                  dir->block.bytes,
-                  sizeof (dir->block)) == sizeof (dir->block)) {
+          // Skip directory header entry
+          //dir->current_entry = 1;
+        memcpy(&dir->name, name, 8+3+1);
 
-            // Get directory entry infos from directory header
-            //dir->entry_length      = dir->block.bytes[0x23];
-            //dir->entries_per_block = dir->block.bytes[0x24];
+        printf("%s\n", dir->name);
 
-            // Skip directory header entry
-            //dir->current_entry = 1;
-          memcpy(&dir->name, name, 8+3+1);
-
-  			  cprintf("%s", dir->name);
-
-          // Return success
-          return dir;
-        }
-        */
-        // EOF: Most probably no directory file at all
-        if (_oserror == 0) {
-            _directerrno (EINVAL);
-        }
-        // Cleanup directory file
-//        close (dir->fd);
+        // Return success
+        return dir;
     }
 
     // Cleanup DIR

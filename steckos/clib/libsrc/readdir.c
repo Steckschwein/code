@@ -1,8 +1,8 @@
 /*****************************************************************************/
 /*                                                                           */
-/*                                 dirent.h                                  */
+/*                                readdir.c                                  */
 /*                                                                           */
-/*                        Directory entries for cc65                         */
+/*                           Read directory entry                            */
 /*                                                                           */
 /*                                                                           */
 /*                                                                           */
@@ -29,27 +29,12 @@
 /*****************************************************************************/
 
 
-#ifndef _DIRENT_H
-#define _DIRENT_H
 
+#include <stddef.h>
+#include <unistd.h>
+#include <dirent.h>
+#include "dir.h"
 
-
-/*****************************************************************************/
-/*                                   Data                                    */
-/*****************************************************************************/
-
-
-typedef struct DIR DIR;
-
-struct dirent {
-    char                d_name[8+1+3+1];
-    unsigned int        d_off;
-    unsigned int        d_blocks;
-    unsigned char       d_type;         /* See _CBM_T_xxx defines */
-
-    /* bsd extensions */
-    unsigned char       d_namlen;
-};
 
 
 /*****************************************************************************/
@@ -58,19 +43,17 @@ struct dirent {
 
 
 
-DIR* __fastcall__ opendir (const char* name);
+struct dirent* __fastcall__ readdir (register DIR* dir)
+{
+    register unsigned char* entry;
 
-struct dirent* __fastcall__ readdir (DIR* dir);
+    if (read (dir->fd, NULL, 0)) {
 
-int __fastcall__ closedir (DIR* dir);
+        /* Just return failure as read() has */
+        /* set errno if (and only if) no EOF */
+        return NULL;
+    }
 
-long __fastcall__ telldir (DIR* dir);
-
-void __fastcall__ seekdir (DIR* dir, long offs);
-
-void __fastcall__ rewinddir (DIR* dir);
-
-
-
-/* End of dirent.h */
-#endif
+    /* Return success */
+    return (struct dirent*)&entry[0x01];
+}

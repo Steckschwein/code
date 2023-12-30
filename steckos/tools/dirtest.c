@@ -19,8 +19,7 @@
 #include <string.h>
 #include <errno.h>
 #include <conio.h>
-#include <dirent.h>
-
+#include "dir.h"
 
 int main(void)
 {
@@ -40,8 +39,8 @@ int main(void)
 
     /* Open the directory */
     D = opendir (name);
-    if (D == 0) {
-        printf("error opening %s: %s\n", name, strerror (errno));
+    if (!D) {
+        printf("error opening '%s', error: %s\n", name, strerror (errno));
         return 1;
     }
 
@@ -66,7 +65,7 @@ int main(void)
                     goto done;
 
                 case 'r':
-//                    seekdir (D, E->d_off);
+                    seekdir (D, E->d_off);
                     break;
 
                 case 's':

@@ -13,7 +13,6 @@
       .macpack generic
 
 initcwd:
-      stp
 		  lda	#<__cwd
 		  ldx	#>__cwd
       ldy #<__cwd_buf_size
