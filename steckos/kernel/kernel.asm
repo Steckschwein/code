@@ -208,18 +208,7 @@ frame:
 ;----------------------------------------------------------------------------------------------
 ; IO_NMI Routine. Handle NMI
 ;----------------------------------------------------------------------------------------------
-.struct save_status
-SLOT0   .byte
-SLOT1   .byte
-SLOT2   .byte
-SLOT3   .byte
-ACC     .byte
-XREG    .byte
-YREG    .byte
-SP      .byte
-STATUS  .byte
-PC      .word
-.endstruct
+
 
 
 .code
@@ -231,17 +220,13 @@ do_nmi:
     tsx 
     stx save_stat + save_status::SP 
 
-    ; use x indirect addressing to fetch PC and SR from the stack
-    ; while leaving the stack pointer alone
-    lda $0100,x
+    pla 
     sta save_stat + save_status::STATUS
-
-    dex 
-    lda $0100,x
+    pla
     sta save_stat + save_status::PC
-    dex 
-    lda $0100,x
+    pla
     sta save_stat + save_status::PC+1
+
 
     ldx #3
 :
@@ -295,6 +280,16 @@ do_nmi:
 
     ldx save_stat + save_status::SP 
     txs 
+
+    lda save_stat + save_status::PC+1
+    pha 
+    lda save_stat + save_status::PC
+    pha 
+
+    lda save_stat + save_status::STATUS
+    pha 
+    
+    
 
     lda save_stat + save_status::ACC
     ldx save_stat + save_status::XREG
