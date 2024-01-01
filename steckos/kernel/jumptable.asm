@@ -12,10 +12,10 @@ krn_upload:             jmp do_upload
 krn_execv:              jmp execv
 
 ; filesystem stuff
-.export krn_mount
-krn_mount:              jmp fat_mount
 .export krn_open
-krn_open:               jmp fat_fopen
+krn_open:               jmp fat_open
+.export krn_fopen
+krn_fopen:              jmp fat_fopen
 .export krn_chdir
 krn_chdir:              jmp fat_chdir
 .export krn_unlink

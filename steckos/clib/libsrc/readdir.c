@@ -55,5 +55,5 @@ struct dirent* __fastcall__ readdir (register DIR* dir)
     }
 
     /* Return success */
-    return (struct dirent*)&entry[0x01];
+    return (struct dirent*)&entry;
 }

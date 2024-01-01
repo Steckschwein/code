@@ -42,6 +42,7 @@
 
 .autoimport
 
+.export fat_open
 .export fat_fopen
 .export fat_fread_byte
 .export fat_fseek
@@ -263,3 +264,5 @@ fat_close:
 fat_find_first = __fat_find_first_mask
 
 fat_find_next = __fat_find_next
+
+fat_open = __fat_open_path
