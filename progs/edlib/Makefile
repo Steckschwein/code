@@ -34,3 +34,6 @@ edlplytest.prg: edlplytest.o $(LIBS)
 
 %: %.prg
 	../../xmodem.sh $<
+
+%.emu: %.prg
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $<
