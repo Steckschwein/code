@@ -62,7 +62,7 @@ fat_get_root_and_pwd:
     ldx #FD_INDEX_TEMP_DIR              ; if root, exit to inverse the path string
     jsr __fat_is_start_cln_zero
     beq @l_path_trim
-    m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, __matcher_cln, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
+    m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::StartCluster, __matcher_cln, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
     lda #<l_dot_dot
     ldx #>l_dot_dot
     ldy #FD_INDEX_TEMP_DIR              ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
@@ -98,7 +98,7 @@ cluster_nr_matcher:
     lda __matcher_cln+0
     cmp (dirptr),y
     bne @l_notfound
-    ldy #F32DirEntry::FstClusLO+1
+    iny
     lda __matcher_cln+1
     cmp (dirptr),y
     bne @l_notfound
@@ -106,7 +106,7 @@ cluster_nr_matcher:
     lda __matcher_cln+2
     cmp (dirptr),y
     bne @l_notfound
-    ldy #F32DirEntry::FstClusHI+1
+    iny
     lda __matcher_cln+3
     cmp (dirptr),y
     beq @l_found

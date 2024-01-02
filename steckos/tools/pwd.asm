@@ -23,7 +23,7 @@ appstart $1000
 @l_err:
 		pha
 		jsr primm
-    .asciiz "i/o error"
+    .asciiz "i/o error "
 		pla
 		jsr hexout
 		bra @l2

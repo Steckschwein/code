@@ -110,7 +110,7 @@ __fat_find_next:
     jsr __fat_seek_next_dirent
     debug32 "ff nxt seek <", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
     .assert >block_data & $01 = 0, error, "block_data address must be $0200 aligned!"
-    lda dirptr+1 ; block start?
+    lda dirptr+1 ; block_data start at $?200 ?
     and #$01
     ora dirptr
     beq __ff_loop
@@ -270,6 +270,7 @@ __fat_open_file:
     jsr __fat_set_fd_dirlba
 
     jsr __fat_set_fd_start_cluster_seek_pos
+    ; TODO use jsr __fat_set_fd_start_cluster if alloc_fd is used also for directories
 @l_exit:
     ply
     rts
@@ -377,8 +378,7 @@ __fat_set_fd_dirlba:
 ;  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 __fat_alloc_fd:
     ldx #(2*FD_Entry_Size)                    ; skip 2 entries, they're reserved for current and temp dir
-@loop:
-    lda fd_area + F32_fd::status,x            ; bit 7 not set means unused, init and return current x as offset
+:   lda fd_area + F32_fd::status,x            ; bit 7 not set means unused, init and return current x as offset
     bpl __fat_init_fd
 
     txa
@@ -387,7 +387,7 @@ __fat_alloc_fd:
     tax
 
     cpx #(FD_Entry_Size*FD_Entries_Max)
-    bne @loop
+    bne :-
     lda #EMFILE                         ; Too many open files, no free file descriptor found
     rts
 
