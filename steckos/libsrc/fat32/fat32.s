@@ -118,34 +118,34 @@ __fat_fseek_cluster:
 
     ; calculate amount of clusters required for requested seek position - "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
     lda fd_area+F32_fd::SeekPos+3,x
-    sta volumeID+VolumeID::temp_dword+2
+    sta volumeID+VolumeID::cluster_seek_cnt+2
     lda fd_area+F32_fd::SeekPos+2,x
-    sta volumeID+VolumeID::temp_dword+1
+    sta volumeID+VolumeID::cluster_seek_cnt+1
     lda fd_area+F32_fd::SeekPos+1,x
-    sta volumeID+VolumeID::temp_dword+0
+    sta volumeID+VolumeID::cluster_seek_cnt+0
 
     ldy volumeID+VolumeID::BPB_SecPerClusCount ; Count + 1 cause SeekPos / $200 gives amount of blocks/sectors, so we need at least one iteration
-:   lsr volumeID+VolumeID::temp_dword+2
-    ror volumeID+VolumeID::temp_dword+1
-    ror volumeID+VolumeID::temp_dword+0
+:   lsr volumeID+VolumeID::cluster_seek_cnt+2
+    ror volumeID+VolumeID::cluster_seek_cnt+1
+    ror volumeID+VolumeID::cluster_seek_cnt+0
     dey
     bpl :-
 
 @l_seek:
     ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may fail within seek and leave with partial reserved clusters and we dont recover (yet)
-    ; read fsinfo and cmp temp_dword with fsinfo:FreeClus
-    lda volumeID+VolumeID::temp_dword+2
-    ora volumeID+VolumeID::temp_dword+1
-    ora volumeID+VolumeID::temp_dword+0
-    debug32 "seek cnt", volumeID+VolumeID::temp_dword
+    ; read fsinfo and cmp cluster_seek_cnt with fsinfo:FreeClus
+    lda volumeID+VolumeID::cluster_seek_cnt+2
+    ora volumeID+VolumeID::cluster_seek_cnt+1
+    ora volumeID+VolumeID::cluster_seek_cnt+0
+    debug32 "seek cnt", volumeID+VolumeID::cluster_seek_cnt
     beq @l_exit_ok
 @seek_cln:
     lda __volatile_tmp
     lsr ; restore carry
     jsr __fat_next_cln
     bcs @l_exit
-    _dec24 volumeID+VolumeID::temp_dword
-    debug32 "seek nxt", volumeID+VolumeID::temp_dword
+    _dec24 volumeID+VolumeID::cluster_seek_cnt
+    debug32 "seek nxt", volumeID+VolumeID::cluster_seek_cnt
     bne @seek_cln
 @l_exit_ok:
     lda fd_area+F32_fd::status,x

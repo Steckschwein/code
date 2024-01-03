@@ -611,16 +611,16 @@ __fat_next_cln:
   ;  bcc @l_exit
     bne @l_exit ; other error, then exit
     debug "f n cl w"
-    lda volumeID + VolumeID::LastClus + 0 ;
+    lda volumeID + VolumeID::cluster + 0 ;
     sta (read_blkptr), y
     iny
-    lda volumeID + VolumeID::LastClus + 1
+    lda volumeID + VolumeID::cluster + 1
     sta (read_blkptr), y
     iny
-    lda volumeID + VolumeID::LastClus + 2
+    lda volumeID + VolumeID::cluster + 2
     sta (read_blkptr), y
     iny
-    lda volumeID + VolumeID::LastClus + 3
+    lda volumeID + VolumeID::cluster + 3
     sta (read_blkptr), y
 
     jsr __fat_write_fat_blocks    ; write fat block with updated chain

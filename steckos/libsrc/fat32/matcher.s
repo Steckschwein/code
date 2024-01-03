@@ -56,7 +56,7 @@ __dmm_neq:
 ; build 11 byte fat file name (8.3) as used within dir entries
 ; in:
 ;   filenameptr pointer to input string to convert to fat file name mask
-;  s_ptr2 pointer to result of fat file name mask
+;   s_ptr2 pointer to result of fat file name mask
 ; out:
 ;   C=1 if input was too large (>255 byte), C=0 otherwise
 ;   Z=1 if input was empty string, Z=0 otherwise

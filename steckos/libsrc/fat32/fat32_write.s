@@ -343,16 +343,16 @@ __fat_free_cluster:
 __fat_reserve_start_cluster:
     jsr __fat_reserve_cluster
     bcs @l_exit
-    lda volumeID + VolumeID::LastClus + 3
+    lda volumeID + VolumeID::cluster + 3
     sta fd_area + F32_fd::StartCluster + 3, x
-    lda volumeID + VolumeID::LastClus + 2
+    lda volumeID + VolumeID::cluster + 2
     sta fd_area + F32_fd::StartCluster + 2, x
-    lda volumeID + VolumeID::LastClus + 1
+    lda volumeID + VolumeID::cluster + 1
     sta fd_area + F32_fd::StartCluster + 1, x
-    lda volumeID + VolumeID::LastClus + 0
+    lda volumeID + VolumeID::cluster + 0
     sta fd_area + F32_fd::StartCluster + 0, x
 @l_exit:
-    debug32 "reserve strt cl <", volumeID + VolumeID::LastClus
+    debug32 "reserve strt cl <", volumeID + VolumeID::cluster
     rts
 
 
@@ -387,13 +387,13 @@ __fat_update_cluster:
     stz volumeID+VolumeID::fat_cluster_add
     bpl :+                      ; +/- fs info cluster number?
     dec volumeID+VolumeID::fat_cluster_add ; 2's complement ($ff)
-    ldy volumeID+VolumeID::LastClus+0
+    ldy volumeID+VolumeID::cluster+0
     sty block_fat+F32FSInfo::LastClus+0
-    ldy volumeID+VolumeID::LastClus+1
+    ldy volumeID+VolumeID::cluster+1
     sty block_fat+F32FSInfo::LastClus+1
-    ldy volumeID+VolumeID::LastClus+2
+    ldy volumeID+VolumeID::cluster+2
     sty block_fat+F32FSInfo::LastClus+2
-    ldy volumeID+VolumeID::LastClus+3
+    ldy volumeID+VolumeID::cluster+3
     sty block_fat+F32FSInfo::LastClus+3
 :   debug32 "fs_info", block_fat+F32FSInfo::FreeClus
     clc
@@ -536,7 +536,7 @@ __fat_mark_cluster:
     sta (read_blkptr), y
     rts
 
-; try to find a free cluster and store them in volumeId+VolumeID::LastClus
+; try to find a free cluster and store them in volumeId+VolumeID::cluster
 ; out:
 ;   C=0 on success, Y=offset in block_fat of found cluster. lba_addr of the fat block where the found cluster resides
 ;   C=1 on error and A=<error code>
@@ -581,12 +581,12 @@ __fat_find_free_cluster:
     lda #$40          ; adjust clnr with +$40 (256 / 4 byte/clnr) clusters since it was found in 2nd page
 @l_found_lb:          ; A=0 here if called from branch above
     debug "fat found cl"
-    sta volumeID+VolumeID::LastClus+0
+    sta volumeID+VolumeID::cluster+0
     tya
     lsr            ; offset Y>>2 (div 4) - 32 bit clnr
     lsr
-    adc volumeID+VolumeID::LastClus+0  ; C=0 here always, y is multiple of 4
-    sta volumeID+VolumeID::LastClus+0  ; safe clnr
+    adc volumeID+VolumeID::cluster+0  ; C=0 here always, y is multiple of 4
+    sta volumeID+VolumeID::cluster+0  ; safe clnr
 
     ; calc the cluster number with clnr = (block number * 512) / 4 + (Y / 4) => (lba_addr - volumeID+VolumeID::lba_fat) << 7+(Y>>2)
     ; to avoid the <<7, we simply <<8 and do one ror - FTW!
@@ -597,18 +597,18 @@ __fat_find_free_cluster:
     lda lba_addr+1
     sbc volumeID+VolumeID::lba_fat+1    ; now we have 16bit blocknumber
     lsr            ; clnr = blocks<<7
-    sta volumeID+VolumeID::LastClus+2
+    sta volumeID+VolumeID::cluster+2
     lda volumeID+VolumeID::fat_rtc_0        ; restore A
     ror
-    sta volumeID+VolumeID::LastClus+1
+    sta volumeID+VolumeID::cluster+1
     lda #0
-    ror            ; clnr += Y>>2 (offset within block) - already saved in volumeId+VolumeID::LastClus+0 (s.above)
-    adc volumeID+VolumeID::LastClus+0
-    sta volumeID+VolumeID::LastClus+0
+    ror            ; clnr += Y>>2 (offset within block) - already saved in volumeId+VolumeID::cluster+0 (s.above)
+    adc volumeID+VolumeID::cluster+0
+    sta volumeID+VolumeID::cluster+0
     lda #0          ; exit found
-    sta volumeID+VolumeID::LastClus+3
+    sta volumeID+VolumeID::cluster+3
     clc ; found, C=0 success
-    debug32 "fat find cl <", volumeID+VolumeID::LastClus
+    debug32 "fat find cl <", volumeID+VolumeID::cluster
     rts
 
 ; unlink a file denoted by given path in A/X

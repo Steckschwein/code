@@ -116,18 +116,18 @@ PartType_FAT32_LBA    = $0c
 ; struct VolumeID like we keep it in memory
 .struct VolumeID
   BPB_SecPerClus      .byte
-  BPB_SecPerClusMask  .byte ; BPB_SecPerClus-1
-  BPB_SecPerClusCount .byte ; pre calculated counter from BPB_SecPerClus bit set - e.g. $00 => 0, $01 => 1, $02 => 2, $04 => 3 ...
+  BPB_SecPerClusMask  .byte   ; BPB_SecPerClus-1
+  BPB_SecPerClusCount .byte   ; pre calculated counter from BPB_SecPerClus bit set - e.g. $00 => 0, $01 => 1, $02 => 2, $04 => 3 ...
   BPB_RootClus        .dword
-  BPB_FATSz32         .dword ; sectors per fat
+  BPB_FATSz32         .dword  ; sectors per fat
   lba_data            .dword
   lba_fat             .dword
-  lba_fat2            .dword ; mirror fat lba
+  lba_fat2            .dword  ; mirror fat lba
   lba_fsinfo          .dword
-  LastClus            .dword ; mirror of fsinfo LastClus - used for free cluster search
-  fat_cluster_add     .byte   ; cluster reservation addend
   lba_addr_last       .dword  ; last lba_addr
-  temp_dword          .dword
+  cluster             .dword  ; mirror of fsinfo LastClus - used for free cluster search
+  cluster_seek_cnt    .dword
+  fat_cluster_add     .byte   ; cluster reservation addend
   fat_rtc_0           .byte   ; rtc temp variable
   fat_rtc_1           .byte   ; rtc temp variable
   fat_vec_matcher     .addr     ; (2 byte) jump vector

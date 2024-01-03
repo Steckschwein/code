@@ -62,14 +62,14 @@ fat_get_root_and_pwd:
     ldx #FD_INDEX_TEMP_DIR              ; if root, exit to inverse the path string
     jsr __fat_is_start_cln_zero
     beq @l_path_trim
-    m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::StartCluster, __matcher_cln, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
+    m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::StartCluster, volumeID+VolumeID::cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
     lda #<l_dot_dot
     ldx #>l_dot_dot
     ldy #FD_INDEX_TEMP_DIR              ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
     jsr __fat_opendir
     bcs @l_exit
     SetVector cluster_nr_matcher, volumeID+VolumeID::fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
-    jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in __matcher_cln before we did the cd ".."
+    jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in cluster before we did the cd ".."
     bcs @l_exit
     jsr fat_name_string                 ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
     bra @l_rd_dir                       ; go on with bottom up walk until root is reached
@@ -95,19 +95,19 @@ cluster_nr_matcher:
     cmp #DIR_Entry_Deleted
     beq @l_notfound
     ldy #F32DirEntry::FstClusLO+0
-    lda __matcher_cln+0
+    lda volumeID+VolumeID::cluster+0
     cmp (dirptr),y
     bne @l_notfound
     iny
-    lda __matcher_cln+1
+    lda volumeID+VolumeID::cluster+1
     cmp (dirptr),y
     bne @l_notfound
     ldy #F32DirEntry::FstClusHI+0
-    lda __matcher_cln+2
+    lda volumeID+VolumeID::cluster+2
     cmp (dirptr),y
     bne @l_notfound
     iny
-    lda __matcher_cln+3
+    lda volumeID+VolumeID::cluster+3
     cmp (dirptr),y
     beq @l_found
 @l_notfound:
@@ -164,5 +164,4 @@ put_char:
   rts
 
 .bss
-__matcher_cln: .res 4
 __string_ix: .res 1
