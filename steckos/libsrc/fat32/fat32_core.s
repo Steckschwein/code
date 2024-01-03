@@ -581,7 +581,7 @@ __calc_fat_lba_addr:
     ; add volumeID+VolumeID::lba_fat and lba_addr
     add32 volumeID+VolumeID::lba_fat, lba_addr, lba_addr
 
-    debug32 "fat_lba", lba_addr
+    debug32 "fat_lba <", lba_addr
     rts
 
 ; extract next cluster number from the 512 fat block buffer or reserve a new one
@@ -595,7 +595,6 @@ __fat_next_cln:
 
     bcc @l_select_next_cln  ; read access, just try to select
 
-@l_write:
     jsr @l_select_next_cln
     bcc @l_exit
    ;cmp #EOK   ; EOK means EOC (C=1/A=0)
