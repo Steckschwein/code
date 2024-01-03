@@ -69,7 +69,7 @@ fat_get_root_and_pwd:
     jsr __fat_opendir
     bcs @l_exit
     SetVector cluster_nr_matcher, volumeID+VolumeID::fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
-    jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in temp_dword before we did the cd ".."
+    jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in __matcher_cln before we did the cd ".."
     bcs @l_exit
     jsr fat_name_string                 ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
     bra @l_rd_dir                       ; go on with bottom up walk until root is reached

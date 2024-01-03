@@ -383,10 +383,10 @@ __fat_update_cluster:
 :   m_memcpy volumeID+VolumeID::lba_fsinfo, lba_addr, 4
     jsr __fat_read_block_fat
     bcs @l_exit
-    stz s_tmp2
     lda s_tmp1
+    stz s_tmp1
     bpl :+                      ; +/- fs info cluster number?
-    dec s_tmp2 ; 2's complement ($ff)
+    dec s_tmp1 ; 2's complement ($ff)
     ldy volumeID+VolumeID::LastClus+0
     sty block_fat+F32FSInfo::LastClus+0
     ldy volumeID+VolumeID::LastClus+1
@@ -400,13 +400,13 @@ __fat_update_cluster:
     adc block_fat+F32FSInfo::FreeClus+0
     sta block_fat+F32FSInfo::FreeClus+0
     lda block_fat+F32FSInfo::FreeClus+1
-    adc s_tmp2
+    adc s_tmp1
     sta block_fat+F32FSInfo::FreeClus+1
     lda block_fat+F32FSInfo::FreeClus+2
-    adc s_tmp2
+    adc s_tmp1
     sta block_fat+F32FSInfo::FreeClus+2
     lda block_fat+F32FSInfo::FreeClus+3
-    adc s_tmp2
+    adc s_tmp1
     sta block_fat+F32FSInfo::FreeClus+3
 
 ; return C=0 on success, C=1 otherwise and A=error code
