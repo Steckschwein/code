@@ -32,5 +32,5 @@ mcopy -i ${img} $PROGS $TARGET/progs/
 mcopy -i ${img} progs/ehbasic_65c02/demo/* $TARGET/basic
 
 if [ -d "../local" ] ; then
-  mcopy -snvo -i ${img} ../local/* $TARGET/
+	mcopy -snvo -i ${img} ../local/* $TARGET/
 fi
