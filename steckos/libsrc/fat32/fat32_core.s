@@ -283,13 +283,14 @@ __fat_open_file:
 __fat_clone_fd:
     phx
     lda #FD_Entry_Size
-    sta s_tmp1
 @l1:
+    pha
     lda fd_area, y
     sta fd_area, x
     inx
     iny
-    dec s_tmp1
+    pla
+    dec
     bne @l1
     plx
     rts

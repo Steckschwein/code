@@ -330,7 +330,7 @@ __fat_free_cluster:
     bne @l_exit        ; read error
     bcc @l_exit        ; EOC? (C=1) expected here in order to free - TODO FIXME cluster chain during deletion not supported yet
     lda #1
-    sta s_tmp1
+    sta volumeID+VolumeID::fat_rtc_0
     dec
     bra __fat_update_cluster
 @l_exit:
@@ -367,11 +367,11 @@ __fat_reserve_cluster:
     rts
 
 :   lda #$ff
-    sta s_tmp1
+    sta volumeID+VolumeID::fat_cluster_add
 ; update cluster
 ; in:
 ;  .A - mark cluster in fat block eihter with EOC (0x0fffffff) or free 0x00000000
-;  s_tmp1 amount of  clusters to be reserved/freed with A [-128...127]
+;  volumeID+VolumeID::fat_cluster_add amount of  clusters to be reserved/freed with A [-128...127]
 __fat_update_cluster:
     jsr __fat_mark_cluster
     jsr __fat_write_fat_blocks  ; write the updated fat block for 1st and 2nd FAT to the device
@@ -383,10 +383,10 @@ __fat_update_cluster:
 :   m_memcpy volumeID+VolumeID::lba_fsinfo, lba_addr, 4
     jsr __fat_read_block_fat
     bcs @l_exit
-    lda s_tmp1
-    stz s_tmp1
+    lda volumeID+VolumeID::fat_cluster_add
+    stz volumeID+VolumeID::fat_cluster_add
     bpl :+                      ; +/- fs info cluster number?
-    dec s_tmp1 ; 2's complement ($ff)
+    dec volumeID+VolumeID::fat_cluster_add ; 2's complement ($ff)
     ldy volumeID+VolumeID::LastClus+0
     sty block_fat+F32FSInfo::LastClus+0
     ldy volumeID+VolumeID::LastClus+1
@@ -400,13 +400,13 @@ __fat_update_cluster:
     adc block_fat+F32FSInfo::FreeClus+0
     sta block_fat+F32FSInfo::FreeClus+0
     lda block_fat+F32FSInfo::FreeClus+1
-    adc s_tmp1
+    adc volumeID+VolumeID::fat_cluster_add
     sta block_fat+F32FSInfo::FreeClus+1
     lda block_fat+F32FSInfo::FreeClus+2
-    adc s_tmp1
+    adc volumeID+VolumeID::fat_cluster_add
     sta block_fat+F32FSInfo::FreeClus+2
     lda block_fat+F32FSInfo::FreeClus+3
-    adc s_tmp1
+    adc volumeID+VolumeID::fat_cluster_add
     sta block_fat+F32FSInfo::FreeClus+3
 
 ; return C=0 on success, C=1 otherwise and A=error code
@@ -479,45 +479,45 @@ __fat_write_fat_blocks:
 
 __fat_rtc_high_word:
     lsr
-    ror s_tmp2
+    ror volumeID+VolumeID::fat_rtc_1
     lsr
-    ror s_tmp2
+    ror volumeID+VolumeID::fat_rtc_1
     lsr
-    ror s_tmp2
-    ora s_tmp1
+    ror volumeID+VolumeID::fat_rtc_1
+    ora volumeID+VolumeID::fat_rtc_0
     tax
     rts
 
-    ; out:
-    ;  .A/.X with time from rtc struct in fat format
+; out:
+;   A/X with time from rtc struct in fat format
 __fat_rtc_time:
-    stz s_tmp2
+    stz volumeID+VolumeID::fat_rtc_1
     lda rtc_systime_t+time_t::tm_hour              ; hour
     asl
     asl
     asl
-    sta s_tmp1
+    sta volumeID+VolumeID::fat_rtc_0
     lda rtc_systime_t+time_t::tm_min                ; minutes 0..59
     jsr __fat_rtc_high_word
     lda rtc_systime_t+time_t::tm_sec                ; seconds/2
     lsr
-    ora s_tmp2
+    ora volumeID+VolumeID::fat_rtc_1
     rts
 
-    ; out
-    ;  A/X with date from rtc struct in fat format
+; out
+;   A/X with date from rtc struct in fat format
 __fat_rtc_date:
-    stz s_tmp2
-    lda rtc_systime_t+time_t::tm_year              ; years since 1900
+    stz volumeID+VolumeID::fat_rtc_1
+    lda rtc_systime_t+time_t::tm_year               ; years since 1900
     sec
-    sbc #80                                ; fat year is 1980..2107 (bit 15-9), we have to adjust 80 years
+    sbc #80                                         ; fat year is 1980..2107 (bit 15-9), we have to adjust 80 years
     asl
-    sta s_tmp1
+    sta volumeID+VolumeID::fat_rtc_0
     lda rtc_systime_t+time_t::tm_mon                ; month from rtc is (0..11), adjust +1
     inc
     jsr __fat_rtc_high_word
-    lda rtc_systime_t+time_t::tm_mday              ; day of month (1..31)
-    ora s_tmp2
+    lda rtc_systime_t+time_t::tm_mday               ; day of month (1..31)
+    ora volumeID+VolumeID::fat_rtc_1
     rts
 
 ; mark cluster according to A
@@ -593,12 +593,12 @@ __fat_find_free_cluster:
     sec
     lda lba_addr+0
     sbc volumeID+VolumeID::lba_fat+0
-    sta s_tmp1        ; save A
+    sta volumeID+VolumeID::fat_rtc_0        ; save A
     lda lba_addr+1
     sbc volumeID+VolumeID::lba_fat+1    ; now we have 16bit blocknumber
     lsr            ; clnr = blocks<<7
     sta volumeID+VolumeID::LastClus+2
-    lda s_tmp1        ; restore A
+    lda volumeID+VolumeID::fat_rtc_0        ; restore A
     ror
     sta volumeID+VolumeID::LastClus+1
     lda #0
