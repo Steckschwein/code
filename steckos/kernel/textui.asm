@@ -185,7 +185,7 @@ textui_cursor:
   beq _vram_crs_ptr_write_saved
   trb screen_status
   lda #CURSOR_CHAR
-;  sta saved_char
+  ;  sta saved_char
   bra _vram_crs_ptr_write
 _vram_crs_ptr_write_saved:
   lda saved_char
@@ -310,9 +310,7 @@ PSIX2:
 .endif
 
 textui_put:
-;  inc screen_write_lock     ; write on
   sta saved_char
-;  stz screen_write_lock     ; write off
   rts
 
 textui_chrout:
@@ -378,17 +376,17 @@ __textui_dispatch_char:
 @exit:
   rts
 @l4:
-  sta saved_char          ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
-  lda crs_x
-  inc
+    sta saved_char          ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
+    lda crs_x
+    inc
     bit video_mode
     bvs :+
     cmp #40
     beq @l5
 :   cmp #80
-  beq @l5
-  sta crs_x
-  jmp textui_update_crs_ptr
+    beq @l5
+    sta crs_x
+    jmp textui_update_crs_ptr
 @l5:
   stz crs_x
 
