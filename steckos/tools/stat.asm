@@ -47,14 +47,14 @@ l1:
 @l2:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
-    bcs @l4
+    bcc @l4
     jsr hexout
     printstring " i/o error"
     bra @exit
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcc @exit
+    bcs @exit
 @l4:
     lda (dirptr)
     cmp #$e5
