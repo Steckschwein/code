@@ -48,7 +48,7 @@ fat_get_root_and_pwd:
 
     sta __volatile_ptr
     stx __volatile_ptr+1
-    sty s_tmp3
+    sty __string_ix
 
     ldy #FD_INDEX_CURRENT_DIR
     ldx #FD_INDEX_TEMP_DIR
@@ -118,13 +118,13 @@ cluster_nr_matcher:
 path_trim:
     ldy #0
 :   phy
-    ldy s_tmp3
+    ldy __string_ix
     lda (__volatile_ptr),y
     ply
     sta (__volatile_ptr),y
     cmp #0
     beq @l_exit
-    inc s_tmp3
+    inc __string_ix
     iny
     bne :-
 @l_exit:
@@ -134,7 +134,7 @@ path_trim:
   ; in:
   ;  dirptr         - pointer to directory entry (F32DirEntry)
   ;  __volatile_ptr - pointer to result string
-  ;  s_tmp3         - length or offset in result string denoted by s_ptr3
+  ;  __string_ix         - length or offset in result string denoted by s_ptr3
 fat_name_string:
   ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)
 @l_next:
@@ -154,10 +154,10 @@ fat_name_string:
 
 put_char:
   phy
-  ldy s_tmp3
+  ldy __string_ix
   beq @l_exit
   dey
-  sty s_tmp3
+  sty __string_ix
   sta (__volatile_ptr),y
 @l_exit:
   ply
@@ -165,3 +165,4 @@ put_char:
 
 .bss
 __matcher_cln: .res 4
+__string_ix: .res 1
