@@ -102,6 +102,7 @@ __ff_match:
 
     jsr __fat_matcher       ; call matcher strategy
     bcs __ff_found          ; if C=1 we had a match
+
 ; in:
 ;  X - directory fd index into fd_area
 ; out:

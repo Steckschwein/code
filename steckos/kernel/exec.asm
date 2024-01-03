@@ -50,11 +50,13 @@ execv:
 
 :     jsr fat_fread_byte  ; start address low
       bcs @l_exit_close
+ ;     tay
       sta s_ptr2
       sta s_ptr3
-
       jsr fat_fread_byte ; start address high
       bcs @l_exit_close
+  ;    phy
+   ;   pha
       sta s_ptr2+1
       sta s_ptr3+1
 

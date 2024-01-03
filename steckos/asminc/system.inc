@@ -35,6 +35,8 @@ clockspeed  = 10	; in Mhz
 
 ctrl_port	= $0230
 
+stack = $0100
+
 slot0 = ctrl_port+0
 slot1 = ctrl_port+1
 slot2 = ctrl_port+2
