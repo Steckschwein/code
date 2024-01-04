@@ -20,8 +20,7 @@
 .exportzp dirptr        = $f2  ; 2 byte
 
 ; SDCARD/storage block pointer
-.exportzp read_blkptr    = $f4
-.exportzp write_blkptr   = $f6
+.exportzp sd_blkptr    = $f4
 
 ; spi shift register location
 .exportzp spi_sr            = $f9
