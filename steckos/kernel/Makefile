@@ -24,10 +24,6 @@ DEFINES+=-DDISABLE_INTRO
 #DEBUG += -DDEBUG_SPI
 #DEBUG += -DDEBUG_AUTOMOUNT
 
-# optimize flags
-#OPT += -DTEXTUI_STROUT
-#OPT += -DTEXTUI_PRIMM
-
 .PHONY: all clean test
 all: kernel.bin loader.prg
 
