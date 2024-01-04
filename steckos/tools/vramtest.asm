@@ -123,8 +123,7 @@ mem_ca:	; output current address
 	phy            	; save vram adress low byte
 	jsr rset_vbank	; reset vbank (for text output)
 	ldx #20			; offset output
-	ldy crs_y
-	jsr krn_textui_crsxy
+	
 	lda vbank		; vbank (#reg14) A16-A14
 	lsr
 	lsr
@@ -140,6 +139,10 @@ mem_ca:	; output current address
 	pla
 	jsr hexout
 	cli
+
+	jsr primm
+	.byte 27,"[7C",0
+
 	rts
 
 

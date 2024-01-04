@@ -4,7 +4,7 @@
 
 .export char_out=krn_chrout
 .export fopen=krn_open
-.export fread=krn_fread
+.export fread_byte=krn_fread_byte
 .export fclose=krn_close
 
 appstart

@@ -20,42 +20,42 @@ initmainargs:
 ;		  lda	  #>INPUT_BUF
 ;		  sta	  cmdptr+1
 
-		  ldy	  #0				  ;defense copy to not corrupt shell history
-		  ldx	  #0
-L0:	      lda	  (cmdptr),y
-		  sta	  INPUT_BUF,y
-		  beq	  L1
+			ldy	  #0				  ;defense copy to not corrupt shell history
+		  	ldx	  #0
+L0:		lda	  (cmdptr),y
+			sta	  INPUT_BUF,y
+			beq	  L1
 ;		  jsr	  krn_chrout
-		  iny
-		  bne	  L0
-		  dey							; null-term if overflow
-		  lda	  #0
-		  sta	  INPUT_BUF,y
+			iny
+			bne	  L0
+			dey							; null-term if overflow
+			lda	  #0
+			sta	  INPUT_BUF,y
 L1:
-		  lda	  INPUT_BUF,x
-		  sta	  name,x
-		  beq	  L2
-		  cmp	  #' '
-		  beq	  L3
-		  inx
-		  bne	  L1				  ;overflow is handled above
-L2:	  inc	  __argc
-		  bra	  done
+			lda	  INPUT_BUF,x
+			sta	  name,x
+			beq	  L2
+			cmp	  #' '
+			beq	  L3
+			inx
+			bne	  L1				  ;overflow is handled above
+L2:		inc	  __argc
+		  	bra	  done
 
-L3:	  lda	  #0				  ; null term string program name
-		  sta	  name,x
-		  inc	  __argc			 ; argc always is equal to, at least, 1
+L3:	  	lda	  #0				  ; null term string program name
+		  	sta	  name,x
+			inc	  __argc			 ; argc always is equal to, at least, 1
 
 ; Find the next argument
-		  ldy	  #2				  ;args from argv[1..n]
+			ldy	  #2				  ;args from argv[1..n]
 next:	inx
-		  lda	  INPUT_BUF,x
-		  beq	  done				; End of line reached
-		  cmp	  #' '				; skip read...
-		  beq	  next
+		  	lda	  INPUT_BUF,x
+		  	beq	  done				; End of line reached
+		  	cmp	  #' '				; skip read...
+		  	beq	  next
 
-		  txa							; Get low byte
-		  clc
+			txa							; Get low byte
+			clc
 		  adc	  #<INPUT_BUF
 		  sta	  argv,y			 ; argv[y]= &arg	; cmd ptr is page aligned from shell
 		  iny

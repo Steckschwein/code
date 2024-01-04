@@ -79,7 +79,7 @@ rename:
 	SetVector filename, filenameptr
 	ldx #FD_INDEX_CURRENT_DIR
 	jsr krn_find_first
-	bcs @go
+	bcc @go
 	printstring "i/o error"
 
 	jmp (retvec)
@@ -95,7 +95,7 @@ rename:
 	bpl @l
 
 	; set write pointer accordingly and
-	SetVector sd_blktarget, write_blkptr
+	SetVector block_data, write_blkptr
 
 	; just write back the block. lba_address still contains the right address
 	jsr krn_sd_write_block

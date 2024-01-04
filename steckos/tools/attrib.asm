@@ -33,7 +33,7 @@
 .import primm
 
 appstart $1000
-.code 
+.code
 		ldy #$00
 @loop:
 		lda (paramptr),y
@@ -98,7 +98,7 @@ attrib:
 		SetVector filename, filenameptr
 		ldx #FD_INDEX_CURRENT_DIR
 		jsr krn_find_first
-		bcs @found
+		bcc @found
 		printstring "i/o error"
 		jmp (retvec)
 
@@ -116,7 +116,7 @@ attrib:
 
 @save:
 		; set write pointer accordingly and
-		SetVector sd_blktarget, write_blkptr
+		SetVector block_data, write_blkptr
 
 		; just write back the block. lba_address still contains the right address
 		jsr krn_sd_write_block

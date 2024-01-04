@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 .ifndef _YM3812_INC_
-.define _YM3812_INC_
+	_YM3812_INC_=1
 
 .include "system.inc"
 

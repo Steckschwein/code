@@ -8,9 +8,6 @@ clean:
 	(cd asmunit; make clean)
 	if [ -e steckos.img ] ; then rm steckos.img ; fi
 
-distclean:
-	rm -rf dist/LOADER.PRG dist/STECKOS dist/GAMES dist/DEMO dist/PROGS/EDLPLY.PRG dist/PROGS/BASIC.PRG dist/PROGS/IMF.PRG
-	if [ -e steckos.img ] ; then rm steckos.img ; fi
 
 build:
 	(cd asmunit; make)
@@ -18,12 +15,8 @@ build:
 	(cd progs; make)
 	(cd games; make)
 
-test:
+test: build
 	(cd steckos; make test)
 
-
-dist: build
-	./mkdist.sh
-
-img: dist
+img: build
 	./mkimg.sh

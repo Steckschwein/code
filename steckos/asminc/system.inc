@@ -23,6 +23,7 @@
 .ifndef _SYSTEM_INC_
   _SYSTEM_INC_ = 1
 
+
 ; @see system.s
 IRQ_VDP			= 1<<7		; irq from video chip
 IRQ_SND			= 1<<6		; irq from sound card (ym3812)
@@ -52,36 +53,18 @@ SYS_VECTOR_NMI = $fffa
 SYS_VECTOR_RESET = $fffc
 SYS_VECTOR_IRQ = $fffe
 
-.macro crlf
-  lda #CODE_LF		;\n already does the carriage return
-  jsr char_out
-.endmacro
+.struct save_status
+SLOT0   .byte
+SLOT1   .byte
+SLOT2   .byte
+SLOT3   .byte
+ACC     .byte
+XREG    .byte
+YREG    .byte
+SP      .byte
+STATUS  .byte
+PC      .word
+.endstruct
 
-.macro sys_delay_ms millis
-	sys_delay_us (millis * 1000)
-.endmacro
-
-.macro sys_delay_us micros
-      .local @l1,@l2,@l3
-      .assert (micros * clockspeed) >= 0, error, "micros to small!"
-      .assert (>.HIWORD(micros * clockspeed)) = 0, error, "micros to large!"
-      php
-      pha
-      phx
-      phy
-      lda #1+<.HIWORD(micros * clockspeed / 5)
-@l1:  ldx #1+>(micros * clockspeed / 5)
-@l2:  ldy #1+<(micros * clockspeed / 5) ; ~5cl inner loop
-@l3:  dey
-      bne @l3
-      dex
-      bne @l2
-      dec
-      bne @l1
-      ply
-      plx
-      pla
-      plp
-.endmacro
 
 .endif

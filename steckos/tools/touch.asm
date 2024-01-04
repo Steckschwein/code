@@ -20,41 +20,36 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
+.include "steckos.inc"
 .include "fcntl.inc"	; @see
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
 
-.include "appstart.inc"
-.import hexout
-.import primm
-
+.autoimport
 .export char_out=krn_chrout
 
 appstart $1000
 
-		lda (paramptr)	; empty string?
-		bne @l_touch
-		lda #$99
-		bra @errmsg
+	lda (paramptr)	; empty string?
+	bne @l_touch
+	lda #$99
+	bra @errmsg
 @l_touch:
-    	lda paramptr
-    	ldx paramptr+1
-		ldy #O_CREAT
-    	jsr krn_open
-		bne @errmsg
-		jsr krn_close
+	lda paramptr
+	ldx paramptr+1
+	ldy #O_CREAT
+	jsr krn_open
+	bcs @errmsg
 
-		jsr primm
-		.byte $0a," touch ok",$00
+
+	jsr krn_close
+
 @exit:
-		jmp (retvec)
+	jmp (retvec)
 
 @errmsg:
-		;TODO FIXME maybe use oserror() from cc65 lib
-		pha
-		jsr primm
-		.asciiz "Error: "
-		pla
-		jsr hexout
-		jmp @exit
+	;TODO FIXME maybe use oserror() from cc65 lib
+	pha
+	jsr primm
+	.asciiz "Error: "
+	pla
+	jsr hexout
+	jmp @exit

@@ -20,13 +20,13 @@ extern char _cwd[FILENAME_MAX];
 // from global dirent.h
 DIR* __fastcall__ opendir (register const char* name)
 {
-/*	if(length(name)>8+3){
-		_directerrno (ENOMEM);
-		return NULL;
-	}
-*/
 
     register DIR* dir;
+
+    if(strlen(name)>8+3){
+		  _directerrno (ENOSYS);
+		  return NULL;
+	  }
 
     /* Alloc DIR */
     if ((dir = malloc (sizeof (*dir))) == NULL) {
@@ -40,7 +40,7 @@ DIR* __fastcall__ opendir (register const char* name)
 
     /* Interpret dot as current working directory */
     if (*name == '.') {
-        //name = _cwd;
+        name = _cwd;
     }
 
     /* Open directory file */

@@ -1,5 +1,4 @@
 dir_entry_size=11
-krn_tmp=$a0
 
 match:
 	ldx #0

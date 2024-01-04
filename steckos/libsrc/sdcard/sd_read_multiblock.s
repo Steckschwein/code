@@ -23,7 +23,7 @@
 
 ; enable debug for this module
 .ifdef DEBUG_SDCARD_READ_MULTIBLOCK
-	debug_enabled=1
+  debug_enabled=1
 .endif
 
 .include "common.inc"
@@ -45,41 +45,42 @@
 ;---------------------------------------------------------------------
 ; Read multiple blocks from SD Card
 ;in:
-;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
-;	block lba in lba_addr
-;	block count in blocks
+;  A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
+;  block lba in lba_addr
+;  block count in blocks
 ;
 ;out:
-;	A - A = 0 on success, error code otherwise
+;  A - A = 0 on success, error code otherwise
 ;---------------------------------------------------------------------
 .code
 sd_read_multiblock:
-			phx
-			phy
+      phx
+      phy
 
-			jsr sd_select_card
+      jsr sd_select_card
 
-			jsr sd_cmd_lba
-			lda #cmd18	; Send CMD18 command byte
-			jsr sd_cmd
-			debug "sdm18"
-			bne @exit
+      jsr sd_cmd_lba
+      lda #cmd18  ; Send CMD18 command byte
+      jsr sd_cmd
+      debug "sdm18"
+      bne @exit
+
 @l1:
-			jsr fullblock
-			bne @exit
-			inc read_blkptr+1
+      jsr fullblock
+      bne @exit
+      inc read_blkptr+1
 
-			debug16 "sd_rm", blocks
-			dec blocks
-			bne @l1
+      debug16 "sd_rm", blocks
+      dec blocks
+      bne @l1
 
-			; all blocks read, send cmd12 to end transmission
-			lda #cmd12
-			jsr sd_cmd
-			beq @exit			; no busy, already done
-			jsr sd_busy_wait	; otherwise do a busy wait
+      ; all blocks read, send cmd12 to end transmission
+      lda #cmd12
+      jsr sd_cmd
+      beq @exit      ; no busy, already done
+      jsr sd_busy_wait  ; otherwise do a busy wait
       lda #0
 @exit:
-			ply
-			plx
-			jmp sd_deselect_card
+      ply
+      plx
+      jmp sd_deselect_card

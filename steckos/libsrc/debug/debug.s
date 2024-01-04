@@ -23,10 +23,10 @@
 
 .include "zeropage.inc"
 
-.export  _debugout
-.export  _debugout8
-.export  _debugout16
-.export  _debugout32
+.export _debugout
+.export _debugout8
+.export _debugout16
+.export _debugout32
 .export _debugdump
 
 .export _debugdirentry

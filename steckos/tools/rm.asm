@@ -20,32 +20,27 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
+.include "steckos.inc"
 
-.include "appstart.inc"
-.import hexout
-.import primm
-
+.autoimport
 .export char_out=krn_chrout
 
 appstart $1000
 
-    	lda paramptr
-    	ldx paramptr+1
+		lda (paramptr)
+		beq @exit
 
-    	jsr krn_unlink
-		bne @errmsg
+		lda paramptr
+		ldx paramptr+1
 
+		jsr krn_unlink
+		bcs @errmsg
 @exit:
-		jmp (retvec)
-
+    jmp (retvec)
 @errmsg:
-		;TODO FIXME maybe use oserror() from cc65 lib
 		pha
 		jsr primm
 		.asciiz "Error: "
 		pla
 		jsr hexout
-		jmp @exit
+		bra @exit
