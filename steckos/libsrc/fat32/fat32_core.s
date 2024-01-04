@@ -184,9 +184,9 @@ __fat_open_path:
     lda (filenameptr),y
     beq @l_filename_end
     iny
+
     cmp #'.'
     bne @l_char
-
     cpx #0              ; starts with "." ?
     bne @l_fill_name    ; no, then fill until end of fat name
 @l_dot:
@@ -202,12 +202,12 @@ __fat_open_path:
     bra @l_err_einval
 @l_fill_name:
     lda #' '
-:   sta volumeID+VolumeID::fat_filename,x
-    debugdump "f fill nm", volumeID+VolumeID::fat_filename
+:   cpx #.sizeof(F32DirEntry::Name)
+    bcs @l_parse_1
+    sta volumeID+VolumeID::fat_filename,x
+    debugdump "fat fill nm", volumeID+VolumeID::fat_filename
     inx
-    cpx #.sizeof(F32DirEntry::Name)
-    bcc :-
-    bra @l_parse_1
+    bra :-
 @l_char:
     cmp #' '+1           ;TODO FIXME support file/dir name with spaces? it's beyond 8.3 file support
     bcc @l_err_einval

@@ -79,7 +79,27 @@ TEST_FILE_CL2=$19
     assert32 $10, block_fsinfo+F32FSInfo::LastClus
 
 ; -------------------
+		setup "fat_mkdir numeric"
+		lda #<test_dir_name_numeric
+		ldx #>test_dir_name_numeric
+		jsr fat_mkdir
+		assertCarry 0
+		assertA EOK
+    assertDirEntry block_root_dir_00+14*DIR_Entry_Size
+      fat32_dir_entry_dir "12345678", "9AB", TEST_FILE_CL
+    assertDirEntry block_data_cl10_00+0*DIR_Entry_Size
+      fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL
+    assertDirEntry block_data_cl10_00+1*DIR_Entry_Size
+      fat32_dir_entry_dir "..      ", "   ", 0
+    assert8 0, block_data_cl10_00+2*DIR_Entry_Size
+
+    assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $10, block_fsinfo+F32FSInfo::LastClus
+
+
+; -------------------
 		setup "fat_mkdir end of block (4s/cl)"
+
     setDirEntry block_root_dir_00+14*DIR_Entry_Size
       fat32_dir_entry_dir "DIR0D   ", "   ", 0
 
@@ -311,13 +331,14 @@ setUp:
 		rts
 
 .data
-	test_file_name_1: .asciiz "file01.dat"
-	test_dir_name_1: .asciiz "dir01"
-	test_dir_name_eexist: .asciiz "dir02"
-	test_dir_name_enoent: .asciiz "enoent"
-  test_dir_name_new: .asciiz "dirtest.ext"
-  test_dir_name_dot: .asciiz "."
-  test_dir_name_dotdot: .asciiz ".."
+	test_file_name_1:       .asciiz "file01.dat"
+	test_dir_name_1:        .asciiz "dir01"
+	test_dir_name_eexist:   .asciiz "dir02"
+	test_dir_name_enoent:   .asciiz "enoent"
+  test_dir_name_new:      .asciiz "dirtest.ext"
+  test_dir_name_numeric:  .asciiz "12345678.9ab"
+  test_dir_name_dot:      .asciiz "."
+  test_dir_name_dotdot:   .asciiz ".."
 
 block_root_dir_init_00:
 	fat32_dir_entry_dir 	".       ", "   ", 0
