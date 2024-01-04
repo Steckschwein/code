@@ -20,76 +20,93 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-;
-; use imagemagick $convert <image> -geometry 256 -colors 256 <image.ppm>
-;
-.setcpu "65c02"
-.include "zeropage.inc"
-.include "common.inc"
-.include "vdp.inc"
-.include "kernel_jumptable.inc"
-.include "appstart.inc"
+.include "xmodem.inc"
+.include "steckos.inc"
+.include "fcntl.inc"
 
 .autoimport
 
 .export char_out=krn_chrout
-.export fopen=krn_open
-.export fread_byte=krn_fread_byte
-.export fclose=krn_close
+
+.export crc16_hi = crc16_h
+.export crc16_lo = crc16_l
+.export crc16_init = crc16_table_init
+.export xmodem_rcvbuffer = xmbuffer
+
+.zeropage
+ptr1:   .res 2
+ptr2:   .res 2
+p_tgt:  .res 2
 
 appstart $1000
-.code
-;    lda #<filename
-;    ldx #>filename
-    jsr gfxui_on
 
-    lda paramptr
-    ldx paramptr+1
-    jsr ppm_load_image
-    bcs io_error
 
-    keyin
+    	lda paramptr
+    	ldx paramptr+1
+      ldy #O_CREAT
+      jsr krn_open
+      bcs @l_exit_err
+      stx fd
 
-    jsr gfxui_off
-exit:
-        jmp (retvec)
+      jsr primm
+      .byte "Stecklink ", 0
 
-io_error:
-        jsr gfxui_off
-        cmp #0
-        beq :+
-        jsr primm
-    .byte $0a,"Not a valid ppm file! Must be type P6 with 256x192px and 8bpp colors.",0
-        jmp exit
-:       jsr primm
-        .byte $0a,"i/o error, code: ",0
-        txa
-        jsr hexout
-        jmp exit
+      lda #<handle_block
+      ldx #>handle_block
+      jsr xmodem_upload_callback
 
-gfxui_on:
-    jsr krn_textui_disable      ;disable textui
+      ldx fd
+      jsr krn_close
 
-    jsr vdp_mode7_on         ;enable gfx7 mode
-    vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
+@l_exit:
+      jmp (retvec)
 
-    ldy #0
-    jsr vdp_mode7_blank
-
-    rts
-
-gfxui_off:
-      sei
-
+@l_exit_err:
       pha
-      phx
-      vdp_sreg v_reg9_nt, v_reg9  ; 192px
-      jsr krn_textui_init
-      plx
+      jsr primm
+      .asciiz "Error "
       pla
+      jsr hexout_s
+      bra @l_exit
 
-      cli
 
-      rts
+handle_block:
+      ldy crs_x ; save crs x
+      phy
+      pha
+
+@copy:
+      lda xmodem_rcvbuffer,x
+      phx
+      ldx fd
+      jsr krn_write_byte
+      plx
+      bcs @l_exit
+      _inc32 bytes
+      inx
+      cpx #XMODEM_DATA_END
+      bne @copy
+
+@l_exit:
+      lda bytes+3
+      jsr hexout_s
+      lda bytes+2
+      jsr hexout
+      lda bytes+1
+      jsr hexout
+      lda bytes+0
+      jsr hexout
+
+      pla
+      pla
+      sta crs_x
+      jmp krn_textui_update_crs_ptr
+
+.data
+  bytes: .res 4, 0
+
 .bss
-irqsafe: .res 2
+  fd: .res 1
+  crc16_l: .res 256
+  crc16_h: .res 256
+  xmbuffer: .res XMODEM_RECV_BUFFER

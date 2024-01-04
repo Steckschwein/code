@@ -37,11 +37,17 @@
 
 .macro init_volume_id sec_per_cl
   set8 volumeID+VolumeID::BPB_SecPerClus, sec_per_cl
-  set8 volumeID+VolumeID::BPB_SecPerClusMask , (sec_per_cl-1)
+  set8 volumeID+VolumeID::BPB_SecPerClusMask , sec_per_cl-1
+  .if sec_per_cl = 8
+    set8 volumeID+VolumeID::BPB_SecPerClusCount, 3
+  .else
+    .assert sec_per_cl <= 4, error, "sec/cl not supported here!"
+    set8 volumeID+VolumeID::BPB_SecPerClusCount, (sec_per_cl / 2) ; !!! works for 4, 2, 1 only
+  .endif
 	set32 volumeID+VolumeID::BPB_RootClus, ROOT_CL
   set32 volumeID + VolumeID::BPB_FATSz32, (FAT2_LBA - FAT_LBA)
   set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * sec_per_cl)
-  set32 volumeID+VolumeID::lba_addr_last, $ff
+  set32 volumeID+VolumeID::lba_addr_last, $ffffffff
 	set32 volumeID+VolumeID::lba_fat, FAT_LBA		;fat lba
   set32 volumeID+VolumeID::lba_fat2, FAT2_LBA
   set32 volumeID+VolumeID::lba_fsinfo, FS_INFO_LBA
@@ -81,6 +87,10 @@
   .word (year-1980)<<9 | month<<5 | day
 .endmacro
 
+.macro setDirEntry address
+  setMemory address, DIR_Entry_Size
+.endmacro
+
 .macro fat32_dir_entry_dir _8_3_name, _8_3_ext, cl
   fat32_dir_entry _8_3_name, _8_3_ext, DIR_Attr_Mask_Dir, cl, 0
 .endmacro
@@ -91,8 +101,8 @@
 
 ; fat32 dir entry - $20 byte
 .macro fat32_dir_entry _8_3_name, _8_3_ext, attr, cl, fsize
-  .assert .strlen(_8_3_name) = 8, error, "file name size"
-  .assert .strlen(_8_3_ext) = 3, error, "ext size"
+  .assert .strlen(_8_3_name) = 8, error, "file name length != 8 !"
+  .assert .strlen(_8_3_ext) = 3, error, "ext length != 3 !"
   .byte _8_3_name      ; 8 byte
   .byte _8_3_ext      ; 3 byte
   .byte attr        ; attr

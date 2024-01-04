@@ -2,8 +2,7 @@
 .include "kernel_jumptable.inc"
 .include "appstart.inc"
 
-.import hexout
-.import strout
+.autoimport
 
 .export char_out=krn_chrout
 appstart $1000
@@ -12,19 +11,19 @@ appstart $1000
 		ldx #>buffer
 		ldy	#$ff
 		jsr krn_getcwd
-		bne	@l_err
+		bcs	@l_err
 		lda	#<buffer
 		ldx #>buffer
 		;TODO FIXME use a/x instead of zp location msgptr
 		jsr strout
-    
+
 @l2:
     jmp (retvec)
 
 @l_err:
 		pha
-		lda #'E'
-		jsr krn_chrout
+		jsr primm
+    .asciiz "i/o error "
 		pla
 		jsr hexout
 		bra @l2

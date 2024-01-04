@@ -19,21 +19,17 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.setcpu "65c02"
 
-prompt  = $af
+prompt  = '.'
 
-.include "zeropage.inc"
-.include "kernel_jumptable.inc"
-.include "vdp.inc"
-.include "common.inc"
-.include "keyboard.inc"
-.include "rtc.inc"
-.include "debug.inc"
-.include "appstart.inc"
+.include "steckos.inc"
 
 ; SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE    = 80 ;TODO maybe too small?
+
+dumpvec    = $c0
+dumpvec_end     = dumpvec
+dumpvec_start   = dumpvec+2
 
 
 ;---------------------------------------------------------------------------------------------------------
@@ -46,28 +42,19 @@ BUF_SIZE    = 80 ;TODO maybe too small?
 .autoimport
 
 .zeropage
-msg_ptr:  .res 2
 bufptr:         .res 2
-pathptr:        .res 2
-;p_history:      .res 2
-tmp1:   .res 1
-tmp2:   .res 1
+; pathptr:        .res 2
+; p_history:      .res 2
+; tmp1:   .res 1
+; tmp2:   .res 1
 
 
-appstart __SHELL_START__
-.export __APP_SIZE__=kernel_start-__SHELL_START__ ; adjust __APP_SIZE__ for linker accordingly
+appstart $1000
+
 .code
 init:
-        jsr primm
-        ;.byte 27,"[2J "
 
-        ;.byte 27,"[3B" ; move cursor down 3 lines
 
-        .byte "steckOS shell  "
-    ;    .byte 27,"[5D" ; move cursor left 5 pos
-
-        .include "version.inc"
-        .byte CODE_LF,0
 exit_from_prg:
         cld
         jsr  krn_textui_init
@@ -80,28 +67,11 @@ exit_from_prg:
         SetVector exit_from_prg, retvec
         SetVector buf, bufptr
         SetVector buf, paramptr ; set param to empty buffer
-        SetVector PATH, pathptr
 mainloop:
-        jsr primm
-        .byte CODE_LF, '[', 0
-        ; output current path
-        lda #<cwdbuf
-        ldx #>cwdbuf
-        ldy #cwdbuf_size
-        jsr krn_getcwd
-        bcs @nocwd
-
-        lda #<cwdbuf
-        ldx #>cwdbuf
-        jsr strout
-
-        bra @prompt
-@nocwd:
-        lda #'?'
-        jsr char_out
-@prompt:
-        jsr primm
-        .byte ']', prompt, 0
+        
+        lda #prompt
+        jsr krn_chrout
+        .byte prompt, 0
 
         lda crs_x
         sta crs_x_prompt
@@ -134,9 +104,6 @@ inputloop:
         cmp #KEY_CRSR_DOWN
         beq key_crs_down
 
-        cmp #KEY_FN12
-        beq key_fn12
-
         ; prevent overflow of input buffer
         cpy #BUF_SIZE
         beq inputloop
@@ -160,8 +127,6 @@ escape:
         jsr printbuf
         bra inputloop
 
-key_fn12:
-        jmp mode_toggle
 
 key_crs_up:
 ;        jsr history_back
@@ -261,7 +226,7 @@ compare:
 
         lda cmdlist,x
         cmp #$ff
-        beq try_exec
+        beq @l1
         bra @l1
 
 cmdfound:
@@ -269,95 +234,9 @@ cmdfound:
         inx
         jmp (cmdlist,x) ; 65c02 FTW!!
 
-try_exec:
-        lda (bufptr)
-        beq @l1
-
-        crlf
-        jmp exec
 
 @l1:  jmp mainloop
 
-; history_frwd:
-;         lda p_history
-;         ;cmp #<(history+$0100)
-;         cmp p_history
-;         bne @inc_hist_ptr
-;         lda p_history+1
-;         ;cmp #>(history+$0100)
-;         cmp p_history+1
-;         bne @inc_hist_ptr
-;         rts
-; @inc_hist_ptr:
-;         lda p_history
-;         clc
-;         adc #BUF_SIZE
-;         sta p_history
-;         bra history_peek
-
-; history_back:
-;         lda p_history+1
-;         cmp #>history
-;         bne @dec_hist_ptr
-;         lda p_history
-;         cmp #<history
-;         bne @dec_hist_ptr
-;         rts
-; @dec_hist_ptr:
-;         sec ;dec hist ptr
-;         sbc #BUF_SIZE
-;         sta p_history
-
-; history_peek:
-;         lda crs_x_prompt
-;         sta crs_x
-;         jsr krn_textui_update_crs_ptr
-
-;         ldy #0
-;         ldx #BUF_SIZE
-; :       lda (p_history), y
-;         sta (bufptr), y
-;         beq :+
-;         jsr char_out
-;         iny
-;         dex
-;         bpl :-
-
-; :       phy       ;safe y pos in buffer
-;         ldy crs_x ;safe crs_x position after restored cmd to y
-
-;         lda #' '  ;erase the rest of the line
-; :
-;         jsr char_out
-;         dex
-;         bpl :-
-;         sty crs_x
-;         jsr krn_textui_update_crs_ptr
-;         ply       ;restore y buffer index
-;         rts
-
-; history_push:
-;         lda #CODE_LF
-;         ;jsr char_out
-
-;         tya
-;         tax
-;         ldy #0
-; :       lda (bufptr), y
-;         sta (p_history), y
-;         ;jsr char_out
-;         iny
-;         dex
-;         bpl :-
-
-;         lda #CODE_LF
-;         ;jsr char_out
-
-;         lda p_history   ; new end
-;         clc
-;         adc #BUF_SIZE
-;         sta p_history
-;         rts
 
 printbuf:
         ldy #$01
@@ -381,14 +260,10 @@ cmdlist:
         .byte "up",0
         .word krn_upload
 
-.ifdef DEBUG
-        .byte "dump",0
-  .word dump
-.endif
+        .byte "m",0
+        .word dump
   ; End of list
   .byte $ff
-
-.ifdef DEBUG
 
 atoi:
   cmp #'9'+1
@@ -401,58 +276,14 @@ atoi:
 @l1:  sec
   sbc #$30
   rts
-.endif
 
 
-msg_EOK:        .asciiz "No error"
-msg_ENOENT:     .asciiz "No such file or directory"
-msg_ENOMEM:     .asciiz "Out of memory"
-msg_EACCES:     .asciiz "Permission denied"
-msg_ENODEV:     .asciiz "No such device"
-msg_EMFILE:     .asciiz "Too many open files"
-msg_EBUSY:      .asciiz "Device or resource busy"
-msg_EINVAL:     .asciiz "Invalid argument (0x07)"
-msg_ENOSPC:     .asciiz "No space left on device (0x08)"
-msg_EEXIST:     .asciiz "File exists"
-msg_EAGAIN:     .asciiz "Try again (0x0a)"
-msg_EIO:        .asciiz "I/O error"
-msg_EINTR:      .asciiz "Interrupted system call"
-msg_ENOSYS:     .asciiz "Function not implemented"
-msg_ESPIPE:     .asciiz "Illegal seek"
-msg_ERANGE:     .asciiz "Range error"
-msg_EBADF:      .asciiz "Bad file number"
-msg_ENOEXEC:    .asciiz "Exec format error"
-msg_EISDIR:     .asciiz "Is a directory"
-msg_ENOTDIR:    .asciiz "Not a directory"
-msg_ENOTEMPTY:  .asciiz "Directory not empty"
-
-errors:
-.addr msg_EOK
-.addr msg_ENOENT
-.addr msg_ENOMEM
-.addr msg_EACCES
-.addr msg_ENODEV
-.addr msg_EMFILE
-.addr msg_EBUSY
-.addr msg_EINVAL
-.addr msg_ENOSPC
-.addr msg_EEXIST
-.addr msg_EAGAIN
-.addr msg_EIO
-.addr msg_EINTR
-.addr msg_ENOSYS
-.addr msg_ESPIPE
-.addr msg_ERANGE
-.addr msg_EBADF
-.addr msg_ENOEXEC
-.addr msg_EISDIR
-.addr msg_ENOTDIR
-.addr msg_ENOTEMPTY
 
 errmsg:
   ;TODO FIXME maybe use oserror() from cc65 lib
   cmp #$f1
   bne @l1
+
   jsr primm
   .byte CODE_LF,"invalid command",CODE_LF,$00
   jmp mainloop
@@ -460,125 +291,26 @@ errmsg:
 @l1:
   cmp #$f2
   bne @l2
+
   jsr primm
   .byte CODE_LF,"invalid directory",CODE_LF,$00
   jmp mainloop
 
 @l2:
-  cmp #$15
-  bcs @l_unknown
-  asl
-  tax
-  lda errors,x
-  sta msg_ptr
-  lda errors+1,x
-  sta msg_ptr+1
-  ldy #0
-: lda (msg_ptr),y
-  beq @l_exit
-  jsr char_out
-  iny
-  bne :-
-@l_unknown:
-  pha
   jsr primm
-  .asciiz "unknown error "
-  pla
-  jsr hexout_s
-@l_exit:
-  lda #CODE_LF
-  jsr char_out
+  .byte CODE_LF,"unknown error",CODE_LF,$00
   jmp mainloop
 
-mode_toggle:
-        lda video_mode
-        eor #VIDEO_MODE_80_COLS
-        jsr hexout
-        jsr krn_textui_setmode
-        jmp mainloop
 cd:
         lda paramptr
         ldx paramptr+1
         jsr krn_chdir
-        bcc @l2
+        beq @l2
         jmp errmsg
 @l2:
         jmp mainloop
 
-exec:
-        lda cmdptr
-        ldx cmdptr+1    ; cmdline in a/x
-        jsr krn_execv   ; return A with errorcode
-        bcs @l1         ; error? try different path
-        jmp mainloop
 
-@l1:
-  stz tmp2
-@try_path:
-  ldx #0
-  ldy tmp2
-@cp_path:
-  lda (pathptr), y
-  beq @check_path
-  cmp #':'
-  beq @cp_next
-  sta tmpbuf,x
-  inx
-  iny
-  bne @cp_path
-  lda #$f0
-  jmp errmsg
-@check_path:    ;PATH end reached and nothing to prefix
-  cpy tmp2
-  bne @cp_next_piece  ;end of path, no iny
-  lda #$f1        ;nothing found, "Invalid command"
-  jmp errmsg
-@cp_next:
-  iny
-@cp_next_piece:
-  sty tmp2        ;safe PATH offset, 4 next try
-  stz  tmp1
-  ldy #0
-@cp_loop:
-  lda (cmdptr),y
-  beq @l3
-  cmp #'.'
-  bne  @cp_loop_1
-  stx  tmp1
-@cp_loop_1:
-  cmp #' '    ;end of program name?
-  beq @l3
-  sta tmpbuf,x
-  iny
-  inx
-  bne @cp_loop
-@l3:
-        lda tmp1
-        bne  @l4
-        ldy #0
-@l5:
-        lda  PRGEXT,y
-        beq @l4
-        sta tmpbuf,x
-        inx
-        iny
-        bne  @l5
-@l4:
-        stz tmpbuf,x
-
-        lda #<tmpbuf
-        ldx #>tmpbuf    ; cmdline in a/x
-        jsr krn_execv   ; return A with errorcode
-        bcs @try_path
-        lda #$fe
-        jmp errmsg
-
-
-.ifdef DEBUG
-.import hexout
-dumpvec    = $c0
-dumpvec_end     = dumpvec
-dumpvec_start   = dumpvec+2
 
 dump:
         stz dumpvec+1
@@ -675,32 +407,7 @@ dump:
         bra @l3
 
 @l8:  jmp mainloop
-.endif
 
-; screensaver_loop:
-;         lda rtc_systime_t+time_t::tm_min
-;         cmp screensaver_rtc
-;         bne l_exit
-;         lda #<screensaver_prg
-;         ldx #>screensaver_prg
-;         phy
-;         jsr krn_execv   ;ignore any errors
-;         ply
-; screensaver_settimeout:
-;         lda rtc_systime_t+time_t::tm_min
-;         clc
-;         adc #SCREENSAVER_TIMEOUT_MINUTES
-;         cmp #60
-;         bcc :+
-;         sbc #60
-; :       sta screensaver_rtc
-; l_exit:
-;         rts
-
-PATH: .asciiz "./:/steckos/:/progs/"
-PRGEXT: .asciiz ".PRG"
-; screensaver_prg: .asciiz "/steckos/unrclock.prg"
-; screensaver_rtc:  .res 1
 
 .bss
 crs_x_prompt:     .res 1
@@ -708,4 +415,3 @@ tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
 cwdbuf_size=80
 cwdbuf:           .res cwdbuf_size
-history:
