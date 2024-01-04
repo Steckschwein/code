@@ -46,14 +46,6 @@
 nvram = $1000
 
 kern_init:
-    ; copy trampolin code for ml monitor entry to ram
-    ldx #$00
-@copy:
-    lda trampolin_code,x
-    sta trampolin,x
-    inx
-    cpx #(trampolin_code_end - trampolin_code)
-    bne @copy
 
     SetVector user_isr_default, user_isr
     jsr textui_init0
@@ -197,7 +189,6 @@ do_irq:
     lda #Medium_Red<<4|Medium_Red
     jsr vdp_bgcolor
     sys_delay_us 128
-
 :
     lda #Medium_Green<<4|Black
     jsr vdp_bgcolor
@@ -216,23 +207,94 @@ frame:
 ;----------------------------------------------------------------------------------------------
 ; IO_NMI Routine. Handle NMI
 ;----------------------------------------------------------------------------------------------
-ACC = $45
-XREG = $46
-YREG = $47
-STATUS = $48
-SPNT = $49
 
+
+
+.code
 do_nmi:
-  sta ACC
-  stx XREG
-  sty YREG
-  pla
-  sta STATUS
-  tsx
-  stx SPNT
+    sta save_stat + save_status::ACC
+    stx save_stat + save_status::XREG
+    sty save_stat + save_status::YREG
 
-  jmp trampolin
+    tsx 
+    stx save_stat + save_status::SP 
 
+    pla 
+    sta save_stat + save_status::STATUS
+    pla
+    sta save_stat + save_status::PC
+    pla
+    sta save_stat + save_status::PC+1
+
+
+    ldx #3
+:
+    lda slot0,x 
+    sta save_stat + save_status::SLOT0,x 
+    dex 
+    bpl :-
+
+    jsr primm 
+    .byte CODE_LF, "PC   S0 S1 S2 S3 AC XR YR SP NV-BDIZC", CODE_LF,0
+
+    lda save_stat + save_status::PC+1
+    jsr hexout
+    lda save_stat + save_status::PC
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+
+    ldx #save_status::SLOT0
+:
+    lda save_stat,x
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+    inx 
+    cpx #save_status::STATUS
+    bne :-
+
+
+    lda save_stat + save_status::STATUS
+    sta atmp
+
+    ldx #0
+@next:
+    asl atmp
+    bcs @set
+    lda #'0'
+    bra @skip
+@set:    
+    lda #'1'
+@skip:
+    jsr char_out
+    inx 
+    cpx #8
+    bne @next
+
+    lda #CODE_LF
+    jsr char_out
+
+    ldx save_stat + save_status::SP 
+    txs 
+
+    lda save_stat + save_status::PC+1
+    pha 
+    lda save_stat + save_status::PC
+    pha 
+
+    lda save_stat + save_status::STATUS
+    pha 
+    
+    
+
+    lda save_stat + save_status::ACC
+    ldx save_stat + save_status::XREG
+    ldy save_stat + save_status::YREG
+
+    rti
 
 do_reset:
   ; disable interrupt
@@ -247,19 +309,9 @@ do_reset:
   jmp kern_init
 
 
-filename: .asciiz "/steckos/shell.prg"
 
-; trampolin code to enter ML monitor on NMI
-; this code gets copied to $10 and executed there
-trampolin_code:
-  sei
-  ; switch to ROM bank 1
-  lda #$02
-  sta $0230
-  ; go!
-  brk
-  ;jmp $f000
-trampolin_code_end:
+
+filename: .asciiz "/steckos/shell.prg"
 
 
 .segment "VECTORS"
@@ -279,3 +331,5 @@ trampolin_code_end:
 
 .bss
 startaddr:  .res 2
+save_stat: .res   .sizeof(save_status)
+atmp: .res 1

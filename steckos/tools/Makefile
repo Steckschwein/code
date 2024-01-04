@@ -22,8 +22,8 @@ TOOLS+=\
   setdate.prg \
   uname.prg \
   fsinfo.prg \
-	dirtest.prg
-
+	dirtest.prg \
+	stecklnk.prg
 
 .PHONY: all clean
 
