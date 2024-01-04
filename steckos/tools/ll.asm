@@ -40,6 +40,7 @@ main:
     .repeat 4,i
         stz fsize_sum + i
     .endrepeat
+    stz files
 l1:
     crlf
     SetVector pattern, filenameptr

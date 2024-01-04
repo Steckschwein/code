@@ -30,9 +30,6 @@
 .globalzp __volatile_ptr
 .globalzp __volatile_tmp
 
-.globalzp s_ptr1, s_ptr2, s_ptr3 ; static pointer (memory location wise)
-.globalzp s_tmp1,s_tmp2,s_tmp3 ; static temp (memory location wise)
-
 .globalzp filenameptr, dirptr
 .globalzp read_blkptr, write_blkptr
 
