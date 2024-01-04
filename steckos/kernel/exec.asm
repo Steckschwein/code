@@ -72,20 +72,21 @@ execv:
       jsr fat_close
       pla
 
-      ply                ; get back start address
+      ply               ; get back start address
+      sty cmdptr
       ply
+      sty cmdptr+1
+
       cmp #0
       beq @l_exec_run
       sec
       rts
 @l_exit_close:
-      jmp fat_close      ; close after read to free fd, regardless of error
+      jmp fat_close     ; close after read to free fd, regardless of error
 
 @l_exec_run:
-      tsx
-      dex
       ; we came here using jsr, but will not rts.
       ; get return address from stack to prevent stack corruption
       pla
       pla
-      jmp (stack,x)
+      jmp (cmdptr)
