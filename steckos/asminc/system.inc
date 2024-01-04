@@ -55,6 +55,18 @@ SYS_VECTOR_NMI = $fffa
 SYS_VECTOR_RESET = $fffc
 SYS_VECTOR_IRQ = $fffe
 
+.struct save_status
+SLOT0   .byte
+SLOT1   .byte
+SLOT2   .byte
+SLOT3   .byte
+ACC     .byte
+XREG    .byte
+YREG    .byte
+SP      .byte
+STATUS  .byte
+PC      .word
+.endstruct
 
 
 .endif
