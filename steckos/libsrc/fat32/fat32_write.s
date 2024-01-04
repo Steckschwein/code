@@ -334,7 +334,7 @@ __fat_free_cluster:
     bne @l_exit        ; read error
     bcc @l_exit        ; EOC? (C=1) expected here in order to free - TODO FIXME cluster chain during deletion not supported yet
     lda #1
-    sta volumeID+VolumeID::fat_tmp_0
+    sta volumeID+VolumeID::fat_cluster_add
     dec
     bra __fat_update_cluster
 @l_exit:
