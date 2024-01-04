@@ -12,13 +12,11 @@
 .exportzp paramptr  = $e2
 
 ; pointer and temps - internally used by library
-.exportzp s_ptr1  = $e4  ; 2 bytes
 .exportzp s_ptr2  = $e6  ; 2 bytes
 .exportzp s_ptr3  = $e8  ; 2 bytes
 
 .exportzp s_tmp1  = $ea
 .exportzp s_tmp2  = s_tmp1+1  ; single byte
-;.exportzp s_tmp3  = s_tmp1+2  ; single byte
 
 ; have to use fixed zp locations to avoid ehbasic clashes
 .exportzp vdp_ptr   =$ed

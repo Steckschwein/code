@@ -189,17 +189,17 @@ fat_fread_byte:
     rts
 
 ; in:
-;  A/X - pointer to zero terminated string with the file path
-;    Y - file mode constants - see fcntl.inc (cc65)
-;    O_RDONLY  = $01
-;    O_WRONLY  = $02
-;    O_RDWR    = $03
-;    O_CREAT   = $10
-;    O_TRUNC   = $20
-;    O_APPEND  = $40
-;    O_EXCL    = $80
+;   A/X - pointer to zero terminated string with the file path
+;   Y - file mode constants - see fcntl.inc (cc65)
+;     O_RDONLY  = $01
+;     O_WRONLY  = $02
+;     O_RDWR    = $03
+;     O_CREAT   = $10
+;     O_TRUNC   = $20
+;     O_APPEND  = $40
+;     O_EXCL    = $80
 ; out:
-;   .X - index into fd_area of the opened file
+;   X - index into fd_area of the opened file
 ;   C=0 on success, C=1 and A=<error code> otherwise
 fat_fopen:
     debug "fopen >"
@@ -255,7 +255,7 @@ fat_close:
 ; find first dir entry
 ; in:
 ;   X - file descriptor (index into fd_area) of the directory
-;   filenameptr  - with file name to search
+;   A/Y - pointer to file name matcher strategy
 ; out:
 ;   Z=1 on success (A=0), Z=0 and A=error code otherwise
 ;   C=0 if found and dirptr is set to the dir entry found (requires Z=1), C=1 otherwise

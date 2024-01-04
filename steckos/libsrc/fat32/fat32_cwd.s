@@ -37,8 +37,8 @@
 
 .code
 ;in:
-;  A/X - address to write the current work directory string into
-;  Y  - size of result buffer/string
+;  A/Y - address to write the current work directory string into
+;  X  - size of result buffer/string
 ;out:
 ;  C - C=0 on success (A=0), C=1 and A=error code otherwise
 fat_get_root_and_pwd:
@@ -47,8 +47,8 @@ fat_get_root_and_pwd:
     sei
 
     sta __volatile_ptr
-    stx __volatile_ptr+1
-    sty __string_ix
+    sty __volatile_ptr+1
+    stx volumeID+VolumeID::fat_tmp_0
 
     ldy #FD_INDEX_CURRENT_DIR
     ldx #FD_INDEX_TEMP_DIR
@@ -118,23 +118,23 @@ cluster_nr_matcher:
 path_trim:
     ldy #0
 :   phy
-    ldy __string_ix
+    ldy volumeID+VolumeID::fat_tmp_0
     lda (__volatile_ptr),y
     ply
     sta (__volatile_ptr),y
     cmp #0
     beq @l_exit
-    inc __string_ix
+    inc volumeID+VolumeID::fat_tmp_0
     iny
     bne :-
 @l_exit:
     rts
 
-  ; fat name to string (by reference)
-  ; in:
-  ;  dirptr         - pointer to directory entry (F32DirEntry)
-  ;  __volatile_ptr - pointer to result string
-  ;  __string_ix         - length or offset in result string denoted by s_ptr3
+; fat name to string (by reference)
+; in:
+;   dirptr         - pointer to directory entry (F32DirEntry)
+;   __volatile_ptr - pointer to result string
+;   __string_ix    - length or offset in result string denoted by __volatile_ptr
 fat_name_string:
   ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)
 @l_next:
@@ -154,14 +154,11 @@ fat_name_string:
 
 put_char:
   phy
-  ldy __string_ix
+  ldy volumeID+VolumeID::fat_tmp_0
   beq @l_exit
   dey
-  sty __string_ix
+  sty volumeID+VolumeID::fat_tmp_0
   sta (__volatile_ptr),y
 @l_exit:
   ply
   rts
-
-.bss
-__string_ix: .res 1

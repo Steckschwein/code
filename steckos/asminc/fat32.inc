@@ -128,8 +128,8 @@ PartType_FAT32_LBA    = $0c
   cluster             .dword  ; mirror of fsinfo LastClus - used for free cluster search
   cluster_seek_cnt    .dword
   fat_cluster_add     .byte     ; cluster reservation addend
-  fat_rtc_0           .byte     ; rtc temp variable
-  fat_rtc_1           .byte     ; rtc temp variable
+  fat_tmp_0           .byte     ; temp variable
+  fat_tmp_1           .byte     ; temp variable
   fat_vec_matcher     .addr     ; 2 byte jump vector
   fat_filename        .byte 8+3 ; 11 byte fat file name used in open to match given filename
 .endstruct

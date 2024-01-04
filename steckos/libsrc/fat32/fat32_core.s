@@ -158,19 +158,20 @@ __fat_seek_next_dirent:
 ;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;   dirptr - last visited directory entry
 ;   lba_addr - last visited directory block
+;
 ;   Note: regardless of return value, the dirptr points to the last visited directory entry and the corresponding lba_addr is set to the block where the dir entry resides.
-;      furthermore the filenameptr points to the last inspected path fragment of the given input path
+;
 __fat_open_path:
     debug "fat_open_path >"
-    sta s_ptr1
-    stx s_ptr1+1              ; save path arg given in a/x
+    sta filenameptr
+    stx filenameptr+1         ; save path arg given in a/x
 
     ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
     jsr __fat_clone_fd        ; Y is given as param
 
     ldy #0                    ; trim whitespace at the beginning
 @l1:
-    lda (s_ptr1), y
+    lda (filenameptr), y
     cmp #' '+1
     bcs @l2
     iny
@@ -180,7 +181,7 @@ __fat_open_path:
     ;  parse input path fragments into fat_filename try to change dirs accordingly
     ldx #0
 @l_parse_1:
-    lda (s_ptr1),y
+    lda (filenameptr),y
     beq @l_filename_end
     iny
     cmp #'.'
@@ -191,7 +192,7 @@ __fat_open_path:
 @l_dot:
     sta volumeID+VolumeID::fat_filename,x
     inx
-    lda (s_ptr1),y
+    lda (filenameptr),y
     beq @l_open_file
     iny
     cmp #'.'
@@ -251,11 +252,11 @@ __fat_open_path:
     inx
     bra :-
 
-;in:
-;  filenameptr - ptr to the filename
-;out:
-;  X - index into fd_area of the opened file
-;  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
+; in:
+;   volumeID+VolumeID::fat_filename set with fat compatible filename to open
+; out:
+;   X - index into fd_area of the opened file
+;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 __fat_open_file:
       phy
       ldx #FD_INDEX_TEMP_DIR
