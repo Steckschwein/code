@@ -74,18 +74,14 @@ l1:
 
     ldy #F32DirEntry::FileSize+3
     clc
-    lda (dirptr),y
-    sta fsize+3
-    adc fsize_sum+3
-    sta fsize_sum+3
 
-    ldx #2
+    ldx #3  
 :
-    dey
     lda (dirptr),y
     sta fsize,x
     adc fsize_sum,x
     sta fsize_sum,x
+    dey
     dex
     bpl :-
 
