@@ -20,11 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
+.include "steckos.inc"
 .include "fat32.inc"
-.include "appstart.inc"
 .export char_out=krn_chrout
 
 .autoimport
@@ -65,24 +62,11 @@ l1:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
     bcc @l4
-    jmp @summary
+    jmp @exit
 @l4:
     lda (dirptr)
     cmp #$e5
     beq @l3
-
-    ldy #F32DirEntry::FileSize+3
-    clc
-
-    ldx #3  
-:
-    lda (dirptr),y
-    sta fsize,x
-    adc fsize_sum,x
-    sta fsize_sum,x
-    dey
-    dex
-    bpl :-
 
     ldy #F32DirEntry::Attr
     lda (dirptr),y
@@ -119,116 +103,47 @@ l1:
     bmi @exit
     bra @l3
 
-@summary:
-    jsr show_bytes_decimal
-
-    jsr primm
-    .asciiz " bytes in "
-
-    stz decimal
-    stz decimal+1
-
-    ldx #8
-    sed
-@l1:
-    asl files
-    lda decimal
-    adc decimal
-    sta decimal
-
-    lda decimal+1
-    adc decimal+1
-    sta decimal+1
-
-    dex
-    bne @l1
-    cld
-
-    lda decimal+1
-    beq :+
-    jsr hexout
-:
-    lda decimal
-    jsr hexout
-
-
-    printstring " files"
 
 @exit:
     jmp (retvec)
 
-show_bytes_decimal:
-    jsr zero_decimal_buf
-
-    sed
-    ldx #32
-@l1:
-    asl fsize_sum + 0
-    rol fsize_sum + 1
-    rol fsize_sum + 2
-    rol fsize_sum + 3
-
-    ldy #<(-5)
-:
-    lda decimal + 5 -$100,y
-    adc decimal + 5 -$100,y
-    sta decimal + 5 -$100,y
-    iny
-    bne :-
-    dex
-    bne @l1
-    cld
-
-    stz tmp1
-    ldx #6
-:
-    dex
-    lda decimal,x
-    beq :-
-:
-    lda decimal,x
-    jsr hexout
-    dex
-    bpl :-
-
-    rts
 
 dir_show_entry:
-  pha
-  jsr print_filename
+    pha
+    jsr print_filename
 
-  ldy #F32DirEntry::Attr
-  lda (dirptr),y
+    ldy #F32DirEntry::Attr
+    lda (dirptr),y
 
-  bit #DIR_Attr_Mask_Dir
-  beq @l
-  jsr primm
-  .asciiz "    <DIR> "
-  bra @date        ; no point displaying directory size as its always zeros
+    bit #DIR_Attr_Mask_Dir
+    beq @l
+    jsr primm
+    .asciiz "    <DIR> "
+    bra @date        ; no point displaying directory size as its always zeros
               ; just print some spaces and skip to date display
 @l:
 
     lda #' '
     jsr krn_chrout
 
-  jsr print_filesize
+    jsr print_filesize
 
-  lda #' '
-  jsr krn_chrout
-  inc files
+    lda #' '
+    jsr krn_chrout
+    inc files
 @date:
-  jsr print_fat_date
+    jsr print_fat_date
 
 
-  lda #' '
-  jsr krn_chrout
+    lda #' '
+    jsr krn_chrout
 
 
-  jsr print_fat_time
+    jsr print_fat_time
     crlf
 
-  pla
-  rts
+    pla
+    rts
 
 zero_decimal_buf:
     .repeat 6,i
