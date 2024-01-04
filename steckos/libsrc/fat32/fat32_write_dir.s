@@ -103,10 +103,10 @@ fat_mkdir:
     debug "fat mkdir <"
     rts
 
-    ; in:
-    ;  X - file descriptor of directory
-    ; out:
-    ;  C=0 if directory is empty or contains <=2 entries ("." and ".."), C=1 otherwise
+; in:
+;   X - file descriptor of directory
+; out:
+;   C=0 if directory is empty or contains <=2 entries ("." and ".."), C=1 otherwise
 __fat_dir_isempty:
     phx
     jsr __fat_count_direntries
@@ -117,25 +117,37 @@ __fat_dir_isempty:
     plx
     rts
 
+
+; in:
+;  X - file descriptor of directory
+; out:
+;  A - number of directory entries (with "." and "..")
 __fat_count_direntries:
-    stz s_tmp3
-    SetVector @l_all, filenameptr
+    lda #<@match_always
+    ldy #>@match_always
     jsr __fat_find_first_mask    ; find within dir given in X
     bcs @l_exit
+    ldy #0
 @l_next:
     lda (dirptr)
     cmp #DIR_Entry_Deleted
     beq @l_find_next
-    inc  s_tmp3
+    iny
 @l_find_next:
+    phy
     jsr __fat_find_next
-    bcs  @l_next
+    ply
+    bcc @l_next
 @l_exit:
-    lda s_tmp3
+    tya
     debug "f_cnt_d"
     rts
-@l_all:
-    .asciiz "*.*"
+@match_always:
+    clc
+    lda (dirptr)
+    beq :+  ; deleted, C=0 no match
+    sec
+:   rts
 
 
 ; create the "." and ".." entry of the new directory

@@ -37,8 +37,8 @@
 
 .code
 ;in:
-;  A/X - address to write the current work directory string into
-;  Y  - size of result buffer/string
+;  A/Y - address to write the current work directory string into
+;  X  - size of result buffer/string
 ;out:
 ;  C - C=0 on success (A=0), C=1 and A=error code otherwise
 fat_get_root_and_pwd:
@@ -47,8 +47,8 @@ fat_get_root_and_pwd:
     sei
 
     sta __volatile_ptr
-    stx __volatile_ptr+1
-    sty s_tmp3
+    sty __volatile_ptr+1
+    stx volumeID+VolumeID::fat_tmp_0
 
     ldy #FD_INDEX_CURRENT_DIR
     ldx #FD_INDEX_TEMP_DIR
@@ -62,14 +62,14 @@ fat_get_root_and_pwd:
     ldx #FD_INDEX_TEMP_DIR              ; if root, exit to inverse the path string
     jsr __fat_is_start_cln_zero
     beq @l_path_trim
-    m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::StartCluster, __matcher_cln, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
+    m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::StartCluster, volumeID+VolumeID::cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
     lda #<l_dot_dot
     ldx #>l_dot_dot
     ldy #FD_INDEX_TEMP_DIR              ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
     jsr __fat_opendir
     bcs @l_exit
     SetVector cluster_nr_matcher, volumeID+VolumeID::fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
-    jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in temp_dword before we did the cd ".."
+    jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in cluster before we did the cd ".."
     bcs @l_exit
     jsr fat_name_string                 ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
     bra @l_rd_dir                       ; go on with bottom up walk until root is reached
@@ -95,19 +95,19 @@ cluster_nr_matcher:
     cmp #DIR_Entry_Deleted
     beq @l_notfound
     ldy #F32DirEntry::FstClusLO+0
-    lda __matcher_cln+0
+    lda volumeID+VolumeID::cluster+0
     cmp (dirptr),y
     bne @l_notfound
     iny
-    lda __matcher_cln+1
+    lda volumeID+VolumeID::cluster+1
     cmp (dirptr),y
     bne @l_notfound
     ldy #F32DirEntry::FstClusHI+0
-    lda __matcher_cln+2
+    lda volumeID+VolumeID::cluster+2
     cmp (dirptr),y
     bne @l_notfound
     iny
-    lda __matcher_cln+3
+    lda volumeID+VolumeID::cluster+3
     cmp (dirptr),y
     beq @l_found
 @l_notfound:
@@ -118,23 +118,23 @@ cluster_nr_matcher:
 path_trim:
     ldy #0
 :   phy
-    ldy s_tmp3
+    ldy volumeID+VolumeID::fat_tmp_0
     lda (__volatile_ptr),y
     ply
     sta (__volatile_ptr),y
     cmp #0
     beq @l_exit
-    inc s_tmp3
+    inc volumeID+VolumeID::fat_tmp_0
     iny
     bne :-
 @l_exit:
     rts
 
-  ; fat name to string (by reference)
-  ; in:
-  ;  dirptr         - pointer to directory entry (F32DirEntry)
-  ;  __volatile_ptr - pointer to result string
-  ;  s_tmp3         - length or offset in result string denoted by s_ptr3
+; fat name to string (by reference)
+; in:
+;   dirptr         - pointer to directory entry (F32DirEntry)
+;   __volatile_ptr - pointer to result string
+;   __string_ix    - length or offset in result string denoted by __volatile_ptr
 fat_name_string:
   ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)
 @l_next:
@@ -154,14 +154,11 @@ fat_name_string:
 
 put_char:
   phy
-  ldy s_tmp3
+  ldy volumeID+VolumeID::fat_tmp_0
   beq @l_exit
   dey
-  sty s_tmp3
+  sty volumeID+VolumeID::fat_tmp_0
   sta (__volatile_ptr),y
 @l_exit:
   ply
   rts
-
-.bss
-__matcher_cln: .res 4

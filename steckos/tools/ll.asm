@@ -20,21 +20,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
+.include "steckos.inc"
 .include "fat32.inc"
-.include "appstart.inc"
 .export char_out=krn_chrout
 
-.import hexout
-.import primm
-.import print_fat_date, print_fat_time, print_filename
+.autoimport
 
 .zeropage
 tmp1: .res 1
 tmp2: .res 1
-tmp3: .res 2
+tmp3: .res 1
 
 appstart $1000
 
@@ -42,6 +37,7 @@ main:
     .repeat 4,i
         stz fsize_sum + i
     .endrepeat
+    stz files
 l1:
     crlf
     SetVector pattern, filenameptr
@@ -50,9 +46,16 @@ l1:
     beq @l2
     copypointer paramptr, filenameptr
 @l2:
+    lda #<fat_dirname_mask
+    ldy #>fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
     bcc @l4
+
     jsr hexout
     printstring " i/o error"
     jmp @exit
@@ -66,22 +69,16 @@ l1:
     cmp #$e5
     beq @l3
 
-    ldy #F32DirEntry::FileSize+3
+    ldx #<(-4)
+    ldy #F32DirEntry::FileSize
     clc
-    lda (dirptr),y
-    sta fsize+3
-    adc fsize_sum+3
-    sta fsize_sum+3
-
-    ldx #2
-:
-    dey
-    lda (dirptr),y
-    sta fsize,x
-    adc fsize_sum,x
-    sta fsize_sum,x
-    dex
-    bpl :-
+:   lda (dirptr),y
+    sta fsize+4-$100,x
+    adc fsize_sum+4-$100,x
+    sta fsize_sum+4-$100,x
+    iny
+    inx
+    bne :-
 
     ldy #F32DirEntry::Attr
     lda (dirptr),y
@@ -150,11 +147,11 @@ l1:
     lda decimal
     jsr hexout
 
-
     printstring " files"
 
 @exit:
     jmp (retvec)
+
 
 show_bytes_decimal:
     jsr zero_decimal_buf
@@ -193,41 +190,41 @@ show_bytes_decimal:
     rts
 
 dir_show_entry:
-	pha
-	jsr print_filename
+    pha
+    jsr print_filename
 
-	ldy #F32DirEntry::Attr
-	lda (dirptr),y
+    ldy #F32DirEntry::Attr
+    lda (dirptr),y
 
-	bit #DIR_Attr_Mask_Dir
-	beq @l
-	jsr primm
-	.asciiz "    <DIR> "
-	bra @date				; no point displaying directory size as its always zeros
-							; just print some spaces and skip to date display
+    bit #DIR_Attr_Mask_Dir
+    beq @l
+    jsr primm
+    .asciiz "    <DIR> "
+    bra @date        ; no point displaying directory size as its always zeros
+              ; just print some spaces and skip to date display
 @l:
 
     lda #' '
     jsr krn_chrout
 
-	jsr print_filesize
+    jsr print_filesize
 
-	lda #' '
-	jsr krn_chrout
-	inc files
+    lda #' '
+    jsr krn_chrout
+    inc files
 @date:
-	jsr print_fat_date
+    jsr print_fat_date
 
 
-	lda #' '
-	jsr krn_chrout
+    lda #' '
+    jsr krn_chrout
 
 
-	jsr print_fat_time
+    jsr print_fat_time
     crlf
 
-	pla
-	rts
+    pla
+    rts
 
 zero_decimal_buf:
     .repeat 6,i
@@ -288,16 +285,17 @@ print_filesize:
     lda decimal + 0
     jmp hexout
 
-;	rts
-
 entries = 23
-; .data
-pattern:        .asciiz "*.*"
-cnt:            .byte $04
+.data
+pattern:          .asciiz "*.*"
+cnt:              .byte $04
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
-files:          .res 1
-fsize_sum:      .res 4
-fsize:          .res 4
-decimal:        .res 6
+
+.bss
+fsize_sum:        .res 4
+fsize:            .res 4
+files:            .res 1
+decimal:          .res 6
+fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>

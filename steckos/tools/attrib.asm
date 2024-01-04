@@ -29,8 +29,7 @@
 
 .export char_out=krn_chrout
 
-
-.import primm
+.autoimport
 
 appstart $1000
 .code
@@ -93,9 +92,13 @@ wuerg:
 		bra @loop
 
 attrib:
-
-
 		SetVector filename, filenameptr
+    lda #<fat_dirname_mask
+    ldy #>fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
 		ldx #FD_INDEX_CURRENT_DIR
 		jsr krn_find_first
 		bcc @found
@@ -185,8 +188,12 @@ attr_tbl:
 attr_lbl:
 		.byte 'R','H','S','A'
 
+.data
 filename:
-		.res 11
-		.byte $00
+	  	.res 11
+  		.byte $00
 op:		.byte $00
 atr:	.byte $00
+
+.bss
+fat_dirname_mask: .res 8+3

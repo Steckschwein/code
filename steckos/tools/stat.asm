@@ -26,9 +26,10 @@
 .include "fat32.inc"
 .include "appstart.inc"
 
-.import print_filename, dpb2ad, print_fat_date, print_fat_time, bin2dual, hexout, primm
+.autoimport
 
 .export char_out=krn_chrout
+
 .zeropage
 tmp1: .res 1
 tmp2: .res 1
@@ -45,6 +46,12 @@ l1:
     beq @l2
     copypointer paramptr, filenameptr
 @l2:
+    lda #<fat_dirname_mask
+    ldy #>fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
     bcc @l4
@@ -162,9 +169,14 @@ dir_show_entry:
 	pla
 	rts
 
+entries = 23
+
+.data
 pattern:  .byte "*.*",$00
 cnt:      .byte $04
-entries = 23
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
+
+.bss
+fat_dirname_mask: .res 8+3

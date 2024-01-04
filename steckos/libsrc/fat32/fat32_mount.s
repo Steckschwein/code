@@ -162,7 +162,7 @@ fat_mount:
     debug32 "fat lba",  volumeID+VolumeID::lba_fat
     debug32 "fat2_lba", volumeID+VolumeID::lba_fat2
     debug32 "data lba", volumeID+VolumeID::lba_data
-    debug16 "fbuf",   filename_buf
+    debug16 "fbuf",   volumeID+VolumeID::filename_buf
 
     ldx #0  ; init file descriptor area
     jsr __fat_init_fdarea
