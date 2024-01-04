@@ -86,8 +86,8 @@ mainloop:
         .byte CODE_LF, '[', 0
         ; output current path
         lda #<cwdbuf
-        ldx #>cwdbuf
-        ldy #cwdbuf_size
+        ldy #>cwdbuf
+        ldx #cwdbuf_size
         jsr krn_getcwd
         bcs @nocwd
 

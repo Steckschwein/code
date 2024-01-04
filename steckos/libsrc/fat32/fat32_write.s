@@ -162,10 +162,14 @@ __fat_add_direntry:
     ldy #F32DirEntry::Attr              ; store type attribute
     sta (dirptr), y
 
-    debug16 "fat wr dirent >", dirptr
-    copypointer dirptr, s_ptr2          ; TODO use dirptr directly
-    jsr string_fat_name                 ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
-    bcs @l_exit
+    ldy #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)-1
+:   lda volumeID+VolumeID::fat_filename,y
+    sta (dirptr),y
+    dey
+    bpl :-
+
+    debugdumpptr "dirent dptr", dirptr
+    debugdump "dirent nm", volumeID+VolumeID::fat_filename
 
     jsr __fat_set_lba_from_fd_dirlba
     jsr __fat_set_direntry_create_datetime
@@ -330,7 +334,7 @@ __fat_free_cluster:
     bne @l_exit        ; read error
     bcc @l_exit        ; EOC? (C=1) expected here in order to free - TODO FIXME cluster chain during deletion not supported yet
     lda #1
-    sta s_tmp1
+    sta volumeID+VolumeID::fat_cluster_add
     dec
     bra __fat_update_cluster
 @l_exit:
@@ -343,16 +347,16 @@ __fat_free_cluster:
 __fat_reserve_start_cluster:
     jsr __fat_reserve_cluster
     bcs @l_exit
-    lda volumeID + VolumeID::LastClus + 3
+    lda volumeID + VolumeID::cluster + 3
     sta fd_area + F32_fd::StartCluster + 3, x
-    lda volumeID + VolumeID::LastClus + 2
+    lda volumeID + VolumeID::cluster + 2
     sta fd_area + F32_fd::StartCluster + 2, x
-    lda volumeID + VolumeID::LastClus + 1
+    lda volumeID + VolumeID::cluster + 1
     sta fd_area + F32_fd::StartCluster + 1, x
-    lda volumeID + VolumeID::LastClus + 0
+    lda volumeID + VolumeID::cluster + 0
     sta fd_area + F32_fd::StartCluster + 0, x
 @l_exit:
-    debug32 "reserve strt cl <", volumeID + VolumeID::LastClus
+    debug32 "reserve strt cl <", volumeID + VolumeID::cluster
     rts
 
 
@@ -367,11 +371,11 @@ __fat_reserve_cluster:
     rts
 
 :   lda #$ff
-    sta s_tmp1
+    sta volumeID+VolumeID::fat_cluster_add
 ; update cluster
 ; in:
 ;  .A - mark cluster in fat block eihter with EOC (0x0fffffff) or free 0x00000000
-;  s_tmp1 amount of  clusters to be reserved/freed with A [-128...127]
+;  volumeID+VolumeID::fat_cluster_add amount of  clusters to be reserved/freed with A [-128...127]
 __fat_update_cluster:
     jsr __fat_mark_cluster
     jsr __fat_write_fat_blocks  ; write the updated fat block for 1st and 2nd FAT to the device
@@ -383,30 +387,30 @@ __fat_update_cluster:
 :   m_memcpy volumeID+VolumeID::lba_fsinfo, lba_addr, 4
     jsr __fat_read_block_fat
     bcs @l_exit
-    stz s_tmp2
-    lda s_tmp1
+    lda volumeID+VolumeID::fat_cluster_add
+    stz volumeID+VolumeID::fat_cluster_add
     bpl :+                      ; +/- fs info cluster number?
-    dec s_tmp2 ; 2's complement ($ff)
-    ldy volumeID+VolumeID::LastClus+0
+    dec volumeID+VolumeID::fat_cluster_add ; 2's complement ($ff)
+    ldy volumeID+VolumeID::cluster+0
     sty block_fat+F32FSInfo::LastClus+0
-    ldy volumeID+VolumeID::LastClus+1
+    ldy volumeID+VolumeID::cluster+1
     sty block_fat+F32FSInfo::LastClus+1
-    ldy volumeID+VolumeID::LastClus+2
+    ldy volumeID+VolumeID::cluster+2
     sty block_fat+F32FSInfo::LastClus+2
-    ldy volumeID+VolumeID::LastClus+3
+    ldy volumeID+VolumeID::cluster+3
     sty block_fat+F32FSInfo::LastClus+3
 :   debug32 "fs_info", block_fat+F32FSInfo::FreeClus
     clc
     adc block_fat+F32FSInfo::FreeClus+0
     sta block_fat+F32FSInfo::FreeClus+0
     lda block_fat+F32FSInfo::FreeClus+1
-    adc s_tmp2
+    adc volumeID+VolumeID::fat_cluster_add
     sta block_fat+F32FSInfo::FreeClus+1
     lda block_fat+F32FSInfo::FreeClus+2
-    adc s_tmp2
+    adc volumeID+VolumeID::fat_cluster_add
     sta block_fat+F32FSInfo::FreeClus+2
     lda block_fat+F32FSInfo::FreeClus+3
-    adc s_tmp2
+    adc volumeID+VolumeID::fat_cluster_add
     sta block_fat+F32FSInfo::FreeClus+3
 
 ; return C=0 on success, C=1 otherwise and A=error code
@@ -479,45 +483,45 @@ __fat_write_fat_blocks:
 
 __fat_rtc_high_word:
     lsr
-    ror s_tmp2
+    ror volumeID+VolumeID::fat_tmp_1
     lsr
-    ror s_tmp2
+    ror volumeID+VolumeID::fat_tmp_1
     lsr
-    ror s_tmp2
-    ora s_tmp1
+    ror volumeID+VolumeID::fat_tmp_1
+    ora volumeID+VolumeID::fat_tmp_0
     tax
     rts
 
-    ; out:
-    ;  .A/.X with time from rtc struct in fat format
+; out:
+;   A/X with time from rtc struct in fat format
 __fat_rtc_time:
-    stz s_tmp2
+    stz volumeID+VolumeID::fat_tmp_1
     lda rtc_systime_t+time_t::tm_hour              ; hour
     asl
     asl
     asl
-    sta s_tmp1
+    sta volumeID+VolumeID::fat_tmp_0
     lda rtc_systime_t+time_t::tm_min                ; minutes 0..59
     jsr __fat_rtc_high_word
     lda rtc_systime_t+time_t::tm_sec                ; seconds/2
     lsr
-    ora s_tmp2
+    ora volumeID+VolumeID::fat_tmp_1
     rts
 
-    ; out
-    ;  A/X with date from rtc struct in fat format
+; out
+;   A/X with date from rtc struct in fat format
 __fat_rtc_date:
-    stz s_tmp2
-    lda rtc_systime_t+time_t::tm_year              ; years since 1900
+    stz volumeID+VolumeID::fat_tmp_1
+    lda rtc_systime_t+time_t::tm_year               ; years since 1900
     sec
-    sbc #80                                ; fat year is 1980..2107 (bit 15-9), we have to adjust 80 years
+    sbc #80                                         ; fat year is 1980..2107 (bit 15-9), we have to adjust 80 years
     asl
-    sta s_tmp1
+    sta volumeID+VolumeID::fat_tmp_0
     lda rtc_systime_t+time_t::tm_mon                ; month from rtc is (0..11), adjust +1
     inc
     jsr __fat_rtc_high_word
-    lda rtc_systime_t+time_t::tm_mday              ; day of month (1..31)
-    ora s_tmp2
+    lda rtc_systime_t+time_t::tm_mday               ; day of month (1..31)
+    ora volumeID+VolumeID::fat_tmp_1
     rts
 
 ; mark cluster according to A
@@ -536,7 +540,7 @@ __fat_mark_cluster:
     sta (read_blkptr), y
     rts
 
-; try to find a free cluster and store them in volumeId+VolumeID::LastClus
+; try to find a free cluster and store them in volumeId+VolumeID::cluster
 ; out:
 ;   C=0 on success, Y=offset in block_fat of found cluster. lba_addr of the fat block where the found cluster resides
 ;   C=1 on error and A=<error code>
@@ -581,34 +585,34 @@ __fat_find_free_cluster:
     lda #$40          ; adjust clnr with +$40 (256 / 4 byte/clnr) clusters since it was found in 2nd page
 @l_found_lb:          ; A=0 here if called from branch above
     debug "fat found cl"
-    sta volumeID+VolumeID::LastClus+0
+    sta volumeID+VolumeID::cluster+0
     tya
     lsr            ; offset Y>>2 (div 4) - 32 bit clnr
     lsr
-    adc volumeID+VolumeID::LastClus+0  ; C=0 here always, y is multiple of 4
-    sta volumeID+VolumeID::LastClus+0  ; safe clnr
+    adc volumeID+VolumeID::cluster+0  ; C=0 here always, y is multiple of 4
+    sta volumeID+VolumeID::cluster+0  ; safe clnr
 
     ; calc the cluster number with clnr = (block number * 512) / 4 + (Y / 4) => (lba_addr - volumeID+VolumeID::lba_fat) << 7+(Y>>2)
     ; to avoid the <<7, we simply <<8 and do one ror - FTW!
     sec
     lda lba_addr+0
     sbc volumeID+VolumeID::lba_fat+0
-    sta s_tmp1        ; save A
+    sta volumeID+VolumeID::fat_tmp_0        ; save A
     lda lba_addr+1
     sbc volumeID+VolumeID::lba_fat+1    ; now we have 16bit blocknumber
     lsr            ; clnr = blocks<<7
-    sta volumeID+VolumeID::LastClus+2
-    lda s_tmp1        ; restore A
+    sta volumeID+VolumeID::cluster+2
+    lda volumeID+VolumeID::fat_tmp_0        ; restore A
     ror
-    sta volumeID+VolumeID::LastClus+1
+    sta volumeID+VolumeID::cluster+1
     lda #0
-    ror            ; clnr += Y>>2 (offset within block) - already saved in volumeId+VolumeID::LastClus+0 (s.above)
-    adc volumeID+VolumeID::LastClus+0
-    sta volumeID+VolumeID::LastClus+0
+    ror            ; clnr += Y>>2 (offset within block) - already saved in volumeId+VolumeID::cluster+0 (s.above)
+    adc volumeID+VolumeID::cluster+0
+    sta volumeID+VolumeID::cluster+0
     lda #0          ; exit found
-    sta volumeID+VolumeID::LastClus+3
+    sta volumeID+VolumeID::cluster+3
     clc ; found, C=0 success
-    debug32 "fat find cl <", volumeID+VolumeID::LastClus
+    debug32 "fat find cl <", volumeID+VolumeID::cluster
     rts
 
 ; unlink a file denoted by given path in A/X

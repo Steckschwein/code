@@ -27,14 +27,12 @@
 .include "appstart.inc"
 .export char_out=krn_chrout
 
-.import hexout
-.import primm
-.import print_fat_date, print_fat_time, print_filename
+.autoimport
 
 .zeropage
 tmp1: .res 1
 tmp2: .res 1
-tmp3: .res 2
+tmp3: .res 1
 
 appstart $1000
 
@@ -50,9 +48,16 @@ l1:
     beq @l2
     copypointer paramptr, filenameptr
 @l2:
+    lda #<fat_dirname_mask
+    ldy #>fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
     bcc @l4
+
     jsr hexout
     printstring " i/o error"
     jmp @exit
@@ -193,41 +198,41 @@ show_bytes_decimal:
     rts
 
 dir_show_entry:
-	pha
-	jsr print_filename
+  pha
+  jsr print_filename
 
-	ldy #F32DirEntry::Attr
-	lda (dirptr),y
+  ldy #F32DirEntry::Attr
+  lda (dirptr),y
 
-	bit #DIR_Attr_Mask_Dir
-	beq @l
-	jsr primm
-	.asciiz "    <DIR> "
-	bra @date				; no point displaying directory size as its always zeros
-							; just print some spaces and skip to date display
+  bit #DIR_Attr_Mask_Dir
+  beq @l
+  jsr primm
+  .asciiz "    <DIR> "
+  bra @date        ; no point displaying directory size as its always zeros
+              ; just print some spaces and skip to date display
 @l:
 
     lda #' '
     jsr krn_chrout
 
-	jsr print_filesize
+  jsr print_filesize
 
-	lda #' '
-	jsr krn_chrout
-	inc files
+  lda #' '
+  jsr krn_chrout
+  inc files
 @date:
-	jsr print_fat_date
+  jsr print_fat_date
 
 
-	lda #' '
-	jsr krn_chrout
+  lda #' '
+  jsr krn_chrout
 
 
-	jsr print_fat_time
+  jsr print_fat_time
     crlf
 
-	pla
-	rts
+  pla
+  rts
 
 zero_decimal_buf:
     .repeat 6,i
@@ -288,16 +293,19 @@ print_filesize:
     lda decimal + 0
     jmp hexout
 
-;	rts
+;  rts
 
 entries = 23
-; .data
-pattern:        .asciiz "*.*"
-cnt:            .byte $04
+.data
+pattern:          .asciiz "*.*"
+cnt:              .byte $04
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
-files:          .res 1
-fsize_sum:      .res 4
-fsize:          .res 4
-decimal:        .res 6
+
+.bss
+fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
+files:            .res 1
+fsize_sum:        .res 4
+fsize:            .res 4
+decimal:          .res 6

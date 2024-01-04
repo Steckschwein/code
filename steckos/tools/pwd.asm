@@ -5,11 +5,15 @@
 .autoimport
 
 .export char_out=krn_chrout
+
 appstart $1000
+
+buffer_size=255
+
 .code
 		lda	#<buffer
-		ldx #>buffer
-		ldy	#$ff
+		ldy #>buffer
+		ldx	#buffer_size
 		jsr krn_getcwd
 		bcs	@l_err
 		lda	#<buffer
@@ -29,4 +33,4 @@ appstart $1000
 		bra @l2
 
 buffer:
-	.res 255
+	.res buffer_size
