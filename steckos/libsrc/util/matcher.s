@@ -27,6 +27,10 @@
 .export string_fat_mask_matcher
 .export string_fat_mask
 
+.zeropage
+  s_tmp1: .res 1
+  s_tmp2: .res 1
+
 .code
 ;   match input name[.[ext]] (8.3 filename) against 11 byte dir entry <name><ext>
 ;   note:
