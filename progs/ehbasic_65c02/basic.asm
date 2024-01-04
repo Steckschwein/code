@@ -7733,9 +7733,14 @@ LAB_DIR:
     SetVector pattern, filenameptr
 @skip:
 
-
     jsr LAB_CRLF
 
+    lda #<_fat_dirname_mask
+    ldy #>_fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
     bcs @end
@@ -8826,6 +8831,8 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
 exit:		jmp (retvec)
+
 .bss
-_fd:        .res 1
+_fd:                .res 1
+_fat_dirname_mask:  .res 8+3
  .END

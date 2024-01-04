@@ -127,11 +127,11 @@ PartType_FAT32_LBA    = $0c
   lba_addr_last       .dword  ; last lba_addr
   cluster             .dword  ; mirror of fsinfo LastClus - used for free cluster search
   cluster_seek_cnt    .dword
-  fat_cluster_add     .byte   ; cluster reservation addend
-  fat_rtc_0           .byte   ; rtc temp variable
-  fat_rtc_1           .byte   ; rtc temp variable
-  fat_vec_matcher     .addr     ; (2 byte) jump vector
-  fat_dirname_mask    .byte 11  ; (11 byte, fat32 name and ext)
+  fat_cluster_add     .byte     ; cluster reservation addend
+  fat_rtc_0           .byte     ; rtc temp variable
+  fat_rtc_1           .byte     ; rtc temp variable
+  fat_vec_matcher     .addr     ; 2 byte jump vector
+  fat_filename        .byte 8+3 ; 11 byte fat file name used in open to match given filename
 .endstruct
 
 ;--------------------------------------------------------------------------------------
@@ -226,11 +226,10 @@ FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
 ; memory locations for fat32 driver
 volumeID              = $0300 ; address of VolumeID (@see rtc.inc)
-filename_buf          = volumeID + .sizeof(VolumeID) ; (13 byte, 8.3 + \0) file name buffer
 
-.assert filename_buf+13 <= fd_area, error, "fat metadata overflow!"
-fd_area               = filename_buf+13 ; File descriptor area until $0400
+fd_area               = volumeID+.sizeof(VolumeID) ; File descriptor area until $0400
 fd_area_end           = $0400
+.assert fd_area+3*FD_Entry_Size <= fd_area_end, error, "fat metadata overflow! at least one FD is needed."
 
 sd_blocksize          = $200  ; block size
 block_data            = BUFFER_0 ; $0400-$5ff

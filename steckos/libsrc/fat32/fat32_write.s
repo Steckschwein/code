@@ -162,10 +162,14 @@ __fat_add_direntry:
     ldy #F32DirEntry::Attr              ; store type attribute
     sta (dirptr), y
 
-    debug16 "fat wr dirent >", dirptr
-    copypointer dirptr, s_ptr2          ; TODO use dirptr directly
-    jsr string_fat_name                 ; build fat name upon input string (filenameptr) and store them directly to current dirptr!
-    bcs @l_exit
+    ldy #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)-1
+:   lda volumeID+VolumeID::fat_filename,y
+    sta (dirptr),y
+    dey
+    bpl :-
+
+    debugdumpptr "dirent dptr", dirptr
+    debugdump "dirent nm", volumeID+VolumeID::fat_filename
 
     jsr __fat_set_lba_from_fd_dirlba
     jsr __fat_set_direntry_create_datetime

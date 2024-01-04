@@ -202,8 +202,8 @@ fat_fread_byte:
 ;   .X - index into fd_area of the opened file
 ;   C=0 on success, C=1 and A=<error code> otherwise
 fat_fopen:
-    phy                          ; save open flag
     debug "fopen >"
+    phy                          ; save open flag
     ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
     jsr __fat_open_path
     ply
@@ -213,7 +213,6 @@ fat_fopen:
     beq @l_open                 ; ok, file opened
     lda #EISDIR                 ; was directory, we must not free any fd
 @l_not_open:
-    debug "fat open err"
     cmp #EOK                    ; or error from open was end of cluster (@see find_first/_next)?
     beq @l_add_dirent           ; EOC, C=1 go on with write check
     cmp #ENOENT                 ; no such file or directory ?

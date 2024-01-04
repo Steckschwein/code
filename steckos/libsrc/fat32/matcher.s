@@ -24,23 +24,24 @@
 .include  "errno.inc"
 .include  "zeropage.inc"
 
-.export dirname_mask_matcher
+.export string_fat_mask_matcher
 .export string_fat_mask
-.export string_fat_name
 
 .code
 ;   match input name[.[ext]] (8.3 filename) against 11 byte dir entry <name><ext>
-;  note:
-;    *.*  - matches any file or directory with extension
-;    *  - matches any file or directory without extension
+;   note:
+;     *.*  - matches any file or directory with extension
+;     *  - matches any file or directory without extension
+; req:
+;   requires a previous call to string_fat_mask to build the fat mask upon user input
 ; in:
-;  dirptr - pointer to dir entry (F32DirEntry)
+;   dirptr - pointer to dir entry (F32DirEntry)
 ; out:
-;  C=1 on match, C=0 otherwise
-dirname_mask_matcher:
+;   C=1 on match, C=0 otherwise
+string_fat_mask_matcher:
     ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) - 1
 __dmm:
-    lda volumeID+VolumeID::fat_dirname_mask, y
+    lda (paramptr),y
     cmp #'?'
     beq __dmm_next
     cmp (dirptr), y
@@ -55,12 +56,14 @@ __dmm_neq:
 
 ; build 11 byte fat file name (8.3) as used within dir entries
 ; in:
+;   A/Y - pointer to result address where the fat file name mask should be stored
 ;   filenameptr pointer to input string to convert to fat file name mask
-;   s_ptr2 pointer to result of fat file name mask
 ; out:
 ;   C=1 if input was too large (>255 byte), C=0 otherwise
 ;   Z=1 if input was empty string, Z=0 otherwise
 string_fat_mask:
+    sta paramptr
+    sty paramptr+1
     jsr string_trim        ; trim input
     bcs __tfm_exit          ; C=1, overflow
     beq __tfm_exit          ; Z=1, empty input
@@ -81,7 +84,7 @@ __tfn_mask_input:
     beq __tfn_mask_input
     cpy #1              ; 2nd position?
     bne __tfn_mask_fill_blank  ; no, fill section
-    cmp  (s_ptr2)        ; otherwise check whether we already captured a "." as first char
+    cmp  (paramptr)        ; otherwise check whether we already captured a "." as first char
     beq __tfn_mask_char_l2
 __tfn_mask_fill_blank:
     lda #' '
@@ -100,7 +103,7 @@ __tfn_mask_fill:
 __tfn_mask_fill_l1:
     ldy s_tmp2
 __tfn_mask_fill_l2:
-    sta (s_ptr2), y
+    sta (paramptr), y
     iny
     bcs __tfn_mask_input      ; C=1, then go on next char
     cpy #8
@@ -119,7 +122,7 @@ __tfn_mask_char:
 __tfn_mask_char_l1:
     ldy s_tmp2
 __tfn_mask_char_l2:
-    sta (s_ptr2), y
+    sta (paramptr), y
     iny
     cpy #8+3
     bne __tfn_mask_input
@@ -154,29 +157,6 @@ string_trim:
 @l_st_ex:
       clc        ;
       tya        ; length to A
-      rts
-
-; build 11 byte fat file name (8.3) as used within dir entries
-; in:
-;  filenameptr with input string to convert to fat file name mask
-;  s_ptr2 with pointer where the fat file name mask should be stored
-; out:
-;  C=0 on success and s_ptr2 with the pointer of the mask build upon input string
-;  C=1 on error, the input string contains invalid chars not allowed within a dos 8.3. file name
-string_fat_name:
-      phx
-      ldy #0
-__sfn_ic:
-      lda (filenameptr), y
-      beq __sfn_mask
-      jsr string_illegalchar
-      bcs __sfn_exit
-      iny
-      bne __sfn_ic
-__sfn_mask:
-      jsr string_fat_mask
-__sfn_exit:
-      plx
       rts
 
 ; in:

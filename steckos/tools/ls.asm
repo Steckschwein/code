@@ -39,9 +39,16 @@ l1:
     beq @l2
     copypointer paramptr, filenameptr
 @l2:
+    lda #<fat_dirname_mask
+    ldy #>fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
     ldx #FD_INDEX_CURRENT_DIR
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
     jsr krn_find_first
     bcc @l4
+
     jsr hexout
     printstring " i/o error"
     jmp @exit
@@ -132,10 +139,14 @@ l1:
 @exit:
     jmp (retvec)
 
+entries = 5*24
 
+.data
 pattern:  .byte "*.*",$00
 cnt:      .byte 6
-entries = 5*24
 dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
+
+.bss
+fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>

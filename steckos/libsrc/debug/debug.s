@@ -28,6 +28,7 @@
 .export _debugout16
 .export _debugout32
 .export _debugdump
+.export _debugdumpptr
 
 .export _debugdirentry
 
@@ -54,10 +55,10 @@ _debugout_enter:
     sta dbg_status
     cld
 
-    lda   __dbg_ptr
-    sta   dbg_savept
-    lda   __dbg_ptr+1
-    sta   dbg_savept+1
+    lda __dbg_ptr
+    sta dbg_savept
+    lda __dbg_ptr+1
+    sta dbg_savept+1
 
     stz dbg_bytes
 ;    jsr primm
@@ -70,13 +71,16 @@ _debugout_enter:
     jsr _hexout
     lda dbg_status
     jsr _hexout
+    tsx
+    txa
+    jsr _hexout
     lda  #' '
     jmp debug_chrout
 
 _debugdirentry:
-    jsr   _debugout_enter
+    jsr _debugout_enter
     ldy #0
-  @l0:
+@l0:
     lda (dirptr),y
     jsr _hexout
     lda #' '
@@ -87,9 +91,9 @@ _debugdirentry:
     bra _debugoutnone
 
 _debugdumpptr:
-;    jsr   _debugout_enter
-;    lda   #11
-;    bra    _debugout0
+    jsr _debugout_enter
+    lda #$4b
+    bra _debugout0
 _debugdump:
     jsr _debugout_enter
     lda #11
@@ -109,43 +113,47 @@ _debugout8:
 _debugout:
     jsr _debugout_enter
 _debugoutnone:
-    lda #$ff
+    lda #$80
 _debugout0:
     sta dbg_bytes
-    pla              ; Get the low part of "return" address
+    pla           ; Get the low part of "return" address
                   ; (data start address)
-    sta    dbg_return
-    sta   __dbg_ptr
+    sta dbg_return
+    sta __dbg_ptr
     pla
-    sta    dbg_return+1       ; Get the high part of "return" address
-    sta   __dbg_ptr+1      ; (data start address)
+    sta dbg_return+1       ; Get the high part of "return" address
+    sta __dbg_ptr+1      ; (data start address)
 
-    ldy   dbg_bytes      ; bytes to output
-    bmi    @PSINB
+    bit dbg_bytes      ; bytes to output
+    bmi @PSINB
 
-    ldy    #2          ; 2 byte address argument
-    lda   (__dbg_ptr),y
-    tax
+    ldy #2          ; 2 byte address argument
+    jsr _set_dbg_ptr
+
+    lda __dbg_ptr
+    jsr _hexout
+    lda __dbg_ptr+1
+    jsr _hexout
+    lda #' '
+    jsr debug_chrout
+
+    bit dbg_bytes
+    bvc :+            ; pointer to debug?
+    ldy #1            ; yes, resolve address from pointer
+    jsr _set_dbg_ptr
+
+:   lda dbg_bytes      ; bytes to output
+    and #$3f
+    tay
+@l1:
+    lda (__dbg_ptr),y
+    jsr _hexout
+    lda #' '
+    jsr debug_chrout
     dey
-    lda   (__dbg_ptr),y
-    sta    __dbg_ptr      ; address is setup in __dbg_ptr
-    stx    __dbg_ptr+1
-
-    ldy   dbg_bytes      ; bytes to output
-    lda    __dbg_ptr+1
-    jsr   _hexout
-    lda    __dbg_ptr
-    jsr   _hexout
-    lda    #' '
-    jsr   debug_chrout
-@l1:  lda    (__dbg_ptr),y
-    jsr   _hexout
-    lda   #' '
-    jsr   debug_chrout
-    dey
-    bpl    @l1
-    lda    #' '
-    jsr   debug_chrout
+    bpl @l1
+    lda #' '
+    jsr debug_chrout
 
     clc
     lda    dbg_return    ; restore address for message argument
@@ -161,7 +169,8 @@ _debugout0:
     bne    @PSICHO      ; if not, we're pointing to next character
     inc    __dbg_ptr+1    ; account for page crossing
 
-@PSICHO:lda    (__dbg_ptr)     ; Get the next string character
+@PSICHO:
+    lda    (__dbg_ptr)     ; Get the next string character
     beq    @PSIX1       ; don't print the final NULL
     jsr    debug_chrout    ; write it out
     bra    @PSINB       ; back around
@@ -189,6 +198,15 @@ _debugout0:
     plp
 
     jmp    (dbg_return)        ; return to byte following final NULL
+
+_set_dbg_ptr:
+    lda (__dbg_ptr),y
+    tax
+    dey
+    lda (__dbg_ptr),y
+    sta __dbg_ptr      ; address is setup in __dbg_ptr
+    stx __dbg_ptr+1
+    rts
 
 ;----------------------------------------------------------------------------------------------
 ; Output byte as hex string on active output device
