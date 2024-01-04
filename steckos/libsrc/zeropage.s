@@ -12,7 +12,6 @@
 .exportzp paramptr  = $e2
 
 ; pointer and temps - internally used by library
-.exportzp s_ptr2  = $e6  ; 2 bytes
 .exportzp s_ptr3  = $e8  ; 2 bytes
 
 ; have to use fixed zp locations to avoid ehbasic clashes
