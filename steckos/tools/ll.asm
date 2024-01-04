@@ -75,7 +75,7 @@ l1:
     ldy #F32DirEntry::FileSize+3
     clc
 
-    ldx #3  
+    ldx #3
 :
     lda (dirptr),y
     sta fsize,x
