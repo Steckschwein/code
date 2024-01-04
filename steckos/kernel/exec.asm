@@ -50,34 +50,43 @@ execv:
 
 :     jsr fat_fread_byte  ; start address low
       bcs @l_exit_close
-      sta s_ptr2
-      sta s_ptr3
-
-      jsr fat_fread_byte ; start address high
+      sta cmdptr
+      tay
+      jsr fat_fread_byte  ; start address high
       bcs @l_exit_close
-      sta s_ptr2+1
-      sta s_ptr3+1
+      sta cmdptr+1
+
+      pha                 ; save start address
+      phy
 
 @l:   jsr fat_fread_byte
       bcs @l_is_eof
-      sta (s_ptr2)
-      inc s_ptr2
+      sta (cmdptr)
+      inc cmdptr
       bne @l
-      inc s_ptr2+1
+      inc cmdptr+1
       bne @l
-@l_err_exit:
-      sec
-@l_exit_close:
-      jmp fat_close      ; close after read to free fd, regardless of error
+      lda #ERANGE
 @l_is_eof:
       pha
       jsr fat_close
       pla
+
+      ply               ; get back start address
+      sty cmdptr
+      ply
+      sty cmdptr+1
+
       cmp #0
-      bne @l_err_exit
+      beq @l_exec_run
+      sec
+      rts
+@l_exit_close:
+      jmp fat_close     ; close after read to free fd, regardless of error
+
 @l_exec_run:
       ; we came here using jsr, but will not rts.
       ; get return address from stack to prevent stack corruption
       pla
       pla
-      jmp (s_ptr3)
+      jmp (cmdptr)

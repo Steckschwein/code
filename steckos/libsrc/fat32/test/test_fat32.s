@@ -110,8 +110,9 @@ TEST_FILE_CL2=$19
 		lda #<test_file_name_1
 		ldx #>test_file_name_1
 		jsr fat_fopen
-		assertCarry 0
 		ply
+;		assertA EOK
+		assertCarry 0
     dey
     bne :-
 
@@ -119,8 +120,8 @@ TEST_FILE_CL2=$19
 		lda #<test_file_name_1
 		ldx #>test_file_name_1
 		jsr fat_fopen
-		assertA EMFILE
 		assertCarry 1
+		assertA EMFILE
 
 ; -------------------
 		setup "fat_fopen O_RDONLY"
@@ -504,7 +505,9 @@ block_root_dir_init_00:
 	fat32_dir_entry_dir  "DIR02   ", "   ", 9
 	fat32_dir_entry_file "FILE01  ", "DAT", 0, 0 ; 0 - no cluster reserved, 0 size
 	fat32_dir_entry_file "FILE02  ", "TXT", 5, 12	; 5 - 1st cluster nr of file, 12 byte file size
-  .res 12*DIR_Entry_Size, 0
+	fat32_dir_entry_dir  ".       ", "   ", 0
+	fat32_dir_entry_dir  "..      ", "   ", 0
+  .res 10*DIR_Entry_Size, 0
 
 test_block_data_0_0:
   .byte "B0/C0"; block 0, cluster 0

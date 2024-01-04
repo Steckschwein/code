@@ -37,9 +37,25 @@ TEST_FILE_CL2=$19
 		assertA ENOENT
 
 ; -------------------
+		setup "fat_chdir ."
+		lda #<test_dir_name_dot
+		ldx #>test_dir_name_dot
+		jsr fat_chdir
+		assertCarry 0
+		assertA EOK
+
+; -------------------
+		setup "fat_chdir .."
+		lda #<test_dir_name_dotdot
+		ldx #>test_dir_name_dotdot
+		jsr fat_chdir
+		assertCarry 0
+		assertA EOK
+
+; -------------------
 		setup "fat_mkdir eexist"
-		lda #<test_dir_name_2
-		ldx #>test_dir_name_2
+		lda #<test_dir_name_eexist
+		ldx #>test_dir_name_eexist
 		jsr fat_mkdir
 		assertCarry 1
 		assertA EEXIST
@@ -52,7 +68,7 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 		assertA EOK
     assertDirEntry block_root_dir_00+14*DIR_Entry_Size
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size
       fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL
     assertDirEntry block_data_cl10_00+1*DIR_Entry_Size
@@ -63,7 +79,27 @@ TEST_FILE_CL2=$19
     assert32 $10, block_fsinfo+F32FSInfo::LastClus
 
 ; -------------------
+		setup "fat_mkdir numeric"
+		lda #<test_dir_name_numeric
+		ldx #>test_dir_name_numeric
+		jsr fat_mkdir
+		assertCarry 0
+		assertA EOK
+    assertDirEntry block_root_dir_00+14*DIR_Entry_Size
+      fat32_dir_entry_dir "12345678", "9AB", TEST_FILE_CL
+    assertDirEntry block_data_cl10_00+0*DIR_Entry_Size
+      fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL
+    assertDirEntry block_data_cl10_00+1*DIR_Entry_Size
+      fat32_dir_entry_dir "..      ", "   ", 0
+    assert8 0, block_data_cl10_00+2*DIR_Entry_Size
+
+    assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $10, block_fsinfo+F32FSInfo::LastClus
+
+
+; -------------------
 		setup "fat_mkdir end of block (4s/cl)"
+
     setDirEntry block_root_dir_00+14*DIR_Entry_Size
       fat32_dir_entry_dir "DIR0D   ", "   ", 0
 
@@ -73,7 +109,7 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 		assertA EOK
     assertDirEntry block_root_dir_00+15*DIR_Entry_Size  ; expect new dirent at end of 1st block
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL
     assert8 0, block_root_dir_01+0*DIR_Entry_Size  ; expect eod at begin of 2nd block
 
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size
@@ -111,7 +147,7 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 		assertA EOK
     assertDirEntry block_root_dir_03+15*DIR_Entry_Size
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL
     ; end of cluster, read to next dir entry end up in eoc
 
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size
@@ -148,7 +184,7 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 		assertA EOK
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL2
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL2
     assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
 
     assertDirEntry block_data_cl19_00+0*DIR_Entry_Size
@@ -182,7 +218,7 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 		assertA EOK
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL2
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL2
     assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
 
     assertDirEntry block_data_cl19_00+0*DIR_Entry_Size
@@ -295,15 +331,18 @@ setUp:
 		rts
 
 .data
-	test_file_name_1: .asciiz "file01.dat"
-	test_dir_name_1: .asciiz "dir01"
-	test_dir_name_2: .asciiz "dir02"
-	test_dir_name_enoent: .asciiz "enoent"
-  test_dir_name_new: .asciiz "dirtest"
+	test_file_name_1:       .asciiz "file01.dat"
+	test_dir_name_1:        .asciiz "dir01"
+	test_dir_name_eexist:   .asciiz "dir02"
+	test_dir_name_enoent:   .asciiz "enoent"
+  test_dir_name_new:      .asciiz "dirtest.ext"
+  test_dir_name_numeric:  .asciiz "12345678.9ab"
+  test_dir_name_dot:      .asciiz "."
+  test_dir_name_dotdot:   .asciiz ".."
 
 block_root_dir_init_00:
-	fat32_dir_entry_dir 	"DIR00   ", "   ", 0
-	fat32_dir_entry_dir 	"DIR01   ", "   ", 0
+	fat32_dir_entry_dir 	".       ", "   ", 0
+	fat32_dir_entry_dir 	"..      ", "   ", 0
 	fat32_dir_entry_dir 	"DIR02   ", "   ", 0
 	fat32_dir_entry_dir 	"DIR03   ", "   ", 0
 	fat32_dir_entry_dir 	"DIR04   ", "   ", 0

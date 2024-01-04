@@ -44,5 +44,5 @@ appstart $1000
     jsr primm
     .asciiz "Error: "
     pla
-    jsr hexout
+    jsr hexout_s
     jmp @exit

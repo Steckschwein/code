@@ -256,58 +256,6 @@ textui_cursor_onoff:
   sta screen_status
   rts
 
-.ifdef TEXTUI_STROUT
-;----------------------------------------------------------------------------------------------
-; Output string on screen
-; in:
-;  A - lowbyte  of string address
-;  X - highbyte of string address
-;----------------------------------------------------------------------------------------------
-textui_strout:
-  sta s_ptr3      ;init for output below
-  stx s_ptr3+1
-
-  inc screen_write_lock   ;write lock on
-  ldy   #$00
-@l1:
-  lda   (s_ptr3),y
-  beq   @l2
-  jsr __textui_dispatch_char
-  iny
-  bne   @l1
-@l2:
-  stz screen_write_lock   ;write lock off
-  rts
-.endif
-
-;----------------------------------------------------------------------------------------------
-; Put the string following in-line until a NULL out to the console
-; jsr primm
-; .byte "Example Text!",$00
-;----------------------------------------------------------------------------------------------
-.ifdef TEXTUI_PRIMM
-textui_primm:
-    pla                ; Get the low part of "return" address
-    sta s_ptr3
-    pla                ; Get the high part of "return" address
-    sta s_ptr3+1
-
-    inc screen_write_lock
-    ; Note: actually we're pointing one short
-PSINB:  inc s_ptr3         ; update the pointer
-    bne  PSICHO       ; if not, we're pointing to next character
-    inc  s_ptr3+1         ; account for page crossing
-PSICHO: lda  (s_ptr3)        ; Get the next string character
-    beq  PSIX1        ; don't print the final NULL
-    jsr  __textui_dispatch_char      ; write it out
-    bra  PSINB        ; back around
-PSIX1:  inc  s_ptr3         ;
-    bne  PSIX2        ;
-    inc  s_ptr3+1         ; account for page crossing
-PSIX2:
-    stz screen_write_lock
-    jmp  (s_ptr3)        ; return to byte following final NULL
-.endif
 
 textui_put:
   sta saved_char

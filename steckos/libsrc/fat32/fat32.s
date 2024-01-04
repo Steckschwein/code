@@ -118,34 +118,34 @@ __fat_fseek_cluster:
 
     ; calculate amount of clusters required for requested seek position - "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
     lda fd_area+F32_fd::SeekPos+3,x
-    sta volumeID+VolumeID::temp_dword+2
+    sta volumeID+VolumeID::cluster_seek_cnt+2
     lda fd_area+F32_fd::SeekPos+2,x
-    sta volumeID+VolumeID::temp_dword+1
+    sta volumeID+VolumeID::cluster_seek_cnt+1
     lda fd_area+F32_fd::SeekPos+1,x
-    sta volumeID+VolumeID::temp_dword+0
+    sta volumeID+VolumeID::cluster_seek_cnt+0
 
     ldy volumeID+VolumeID::BPB_SecPerClusCount ; Count + 1 cause SeekPos / $200 gives amount of blocks/sectors, so we need at least one iteration
-:   lsr volumeID+VolumeID::temp_dword+2
-    ror volumeID+VolumeID::temp_dword+1
-    ror volumeID+VolumeID::temp_dword+0
+:   lsr volumeID+VolumeID::cluster_seek_cnt+2
+    ror volumeID+VolumeID::cluster_seek_cnt+1
+    ror volumeID+VolumeID::cluster_seek_cnt+0
     dey
     bpl :-
 
 @l_seek:
     ; TODO check amount of free clusters before seek if file opened with r+/w+ otherwise we may fail within seek and leave with partial reserved clusters and we dont recover (yet)
-    ; read fsinfo and cmp temp_dword with fsinfo:FreeClus
-    lda volumeID+VolumeID::temp_dword+2
-    ora volumeID+VolumeID::temp_dword+1
-    ora volumeID+VolumeID::temp_dword+0
-    debug32 "seek cnt", volumeID+VolumeID::temp_dword
+    ; read fsinfo and cmp cluster_seek_cnt with fsinfo:FreeClus
+    lda volumeID+VolumeID::cluster_seek_cnt+2
+    ora volumeID+VolumeID::cluster_seek_cnt+1
+    ora volumeID+VolumeID::cluster_seek_cnt+0
+    debug32 "seek cnt", volumeID+VolumeID::cluster_seek_cnt
     beq @l_exit_ok
 @seek_cln:
     lda __volatile_tmp
     lsr ; restore carry
     jsr __fat_next_cln
     bcs @l_exit
-    _dec24 volumeID+VolumeID::temp_dword
-    debug32 "seek nxt", volumeID+VolumeID::temp_dword
+    _dec24 volumeID+VolumeID::cluster_seek_cnt
+    debug32 "seek nxt", volumeID+VolumeID::cluster_seek_cnt
     bne @seek_cln
 @l_exit_ok:
     lda fd_area+F32_fd::status,x
@@ -189,21 +189,21 @@ fat_fread_byte:
     rts
 
 ; in:
-;  A/X - pointer to zero terminated string with the file path
-;    Y - file mode constants - see fcntl.inc (cc65)
-;    O_RDONLY  = $01
-;    O_WRONLY  = $02
-;    O_RDWR    = $03
-;    O_CREAT   = $10
-;    O_TRUNC   = $20
-;    O_APPEND  = $40
-;    O_EXCL    = $80
+;   A/X - pointer to zero terminated string with the file path
+;   Y - file mode constants - see fcntl.inc (cc65)
+;     O_RDONLY  = $01
+;     O_WRONLY  = $02
+;     O_RDWR    = $03
+;     O_CREAT   = $10
+;     O_TRUNC   = $20
+;     O_APPEND  = $40
+;     O_EXCL    = $80
 ; out:
-;   .X - index into fd_area of the opened file
+;   X - index into fd_area of the opened file
 ;   C=0 on success, C=1 and A=<error code> otherwise
 fat_fopen:
-    phy                          ; save open flag
     debug "fopen >"
+    phy                          ; save open flag
     ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
     jsr __fat_open_path
     ply
@@ -213,7 +213,6 @@ fat_fopen:
     beq @l_open                 ; ok, file opened
     lda #EISDIR                 ; was directory, we must not free any fd
 @l_not_open:
-    debug "fat open err"
     cmp #EOK                    ; or error from open was end of cluster (@see find_first/_next)?
     beq @l_add_dirent           ; EOC, C=1 go on with write check
     cmp #ENOENT                 ; no such file or directory ?
@@ -256,7 +255,7 @@ fat_close:
 ; find first dir entry
 ; in:
 ;   X - file descriptor (index into fd_area) of the directory
-;   filenameptr  - with file name to search
+;   A/Y - pointer to file name matcher strategy
 ; out:
 ;   Z=1 on success (A=0), Z=0 and A=error code otherwise
 ;   C=0 if found and dirptr is set to the dir entry found (requires Z=1), C=1 otherwise
