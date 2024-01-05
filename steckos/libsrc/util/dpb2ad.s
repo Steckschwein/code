@@ -53,7 +53,7 @@ uptbl:
     lda tmp3
     ora #$30
 
-		jmp char_out
+	jmp char_out
 
 subtbl:		
     .word 10000
