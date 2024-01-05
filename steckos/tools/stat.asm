@@ -20,15 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
+.include "steckos.inc"
 .include "fat32.inc"
-.include "appstart.inc"
 
 .autoimport
 
 .export char_out=krn_chrout
+entries = 23
 
 
 appstart $1000
@@ -160,12 +158,9 @@ dir_show_entry:
 		pla
 		rts
 
-entries = 23
 
 .data
 pattern:  .byte "*.*",$00
-cnt:      .byte $04
-dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
 
