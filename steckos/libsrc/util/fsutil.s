@@ -92,7 +92,8 @@ print_fat_time:
 		rts
 
 print_filesize:
-    clc
+    phy
+		clc
     ldy #F32DirEntry::FileSize+3
     lda (dirptr),y
     ldy #F32DirEntry::FileSize+2
@@ -101,6 +102,7 @@ print_filesize:
     beq :+
     jsr primm
     .asciiz ">64k "
+		ply
     rts
 :
     ldy #F32DirEntry::FileSize+1
@@ -109,8 +111,9 @@ print_filesize:
     dey 
     lda (dirptr),y
 
-    jmp dpb2ad
-    ;rts
+    jsr dpb2ad
+		ply
+    rts
 
 .bss
 tmp1: .res 1
