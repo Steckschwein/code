@@ -1,6 +1,5 @@
 
 .export dword2asc
-.segment "CODE"
 
 ; from httpp://6502.org/source/strings/32bit-to-ascii.html
 ;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -105,6 +104,8 @@
 ;
 .zeropage
 ptr: .res 2
+
+.code
 
 a_hexdec ='A'-'9'-2            ;hex to decimal difference
 m_bits   =32                   ;operand bit size
