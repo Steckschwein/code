@@ -30,10 +30,6 @@
 
 .export char_out=krn_chrout
 
-.zeropage
-tmp1: .res 1
-tmp2: .res 1
-tmp3: .res 2
 
 appstart $1000
 
@@ -94,75 +90,75 @@ l1:
     jmp (retvec)
 
 dir_show_entry:
-	pha
-	jsr primm
-	.byte "Name: ",$00
-	jsr print_filename
-	crlf
+		pha
+		jsr primm
+		.byte "Name: ",$00
+		jsr print_filename
+		crlf
 
-	jsr primm
-	.byte "Size: ",$00
-	jsr print_filesize
+		jsr primm
+		.byte "Size: ",$00
+		jsr print_filesize
 
-	jsr primm
-	.byte "  Cluster#1: ",$00
+		jsr primm
+		.byte "  Cluster#1: ",$00
 
-	ldy #F32DirEntry::FstClusHI+1
-	lda (dirptr),y
-	jsr hexout
-	dey
-	lda (dirptr),y
-	jsr hexout
-	ldy #F32DirEntry::FstClusLO+1
-	lda (dirptr),y
-	jsr hexout
-	dey
-	lda (dirptr),y
-	jsr hexout
+		ldy #F32DirEntry::FstClusHI+1
+		lda (dirptr),y
+		jsr hexout
+		dey
+		lda (dirptr),y
+		jsr hexout
+		ldy #F32DirEntry::FstClusLO+1
+		lda (dirptr),y
+		jsr hexout
+		dey
+		lda (dirptr),y
+		jsr hexout
 
-	crlf
+		crlf
 
-	jsr primm
-	.byte "Attribute: "
-	.byte "--ADVSHR",$00
-	crlf
+		jsr primm
+		.byte "Attribute: "
+		.byte "--ADVSHR",$00
+		crlf
 
-	jsr primm
-	.byte "           ",$00
+		jsr primm
+		.byte "           ",$00
 
-	ldy #F32DirEntry::Attr
-	lda (dirptr),y
+		ldy #F32DirEntry::Attr
+		lda (dirptr),y
 
-	jsr bin2dual
-	crlf
+		jsr bin2dual
+		crlf
 
 
-	jsr primm
-	.byte "Created  : ",$00
-	ldy #F32DirEntry::CrtDate
-	jsr print_fat_date
+		jsr primm
+		.byte "Created  : ",$00
+		ldy #F32DirEntry::CrtDate
+		jsr print_fat_date
 
-	lda #' '
-	jsr krn_chrout
+		lda #' '
+		jsr krn_chrout
 
-	ldy #F32DirEntry::CrtTime +1
-	jsr print_fat_time
-	crlf
+		ldy #F32DirEntry::CrtTime +1
+		jsr print_fat_time
+		crlf
 
-	jsr primm
-	.byte "Modified : ",$00
-	ldy #F32DirEntry::WrtDate
-	jsr print_fat_date
+		jsr primm
+		.byte "Modified : ",$00
+		ldy #F32DirEntry::WrtDate
+		jsr print_fat_date
 
-	lda #' '
-	jsr krn_chrout
+		lda #' '
+		jsr krn_chrout
 
-	ldy #F32DirEntry::WrtTime +1
-	jsr print_fat_time
-	crlf
+		ldy #F32DirEntry::WrtTime +1
+		jsr print_fat_time
+		crlf
 
-	pla
-	rts
+		pla
+		rts
 
 entries = 23
 
