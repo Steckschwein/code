@@ -3,12 +3,12 @@
 .export print_filename, print_fat_date, print_fat_time, print_filesize
 
 .importzp dirptr
-.importzp tmp1, tmp2
 .autoimport 
 .segment "CODE"
 print_filename:
 		ldy #F32DirEntry::Name
-@l1:	lda (dirptr),y
+@l1:
+		lda (dirptr),y
 		jsr char_out
 		iny
 		cpy #$0b
@@ -50,8 +50,8 @@ print_fat_date:
 		bcc @l6		; greater than 100 (post-2000)
 		sec 		; yes, substract 100
 		sbc #100
-@l6:	jsr b2ad ; there we go
-
+@l6:
+		jsr b2ad ; there we go
 		rts
 
 print_fat_time:
@@ -92,42 +92,26 @@ print_fat_time:
 		rts
 
 print_filesize:
-		lda #' '
-		jsr char_out
+    clc
+    ldy #F32DirEntry::FileSize+3
+    lda (dirptr),y
+    ldy #F32DirEntry::FileSize+2
+    adc (dirptr),y
 
-		phy
-		lda dirptr
-	    clc
-	    adc #F32DirEntry::FileSize
-	    tax
-	    lda dirptr +1
-	    adc #0
-	    tay
+    beq :+
+    jsr primm
+    .asciiz ">64k "
+    rts
+:
+    ldy #F32DirEntry::FileSize+1
+    lda (dirptr),y
+    tax 
+    dey 
+    lda (dirptr),y
 
-	    lda #' '
-	    jsr dword2asc
+    jmp dpb2ad
+    ;rts
 
- 		stx $0a
-		sty $0b
-
-		sta tmp2
-		lda #$06
-		sec
-		sbc tmp2
-		; beq @l2
-		tax
-		lda #' '
-@l0:
-		jsr char_out
-		dex
-		bpl @l0
-
-	    ldy #0
-@l2:
-	    lda ($0a),y
-	    jsr char_out
-	    iny
-	    cpy tmp2
-	    bne @l2
-		ply
-		rts
+.bss
+tmp1: .res 1
+tmp2: .res 1
