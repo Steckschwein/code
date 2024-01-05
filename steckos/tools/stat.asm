@@ -102,12 +102,7 @@ dir_show_entry:
 
 	jsr primm
 	.byte "Size: ",$00
-	ldy #F32DirEntry::FileSize +1
-	lda (dirptr),y
-	tax
-	ldy #F32DirEntry::FileSize
-	lda (dirptr),y
-	jsr dpb2ad
+	jsr print_filesize
 
 	jsr primm
 	.byte "  Cluster#1: ",$00
