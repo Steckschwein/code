@@ -65,6 +65,8 @@ l1:
     cmp #$e5
     beq @l3
 
+
+
     ldy #F32DirEntry::Attr
     lda (dirptr),y
     bit dir_attrib_mask ; Hidden attribute set, skip
@@ -148,6 +150,15 @@ zero_decimal_buf:
     rts
 
 print_filesize:
+    ldx #<(-4)
+    ldy #F32DirEntry::FileSize
+:   lda (dirptr),y
+    sta fsize+4-$100,x
+    iny
+    inx
+    bne :-
+
+
     lda fsize + 3
     beq :+
     jsr primm
