@@ -4,7 +4,7 @@
 
 .importzp dirptr
 .importzp tmp1, tmp2
-.import b2ad, dword2asc, char_out
+.autoimport 
 .segment "CODE"
 print_filename:
 		ldy #F32DirEntry::Name
