@@ -12,24 +12,24 @@
 .exportzp paramptr  = $e2
 
 ; have to use fixed zp locations to avoid ehbasic clashes
-.exportzp vdp_ptr   =$ed
-.exportzp vdp_tmp   =$ef
+.exportzp vdp_ptr   = $e4
+.exportzp vdp_tmp   = $e6
 
 ; FAT32
-.exportzp filenameptr   = $f0  ; 2 byte
-.exportzp dirptr        = $f2  ; 2 byte
+.exportzp filenameptr   = $e7  ; 2 byte
+.exportzp dirptr        = $e9  ; 2 byte
 
 ; SDCARD/storage block pointer
-.exportzp read_blkptr    = $f4
-.exportzp write_blkptr   = $f6
+.exportzp read_blkptr    = $ed 
+.exportzp write_blkptr   = $ef
 
 ; spi shift register location
-.exportzp spi_sr            = $f9
-.exportzp __volatile_ptr    = $fa
-.exportzp __volatile_tmp    = $fc
+.exportzp spi_sr            = $f0
+.exportzp __volatile_ptr    = $f1
+.exportzp __volatile_tmp    = $f3
 
 ; flags/signals (like ctrl-c, etc)
-.exportzp flags             = $fd
+.exportzp flags             = $f4
 
 ;.exportzp ansi_state       = $f9
 ;.exportzp ansi_index       = $fa
