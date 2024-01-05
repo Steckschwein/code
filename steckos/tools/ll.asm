@@ -63,7 +63,7 @@ l1:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
     bcc @l4
-    jmp @summary
+    jmp @exit
 @l4:
     lda (dirptr)
     cmp #$e5
