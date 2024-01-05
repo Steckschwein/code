@@ -22,14 +22,12 @@
 
 .include "steckos.inc"
 .include "fat32.inc"
+
 .export char_out=krn_chrout
 
 .autoimport
 
-.zeropage
-tmp1: .res 1
-tmp2: .res 1
-tmp3: .res 1
+entries = 23
 
 appstart $1000
 
@@ -117,7 +115,7 @@ dir_show_entry:
     bit #DIR_Attr_Mask_Dir
     beq @l
     jsr primm
-    .asciiz "    <DIR> "
+    .asciiz " <DIR> "
     bra @date        ; no point displaying directory size as its always zeros
               ; just print some spaces and skip to date display
 @l:
@@ -126,6 +124,7 @@ dir_show_entry:
     jsr krn_chrout
 
     jsr print_filesize
+
 
     lda #' '
     jsr krn_chrout
@@ -143,76 +142,9 @@ dir_show_entry:
     pla
     rts
 
-zero_decimal_buf:
-    .repeat 6,i
-        stz decimal + i
-    .endrepeat
-    rts
+    
 
-print_filesize:
-    ldx #<(-4)
-    ldy #F32DirEntry::FileSize
-:   lda (dirptr),y
-    sta fsize+4-$100,x
-    iny
-    inx
-    bne :-
-
-
-    lda fsize + 3
-    beq :+
-    jsr primm
-    .asciiz "VERY BIG"
-    rts
-:
-    jsr zero_decimal_buf
-
-    ldx #32
-    sed
-@l1:
-    asl fsize + 0
-    rol fsize + 1
-    rol fsize + 2
-    rol fsize + 3
-
-    ; phy
-    ldy #<(-5)
-:
-    lda decimal + 5 -$100,y
-    adc decimal + 5 -$100,y
-    sta decimal + 5 -$100,y
-    iny
-    bne :-
-    ; ply
-
-    dex
-    bne @l1
-    cld
-
-    lda decimal + 5
-    bne :+
-    bra @next0
-:
-    jsr hexout
-@next0:
-    lda decimal + 4
-    bne :+
-    bra @next1
-:
-    jsr hexout
-@next1:
-
-    lda decimal + 3
-    jsr hexout
-    lda decimal + 2
-    jsr hexout
-    lda decimal + 1
-    jsr hexout
-    lda decimal + 0
-    jmp hexout
-
-entries = 23
-.data
+;.data
 pattern:          .asciiz "*.*"
 cnt:              .byte $04
 dir_attrib_mask:  .byte $0a
@@ -220,7 +152,5 @@ entries_per_page: .byte entries
 pagecnt:          .byte entries
 
 .bss
-fsize:            .res 4
 files:            .res 1
-decimal:          .res 6
 fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
