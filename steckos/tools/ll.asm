@@ -34,10 +34,6 @@ tmp3: .res 1
 appstart $1000
 
 main:
-    .repeat 4,i
-        stz fsize_sum + i
-    .endrepeat
-    stz files
 l1:
     crlf
     SetVector pattern, filenameptr
@@ -63,22 +59,11 @@ l1:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
     bcc @l4
-    jmp @summary
+    jmp @exit
 @l4:
     lda (dirptr)
     cmp #$e5
     beq @l3
-
-    ldx #<(-4)
-    ldy #F32DirEntry::FileSize
-    clc
-:   lda (dirptr),y
-    sta fsize+4-$100,x
-    adc fsize_sum+4-$100,x
-    sta fsize_sum+4-$100,x
-    iny
-    inx
-    bne :-
 
     ldy #F32DirEntry::Attr
     lda (dirptr),y
@@ -115,79 +100,10 @@ l1:
     bmi @exit
     bra @l3
 
-@summary:
-    jsr show_bytes_decimal
-
-    jsr primm
-    .asciiz " bytes in "
-
-    stz decimal
-    stz decimal+1
-
-    ldx #8
-    sed
-@l1:
-    asl files
-    lda decimal
-    adc decimal
-    sta decimal
-
-    lda decimal+1
-    adc decimal+1
-    sta decimal+1
-
-    dex
-    bne @l1
-    cld
-
-    lda decimal+1
-    beq :+
-    jsr hexout
-:
-    lda decimal
-    jsr hexout
-
-    printstring " files"
 
 @exit:
     jmp (retvec)
 
-
-show_bytes_decimal:
-    jsr zero_decimal_buf
-
-    sed
-    ldx #32
-@l1:
-    asl fsize_sum + 0
-    rol fsize_sum + 1
-    rol fsize_sum + 2
-    rol fsize_sum + 3
-
-    ldy #<(-5)
-:
-    lda decimal + 5 -$100,y
-    adc decimal + 5 -$100,y
-    sta decimal + 5 -$100,y
-    iny
-    bne :-
-    dex
-    bne @l1
-    cld
-
-    stz tmp1
-    ldx #6
-:
-    dex
-    lda decimal,x
-    beq :-
-:
-    lda decimal,x
-    jsr hexout
-    dex
-    bpl :-
-
-    rts
 
 dir_show_entry:
     pha
@@ -211,7 +127,6 @@ dir_show_entry:
 
     lda #' '
     jsr krn_chrout
-    inc files
 @date:
     jsr print_fat_date
 
@@ -294,7 +209,6 @@ entries_per_page: .byte entries
 pagecnt:          .byte entries
 
 .bss
-fsize_sum:        .res 4
 fsize:            .res 4
 files:            .res 1
 decimal:          .res 6
