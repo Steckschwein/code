@@ -131,9 +131,9 @@
 
 .macro init_block src, dst
     lda #<src
-    sta write_blkptr
+    sta sd_blkptr
     lda #>src
-    sta write_blkptr+1
+    sta sd_blkptr+1
     lda #<dst
     ldy #>dst
     jsr store_test_data
@@ -146,10 +146,10 @@ store_test_data:
     sty test_data_ptr+1
     ldy #0
     jsr @cp
-    inc write_blkptr+1  ; leave with same sideeffect as sdcard block impl. write_blkptr is incremented
+    inc sd_blkptr+1  ; leave with same sideeffect as sdcard block impl. sd_blkptr is incremented
     inc test_data_ptr+1
 @cp:
-    lda (write_blkptr),y
+    lda (sd_blkptr),y
     sta (test_data_ptr),y
     iny
     bne @cp
@@ -172,11 +172,11 @@ load_test_data:
     sty test_data_ptr+1
     ldy #0
     jsr @cp
-    inc read_blkptr+1
+    inc sd_blkptr+1
     inc test_data_ptr+1
 @cp:
     lda (test_data_ptr),y
-    sta (read_blkptr),y
+    sta (sd_blkptr),y
     iny
     bne @cp
     rts

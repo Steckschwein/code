@@ -267,7 +267,7 @@ mock_read_block:
 mock_write_block:
     tax ; mock destruction of X
     debug32 "mock_write_block lba", lba_addr
-    debug16 "mock_write_block wptr", write_blkptr
+    debug16 "mock_write_block wptr", sd_blkptr
     store_block_if (LBA_BEGIN+0), block_root_dir_00, @ok
     store_block_if (LBA_BEGIN+1), block_root_dir_01, @ok
 

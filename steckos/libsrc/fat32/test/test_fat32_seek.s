@@ -233,7 +233,7 @@ mock_read_block:
     bne :-
 
 @exit_inc:
-		inc read_blkptr+1 ; => same behavior as real block read implementation
+		inc sd_blkptr+1 ; => same behavior as real block read implementation
 @exit:
 		lda #EOK
 		rts

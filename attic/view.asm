@@ -60,7 +60,7 @@ main:
 		bne @err
 
 		stx tmp1						; save fd
-		SetVector content, read_blkptr
+		SetVector content, sd_blkptr
 		;jsr krn_read
 
 		ldx tmp1

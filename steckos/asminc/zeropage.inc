@@ -31,7 +31,7 @@
 .globalzp __volatile_tmp
 
 .globalzp filenameptr, dirptr
-.globalzp read_blkptr, write_blkptr
+.globalzp sd_blkptr
 
 .globalzp cmdptr
 .globalzp paramptr

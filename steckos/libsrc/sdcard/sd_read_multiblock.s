@@ -68,7 +68,7 @@ sd_read_multiblock:
 @l1:
       jsr fullblock
       bne @exit
-      inc read_blkptr+1
+      inc sd_blkptr+1
 
       debug16 "sd_rm", blocks
       dec blocks

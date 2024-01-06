@@ -276,7 +276,7 @@ sd_exit:
 ; Read block from SD Card
 ;in:
 ;	lba_addr set with lba address to read
-;   read_blkptr target adress for the block data to be read
+;   sd_blkptr target adress for the block data to be read
 ;
 ;out:
 ;	A - A = 0 on success, error code otherwise
@@ -329,7 +329,7 @@ fullblock:
 			ldy #$00
 			jsr halfblock
 
-			inc read_blkptr+1
+			inc sd_blkptr+1
 			jsr halfblock
 
 			jsr spi_r_byte		; Read 2 CRC bytes
@@ -341,7 +341,7 @@ fullblock:
 halfblock:
 @l:
 			jsr spi_r_byte
-			sta (read_blkptr),y
+			sta (sd_blkptr),y
 			iny
 			bne @l
 			rts

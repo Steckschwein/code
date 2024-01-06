@@ -48,7 +48,7 @@
 ;in:
 ;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
 ;	block lba in lba_addr
-;  write_blkptr - pointer to data
+;  sd_blkptr - pointer to data
 ;out:
 ;	A - A = 0 on success, error code otherwise
 ;---------------------------------------------------------------------
@@ -82,11 +82,11 @@ sd_write_block:
         	jmp sd_deselect_card
 
 __sd_write_block_halfblock:
-:			lda (write_blkptr),y
+:			lda (sd_blkptr),y
 			phy
 			jsr spi_rw_byte
 			ply
 			iny
 			bne :-
-			inc write_blkptr+1
+			inc sd_blkptr+1
 			rts
