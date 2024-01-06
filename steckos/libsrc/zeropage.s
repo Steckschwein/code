@@ -5,36 +5,9 @@
 .include      "zeropage.inc"
 
 ; ------------------------------------------------------------------------
-.zeropage
+;.zeropage
 
-; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
-.exportzp cmdptr    = $e0
-.exportzp paramptr  = $e2
 
-; have to use fixed zp locations to avoid ehbasic clashes
-.exportzp vdp_ptr   = $e4
-.exportzp vdp_tmp   = $e6
-
-; FAT32
-.exportzp filenameptr   = $e7  ; 2 byte
-.exportzp dirptr        = $e9  ; 2 byte
-
-; SDCARD/storage block pointer
-.exportzp read_blkptr    = $ed 
-.exportzp write_blkptr   = $ef
-
-; spi shift register location
-.exportzp spi_sr            = $f1
-.exportzp __volatile_ptr    = $f2
-.exportzp __volatile_tmp    = $f4
-
-; flags/signals (like ctrl-c, etc)
-.exportzp flags             = $f5
-
-;.exportzp ansi_state       = $f9
-;.exportzp ansi_index       = $fa
-;.exportzp ansi_param1      = $fb
-;.exportzp ansi_param2      = $fc
 
 .export retvec    = $fff8
 

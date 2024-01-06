@@ -22,20 +22,45 @@
 .ifndef _ZEROPAGE_INC_
   _ZEROPAGE_INC_=1
 
-.globalzp ptr1, ptr2, ptr3, ptr4, ptr5, ptr6
-.globalzp tmp1, tmp2, tmp3, tmp4
+.globalzp ptr1, ptr2 ;, ptr3, ptr4, ptr5, ptr6
+; .globalzp tmp1, tmp2, tmp3, tmp4
 
-.globalzp spi_sr
-.globalzp vdp_ptr, vdp_tmp
-.globalzp __volatile_ptr
-.globalzp __volatile_tmp
+; .globalzp spi_sr
+; .globalzp vdp_ptr, vdp_tmp
+; .globalzp __volatile_ptr
+;  .globalzp __volatile_tmp
 
-.globalzp filenameptr, dirptr
-.globalzp read_blkptr, write_blkptr
+; .globalzp filenameptr, dirptr
+; .globalzp read_blkptr, write_blkptr
 
-.globalzp cmdptr
-.globalzp paramptr
-.globalzp flags
+; .globalzp cmdptr
+; .globalzp paramptr
+; .globalzp flags
+
+; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
+cmdptr    = $e0
+paramptr  = $e2
+
+; have to use fixed zp locations to avoid ehbasic clashes
+vdp_ptr   = $e4
+vdp_tmp   = $e6
+
+; FAT32
+filenameptr   = $e7  ; 2 byte
+dirptr        = $e9  ; 2 byte
+
+; SDCARD/storage block pointer
+read_blkptr    = $ed 
+write_blkptr   = $ef
+
+; spi shift register location
+spi_sr            = $f1
+__volatile_ptr    = $f2
+__volatile_tmp    = $f4
+
+; flags/signals (like ctrl-c, etc)
+flags             = $f5
+
 
 ; lower memory after i/o
 
@@ -56,3 +81,4 @@ VIDEO_MODE_PAL      = 1<<7
 VIDEO_MODE_80_COLS  = 1<<6
 
 .endif
+
