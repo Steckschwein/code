@@ -24,12 +24,12 @@
 .exportzp write_blkptr   = $ef
 
 ; spi shift register location
-.exportzp spi_sr            = $f0
-.exportzp __volatile_ptr    = $f1
-.exportzp __volatile_tmp    = $f3
+.exportzp spi_sr            = $f1
+.exportzp __volatile_ptr    = $f2
+.exportzp __volatile_tmp    = $f4
 
 ; flags/signals (like ctrl-c, etc)
-.exportzp flags             = $f4
+.exportzp flags             = $f5
 
 ;.exportzp ansi_state       = $f9
 ;.exportzp ansi_index       = $fa
