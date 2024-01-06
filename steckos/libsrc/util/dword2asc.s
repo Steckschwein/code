@@ -1,9 +1,7 @@
 
 .export dword2asc
 
-.segment "CODE"
-
-; from http://6502.org/source/strings/32bit-to-ascii.html
+; from httpp://6502.org/source/strings/32bit-to-ascii.html
 ;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 ;*                                                                             *
 ;*                CONVERT 32-BIT BINARY TO ASCII NUMBER STRING                 *
@@ -104,6 +102,11 @@
 ;	----------------------------------------------------------------
 ;
 ;
+.zeropage
+ptr: .res 2
+
+.code
+
 a_hexdec ='A'-'9'-2            ;hex to decimal difference
 m_bits   =32                   ;operand bit size
 m_cbits  =48                   ;workspace bit size
@@ -113,9 +116,8 @@ s_pfac   =m_bits/8             ;primary accumulator size
 s_ptr    =2                    ;pointer size
 s_wrkspc =m_cbits/8            ;conversion workspace size
 
-ptr01=$0a
 
-pfac     =ptr01+s_ptr          ;primary accumulator
+pfac     =ptr+s_ptr          ;primary accumulator
 wrkspc01 =pfac+s_pfac          ;conversion...
 wrkspc02 =wrkspc01+s_wrkspc    ;workspace
 formflag =wrkspc02+s_wrkspc    ;string format flag
@@ -139,12 +141,12 @@ radxtab: .byte 0,"%@$"         ;recognized symbols
 ;
 ;================================================================================
 
-dword2asc: 	stx ptr01             ;operand pointer LSB
-			sty ptr01+1           ;operand pointer MSB
+dword2asc: 	stx ptr             ;operand pointer LSB
+			sty ptr+1           ;operand pointer MSB
 			tax                   ;protect radix
 			ldy #s_pfac-1         ;operand size
 ;
-binstr01:	lda (ptr01),y         ;copy operand to...
+binstr01:	lda (ptr),y         ;copy operand to...
          sta pfac,y            ;workspace
          dey
          bpl binstr01

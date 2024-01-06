@@ -22,22 +22,16 @@
 
 .include "steckos.inc"
 .include "fat32.inc"
+
 .export char_out=krn_chrout
 
 .autoimport
 
-.zeropage
-tmp1: .res 1
-tmp2: .res 1
-tmp3: .res 1
+entries = 23
 
 appstart $1000
 
 main:
-    .repeat 4,i
-        stz fsize_sum + i
-    .endrepeat
-    stz files
 l1:
     crlf
     SetVector pattern, filenameptr
@@ -63,22 +57,13 @@ l1:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
     bcc @l4
-    jmp @summary
+    jmp @exit
 @l4:
     lda (dirptr)
     cmp #$e5
     beq @l3
 
-    ldx #<(-4)
-    ldy #F32DirEntry::FileSize
-    clc
-:   lda (dirptr),y
-    sta fsize+4-$100,x
-    adc fsize_sum+4-$100,x
-    sta fsize_sum+4-$100,x
-    iny
-    inx
-    bne :-
+
 
     ldy #F32DirEntry::Attr
     lda (dirptr),y
@@ -115,79 +100,10 @@ l1:
     bmi @exit
     bra @l3
 
-@summary:
-    jsr show_bytes_decimal
-
-    jsr primm
-    .asciiz " bytes in "
-
-    stz decimal
-    stz decimal+1
-
-    ldx #8
-    sed
-@l1:
-    asl files
-    lda decimal
-    adc decimal
-    sta decimal
-
-    lda decimal+1
-    adc decimal+1
-    sta decimal+1
-
-    dex
-    bne @l1
-    cld
-
-    lda decimal+1
-    beq :+
-    jsr hexout
-:
-    lda decimal
-    jsr hexout
-
-    printstring " files"
 
 @exit:
     jmp (retvec)
 
-
-show_bytes_decimal:
-    jsr zero_decimal_buf
-
-    sed
-    ldx #32
-@l1:
-    asl fsize_sum + 0
-    rol fsize_sum + 1
-    rol fsize_sum + 2
-    rol fsize_sum + 3
-
-    ldy #<(-5)
-:
-    lda decimal + 5 -$100,y
-    adc decimal + 5 -$100,y
-    sta decimal + 5 -$100,y
-    iny
-    bne :-
-    dex
-    bne @l1
-    cld
-
-    stz tmp1
-    ldx #6
-:
-    dex
-    lda decimal,x
-    beq :-
-:
-    lda decimal,x
-    jsr hexout
-    dex
-    bpl :-
-
-    rts
 
 dir_show_entry:
     pha
@@ -199,7 +115,7 @@ dir_show_entry:
     bit #DIR_Attr_Mask_Dir
     beq @l
     jsr primm
-    .asciiz "    <DIR> "
+    .asciiz " <DIR> "
     bra @date        ; no point displaying directory size as its always zeros
               ; just print some spaces and skip to date display
 @l:
@@ -209,9 +125,9 @@ dir_show_entry:
 
     jsr print_filesize
 
+
     lda #' '
     jsr krn_chrout
-    inc files
 @date:
     jsr print_fat_date
 
@@ -226,67 +142,9 @@ dir_show_entry:
     pla
     rts
 
-zero_decimal_buf:
-    .repeat 6,i
-        stz decimal + i
-    .endrepeat
-    rts
+    
 
-print_filesize:
-    lda fsize + 3
-    beq :+
-    jsr primm
-    .asciiz "VERY BIG"
-    rts
-:
-    jsr zero_decimal_buf
-
-    ldx #32
-    sed
-@l1:
-    asl fsize + 0
-    rol fsize + 1
-    rol fsize + 2
-    rol fsize + 3
-
-    ; phy
-    ldy #<(-5)
-:
-    lda decimal + 5 -$100,y
-    adc decimal + 5 -$100,y
-    sta decimal + 5 -$100,y
-    iny
-    bne :-
-    ; ply
-
-    dex
-    bne @l1
-    cld
-
-    lda decimal + 5
-    bne :+
-    bra @next0
-:
-    jsr hexout
-@next0:
-    lda decimal + 4
-    bne :+
-    bra @next1
-:
-    jsr hexout
-@next1:
-
-    lda decimal + 3
-    jsr hexout
-    lda decimal + 2
-    jsr hexout
-    lda decimal + 1
-    jsr hexout
-    lda decimal + 0
-    jmp hexout
-
-entries = 23
-.data
+;.data
 pattern:          .asciiz "*.*"
 cnt:              .byte $04
 dir_attrib_mask:  .byte $0a
@@ -294,8 +152,5 @@ entries_per_page: .byte entries
 pagecnt:          .byte entries
 
 .bss
-fsize_sum:        .res 4
-fsize:            .res 4
 files:            .res 1
-decimal:          .res 6
 fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
