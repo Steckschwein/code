@@ -22,15 +22,15 @@
 
 
 .ifdef DEBUG_FAT32_DIR ; debug switch for this module
-	debug_enabled=1
+  debug_enabled=1
 .endif
 
 .include "zeropage.inc"
 .include "common.inc"
 .include "fat32.inc"
 .include "rtc.inc"
-.include "errno.inc"	; from ca65 api
-.include "fcntl.inc"	; from ca65 api
+.include "errno.inc"  ; from ca65 api
+.include "fcntl.inc"  ; from ca65 api
 
 .include "debug.inc"
 
@@ -68,7 +68,7 @@ __fat_opendir:
 
 
 ;in:
-;	A/X - pointer to string with the file path
+;  A/X - pointer to string with the file path
 ;out:
 ;	C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)

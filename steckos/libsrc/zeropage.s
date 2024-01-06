@@ -7,7 +7,7 @@
 ; ------------------------------------------------------------------------
 .zeropage
 
-; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
+; shell related - TODO FIXME away from kernel stuff, conflicts with basic.
 .exportzp cmdptr    = $e0
 .exportzp paramptr  = $e2
 
@@ -22,6 +22,8 @@
 ; SDCARD/storage block pointer
 .exportzp read_blkptr    = $ed 
 .exportzp write_blkptr   = $ef
+
+;.exportzp unused   = $f8
 
 ; spi shift register location
 .exportzp spi_sr            = $f0

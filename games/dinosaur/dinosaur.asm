@@ -723,7 +723,7 @@ update_highscore:
     lda #<filename
     ldx #>filename
     ldy #O_WRONLY
-    jsr krn_open
+    jsr krn_fopen
     bcs @exit
     ldy #0
 :   lda score_value_high,y
@@ -794,7 +794,7 @@ load_highscore:
     lda #<filename
     ldx #>filename
     ldy #O_RDONLY
-    jsr krn_open     ; X contains fd
+    jsr krn_fopen     ; X contains fd
     bcs @notfound    ; not found or other error, dont care...
     ldy #0
 :   jsr krn_fread_byte

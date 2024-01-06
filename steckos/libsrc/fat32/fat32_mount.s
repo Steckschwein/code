@@ -98,7 +98,7 @@ fat_mount:
     dec
     sta volumeID + VolumeID::BPB_SecPerClusMask
 
-    lda volumeID + VolumeID::BPB_SecPerClus
+    inc
 :   lsr
     beq @l7
     inc volumeID + VolumeID::BPB_SecPerClusCount

@@ -20,13 +20,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
 .include "errno.inc"
-.include "fcntl.inc"	; @see ca65 fcntl.inc
-.include "../kernel/kernel.inc"
-.include "../kernel/kernel_jumptable.inc"
+.include "fcntl.inc"  ; @see ca65 fcntl.inc
+.include "steckos.inc"
 
-.include "appstart.inc"
 .import hexout
 .import primm
 
@@ -34,64 +31,74 @@
 
 appstart $1000
 
-		lda (paramptr)	; empty string?
-		bne @l_cp
-		lda #$99
-		bra @errmsg
+        lda (paramptr)  ; empty string?
+        bne @l_cp
+        lda #$99
+        bra @errmsg
 @l_cp:
-    	lda paramptr
-    	ldx paramptr+1
-		ldy #O_RDONLY
-    	jsr krn_open
-		bne @errmsg
-		stx fd1
+        lda paramptr
+        ldx paramptr+1
+        ldy #O_RDONLY
+        jsr krn_fopen
+        bcs @errmsg
+        stx fd1
 
-@l0:	lda (paramptr)
-		cmp #' '
-		beq @l1
-		inc paramptr
-		bne @l0
-		lda #EINVAL
-		bra @errmsg
+@l0:    lda (paramptr)
+        cmp #' '
+        beq @l1
+        inc paramptr
+        bne @l0
+        lda #EINVAL
+        bra @errmsg
 
 @l1:
-    	lda paramptr
-    	ldx paramptr+1
-		ldy #O_WRONLY
-    	jsr krn_open
-		bne @err_close_fd1
-		stx fd2
+        lda paramptr
+        ldx paramptr+1
+        ldy #O_WRONLY
+        jsr krn_fopen
+        bcs @err_close_fd1
+        stx fd2
 
-		;TODO check whether f2 denotes the same file as f1
-		;TODO copy loop
+        ;TODO check whether fd2 denotes the same file as fd1
+@copy:
+        ldx fd1
+        jsr krn_fread_byte
+        bcs @eof
+        ldx fd2
+        jsr krn_write_byte
+        bcc @copy
 
-		jsr krn_close
+@eof:   bne @err_close
 
-		ldx fd1
-		jsr krn_close
+        jsr krn_close
 
-		jsr primm
-		.byte $0a," cp ok",$00
+        ldx fd2
+        jsr krn_close
+
+        jsr primm
+        .byte $0a," cp ok",$00
 @exit:
-		jmp (retvec)
+        jmp (retvec)
 
 @err_close:
-		ldx fd2
-		jsr krn_close
+        pha
+        ldx fd2
+        jsr krn_close
+        pla
 @err_close_fd1:
-		pha
-		ldx fd1
-		jsr krn_close
-		pla
+        pha
+        ldx fd1
+        jsr krn_close
+        pla
 @errmsg:
-		;TODO FIXME maybe use oserror() from cc65 lib
-		pha
-		jsr primm
-		.asciiz "Error: "
-		pla
-		jsr hexout
-		jmp @exit
+        ;TODO FIXME maybe use oserror() from cc65 lib
+        pha
+        jsr primm
+        .asciiz "Error: "
+        pla
+        jsr hexout
+        jmp @exit
 
 .data
-fd1:	.res 1
-fd2:	.res 1
+fd1:  .res 1
+fd2:  .res 1

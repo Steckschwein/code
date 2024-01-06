@@ -36,9 +36,8 @@ appstart $1000
 	lda paramptr
 	ldx paramptr+1
 	ldy #O_CREAT
-	jsr krn_open
+	jsr krn_fopen
 	bcs @errmsg
-
 
 	jsr krn_close
 
