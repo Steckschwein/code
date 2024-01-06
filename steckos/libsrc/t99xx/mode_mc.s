@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.include "zeropage.inc"
 .include "vdp.inc"
 
 .import vdp_init_reg
@@ -29,7 +30,7 @@
 .export vdp_mc_blank
 .export vdp_mc_init_screen
 
-.importzp vdp_tmp
+; .importzp vdp_tmp
 
 .code
 ;

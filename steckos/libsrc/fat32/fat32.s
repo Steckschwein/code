@@ -38,7 +38,7 @@
 
 .include "debug.inc"
 
-.importzp __volatile_tmp
+; .importzp __volatile_tmp
 
 .autoimport
 

@@ -27,7 +27,7 @@
 .include "keyboard.inc"
 .include "zeropage.inc"
 
-.importzp tmp1,tmp2
+; .importzp tmp1,tmp2
 .importzp ptr1,ptr2
 
 .code

@@ -1,8 +1,10 @@
+.include "zeropage.inc"
+
 .include "fat32.inc"
 
 .export print_filename, print_fat_date, print_fat_time, print_filesize
 
-.importzp dirptr
+; .importzp dirptr
 .autoimport 
 .segment "CODE"
 print_filename:
@@ -70,12 +72,12 @@ print_fat_time:
 
 		txa
 		and #%00000111
-		sta tmp1
+		sta _tmp1
 		dey
 		lda (dirptr),y
 
 		.repeat 5
-		lsr tmp1
+		lsr _tmp1
 		ror
 		.endrepeat
 
@@ -116,5 +118,5 @@ print_filesize:
     rts
 
 .bss
-tmp1: .res 1
-tmp2: .res 1
+_tmp1: .res 1
+_tmp2: .res 1

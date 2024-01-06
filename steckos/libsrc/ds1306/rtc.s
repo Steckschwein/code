@@ -24,6 +24,7 @@
   debug_enabled=1
 .endif
 
+.include "zeropage.inc"
 .include "debug.inc"
 .include "rtc.inc"
 .include "spi.inc"
@@ -33,7 +34,7 @@
 .import spi_r_byte
 .import spi_rw_byte
 
-.importzp __volatile_ptr
+; .importzp __volatile_ptr
 
 .export rtc_systime_update
 

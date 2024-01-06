@@ -8,7 +8,9 @@
 .include "nvram.inc"
 .include "via.inc"
 .include "keyboard.inc"
-.importzp __volatile_ptr
+.include "zeropage.inc"
+
+; .importzp __volatile_ptr
 
 .code
 ;---------------------------------------------------------------------

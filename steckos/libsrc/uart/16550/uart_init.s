@@ -2,7 +2,9 @@
 
        .include "uart.inc"
        .include "nvram.inc"
-       .importzp __volatile_ptr
+       .include "zeropage.inc"
+       
+       ; .importzp __volatile_ptr
 .code
 ;----------------------------------------------------------------------------------------------
 ; init UART

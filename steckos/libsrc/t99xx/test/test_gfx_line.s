@@ -1,11 +1,13 @@
 .include "asmunit.inc" 	; test api
+.include "zeropage.inc"
+
 .include "debug.inc"
 
 .include "vdp.inc"
 .include "gfx.inc"
 
 .import gfx_line
-.importzp __volatile_tmp
+; .importzp __volatile_tmp
 
 debug_enabled=1
 .code

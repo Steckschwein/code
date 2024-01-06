@@ -20,11 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.include "zeropage.inc"
+
 .include "vdp.inc"
 
 .export vdp_mc_set_pixel
 
-.importzp vdp_tmp
+; .importzp vdp_tmp
 
 .code
 

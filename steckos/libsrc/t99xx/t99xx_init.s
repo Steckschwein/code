@@ -20,11 +20,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.include "zeropage.inc"
 .include "vdp.inc"
 
 .export vdp_init_reg
 
-.importzp vdp_ptr
+; .importzp vdp_ptr
 
 .code
 ; setup video registers upon given table starting from register #R.X down to #R0

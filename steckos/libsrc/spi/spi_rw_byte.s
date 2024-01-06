@@ -23,11 +23,13 @@
   debug_enabled=1
 .endif
 
+.include "zeropage.inc"
 .include "via.inc"
 .include "spi.inc"
 .include "errno.inc"
 
-.importzp spi_sr
+; .importzp spi_sr
+
 
 .export spi_rw_byte
 

@@ -19,8 +19,9 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-		.importzp __volatile_ptr
-		.importzp __volatile_tmp
+		; .importzp __volatile_ptr
+		; .importzp __volatile_tmp
+		.include "zeropage.inc"
 
 		.import char_out
 

@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+.include "zeropage.inc"
+
 .include "debug.inc"
 
 .include "vdp.inc"
@@ -27,8 +29,8 @@
 
 .import vdp_wait_cmd
 
-.importzp __volatile_ptr
-.importzp __volatile_tmp
+; .importzp __volatile_ptr
+; .importzp __volatile_tmp
 
 .export gfx_line
 

@@ -27,7 +27,7 @@
 		  .include "common.inc"
 		  .include "zeropage.inc"
 
-		  .importzp vdp_ptr
+		  ; .importzp vdp_ptr
 		  .import vdp_init_reg
 		  .import vdp_fill
 		  .import vdp_fills

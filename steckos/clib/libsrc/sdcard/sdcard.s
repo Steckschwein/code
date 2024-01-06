@@ -9,7 +9,8 @@
 .import sd_read_block
 .import popax
 
-.importzp read_blkptr,sreg
+; .importzp read_blkptr,sreg
+.importzp sreg
 
 .export _read_block
 

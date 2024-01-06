@@ -1,9 +1,10 @@
 .include "asmunit.inc" 	; unit test api
+.include "zeropage.inc" 	; unit test api
 
 .include "fat32.inc"
 
 .autoimport
-.importzp dirptr
+; .importzp dirptr
 .code
     lda #<direntry
     sta dirptr

@@ -24,7 +24,7 @@
 .include "zeropage.inc"
 .include "ym3812.inc"
 .export opl2_detect
-.importzp __volatile_tmp
+; .importzp __volatile_tmp
 .import opl2_reg_write, opl2_delay_register
 .import char_out
 ;// ----------------------------------------------------------------------------------------------------------
