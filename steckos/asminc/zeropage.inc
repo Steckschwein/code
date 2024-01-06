@@ -55,6 +55,4 @@
 VIDEO_MODE_PAL      = 1<<7
 VIDEO_MODE_80_COLS  = 1<<6
 
-trampolin	    = $0010
-
 .endif
