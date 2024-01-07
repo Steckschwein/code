@@ -46,9 +46,6 @@ location___volatile_tmp    = $f4
 location_flags             = $f5
 
 
-; .globalzp ptr1, ptr2, ptr3, ptr4, ptr5, ptr6
-; .globalzp tmp1, tmp2, tmp3, tmp4
-
 .globalzp spi_sr
 .globalzp vdp_ptr, vdp_tmp
 .globalzp __volatile_ptr
