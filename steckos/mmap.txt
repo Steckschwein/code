@@ -9,7 +9,8 @@ $0250	- $025F   Expansion slot 0
 $0260	- $026F   Expansion slot 1
 $0270	- $027F   reserved for future use
 $0280 - $0283   lba address
-$0284 - $0286   blocks
+$0284           blocks
+$0285 - $0286   unused
 $0287           1 byte keyboard char "buffer"
 $0288           video mode register
 $0289 - $028A   User ISR 
