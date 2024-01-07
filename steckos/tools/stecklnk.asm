@@ -21,8 +21,8 @@
 ; SOFTWARE.
 
 .include "xmodem.inc"
-.include "steckos.inc"
 .include "fcntl.inc"
+.include "steckos.inc"
 
 .autoimport
 
@@ -34,14 +34,18 @@
 .export xmodem_rcvbuffer = xmbuffer
 
 .zeropage
-ptr1:   .res 2
-ptr2:   .res 2
-p_tgt:  .res 2
 
 appstart $1000
 
+      lda (paramptr)
+      bne :+
+      jsr primm
+      .byte "too few arguments",CODE_LF
+      .byte "usage: stecklnk FILE", CODE_LF
+      .byte 0
+      bra @l_exit
 
-    	lda paramptr
+:    	lda paramptr
     	ldx paramptr+1
       ldy #O_CREAT
       jsr krn_open
@@ -64,7 +68,7 @@ appstart $1000
 @l_exit_err:
       pha
       jsr primm
-      .asciiz "Error "
+      .asciiz "Error: "
       pla
       jsr hexout_s
       bra @l_exit
@@ -76,12 +80,16 @@ handle_block:
       pha
 
 @copy:
+
       lda xmodem_rcvbuffer,x
+      jsr hexout_s
+      lda #' '
+      jsr char_out
       phx
-      ldx fd
-      jsr krn_write_byte
+ ;     ldx fd
+;      jsr krn_write_byte
       plx
-      bcs @l_exit
+  ;    bcs @l_exit
       _inc32 bytes
       inx
       cpx #XMODEM_DATA_END
@@ -109,4 +117,4 @@ handle_block:
   fd: .res 1
   crc16_l: .res 256
   crc16_h: .res 256
-  xmbuffer: .res XMODEM_RECV_BUFFER
+  xmbuffer: .res XMODEM_RECV_BUFFER_SIZE
