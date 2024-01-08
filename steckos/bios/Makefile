@@ -42,7 +42,10 @@ bios.dis: bios.bin
 %: %.prg
 	../../xmodem.sh $<
 
-bios: bios.bin
+# bios update needs two uploads.
+# 1. the loader is uploaded (xmodem)
+# 2. the loader itself starts xmodem and expects the bios.bin image which is directly loaded to target bios address
+bios: loader bios.bin
 	../../xmodem.sh bios.bin
 
 mettwurst: mettwurst.prg

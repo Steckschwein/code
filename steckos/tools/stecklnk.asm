@@ -45,8 +45,8 @@ appstart $1000
       .byte 0
       bra @l_exit
 
-:    	lda paramptr
-    	ldx paramptr+1
+:     lda paramptr
+      ldx paramptr+1
       ldy #O_CREAT
       jsr krn_open
       bcs @l_exit_err
@@ -80,16 +80,15 @@ handle_block:
       pha
 
 @copy:
-
       lda xmodem_rcvbuffer,x
       jsr hexout_s
       lda #' '
       jsr char_out
       phx
- ;     ldx fd
-;      jsr krn_write_byte
+      ldx fd
+      jsr krn_write_byte
       plx
-  ;    bcs @l_exit
+      bcs @l_exit
       _inc32 bytes
       inx
       cpx #XMODEM_DATA_END
