@@ -34,16 +34,15 @@ location_filenameptr   = $e7  ; 2 byte
 location_dirptr        = $e9  ; 2 byte
 
 ; SDCARD/storage block pointer
-location_read_blkptr    = $ed 
-location_write_blkptr   = $ef
+location_sdblock_ptr    = $eb
 
 ; spi shift register location
-location_spi_sr            = $f1
-location___volatile_ptr    = $f2
-location___volatile_tmp    = $f4
+location_spi_sr            = $ed
+location___volatile_ptr    = $ee
+location___volatile_tmp    = $f0
 
 ; flags/signals (like ctrl-c, etc)
-location_flags             = $f5
+location_flags             = $f1
 
 
 .globalzp spi_sr
