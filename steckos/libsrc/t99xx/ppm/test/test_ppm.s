@@ -66,7 +66,7 @@
 
 ;-------------
 	setup "rgb_bytes_to_grb"
- 	SetVector ppm_data, read_blkptr
+ 	SetVector ppm_data, sd_blkptr
 	m_memcpy test_ppm_data, ppm_data, 32
 
 	ldy #0

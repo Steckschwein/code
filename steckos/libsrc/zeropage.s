@@ -22,9 +22,7 @@
 
 
 ; SDCARD/storage block pointer
-.exportzp read_blkptr    = location_read_blkptr
-.exportzp write_blkptr   = location_write_blkptr
-
+.exportzp sd_blkptr    = location_sdblock_ptr
 
 ; spi shift register location
 .exportzp spi_sr            = location_spi_sr

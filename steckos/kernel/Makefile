@@ -60,4 +60,4 @@ test:
 	(cd ../libsrc ; make)
 
 emu: loader.prg
-	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img # -upload ../shell/shell.prg # loader.prg
+	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -upload ../shell/shell.prg # loader.prg

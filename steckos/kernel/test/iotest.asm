@@ -52,9 +52,9 @@ main:
 		beq :+
 		jmp exit
 :		lda #<testdata
-		sta write_blkptr+0
+		sta sd_blkptr+0
 		lda #>testdata
-		sta write_blkptr+1
+		sta sd_blkptr+1
 		lda #testdata_e-testdata
 		sta fd_area + F32_fd::FileSize + 0,x
 		stz fd_area + F32_fd::FileSize + 1,x
@@ -76,7 +76,7 @@ main:
 		beq @ro_read
 		jmp exit
 @ro_read:
-		SetVector buffer, read_blkptr
+		SetVector buffer, sd_blkptr
 		jsr krn_read
 		jsr test_result
 

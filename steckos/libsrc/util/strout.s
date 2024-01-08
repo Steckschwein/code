@@ -26,7 +26,7 @@
 .import char_out
 ;.importzp ptr1
 
-.zeropage
+.segment "ZEROPAGE_LIB": zeropage
 _ptr: .res 2
 
 .code

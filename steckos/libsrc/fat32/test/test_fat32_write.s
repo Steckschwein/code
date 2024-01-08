@@ -576,7 +576,7 @@ mock_read_block:
     fail "read lba not handled!"
 
 @exit_inc:
-    inc read_blkptr+1 ; => same behaviour as real block read implementation
+    inc sd_blkptr+1 ; => same behaviour as real block read implementation
 @ok:
     lda #EOK
     rts
@@ -584,7 +584,7 @@ mock_read_block:
 mock_write_block:
     tax ; mock destruction of X
     debug32 "mock_write_block lba", lba_addr
-    debug16 "mock_write_block wptr", write_blkptr
+    debug16 "mock_write_block wptr", sd_blkptr
     store_block_if (LBA_BEGIN+0), block_root_dir_00, @ok
     store_block_if (LBA_BEGIN+1), block_root_dir_01, @ok
     store_block_if (LBA_BEGIN+3), block_root_dir_03, @ok

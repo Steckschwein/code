@@ -27,7 +27,7 @@
 .export string_fat_mask_matcher
 .export string_fat_mask
 
-.zeropage
+.segment "ZEROPAGE_LIB": zeropage
   s_tmp1: .res 1
   s_tmp2: .res 1
 
