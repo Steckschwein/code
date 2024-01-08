@@ -67,7 +67,7 @@
 ; zero page variables (adjust these to suit your needs)
 ;
 ;
-.zeropage
+.segment "ZEROPAGE_LIB": zeropage
 crc:  .res 2  ; CRC lo byte  (two byte variable)
 crch  = crc+1  ; CRC hi byte
 
