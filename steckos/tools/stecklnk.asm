@@ -81,9 +81,6 @@ handle_block:
 
 @copy:
       lda xmodem_rcvbuffer,x
-      jsr hexout_s
-      lda #' '
-      jsr char_out
       phx
       ldx fd
       jsr krn_write_byte

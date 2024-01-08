@@ -101,14 +101,16 @@ Rbuff=xmodem_rcvbuffer      ; temp 132 byte receive buffer ;(place anywhere, pag
 ;
 ;
 ; XMODEM Control Character Constants
-SOH  = $01  ; start block
-EOT  = $04  ; end of text marker
-ACK  = $06  ; good block acknowledged
-NAK  = $15  ; bad block acknowledged
-CAN  = $18  ; cancel (not standard, not supported)
+SOH = $01  ; start block
+_STX = $02  ; start 1k block
+EOT = $04  ; end of text marker
+ACK = $06  ; good block acknowledged
+NAK = $15  ; bad block acknowledged
+CAN = $18  ; cancel (not standard, not supported)
 CR  = $0d  ; carriage return
 LF  = $0a  ; line feed
-ESC  = $1b  ; ESC to exit
+ESC = $1b  ; ESC to exit
+
 
 .code
 ;
@@ -148,9 +150,7 @@ StartCrc: lda #'C' ; "C" start with CRC mode
           bcs GotByte   ; byte received, process it
           bcc StartCrc  ; resend "C"
 
-StartBlk:lda #$FF ;
-          sta retry2   ; set loop counter for ~3 sec delay
-          stz crc      ;
+StartBlk: stz crc      ;
           stz crch     ; init CRC value
           jsr GetByte  ; get first byte of block
           bcc StartBlk ; timed out, keep waiting...
@@ -165,9 +165,7 @@ Done:                 ; EOT - all done!
           jmp Flush     ; get leftover characters, if any
           ; exit, C=0
 BegBlk:   ldx #$00
-GetBlk:   lda #$ff    ; 3 sec window to receive characters
-          sta retry2  ;
-GetBlk1:  jsr GetByte  ; get next character
+GetBlk:   jsr GetByte  ; get next character
           bcc BadCrc  ; chr rcv error, flush and send NAK
 GetBlk2:  sta Rbuff,x  ; good char, save it in the rcv buffer
           inx        ; inc buffer pointer
@@ -231,13 +229,13 @@ _block_rx:
 ; subroutines
 ;
 ;
-Flush:    lda #$70  ; flush receive buffer
-          sta retry2  ; flush until empty for ~1 sec.
-          jsr GetByte  ; read the port
+Flush:    jsr GetByte  ; read the port
           bcs Flush  ; if chr recvd, wait for another
           rts    ; else done
 
-GetByte: stz retry  ; set low value of timing loop
+GetByte:  stz retry  ; set low value of timing loop
+          lda #$80
+          sta retry2
 StartCrcLp:
           jsr Get_Chr  ; get chr from serial port, don't wait
           bcs exit  ; got one, so exit
