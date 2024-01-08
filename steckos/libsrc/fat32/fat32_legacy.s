@@ -61,7 +61,7 @@ fat_read:
 ; NOTE: only max blocks in first cluster are supported
 ; in:
 ;  X - offset into fd_area
-;  write_blkptr - set to the address with data we have to write
+;  sd_blkptr - set to the address with data we have to write
 ; out:
 ;  C - C=0 on success (A=0), C=1 and A=error code otherwise
 fat_write:
@@ -84,17 +84,17 @@ fat_write:
     debug32 "fat_wr lba", lba_addr
 .ifdef MULTIBLOCK_WRITE
     .warning "SD multiblock writes are EXPERIMENTAL"
-    debug16 "fat_wr wptr", write_blkptr
+    debug16 "fat_wr wptr", sd_blkptr
     .import sd_write_multiblock
     jsr sd_write_multiblock
 .else
 @l: debug8 "fat_wr blks", blocks
-    debug16 "fat_wr wptr", write_blkptr
+    debug16 "fat_wr wptr", sd_blkptr
     jsr __fat_write_block_data
     bcs @l_exit
     jsr __inc_lba_address              ; increment lba address to write next block
-    inc write_blkptr+1
-    inc write_blkptr+1
+    inc sd_blkptr+1
+    inc sd_blkptr+1
     dec blocks
     bne @l
 .endif

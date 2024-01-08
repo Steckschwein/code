@@ -33,11 +33,11 @@ test_end
 
     ; set file size and write ptr
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 1; 1 block must be written
-    SetVector write_target, write_blkptr
+    SetVector write_target, sd_blkptr
     jsr fat_write
     assertCarry 0
     assertX FD_Entry_Size*2  ; assert FD reserved
-    assert16 write_target+1*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
+    assert16 write_target+1*sd_blocksize, sd_blkptr ; expect write ptr updated accordingly
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_CREAT, FD_STATUS_FILE_OPEN
 
@@ -61,11 +61,11 @@ test_end
 
     ; set file size and write ptr
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (3*sd_blocksize+3) ; 4 blocks must be written
-    SetVector write_target, write_blkptr
+    SetVector write_target, sd_blkptr
     jsr fat_write
     assertCarry 0
     assertX FD_Entry_Size*2  ; assert FD reserved
-    assert16 write_target+4*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
+    assert16 write_target+4*sd_blocksize, sd_blkptr ; expect write ptr updated accordingly
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (3*sd_blocksize+3), O_CREAT, FD_STATUS_FILE_OPEN
 
@@ -90,7 +90,7 @@ test_end
         fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
     ; size to 4 blocks + 3 byte ;) - we use 4 SEC_PER_CL - hence a new cluster must be reserved and the chain build
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (4 * sd_blocksize + 3) ; size is greater then 1 cl
-    SetVector write_target, write_blkptr
+    SetVector write_target, sd_blkptr
     jsr fat_write
     assertCarry 1 ; write failed due to blocks to write > sec/cl => expect write error C=1
     assertX FD_Entry_Size*2  ; assert FD
@@ -144,7 +144,7 @@ mock_read_block:
     assert32 FAT_EOC, lba_addr ; fail
 
 @dummy_read:
-    inc read_blkptr+1 ; => same behaviour as real block read implementation
+    inc sd_blkptr+1 ; => same behaviour as real block read implementation
 @ok:
     lda #EOK
     rts
@@ -152,7 +152,7 @@ mock_read_block:
 mock_write_block:
     tax ; mock destruction of X
     debug32 "mock_write_block lba", lba_addr
-    debug16 "mock_write_block wptr", write_blkptr
+    debug16 "mock_write_block wptr", sd_blkptr
     store_block_if LBA_BEGIN, block_root_cl, @ok ; write root cl block
     store_block_if FS_INFO_LBA, block_fsinfo, @ok ;
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), block_data_00, @ok
@@ -171,7 +171,7 @@ mock_write_block:
     fail "mock write invalid lba called!" ; fail if we end up here !!!
 @dummy_write:
     debug "dummy write"
-    inc write_blkptr+1 ; => same behaviour as real block read implementation
+    inc sd_blkptr+1 ; => same behaviour as real block read implementation
 @ok:
     lda #EOK
     rts

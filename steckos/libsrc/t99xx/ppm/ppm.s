@@ -57,7 +57,7 @@
 .define COLOR_DEPTH 255
 .define BLOCK_BUFFER 8
 
-.zeropage
+.segment "ZEROPAGE_LIB": zeropage
 _i:     .res 1
 
 .code

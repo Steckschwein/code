@@ -12,7 +12,7 @@ DEFINES+=-DCOLS80
 # DEFINES += -DDEBUG_FAT32
 
 .PHONY: all clean
-all: version.inc bios.bin
+all: version.inc bios.bin loader.prg
 
 clean:
 	rm -f *.o *.bin *.prg *.map *.lbl *.dis version.inc bios_call.inc
