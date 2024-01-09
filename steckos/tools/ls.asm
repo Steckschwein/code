@@ -31,13 +31,43 @@ appstart $1000
 
 .code
 main:
+    stz long
 l1:
     crlf
     SetVector pattern, filenameptr
+   
+    ldy #0
+@parseloop:
+    lda (paramptr),y 
+    beq @read
+    cmp #'-'
+    beq @option
+    iny 
+    bne @parseloop 
+    bra @read 
 
-    lda (paramptr)
-    beq @l2
-    copypointer paramptr, filenameptr
+@option:
+    iny
+    lda (paramptr),y  
+    beq @parseloop    
+    cmp #' '
+    beq @parseloop
+
+    ; jsr char_out
+
+    cmp #'l'
+    bne :+
+    lda #1
+    sta long
+:
+    bne @option 
+    
+
+
+    ; beq @l2
+@read:
+
+    ; copypointer paramptr, filenameptr
 @l2:
     lda #<fat_dirname_mask
     ldy #>fat_dirname_mask
@@ -68,53 +98,13 @@ l1:
     bit dir_attrib_mask ; Hidden attribute set, skip
     bne @l3
 
-
-    dec cnt
-    bne @l1
-    crlf
-    lda #5
-    sta cnt
-@l1:
-    ldy #F32DirEntry::Attr
-    lda (dirptr),y
-
-    bit #DIR_Attr_Mask_Dir
+    lda long 
     beq :+
-    lda #'['
-    jsr char_out
-    bra @print
+    jsr dir_show_entry_long
+    bra @next
 :
-    lda #' '
-    jsr char_out
-
-@print:
-
-  ldy #F32DirEntry::Name
-:
-  lda (dirptr),y
-    jsr char_out
-    iny
-    cpy #$0b
-    bne :-
-
-    ldy #F32DirEntry::Attr
-  lda (dirptr),y
-
-  bit #DIR_Attr_Mask_Dir
-  beq :+
-    lda #']'
-    jsr char_out
-    bra @pad
-:
-
-    lda #' '
-    jsr krn_chrout
-@pad:
-    lda #' '
-    jsr krn_chrout
-    lda #' '
-    jsr krn_chrout
-
+    jsr dir_show_entry_short
+@next:
     dec pagecnt
     bne @l
     keyin
@@ -139,6 +129,93 @@ l1:
 @exit:
     jmp (retvec)
 
+dir_show_entry_short:
+    dec cnt
+    bne @l1
+    crlf
+    lda #5
+    sta cnt
+@l1:
+    ldy #F32DirEntry::Attr
+    lda (dirptr),y
+
+    bit #DIR_Attr_Mask_Dir
+    beq :+
+    lda #'['
+    jsr char_out
+    bra @print
+:
+    lda #' '
+    jsr char_out
+    
+@print:
+
+    ldy #F32DirEntry::Name
+:
+    lda (dirptr),y
+    jsr char_out
+    iny
+    cpy #$0b
+    bne :-
+
+    ldy #F32DirEntry::Attr
+    lda (dirptr),y
+
+    bit #DIR_Attr_Mask_Dir
+    beq :+
+    lda #']'
+    jsr char_out
+    bra @pad
+:
+
+    lda #' '
+    jsr krn_chrout
+@pad:
+    lda #' '
+    jsr krn_chrout
+    lda #' '
+    jsr krn_chrout
+    rts 
+
+dir_show_entry_long:
+    pha
+    jsr print_filename
+
+    ldy #F32DirEntry::Attr
+    lda (dirptr),y
+
+    bit #DIR_Attr_Mask_Dir
+    beq @l
+    jsr primm
+    .asciiz " <DIR> "
+    bra @date        ; no point displaying directory size as its always zeros
+              ; just print some spaces and skip to date display
+@l:
+
+    lda #' '
+    jsr krn_chrout
+
+    jsr print_filesize
+
+
+    lda #' '
+    jsr krn_chrout
+@date:
+    jsr print_fat_date
+
+
+    lda #' '
+    jsr krn_chrout
+
+
+    jsr print_fat_time
+    crlf
+
+    pla
+    rts
+
+
+
 entries = 5*24
 
 .data
@@ -150,3 +227,4 @@ pagecnt:          .byte entries
 
 .bss
 fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
+long: .res 1, 0
