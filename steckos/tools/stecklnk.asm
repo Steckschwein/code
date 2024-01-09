@@ -130,23 +130,14 @@ handle_block:
 @copy:
       phx
       lda xmodem_rcvbuffer,x
- ;     jsr hexout_s
-      lda #' '
-;      jsr char_out
- ;     ldx fd
-;      jsr krn_write_byte
-;      bcs @l_exit
+      ldx fd
+      jsr krn_write_byte
+      bcs @l_exit
       _inc32 bytes
       plx
       inx
       cpx #XMODEM_DATA_END
       bne @copy
-
-;      pha
-;      jsr primm
- ;     .byte "block: ", 0
- ;     pla
-;      jsr hexout_s
 
       jsr primm
       .byte "bytes: ", 0
