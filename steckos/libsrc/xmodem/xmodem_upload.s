@@ -158,14 +158,12 @@ StartCrc: lda #'C'      ; "C" start with CRC mode
           jsr Put_Chr   ; send it
           stz crc
           stz crch      ; init CRC value
-;          stz retry2
           jsr GetByte   ; wait for input
           bcs GotByte   ; byte received, process it
           bcc StartCrc  ; resend "C"
 
 StartBlk: stz crc      ;
           stz crch     ; init CRC value
-;          stz retry2
           jsr GetByte  ; get first byte of block
           bcc StartBlk ; timed out, keep waiting...
 GotByte:
@@ -270,10 +268,8 @@ GetByte:  stz retry     ; set low value of timing loop
 @StartCrcLp:
           jsr Get_Chr     ; get chr from serial port, don't wait
           bcs exit        ; got one, so exit
-          sys_delay_us 100  ;100µs wait
+          sys_delay_us 500   ; wait
           dec retry       ; no character received, so dec counter
-;          bne @StartCrcLp
- ;         dec retry2      ; dec hi byte of counter
           bne @StartCrcLp  ; look for character again
           clc    ; if loop times out, CLC, else SEC and return
 exit:     rts    ; with character in "A"

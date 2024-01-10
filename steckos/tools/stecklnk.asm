@@ -67,7 +67,7 @@ appstart $1000
       bcc :+
       pha
       jsr primm
-      .byte "ymodem i/o error",0
+      .byte CODE_LF, "y-modem i/o error: ", 0
       pla
       jsr hexout_s
 
@@ -80,7 +80,7 @@ appstart $1000
 @l_exit_err:
       pha
       jsr primm
-      .asciiz "Error: "
+      .byte CODE_LF, "Error: ", 0
       pla
       jsr hexout_s
       bra @l_exit
@@ -110,25 +110,53 @@ handle_block:
       bra @l_exit
 @l_fsize:
       ; 31 33 20
+      stz fsize+0
+      stz fsize+1
       jsr primm
       .byte CODE_LF,"size: ",0
       inx
-      jsr parseOctal
+      jsr parseFsize
       bcs @l_exit
+      lda #' '
+      jsr char_out
+      lda fsize+1
+      jsr hexout_s
+      lda fsize+0
+      jsr hexout
 @l_modts:
       ; 31 34 35 34 37 30 31 37 35 34 33 20
       jsr primm
-      .byte CODE_LF,"modify: ",0
+      .byte CODE_LF,"modified: ",0
+      inx
       jsr parseOctal
+
       lda #CODE_LF
       jsr char_out
-      bra @l_exit
+@l_exit:
+      rts
 
 @data_block:
       ldy crs_x ; save crs x
       phy
-@copy:
-      phx
+
+      jsr write_bytes
+
+      jsr primm
+      .byte "bytes: ", 0
+
+      lda bytes+1
+      jsr hexout_s
+      lda bytes+0
+      jsr hexout
+
+      pla
+      sta crs_x
+      jmp krn_textui_update_crs_ptr
+
+write_bytes:
+      cmp16 fsize, bytes, :+
+      rts
+:     phx
       lda xmodem_rcvbuffer,x
       ldx fd
       jsr krn_write_byte
@@ -137,32 +165,59 @@ handle_block:
       plx
       inx
       cpx #XMODEM_DATA_END
-      bne @copy
-
-      jsr primm
-      .byte "bytes: ", 0
-
-      lda bytes+3
-      jsr hexout_s
-      lda bytes+2
-      jsr hexout
-      lda bytes+1
-      jsr hexout
-      lda bytes+0
-      jsr hexout
-
-      pla
-      sta crs_x
-      jmp krn_textui_update_crs_ptr
+      bne write_bytes
 @l_exit:
       rts
 
+parseFsize:
+:     lda xmodem_rcvbuffer,x
+      cmp #$20
+      beq :+
+      jsr @dec2hex
+      inx
+      cpx #XMODEM_DATA_END
+      bne :-
+      rts
+:     clc
+      rts
+@dec2hex:
+      pha
+      jsr @mul_10   ; fsize * 10
+      pla
+      and #$0f
+      clc
+      adc fsize+0
+      sta fsize+0
+      lda fsize+1
+      adc #0
+      sta fsize+1
+      rts
+@mul_10:    ;
+      lda fsize+0
+      ldy fsize+1
+      asl           ; *2
+      rol fsize+1
+      asl           ; *4
+      rol fsize+1
+      clc
+      adc fsize+0   ; +1 (*5)
+      sta fsize+0
+      tya           ; +1 (*5) high byte
+      adc fsize+1
+      asl fsize+0
+      rol
+      sta fsize+1
+      rts
+
+
 parseOctal:
+parseNumber:
 :     lda xmodem_rcvbuffer,x
       inx
       cmp #$20
       beq :+
       jsr char_out
+
       cpx #XMODEM_DATA_END
       bne :-
       rts
@@ -170,9 +225,10 @@ parseOctal:
       rts
 
 .data
-  bytes: .res 4, 0
+  bytes: .res 2, 0
 
 .bss
+  fsize:  .res 2
   status: .res 1
   fd: .res 1
   crc16_l: .res 256
