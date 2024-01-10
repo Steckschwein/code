@@ -424,6 +424,8 @@ __fat_write_block_data:
 .endif
 :   sta sd_blkptr+1
     stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
+    phy
+
 .ifndef FAT_NOWRITE
     debug32 "f_wr lba", lba_addr
     debug16 "f_wr wpt", sd_blkptr
@@ -434,10 +436,12 @@ __fat_write_block_data:
     lda #EOK
     clc
 .endif
+
+    ply
     cmp #EOK
     bne @l_exit_err
     clc
-    jmp __fat_save_lba_addr
+    rts; jmp __fat_save_lba_addr
 @l_exit_err:
     sec
     rts
