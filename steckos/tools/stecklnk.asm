@@ -78,7 +78,7 @@ data_block:
       phy
 
       lda fd
-      beq @l_exit    ; no fd was reserved. an error occured, skip further writes
+      beq @l_exit    ; no fd was reserved or an error occured. skip further writes
 
       jsr write_bytes
 
@@ -99,18 +99,19 @@ data_block:
       jmp krn_textui_update_crs_ptr
 
 write_bytes:
+      txa
+      tay
+      ldx fd
+@write:
       cmp16 fsize, bytes, :+
       rts
-:     phx
-      lda xmodem_rcvbuffer,x
-      ldx fd
+:     lda xmodem_rcvbuffer,y
       jsr krn_write_byte
-      plx
       bcs @l_error
       _inc32 bytes
-      inx
-      cpx #XMODEM_DATA_END
-      bne write_bytes
+      iny
+      cpy #XMODEM_DATA_END
+      bne @write
       clc
 @l_exit:
       rts
@@ -122,6 +123,7 @@ write_bytes:
       jsr hexout_s
       lda #CODE_LF
       jsr char_out
+      ldx fd
       jsr krn_close
       stz fd
       sec ; set error
@@ -143,7 +145,7 @@ header_block:
       bne :-
       bra @l_exit
 
-:     ; bra @l_fsize ; skip
+:     ;bra @l_fsize ; skip
       phx         ; save x receive buffer
       lda #<fname
       ldx #>fname
@@ -174,7 +176,7 @@ header_block:
       lda fsize+0
       jsr hexout
 @l_modts:
-      ; 31 34 35 34 37 30 31 37 35 34 33 20
+      ; 31 34 35 34 37 30 31 37 35 34 33 20 - octal timestamp as sec since 1.1.1970 GMT
       jsr primm
       .byte " modified: ",0
       inx
@@ -201,6 +203,7 @@ parseFsize:
       jsr @mul_10   ; fsize * 10
       pla
       and #$0f
+
       clc
       adc fsize+0
       sta fsize+0
@@ -231,17 +234,24 @@ parseFsize:
       rol fsize+1
       rol fsize+2
       rol fsize+3
+
       clc
       adc fsize+0   ; +1 (*5)
       sta fsize+0
-
       pla
       adc fsize+1
-      asl fsize+0   ; *2 (*10)
-      rol
       sta fsize+1
       pla
+      adc fsize+2
+      sta fsize+2
       pla
+      adc fsize+3
+      sta fsize+3
+
+      asl fsize+0   ; *2 (*10)
+      rol fsize+1
+      rol fsize+2
+      rol fsize+3
       rts
 
 
