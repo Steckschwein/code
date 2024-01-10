@@ -37,27 +37,9 @@
 
 appstart $1000
 
-      bra @start
-      lda (paramptr)
-      bne :+
-      jsr primm
-      .byte "too few arguments",CODE_LF
-      .byte "usage: stecklnk FILE", CODE_LF
-      .byte 0
-      bra @l_exit
-
-:     lda paramptr
-      ldx paramptr+1
-@file: .asciiz "foo.txt"
-@start:
-      lda #<@file
-      ldx #>@file
-      ldy #O_CREAT
-      jsr krn_open
-      bcs @l_exit_err
-      stx fd
-
       stz status
+      stz fd
+
       jsr primm
       .byte "Stecklink ", 0
 
@@ -74,17 +56,8 @@ appstart $1000
 :     ldx fd
       jsr krn_close
 
-@l_exit:
+quit:
       jmp (retvec)
-
-@l_exit_err:
-      pha
-      jsr primm
-      .byte CODE_LF, "Error: ", 0
-      pla
-      jsr hexout_s
-      bra @l_exit
-
 
 ; xmodem callback
 ; in:
@@ -93,21 +66,62 @@ appstart $1000
 handle_block:
 
       cmp #0
-      bne @data_block
-      ldy status
-      bne @data_block
-      inc status
+      bne data_block
 
+      ldy status        ; header block 0 received?
+      bne data_block
+      inc status
+      bra header_block
+
+data_block:
+      ldy crs_x ; save crs x
+      phy
+
+      lda fd
+      beq @l_exit    ; no fd was reserved. an error occured, skip further writes
+      jsr write_bytes
+
+      jsr primm
+      .byte "bytes: ", 0
+
+      lda bytes+1
+      jsr hexout_s
+      lda bytes+0
+      jsr hexout
+ @l_exit:
+      pla
+      sta crs_x
+      jmp krn_textui_update_crs_ptr
+
+header_block:
       ; 7a 6d 6f 64 65 6d 2e 74 78 74 00
       jsr primm
       .byte CODE_LF, "file: ",0
+      ldy #0
 :     lda xmodem_rcvbuffer,x
-      beq @l_fsize
+      sta fname,y
+      beq :+
       jsr char_out
+      iny
       inx
       cpx #XMODEM_DATA_END
       bne :-
       bra @l_exit
+
+:     phx         ; save x receive buffer
+      lda #<fname
+      ldx #>fname
+      ldy #O_CREAT
+      jsr krn_open
+      bcc :+
+      pha
+      jsr primm
+      .byte CODE_LF, "i/o error: ", 0
+      pla
+      jsr hexout_s
+      bra @l_exit
+ :    stx fd
+      plx
 @l_fsize:
       ; 31 33 20
       stz fsize+0
@@ -134,24 +148,6 @@ handle_block:
       jsr char_out
 @l_exit:
       rts
-
-@data_block:
-      ldy crs_x ; save crs x
-      phy
-
-      jsr write_bytes
-
-      jsr primm
-      .byte "bytes: ", 0
-
-      lda bytes+1
-      jsr hexout_s
-      lda bytes+0
-      jsr hexout
-
-      pla
-      sta crs_x
-      jmp krn_textui_update_crs_ptr
 
 write_bytes:
       cmp16 fsize, bytes, :+
@@ -202,9 +198,9 @@ parseFsize:
       clc
       adc fsize+0   ; +1 (*5)
       sta fsize+0
-      tya           ; +1 (*5) high byte
+      tya
       adc fsize+1
-      asl fsize+0
+      asl fsize+0   ; *2 (*10)
       rol
       sta fsize+1
       rts
@@ -228,6 +224,7 @@ parseNumber:
   bytes: .res 2, 0
 
 .bss
+  fname:  .res 32
   fsize:  .res 2
   status: .res 1
   fd: .res 1
