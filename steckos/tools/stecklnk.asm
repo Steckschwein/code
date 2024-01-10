@@ -126,13 +126,11 @@ header_block:
       ; 31 33 20
       stz fsize+0
       stz fsize+1
-      jsr primm
-      .byte CODE_LF,"size: ",0
       inx
       jsr parseFsize
       bcs @l_exit
-      lda #' '
-      jsr char_out
+      jsr primm
+      .byte " bytes: ",0
       lda fsize+1
       jsr hexout_s
       lda fsize+0
@@ -140,7 +138,7 @@ header_block:
 @l_modts:
       ; 31 34 35 34 37 30 31 37 35 34 33 20
       jsr primm
-      .byte CODE_LF,"modified: ",0
+      .byte " modified: ",0
       inx
       jsr parseOctal
 
@@ -207,7 +205,6 @@ parseFsize:
 
 
 parseOctal:
-parseNumber:
 :     lda xmodem_rcvbuffer,x
       inx
       cmp #$20

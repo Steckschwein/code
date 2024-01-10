@@ -521,9 +521,10 @@ __fat_read_block_data:
     phx
 ;    debug16 "fat_rb_ptr", sd_blkptr
     jsr read_block
-    dec sd_blkptr+1    ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
+    dec sd_blkptr+1     ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
     plx
     cmp #EOK
+    clc                 ; success if we take the branch
     beq __fat_save_lba_addr
     sec
     rts
@@ -537,7 +538,6 @@ __fat_save_lba_addr:
     sta volumeID+VolumeID::lba_addr_last+2
     lda lba_addr+3
     sta volumeID+VolumeID::lba_addr_last+3
-    clc ; success
     rts
 
     ; in:

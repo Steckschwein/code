@@ -266,13 +266,13 @@ Flush:    jsr GetByte   ; read the port
 
 GetByte:  stz retry     ; set low value of timing loop
 @StartCrcLp:
-          jsr Get_Chr     ; get chr from serial port, don't wait
-          bcs exit        ; got one, so exit
-          sys_delay_us 500   ; wait
-          dec retry       ; no character received, so dec counter
-          bne @StartCrcLp  ; look for character again
-          clc    ; if loop times out, CLC, else SEC and return
-exit:     rts    ; with character in "A"
+          jsr Get_Chr       ; get chr from serial port, don't wait
+          bcs exit          ; got one, so exit
+          sys_delay_us 100  ; wait
+          dec retry         ; no character received, so dec counter
+          bne @StartCrcLp   ; look for character again
+          clc               ; if loop times out, CLC, else SEC and return
+exit:     rts               ; with character in "A"
 
 ;
 ;======================================================================
