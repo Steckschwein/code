@@ -359,7 +359,7 @@ __fat_prepare_block_access_read:
 ;   A/Y pointer to data block for read/write access
 __fat_prepare_block_access:
 
-    bit fd_area+F32_fd::status,x      ; dirty?
+    bit fd_area+F32_fd::status,x              ; dirty from seek?
     debug "fp ba >"
     bvs @l_seek
 

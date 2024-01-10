@@ -84,6 +84,7 @@ SRCDIRS +=  lcd
 SRCDIRS +=  debug
 SRCDIRS +=  xmodem
 SRCDIRS +=  edlib
+SRCDIRS += 	blklayer
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS)

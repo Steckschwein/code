@@ -428,7 +428,7 @@ __fat_write_block_data:
 
 .ifndef FAT_NOWRITE
     debug32 "f_wr lba", lba_addr
-    debug16 "f_wr wpt", sd_blkptr
+    debug16 "f_wr bpt", sd_blkptr
     phx
     jsr write_block
     plx
@@ -441,7 +441,7 @@ __fat_write_block_data:
     cmp #EOK
     bne @l_exit_err
     clc
-    rts; jmp __fat_save_lba_addr
+    rts
 @l_exit_err:
     sec
     rts

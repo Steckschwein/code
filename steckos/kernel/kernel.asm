@@ -29,8 +29,9 @@
 
 .autoimport
 
-.export read_block=sd_read_block
-.export write_block=sd_write_block
+.export read_block=blklayer_read_block
+.export write_block=blklayer_write_block
+
 .export char_out=ansi_chrout         ; account for page crossing
 
 .export crc16_lo=BUFFER_0
