@@ -67,7 +67,8 @@ crc:    .res 2  ; CRC lo byte  (two byte variable)
 crch = crc+1  ; CRC hi byte
 
 blkno:    .res 1 ; block number
-retry:    .res 1 ; retry counter
+retryl:   .res 1 ; 16 bit retry
+retryh:   .res 1 ;
 protocol: .res 1 ; 2nd counter
 
 block_rx: .res 2 ; callback
@@ -264,13 +265,15 @@ Flush:    jsr GetByte   ; read the port
           bcs Flush     ; if chr recvd, wait for another
           rts           ; else done
 
-GetByte:  stz retry     ; set low value of timing loop
+GetByte:  stz retryl     ; set low value of timing loop
+          stz retryh
 @StartCrcLp:
           jsr Get_Chr       ; get chr from serial port, don't wait
           bcs exit          ; got one, so exit
-          sys_delay_us 100  ; wait
-          dec retry         ; no character received, so dec counter
+          dec retryl        ; no character received, so dec counter
           bne @StartCrcLp   ; look for character again
+          dec retryh
+          bne @StartCrcLp
           clc               ; if loop times out, CLC, else SEC and return
 exit:     rts               ; with character in "A"
 

@@ -37,8 +37,7 @@
 
 appstart $1000
 
-      stz status
-      stz fd
+      m_memclr _meta, (_meta_end-_meta)
 
       jsr primm
       .byte "Stecklink ", 0
@@ -70,8 +69,9 @@ handle_block:
 
       ldy status        ; header block 0 received?
       bne data_block
+
       inc status
-      bra header_block
+      jmp header_block
 
 data_block:
       ldy crs_x ; save crs x
@@ -79,19 +79,54 @@ data_block:
 
       lda fd
       beq @l_exit    ; no fd was reserved. an error occured, skip further writes
+
       jsr write_bytes
 
       jsr primm
       .byte "bytes: ", 0
 
-      lda bytes+1
+      lda bytes+3
       jsr hexout_s
+      lda bytes+2
+      jsr hexout
+      lda bytes+1
+      jsr hexout
       lda bytes+0
       jsr hexout
- @l_exit:
+@l_exit:
       pla
       sta crs_x
       jmp krn_textui_update_crs_ptr
+
+write_bytes:
+      cmp16 fsize, bytes, :+
+      rts
+:     phx
+      lda xmodem_rcvbuffer,x
+      ldx fd
+      jsr krn_write_byte
+      plx
+      bcs @l_error
+      _inc32 bytes
+      inx
+      cpx #XMODEM_DATA_END
+      bne write_bytes
+      clc
+@l_exit:
+      rts
+@l_error:
+      pha
+      jsr primm
+      .byte CODE_LF, "i/o error write: ", 0
+      pla
+      jsr hexout_s
+      lda #CODE_LF
+      jsr char_out
+      jsr krn_close
+      stz fd
+      sec ; set error
+      bra @l_exit
+
 
 header_block:
       ; 7a 6d 6f 64 65 6d 2e 74 78 74 00
@@ -108,7 +143,8 @@ header_block:
       bne :-
       bra @l_exit
 
-:     phx         ; save x receive buffer
+:     ; bra @l_fsize ; skip
+      phx         ; save x receive buffer
       lda #<fname
       ldx #>fname
       ldy #O_CREAT
@@ -124,15 +160,17 @@ header_block:
       plx
 @l_fsize:
       ; 31 33 20
-      stz fsize+0
-      stz fsize+1
       inx
       jsr parseFsize
       bcs @l_exit
       jsr primm
       .byte " bytes: ",0
-      lda fsize+1
+      lda fsize+3
       jsr hexout_s
+      lda fsize+2
+      jsr hexout
+      lda fsize+1
+      jsr hexout
       lda fsize+0
       jsr hexout
 @l_modts:
@@ -144,22 +182,6 @@ header_block:
 
       lda #CODE_LF
       jsr char_out
-@l_exit:
-      rts
-
-write_bytes:
-      cmp16 fsize, bytes, :+
-      rts
-:     phx
-      lda xmodem_rcvbuffer,x
-      ldx fd
-      jsr krn_write_byte
-      bcs @l_exit
-      _inc32 bytes
-      plx
-      inx
-      cpx #XMODEM_DATA_END
-      bne write_bytes
 @l_exit:
       rts
 
@@ -185,22 +207,41 @@ parseFsize:
       lda fsize+1
       adc #0
       sta fsize+1
+      lda fsize+2
+      adc #0
+      sta fsize+2
+      lda fsize+3
+      adc #0
+      sta fsize+3
       rts
 @mul_10:    ;
+      lda fsize+3
+      pha
+      lda fsize+2
+      pha
+      lda fsize+1
+      pha
       lda fsize+0
-      ldy fsize+1
+
       asl           ; *2
       rol fsize+1
+      rol fsize+2
+      rol fsize+3
       asl           ; *4
       rol fsize+1
+      rol fsize+2
+      rol fsize+3
       clc
       adc fsize+0   ; +1 (*5)
       sta fsize+0
-      tya
+
+      pla
       adc fsize+1
       asl fsize+0   ; *2 (*10)
       rol
       sta fsize+1
+      pla
+      pla
       rts
 
 
@@ -217,14 +258,16 @@ parseOctal:
 :     clc
       rts
 
-.data
-  bytes: .res 2, 0
 
 .bss
+_meta:
+  bytes: .res 4
   fname:  .res 32
-  fsize:  .res 2
+  fsize:  .res 4
   status: .res 1
   fd: .res 1
+_meta_end:
+; crc16 stuff
   crc16_l: .res 256
   crc16_h: .res 256
   xmbuffer: .res XMODEM_RECV_BUFFER_SIZE

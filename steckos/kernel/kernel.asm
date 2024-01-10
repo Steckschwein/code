@@ -158,8 +158,8 @@ do_irq:
 ;    jsr vdp_bgcolor
 
 @check_spi_rtc:
-;    jsr rtc_irq0_ack
- ;   bcc @check_spi_keyboard
+    jsr rtc_irq0_ack
+    bcc @check_spi_keyboard
 ;    lda #Cyan<<4|Cyan
 ;    jsr vdp_bgcolor
 
@@ -177,19 +177,19 @@ do_irq:
     dec frame
     lda frame
     and #$0f            ; every 16 frames we try to update rtc, gives 320ms clock resolution
-    bne @exit
+    bne @spi_busy
     jsr rtc_systime_update     ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
     jsr __automount
 
-@exit:
+@spi_busy:
     lda via1portb
     and #spi_device_deselect
     cmp #spi_device_deselect
-    beq :+
+    beq @exit
     lda #Medium_Red<<4|Medium_Red ; indicates busy spi
     jsr vdp_bgcolor
-    sys_delay_us 16
-:
+
+@exit:
     lda #Medium_Green<<4|Black
     jsr vdp_bgcolor
 
