@@ -20,7 +20,6 @@
 .exportzp filenameptr   = location_filenameptr  ; 2 byte
 .exportzp dirptr        = location_dirptr       ; 2 byte
 
-
 ; SDCARD/storage block pointer
 .exportzp sd_blkptr    = location_sdblock_ptr
 
@@ -31,7 +30,6 @@
 
 ; flags/signals (like ctrl-c, etc)
 .exportzp flags             = location_flags
-
 
 .export retvec    = $fff8
 

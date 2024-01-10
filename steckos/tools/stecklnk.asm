@@ -21,8 +21,8 @@
 ; SOFTWARE.
 
 .include "xmodem.inc"
-.include "steckos.inc"
 .include "fcntl.inc"
+.include "steckos.inc"
 
 .autoimport
 
@@ -34,60 +34,57 @@
 .export xmodem_rcvbuffer = xmbuffer
 
 .zeropage
-ptr1:   .res 2
-ptr2:   .res 2
-p_tgt:  .res 2
 
 appstart $1000
 
-
-    	lda paramptr
-    	ldx paramptr+1
-      ldy #O_CREAT
-      jsr krn_open
-      bcs @l_exit_err
-      stx fd
+      m_memclr _meta, (_meta_end-_meta)
 
       jsr primm
       .byte "Stecklink ", 0
 
       lda #<handle_block
       ldx #>handle_block
-      jsr xmodem_upload_callback
-
-      ldx fd
-      jsr krn_close
-
-@l_exit:
-      jmp (retvec)
-
-@l_exit_err:
+      jsr ymodem_upload_callback
+      bcc :+
       pha
       jsr primm
-      .asciiz "Error "
+      .byte CODE_LF, "y-modem i/o error: ", 0
       pla
       jsr hexout_s
-      bra @l_exit
 
+:     ldx fd
+      jsr krn_close
 
+quit:
+      jmp (retvec)
+
+; xmodem callback
+; in:
+;   A - block number
+;   X - offset in data recv buffer until XMODEM_DATA_END
 handle_block:
+
+      cmp #0
+      bne data_block
+
+      ldy status        ; header block 0 received?
+      bne data_block
+
+      inc status
+      jmp header_block
+
+data_block:
       ldy crs_x ; save crs x
       phy
-      pha
 
-@copy:
-      lda xmodem_rcvbuffer,x
-      phx
-      ldx fd
-      jsr krn_write_byte
-      plx
-      bcs @l_exit
-      _inc32 bytes
-      inx
-      cpx #XMODEM_DATA_END
-      bne @copy
+      lda fd
+      beq @l_exit    ; no fd was reserved or an error occured. skip further writes
 
-@l_exit:
+      jsr write_bytes
+
+      jsr primm
+      .byte "bytes: ", 0
+
       lda bytes+3
       jsr hexout_s
       lda bytes+2
@@ -96,17 +93,191 @@ handle_block:
       jsr hexout
       lda bytes+0
       jsr hexout
-
-      pla
+@l_exit:
       pla
       sta crs_x
       jmp krn_textui_update_crs_ptr
 
-.data
-  bytes: .res 4, 0
+write_bytes:
+      txa
+      tay
+      ldx fd
+@write:
+      cmp16 fsize, bytes, :+
+      rts
+:     lda xmodem_rcvbuffer,y
+      jsr krn_write_byte
+      bcs @l_error
+      _inc32 bytes
+      iny
+      cpy #XMODEM_DATA_END
+      bne @write
+      clc
+@l_exit:
+      rts
+@l_error:
+      pha
+      jsr primm
+      .byte CODE_LF, "i/o error write: ", 0
+      pla
+      jsr hexout_s
+      lda #CODE_LF
+      jsr char_out
+      ldx fd
+      jsr krn_close
+      stz fd
+      sec ; set error
+      bra @l_exit
+
+
+header_block:
+      ; 7a 6d 6f 64 65 6d 2e 74 78 74 00
+      jsr primm
+      .byte CODE_LF, "file: ",0
+      ldy #0
+:     lda xmodem_rcvbuffer,x
+      sta fname,y
+      beq :+
+      jsr char_out
+      iny
+      inx
+      cpx #XMODEM_DATA_END
+      bne :-
+      bra @l_exit
+
+:     ;bra @l_fsize ; skip
+      phx         ; save x receive buffer
+      lda #<fname
+      ldx #>fname
+      ldy #O_CREAT
+      jsr krn_open
+      bcc :+
+      pha
+      jsr primm
+      .byte CODE_LF, "i/o error: ", 0
+      pla
+      jsr hexout_s
+      bra @l_exit
+ :    stx fd
+      plx
+@l_fsize:
+      ; 31 33 20
+      inx
+      jsr parseFsize
+      bcs @l_exit
+      jsr primm
+      .byte " bytes: ",0
+      lda fsize+3
+      jsr hexout_s
+      lda fsize+2
+      jsr hexout
+      lda fsize+1
+      jsr hexout
+      lda fsize+0
+      jsr hexout
+@l_modts:
+      ; 31 34 35 34 37 30 31 37 35 34 33 20 - octal timestamp as sec since 1.1.1970 GMT
+      jsr primm
+      .byte " modified: ",0
+      inx
+      jsr parseOctal
+
+      lda #CODE_LF
+      jsr char_out
+@l_exit:
+      rts
+
+parseFsize:
+:     lda xmodem_rcvbuffer,x
+      cmp #$20
+      beq :+
+      jsr @dec2hex
+      inx
+      cpx #XMODEM_DATA_END
+      bne :-
+      rts
+:     clc
+      rts
+@dec2hex:
+      pha
+      jsr @mul_10   ; fsize * 10
+      pla
+      and #$0f
+
+      clc
+      adc fsize+0
+      sta fsize+0
+      lda fsize+1
+      adc #0
+      sta fsize+1
+      lda fsize+2
+      adc #0
+      sta fsize+2
+      lda fsize+3
+      adc #0
+      sta fsize+3
+      rts
+@mul_10:    ;
+      lda fsize+3
+      pha
+      lda fsize+2
+      pha
+      lda fsize+1
+      pha
+      lda fsize+0
+
+      asl           ; *2
+      rol fsize+1
+      rol fsize+2
+      rol fsize+3
+      asl           ; *4
+      rol fsize+1
+      rol fsize+2
+      rol fsize+3
+
+      clc
+      adc fsize+0   ; +1 (*5)
+      sta fsize+0
+      pla
+      adc fsize+1
+      sta fsize+1
+      pla
+      adc fsize+2
+      sta fsize+2
+      pla
+      adc fsize+3
+      sta fsize+3
+
+      asl fsize+0   ; *2 (*10)
+      rol fsize+1
+      rol fsize+2
+      rol fsize+3
+      rts
+
+
+parseOctal:
+:     lda xmodem_rcvbuffer,x
+      inx
+      cmp #$20
+      beq :+
+      jsr char_out
+
+      cpx #XMODEM_DATA_END
+      bne :-
+      rts
+:     clc
+      rts
+
 
 .bss
+_meta:
+  bytes: .res 4
+  fname:  .res 32
+  fsize:  .res 4
+  status: .res 1
   fd: .res 1
+_meta_end:
+; crc16 stuff
   crc16_l: .res 256
   crc16_h: .res 256
-  xmbuffer: .res XMODEM_RECV_BUFFER
+  xmbuffer: .res XMODEM_RECV_BUFFER_SIZE

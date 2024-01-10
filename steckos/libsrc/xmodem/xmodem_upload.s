@@ -1,17 +1,12 @@
-.include "zeropage.inc"
 .include "system.inc"
 .include "keyboard.inc"
 .include "xmodem.inc"
+.include "common.inc"
 
 .export xmodem_upload_callback
+.export ymodem_upload_callback
 
-.import uart_tx
-.import uart_rx_nowait
-.import crc16_init
-.import crc16_lo, crc16_hi
-.import primm
-.import xmodem_rcvbuffer
-.import xmodem_startaddress
+.autoimport
 
 ; XMODEM/CRC Receiver for the 65C02
 ;
@@ -68,14 +63,15 @@
 ;
 ;
 .segment "ZEROPAGE_LIB": zeropage
-crc:  .res 2  ; CRC lo byte  (two byte variable)
-crch  = crc+1  ; CRC hi byte
+crc:    .res 2  ; CRC lo byte  (two byte variable)
+crch = crc+1  ; CRC hi byte
 
-blkno:  .res 1 ; block number
-retry:  .res 1 ; retry counter
-retry2:  .res 1 ; 2nd counter
+blkno:    .res 1 ; block number
+retryl:   .res 1 ; 16 bit retry
+retryh:   .res 1 ;
+protocol: .res 1 ; 2nd counter
 
-block_rx: .res 2 ;
+block_rx: .res 2 ; callback
 
 ;
 ;
@@ -101,14 +97,16 @@ Rbuff=xmodem_rcvbuffer      ; temp 132 byte receive buffer ;(place anywhere, pag
 ;
 ;
 ; XMODEM Control Character Constants
-SOH  = $01  ; start block
-EOT  = $04  ; end of text marker
-ACK  = $06  ; good block acknowledged
-NAK  = $15  ; bad block acknowledged
-CAN  = $18  ; cancel (not standard, not supported)
-CR  = $0d  ; carriage return
-LF  = $0a  ; line feed
-ESC  = $1b  ; ESC to exit
+X_SOH = $01  ; start block
+X_STX = $02  ; start 1k block
+X_EOT = $04  ; end of text marker
+X_ACK = $06  ; good block acknowledged
+X_NAK = $15  ; bad block acknowledged
+X_CAN = $18  ; cancel (not standard, not supported)
+X_CR  = $0d  ; carriage return
+X_LF  = $0a  ; line feed
+X_ESC = $1b  ; ESC to exit
+
 
 .code
 ;
@@ -128,54 +126,72 @@ ESC  = $1b  ; ESC to exit
 ; out:
 ;  C=0 on success, C=1 on any i/o or protocoll related error
 .proc xmodem_upload_callback
+          ldy #1
+          bra __x_y_modem_upload
+.endproc
+
+.proc ymodem_upload_callback
+          ldy #0
+.endproc
+
+__x_y_modem_upload:
           sta block_rx+0
           stx block_rx+1
 
+          sty blkno     ; set start block #
+
           jsr crc16_init
 
+          lda #'Y'
+          sec
+          sbc blkno
+          jsr char_out
           jsr primm
-          .byte "XMODEM upload... ", 0
+          .byte "MODEM upload... ", 0
 
-          lda #$01
-          sta blkno    ; set block # to 1
-StartCrc: lda #'C' ; "C" start with CRC mode
-          jsr Put_Chr  ; send it
-          lda #$FF
-          sta retry2  ; set loop counter for ~3 sec delay
+          lda blkno
+          eor #$01
+          and #$01      ; $01 y-modem, $00 x-modem
+
+Start0:   sta protocol
+
+StartCrc: lda #'C'      ; "C" start with CRC mode
+          jsr Put_Chr   ; send it
           stz crc
           stz crch      ; init CRC value
           jsr GetByte   ; wait for input
           bcs GotByte   ; byte received, process it
           bcc StartCrc  ; resend "C"
 
-StartBlk:lda #$FF ;
-          sta retry2   ; set loop counter for ~3 sec delay
-          stz crc      ;
+StartBlk: stz crc      ;
           stz crch     ; init CRC value
           jsr GetByte  ; get first byte of block
           bcc StartBlk ; timed out, keep waiting...
 GotByte:
-          cmp #SOH    ; start of block?
-          beq BegBlk  ; yes
-          cmp #EOT    ;
-          bne BadCrc  ; Not SOH or EOT, so flush buffer & send NAK
-Done:                 ; EOT - all done!
-          lda #ACK      ; last block, send ACK and exit.
+          cmp #X_SOH    ; start of block?
+          beq BegBlk    ; yes
+          cmp #X_EOT    ;
+          bne BadCrc    ; Not SOH or EOT, so flush buffer & send NAK
+Done:                   ; EOT - all done!
+          lda #X_ACK    ; last block, send ACK and exit.
           jsr Put_Chr   ;
-          jmp Flush     ; get leftover characters, if any
+          stz blkno     ; EOT received, y-modem protocol expects an additional block 0 to be send
+          lda protocol  ; check protocol
+          beq :+
+          ora #$40      ; bit 6 EOT received
+          bra Start0    ; if y-modem, go on and reveive that block 0 - SOH 00 FF NUL[128] CRC CRC
+:         jmp Flush     ; x-modem, get leftover characters, if any and exit
           ; exit, C=0
 BegBlk:   ldx #$00
-GetBlk:   lda #$ff    ; 3 sec window to receive characters
-          sta retry2  ;
-GetBlk1:  jsr GetByte  ; get next character
-          bcc BadCrc  ; chr rcv error, flush and send NAK
-GetBlk2:  sta Rbuff,x  ; good char, save it in the rcv buffer
-          inx        ; inc buffer pointer
-          cpx #$84    ; <01> <FE> <128 bytes> <CRCH> <CRCL>
-          bne GetBlk  ; get 132 characters
-          ldx #$00    ;
-          lda Rbuff,x  ; get block # from buffer
-          cmp blkno    ; compare to expected block #
+GetBlk:   jsr GetByte   ; get next character
+          bcc BadCrc    ; chr rcv error, flush and send NAK
+GetBlk2:  sta Rbuff,x   ; good char, save it in the rcv buffer
+          inx           ; inc buffer pointer
+          cpx #$84      ; <01> <FE> <128 bytes> <CRCH> <CRCL>
+          bne GetBlk    ; get 132 characters
+          ldx #$00      ;
+          lda Rbuff,x   ; get block # from buffer
+          cmp blkno     ; compare to expected block #
           beq GoodBlk1  ; matched!
 err_exit:
           jsr Flush  ; mismatched - flush buffer and then exit
@@ -184,15 +200,15 @@ err_exit:
           sec
           rts
 
-GoodBlk1: eor #$ff    ; 1's comp of block #
-          inx        ;
-          cmp Rbuff,x  ; compare with expected 1's comp of block #
+GoodBlk1: eor #$ff      ; 1's comp of block #
+          inx           ;
+          cmp Rbuff,x   ; compare with expected 1's comp of block #
           bne err_exit  ; err, no match!
 
 GoodBlk2: ldy #$02  ;
 CalcCrc:  lda Rbuff,y  ; calculate the CRC for the 128 bytes of data
 
-UpdCrc:  eor  crc+1  ; Quick CRC computation with lookup tables
+UpdCrc:   eor  crc+1  ; Quick CRC computation with lookup tables
           tax        ; updates the two bytes at crc & crc+1
           lda  crc   ; with the byte send in the "A" register
           eor  crc16_hi,x
@@ -207,23 +223,37 @@ UpdCrc:  eor  crc+1  ; Quick CRC computation with lookup tables
           cmp crch  ; compare to calculated hi CRC
           bne BadCrc  ; bad crc, send NAK
           iny   ;
-          lda Rbuff,y  ; get lo CRC from buffer
-          cmp crc   ; compare to calculated lo CRC
-          beq GoodCrc  ; good CRC
-BadCrc:   jsr Flush  ; flush the input port
-          lda #NAK  ;
-          jsr Put_Chr  ; send NAK to resend block
-          bra StartBlk ; start over, get the block again
+          lda Rbuff,y   ; get lo CRC from buffer
+          cmp crc       ; compare to calculated lo CRC
+          beq GoodCrc   ; good CRC
+BadCrc:   jsr Flush     ; flush the input port
+          lda #X_NAK    ;
+          jsr Put_Chr   ; send NAK to resend block
+          bra StartBlk  ; start over, get the block again
 GoodCrc:  ldx #XMODEM_DATA_START  ;
-          lda blkno  ; get the block number
+          lda blkno     ; get the block number
           jsr _block_rx
-IncBlk:   inc blkno  ; done.  Inc the block #
-          lda #ACK  ; send ACK
-          jsr Put_Chr  ;
-          jmp StartBlk ; get next block
+IncBlk:   lda #X_ACK    ; send ACK
+          jsr Put_Chr   ;
+          lda blkno
+          inc blkno     ; done.  Inc the block #
+          cmp #0        ; block 0 ?
+          bne @next_block
+
+          lda protocol  ; x-/y-modem ?
+          beq @next_block
+
+          bit protocol
+          bmi :+          ; block 0 header already received?
+          ora #$80        ; no, set bit 7 y-modem header block 0 received, start over with data block transfer
+          jmp Start0
+:         bvc @next_block ; EOT not received, normal data block 0
+          stz protocol    ; reset to x-modem to normal exit
+          jmp Done        ; EOT already received, so this was be the "end of file" block 0
+@next_block:
+          jmp StartBlk  ; no, then x-/y-modem - get next block
 _block_rx:
           jmp (block_rx)
-.endproc
 
 ;
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -231,22 +261,21 @@ _block_rx:
 ; subroutines
 ;
 ;
-Flush:    lda #$70  ; flush receive buffer
-          sta retry2  ; flush until empty for ~1 sec.
-          jsr GetByte  ; read the port
-          bcs Flush  ; if chr recvd, wait for another
-          rts    ; else done
+Flush:    jsr GetByte   ; read the port
+          bcs Flush     ; if chr recvd, wait for another
+          rts           ; else done
 
-GetByte: stz retry  ; set low value of timing loop
-StartCrcLp:
-          jsr Get_Chr  ; get chr from serial port, don't wait
-          bcs exit  ; got one, so exit
-          dec retry  ; no character received, so dec counter
-          bne StartCrcLp ;
-          dec retry2  ; dec hi byte of counter
-          bne StartCrcLp ; look for character again
-          clc    ; if loop times out, CLC, else SEC and return
-exit:     rts    ; with character in "A"
+GetByte:  stz retryl     ; set low value of timing loop
+          stz retryh
+@StartCrcLp:
+          jsr Get_Chr       ; get chr from serial port, don't wait
+          bcs exit          ; got one, so exit
+          dec retryl        ; no character received, so dec counter
+          bne @StartCrcLp   ; look for character again
+          dec retryh
+          bne @StartCrcLp
+          clc               ; if loop times out, CLC, else SEC and return
+exit:     rts               ; with character in "A"
 
 ;
 ;======================================================================

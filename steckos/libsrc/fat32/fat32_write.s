@@ -422,27 +422,10 @@ __fat_write_block_data:
 .ifdef FAT_DUMP_FAT_WRITE
     debugdump "fat_wb dmp", block_fat
 .endif
-
-:   pha
-
-    debug32 "fat_wb lba", lba_addr
-    debug32 "fat_wb lba last", volumeID+VolumeID::lba_addr_last
-    bra @l_write ; TODO dirty check
-    ;cmp32 volumeID+VolumeID::lba_addr_last, lba_addr, @l_write
-
-    pla
-    clc
-    rts
-
-@l_write:
-    pla
-    phy
-    ldy sd_blkptr
-    phy
-    ldy sd_blkptr+1
-    phy
-    sta sd_blkptr+1
+:   sta sd_blkptr+1
     stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
+    phy
+
 .ifndef FAT_NOWRITE
     debug32 "f_wr lba", lba_addr
     debug16 "f_wr wpt", sd_blkptr
@@ -453,14 +436,12 @@ __fat_write_block_data:
     lda #EOK
     clc
 .endif
-    ply
-    sty sd_blkptr+1
-    ply
-    sty sd_blkptr
+
     ply
     cmp #EOK
     bne @l_exit_err
-    jmp __fat_save_lba_addr
+    clc
+    rts; jmp __fat_save_lba_addr
 @l_exit_err:
     sec
     rts
