@@ -38,6 +38,8 @@
 
 .importzp sd_blkptr
 
+BLKL_WRITE_PENDING = 1<<7
+
 .struct _blkl_state
   lba_addr  .res 4
   blk_ptr   .res 2
@@ -50,22 +52,32 @@ blklayer_init:
           rts
 
 blklayer_read_block:
-          debug32 "blkl lba", lba_addr
-          debug32 "blkl lba last", _blkl_0+_blkl_state::lba_addr
-          debug16 "blkl lba blkptr", _blkl_0+_blkl_state::blk_ptr
+          debug32 "blkl r lba", lba_addr
+          debug32 "blkl r lba last", _blkl_0+_blkl_state::lba_addr
+          debug16 "blkl r lba blkptr", _blkl_0+_blkl_state::blk_ptr
           cmp32 _blkl_0+_blkl_state::lba_addr, lba_addr, @l_read
 
-          inc sd_blkptr+1 ; TODO FIXME fake read
+          inc sd_blkptr+1 ; TODO FIXME fake device access
           lda #EOK
           clc
-          rts
+@l_exit:  rts
+
 @l_read:
-          debug32 "blkl lba rd miss >", lba_addr
+          bit _blkl_0+_blkl_state::status ; ? pending write
+          bpl @l_read_dev_block
+          debug "blkl flush >"
+          jsr dev_write_block
+          bne @l_exit
+          dec sd_blkptr+1
+@l_read_dev_block:
+          debug32 "blkl lba r miss >", lba_addr
           jsr dev_read_block
           ;cmp #EOK
           sec
-          bne :+
-@l_save_lba_addr:
+          bne @l_exit
+__blkl_save_lba_addr:
+          stz _blkl_0+_blkl_state::status
+
           lda lba_addr+0
           sta _blkl_0+_blkl_state::lba_addr+0
           lda lba_addr+1
@@ -74,18 +86,22 @@ blklayer_read_block:
           sta _blkl_0+_blkl_state::lba_addr+2
           lda lba_addr+3
           sta _blkl_0+_blkl_state::lba_addr+3
-          lda #EOK
-          clc
-:         rts
-
-
-blklayer_write_block:
-          jmp dev_write_block
-
 blklayer_flush:
           lda #EOK
           clc
           rts
+
+blklayer_write_block:
+          ;debug32 "blkl w rlba", lba_addr
+          ;debug32 "blkl w llba", _blkl_0+_blkl_state::lba_addr
+          ;debug16 "blkl w lba blkptr", _blkl_0+_blkl_state::blk_ptr
+          ;cmp32 _blkl_0+_blkl_state::lba_addr, lba_addr, l_dev_write
+          jsr dev_write_block
+          ;cmp #EOK
+          beq __blkl_save_lba_addr
+          sec
+          rts
+
 
 .bss
   _blkl_0: .tag _blkl_state

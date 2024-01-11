@@ -180,13 +180,8 @@ __fat_add_direntry:
 ; out:
 ;   C=0 on success, C=1 and A=<error> otherwise
 __fat_update_direntry:
-    lda fd_area+F32_fd::flags,x
-    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; file write access?
-    beq @l_exit ; no, read access we skip update
-
     jsr __fat_read_direntry                  ; read dir entry, dirptr is set accordingly
     bcc :+
-@l_exit:
     rts
 
 :   jsr __fat_set_direntry_modify_datetime  ; set modification time and date

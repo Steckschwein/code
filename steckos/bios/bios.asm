@@ -24,9 +24,10 @@
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
-.export dev_write_block=write_block
-.export write_block
-write_block:
+.export dev_write_block=_noop
+.export write_flush=_noop
+.export write_block=_noop
+_noop:
       clc
       rts
 
