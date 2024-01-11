@@ -92,8 +92,6 @@ appstart $1000
     bra @option 
 
 @set_filenameptr:
-    lda #'R'
-    jsr char_out
     
     iny
     lda (paramptr),y
@@ -295,12 +293,10 @@ print_cluster_no:
     dey
     lda (dirptr),y
     jsr hexout
-
     rts
 
 print_fat_date_ax:
-        sta fatdate
-        stx fatdate+1
+        pha
 		and #%00011111
 		jsr b2ad
 
@@ -309,10 +305,11 @@ print_fat_date_ax:
 
 		; month
 		
-		lda fatdate+1
+		txa
 		lsr
 		tax
-		lda fatdate
+
+        pla
 		ror
 		lsr
 		lsr
@@ -322,11 +319,10 @@ print_fat_date_ax:
 		jsr b2ad
 
 		lda #'.'
-		jsr char_out
-
+		jsr  char_out
 
 		txa
-		clc
+      	clc
 		adc #80   	; add begin of msdos epoch (1980)
 		cmp #100
 		bcc @l6		; greater than 100 (post-2000)
@@ -338,9 +334,6 @@ print_fat_date_ax:
 
 
 print_fat_time_ax:
-    ; ldy #F32DirEntry::WrtTime +1
-    ; lda (dirptr),y
-   
     pha
     lsr
     lsr
@@ -356,8 +349,6 @@ print_fat_time_ax:
     sta tmp1
 
     txa
-    ; ldy #F32DirEntry::WrtTime 
-    ; lda (dirptr),y
    
     .repeat 5
     lsr tmp1
@@ -370,11 +361,9 @@ print_fat_time_ax:
     jsr char_out
 
     txa
-    ; lda (dirptr),y
     and #%00011111
 
     jsr b2ad
-
     rts
 
 
@@ -390,7 +379,6 @@ usage:
     .byte "   -v   show volume ID ",$0a,$0d
     .byte "   -l   use a long listing format",$0a,$0d
     .byte 0
-dummy:
     rts
 
 
@@ -408,5 +396,4 @@ fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 direntry_vec: .res 2
 showcls: .res 1
 crtdate: .res 1
-fatdate: .res 2
 tmp1: .res 1
