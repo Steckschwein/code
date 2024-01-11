@@ -4,13 +4,12 @@
 
 .export read_block=mock_read_block
 
+.export dev_read_block=         mock_read_block
+.export read_block=             blklayer_read_block
+.export dev_write_block=        mock_not_implemented
+.export write_block=            mock_not_implemented
+
 .export __rtc_systime_update=mock_not_implemented
-.export sd_read_multiblock=mock_not_implemented
-.export write_block=mock_not_implemented
-.export cluster_nr_matcher=mock_not_implemented
-.export fat_name_string=mock_not_implemented
-.export path_inverse=mock_not_implemented
-.export put_char=mock_not_implemented
 
 debug_enabled=1
 
@@ -173,6 +172,7 @@ debug_enabled=1
 test_end
 
 setUp:
+  jsr blklayer_init
 	jsr __fat_init_fdarea
 	init_volume_id 2
 

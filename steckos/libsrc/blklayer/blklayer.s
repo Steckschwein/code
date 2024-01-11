@@ -52,10 +52,15 @@ blklayer_read_block:
           debug32 "blkl lba last", _blkl_0+_blkl_state::lba_addr
           debug16 "blkl lba blkptr", _blkl_0+_blkl_state::blk_ptr
           cmp32 _blkl_0+_blkl_state::lba_addr, lba_addr, @l_read
+
+          inc sd_blkptr+1 ; TODO FIXME fake read
           lda #EOK
+          clc
           rts
 @l_read:
+          debug32 "blkl lba rd miss >", lba_addr
           jsr dev_read_block
+          ;cmp #EOK
           sec
           bne :+
 @l_save_lba_addr:
@@ -76,6 +81,7 @@ blklayer_write_block:
           jmp dev_write_block
 
 blklayer_flush:
+          lda #EOK
           clc
           rts
 

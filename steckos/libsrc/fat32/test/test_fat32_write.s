@@ -3,8 +3,11 @@
 .autoimport
 
 ; mock defines
-.export read_block=mock_read_block
-.export write_block=mock_write_block
+.export dev_read_block=         mock_read_block
+.export read_block=             blklayer_read_block
+.export dev_write_block=        mock_write_block
+.export write_block=            blklayer_write_block
+
 .export rtc_systime_update=mock_rtc
 
 debug_enabled=1
@@ -615,6 +618,7 @@ mock_not_implemented4:
     fail "mock put_char called!"
 
 setUp:
+  jsr blklayer_init
   jsr __fat_init_fdarea
   init_volume_id SEC_PER_CL
 

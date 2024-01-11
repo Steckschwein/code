@@ -47,7 +47,6 @@
 	set32 volumeID+VolumeID::BPB_RootClus, ROOT_CL
   set32 volumeID + VolumeID::BPB_FATSz32, (FAT2_LBA - FAT_LBA)
   set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * sec_per_cl)
-  set32 volumeID+VolumeID::lba_addr_last, $ffffffff
 	set32 volumeID+VolumeID::lba_fat, FAT_LBA		;fat lba
   set32 volumeID+VolumeID::lba_fat2, FAT2_LBA
   set32 volumeID+VolumeID::lba_fsinfo, FS_INFO_LBA
