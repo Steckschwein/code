@@ -42,6 +42,7 @@ appstart $1000
 
     stz showcls
     stz crtdate
+    stz paging
     
     ldy #0
 @parseloop:
@@ -68,7 +69,7 @@ appstart $1000
     cmp #'l'
     bne :+
     SetVector dir_show_entry_long, direntry_vec
-    lda entries_long
+    lda #entries_long
     sta pagecnt
     sta entries_per_page
 :
@@ -93,6 +94,10 @@ appstart $1000
     cmp #'d'
     bne :+
     inc crtdate
+:
+    cmp #'p'
+    bne :+
+    inc paging
 :
 
     cmp #'h'
@@ -149,7 +154,6 @@ appstart $1000
     bne @l3
 
     jsr dir_show_entry
-
 
 @next:
     dec pagecnt
@@ -406,6 +410,7 @@ fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 direntry_vec: .res 2
 showcls: .res 1
 crtdate: .res 1
+paging: .res 1
 pagecnt:          .res 1
 entries_per_page: .res 1
 tmp1: .res 1
