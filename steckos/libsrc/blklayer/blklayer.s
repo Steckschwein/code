@@ -36,6 +36,8 @@
 
 .autoimport
 
+.importzp sd_blkptr
+
 .struct _blkl_state
   lba_addr  .res 4
   blk_ptr   .res 2

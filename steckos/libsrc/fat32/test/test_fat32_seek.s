@@ -2,8 +2,6 @@
 
 .autoimport
 
-.export read_block=mock_read_block
-
 .export dev_read_block=         mock_read_block
 .export read_block=             blklayer_read_block
 .export dev_write_block=        mock_not_implemented

@@ -175,14 +175,8 @@ mock_write_block:
     rts
 
 
-mock_not_implemented1:
-    fail "mock cluster_nr_matcher called!"
-mock_not_implemented2:
-    fail "mock fat_name_string called!"
-mock_not_implemented3:
-    fail "mock path_inverse called!"
-mock_not_implemented4:
-    fail "mock put_char called!"
+mock_not_implemented:
+    fail "unexpected mock call!"
 
 setUp:
   jsr blklayer_init

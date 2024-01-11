@@ -293,7 +293,7 @@ mock_write_block:
 
 
 mock_not_implemented:
-		fail "mock!"
+    fail "unexpected mock call!"
 
 setUp:
     jsr blklayer_init
