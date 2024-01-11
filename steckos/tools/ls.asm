@@ -30,21 +30,24 @@
 appstart $1000
 
 .code
-main:
-    stz long
-l1:
-    crlf
     SetVector pattern, filenameptr
-   
+    SetVector dir_show_entry_short, direntry_vec
+    stz showcls
+
     ldy #0
 @parseloop:
     lda (paramptr),y 
     beq @read
+    cmp #' '
+    beq @set_filenameptr
+
     cmp #'-'
     beq @option
+    bne @set_filenameptr
+
     iny 
     bne @parseloop 
-    bra @read 
+    bra @set_filenameptr
 
 @option:
     iny
@@ -53,21 +56,58 @@ l1:
     cmp #' '
     beq @parseloop
 
-    ; jsr char_out
-
     cmp #'l'
     bne :+
-    lda #1
-    sta long
+    SetVector dir_show_entry_long, direntry_vec
 :
-    bne @option 
+    ; show all files (remove hidden bit from mask)
+    cmp #'a'
+    bne :+
+    lda dir_attrib_mask
+    and #%11111101
+    sta dir_attrib_mask
+:
+    ; show volume id (remove volid bit from mask)
+    cmp #'v'
+    bne :+
+    lda dir_attrib_mask
+    and #%11110111
+    sta dir_attrib_mask
+:
+    cmp #'c'
+    bne :+
+    inc showcls
+:
+    cmp #'d'
+    bne :+
+    inc crtdate
+:
+
+    cmp #'h'
+    bne :+
+    jsr usage
+    jmp @exit
+:
+
+    bra @option 
+
+@set_filenameptr:
+    lda #'R'
+    jsr char_out
     
+    iny
+    lda (paramptr),y
+    beq @l2
+    dey
+    copypointer paramptr, filenameptr
 
+    tya 
+    clc 
+    adc filenameptr
+    sta filenameptr
 
-    ; beq @l2
 @read:
 
-    ; copypointer paramptr, filenameptr
 @l2:
     lda #<fat_dirname_mask
     ldy #>fat_dirname_mask
@@ -98,12 +138,8 @@ l1:
     bit dir_attrib_mask ; Hidden attribute set, skip
     bne @l3
 
-    lda long 
-    beq :+
-    jsr dir_show_entry_long
-    bra @next
-:
-    jsr dir_show_entry_short
+    jsr dir_show_entry
+
 @next:
     dec pagecnt
     bne @l
@@ -127,7 +163,11 @@ l1:
     jmp @l3
 
 @exit:
+    ; SetVector paramptr, filenameptr
     jmp (retvec)
+
+dir_show_entry:
+    jmp (direntry_vec)
 
 dir_show_entry_short:
     dec cnt
@@ -150,13 +190,7 @@ dir_show_entry_short:
     
 @print:
 
-    ldy #F32DirEntry::Name
-:
-    lda (dirptr),y
-    jsr char_out
-    iny
-    cpy #$0b
-    bne :-
+    jsr print_filename
 
     ldy #F32DirEntry::Attr
     lda (dirptr),y
@@ -181,6 +215,13 @@ dir_show_entry_long:
     pha
     jsr print_filename
 
+    lda #' '
+    jsr krn_chrout
+
+    lda showcls
+    beq :+
+    jsr print_cluster_no
+:   
     ldy #F32DirEntry::Attr
     lda (dirptr),y
 
@@ -197,34 +238,175 @@ dir_show_entry_long:
 
     jsr print_filesize
 
-
     lda #' '
     jsr krn_chrout
+
+
+
 @date:
-    jsr print_fat_date
+    lda crtdate
+    bne :+
+    ldy #F32DirEntry::WrtDate+1
+    bra @x
+:
+    ldy #F32DirEntry::CrtDate+1
+@x:
+    lda (dirptr),y 
+    tax 
+    dey 
+    lda (dirptr),y 
+    
+    jsr print_fat_date_ax
 
 
     lda #' '
     jsr krn_chrout
 
+    lda crtdate
+    bne :+
+    ldy #F32DirEntry::WrtTime
+    bra @y
+:
+    ldy #F32DirEntry::CrtTime
+@y:
+    lda (dirptr),y 
+    tax
+    iny
+    lda (dirptr),y 
 
-    jsr print_fat_time
+
+    jsr print_fat_time_ax
     crlf
 
     pla
     rts
 
+print_cluster_no:
+    ldy #F32DirEntry::FstClusHI+1
+    lda (dirptr),y
+    jsr hexout
+    dey
+    lda (dirptr),y
+    jsr hexout
+    
+    ldy #F32DirEntry::FstClusLO+1
+    lda (dirptr),y
+    jsr hexout
+    dey
+    lda (dirptr),y
+    jsr hexout
+
+    rts
+
+print_fat_date_ax:
+        sta fatdate
+        stx fatdate+1
+		and #%00011111
+		jsr b2ad
+
+		lda #'.'
+		jsr char_out
+
+		; month
+		
+		lda fatdate+1
+		lsr
+		tax
+		lda fatdate
+		ror
+		lsr
+		lsr
+		lsr
+		lsr
+
+		jsr b2ad
+
+		lda #'.'
+		jsr char_out
+
+
+		txa
+		clc
+		adc #80   	; add begin of msdos epoch (1980)
+		cmp #100
+		bcc @l6		; greater than 100 (post-2000)
+		sec 		; yes, substract 100
+		sbc #100
+@l6:
+		jsr b2ad ; there we go
+		rts
+
+
+print_fat_time_ax:
+    ; ldy #F32DirEntry::WrtTime +1
+    ; lda (dirptr),y
+   
+    pha
+    lsr
+    lsr
+    lsr
+
+    jsr b2ad
+ 
+    lda #':'
+    jsr char_out
+
+    pla
+    and #%00000111
+    sta tmp1
+
+    txa
+    ; ldy #F32DirEntry::WrtTime 
+    ; lda (dirptr),y
+   
+    .repeat 5
+    lsr tmp1
+    ror
+    .endrepeat
+
+    jsr b2ad
+
+    lda #':'
+    jsr char_out
+
+    txa
+    ; lda (dirptr),y
+    and #%00011111
+
+    jsr b2ad
+
+    rts
+
+
+
+usage:
+    jsr primm
+    .byte "Usage: ls [OPTION]... [FILE]...",$0a, $0d
+    .byte "options:",$0a,$0d
+    .byte "   -a   show all files (including hidden)",$0a,$0d
+    .byte "   -c   show number of first cluster",$0a,$0d
+    .byte "   -d   show creation date",$0a,$0d
+    .byte "   -h   show this useful message",$0a,$0d
+    .byte "   -v   show volume ID ",$0a,$0d
+    .byte "   -l   use a long listing format",$0a,$0d
+    .byte 0
+dummy:
+    rts
 
 
 entries = 5*24
 
 .data
 pattern:  .byte "*.*",$00
+dir_attrib_mask:  .byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
 cnt:      .byte 6
-dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
 
 .bss
 fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
-long: .res 1, 0
+direntry_vec: .res 2
+showcls: .res 1
+crtdate: .res 1
+fatdate: .res 2
+tmp1: .res 1
