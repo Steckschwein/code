@@ -27,24 +27,33 @@
 .autoimport
 .export char_out=krn_chrout
 
+entries_short    = 5*24
+entries_long     = 23
+
+
 appstart $1000
 
 .code
     SetVector pattern, filenameptr
     SetVector dir_show_entry_short, direntry_vec
-    stz showcls
+    lda #entries_short
+    sta pagecnt
+    sta entries_per_page
 
+    stz showcls
+    stz crtdate
+    
     ldy #0
 @parseloop:
     lda (paramptr),y 
     beq @read
     cmp #' '
     beq @set_filenameptr
-
     cmp #'-'
     beq @option
     bne @set_filenameptr
 
+@next_opt:
     iny 
     bne @parseloop 
     bra @set_filenameptr
@@ -54,11 +63,14 @@ appstart $1000
     lda (paramptr),y  
     beq @parseloop    
     cmp #' '
-    beq @parseloop
+    beq @next_opt
 
     cmp #'l'
     bne :+
     SetVector dir_show_entry_long, direntry_vec
+    lda entries_long
+    sta pagecnt
+    sta entries_per_page
 :
     ; show all files (remove hidden bit from mask)
     cmp #'a'
@@ -137,6 +149,7 @@ appstart $1000
     bne @l3
 
     jsr dir_show_entry
+
 
 @next:
     dec pagecnt
@@ -382,18 +395,17 @@ usage:
     rts
 
 
-entries = 5*24
 
 .data
 pattern:  .byte "*.*",$00
 dir_attrib_mask:  .byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
 cnt:      .byte 6
-entries_per_page: .byte entries
-pagecnt:          .byte entries
 
 .bss
 fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 direntry_vec: .res 2
 showcls: .res 1
 crtdate: .res 1
+pagecnt:          .res 1
+entries_per_page: .res 1
 tmp1: .res 1
