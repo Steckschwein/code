@@ -6,6 +6,7 @@
 .export read_block=             blklayer_read_block
 .export dev_write_block=        mock_not_implemented
 .export write_block=            mock_not_implemented
+.export write_block_buffered=   mock_not_implemented
 .export write_flush=            blklayer_flush
 
 .export __rtc_systime_update=mock_not_implemented

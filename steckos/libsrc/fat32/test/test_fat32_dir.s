@@ -7,6 +7,7 @@
 .export read_block=             blklayer_read_block
 .export dev_write_block=        mock_write_block
 .export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
 .export write_flush=            blklayer_flush
 .export rtc_systime_update=mock_rtc
 

@@ -32,6 +32,7 @@
 .export blklayer_init
 .export blklayer_read_block;
 .export blklayer_write_block;
+.export blklayer_write_block_buffered;
 .export blklayer_flush;
 
 .autoimport
@@ -42,6 +43,7 @@ BLKL_WRITE_PENDING = 1<<7
 
 .struct _blkl_state
   lba_addr  .res 4
+  lba_temp  .res 4
   blk_ptr   .res 2
   status    .res 1
 .endstruct
@@ -54,27 +56,20 @@ blklayer_init:
 blklayer_read_block:
           debug32 "blkl r lba", lba_addr
           debug32 "blkl r lba last", _blkl_0+_blkl_state::lba_addr
-          debug16 "blkl r lba blkptr", _blkl_0+_blkl_state::blk_ptr
+;          debug16 "blkl r lba blkptr", _blkl_0+_blkl_state::blk_ptr
           cmp32 _blkl_0+_blkl_state::lba_addr, lba_addr, @l_read
 
-          inc sd_blkptr+1 ; TODO FIXME fake device access
+          inc sd_blkptr+1  ; TODO FIXME dev_write_block (sdcard) device driver sideeffect
           lda #EOK
           clc
 @l_exit:  rts
 
-@l_read:
-          bit _blkl_0+_blkl_state::status ; ? pending write
-          bpl @l_read_dev_block
-          debug "blkl flush >"
-          jsr dev_write_block
-          bne @l_exit
-          dec sd_blkptr+1
-@l_read_dev_block:
+@l_read:  jsr blklayer_flush
+          bcs @l_exit
           debug32 "blkl lba r miss >", lba_addr
           jsr dev_read_block
           ;cmp #EOK
-          sec
-          bne @l_exit
+          bne l_exit_err
 __blkl_save_lba_addr:
           stz _blkl_0+_blkl_state::status
 
@@ -86,22 +81,47 @@ __blkl_save_lba_addr:
           sta _blkl_0+_blkl_state::lba_addr+2
           lda lba_addr+3
           sta _blkl_0+_blkl_state::lba_addr+3
-blklayer_flush:
           lda #EOK
           clc
           rts
+l_exit_err:
+          sec
+          rts
+
+blklayer_flush:
+          bit _blkl_0+_blkl_state::status ; ? pending write
+          bpl @l_exit
+          debug "blkl flush >"
+          m_memcpy lba_addr, _blkl_0+_blkl_state::lba_temp, 4
+          m_memcpy _blkl_0+_blkl_state::lba_addr, lba_addr, 4
+          jsr dev_write_block
+          pha
+          m_memcpy _blkl_0+_blkl_state::lba_temp, lba_addr, 4
+          pla
+          cmp #EOK
+          bne l_exit_err
+          dec sd_blkptr+1 ; TODO FIXME dev_write_block (sdcard) device driver sideeffect
+@l_exit:  clc
+          rts
 
 blklayer_write_block:
-          ;debug32 "blkl w rlba", lba_addr
-          ;debug32 "blkl w llba", _blkl_0+_blkl_state::lba_addr
-          ;debug16 "blkl w lba blkptr", _blkl_0+_blkl_state::blk_ptr
-          ;cmp32 _blkl_0+_blkl_state::lba_addr, lba_addr, l_dev_write
+          debug32 "blkl w rlba", lba_addr
           jsr dev_write_block
           ;cmp #EOK
           beq __blkl_save_lba_addr
           sec
           rts
 
+blklayer_write_block_buffered:
+          debug32 "blkl wb rlba", lba_addr
+          ;debug32 "blkl w llba", _blkl_0+_blkl_state::lba_addr
+          ;debug16 "blkl w lba blkptr", _blkl_0+_blkl_state::blk_ptr
+          ;cmp32 _blkl_0+_blkl_state::lba_addr, lba_addr, l_dev_write
+          lda #BLKL_WRITE_PENDING
+          sta _blkl_0+_blkl_state::status
+          lda #EOK
+          clc
+          rts
 
 .bss
   _blkl_0: .tag _blkl_state

@@ -77,7 +77,7 @@ fat_write_byte:
     _inc32_x fd_area+F32_fd::SeekPos    ; seek+1
 
     jsr __fat_set_fd_filesize
-    jsr __fat_write_block_data          ; write block
+    jsr __fat_write_block_data_buffered ; write block buffered
 @l_exit:
     ply
     rts
@@ -441,6 +441,22 @@ __fat_write_block_data:
     sec
     rts
 
+__fat_write_block_data_buffered:
+    lda #>block_data
+    sta sd_blkptr+1
+    stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
+    phy
+    phx
+    jsr write_block_buffered
+    plx
+    ply
+    cmp #EOK
+    bne @l_exit_err
+    clc
+    rts
+@l_exit_err:
+    sec
+    rts
 
 __fat_write_fat_blocks:
     jsr __fat_write_block_fat      ; lba_addr is already setup by __fat_find_free_cluster

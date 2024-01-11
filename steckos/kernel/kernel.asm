@@ -30,13 +30,13 @@
 .autoimport
 
 ; expose high level read_/write_block api
-.export read_block=blklayer_read_block
-.export write_block=blklayer_write_block
-.export write_flush=blklayer_flush
-
+.export read_block=             blklayer_read_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
+.export write_flush=            blklayer_flush
 ; configure low level or device read_/write_block api
-.export dev_read_block=sd_read_block
-.export dev_write_block=sd_write_block
+.export dev_read_block=         sd_read_block
+.export dev_write_block=        sd_write_block
 
 .export char_out=ansi_chrout         ; account for page crossing
 
