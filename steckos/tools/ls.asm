@@ -156,6 +156,8 @@ appstart $1000
     jsr dir_show_entry
 
 @next:
+    lda paging
+    beq @l
     dec pagecnt
     bne @l
     keyin
@@ -393,6 +395,7 @@ usage:
     .byte "   -c   show number of first cluster",$0a,$0d
     .byte "   -d   show creation date",$0a,$0d
     .byte "   -h   show this useful message",$0a,$0d
+    .byte "   -p   paginate output",$0a,$0d
     .byte "   -v   show volume ID ",$0a,$0d
     .byte "   -l   use a long listing format",$0a,$0d
     .byte 0
