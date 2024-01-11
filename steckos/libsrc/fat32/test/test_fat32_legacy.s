@@ -6,10 +6,6 @@
 .export read_block=mock_read_block
 .export write_block=mock_write_block
 .export rtc_systime_update=mock_rtc
-.export cluster_nr_matcher=mock_not_implemented1
-.export fat_name_string=mock_not_implemented2
-.export path_inverse=mock_not_implemented3
-.export put_char=mock_not_implemented4
 
 debug_enabled=1
 
@@ -100,8 +96,7 @@ test_end
     assertDirEntry block_root_cl+4*DIR_Entry_Size
       fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, (4 * sd_blocksize + 3); cluster reserved but no blocks are written, filesize is wrong here!!!
 
-    brk
-
+test_end
 
 data_loader  ; define data loader
 data_writer ; define data writer

@@ -24,20 +24,60 @@
   debug_enabled=1
 .endif
 
+.include "common.inc"
+.include "errno.inc"
+
+.include "debug.inc"
+
+.export blklayer_init
 .export blklayer_read_block;
 .export blklayer_write_block;
 .export blklayer_flush;
 
 .autoimport
 
+.struct _blkl_state
+  lba_addr  .res 4
+  blk_ptr   .res 2
+  status    .res 1
+.endstruct
+
+blklayer_init:
+          m_memset _blkl_0+_blkl_state::lba_addr, $ff, 4
+          stz _blkl_0+_blkl_state::status
+          rts
+
 blklayer_read_block:
-        jmp sd_read_block
-        rts
+          debug32 "blkl lba", lba_addr
+          debug32 "blkl lba last", _blkl_0+_blkl_state::lba_addr
+          debug16 "blkl lba blkptr", _blkl_0+_blkl_state::blk_ptr
+          cmp32 _blkl_0+_blkl_state::lba_addr, lba_addr, @l_read
+          lda #EOK
+          rts
+@l_read:
+          jsr dev_read_block
+          sec
+          bne :+
+@l_save_lba_addr:
+          lda lba_addr+0
+          sta _blkl_0+_blkl_state::lba_addr+0
+          lda lba_addr+1
+          sta _blkl_0+_blkl_state::lba_addr+1
+          lda lba_addr+2
+          sta _blkl_0+_blkl_state::lba_addr+2
+          lda lba_addr+3
+          sta _blkl_0+_blkl_state::lba_addr+3
+          lda #EOK
+          clc
+:         rts
+
 
 blklayer_write_block:
-        jmp sd_write_block
-        rts
+          jmp dev_write_block
 
 blklayer_flush:
-        clc
-        rts
+          clc
+          rts
+
+.bss
+  _blkl_0: .tag _blkl_state

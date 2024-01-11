@@ -47,7 +47,6 @@
 fat_mount:
 
     m_memclr volumeID, .sizeof(VolumeID)
-    m_memset volumeID+VolumeID::lba_addr_last, $ff, 4
 
     ; set lba_addr to $00000000 since we want to read the bootsector
     m_memclr lba_addr, 4

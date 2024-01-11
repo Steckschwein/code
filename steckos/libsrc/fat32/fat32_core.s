@@ -61,7 +61,6 @@
 .export __fat_set_fd_dirlba
 .export __fat_set_fd_start_cluster
 .export __fat_set_fd_start_cluster_seek_pos
-.export __fat_save_lba_addr
 .export __fat_set_root_clus_lba_addr
 .export __calc_lba_addr
 .export __fat_shift_lba_addr
@@ -511,33 +510,16 @@ __fat_read_block_data:
 :   sta sd_blkptr+1
     stz sd_blkptr+0
 
-    debug32 "fat_rb lba", lba_addr
-    debug32 "fat_rb lba last", volumeID+VolumeID::lba_addr_last
-    cmp32 volumeID+VolumeID::lba_addr_last, lba_addr, @l_read
-    clc
-    rts
-
 @l_read:
     phx
-;    debug16 "fat_rb_ptr", sd_blkptr
     jsr read_block
     dec sd_blkptr+1     ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
     plx
     cmp #EOK
-    clc                 ; success if we take the branch
-    beq __fat_save_lba_addr
-    sec
+    bne :+
+    clc
     rts
-
-__fat_save_lba_addr:
-    lda lba_addr+0
-    sta volumeID+VolumeID::lba_addr_last+0
-    lda lba_addr+1
-    sta volumeID+VolumeID::lba_addr_last+1
-    lda lba_addr+2
-    sta volumeID+VolumeID::lba_addr_last+2
-    lda lba_addr+3
-    sta volumeID+VolumeID::lba_addr_last+3
+:   sec
     rts
 
     ; in:

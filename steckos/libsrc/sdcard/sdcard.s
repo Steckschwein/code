@@ -279,7 +279,7 @@ sd_exit:
 ;   sd_blkptr target adress for the block data to be read
 ;
 ;out:
-;	A - A = 0 on success, error code otherwise
+;	C=1, A = 0 on success, C=0 and A=<error code> otherwise
 ;---------------------------------------------------------------------
 sd_read_block:
       php
@@ -298,7 +298,7 @@ sd_read_block:
       cmp #0
       rts
 
-@exit: 	; fall through to sd_deselect_card
+@exit:
 
 ;---------------------------------------------------------------------
 ; deselect sd card, puSH CS line to HI and generate few clock cycles

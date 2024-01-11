@@ -2,7 +2,9 @@
 
 .autoimport
 
-.export read_block=sd_read_block
+.export read_block=blklayer_read_block
+.export dev_read_block=sd_read_block
+
 .export char_out=vdp_charout
 .export debug_chrout=vdp_charout
 ;.export char_out=uart_tx
@@ -22,6 +24,7 @@
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
+.export dev_write_block=write_block
 .export write_block
 write_block:
       clc
@@ -208,6 +211,9 @@ zp_broken:
 stack_broken:
 
 zp_stack_ok:
+
+      jsr blklayer_init
+
       jsr init_via1
 
       lda #<nvram

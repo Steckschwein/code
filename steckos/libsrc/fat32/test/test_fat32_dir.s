@@ -6,10 +6,6 @@
 .export read_block=mock_read_block
 .export write_block=mock_write_block
 .export rtc_systime_update=mock_rtc
-.export cluster_nr_matcher=mock_not_implemented
-.export fat_name_string=mock_not_implemented
-.export path_inverse=mock_not_implemented
-.export put_char=mock_not_implemented
 
 debug_enabled=1
 
@@ -235,7 +231,7 @@ TEST_FILE_CL2=$19
     assert32 $fe, block_fsinfo+F32FSInfo::FreeClus
     assert32 TEST_FILE_CL2, block_fsinfo+F32FSInfo::LastClus
 
-		test_end
+test_end
 
 data_loader  ; define data loader
 data_writer ; define data writer

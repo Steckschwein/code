@@ -2,6 +2,16 @@
 
 .autoimport
 
+.export read_block=mock_read_block
+
+.export __rtc_systime_update=mock_not_implemented
+.export sd_read_multiblock=mock_not_implemented
+.export write_block=mock_not_implemented
+.export cluster_nr_matcher=mock_not_implemented
+.export fat_name_string=mock_not_implemented
+.export path_inverse=mock_not_implemented
+.export put_char=mock_not_implemented
+
 debug_enabled=1
 
 .code
@@ -160,7 +170,7 @@ debug_enabled=1
 		assertCarry 1
     assertA EOK ; eof expected
 
-		brk
+test_end
 
 setUp:
 	jsr __fat_init_fdarea
@@ -180,15 +190,6 @@ setUp:
   set8 fd_area+(2*FD_Entry_Size)+F32_fd::flags, O_RDONLY
 
 	rts
-
-.export __rtc_systime_update=mock_not_implemented
-.export read_block=mock_read_block
-.export sd_read_multiblock=mock_not_implemented
-.export write_block=mock_not_implemented
-.export cluster_nr_matcher=mock_not_implemented
-.export fat_name_string=mock_not_implemented
-.export path_inverse=mock_not_implemented
-.export put_char=mock_not_implemented
 
 data_loader	; define data loader
 
