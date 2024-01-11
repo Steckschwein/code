@@ -73,14 +73,7 @@ blklayer_read_block:
 __blkl_save_lba_addr:
           stz _blkl_0+_blkl_state::status
 
-          lda lba_addr+0
-          sta _blkl_0+_blkl_state::lba_addr+0
-          lda lba_addr+1
-          sta _blkl_0+_blkl_state::lba_addr+1
-          lda lba_addr+2
-          sta _blkl_0+_blkl_state::lba_addr+2
-          lda lba_addr+3
-          sta _blkl_0+_blkl_state::lba_addr+3
+          m_memcpy lba_addr, _blkl_0+_blkl_state::lba_addr, 4
           lda #EOK
           clc
           rts

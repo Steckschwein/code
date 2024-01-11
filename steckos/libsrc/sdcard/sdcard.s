@@ -293,12 +293,10 @@ sd_read_block:
 			bne @exit
 			jsr fullblock
       jsr sd_deselect_card
-
+@exit:
       plp
       cmp #0
       rts
-
-@exit:
 
 ;---------------------------------------------------------------------
 ; deselect sd card, puSH CS line to HI and generate few clock cycles

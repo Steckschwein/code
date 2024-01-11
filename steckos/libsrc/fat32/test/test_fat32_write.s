@@ -471,6 +471,8 @@ TEST_FILE_CL19=$19
 
     jsr fat_close
 
+    assert32 $fe, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $19, block_fsinfo+F32FSInfo::LastClus
 
 ; -------------------
 single_test:
@@ -538,6 +540,9 @@ single_test:
     assertA EOK ; eoc
 
     jsr fat_close
+
+    assert32 $fe, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $19, block_fsinfo+F32FSInfo::LastClus
 
 test_end
 

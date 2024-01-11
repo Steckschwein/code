@@ -253,7 +253,6 @@ fat_close:
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; file write access?
     beq :+ ; read access, dir entry has not modified we skip the update
     jsr __fat_update_direntry
-    jsr write_flush
 :   jmp __fat_free_fd
 
 ; find first dir entry
