@@ -1,18 +1,23 @@
 .include "fat32.inc"
+.include "common.inc"
+
 
 .export print_filename, print_fat_date, print_fat_time, print_filesize
 
 .importzp dirptr
 .autoimport 
-.segment "CODE"
+.code
 print_filename:
+		ldx #0
 		ldy #F32DirEntry::Name
 @l1:
 		lda (dirptr),y
+		tolower
 		jsr char_out
 		iny
-		cpy #$0b
+		cpy #11
 		bne @l1
+
 		rts
 
 print_fat_date:
