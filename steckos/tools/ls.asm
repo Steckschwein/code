@@ -36,6 +36,7 @@ appstart $1000
 .code
     SetVector pattern, filenameptr
     SetVector dir_show_entry_short, direntry_vec
+    
     lda #entries_short
     sta pagecnt
     sta entries_per_page
@@ -43,11 +44,14 @@ appstart $1000
     stz showcls
     stz crtdate
     stz paging
+    stz attribs
     
     ldy #0
 @parseloop:
-    lda (paramptr),y 
-    beq @read
+    lda (paramptr),y
+    bne :+
+    jmp @read
+: 
     cmp #' '
     beq @set_filenameptr
     cmp #'-'
@@ -74,7 +78,7 @@ appstart $1000
     sta entries_per_page
 :
     ; show all files (remove hidden bit from mask)
-    cmp #'a'
+    cmp #'h'
     bne :+
     lda dir_attrib_mask
     and #%11111101
@@ -99,8 +103,12 @@ appstart $1000
     bne :+
     inc paging
 :
+    cmp #'a'
+    bne :+
+    inc attribs
+:
 
-    cmp #'h'
+    cmp #'?'
     bne :+
     jsr usage
     jmp @exit
@@ -180,7 +188,6 @@ appstart $1000
     jmp @l3
 
 @exit:
-    ; SetVector paramptr, filenameptr
     jmp (retvec)
 
 dir_show_entry:
@@ -228,6 +235,34 @@ dir_show_entry_short:
     jsr krn_chrout
     rts 
 
+print_attribs:
+    ldy #F32DirEntry::Attr
+    lda (dirptr),y
+
+    bit #DIR_Attr_Mask_Dir
+    beq :+
+    jsr primm
+    .asciiz "    "
+    rts
+:
+
+    ldx #3
+@al:
+    bit attr_tbl,x
+    beq @skip
+    pha
+    lda attr_lbl,x
+    jsr krn_chrout
+    pla
+    bra @next
+@skip:
+    lda #' '
+    jsr char_out
+@next:
+    dex 
+    bpl @al
+    rts
+
 dir_show_entry_long:
     pha
     jsr print_filename
@@ -235,10 +270,19 @@ dir_show_entry_long:
     lda #' '
     jsr krn_chrout
 
+
     lda showcls
     beq :+
     jsr print_cluster_no
 :   
+
+    lda attribs
+    beq :+
+    lda #' '
+    jsr krn_chrout
+    jsr print_attribs
+:
+
     ldy #F32DirEntry::Attr
     lda (dirptr),y
 
@@ -249,7 +293,6 @@ dir_show_entry_long:
     bra @date        ; no point displaying directory size as its always zeros
               ; just print some spaces and skip to date display
 @l:
-
     lda #' '
     jsr krn_chrout
 
@@ -257,6 +300,7 @@ dir_show_entry_long:
 
     lda #' '
     jsr krn_chrout
+
 
 
 
@@ -315,41 +359,41 @@ print_cluster_no:
     rts
 
 print_fat_date_ax:
-        pha
-		and #%00011111
-		jsr b2ad
+    pha
+    and #%00011111
+    jsr b2ad
 
-		lda #'.'
-		jsr char_out
+    lda #'.'
+    jsr char_out
 
-		; month
-		
-		txa
-		lsr
-		tax
+    ; month
+    
+    txa
+    lsr
+    tax
 
-        pla
-		ror
-		lsr
-		lsr
-		lsr
-		lsr
+    pla
+    ror
+    lsr
+    lsr
+    lsr
+    lsr
 
-		jsr b2ad
+    jsr b2ad
 
-		lda #'.'
-		jsr  char_out
+    lda #'.'
+    jsr  char_out
 
-		txa
-      	clc
-		adc #80   	; add begin of msdos epoch (1980)
-		cmp #100
-		bcc @l6		; greater than 100 (post-2000)
-		sec 		; yes, substract 100
-		sbc #100
+    txa
+    clc
+    adc #80   	; add begin of msdos epoch (1980)
+    cmp #100
+    bcc @l6		; greater than 100 (post-2000)
+    sec 		; yes, substract 100
+    sbc #100
 @l6:
-		jsr b2ad ; there we go
-		rts
+    jsr b2ad ; there we go
+    rts
 
 
 print_fat_time_ax:
@@ -391,29 +435,32 @@ usage:
     jsr primm
     .byte "Usage: ls [OPTION]... [FILE]...",$0a, $0d
     .byte "options:",$0a,$0d
-    .byte "   -a   show all files (including hidden)",$0a,$0d
+    .byte "   -a   show file attributes",$0a,$0d
     .byte "   -c   show number of first cluster",$0a,$0d
     .byte "   -d   show creation date",$0a,$0d
-    .byte "   -h   show this useful message",$0a,$0d
+    .byte "   -h   show hidden files",$0a,$0d
+    .byte "   -l   use a long listing format",$0a,$0d
     .byte "   -p   paginate output",$0a,$0d
     .byte "   -v   show volume ID ",$0a,$0d
-    .byte "   -l   use a long listing format",$0a,$0d
+    .byte "   -?   show this useful message",$0a,$0d
     .byte 0
     rts
 
 
 
 .data
-pattern:  .byte "*.*",$00
+attr_tbl:   .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
+attr_lbl:   .byte 'R','H','S','A'
+pattern:    .byte "*.*",$00
 dir_attrib_mask:  .byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
-cnt:      .byte 6
-
+cnt:        .byte 6
 .bss
 fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 direntry_vec: .res 2
 showcls: .res 1
 crtdate: .res 1
 paging: .res 1
+attribs: .res 1
 pagecnt:          .res 1
 entries_per_page: .res 1
 tmp1: .res 1
