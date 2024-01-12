@@ -36,7 +36,7 @@ appstart $1000
 .code
     SetVector pattern, filenameptr
     SetVector dir_show_entry_short, direntry_vec
-    
+
     lda #entries_short
     sta pagecnt
     sta entries_per_page
@@ -227,24 +227,17 @@ dir_show_entry_short:
 :
 
     lda #' '
-    jsr krn_chrout
+    jsr char_out
 @pad:
     lda #' '
-    jsr krn_chrout
+    jsr char_out
     lda #' '
-    jsr krn_chrout
+    jsr char_out
     rts 
 
 print_attribs:
     ldy #F32DirEntry::Attr
     lda (dirptr),y
-
-    bit #DIR_Attr_Mask_Dir
-    beq :+
-    jsr primm
-    .asciiz "    "
-    rts
-:
 
     ldx #3
 @al:
@@ -252,12 +245,14 @@ print_attribs:
     beq @skip
     pha
     lda attr_lbl,x
-    jsr krn_chrout
+    jsr char_out
     pla
     bra @next
 @skip:
+    pha
     lda #' '
     jsr char_out
+    pla
 @next:
     dex 
     bpl @al
@@ -268,7 +263,7 @@ dir_show_entry_long:
     jsr print_filename
 
     lda #' '
-    jsr krn_chrout
+    jsr char_out
 
 
     lda showcls
@@ -279,7 +274,7 @@ dir_show_entry_long:
     lda attribs
     beq :+
     lda #' '
-    jsr krn_chrout
+    jsr char_out
     jsr print_attribs
 :
 
@@ -294,12 +289,12 @@ dir_show_entry_long:
               ; just print some spaces and skip to date display
 @l:
     lda #' '
-    jsr krn_chrout
+    jsr char_out
 
     jsr print_filesize
 
     lda #' '
-    jsr krn_chrout
+    jsr char_out
 
 
 
@@ -321,7 +316,7 @@ dir_show_entry_long:
 
 
     lda #' '
-    jsr krn_chrout
+    jsr char_out
 
     lda crtdate
     bne :+
