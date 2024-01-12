@@ -162,95 +162,93 @@ __fat_seek_next_dirent:
 ;   Note: regardless of return value, the dirptr points to the last visited directory entry and the corresponding lba_addr is set to the block where the dir entry resides.
 ;
 __fat_open_path:
-    debug "fat_open_path >"
-    sta filenameptr
-    stx filenameptr+1         ; save path arg given in a/x
+        debug "fat_open_path >"
+        sta filenameptr
+        stx filenameptr+1         ; save path arg given in a/x
 
-    ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
-    jsr __fat_clone_fd        ; Y is given as param
+        ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
+        jsr __fat_clone_fd        ; Y is given as param
 
-    ldy #0                    ; trim whitespace at the beginning
-@l1:
-    lda (filenameptr), y
-    cmp #' '+1
-    bcs @l2
-    iny
-    bne @l1
-    bra @l_err_einval         ; overflow, >255 chars
-@l2:
-    ;  parse input path fragments into fat_filename try to change dirs accordingly
-    ldx #0
-@l_parse_1:
-    lda (filenameptr),y
-    beq @l_filename_end
-    iny
-
-    cmp #'.'
-    bne @l_char
-    cpx #0              ; starts with "." ?
-    bne @l_fill_name    ; no, then fill until end of fat name
+        ldy #0                    ; trim whitespace at the beginning
+@trim:  lda (filenameptr), y
+        cmp #' '+1
+        bcs @l_parse_path
+        iny
+        bne @trim
+        bra @l_err_einval         ; overflow, >255 chars
+@l_parse_path:
+        ;  parse input path fragments into fat_filename try to change dirs accordingly
+        ldx #0
+@l_parse:
+        lda (filenameptr),y
+        beq @l_filename_end
+        iny
+        cmp #'.'
+        bne @l_char
+        cpx #0              ; starts with "." ?
+        bne @l_fill_name    ; no, then fill until end of fat name
 @l_dot:
-    sta volumeID+VolumeID::fat_filename,x
-    inx
-    lda (filenameptr),y
-    beq @l_open_file
-    iny
-    cmp #'.'
-    bne @l_char
-    cpx #1              ; starts with ".." ?
-    beq @l_dot
-    bra @l_err_einval
+        sta volumeID+VolumeID::fat_filename,x
+        inx
+        lda (filenameptr),y
+        beq @l_open_file    ; open "." dir
+        iny
+        cmp #'.'
+        bne @l_char
+        cpx #1              ; starts with ".." ?
+        beq @l_dot          ; go on, verify no further chars
+        bra @l_err_einval   ; otherwise more then 2 "." at the beginning
+@l_fn:  lda #' '
+        sta volumeID+VolumeID::fat_filename,x
+        inx
 @l_fill_name:
-    lda #' '
-:   cpx #.sizeof(F32DirEntry::Name)
-    bcs @l_parse_1
-    sta volumeID+VolumeID::fat_filename,x
-    debugdump "fat fill nm", volumeID+VolumeID::fat_filename
-    inx
-    bra :-
+        cpx #.sizeof(F32DirEntry::Name)
+        debugdump "fat fill nm", volumeID+VolumeID::fat_filename
+        bcc @l_fn
+        bra @l_parse
 @l_char:
-    cmp #' '+1           ;TODO FIXME support file/dir name with spaces? it's beyond 8.3 file support
-    bcc @l_err_einval
+        cmp #' '+1           ;TODO FIXME support file/dir name with spaces? it's beyond 8.3 file support
+        bcc @l_err_einval
 @l_skip:
-    cmp #'/'
-    beq @l_open_dir
-    cmp #'a' ; Is lowercase?
-    bcc :+
-    cmp #'z'+1
-    bcs :+
-    and #$DF
-:   sta volumeID+VolumeID::fat_filename,x
-    inx
-    cpx #8+3 +1             ; buffer overflow ? - only 8.3 file support yet
-    bne @l_parse_1
+        cmp #'/'
+        beq @l_open_dir
+        cmp #'a' ; Is lowercase?
+        bcc :+
+        cmp #'z'+1
+        bcs :+
+        and #$DF
+:       sta volumeID+VolumeID::fat_filename,x
+        inx
+        cpx #8+3 +1             ; buffer overflow ? - only 8.3 file support yet
+        bne @l_parse
 @l_err_einval:
-    lda #EINVAL
-    sec
-    rts
-@l_open_dir:
-    cpx #0                  ; empty string, we came from '/' match
-    beq @l_open_rootdir
-    jsr @l_open_file        ; return with X as offset into fd_area
-    bcc @l2
-    rts
-@l_open_rootdir:
-    ldx #FD_INDEX_TEMP_DIR  ; use fd of the temp directory
-    jsr __fat_open_rootdir
-    bcc @l2
-    rts
+        lda #EINVAL
+        sec
+        rts
 @l_filename_end:
-    cpx #0
-    bne @l_open_file
-    clc
-    rts
+        cpx #0
+        bne @l_open_file
+        ldx #FD_INDEX_TEMP_DIR  ; end up here from a previous opendir()/changedir()
+        clc
+        rts
+@l_open_dir:
+        cpx #0                  ; empty string, we came from '/' match
+        beq @l_open_rootdir
+        jsr @l_open_file        ; return with X as offset into fd_area
+        bcc @l_parse_path
+        rts
+@l_open_rootdir:
+        ldx #FD_INDEX_TEMP_DIR  ; use fd of the temp directory
+        jsr __fat_open_rootdir
+        bcc @l_parse_path
+        rts
+ :      lda #' '
+        sta volumeID+VolumeID::fat_filename,x
+        inx
 @l_open_file:
-    lda #' '
-:   cpx #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)
-    bcs __fat_open_file
-    sta volumeID+VolumeID::fat_filename,x
-    debugdump "f fill ex", volumeID+VolumeID::fat_filename
-    inx
-    bra :-
+        cpx #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)
+        bcc :-
+        debugdump "f fill ex", volumeID+VolumeID::fat_filename
 
 ; in:
 ;   volumeID+VolumeID::fat_filename set with fat compatible filename to open
