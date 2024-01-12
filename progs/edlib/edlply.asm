@@ -31,6 +31,8 @@
 .export d00file
 .export char_out=krn_chrout
 
+EDLIB_MAX_FILE_SIZE=16*1024
+
 appstart $1000
 
 .code
@@ -89,18 +91,18 @@ main:
 
 @keyin:
     keyin
-    cmp #'p'
-    bne @key_min
-    lda #01
-    eor player_state
-    sta player_state
-    beq :+
-    jsr primm
-    .byte "Pause...",$0a,0
-    bra @keyin
-:    jsr primm
-    .byte "Play...",$0a,0
-    bra @keyin
+		cmp #'p'
+		bne @key_min
+		lda #01
+		eor player_state
+		sta player_state
+		beq :+
+		jsr primm
+		.byte "Pause...",$0a,0
+		bra @keyin
+:		jsr primm
+		.byte "Play...",$0a,0
+		bra @keyin
 @key_min:
     cmp #'-'
     bne @key_pls
@@ -148,7 +150,7 @@ set_timer_t2_safe:
     plp
     rts
 set_timer_t2:
-    ldx #opl2_reg_t2  ; t2 timer value
+    ldx #opl2_reg_t2	; t2 timer value
     lda t2_value
     jmp opl2_reg_write
 
@@ -195,13 +197,26 @@ d00header:
     .byte "JCH",$26,$2,$66
 
 loadfile:
-    lda paramptr
-    ldx paramptr+1
-    ldy #O_RDONLY
-    jsr krn_fopen
+		lda paramptr
+		ldx paramptr+1
+		ldy #O_RDONLY
+		jsr krn_open
     bcs @l_exit
+
+    lda fd_area+F32_fd::FileSize+1,x
+    and #$3f
+    ora fd_area+F32_fd::FileSize+2,x
+    ora fd_area+F32_fd::FileSize+3,x
+    beq @load
+    jsr primm
+    .byte "d00 file to big! cannot handle it.",$0a,0
+    jsr krn_close
+    lda #EINVAL
+    sec
+    rts
+@load:
     SetVector d00file, file_ptr
-:   jsr krn_fread_byte
+:		jsr krn_fread_byte
     bcs @eof
     sta (file_ptr)
     inc file_ptr+0
@@ -210,7 +225,7 @@ loadfile:
     bra :-
 @l_exit:
     rts
-@eof:
+@exit_close:
     jmp krn_close
 
 player_isr:
@@ -248,11 +263,11 @@ player_isr:
   file_ptr: .res 2
 
 .data
-  safe_isr:     .res 2
-  player_state: .res 1
-  t2_value:     .res 1
-  fd:           .res 1
-  fm_master_volume: .res 1
+  player_state: .res 1, 0
+  fm_master_volume: .res 1, 0
 
 .bss
+  fd:           .res 1
+  t2_value:     .res 1
+  safe_isr:     .res 2
   d00file:      .res $4000

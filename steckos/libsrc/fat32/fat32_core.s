@@ -508,8 +508,8 @@ __fat_read_block_fat:
     bra :+
 __fat_read_block_data:
     lda #>block_data
-:   sta read_blkptr+1
-    stz read_blkptr+0
+:   sta sd_blkptr+1
+    stz sd_blkptr+0
 
     debug32 "fat_rb lba", lba_addr
     debug32 "fat_rb lba last", volumeID+VolumeID::lba_addr_last
@@ -519,11 +519,12 @@ __fat_read_block_data:
 
 @l_read:
     phx
-;    debug16 "fat_rb_ptr", read_blkptr
+;    debug16 "fat_rb_ptr", sd_blkptr
     jsr read_block
-    dec read_blkptr+1    ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
+    dec sd_blkptr+1     ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
     plx
     cmp #EOK
+    clc                 ; success if we take the branch
     beq __fat_save_lba_addr
     sec
     rts
@@ -537,7 +538,6 @@ __fat_save_lba_addr:
     sta volumeID+VolumeID::lba_addr_last+2
     lda lba_addr+3
     sta volumeID+VolumeID::lba_addr_last+3
-    clc ; success
     rts
 
     ; in:
@@ -663,35 +663,35 @@ __fat_next_cln:
     bne @l_exit ; other error, then exit
     debug "f n cl w"
     lda volumeID + VolumeID::cluster + 0 ;
-    sta (read_blkptr), y
+    sta (sd_blkptr), y
     iny
     lda volumeID + VolumeID::cluster + 1
-    sta (read_blkptr), y
+    sta (sd_blkptr), y
     iny
     lda volumeID + VolumeID::cluster + 2
-    sta (read_blkptr), y
+    sta (sd_blkptr), y
     iny
     lda volumeID + VolumeID::cluster + 3
-    sta (read_blkptr), y
+    sta (sd_blkptr), y
 
     jsr __fat_write_fat_blocks    ; write fat block with updated chain
     bcs @l_exit
 
 @l_select_next_cln:
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
-    debug16 "sel nxt (eoc)", read_blkptr
+    debug16 "sel nxt (eoc)", sd_blkptr
     bcs @l_exit
 
-    lda (read_blkptr), y
+    lda (sd_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+0, x
     iny
-    lda (read_blkptr), y
+    lda (sd_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+1, x
     iny
-    lda (read_blkptr), y
+    lda (sd_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+2, x
     iny
-    lda (read_blkptr), y
+    lda (sd_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+3, x
 @l_exit:
     debug32 "fat next cln <", fd_area+(FD_Entry_Size*2)+F32_fd::CurrentCluster
@@ -722,7 +722,7 @@ __fat_set_fd_start_cluster:
 ; in:
 ;  X - file descriptor
 ; out:
-;  read_blkptr - setup to block_fat either low/high page
+;  sd_blkptr - setup to block_fat either low/high page
 ;  Y - offset within block_fat to clnr
 ;  C=0 on success, C=1 if the cluster number is the EOC and A=EOK or C=1 and A=<error code> otherwise
 __fat_read_cluster_block_and_select:
@@ -738,7 +738,7 @@ __fat_read_cluster_block_and_select:
 @l_clnr_page:
     bit #$40                                ; clnr within 2nd page of the 512 byte block ?
     beq @l_clnr
-    inc read_blkptr+1            ; yes, set read_blkptr to 2nd page of block_fat
+    inc sd_blkptr+1            ; yes, set sd_blkptr to 2nd page of block_fat
 @l_clnr:
     asl                    ; block offset = clnr*4
     asl
@@ -748,20 +748,20 @@ __fat_read_cluster_block_and_select:
 ;  C=1 if clnr is EOC and A=EOK, C=0 otherwise
 @l_is_eoc:
     phy
-    lda (read_blkptr),y
+    lda (sd_blkptr),y
     and #$f8              ; 0x?FFFFFF8 - 0x?FFFFFFF - eoc compatible check
     cmp #$f8
     bcc @l_not_eoc
     iny
-    lda (read_blkptr),y
+    lda (sd_blkptr),y
     cmp #<(FAT_EOC>>8)
     bne @l_not_eoc
     iny
-    lda (read_blkptr),y
+    lda (sd_blkptr),y
     cmp #<(FAT_EOC>>16)
     bne @l_not_eoc
     iny
-    lda (read_blkptr),y
+    lda (sd_blkptr),y
     and #<(FAT_EOC>>24)
     cmp #<(FAT_EOC>>24)
     beq @l_eoc

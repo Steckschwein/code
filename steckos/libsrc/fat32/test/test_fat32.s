@@ -490,7 +490,7 @@ mock_read_block:
 
     fail "read lba not handled!"
 @exit_inc:
-		inc read_blkptr+1 ; => same behavior as real block read implementation
+		inc sd_blkptr+1 ; => same behavior as real block read implementation
 @ok:
 		lda #EOK
 		rts

@@ -422,30 +422,13 @@ __fat_write_block_data:
 .ifdef FAT_DUMP_FAT_WRITE
     debugdump "fat_wb dmp", block_fat
 .endif
-
-:   pha
-
-    debug32 "fat_wb lba", lba_addr
-    debug32 "fat_wb lba last", volumeID+VolumeID::lba_addr_last
-    bra @l_write ; TODO dirty check
-    ;cmp32 volumeID+VolumeID::lba_addr_last, lba_addr, @l_write
-
-    pla
-    clc
-    rts
-
-@l_write:
-    pla
+:   sta sd_blkptr+1
+    stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
     phy
-    ldy write_blkptr
-    phy
-    ldy write_blkptr+1
-    phy
-    sta write_blkptr+1
-    stz write_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
+
 .ifndef FAT_NOWRITE
     debug32 "f_wr lba", lba_addr
-    debug16 "f_wr wpt", write_blkptr
+    debug16 "f_wr wpt", sd_blkptr
     phx
     jsr write_block
     plx
@@ -453,14 +436,12 @@ __fat_write_block_data:
     lda #EOK
     clc
 .endif
-    ply
-    sty write_blkptr+1
-    ply
-    sty write_blkptr
+
     ply
     cmp #EOK
     bne @l_exit_err
-    jmp __fat_save_lba_addr
+    clc
+    rts; jmp __fat_save_lba_addr
 @l_exit_err:
     sec
     rts
@@ -528,16 +509,16 @@ __fat_rtc_date:
 ; in:
 ;  A - 0x00 free, 0xff EOC
 ;  Y - offset in block
-;   read_blkptr - points to block_fat either 1st or 2nd page
+;   sd_blkptr - points to block_fat either 1st or 2nd page
 __fat_mark_cluster:
-    sta (read_blkptr), y
+    sta (sd_blkptr), y
     iny
-    sta (read_blkptr), y
+    sta (sd_blkptr), y
     iny
-    sta (read_blkptr), y
+    sta (sd_blkptr), y
     iny
     and #$0f
-    sta (read_blkptr), y
+    sta (sd_blkptr), y
     rts
 
 ; try to find a free cluster and store them in volumeId+VolumeID::cluster
@@ -580,8 +561,8 @@ __fat_find_free_cluster:
 @l_exit_err:
     rts
 @l_found_hb: ; found in "high" block (2nd page of the sd_blocksize)
-    lda #>(block_fat+$100)  ; set read_blkptr to begin 2nd page of fat_buffer - @see __fat_mark_free_cluster
-    sta read_blkptr+1
+    lda #>(block_fat+$100)  ; set sd_blkptr to begin 2nd page of fat_buffer - @see __fat_mark_free_cluster
+    sta sd_blkptr+1
     lda #$40          ; adjust clnr with +$40 (256 / 4 byte/clnr) clusters since it was found in 2nd page
 @l_found_lb:          ; A=0 here if called from branch above
     debug "fat found cl"

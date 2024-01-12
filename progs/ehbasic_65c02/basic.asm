@@ -337,6 +337,9 @@ Decss           = Rbyte3+1   ; number to decimal string start
 Decssp1         = Decss+1    ; number to decimal string start
 ZPLastByte      = Decss+17   ; last declared byte in Page Zero
 
+; .out .sprintf("Last ZP Address: %x", ZPLastByte)
+.assert ZPLastByte < $d0, error, "ZP usage clash with kernel"
+
 ; Note: C02BIOS uses Page Zero locations from $E0 - $FF
 ; C02Monitor uses Page Zero locations from $B0 - $DF
 

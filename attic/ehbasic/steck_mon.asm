@@ -68,9 +68,9 @@ bsave:
 		bne io_error
 
 		lda Smemh
-		sta write_blkptr + 1
+		sta sd_blkptr + 1
 		lda Smeml
-		sta write_blkptr + 0
+		sta sd_blkptr + 0
 
 		sec
 		lda Svarl
@@ -131,10 +131,10 @@ bload:
 		bne io_error
 
 		lda Smemh
-		sta read_blkptr + 1
+		sta sd_blkptr + 1
 
 		lda Smeml
-		sta read_blkptr + 0
+		sta sd_blkptr + 0
 
 		jsr krn_read
 		;bne io_error

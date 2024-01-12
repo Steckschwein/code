@@ -42,24 +42,24 @@ main:
     jmp exit
 :    jsr krn_close
 
-    jsr krn_primm
-    .asciiz "op rw+"  ; open again for write
-      lda paramptr
-      ldx paramptr+1
-    ldy #O_WRONLY
-      jsr krn_fopen
-    jsr test_result
-    beq :+
-    jmp exit
-:    lda #<testdata
-    sta write_blkptr+0
-    lda #>testdata
-    sta write_blkptr+1
-    lda #testdata_e-testdata
-    sta fd_area + F32_fd::FileSize + 0,x
-    stz fd_area + F32_fd::FileSize + 1,x
-    stz fd_area + F32_fd::FileSize + 2,x
-    stz fd_area + F32_fd::FileSize + 3,x
+		jsr krn_primm
+		.asciiz "op rw+"	; open again for write
+    	lda paramptr
+    	ldx paramptr+1
+		ldy #O_WRONLY
+    	jsr krn_open
+		jsr test_result
+		beq :+
+		jmp exit
+:		lda #<testdata
+		sta sd_blkptr+0
+		lda #>testdata
+		sta sd_blkptr+1
+		lda #testdata_e-testdata
+		sta fd_area + F32_fd::FileSize + 0,x
+		stz fd_area + F32_fd::FileSize + 1,x
+		stz fd_area + F32_fd::FileSize + 2,x
+		stz fd_area + F32_fd::FileSize + 3,x
 
     jsr krn_write
     jsr test_result
@@ -76,9 +76,9 @@ main:
     beq @ro_read
     jmp exit
 @ro_read:
-    SetVector buffer, read_blkptr
-    jsr krn_read
-    jsr test_result
+		SetVector buffer, sd_blkptr
+		jsr krn_read
+		jsr test_result
 
 close_exit:
     jsr krn_close
