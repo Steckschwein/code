@@ -23,6 +23,7 @@
 .setcpu "65c02"
 
 .include "steckos.inc"
+.include "fat32.inc"
 .include "fcntl.inc"
 .include "errno.inc"
 
@@ -204,7 +205,7 @@ loadfile:
     bcs @l_exit
 
     lda fd_area+F32_fd::FileSize+1,x
-    and #$3f
+    and #$c0
     ora fd_area+F32_fd::FileSize+2,x
     ora fd_area+F32_fd::FileSize+3,x
     beq @load
@@ -217,7 +218,7 @@ loadfile:
 @load:
     SetVector d00file, file_ptr
 :		jsr krn_fread_byte
-    bcs @eof
+    bcs @exit_close
     sta (file_ptr)
     inc file_ptr+0
     bne :-
@@ -257,7 +258,6 @@ player_isr:
     jsr vdp_bgcolor
 
     rts
-
 
 .zeropage
   file_ptr: .res 2
