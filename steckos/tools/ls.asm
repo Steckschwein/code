@@ -235,29 +235,6 @@ dir_show_entry_short:
     jsr char_out
     rts 
 
-print_attribs:
-    ldy #F32DirEntry::Attr
-    lda (dirptr),y
-
-    ldx #3
-@al:
-    bit attr_tbl,x
-    beq @skip
-    pha
-    lda attr_lbl,x
-    jsr char_out
-    pla
-    bra @next
-@skip:
-    pha
-    lda #' '
-    jsr char_out
-    pla
-@next:
-    dex 
-    bpl @al
-    rts
-
 dir_show_entry_long:
     pha
     jsr print_filename
@@ -302,17 +279,13 @@ dir_show_entry_long:
 @date:
     lda crtdate
     bne :+
-    ldy #F32DirEntry::WrtDate+1
+    ldy #F32DirEntry::WrtDate
     bra @x
 :
-    ldy #F32DirEntry::CrtDate+1
+    ldy #F32DirEntry::CrtDate
 @x:
-    lda (dirptr),y 
-    tax 
-    dey 
-    lda (dirptr),y 
     
-    jsr print_fat_date_ax
+    jsr print_fat_date
 
 
     lda #' '
@@ -320,18 +293,13 @@ dir_show_entry_long:
 
     lda crtdate
     bne :+
-    ldy #F32DirEntry::WrtTime
+    ldy #F32DirEntry::WrtTime+1
     bra @y
 :
-    ldy #F32DirEntry::CrtTime
+    ldy #F32DirEntry::CrtTime+1
 @y:
-    lda (dirptr),y 
-    tax
-    iny
-    lda (dirptr),y 
 
-
-    jsr print_fat_time_ax
+    jsr print_fat_time
     crlf
 
     pla
@@ -353,76 +321,6 @@ print_cluster_no:
     jsr hexout
     rts
 
-print_fat_date_ax:
-    pha
-    and #%00011111
-    jsr b2ad
-
-    lda #'.'
-    jsr char_out
-
-    ; month
-    
-    txa
-    lsr
-    tax
-
-    pla
-    ror
-    lsr
-    lsr
-    lsr
-    lsr
-
-    jsr b2ad
-
-    lda #'.'
-    jsr  char_out
-
-    txa
-    clc
-    adc #80   	; add begin of msdos epoch (1980)
-    cmp #100
-    bcc @l6		; greater than 100 (post-2000)
-    sec 		; yes, substract 100
-    sbc #100
-@l6:
-    jsr b2ad ; there we go
-    rts
-
-
-print_fat_time_ax:
-    pha
-    lsr
-    lsr
-    lsr
-
-    jsr b2ad
- 
-    lda #':'
-    jsr char_out
-
-    pla
-    and #%00000111
-    sta tmp1
-
-    txa
-   
-    .repeat 5
-    lsr tmp1
-    ror
-    .endrepeat
-
-    jsr b2ad
-
-    lda #':'
-    jsr char_out
-
-    txa
-    and #%00011111
-
-    jsr b2ad
-    rts
 
 
 
@@ -444,8 +342,6 @@ usage:
 
 
 .data
-attr_tbl:   .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
-attr_lbl:   .byte 'R','H','S','A'
 pattern:    .byte "*.*",$00
 dir_attrib_mask:  .byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
 cnt:        .byte 6
