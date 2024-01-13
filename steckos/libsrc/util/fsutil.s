@@ -21,7 +21,6 @@ print_filename:
 		rts
 
 print_fat_date:
-    ; ldy #F32DirEntry::WrtDate
     lda (dirptr),y
     and #%00011111
     jsr b2ad
@@ -59,7 +58,6 @@ print_fat_date:
     rts
 
 print_fat_time:
-    ; ldy #F32DirEntry::WrtTime +1
     lda (dirptr),y
     tax
     lsr
