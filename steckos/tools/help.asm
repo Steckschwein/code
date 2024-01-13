@@ -45,7 +45,6 @@ appstart $1000
     .byte "fsinfo             - filesystem info",$0a,$0d
     .byte "nvram              - manage nvram",$0a,$0d
     .byte "setdate            - set rtc date",$0a,$0d
-    .byte "basic              - enter EhBasic",$0a,$0d
     .byte $00
 
     jmp (retvec)
