@@ -21,12 +21,16 @@
 
     test "fat_entry_wrtdate"
 
+    ldy #F32DirEntry::WrtDate
+
     jsr print_fat_date
     assertY F32DirEntry::WrtDate
     assertOut "00.0"
 
     test "fat_entry_wrttime"
 
+    ldy #F32DirEntry::WrtTime+1
+    
     jsr print_fat_time
     assertOut "00:0"
 
