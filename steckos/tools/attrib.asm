@@ -141,18 +141,6 @@ attrib:
 
 		jsr print_attribs
 
-; 		lda (dirptr),y
-; 		ldx #$03
-; @al:
-; 		bit attr_tbl,x
-; 		beq @skip
-; 		pha
-; 		lda attr_lbl,x
-; 		jsr krn_chrout
-; 		pla
-; @skip:
-; 		dex
-; 		bpl @al
 @out:
 		jmp (retvec)
 
