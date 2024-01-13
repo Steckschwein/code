@@ -49,9 +49,3 @@ appstart $1000
     .byte $00
 
     jmp (retvec)
-
-
-
-.segment "INITBSS"
-.segment "ZPSAVE"
-.segment "STARTUP"
