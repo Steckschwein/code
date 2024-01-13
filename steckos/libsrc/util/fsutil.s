@@ -8,17 +8,17 @@
 .autoimport 
 .code
 print_filename:
-		ldx #0
-		ldy #F32DirEntry::Name
+    ldx #0
+    ldy #F32DirEntry::Name
 @l1:
-		lda (dirptr),y
-		tolower
-		jsr char_out
-		iny
-		cpy #11
-		bne @l1
+    lda (dirptr),y
+    tolower
+    jsr char_out
+    iny
+    cpy #11
+    bne @l1
 
-		rts
+    rts
 
 print_fat_date:
     lda (dirptr),y
@@ -69,17 +69,19 @@ print_fat_time:
     lda #':'
     jsr char_out
 
-
     txa
     and #%00000111
     sta tmp1
     dey
     lda (dirptr),y
 
-    .repeat 5
+    ldx #5
+@loop:
     lsr tmp1
     ror
-    .endrepeat
+
+    dex 
+    bne @loop
 
     jsr b2ad
 
@@ -139,6 +141,7 @@ print_attribs:
     dex 
     bpl @al
     rts
+.data
 attr_tbl:   .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
 attr_lbl:   .byte 'R','H','S','A'
 
