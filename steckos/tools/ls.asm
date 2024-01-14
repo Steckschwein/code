@@ -137,10 +137,6 @@ appstart $1000
     sta filenameptr
 
 @read:
-    lda options 
-    jsr bin2dual
-    crlf
-
 
 @l2:
     lda #<fat_dirname_mask
