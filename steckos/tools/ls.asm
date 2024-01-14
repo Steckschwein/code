@@ -69,7 +69,12 @@ appstart $1000
     beq @parseloop    
     cmp #' '
     beq @next_opt
-
+    
+    cmp #'?'
+    bne :+
+    jsr usage
+    jmp @exit
+:
     cmp #'l'
     bne :+
     SetVector dir_show_entry_long, direntry_vec
@@ -80,16 +85,14 @@ appstart $1000
     ; show all files (remove hidden bit from mask)
     cmp #'h'
     bne :+
-    lda dir_attrib_mask
-    and #%11111101
-    sta dir_attrib_mask
+    lda #<~DIR_Attr_Mask_Hidden
+    jsr setmask
 :
     ; show volume id (remove volid bit from mask)
     cmp #'v'
     bne :+
-    lda dir_attrib_mask
-    and #%11110111
-    sta dir_attrib_mask
+    lda #<~DIR_Attr_Mask_Volume
+    jsr setmask
 :
     cmp #'c'
     bne :+
@@ -107,13 +110,6 @@ appstart $1000
     bne :+
     inc attribs
 :
-
-    cmp #'?'
-    bne :+
-    jsr usage
-    jmp @exit
-:
-
     bra @option 
 
 @set_filenameptr:
@@ -304,6 +300,12 @@ dir_show_entry_long:
 
     pla
     rts
+
+setmask:
+    and dir_attrib_mask
+    sta dir_attrib_mask
+    rts 
+
 
 print_cluster_no:
     ldy #F32DirEntry::FstClusHI+1
