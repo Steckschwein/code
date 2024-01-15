@@ -351,7 +351,7 @@
 .macro tolower
   cmp #'A'
   bcc :+
-  cmp #'Z'
+  cmp #'Z'+1
   bcs :+
 	ora #$20
 :
