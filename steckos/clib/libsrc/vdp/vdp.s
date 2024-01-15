@@ -55,7 +55,7 @@ _gfx_mode_table:
     .word vdp_mc_on ; 3
     .word gfx_notimplemented; 4
     .word gfx_notimplemented; 5
-    .word vdp_mode6_on; 6
+    .word vdp_mode6_on ; 6
     .word vdp_mode7_on ; 7
 gfx_notimplemented:
     rts
@@ -80,7 +80,7 @@ gfx_plot_table:
     .word GFX_MC_Plot; 3
     .word gfx_notimplemented; 4
     .word gfx_notimplemented; 5
-    .word gfx_notimplemented; 6
+    .word GFX_6_Plot ; 6
     .word GFX_7_Plot ; 7
 
 GFX_2_Plot:
@@ -94,6 +94,12 @@ GFX_MC_Plot:
     ply
     pla
     jmp vdp_mc_set_pixel
+
+GFX_6_Plot:
+    plx
+    ply
+    pla
+    jmp vdp_mode6_set_pixel
 
 GFX_7_Plot:
     plx
