@@ -10,14 +10,48 @@
 print_filename:
     ldx #0
     ldy #F32DirEntry::Name
-@l1:
+@name:
     lda (dirptr),y
+    cmp #' '
+    beq @ext  
+
     tolower
     jsr char_out
+    inx
     iny
-    cpy #11
-    bne @l1
+    cpy #F32DirEntry::Ext
+    bne @name
 
+@ext:
+    ldy #F32DirEntry::Ext
+    lda (dirptr),y
+    cmp #' '
+    beq @spcloop
+
+    lda #'.'
+    jsr char_out
+    inx
+
+    ldy #F32DirEntry::Ext
+@foo:
+    lda (dirptr),y
+
+    tolower
+    jsr char_out
+    inx
+    iny
+    cpy #F32DirEntry::Ext + 3
+    bne @foo
+    
+@spcloop:
+    cpx #12
+    bcs @done
+    lda #' '
+    jsr char_out
+    inx 
+    bne @spcloop
+    
+@done:
     rts
 
 print_fat_date:

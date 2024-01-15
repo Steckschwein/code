@@ -243,8 +243,6 @@ dir_show_entry_short:
 @pad:
     lda #' '
     jsr char_out
-    lda #' '
-    jsr char_out
     rts 
 
 dir_show_entry_long:
