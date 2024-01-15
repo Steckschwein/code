@@ -349,7 +349,12 @@
 .endmacro
 
 .macro tolower
+  cmp #'A'
+  bcc :+
+  cmp #'Z'+1
+  bcs :+
 	ora #$20
+:
 .endmacro
 
 .macro crlf
