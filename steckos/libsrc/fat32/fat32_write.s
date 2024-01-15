@@ -46,7 +46,6 @@
 .export __fat_write_block_fat
 .export __fat_set_lba_from_fd_dirlba
 .export __fat_unlink
-.export __fat_read_direntry
 .autoimport
 
 ; in:
@@ -445,11 +444,9 @@ __fat_write_block_data_buffered:
     lda #>block_data
     sta sd_blkptr+1
     stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
-    phy
     phx
     jsr write_block_buffered
     plx
-    ply
     cmp #EOK
     bne @l_exit_err
     clc

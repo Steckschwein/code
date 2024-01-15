@@ -42,22 +42,22 @@
 BLKL_WRITE_PENDING = 1<<7
 
 .struct _blkl_state
-  lba_addr  .res 4
-  lba_temp  .res 4
-  blk_ptr   .res 2
-  status    .res 1
+  blk_lba .dword
+  blk_ptr .res 2
+  lba_tmp .dword
+  status  .res 1
 .endstruct
 
 blklayer_init:
-          m_memset _blkl_0+_blkl_state::lba_addr, $ff, 4
+          m_memset _blkl_0+_blkl_state::blk_lba, $ff, 4
           stz _blkl_0+_blkl_state::status
           rts
 
 blklayer_read_block:
-          debug32 "blkl r lba", lba_addr
-          debug32 "blkl r lba last", _blkl_0+_blkl_state::lba_addr
+;          debug32 "blkl r lba", lba_addr
+ ;         debug32 "blkl r lba last", _blkl_0+_blkl_state::blk_lba
 ;          debug16 "blkl r lba blkptr", _blkl_0+_blkl_state::blk_ptr
-          cmp32 _blkl_0+_blkl_state::lba_addr, lba_addr, @l_read
+          cmp32 _blkl_0+_blkl_state::blk_lba, lba_addr, @l_read
 
           inc sd_blkptr+1  ; TODO FIXME dev_write_block (sdcard) device driver sideeffect
           lda #EOK
@@ -73,7 +73,7 @@ blklayer_read_block:
 __blkl_save_lba_addr:
           stz _blkl_0+_blkl_state::status
 
-          m_memcpy lba_addr, _blkl_0+_blkl_state::lba_addr, 4
+          m_memcpy lba_addr, _blkl_0+_blkl_state::blk_lba, 4
           lda #EOK
           clc
           rts
@@ -85,11 +85,11 @@ blklayer_flush:
           bit _blkl_0+_blkl_state::status ; ? pending write
           bpl @l_exit
           debug "blkl flush >"
-          m_memcpy lba_addr, _blkl_0+_blkl_state::lba_temp, 4
-          m_memcpy _blkl_0+_blkl_state::lba_addr, lba_addr, 4
+          m_memcpy lba_addr, _blkl_0+_blkl_state::lba_tmp, 4
+          m_memcpy _blkl_0+_blkl_state::blk_lba, lba_addr, 4
           jsr dev_write_block
           pha
-          m_memcpy _blkl_0+_blkl_state::lba_temp, lba_addr, 4
+          m_memcpy _blkl_0+_blkl_state::lba_tmp, lba_addr, 4
           pla
           cmp #EOK
           bne l_exit_err
@@ -107,9 +107,9 @@ blklayer_write_block:
 
 blklayer_write_block_buffered:
           debug32 "blkl wb rlba", lba_addr
-          ;debug32 "blkl w llba", _blkl_0+_blkl_state::lba_addr
+          ;debug32 "blkl w llba", _blkl_0+_blkl_state::blk_lba
           ;debug16 "blkl w lba blkptr", _blkl_0+_blkl_state::blk_ptr
-          ;cmp32 _blkl_0+_blkl_state::lba_addr, lba_addr, l_dev_write
+          ;cmp32 _blkl_0+_blkl_state::blk_lba, lba_addr, l_dev_write
           lda #BLKL_WRITE_PENDING
           sta _blkl_0+_blkl_state::status
           lda #EOK
