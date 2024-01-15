@@ -38,7 +38,7 @@
     test "fat_entry_filename"
 
     jsr print_filename
-    assertOut "foobar  baz"
+    assertOut "foobar.baz "
 
 
 	brk
