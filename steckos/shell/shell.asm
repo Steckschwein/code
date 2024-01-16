@@ -287,7 +287,8 @@ printbuf:
         jsr char_out
         iny
         bra @l1
-@l2:  rts
+@l2:  
+        rts
 
 
 cmdlist:
@@ -304,20 +305,6 @@ cmdlist:
         ; End of list
         .byte $ff
 
-.ifdef DEBUG
-
-atoi:
-  cmp #'9'+1
-  bcc @l1   ; 0-9?
-  ; must be hex digit
-  adc #$08
-  and #$0f
-  rts
-
-@l1:  sec
-  sbc #$30
-  rts
-.endif
 
 
 msg_EOK:        .asciiz "No error"
