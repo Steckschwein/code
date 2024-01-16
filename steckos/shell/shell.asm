@@ -20,13 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-; prompt  = $af
-prompt  = '>'
 
 .include "steckos.inc"
 
-; SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE    = 80 ;TODO maybe too small?
+cwdbuf_size = 80
+prompt  = '>'
+
 
 
 ;---------------------------------------------------------------------------------------------------------
@@ -105,9 +105,7 @@ mainloop:
 
   ; put input into buffer until return is pressed
 inputloop:
-        ; jsr screensaver_settimeout  ;reset timeout
 @l_input:
-        ; jsr screensaver_loop
 
         jsr krn_getkey
         bcc @l_input
@@ -157,11 +155,9 @@ key_fn12:
         jmp mode_toggle
 
 key_crs_up:
-;        jsr history_back
         bra inputloop
 
 key_crs_down:
-;        jsr history_frwd
         bra inputloop
 
 terminate:
@@ -172,7 +168,6 @@ terminate:
 parse:
         copypointer bufptr, cmdptr
 
-        ;jsr history_push
 
         ; find begin of command word
 @l1:
@@ -292,8 +287,8 @@ printbuf:
 
 
 cmdlist:
-        .byte "cd",0
-        .word cd
+        ; .byte "cd",0
+        ; .word cd
 
         .byte "up",0
         .word krn_upload
@@ -353,45 +348,46 @@ errors:
 .addr msg_ENOTEMPTY
 
 errmsg:
-  ;TODO FIXME maybe use oserror() from cc65 lib
-  cmp #$f1
-  bne @l1
-  jsr primm
-  .byte CODE_LF,"invalid command",CODE_LF,$00
-  jmp mainloop
+        ;TODO FIXME maybe use oserror() from cc65 lib
+        cmp #$f1
+        bne @l1
+        jsr primm
+        .byte CODE_LF,"invalid command",CODE_LF,$00
+        jmp mainloop
 
 @l1:
-  cmp #$f2
-  bne @l2
-  jsr primm
-  .byte CODE_LF,"invalid directory",CODE_LF,$00
-  jmp mainloop
+        cmp #$f2
+        bne @l2
+        jsr primm
+        .byte CODE_LF,"invalid directory",CODE_LF,$00
+        jmp mainloop
 
 @l2:
-  cmp #$15
-  bcs @l_unknown
-  asl
-  tax
-  lda errors,x
-  sta msg_ptr
-  lda errors+1,x
-  sta msg_ptr+1
-  ldy #0
-: lda (msg_ptr),y
-  beq @l_exit
-  jsr char_out
-  iny
-  bne :-
+        cmp #$15
+        bcs @l_unknown
+        asl
+        tax
+        lda errors,x
+        sta msg_ptr
+        lda errors+1,x
+        sta msg_ptr+1
+        ldy #0
+: 
+        lda (msg_ptr),y
+        beq @l_exit
+        jsr char_out
+        iny
+        bne :-
 @l_unknown:
-  pha
-  jsr primm
-  .asciiz "unknown error "
-  pla
-  jsr hexout_s
+        pha
+        jsr primm
+        .asciiz "unknown error "
+        pla
+        jsr hexout_s
 @l_exit:
-  lda #CODE_LF
-  jsr char_out
-  jmp mainloop
+        lda #CODE_LF
+        jsr char_out
+        jmp mainloop
 
 mode_toggle:
         lda video_mode
@@ -412,53 +408,55 @@ exec:
         lda cmdptr
         ldx cmdptr+1    ; cmdline in a/x
 
+        ; try to chdir 
         jsr krn_chdir 
-        bcc :+
+        bcc :+ ; branch taken if chdir successful
+        ; if not, exec it
         jsr krn_execv   ; return A with errorcode
         bcs @l1
 :         ; error? try different path
         jmp mainloop
 
 @l1:
-  stz tmp2
+        stz tmp2
 @try_path:
-  ldx #0
-  ldy tmp2
+        ldx #0
+        ldy tmp2
 @cp_path:
-  lda (pathptr), y
-  beq @check_path
-  cmp #':'
-  beq @cp_next
-  sta tmpbuf,x
-  inx
-  iny
-  bne @cp_path
-  lda #$f0
-  jmp errmsg
+        lda (pathptr), y
+        beq @check_path
+        cmp #':'
+        beq @cp_next
+        sta tmpbuf,x
+        inx
+        iny
+        bne @cp_path
+        lda #$f0
+        jmp errmsg
 @check_path:    ;PATH end reached and nothing to prefix
-  cpy tmp2
-  bne @cp_next_piece  ;end of path, no iny
-  lda #$f1        ;nothing found, "Invalid command"
-  jmp errmsg
+        cpy tmp2
+        bne @cp_next_piece  ;end of path, no iny
+        lda #$f1        ;nothing found, "Invalid command"
+        jmp errmsg
 @cp_next:
-  iny
+        iny
 @cp_next_piece:
-  sty tmp2        ;safe PATH offset, 4 next try
-  stz  tmp1
-  ldy #0
+        sty tmp2        ;safe PATH offset, 4 next try
+        stz  tmp1
+        ldy #0
 @cp_loop:
-  lda (cmdptr),y
-  beq @l3
-  cmp #'.'
-  bne  @cp_loop_1
-  stx  tmp1
+        lda (cmdptr),y
+        beq @l3
+        cmp #'.'
+        bne  @cp_loop_1
+        stx  tmp1
 @cp_loop_1:
-  cmp #' '    ;end of program name?
-  beq @l3
-  sta tmpbuf,x
-  iny
-  inx
-  bne @cp_loop
+        cmp #' '    ;end of program name?
+        beq @l3
+        sta tmpbuf,x
+        iny
+        inx
+        bne @cp_loop
 @l3:
         lda tmp1
         bne  @l4
@@ -482,7 +480,6 @@ exec:
 
 
 .ifdef DEBUG
-.import hexout
 dumpvec    = $c0
 dumpvec_end     = dumpvec
 dumpvec_start   = dumpvec+2
@@ -519,7 +516,8 @@ dump:
         iny
         bra @l1
 
-@l2:  cpy #$00
+@l2:  
+        cpy #$00
         bne @l3
 
         printstring "parameter error"
@@ -550,11 +548,13 @@ dump:
         jsr char_out
 
         ldy #$00
-@l5:  lda (dumpvec_start),y
+@l5:  
+        lda (dumpvec_start),y
         cmp #$19
         bcs @l6
         lda #'.'
-@l6:  jsr char_out
+@l6:  
+        jsr char_out
         iny
         cpy #$08
         bne @l5
@@ -584,35 +584,11 @@ dump:
 @l8:  jmp mainloop
 .endif
 
-; screensaver_loop:
-;         lda rtc_systime_t+time_t::tm_min
-;         cmp screensaver_rtc
-;         bne l_exit
-;         lda #<screensaver_prg
-;         ldx #>screensaver_prg
-;         phy
-;         jsr krn_execv   ;ignore any errors
-;         ply
-; screensaver_settimeout:
-;         lda rtc_systime_t+time_t::tm_min
-;         clc
-;         adc #SCREENSAVER_TIMEOUT_MINUTES
-;         cmp #60
-;         bcc :+
-;         sbc #60
-; :       sta screensaver_rtc
-; l_exit:
-;         rts
-
 PATH: .asciiz "./:/steckos/:/progs/"
 PRGEXT: .asciiz ".PRG"
-; screensaver_prg: .asciiz "/steckos/unrclock.prg"
-; screensaver_rtc:  .res 1
 
 .bss
 crs_x_prompt:     .res 1
 tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
-cwdbuf_size=80
 cwdbuf:           .res cwdbuf_size
-history:
