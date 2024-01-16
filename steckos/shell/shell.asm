@@ -19,18 +19,11 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.setcpu "65c02"
 
-prompt  = $af
+; prompt  = $af
+prompt  = '>'
 
-.include "zeropage.inc"
-.include "kernel_jumptable.inc"
-.include "vdp.inc"
-.include "common.inc"
-.include "keyboard.inc"
-.include "rtc.inc"
-.include "debug.inc"
-.include "appstart.inc"
+.include "steckos.inc"
 
 ; SCREENSAVER_TIMEOUT_MINUTES=2
 BUF_SIZE    = 80 ;TODO maybe too small?
@@ -47,11 +40,10 @@ BUF_SIZE    = 80 ;TODO maybe too small?
 
 .zeropage
 msg_ptr:  .res 2
-bufptr:         .res 2
-pathptr:        .res 2
-;p_history:      .res 2
-tmp1:   .res 1
-tmp2:   .res 1
+bufptr:   .res 2
+pathptr:  .res 2
+tmp1:     .res 1
+tmp2:     .res 1
 
 
 appstart __SHELL_START__
@@ -84,6 +76,7 @@ exit_from_prg:
 mainloop:
         jsr primm
         .byte CODE_LF, '[', 0
+        
         ; output current path
         lda #<cwdbuf
         ldy #>cwdbuf
@@ -220,8 +213,10 @@ parse:
 compare:
       ; compare
         ldx #$00
-@l1:    ldy #$00
-@l2:  lda (cmdptr),y
+@l1:    
+        ldy #$00
+@l2:  
+        lda (cmdptr),y
 
         ; if not, there is a terminating null
         bne @l3
@@ -240,7 +235,7 @@ compare:
 
 @l4:
         ; make lowercase
-        ora #$20
+        tolower
 
         cmp cmdlist,x
         bne @l5  ; difference. this isnt the command were looking for
@@ -250,7 +245,7 @@ compare:
 
         bra @l2
 
-      ; next cmdlist entry
+        ; next cmdlist entry
 @l5:
         inx
         lda cmdlist,x
@@ -276,88 +271,8 @@ try_exec:
         crlf
         jmp exec
 
-@l1:  jmp mainloop
-
-; history_frwd:
-;         lda p_history
-;         ;cmp #<(history+$0100)
-;         cmp p_history
-;         bne @inc_hist_ptr
-;         lda p_history+1
-;         ;cmp #>(history+$0100)
-;         cmp p_history+1
-;         bne @inc_hist_ptr
-;         rts
-; @inc_hist_ptr:
-;         lda p_history
-;         clc
-;         adc #BUF_SIZE
-;         sta p_history
-;         bra history_peek
-
-; history_back:
-;         lda p_history+1
-;         cmp #>history
-;         bne @dec_hist_ptr
-;         lda p_history
-;         cmp #<history
-;         bne @dec_hist_ptr
-;         rts
-; @dec_hist_ptr:
-;         sec ;dec hist ptr
-;         sbc #BUF_SIZE
-;         sta p_history
-
-; history_peek:
-;         lda crs_x_prompt
-;         sta crs_x
-;         jsr krn_textui_update_crs_ptr
-
-;         ldy #0
-;         ldx #BUF_SIZE
-; :       lda (p_history), y
-;         sta (bufptr), y
-;         beq :+
-;         jsr char_out
-;         iny
-;         dex
-;         bpl :-
-
-; :       phy       ;safe y pos in buffer
-;         ldy crs_x ;safe crs_x position after restored cmd to y
-
-;         lda #' '  ;erase the rest of the line
-; :
-;         jsr char_out
-;         dex
-;         bpl :-
-;         sty crs_x
-;         jsr krn_textui_update_crs_ptr
-;         ply       ;restore y buffer index
-;         rts
-
-; history_push:
-;         lda #CODE_LF
-;         ;jsr char_out
-
-;         tya
-;         tax
-;         ldy #0
-; :       lda (bufptr), y
-;         sta (p_history), y
-;         ;jsr char_out
-;         iny
-;         dex
-;         bpl :-
-
-;         lda #CODE_LF
-;         ;jsr char_out
-
-;         lda p_history   ; new end
-;         clc
-;         adc #BUF_SIZE
-;         sta p_history
-;         rts
+@l1:  
+        jmp mainloop
 
 printbuf:
         ldy #$01
@@ -365,7 +280,8 @@ printbuf:
         jsr krn_textui_update_crs_ptr
 
         ldy #$00
-@l1:  lda (bufptr),y
+@l1:  
+        lda (bufptr),y
         beq @l2
         sta buf,y
         jsr char_out
@@ -383,10 +299,10 @@ cmdlist:
 
 .ifdef DEBUG
         .byte "dump",0
-  .word dump
+        .word dump
 .endif
-  ; End of list
-  .byte $ff
+        ; End of list
+        .byte $ff
 
 .ifdef DEBUG
 
@@ -508,8 +424,12 @@ cd:
 exec:
         lda cmdptr
         ldx cmdptr+1    ; cmdline in a/x
+
+        jsr krn_chdir 
+        bcc :+
         jsr krn_execv   ; return A with errorcode
-        bcs @l1         ; error? try different path
+        bcs @l1
+:         ; error? try different path
         jmp mainloop
 
 @l1:
