@@ -30,21 +30,22 @@
 entries_short    = 5*24
 entries_long     = 23
 
+opts_long       = (1 << 0)
+opts_paging     = (1 << 1)
+opts_cluster    = (1 << 2)
+opts_attribs    = (1 << 3)
+opts_crtdate    = (1 << 4)
 
 appstart $1000
 
 .code
     SetVector pattern, filenameptr
-    SetVector dir_show_entry_short, direntry_vec
 
     lda #entries_short
     sta pagecnt
     sta entries_per_page
 
-    stz showcls
-    stz crtdate
-    stz paging
-    stz attribs
+    stz options
     
     ldy #0
 @parseloop:
@@ -69,10 +70,17 @@ appstart $1000
     beq @parseloop    
     cmp #' '
     beq @next_opt
-
+    
+    cmp #'?'
+    bne :+
+    jsr usage
+    jmp @exit
+:
     cmp #'l'
     bne :+
-    SetVector dir_show_entry_long, direntry_vec
+    lda #opts_long
+    jsr setopt
+
     lda #entries_long
     sta pagecnt
     sta entries_per_page
@@ -80,40 +88,39 @@ appstart $1000
     ; show all files (remove hidden bit from mask)
     cmp #'h'
     bne :+
-    lda dir_attrib_mask
-    and #%11111101
-    sta dir_attrib_mask
+    lda #<~DIR_Attr_Mask_Hidden
+    jsr setmask
+    bra @option
 :
     ; show volume id (remove volid bit from mask)
     cmp #'v'
     bne :+
-    lda dir_attrib_mask
-    and #%11110111
-    sta dir_attrib_mask
+    lda #<~DIR_Attr_Mask_Volume
+    jsr setmask
 :
     cmp #'c'
     bne :+
-    inc showcls
+    lda #opts_cluster
+    jsr setopt
+    bra @option
 :
     cmp #'d'
     bne :+
-    inc crtdate
+    lda #opts_crtdate
+    jsr setopt
+    bra @option
 :
     cmp #'p'
     bne :+
-    inc paging
+    lda #opts_paging
+    jsr setopt
+    bra @option
 :
     cmp #'a'
     bne :+
-    inc attribs
+    lda #opts_attribs
+    jsr setopt
 :
-
-    cmp #'?'
-    bne :+
-    jsr usage
-    jmp @exit
-:
-
     bra @option 
 
 @set_filenameptr:
@@ -161,10 +168,17 @@ appstart $1000
     bit dir_attrib_mask ; Hidden attribute set, skip
     bne @l3
 
-    jsr dir_show_entry
+    lda options
+    and #opts_long 
+    beq :+
+    jsr dir_show_entry_long
+    bra @next
+:
+    jsr dir_show_entry_short
 
 @next:
-    lda paging
+    lda options
+    and #opts_paging
     beq @l
     dec pagecnt
     bne @l
@@ -190,8 +204,6 @@ appstart $1000
 @exit:
     jmp (retvec)
 
-dir_show_entry:
-    jmp (direntry_vec)
 
 dir_show_entry_short:
     dec cnt
@@ -231,32 +243,7 @@ dir_show_entry_short:
 @pad:
     lda #' '
     jsr char_out
-    lda #' '
-    jsr char_out
     rts 
-
-print_attribs:
-    ldy #F32DirEntry::Attr
-    lda (dirptr),y
-
-    ldx #3
-@al:
-    bit attr_tbl,x
-    beq @skip
-    pha
-    lda attr_lbl,x
-    jsr char_out
-    pla
-    bra @next
-@skip:
-    pha
-    lda #' '
-    jsr char_out
-    pla
-@next:
-    dex 
-    bpl @al
-    rts
 
 dir_show_entry_long:
     pha
@@ -266,12 +253,14 @@ dir_show_entry_long:
     jsr char_out
 
 
-    lda showcls
+    lda options
+    and #opts_cluster
     beq :+
     jsr print_cluster_no
 :   
 
-    lda attribs
+    lda options
+    and #opts_attribs   
     beq :+
     lda #' '
     jsr char_out
@@ -296,46 +285,46 @@ dir_show_entry_long:
     lda #' '
     jsr char_out
 
-
-
-
 @date:
-    lda crtdate
+    lda #opts_crtdate
+    and options
     bne :+
-    ldy #F32DirEntry::WrtDate+1
+    ldy #F32DirEntry::WrtDate
     bra @x
 :
-    ldy #F32DirEntry::CrtDate+1
+    ldy #F32DirEntry::CrtDate
 @x:
-    lda (dirptr),y 
-    tax 
-    dey 
-    lda (dirptr),y 
     
-    jsr print_fat_date_ax
-
+    jsr print_fat_date
 
     lda #' '
     jsr char_out
 
-    lda crtdate
+    lda #opts_crtdate
+    and options
     bne :+
-    ldy #F32DirEntry::WrtTime
+    ldy #F32DirEntry::WrtTime+1
     bra @y
 :
-    ldy #F32DirEntry::CrtTime
+    ldy #F32DirEntry::CrtTime+1
 @y:
-    lda (dirptr),y 
-    tax
-    iny
-    lda (dirptr),y 
 
-
-    jsr print_fat_time_ax
+    jsr print_fat_time
     crlf
 
     pla
     rts
+
+setopt:
+    ora options
+    sta options
+    rts
+
+setmask:
+    and dir_attrib_mask
+    sta dir_attrib_mask
+    rts 
+
 
 print_cluster_no:
     ldy #F32DirEntry::FstClusHI+1
@@ -352,78 +341,6 @@ print_cluster_no:
     lda (dirptr),y
     jsr hexout
     rts
-
-print_fat_date_ax:
-    pha
-    and #%00011111
-    jsr b2ad
-
-    lda #'.'
-    jsr char_out
-
-    ; month
-    
-    txa
-    lsr
-    tax
-
-    pla
-    ror
-    lsr
-    lsr
-    lsr
-    lsr
-
-    jsr b2ad
-
-    lda #'.'
-    jsr  char_out
-
-    txa
-    clc
-    adc #80   	; add begin of msdos epoch (1980)
-    cmp #100
-    bcc @l6		; greater than 100 (post-2000)
-    sec 		; yes, substract 100
-    sbc #100
-@l6:
-    jsr b2ad ; there we go
-    rts
-
-
-print_fat_time_ax:
-    pha
-    lsr
-    lsr
-    lsr
-
-    jsr b2ad
- 
-    lda #':'
-    jsr char_out
-
-    pla
-    and #%00000111
-    sta tmp1
-
-    txa
-   
-    .repeat 5
-    lsr tmp1
-    ror
-    .endrepeat
-
-    jsr b2ad
-
-    lda #':'
-    jsr char_out
-
-    txa
-    and #%00011111
-
-    jsr b2ad
-    rts
-
 
 
 usage:
@@ -443,19 +360,12 @@ usage:
 
 
 
-.data
-attr_tbl:   .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
-attr_lbl:   .byte 'R','H','S','A'
+; .data
 pattern:    .byte "*.*",$00
 dir_attrib_mask:  .byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
 cnt:        .byte 6
 .bss
 fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
-direntry_vec: .res 2
-showcls: .res 1
-crtdate: .res 1
-paging: .res 1
-attribs: .res 1
+options:          .res 1
 pagecnt:          .res 1
 entries_per_page: .res 1
-tmp1: .res 1

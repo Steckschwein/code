@@ -2,103 +2,136 @@
 .include "common.inc"
 
 
-.export print_filename, print_fat_date, print_fat_time, print_filesize
+.export print_filename, print_fat_date, print_fat_time, print_filesize, print_attribs
 
 .importzp dirptr
 .autoimport 
 .code
 print_filename:
-		ldx #0
-		ldy #F32DirEntry::Name
-@l1:
-		lda (dirptr),y
-		tolower
-		jsr char_out
-		iny
-		cpy #11
-		bne @l1
+    ldx #0
+    ldy #F32DirEntry::Name
+@name:
+    lda (dirptr),y
+    cmp #' '
+    beq @ext  
 
-		rts
+    tolower
+    jsr char_out
+    inx
+    iny
+    cpy #F32DirEntry::Ext
+    bne @name
+
+@ext:
+    ldy #F32DirEntry::Ext
+    lda (dirptr),y
+    cmp #' '
+    beq @spcloop
+
+    lda #'.'
+    jsr char_out
+    inx
+
+    ldy #F32DirEntry::Ext
+@foo:
+    lda (dirptr),y
+
+    tolower
+    jsr char_out
+    inx
+    iny
+    cpy #F32DirEntry::Ext + 3
+    bne @foo
+    
+@spcloop:
+    cpx #12
+    bcs @done
+    lda #' '
+    jsr char_out
+    inx 
+    bne @spcloop
+    
+@done:
+    rts
 
 print_fat_date:
-		ldy #F32DirEntry::WrtDate
-		lda (dirptr),y
-		and #%00011111
-		jsr b2ad
+    lda (dirptr),y
+    and #%00011111
+    jsr b2ad
 
-		lda #'.'
-		jsr char_out
+    lda #'.'
+    jsr char_out
 
-		; month
-		iny
-		lda (dirptr),y
-		lsr
-		tax
-		dey
-		lda (dirptr),y
-		ror
-		lsr
-		lsr
-		lsr
-		lsr
+    ; month
+    iny
+    lda (dirptr),y
+    lsr
+    tax
+    dey
+    lda (dirptr),y
+    ror
+    lsr
+    lsr
+    lsr
+    lsr
 
-		jsr b2ad
+    jsr b2ad
 
-		lda #'.'
-		jsr char_out
+    lda #'.'
+    jsr char_out
 
-
-		txa
-		clc
-		adc #80   	; add begin of msdos epoch (1980)
-		cmp #100
-		bcc @l6		; greater than 100 (post-2000)
-		sec 		; yes, substract 100
-		sbc #100
+    txa
+    clc
+    adc #80   	; add begin of msdos epoch (1980)
+    cmp #100
+    bcc @l6		; greater than 100 (post-2000)
+    sec 		; yes, substract 100
+    sbc #100
 @l6:
-		jsr b2ad ; there we go
-		rts
+    jsr b2ad ; there we go
+    rts
 
 print_fat_time:
-		ldy #F32DirEntry::WrtTime +1
-		lda (dirptr),y
-		tax
-		lsr
-		lsr
-		lsr
+    lda (dirptr),y
+    tax
+    lsr
+    lsr
+    lsr
 
-		jsr b2ad
+    jsr b2ad
 
-		lda #':'
-		jsr char_out
+    lda #':'
+    jsr char_out
 
+    txa
+    and #%00000111
+    sta tmp1
+    dey
+    lda (dirptr),y
 
-		txa
-		and #%00000111
-		sta tmp1
-		dey
-		lda (dirptr),y
+    ldx #5
+@loop:
+    lsr tmp1
+    ror
 
-		.repeat 5
-		lsr tmp1
-		ror
-		.endrepeat
+    dex 
+    bne @loop
 
-		jsr b2ad
+    jsr b2ad
 
-		lda #':'
-		jsr char_out
+    lda #':'
+    jsr char_out
 
-		lda (dirptr),y
-		and #%00011111
+    lda (dirptr),y
+    and #%00011111
 
-		jsr b2ad
+    jsr b2ad
 
-		rts
+    rts
 
 print_filesize:
     phy
-		clc
+	clc
     ldy #F32DirEntry::FileSize+3
     lda (dirptr),y
     ldy #F32DirEntry::FileSize+2
@@ -117,8 +150,34 @@ print_filesize:
     lda (dirptr),y
 
     jsr dpb2ad
-		ply
+	ply
     rts
+
+print_attribs:
+    ldy #F32DirEntry::Attr
+    lda (dirptr),y
+
+    ldx #3
+@al:
+    bit attr_tbl,x
+    beq @skip
+    pha
+    lda attr_lbl,x
+    jsr char_out
+    pla
+    bra @next
+@skip:
+    pha
+    lda #' '
+    jsr char_out
+    pla
+@next:
+    dex 
+    bpl @al
+    rts
+.data
+attr_tbl:   .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
+attr_lbl:   .byte 'R','H','S','A'
 
 .bss
 tmp1: .res 1
