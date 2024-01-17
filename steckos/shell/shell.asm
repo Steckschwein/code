@@ -42,8 +42,6 @@ prompt  = '>'
 msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
-tmp1:     .res 1
-tmp2:     .res 1
 
 
 appstart __SHELL_START__
@@ -287,11 +285,24 @@ printbuf:
 
 
 cmdlist:
-        ; .byte "cd",0
-        ; .word cd
+        .byte "cd",0
+        .word cd
+        
+        .byte "rm",0
+        .word rm
+
+        .byte "mkdir",0
+        .word mkdir
+
+        .byte "rmdir",0
+        .word rmdir
+
+        .byte "pwd",0
+        .word pwd
 
         .byte "up",0
         .word krn_upload
+
 
 .ifdef DEBUG
         .byte "dump",0
@@ -404,20 +415,63 @@ cd:
 @l2:
         jmp mainloop
 
+
+rm:
+        lda (paramptr)
+        beq @exit
+
+        lda paramptr
+        ldx paramptr+1
+
+        jsr krn_unlink
+        bcc @exit
+        jsr errmsg
+@exit:
+        jmp mainloop
+mkdir:
+        lda (paramptr)
+        beq @exit
+
+        lda paramptr
+        ldx paramptr+1 
+
+        jsr krn_mkdir
+        bcc @exit
+        jsr errmsg
+@exit:
+        jmp mainloop
+
+rmdir:
+        lda (paramptr)
+        beq @exit
+
+        lda paramptr
+        ldx paramptr+1 
+
+        jsr krn_rmdir
+        bcc @exit
+        jsr errmsg
+@exit:
+        jmp mainloop
+
+pwd:
+        lda #<cwdbuf
+        ldx #>cwdbuf
+        ;TODO FIXME use a/x instead of zp location msgptr
+        jsr strout
+        jmp mainloop
+
+
 exec:
         lda cmdptr
         ldx cmdptr+1    ; cmdline in a/x
 
         ; try to chdir 
         jsr krn_chdir 
-        bcc :+ ; branch taken if chdir successful
-        ; if not, exec it
-        jsr krn_execv   ; return A with errorcode
-        bcs @l1
-:         ; error? try different path
+        bcs @resolve_path ; branch taken if chdir successful
         jmp mainloop
 
-@l1:
+@resolve_path:
         stz tmp2
 @try_path:
         ldx #0
@@ -442,14 +496,14 @@ exec:
         iny
 @cp_next_piece:
         sty tmp2        ;safe PATH offset, 4 next try
-        stz  tmp1
+        stz tmp1
         ldy #0
 @cp_loop:
         lda (cmdptr),y
         beq @l3
         cmp #'.'
-        bne  @cp_loop_1
-        stx  tmp1
+        bne @cp_loop_1
+        stx tmp1
 @cp_loop_1:
         cmp #' '    ;end of program name?
         beq @l3
@@ -459,10 +513,10 @@ exec:
         bne @cp_loop
 @l3:
         lda tmp1
-        bne  @l4
+        bne @l4
         ldy #0
 @l5:
-        lda  PRGEXT,y
+        lda PRGEXT,y
         beq @l4
         sta tmpbuf,x
         inx
@@ -592,3 +646,5 @@ crs_x_prompt:     .res 1
 tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
 cwdbuf:           .res cwdbuf_size
+tmp1:     .res 1
+tmp2:     .res 1
