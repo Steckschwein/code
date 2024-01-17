@@ -188,8 +188,37 @@ TEST_FILE_CL19=$19
 
 
 ; -------------------
+    setup "fat_write_byte 1 byte 4s/cl try open";
+    ldy #O_RDONLY
+    lda #<test_file_name_1
+    ldx #>test_file_name_1
+    jsr fat_fopen
+    assertC 1
+
+    ldy #O_WRONLY
+    lda #<test_file_name_1
+    ldx #>test_file_name_1
+    jsr fat_fopen
+    assertA EOK
+    assertC 0
+    assertX FD_Entry_Size*2  ; assert FD preserved
+
+    lda #'X'
+    jsr fat_write_byte
+    assertC 0
+    lda #'Y'
+    jsr fat_write_byte
+    assertC 0
+    lda #'Z'
+    jsr fat_write_byte
+    assertC 0
+
+    jsr fat_close
+    assertC 0
+
+; -------------------
     setup "fat_write_byte 1 byte 4s/cl";
-    ldy #O_RDWR
+    ldy #O_WRONLY
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
@@ -199,7 +228,7 @@ TEST_FILE_CL19=$19
     assertDirEntry block_root_dir_00+4*DIR_Entry_Size
         fat32_dir_entry_file "TEST01  ", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
+        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_WRONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
 
     ldy #$31
     lda #'F'
@@ -208,7 +237,7 @@ TEST_FILE_CL19=$19
     assertC 0
     assertY $31 ; preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file TEST_FILE_CL10, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDWR, FD_STATUS_FILE_OPEN
+        fd_entry_file TEST_FILE_CL10, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_WRONLY, FD_STATUS_FILE_OPEN
 
     jsr fat_close
 
@@ -562,6 +591,7 @@ test_seek:
 mock_read_block:
     tax ; mock X destruction
     debug32 "mock_read_block lba", lba_addr
+    debug32 "mock_read_block ptr", sd_blkptr
 		load_block_if (LBA_BEGIN+0), block_root_dir_00, @ok ; load root cl block
     load_block_if (LBA_BEGIN+1), block_root_dir_01, @ok ;
     load_block_if (LBA_BEGIN+2), block_root_dir_02, @ok ;
@@ -590,7 +620,7 @@ mock_read_block:
 mock_write_block:
     tax ; mock destruction of X
     debug32 "mock_write_block lba", lba_addr
-    debug16 "mock_write_block wptr", sd_blkptr
+    debug16 "mock_write_block ptr", sd_blkptr
     store_block_if (LBA_BEGIN+0), block_root_dir_00, @ok
     store_block_if (LBA_BEGIN+1), block_root_dir_01, @ok
     store_block_if (LBA_BEGIN+3), block_root_dir_03, @ok

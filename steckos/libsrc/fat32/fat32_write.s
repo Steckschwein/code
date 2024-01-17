@@ -173,8 +173,6 @@ __fat_add_direntry:
     jsr __fat_set_lba_from_fd_dirlba
     jsr __fat_set_direntry_create_datetime
     bra __fat_update_direntry_write
-@l_exit:
-    rts
 
 ; out:
 ;   C=0 on success, C=1 and A=<error> otherwise
@@ -420,15 +418,15 @@ __fat_write_block_data:
     stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
     phy
 
-.ifndef FAT_NOWRITE
+.ifdef FAT_NOWRITE
+    lda #EOK
+    clc
+.else
     debug32 "f_wr lba", lba_addr
     debug16 "f_wr bpt", sd_blkptr
     phx
     jsr write_block
     plx
-.else
-    lda #EOK
-    clc
 .endif
 
     ply

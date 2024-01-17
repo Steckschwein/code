@@ -210,28 +210,28 @@ fat_fopen:
     bcs @l_not_open
     lda fd_area+F32_fd::Attr,x
     and #DIR_Attr_Mask_Dir      ; file or directory?
-    beq @l_open                 ; ok, file opened
+    bne @l_eisdir               ; dir opened
+    tya
+    sta fd_area+F32_fd::flags,x
+    rts
+@l_eisdir:
     lda #EISDIR                 ; was directory, we must not free any fd
 @l_not_open:
-    cmp #EOK                    ; or error from open was end of cluster (@see find_first/_next)?
-    beq @l_add_dirent           ; EOC, C=1 go on with write check
+    cmp #EOK                    ; C=1/A=EOK error from open was end of cluster (@see find_first/_next)
+    beq @l_add_dirent           ; go on with write check
     cmp #ENOENT                 ; no such file or directory ?
     bne @l_exit_err
     clc                         ; C=0 to skip prepare block below
 @l_add_dirent:
     tya                         ; get open flags
-    bit #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)  ; check write access
-    bne @l_touch                ; if so, we create a new file
+    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)  ; check write access
+    beq @l_enoent               ; if so, we create a new file
+    jmp __fat_fopen_touch
+@l_enoent:
     lda #ENOENT                 ; no "write" flags set, exit with ENOENT
 @l_exit_err:
     sec
     rts
-@l_open:
-    tya
-    sta fd_area+F32_fd::flags,x
-    rts
-@l_touch:
-    jmp __fat_fopen_touch
 
 
 fat_close_all:

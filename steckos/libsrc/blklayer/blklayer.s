@@ -54,9 +54,9 @@ blklayer_init:
           rts
 
 blklayer_read_block:
-;          debug32 "blkl r lba", lba_addr
- ;         debug32 "blkl r lba last", _blkl_0+_blkl_state::blk_lba
-;          debug16 "blkl r lba blkptr", _blkl_0+_blkl_state::blk_ptr
+;          debug32 "bl r lba", lba_addr
+ ;         debug32 "bl r lba last", _blkl_0+_blkl_state::blk_lba
+;          debug16 "bl r lba blkptr", _blkl_0+_blkl_state::blk_ptr
           cmp32 _blkl_0+_blkl_state::blk_lba, lba_addr, @l_read
 
           inc sd_blkptr+1  ; TODO FIXME dev_write_block (sdcard) device driver sideeffect
@@ -66,7 +66,7 @@ blklayer_read_block:
 
 @l_read:  jsr blklayer_flush
           bcs @l_exit
-          debug32 "blkl lba r miss >", lba_addr
+          debug32 "bl r miss >", lba_addr
           jsr dev_read_block
           ;cmp #EOK
           bne l_exit_err
@@ -74,9 +74,20 @@ __blkl_save_lba_addr:
           stz _blkl_0+_blkl_state::status
 
           m_memcpy lba_addr, _blkl_0+_blkl_state::blk_lba, 4
+          lda sd_blkptr
+          sta _blkl_0+_blkl_state::blk_ptr
+          lda sd_blkptr+1
+          dea ; TODO FIXME sd block interface
+          sta _blkl_0+_blkl_state::blk_ptr+1
           lda #EOK
           clc
           rts
+
+blklayer_write_block:
+          debug32 "bl w rlba", lba_addr
+          jsr dev_write_block
+          ;cmp #EOK
+          beq __blkl_save_lba_addr
 l_exit_err:
           sec
           rts
@@ -84,7 +95,12 @@ l_exit_err:
 blklayer_flush:
           bit _blkl_0+_blkl_state::status ; ? pending write
           bpl @l_exit
-          debug "blkl flush >"
+          debug32 "bl fl >", lba_addr
+          debug32 "bl fl l", _blkl_0+_blkl_state::blk_lba
+          debug16 "bl fl r", sd_blkptr
+          debug16 "bl fl l", _blkl_0+_blkl_state::blk_ptr
+;          cmp16 _blkl_0+_blkl_state::blk_ptr, sd_blkptr, l_exit_err
+
           m_memcpy lba_addr, _blkl_0+_blkl_state::lba_tmp, 4
           m_memcpy _blkl_0+_blkl_state::blk_lba, lba_addr, 4
           jsr dev_write_block
@@ -97,23 +113,21 @@ blklayer_flush:
 @l_exit:  clc
           rts
 
-blklayer_write_block:
-          debug32 "blkl w rlba", lba_addr
-          jsr dev_write_block
-          ;cmp #EOK
-          beq __blkl_save_lba_addr
-          sec
-          rts
-
 blklayer_write_block_buffered:
-          debug32 "blkl wb rlba", lba_addr
-          ;debug32 "blkl w llba", _blkl_0+_blkl_state::blk_lba
-          ;debug16 "blkl w lba blkptr", _blkl_0+_blkl_state::blk_ptr
-          ;cmp32 _blkl_0+_blkl_state::blk_lba, lba_addr, l_dev_write
+          ;debug32 "bl wb rlba", lba_addr
+          ;debug32 "bl wb l", _blkl_0+_blkl_state::blk_lba
+          ;debug16 "bl fl r", sd_blkptr
+          ;debug16 "bl wb l", _blkl_0+_blkl_state::blk_ptr
+
+          cmp32 _blkl_0+_blkl_state::blk_lba, lba_addr, @l_err
+          cmp16 _blkl_0+_blkl_state::blk_ptr, sd_blkptr, @l_err
           lda #BLKL_WRITE_PENDING
           sta _blkl_0+_blkl_state::status
           lda #EOK
           clc
+          rts
+@l_err:
+          sec
           rts
 
 .bss

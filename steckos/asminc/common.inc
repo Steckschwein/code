@@ -178,6 +178,7 @@
 .macro m_memcpy src, dest, n
    .local @l
    .assert n<=$80, error, "n must not > $80"
+   .assert n<=$80, warn, "m_memcpy for n <= 2 does not save any space. are you sure you?"
    ldy #n-1
 @l:
    lda src,y

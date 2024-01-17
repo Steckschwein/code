@@ -41,7 +41,7 @@ kernel.bin: version.inc $(OBJS) $(LIBS)
 	grep krn symbols.txt | egrep -v "(krn_tm|krn_ptr)" | sed "s/al 00//" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > kernel_jumptable.inc
 
 loader.prg: kernel.bin loader.o
-	ld65 $(LDFLAGS) loader.o -o loader.prg
+	ld65 $(LDFLAGS) -m loader.map loader.o -o loader.prg
 
 # -m <kernel start adress - $100 (loader)
 dis: kernel.bin
