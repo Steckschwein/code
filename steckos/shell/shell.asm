@@ -457,7 +457,6 @@ rmdir:
 pwd:
         lda #<cwdbuf
         ldx #>cwdbuf
-        ;TODO FIXME use a/x instead of zp location msgptr
         jsr strout
         jmp mainloop
 
