@@ -42,6 +42,10 @@ prompt  = '>'
 msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
+dumpvec:        .res 2
+dumpvec_end = dumpvec
+dumpvec_start:  .res 2
+
 
 
 appstart __SHELL_START__
@@ -303,11 +307,9 @@ cmdlist:
         .byte "up",0
         .word krn_upload
 
-
-.ifdef DEBUG
         .byte "dump",0
         .word dump
-.endif
+
         ; End of list
         .byte $ff
 
@@ -532,12 +534,11 @@ exec:
         jmp errmsg
 
 
-.ifdef DEBUG
-dumpvec    = $c0
-dumpvec_end     = dumpvec
-dumpvec_start   = dumpvec+2
-
 dump:
+        crlf
+        jsr primm
+        .asciiz "####  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F   123457890ABCDEF"
+
         stz dumpvec+1
         stz dumpvec+2
         stz dumpvec+3
@@ -575,9 +576,10 @@ dump:
 
         printstring "parameter error"
 
-        bra @l8
+        jmp @l8
 @l3:
         crlf
+        
         lda dumpvec_start+1
         jsr hexout
         lda dumpvec_start
@@ -594,7 +596,7 @@ dump:
         lda #' '
         jsr char_out
         iny
-        cpy #$08
+        cpy #$10
         bne @l4
 
         lda #' '
@@ -609,7 +611,7 @@ dump:
 @l6:  
         jsr char_out
         iny
-        cpy #$08
+        cpy #$10
         bne @l5
 
         lda dumpvec_start+1
@@ -632,11 +634,13 @@ dump:
         lda dumpvec_start+1
         adc #$00
         sta dumpvec_start+1
-        bra @l3
+        jmp @l3
 
-@l8:  jmp mainloop
-.endif
+@l8:  
+        jmp mainloop
 
+
+.data
 PATH: .asciiz "./:/steckos/:/progs/"
 PRGEXT: .asciiz ".PRG"
 
