@@ -193,12 +193,32 @@ static signed char are_pieces_attracted(const Piece *p1, const Piece *p2)
     return -1;
 }
 
+short isqrt(short number)
+{
+  short i;
+  short y;
+  short x2;
+  const short threehalfs = divfp(3,tofp(2));
+  const short half = divfp(1,tofp(2));
+
+  y  = tofp(number);
+  x2 = mulfp(y,  half);
+  i  = * ( short * ) &y;                       // evil floating point bit level hacking
+  i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+  y  = * ( short * ) &i;
+  y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+  // y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+  return fromfp(y);
+}
+
 static void move(Piece *p1, Piece *p2, short s){
   short l;
   short dx,dy;
   dx = p2->prev_pos->x - p1->prev_pos->x;
   dy = p2->prev_pos->y - p1->prev_pos->y;
-  l = divfp(s, sqrts(dx*dx + dy*dy));
+  //l = divfp(s, sqrts(dx*dx + dy*dy));
+  l = mulfp(s, isqrt(dx*dx + dy*dy));
   p1->pos->x = (p1->pos->x+mulfp(dx, l));
   p1->pos->y = (p1->pos->y+mulfp(dy, l));
   //printf("%d %d %d %d %d/%d\n", l, s, dx, dy, p1->pos->x, p1->pos->y);
