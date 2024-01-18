@@ -57,7 +57,6 @@ loop:
    lda p_src+1
    cmp #>payload_end
    bne loop
-   stp
    ; jump to reset vector
    jmp ($fffc)
 

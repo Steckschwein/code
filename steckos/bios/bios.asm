@@ -22,7 +22,9 @@
       ptr2:       .res 2
       init_step:  .res 1
       startaddr:  .res 2
-.exportzp ptr1,  ptr2
+
+;.exportzp ptr1,  ptr2
+
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
@@ -179,9 +181,9 @@ do_reset:
       txs
 
       lda #$00
-      sta ctrl_port+0
-      lda #$01
-      sta ctrl_port+1
+      sta slot0
+      ina
+      sta slot1
 
       ; Check zeropage and Memory
 check_zp:

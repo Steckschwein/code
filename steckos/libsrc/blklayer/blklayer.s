@@ -58,6 +58,7 @@ blklayer_read_block:
  ;         debug32 "bl r lba last", _blkl_0+_blkl_state::blk_lba
 ;          debug16 "bl r lba blkptr", _blkl_0+_blkl_state::blk_ptr
           cmp32 _blkl_0+_blkl_state::blk_lba, lba_addr, @l_read
+          cmp16 _blkl_0+_blkl_state::blk_ptr, sd_blkptr, @l_read
 
           inc sd_blkptr+1  ; TODO FIXME dev_write_block (sdcard) device driver sideeffect
           lda #EOK
@@ -67,6 +68,7 @@ blklayer_read_block:
 @l_read:  jsr blklayer_flush
           bcs @l_exit
           debug32 "bl r miss >", lba_addr
+;          debug32 "bl r sdpt", sd_blkptr
           jsr dev_read_block
           ;cmp #EOK
           bne l_exit_err
