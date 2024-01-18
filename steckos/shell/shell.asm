@@ -42,10 +42,7 @@ prompt  = '>'
 msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
-dumpvec:        .res 2
-dumpvec_end = dumpvec
-dumpvec_start:  .res 2
-
+dumpvec:  .res 2
 
 
 appstart __SHELL_START__
@@ -307,8 +304,8 @@ cmdlist:
         .byte "up",0
         .word krn_upload
 
-        .byte "dump",0
-        .word dump
+        .byte "pd",0
+        .word pd
 
         ; End of list
         .byte $ff
@@ -533,109 +530,88 @@ exec:
         lda #$fe
         jmp errmsg
 
+dump_line_length = $10
 
-dump:
-        crlf
-        jsr primm
-        .asciiz "####  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F   123457890ABCDEF"
-
+pd:
+        ldy #0
+        lda (paramptr),y
+        beq @error
+       
+        stz dumpvec+0
         stz dumpvec+1
-        stz dumpvec+2
-        stz dumpvec+3
-
-        ldy #$00
-        ldx #$03
-@l1:
-        lda (paramptr),y
-        beq @l2
 
         jsr atoi
         asl
         asl
         asl
         asl
-        sta dumpvec,x
-
+        sta dumpvec+1
+        
         iny
         lda (paramptr),y
-        beq @l2
+        beq @error
         jsr atoi
-        ora dumpvec,x
-        sta dumpvec,x
-        dex
-        iny
-        cpy #$04
-        bne @l1
+        ora dumpvec+1
+        sta dumpvec+1
+        
+        bra @go
 
-        iny
-        bra @l1
-
-@l2:  
-        cpy #$00
-        bne @l3
+@error:  
 
         printstring "parameter error"
-
-        jmp @l8
-@l3:
+        jmp mainloop
+@go:
         crlf
+        jsr primm
+        .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
         
-        lda dumpvec_start+1
+        ldx #256 / dump_line_length
+@output_line:
+        crlf
+
+        lda dumpvec+1
         jsr hexout
-        lda dumpvec_start
+        lda dumpvec
         jsr hexout
+
         lda #':'
         jsr char_out
         lda #' '
         jsr char_out
 
         ldy #$00
-@l4:
-        lda (dumpvec_start),y
+@out_hexbyte:
+        lda (dumpvec),y
         jsr hexout
         lda #' '
         jsr char_out
         iny
-        cpy #$10
-        bne @l4
+        cpy #dump_line_length
+        bne @out_hexbyte
 
         lda #' '
         jsr char_out
 
         ldy #$00
-@l5:  
-        lda (dumpvec_start),y
-        cmp #$19
-        bcs @l6
-        lda #'.'
-@l6:  
+@out_char:  
+        lda (dumpvec),y
+        cmp #$19 ; printable character?
+        bcs :+   ; 
+        lda #'.' ; no, just print '.'
+:                ; yes, print it
         jsr char_out
         iny
-        cpy #$10
-        bne @l5
+        cpy #dump_line_length
+        bne @out_char
 
-        lda dumpvec_start+1
-        cmp dumpvec_end+1
-        bne @l7
-        lda dumpvec_start
-        cmp dumpvec_end
-        beq @l8
-        bcs @l8
-
-@l7:
-        jsr krn_getkey
-        cmp #$03
-        beq @l8
+        ; update dumpvec
         clc
-        lda dumpvec_start
-
-        adc #$08
-        sta dumpvec_start
-        lda dumpvec_start+1
-        adc #$00
-        sta dumpvec_start+1
-        jmp @l3
-
+        tya 
+        adc dumpvec
+        sta dumpvec
+ 
+        dex 
+        bne @output_line
 @l8:  
         jmp mainloop
 
