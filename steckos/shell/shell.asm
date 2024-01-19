@@ -23,6 +23,8 @@
 
 .include "steckos.inc"
 
+dump_line_length = $10
+
 BUF_SIZE    = 80 ;TODO maybe too small?
 cwdbuf_size = 80
 prompt  = '>'
@@ -43,6 +45,7 @@ msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
 dumpvec:  .res 2
+dumpend:  .res 1
 
 
 appstart __SHELL_START__
@@ -452,6 +455,7 @@ rmdir:
         jmp mainloop
 
 pwd:
+        crlf
         lda #<cwdbuf
         ldx #>cwdbuf
         jsr strout
@@ -529,7 +533,6 @@ exec:
         lda #$fe
         jmp errmsg
 
-dump_line_length = $10
 
 pd:
         ldy #0
@@ -552,7 +555,33 @@ pd:
         jsr atoi
         ora dumpvec+1
         sta dumpvec+1
+        sta dumpend
+
+        iny 
+        lda (paramptr),y 
+        beq @go
+
+        iny 
+        lda (paramptr),y
+
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta dumpend
         
+        iny
+        lda (paramptr),y
+        beq @error
+        jsr atoi
+        ora dumpend
+        sta dumpend
+
+        lda dumpend
+        
+        jsr hexout
+        crlf
         bra @go
 
 @error:  
@@ -611,6 +640,21 @@ pd:
  
         dex 
         bne @output_line
+
+        lda dumpvec+1
+        cmp dumpend
+        beq @l8
+        jsr primm
+        .byte $0a,$0d,"-- press a key-- ",$0a,$0a,$00
+        
+        keyin
+        cmp #KEY_CTRL_C
+        beq @l8
+        cmp #KEY_ESCAPE
+        beq @l8
+
+        inc dumpvec+1
+        jmp @go
 @l8:  
         jmp mainloop
 
