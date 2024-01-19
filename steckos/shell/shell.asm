@@ -254,7 +254,7 @@ compare:
         bra @l1
 
 cmdfound:
-        crlf
+        ; crlf
         inx
         jmp (cmdlist,x) ; 65c02 FTW!!
 
@@ -262,9 +262,7 @@ try_exec:
         lda (bufptr)
         beq @l1
 
-        crlf
         jmp exec
-
 @l1:  
         jmp mainloop
 
@@ -470,6 +468,7 @@ exec:
         jmp mainloop
 
 @resolve_path:
+        crlf
         stz tmp2
 @try_path:
         ldx #0
@@ -564,7 +563,7 @@ pd:
         crlf
         jsr primm
         .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
-        
+
         ldx #256 / dump_line_length
 @output_line:
         crlf
