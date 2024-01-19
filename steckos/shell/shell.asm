@@ -540,7 +540,7 @@ pd:
         beq @error
        
         stz dumpvec+0
-        stz dumpvec+1
+        ; stz dumpvec+1
 
         jsr atoi
         asl
@@ -578,9 +578,6 @@ pd:
         ora dumpend
         sta dumpend
 
-        lda dumpend
-        
-        jsr hexout
         crlf
         bra @go
 
@@ -645,7 +642,7 @@ pd:
         cmp dumpend
         beq @l8
         jsr primm
-        .byte $0a,$0d,"-- press a key-- ",$0a,$0a,$00
+        .byte $0a,$0d,"-- press a key-- ",$00
         
         keyin
         cmp #KEY_CTRL_C
