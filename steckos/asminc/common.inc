@@ -321,8 +321,8 @@
 .endmacro
 
 .macro cmp32 op1, op2, _label
+  cmp16 op1+0, op2+0, _label  ; compare little endian - low byte first, propably the high bytes are changing rarely. e.g. cmp32 lba address
   cmp16 op1+2, op2+2, _label
-  cmp16 op1+0, op2+0, _label
 .endmacro
 
 .macro printstring text

@@ -198,11 +198,6 @@ mock_not_implemented:
 
 mock_read_block:
 		debug32 "mock_read_block lba", lba_addr
-		cpx #(2*FD_Entry_Size)
-		bcs :+
-		lda #EINVAL
-		rts
-:
 		; defaults to dir entry data
 		load_block_if LBA_BEGIN, block_root_cl, @exit ; load root cl block
 
