@@ -308,6 +308,9 @@ cmdlist:
         .byte "pd",0
         .word pd
 
+        .byte "ms",0
+        .word ms
+
         ; End of list
         .byte $ff
 
@@ -534,6 +537,99 @@ exec:
         jmp errmsg
 
 
+ms:
+        ldy #0
+        lda (paramptr),y
+        beq @error
+       
+        stz dumpvec+0
+        ; stz dumpvec+1
+
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta dumpvec+1
+        
+        iny
+        lda (paramptr),y
+        beq @error
+
+        jsr atoi
+        ora dumpvec+1
+        sta dumpvec+1
+
+        iny
+        lda (paramptr),y
+        beq @error
+
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta dumpvec
+        
+        iny
+        lda (paramptr),y
+        beq @error
+        jsr atoi
+        ora dumpvec
+        sta dumpvec
+
+
+
+
+        iny
+        lda (paramptr),y
+        beq @error
+        cmp #' '
+        bne @error
+
+        iny
+        lda (paramptr),y
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta dumpend
+        
+        iny
+        lda (paramptr),y
+        beq @error
+        jsr atoi
+        ora dumpend
+        sta dumpend 
+
+        crlf
+        lda dumpvec+1
+        jsr hexout
+
+        lda dumpvec
+        jsr hexout 
+
+        lda #':'
+        jsr char_out
+        lda #' '
+        jsr char_out
+        
+        lda dumpend
+        jsr hexout
+
+        sta (dumpvec)
+        jmp mainloop
+
+
+        beq @error
+@error:  
+        printstring "parameter error"
+        jmp mainloop
+
+
+
+
 pd:
         ldy #0
         lda (paramptr),y
@@ -582,7 +678,6 @@ pd:
         bra @go
 
 @error:  
-
         printstring "parameter error"
         jmp mainloop
 @go:
