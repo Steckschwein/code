@@ -587,6 +587,18 @@ ms:
         cmp #' '
         bne @error
 
+        crlf
+        lda dumpvec+1
+        jsr hexout
+
+        lda dumpvec
+        jsr hexout 
+
+        lda #':'
+        jsr char_out
+        lda #' '
+        jsr char_out
+
         iny
         lda (paramptr),y
         jsr atoi
@@ -603,18 +615,7 @@ ms:
         ora dumpend
         sta dumpend 
 
-        crlf
-        lda dumpvec+1
-        jsr hexout
 
-        lda dumpvec
-        jsr hexout 
-
-        lda #':'
-        jsr char_out
-        lda #' '
-        jsr char_out
-        
         lda dumpend
         jsr hexout
 
