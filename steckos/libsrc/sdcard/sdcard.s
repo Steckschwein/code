@@ -326,7 +326,6 @@ fullblock:
 
 			ldy #$00
 			jsr halfblock
-
 			inc sd_blkptr+1
 			jsr halfblock
 
@@ -337,8 +336,7 @@ fullblock:
 			rts
 
 halfblock:
-@l:
-			jsr spi_r_byte
+@l:   jsr spi_r_byte
 			sta (sd_blkptr),y
 			iny
 			bne @l
