@@ -46,6 +46,7 @@ bufptr:   .res 2
 pathptr:  .res 2
 dumpvec:  .res 2
 dumpend:  .res 1
+tmpchar:  .res 1
 
 
 appstart __SHELL_START__
@@ -536,46 +537,31 @@ exec:
         lda #$fe
         jmp errmsg
 
-
+        
 ms:
         ldy #0
         lda (paramptr),y
         beq @error
-       
         stz dumpvec+0
-        ; stz dumpvec+1
-
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
-        sta dumpvec+1
+        tax
         
         iny
         lda (paramptr),y
         beq @error
-
-        jsr atoi
-        ora dumpvec+1
+        
+        jsr parse_hex
         sta dumpvec+1
 
         iny
         lda (paramptr),y
         beq @error
+        tax 
 
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
-        sta dumpvec
-        
         iny
         lda (paramptr),y
         beq @error
-        jsr atoi
-        ora dumpvec
+   
+        jsr parse_hex
         sta dumpvec
 
 
@@ -601,18 +587,14 @@ ms:
 
         iny
         lda (paramptr),y
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
-        sta dumpend
-        
+        tax
+ 
         iny
         lda (paramptr),y
         beq @error
-        jsr atoi
-        ora dumpend
+
+        jsr parse_hex
+
         sta dumpend 
 
 
@@ -639,18 +621,13 @@ pd:
         stz dumpvec+0
         ; stz dumpvec+1
 
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
-        sta dumpvec+1
-        
+        tax 
         iny
         lda (paramptr),y
         beq @error
-        jsr atoi
-        ora dumpvec+1
+
+        jsr parse_hex
+
         sta dumpvec+1
         sta dumpend
 
@@ -660,19 +637,16 @@ pd:
 
         iny 
         lda (paramptr),y
+        tax
 
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
         sta dumpend
         
         iny
         lda (paramptr),y
         beq @error
-        jsr atoi
-        ora dumpend
+
+        jsr parse_hex
+        
         sta dumpend
 
         crlf
@@ -750,6 +724,26 @@ pd:
         jmp @go
 @l8:  
         jmp mainloop
+
+
+
+; parse two hex digits to binary
+; highbyte in X
+; lowbyte in A
+; returns A
+parse_hex:
+        pha 
+        txa
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta tmpchar
+        pla 
+        jsr atoi
+        ora tmpchar
+        rts
 
 
 .data
