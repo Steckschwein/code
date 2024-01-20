@@ -258,7 +258,6 @@ compare:
         bra @l1
 
 cmdfound:
-        ; crlf
         inx
         jmp (cmdlist,x) ; 65c02 FTW!!
 
@@ -311,6 +310,9 @@ cmdlist:
 
         .byte "ms",0
         .word ms
+
+        .byte "go",0
+        .word go
 
         ; End of list
         .byte $ff
@@ -537,7 +539,38 @@ exec:
         lda #$fe
         jmp errmsg
 
+go:
+        ldy #0
+        lda (paramptr),y
+        beq @error
+        stz dumpvec+0
+        tax
         
+        iny
+        lda (paramptr),y
+        beq @error
+        
+        jsr parse_hex
+        sta dumpvec+1
+
+        iny
+        lda (paramptr),y
+        beq @error
+        tax 
+
+        iny
+        lda (paramptr),y
+        beq @error
+   
+        jsr parse_hex
+        sta dumpvec
+
+        jmp (dumpvec)
+@error:  
+        printstring "parameter error"
+@end:
+        jmp mainloop
+
 ms:
         ldy #0
         lda (paramptr),y
@@ -564,15 +597,13 @@ ms:
         jsr parse_hex
         sta dumpvec
 
-
-
-
         iny
         lda (paramptr),y
         beq @error
         cmp #' '
         bne @error
 
+@again:
         crlf
         lda dumpvec+1
         jsr hexout
@@ -585,29 +616,34 @@ ms:
         lda #' '
         jsr char_out
 
+@skip:
         iny
         lda (paramptr),y
+        beq @end
+        cmp #' '
+        beq @skip 
+
         tax
  
         iny
         lda (paramptr),y
-        beq @error
-
+ 
         jsr parse_hex
 
         sta dumpend 
-
-
-        lda dumpend
         jsr hexout
 
         sta (dumpvec)
+
+        inc16 dumpvec
+        bra @again
         jmp mainloop
 
 
         beq @error
 @error:  
         printstring "parameter error"
+@end:
         jmp mainloop
 
 
