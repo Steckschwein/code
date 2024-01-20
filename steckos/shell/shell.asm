@@ -540,30 +540,8 @@ exec:
         jmp errmsg
 
 go:
-        ldy #0
-        lda (paramptr),y
-        beq @error
-        stz dumpvec+0
-        tax
-        
-        iny
-        lda (paramptr),y
-        beq @error
-        
-        jsr parse_hex
-        sta dumpvec+1
-
-        iny
-        lda (paramptr),y
-        beq @error
-        tax 
-
-        iny
-        lda (paramptr),y
-        beq @error
-   
-        jsr parse_hex
-        sta dumpvec
+        jsr hex2dumpvec
+        bcs @error
 
         jmp (dumpvec)
 @error:  
@@ -571,31 +549,10 @@ go:
 @end:
         jmp mainloop
 
+
 ms:
-        ldy #0
-        lda (paramptr),y
-        beq @error
-        stz dumpvec+0
-        tax
-        
-        iny
-        lda (paramptr),y
-        beq @error
-        
-        jsr parse_hex
-        sta dumpvec+1
-
-        iny
-        lda (paramptr),y
-        beq @error
-        tax 
-
-        iny
-        lda (paramptr),y
-        beq @error
-   
-        jsr parse_hex
-        sta dumpvec
+        jsr hex2dumpvec
+        bcs @error 
 
         iny
         lda (paramptr),y
@@ -779,6 +736,37 @@ parse_hex:
         pla 
         jsr atoi
         ora tmpchar
+        rts
+
+hex2dumpvec:
+        ldy #0
+        lda (paramptr),y
+        beq @err
+        stz dumpvec+0
+        tax
+        
+        iny
+        lda (paramptr),y
+        beq @err
+        
+        jsr parse_hex
+        sta dumpvec+1
+
+        iny
+        lda (paramptr),y
+        beq @err
+        tax 
+
+        iny
+        lda (paramptr),y
+        beq @err
+   
+        jsr parse_hex
+        sta dumpvec
+        clc 
+        rts
+@err:
+        sec
         rts
 
 
