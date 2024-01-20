@@ -325,6 +325,23 @@
   cmp16 op1+2, op2+2, _label
 .endmacro
 
+.macro cmp32_ge op1, op2, _label
+    lda op1+3
+    cmp op2+3
+    bcc @lt
+    lda op1+2
+    cmp op2+2
+    bcc @lt
+    lda op1+1
+    cmp op2+1
+    bcc @lt
+    lda op1+0
+    cmp op2+0
+    bcs _label
+    ;otherwise op1 < op2
+@lt:
+.endmacro
+
 .macro printstring text
     jsr primm
     .byte text

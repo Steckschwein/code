@@ -40,7 +40,6 @@
 ; external deps - block layer
 .autoimport
 
-.export __fat_read_cluster_block_and_select
 .export __fat_find_first
 .export __fat_find_first_mask
 .export __fat_find_next
@@ -54,6 +53,7 @@
 .export __fat_open_rootdir
 .export __fat_prepare_block_access
 .export __fat_prepare_block_access_read
+.export __fat_read_cluster_block_and_select
 .export __fat_read_block_data
 .export __fat_read_block_fat
 .export __fat_seek_next_dirent
@@ -61,8 +61,9 @@
 .export __fat_set_fd_dirlba
 .export __fat_set_fd_start_cluster
 .export __fat_set_fd_start_cluster_seek_pos
-.export __fat_set_root_clus_lba_addr
+.export __fat_set_root_cluster_lba_addr
 .export __calc_lba_addr
+.export __calc_fat_lba_addr
 .export __fat_shift_lba_addr
 .export __inc_lba_address
 
@@ -529,7 +530,7 @@ __fat_read_block_data:
 __prepare_calc_lba_addr:
     jsr  __fat_is_cln_zero
     bne  l_scl
-__fat_set_root_clus_lba_addr:
+__fat_set_root_cluster_lba_addr:
     .repeat 4,i
       lda volumeID + VolumeID::BPB_RootClus + i
       sta lba_addr + i
@@ -595,8 +596,10 @@ __calc_lba_addr:
 ;  X - file descriptor
 ; out:
 ;  vol->LbaFat + (cluster_nr>>7); => div 128 -> 4 (32bit) * 128 cluster numbers per block (512 bytes)
-__calc_fat_lba_addr:
+__calc_fat_lba_addr_from_fd:
     jsr __prepare_calc_lba_addr
+
+__calc_fat_lba_addr:
     ;instead of shift right 7 times in a loop, we copy over the entire byte (same as >>8) - and simply shift left 1 bit (<<1)
     lda lba_addr+0
     asl
@@ -708,7 +711,7 @@ __fat_set_fd_start_cluster:
 ;  Y - offset within block_fat to clnr
 ;  C=0 on success, C=1 if the cluster number is the EOC and A=EOK or C=1 and A=<error code> otherwise
 __fat_read_cluster_block_and_select:
-    jsr __calc_fat_lba_addr
+    jsr __calc_fat_lba_addr_from_fd
     jsr __fat_read_block_fat
     bcs @l_exit
     jsr __fat_is_cln_zero          ; is root clnr? - which is all zero due to offset compensation, therefore we have to select the root cluster explicitly

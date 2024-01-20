@@ -135,8 +135,8 @@ fat_mount:
 
     ; performance optimization - the RootClus offset is compensated within calc_lba_addr - we avoid the substraction of the RootClus from lba_data on each calculation
     ; lba_cluster_m2 = cluster_begin_lba - (VolumeID::RootClus * VolumeID::SecPerClus)
-    jsr __fat_set_root_clus_lba_addr  ; root cluster to lba_addr
-    jsr __fat_shift_lba_addr          ; * sec/cl
+    jsr __fat_set_root_cluster_lba_addr   ; root cluster to lba_addr
+    jsr __fat_shift_lba_addr              ; * sec/cl
 
     sec          ;  subtract from volumeID + VolumeID::lba_data
     lda volumeID + VolumeID::lba_data+0

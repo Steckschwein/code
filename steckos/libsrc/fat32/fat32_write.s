@@ -86,8 +86,8 @@ __fat_set_fd_filesize:
     debug32 "fd fsize >", fd_area+(2*FD_Entry_Size)+F32_fd::FileSize
     lda fd_area+F32_fd::FileSize+3,x
     cmp fd_area+F32_fd::SeekPos+3,x
-    bcc @l_set3
-    bne @l_exit
+    bcc @l_set3 ; less then
+    bne @l_exit ; greater then, otherwise equal
     lda fd_area+F32_fd::FileSize+2,x
     cmp fd_area+F32_fd::SeekPos+2,x
     bcc @l_set2
@@ -184,7 +184,21 @@ __fat_update_direntry:
 :   jsr __fat_set_direntry_modify_datetime  ; set modification time and date
 
 __fat_update_direntry_write:
-    jsr __fat_set_direntry_start_cluster
+    ; copy cluster number from file descriptor to direntry given as dirptr
+    ldy #F32DirEntry::FstClusHI+1
+    lda fd_area+F32_fd::StartCluster+3 , x
+    sta (dirptr),y
+    dey
+    lda fd_area+F32_fd::StartCluster+2 , x
+    sta (dirptr),y
+
+    ldy #F32DirEntry::FstClusLO+1
+    lda fd_area+F32_fd::StartCluster+1 , x
+    sta (dirptr),y
+    dey
+    lda fd_area+F32_fd::StartCluster+0 , x
+    sta (dirptr),y
+
     jsr __fat_set_direntry_filesize         ; set filesize of directory entry via dirptr
 
     jmp __fat_write_block_data              ; lba_addr is already set from read, see above
@@ -295,26 +309,6 @@ __fat_set_direntry_filesize:
     sta (dirptr),y
     debug32 "fsize", fd_area+(2*.sizeof(F32_fd))+F32_fd::FileSize
     rts
-
-; copy cluster number from file descriptor to direntry given as dirptr
-; in:
-;  dirptr
-__fat_set_direntry_start_cluster:
-    ldy #F32DirEntry::FstClusHI+1
-    lda fd_area+F32_fd::StartCluster+3 , x
-    sta (dirptr),y
-    dey
-    lda fd_area+F32_fd::StartCluster+2 , x
-    sta (dirptr),y
-
-    ldy #F32DirEntry::FstClusLO+1
-    lda fd_area+F32_fd::StartCluster+1 , x
-    sta (dirptr),y
-    dey
-    lda fd_area+F32_fd::StartCluster+0 , x
-    sta (dirptr),y
-    rts
-
 
 ; free cluster and maintain the fsinfo block
 ; in:
@@ -529,78 +523,49 @@ __fat_mark_cluster:
 
 ; try to find a free cluster and store them in volumeId+VolumeID::cluster
 ; out:
+;   sd_blkptr points to the free cluster position within the fat block
 ;   C=0 on success, Y=offset in block_fat of found cluster. lba_addr of the fat block where the found cluster resides
 ;   C=1 on error and A=<error code>
 __fat_find_free_cluster:
-    ;TODO improve, use a previously saved lba_addr and/or found cluster number - e.g. from fsinfo
-    ; init lba_addr with fat_begin lba addr
-    m_memcpy volumeID+VolumeID::lba_fat, lba_addr, 4
-
-@next_block:
-    jsr __fat_read_block_fat  ; read fat block
-    bcs @l_exit_err
-
-    ldy #0
-@l1:
-    lda block_fat+3,y    ; 1st page find cluster entry with ?0 00 00 00
-    and #$0f
-    ora block_fat+2,y
-    ora block_fat+1,y
-    ora block_fat+0,y
-    beq @l_found_lb      ; branch, A=0 here
-
-    lda block_fat+$100+3,y  ; 2nd page find cluster entry with ?0 00 00 00
-    and #$0f                ; mask upper 4 bits
-    ora block_fat+$100+2,y
-    ora block_fat+$100+1,y
-    ora block_fat+$100+0,y
-    beq @l_found_hb
-    iny
-    iny
-    iny
-    iny
-    bne @l1
-    jsr __inc_lba_address  ; inc lba_addr, next fat block
-
-    cmp32 volumeID+VolumeID::lba_fat2, lba_addr, @next_block ; end of fat reached?
-    lda #ENOSPC        ; yes, answer ENOSPC () - "No space left on device"
+        debug32 "fcl cl >", volumeID+VolumeID::cluster
+        debug32 "fcl flba", volumeID+VolumeID::lba_fat
+@l_search:
+        _inc32 volumeID+VolumeID::cluster
+        m_memcpy volumeID+VolumeID::cluster, lba_addr, 4   ; init lba_addr with last cluster (if cluster is zero, it will  we start from lba_fat)
+        jsr __calc_fat_lba_addr
+        cmp32 volumeID+VolumeID::lba_fat2, lba_addr, @l_read  ; end of fat reached?
+        lda #ENOSPC ; yes, C=1 answer ENOSPC - "No space left on device"
 @l_exit_err:
-    rts
-@l_found_hb: ; found in "high" block (2nd page of the sd_blocksize)
-    lda #>(block_fat+$100)  ; set sd_blkptr to begin 2nd page of fat_buffer - @see __fat_mark_free_cluster
-    sta sd_blkptr+1
-    lda #$40          ; adjust clnr with +$40 (256 / 4 byte/clnr) clusters since it was found in 2nd page
-@l_found_lb:          ; A=0 here if called from branch above
-    debug "fat found cl"
-    sta volumeID+VolumeID::cluster+0
-    tya
-    lsr            ; offset Y>>2 (div 4) - 32 bit clnr
-    lsr
-    adc volumeID+VolumeID::cluster+0  ; C=0 here always, y is multiple of 4
-    sta volumeID+VolumeID::cluster+0  ; safe clnr
+        rts
+@l_read:
+        jsr __fat_read_block_fat  ; read fat block
+        bcs @l_exit_err
 
-    ; calc the cluster number with clnr = (block number * 512) / 4 + (Y / 4) => (lba_addr - volumeID+VolumeID::lba_fat) << 7+(Y>>2)
-    ; to avoid the <<7, we simply <<8 and do one ror - FTW!
-    sec
-    lda lba_addr+0
-    sbc volumeID+VolumeID::lba_fat+0
-    sta volumeID+VolumeID::fat_tmp_0        ; save A
-    lda lba_addr+1
-    sbc volumeID+VolumeID::lba_fat+1    ; now we have 16bit blocknumber
-    lsr            ; clnr = blocks<<7
-    sta volumeID+VolumeID::cluster+2
-    lda volumeID+VolumeID::fat_tmp_0        ; restore A
-    ror
-    sta volumeID+VolumeID::cluster+1
-    lda #0
-    ror            ; clnr += Y>>2 (offset within block) - already saved in volumeId+VolumeID::cluster+0 (s.above)
-    adc volumeID+VolumeID::cluster+0
-    sta volumeID+VolumeID::cluster+0
-    lda #0          ; exit found
-    sta volumeID+VolumeID::cluster+3
-    clc ; found, C=0 success
-    debug32 "fat find cl <", volumeID+VolumeID::cluster
-    rts
+        lda volumeID+VolumeID::cluster+0
+        sta sd_blkptr
+        lda #0
+        asl sd_blkptr
+        rol
+        asl sd_blkptr
+        rol
+        ora #>block_fat
+        sta sd_blkptr+1
+        debug16 "fcl bp", sd_blkptr
+
+        ldy #3
+        lda (sd_blkptr),y   ; find cluster entry with ?0 00 00 00
+        and #$0f
+        dey
+        ora (sd_blkptr),y
+        dey
+        ora (sd_blkptr),y
+        dey
+        ora (sd_blkptr)
+        cmp #0
+        bne @l_search
+        debug32 "fat find cl <", volumeID+VolumeID::cluster ; found, cluster is set already
+        clc
+        rts
 
 ; unlink a file denoted by given path in A/X
 ; in:

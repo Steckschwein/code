@@ -713,6 +713,10 @@ _rtc_ts:
 block_fsinfo:   .res sd_blocksize
 
 block_fat_0:    .res sd_blocksize
+block_fat_1:    .res sd_blocksize
+block_fat_2:    .res sd_blocksize
+block_fat_3:    .res sd_blocksize
+
 block_fat2_0:   .res sd_blocksize
 
 block_root_dir_00:  .res sd_blocksize
