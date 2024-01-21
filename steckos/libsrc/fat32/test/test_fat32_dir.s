@@ -262,6 +262,7 @@ mock_read_block:
     fail "read lba not handled!"
 @ok:
     lda #EOK
+    clc
 		rts
 
 mock_write_block:

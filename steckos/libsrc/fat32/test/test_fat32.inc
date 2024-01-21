@@ -174,6 +174,9 @@ load_test_data:
     jsr @cp
     inc sd_blkptr+1
     inc test_data_ptr+1
+    jsr @cp
+    dec sd_blkptr+1
+    rts
 @cp:
     lda (test_data_ptr),y
     sta (sd_blkptr),y

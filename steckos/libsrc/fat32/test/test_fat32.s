@@ -471,7 +471,7 @@ mock_read_block:
       set32 block_fat+((test_start_cluster+0)<<2 & (sd_blocksize-1)), (test_start_cluster+3) ; build a fragmented chain
       set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), (test_start_cluster+7)
       set32 block_fat+((test_start_cluster+7)<<2 & (sd_blocksize-1)), FAT_EOC
-      jmp @exit_inc
+      jmp @ok
 :
     ; data block read?
     ; - for tests with 2sec/cl
@@ -485,10 +485,9 @@ mock_read_block:
     load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL + 0), test_block_data_4sec_cl, @ok
 
     fail "read lba not handled!"
-@exit_inc:
-    inc sd_blkptr+1 ; => same behavior as real block read implementation
 @ok:
     lda #EOK
+    clc
     rts
 
 .data

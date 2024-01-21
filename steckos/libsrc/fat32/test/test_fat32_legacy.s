@@ -139,14 +139,12 @@ mock_read_block:
       m_memset block_fat+$000, $ff, $40  ; simulate reserved, next free cluster is TEST_FILE_CL ($10)
       m_memset block_fat+$100, $ff, $40  ;
       m_memset block_fat+$40, $0, 4 ;
-      bra @dummy_read
+      bra @ok
 :
-    assert32 FAT_EOC, lba_addr ; fail
-
-@dummy_read:
-    inc sd_blkptr+1 ; => same behaviour as real block read implementation
+    fail "read lba not handled!"
 @ok:
     lda #EOK
+    clc
     rts
 
 mock_write_block:

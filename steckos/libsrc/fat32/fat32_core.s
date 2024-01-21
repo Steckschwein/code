@@ -513,7 +513,6 @@ __fat_read_block_data:
 
     phx
     jsr read_block
-    dec sd_blkptr+1     ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
     plx
     cmp #EOK
     bne :+

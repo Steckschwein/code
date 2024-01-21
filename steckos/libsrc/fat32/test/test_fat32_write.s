@@ -681,11 +681,9 @@ mock_read_block:
     load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + $250 * SEC_PER_CL + 2), block_data_cl250_02, @ok
 
     fail "read lba not handled!"
-
-@exit_inc:
-    inc sd_blkptr+1 ; => same behaviour as real block read implementation
 @ok:
     lda #EOK
+    clc
     rts
 
 mock_write_block:

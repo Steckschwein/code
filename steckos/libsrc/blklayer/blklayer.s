@@ -61,8 +61,6 @@ blklayer_read_block:
 ;          debug16 "bl r lba blkptr", _blkl_store+_blkl_state::blk_ptr
           ldx #0
           _block_loaded @l_read
-
-          inc sd_blkptr+1  ; fake ptr change - TODO FIXME dev_read_block (sdcard) device driver sideeffect
           lda #EOK
           clc
 @l_exit:  rts
@@ -73,8 +71,7 @@ blklayer_read_block:
           bcs @l_exit
           debug32 "bl r sdpt", sd_blkptr
           jsr dev_read_block
-          ;cmp #EOK
-          bne l_exit_err
+          bcs l_exit_err
 __blkl_save_lba_addr:
           stz _blkl_store+_blkl_state::status
 
@@ -82,7 +79,7 @@ __blkl_save_lba_addr:
           lda sd_blkptr
           sta _blkl_store+_blkl_state::blk_ptr
           lda sd_blkptr+1
-          dea ; TODO FIXME sd block interface
+          ;dea ; TODO FIXME sd block interface
           sta _blkl_store+_blkl_state::blk_ptr+1
           lda #EOK
           clc
