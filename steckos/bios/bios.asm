@@ -2,7 +2,11 @@
 
 .autoimport
 
-.export read_block=sd_read_block
+; expose high level read_/write_block api
+.export read_block=             blklayer_read_block
+; configure low level or device read_/write_block api
+.export dev_read_block=         sd_read_block
+
 .export char_out=vdp_charout
 .export debug_chrout=vdp_charout
 ;.export char_out=uart_tx
@@ -18,12 +22,17 @@
       ptr2:       .res 2
       init_step:  .res 1
       startaddr:  .res 2
-.exportzp ptr1,  ptr2
+
+;.exportzp ptr1,  ptr2
+
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
-.export write_block
-write_block:
+.export dev_write_block=_noop
+.export write_block=_noop
+.export write_block_buffered=_noop
+.export write_flush=_noop
+_noop:
       clc
       rts
 
@@ -172,9 +181,9 @@ do_reset:
       txs
 
       lda #$00
-      sta ctrl_port+0
-      lda #$01
-      sta ctrl_port+1
+      sta slot0
+      ina
+      sta slot1
 
       ; Check zeropage and Memory
 check_zp:
@@ -208,6 +217,9 @@ zp_broken:
 stack_broken:
 
 zp_stack_ok:
+
+      jsr blklayer_init
+
       jsr init_via1
 
       lda #<nvram

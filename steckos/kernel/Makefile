@@ -39,9 +39,9 @@ version.inc:
 kernel.bin: version.inc $(OBJS) $(LIBS)
 	ld65 $(LDFLAGS_KERNEL) $(OBJS) $(LIBS) -m kernel.map -Ln symbols.txt -o kernel.bin
 	grep krn symbols.txt | egrep -v "(krn_tm|krn_ptr)" | sed "s/al 00//" | awk -F' ' '{print $$2" = $$"$$1}'| sed -e "s/^\.//g" > kernel_jumptable.inc
-
+	s=0 && for l in $$(cat kernel.map |grep fat32 -A 1|grep CODE |cut -d '=' -f3|cut -d ' ' -f1);do s=$$(($$s + 0x$$l));done && echo "fat32 size: $$s bytes"
 loader.prg: kernel.bin loader.o
-	ld65 $(LDFLAGS) loader.o -o loader.prg
+	ld65 $(LDFLAGS) -m loader.map loader.o -o loader.prg
 
 # -m <kernel start adress - $100 (loader)
 dis: kernel.bin
