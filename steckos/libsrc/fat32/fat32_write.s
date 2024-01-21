@@ -76,8 +76,22 @@ fat_write_byte:
     _inc32_x fd_area+F32_fd::SeekPos    ; seek+1
 
     jsr __fat_set_fd_filesize
-    jsr __fat_write_block_data_buffered ; write block buffered
+
+    ; write block buffered
+    lda #>block_data
+    sta sd_blkptr+1
+    stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
+    phx
+    jsr write_block_buffered
+    plx
+    cmp #EOK
+    bne @l_exit_err
+    clc
 @l_exit:
+    ply
+    rts
+@l_exit_err:
+    sec
     ply
     rts
 
@@ -432,20 +446,6 @@ __fat_write_block_data:
     sec
     rts
 
-__fat_write_block_data_buffered:
-    lda #>block_data
-    sta sd_blkptr+1
-    stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
-    phx
-    jsr write_block_buffered
-    plx
-    cmp #EOK
-    bne @l_exit_err
-    clc
-    rts
-@l_exit_err:
-    sec
-    rts
 
 __fat_write_fat_blocks:
     jsr __fat_write_block_fat      ; lba_addr is already setup by __fat_find_free_cluster
@@ -561,7 +561,6 @@ __fat_find_free_cluster:
         ora (sd_blkptr),y
         dey
         ora (sd_blkptr)
-        cmp #0
         bne @l_search
         debug32 "fat find cl <", volumeID+VolumeID::cluster ; found, cluster is set already
         clc
