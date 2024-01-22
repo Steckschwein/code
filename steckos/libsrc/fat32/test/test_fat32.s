@@ -120,7 +120,6 @@ TEST_FILE_CL2=$19
     ldx #>test_file_name_1
     jsr fat_fopen
     ply
-;    assertA EOK
     assertCarry 0
     dey
     bne :-
@@ -486,7 +485,6 @@ mock_read_block:
 
     fail "read lba not handled!"
 @ok:
-    lda #EOK
     clc
     rts
 

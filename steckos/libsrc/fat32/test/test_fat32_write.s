@@ -81,7 +81,7 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
-    assertA EOK
+    assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertDirEntry (block_root_dir_00+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
@@ -111,7 +111,6 @@ TEST_FILE_CL19=$19
 		ldx #>test_file_name_1
 		jsr fat_fopen
 		assertC 0
-		assertA EOK
     assertDirEntry block_root_dir_03+15*DIR_Entry_Size
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -142,7 +141,6 @@ TEST_FILE_CL19=$19
 		ldx #>test_file_name_1
 		jsr fat_fopen
 		assertC 0
-		assertA EOK
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
@@ -172,7 +170,6 @@ TEST_FILE_CL19=$19
 		ldx #>test_file_name_1
 		jsr fat_fopen
 		assertC 0
-		assertA EOK
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
@@ -198,7 +195,6 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
 
@@ -221,7 +217,6 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertDirEntry block_root_dir_00+4*DIR_Entry_Size
@@ -266,7 +261,6 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
 
@@ -331,7 +325,6 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
 
@@ -440,7 +433,6 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_2
     ldx #>test_file_name_2
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -509,7 +501,6 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_2
     ldx #>test_file_name_2
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -603,7 +594,6 @@ single_test:
     lda #<test_file_name_2
     ldx #>test_file_name_2
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -682,7 +672,6 @@ mock_read_block:
 
     fail "read lba not handled!"
 @ok:
-    lda #EOK
     clc
     rts
 
@@ -723,7 +712,7 @@ mock_write_block:
 
     fail "write lba not handled!"
 @ok:
-    lda #EOK
+    clc
     rts
 
 mock_not_implemented1:
