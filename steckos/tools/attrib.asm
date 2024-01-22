@@ -123,7 +123,7 @@ attrib:
 
 		; just write back the block. lba_address still contains the right address
 		jsr krn_sd_write_block
-		bne wrerror
+		bcs wrerror
 
 		jmp (retvec)
 

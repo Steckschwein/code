@@ -50,7 +50,7 @@
 ;  block lba in lba_addr
 ;  sd_blkptr - pointer to data
 ;out:
-;  A - A = 0 on success, error code otherwise
+;  C = 0 on success, C = 1 on error and A =<error code> otherwise
 ;---------------------------------------------------------------------
 sd_write_block:
       phx
@@ -70,17 +70,19 @@ sd_write_block:
       jsr __sd_write_block_halfblock
       inc sd_blkptr+1
       jsr __sd_write_block_halfblock
+      dec sd_blkptr+1
 
       ; Send fake CRC bytes
       lda #$00
       jsr spi_rw_byte
       lda #$00
       jsr spi_rw_byte
-      lda #$00
+
+      lda #$00  ; success
 @exit:
       ply
       plx
-          jmp sd_deselect_card
+      jmp sd_deselect_card
 
 __sd_write_block_halfblock:
 :     lda (sd_blkptr),y

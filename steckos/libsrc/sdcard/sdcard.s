@@ -40,8 +40,9 @@
 .export sdcard_init, sdcard_detect
 .export sd_select_card, sd_deselect_card
 .export sd_read_block, sd_cmd, sd_cmd_lba
-.export fullblock
 .export sd_busy_wait
+
+.export _sd_fullblock
 
 .ifdef MULTIBLOCK_WRITE
 .export sd_write_multiblock
@@ -212,7 +213,6 @@ init_clk:
       lda #0      ; SD card init successful
 @exit:
       plp
-      cmp #0
       jmp sd_deselect_card
 
 _sys_delay_4us:
@@ -279,7 +279,7 @@ sd_exit:
 ;   sd_blkptr target adress for the block data to be read
 ;
 ;out:
-;  C=1, A = 0 on success, C=0 and A=<error code> otherwise
+;  C = 0 on success, C = 1 and A=<error code> otherwise
 ;---------------------------------------------------------------------
 sd_read_block:
       php
@@ -291,16 +291,17 @@ sd_read_block:
       lda #cmd17
       jsr sd_cmd
       bne @exit
-      jsr fullblock
-      jsr sd_deselect_card
+      jsr _sd_fullblock
 @exit:
-      plp
-      cmp #0
-      rts
+      plp ; restore IRQ bit
 
 ;---------------------------------------------------------------------
 ; deselect sd card, puSH CS line to HI and generate few clock cycles
 ; to allow card to deinit
+; in:
+;   A = return code
+; out:
+;   C = 0 on success, C = 1 on error with A =<error code>
 ;---------------------------------------------------------------------
 sd_deselect_card:
       pha
@@ -317,21 +318,29 @@ sd_deselect_card:
       ply
       pla
 
+      cmp #0
+      bne @error
+      clc
+      rts
+@error:
+      sec
       rts
 
-fullblock:
+
+_sd_fullblock:
       ; wait for sd card data token
       jsr sd_wait
-      bne @exit
+      bcs @exit
 
       ldy #$00
       jsr halfblock
       inc sd_blkptr+1
       jsr halfblock
+      dec sd_blkptr+1
 
       jsr spi_r_byte    ; Read 2 CRC bytes
       jsr spi_r_byte
-      lda #$00
+      lda #0
 @exit:
       rts
 
@@ -345,7 +354,7 @@ halfblock:
 ;---------------------------------------------------------------------
 ; wait for sd card whatever
 ; in: A - value to wait for
-; out: Z = 1, A = 0 on success, A = error (timeout) otherwise
+; out: C = 0 on success, C = 1 and A = error (timeout) otherwise
 ;---------------------------------------------------------------------
 sd_wait:
       ldy #sd_data_token_retries
@@ -362,8 +371,9 @@ sd_wait:
       bne @l1
 
       lda #sd_card_error_timeout
+      sec
       rts
-@l2:  lda #0
+@l2:  clc
       rts
 
 
