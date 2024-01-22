@@ -7674,26 +7674,28 @@ LAB_LOAD:
       sta VEC_OUT
       lda #>outvec_dummy
       sta VEC_OUT+1
-      JMP   LAB_1319 ; reset and return
+      JMP LAB_1319 ; reset and return
 
 fread_wrapper:
       phx
       phy
       ldx _fd
+      beq @restore
       jsr krn_fread_byte
+      ply
+      plx
       bcs @eof
       cmp #KEY_LF ; replace with "basic end of line"
       bne :+
-      lda #KEY_CR
-:     ply
-      plx
-      cmp #0
+@cr:  lda #KEY_CR
+:     cmp #0
       rts
 @eof:
       jsr krn_close
-
+      stz _fd
+      bra @cr
+@restore:
       jsr init_iovectors
-
       SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
       jmp     LAB_1319         ; cleanup and Return to BASIC
 
