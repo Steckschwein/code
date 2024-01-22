@@ -29,8 +29,15 @@
 
 .autoimport
 
-.export read_block=sd_read_block
-.export write_block=sd_write_block
+; expose high level read_/write_block api
+.export read_block=             blklayer_read_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
+.export write_flush=            blklayer_flush
+; configure low level or device read_/write_block api
+.export dev_read_block=         sd_read_block
+.export dev_write_block=        sd_write_block
+
 .export char_out=ansi_chrout         ; account for page crossing
 
 .export crc16_lo=BUFFER_0
@@ -46,6 +53,8 @@
 nvram = $1000
 
 kern_init:
+
+    jsr blklayer_init
 
     SetVector user_isr_default, user_isr
     jsr textui_init0

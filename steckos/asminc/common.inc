@@ -178,6 +178,7 @@
 .macro m_memcpy src, dest, n
    .local @l
    .assert n<=$80, error, "n must not > $80"
+   .assert n<=$80, warn, "m_memcpy for n <= 2 does not save any space. are you sure you?"
    ldy #n-1
 @l:
    lda src,y
@@ -320,8 +321,25 @@
 .endmacro
 
 .macro cmp32 op1, op2, _label
+  cmp16 op1+0, op2+0, _label  ; compare little endian - low byte first, propably the high bytes are changing rarely. e.g. cmp32 lba address
   cmp16 op1+2, op2+2, _label
-  cmp16 op1+0, op2+0, _label
+.endmacro
+
+.macro cmp32_ge op1, op2, _label
+    lda op1+3
+    cmp op2+3
+    bcc @lt
+    lda op1+2
+    cmp op2+2
+    bcc @lt
+    lda op1+1
+    cmp op2+1
+    bcc @lt
+    lda op1+0
+    cmp op2+0
+    bcs _label
+    ;otherwise op1 < op2
+@lt:
 .endmacro
 
 .macro printstring text

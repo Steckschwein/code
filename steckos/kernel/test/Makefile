@@ -11,7 +11,7 @@ LDFLAGS_PRG=-C ../../prg.ld65.cfg
 
 .PHONY: all clean
 
-all: test.ansi test.textui 
+all: test.ansi test.textui
 
 clean:
 	rm -f *.prg *.bin *.o *.dis *.log
@@ -21,9 +21,6 @@ clean:
 
 test.%.bin: test.%.o $(LIBS) $(<:test.%=%)
 	ld65 $(LDFLAGS) $< ../$(<:test.%=%) $(LIBS) -o $@
-
-test.matcher.bin: test.matcher.o ../matcher.o ../util.o $(LIBS)
-	ld65 $(LDFLAGS) $< ../matcher.o ../util.o $(LIBS) -o $@
 
 %.prg: %.o $(LIBS)
 	ld65 $(LDFLAGS_PRG) $< $(LIBS_PRG) -o $@
@@ -40,5 +37,5 @@ test.%: test.%.bin
 %: %.prg
 	../../../xmodem.sh $<
 
-../../../asmunit/asmunit.a:
-	(cd ../../../asmunit ; make)
+%.emu: %.prg
+	steckschwein-emu -rom ../../bios/bios.bin -sdcard ../../../steckos.img -upload $<

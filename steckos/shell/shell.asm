@@ -79,7 +79,7 @@ exit_from_prg:
 mainloop:
         jsr primm
         .byte CODE_LF, '[', 0
-        
+
         ; output current path
         lda #<cwdbuf
         ldy #>cwdbuf
@@ -211,9 +211,9 @@ parse:
 compare:
       ; compare
         ldx #$00
-@l1:    
+@l1:
         ldy #$00
-@l2:  
+@l2:
         lda (cmdptr),y
 
         ; if not, there is a terminating null
@@ -275,21 +275,21 @@ printbuf:
         jsr krn_textui_update_crs_ptr
 
         ldy #$00
-@l1:  
+@l1:
         lda (bufptr),y
         beq @l2
         sta buf,y
         jsr char_out
         iny
         bra @l1
-@l2:  
+@l2:
         rts
 
 
 cmdlist:
         .byte "cd",0
         .word cd
-        
+
         .byte "rm",0
         .word rm
 
@@ -389,7 +389,7 @@ errmsg:
         lda errors+1,x
         sta msg_ptr+1
         ldy #0
-: 
+:
         lda (msg_ptr),y
         beq @l_exit
         jsr char_out
@@ -439,7 +439,7 @@ mkdir:
         beq @exit
 
         lda paramptr
-        ldx paramptr+1 
+        ldx paramptr+1
 
         jsr krn_mkdir
         bcc @exit
@@ -452,7 +452,7 @@ rmdir:
         beq @exit
 
         lda paramptr
-        ldx paramptr+1 
+        ldx paramptr+1
 
         jsr krn_rmdir
         bcc @exit
@@ -472,8 +472,8 @@ exec:
         lda cmdptr
         ldx cmdptr+1    ; cmdline in a/x
 
-        ; try to chdir 
-        jsr krn_chdir 
+        ; try to chdir
+        jsr krn_chdir
         bcs @resolve_path ; branch taken if chdir successful
         jmp mainloop
 
