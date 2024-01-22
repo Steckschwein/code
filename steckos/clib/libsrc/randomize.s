@@ -1,16 +1,13 @@
-;
-; /* Initialize the random number generator */
 ; void _randomize (void);
+; /* Initialize the random number generator */
 ;
-      .include "asminc/rtc.inc"
 
-      .export __randomize
+        .export         __randomize
+        .import         _srand
 
-      .import _srand
+        .include        "asminc/rtc.inc"
 
-;--------------------------------------------------------------------------
-; _random
 __randomize:
-      ldx rtc_systime_t+time_t::tm_min
-      lda rtc_systime_t+time_t::tm_sec
-      jmp _srand
+        ldx rtc_systime_t+time_t::tm_sec
+        lda rtc_systime_t+time_t::tm_min
+        jmp _srand

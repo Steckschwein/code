@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschein.de
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -20,23 +20,23 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "steckos.inc"
-.autoimport
+.export atoi
 
-.export char_out=krn_chrout
 
-appstart $1000
-    lda paramptr
-    ldx paramptr+1
+.code
+; atoi
+; convert ascii digit to binary
+; in:   A ASCII digit
+; out:  A bin digit
+atoi:
+        cmp #'9'+1
+        bcc @l1   ; 0-9?
+        ; must be hex digit
+        adc #$08
+        and #$0f
+        rts
 
-    ;TODO -p support by using krn_opendir and call krn_mkdir on "does not exist error"
-    jsr krn_mkdir
-    bcc @exit
-    ;TODO FIXME maybe use oserror() from cc65 lib
-    pha
-    jsr primm
-    .asciiz "Error: "
-    pla
-    jsr hexout
-@exit:
-	jmp (retvec)
+@l1:
+        sec
+        sbc #$30
+        rts

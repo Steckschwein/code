@@ -121,10 +121,9 @@ PartType_FAT32_LBA    = $0c
   BPB_RootClus        .dword
   BPB_FATSz32         .dword  ; sectors per fat
   lba_data            .dword
-  lba_fat             .dword
+  lba_fat             .dword  ;
   lba_fat2            .dword  ; mirror fat lba
   lba_fsinfo          .dword
-  lba_addr_last       .dword  ; last lba_addr
   cluster             .dword  ; mirror of fsinfo LastClus - used for free cluster search
   cluster_seek_cnt    .dword
   fat_cluster_add     .byte     ; cluster reservation addend

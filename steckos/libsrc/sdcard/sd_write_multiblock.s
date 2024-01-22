@@ -41,7 +41,7 @@ sd_write_multiblock:
       ; wait for command response.
       lda #$00
       jsr sd_wait
-      bne @exit
+      bcs @exit
 
 @block:
       lda #sd_data_token

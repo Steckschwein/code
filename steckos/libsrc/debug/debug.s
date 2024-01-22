@@ -34,7 +34,8 @@
 
 .import debug_chrout, primm
 
-.code
+.zeropage
+  __dbg_ptr: .res 2
 
 dbg_acc     = $02f9 ; basic uses $0290 - $02f8
 dbg_xreg    = $02fa
@@ -44,7 +45,7 @@ dbg_bytes   = $02fd
 dbg_savept  = $02fe
 dbg_return  = $028e
 
-__dbg_ptr=$0
+.code
 
 _debugout_enter:
     sta dbg_acc
