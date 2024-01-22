@@ -1,13 +1,7 @@
 .include "steckos.inc"
 .include "errno.inc"
 .include "fcntl.inc"  ; @see ca65 fcntl.inc
-<<<<<<< HEAD
-.include "fat32.inc"  ; @see ca65 fcntl.inc
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
-=======
 .include "fat32.inc"
->>>>>>> master
 
 .autoimport
 
