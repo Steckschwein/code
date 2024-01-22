@@ -3,13 +3,14 @@
 .autoimport
 
 ; mock defines
-.export read_block=mock_read_block
-.export write_block=mock_write_block
+.export dev_read_block=         mock_read_block
+.export read_block=             blklayer_read_block
+.export dev_write_block=        mock_write_block
+.export write_block=            mock_not_implemented
+.export write_block_buffered=   mock_not_implemented
+.export write_flush=            blklayer_flush
+
 .export rtc_systime_update=mock_rtc
-.export cluster_nr_matcher=mock_not_implemented1
-.export fat_name_string=mock_not_implemented2
-.export path_inverse=mock_not_implemented3
-.export put_char=mock_not_implemented4
 
 debug_enabled=1
 
@@ -100,8 +101,7 @@ test_end
     assertDirEntry block_root_cl+4*DIR_Entry_Size
       fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, (4 * sd_blocksize + 3); cluster reserved but no blocks are written, filesize is wrong here!!!
 
-    brk
-
+test_end
 
 data_loader  ; define data loader
 data_writer ; define data writer
@@ -177,16 +177,11 @@ mock_write_block:
     rts
 
 
-mock_not_implemented1:
-    fail "mock cluster_nr_matcher called!"
-mock_not_implemented2:
-    fail "mock fat_name_string called!"
-mock_not_implemented3:
-    fail "mock path_inverse called!"
-mock_not_implemented4:
-    fail "mock put_char called!"
+mock_not_implemented:
+    fail "unexpected mock call!"
 
 setUp:
+  jsr blklayer_init
   jsr __fat_init_fdarea
   init_volume_id SEC_PER_CL ;4s/cl
 

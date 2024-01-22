@@ -19,48 +19,38 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
+.ifndef _BLKLAYER_INC_
+  _BLKLAYER_INC_ = 1
 
-.include "common.inc"
-.include "kernel.inc"
-.include "appstart.inc"
+; Z=1 if equal, Z=0 otherwise and branch to given label
+;
+.macro _blkl_cmp32_x op1, op2, _label
+   lda op1+0, x
+   cmp op2+0
+   bne _label
+   lda op1+1, x
+   cmp op2+1
+   bne _label
+   lda op1+2, x
+   cmp op2+2
+   bne _label
+   lda op1+3, x
+   cmp op2+3
+   bne _label
+.endmacro
 
-.import kernel_start
+.macro _blkl_cmp16_x op1, op2, _label
+  lda op1+0, x
+  cmp op2+0
+  bne _label
+  lda op1+1, x
+  cmp op2+1
+  bne _label
+.endmacro
 
-; system attribute has to be set on file system
-.zeropage
-p_src:    .res 2
-p_tgt:    .res 2
+.macro _block_loaded _label
+  _blkl_cmp32_x _blkl_store+_blkl_state::blk_lba, lba_addr, _label
+  _blkl_cmp16_x _blkl_store+_blkl_state::blk_ptr, sd_blkptr, _label
+.endmacro
 
-appstart $1000
-
-   lda #31 ; enable RAM at slot3
-   sta slot3
-
-   sei ; no irq if we upload from kernel to avoid clash
-   ; copy kernel code to kernel_start
-   lda #>payload
-   sta p_src+1
-   stz p_src
-
-   lda #>kernel_start
-   sta p_tgt+1
-   stz p_tgt
-
-   ldy #0
-loop:
-   lda (p_src),y
-   sta (p_tgt),y
-   iny
-   bne loop
-   inc p_src+1
-   inc p_tgt+1
-   lda p_src+1
-   cmp #>payload_end
-   bne loop
-   ; jump to reset vector
-   jmp ($fffc)
-
-.data
-payload:
-.incbin "kernel.bin"
-payload_end:
+.endif  ; _BLKLAYER_INC_

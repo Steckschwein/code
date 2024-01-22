@@ -16,7 +16,6 @@
 ;   A remainder
 ;   C carry (bit 8) of the remainder
 .proc _sqrts
-;      stp
       sta tmp3
       stx tmp4
       STZ tmp1

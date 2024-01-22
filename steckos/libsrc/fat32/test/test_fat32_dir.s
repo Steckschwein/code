@@ -3,20 +3,19 @@
 .autoimport
 
 ; mock defines
-.export read_block=mock_read_block
-.export write_block=mock_write_block
+.export dev_read_block=         mock_read_block
+.export read_block=             blklayer_read_block
+.export dev_write_block=        mock_write_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
+.export write_flush=            blklayer_flush
 .export rtc_systime_update=mock_rtc
-.export cluster_nr_matcher=mock_not_implemented
-.export fat_name_string=mock_not_implemented
-.export path_inverse=mock_not_implemented
-.export put_char=mock_not_implemented
 
 debug_enabled=1
 
 ; cluster search will find following clustes
 TEST_FILE_CL=$10
 TEST_FILE_CL2=$19
-
 
 .code
 
@@ -235,7 +234,7 @@ TEST_FILE_CL2=$19
     assert32 $fe, block_fsinfo+F32FSInfo::FreeClus
     assert32 TEST_FILE_CL2, block_fsinfo+F32FSInfo::LastClus
 
-		test_end
+test_end
 
 data_loader  ; define data loader
 data_writer ; define data writer
@@ -247,6 +246,7 @@ mock_rtc:
 mock_read_block:
     tax ; mock destruction of X
     debug32 "mock_read_block lba", lba_addr
+    debug16 "mock_read_block blkptr", sd_blkptr
 
 		load_block_if (LBA_BEGIN+0), block_root_dir_00, @ok ; load root cl block
     load_block_if (LBA_BEGIN+1), block_root_dir_01, @ok ;
@@ -267,7 +267,7 @@ mock_read_block:
 mock_write_block:
     tax ; mock destruction of X
     debug32 "mock_write_block lba", lba_addr
-    debug16 "mock_write_block wptr", sd_blkptr
+    debug16 "mock_write_block blkptr", sd_blkptr
     store_block_if (LBA_BEGIN+0), block_root_dir_00, @ok
     store_block_if (LBA_BEGIN+1), block_root_dir_01, @ok
 
@@ -294,9 +294,11 @@ mock_write_block:
 
 
 mock_not_implemented:
-		fail "mock!"
+    fail "unexpected mock call!"
 
 setUp:
+    jsr blklayer_init
+
     init_volume_id SEC_PER_CL
 		jsr __fat_init_fdarea
 		;setup fd0 (cwd) to root cluster
