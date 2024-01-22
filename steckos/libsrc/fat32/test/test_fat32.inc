@@ -146,8 +146,11 @@ store_test_data:
     sty test_data_ptr+1
     ldy #0
     jsr @cp
-    inc sd_blkptr+1  ; leave with same sideeffect as sdcard block impl. sd_blkptr is incremented
+    inc sd_blkptr+1
     inc test_data_ptr+1
+    jsr @cp
+    dec sd_blkptr+1
+    rts
 @cp:
     lda (sd_blkptr),y
     sta (test_data_ptr),y

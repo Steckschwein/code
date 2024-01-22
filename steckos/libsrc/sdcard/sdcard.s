@@ -213,7 +213,6 @@ init_clk:
       lda #0      ; SD card init successful
 @exit:
       plp
-      cmp #0
       jmp sd_deselect_card
 
 _sys_delay_4us:
@@ -293,20 +292,16 @@ sd_read_block:
       jsr sd_cmd
       bne @exit
       jsr _sd_fullblock
-      jsr sd_deselect_card
 @exit:
-      plp
-      cmp #0
-      bne @error
-      clc
-      rts
-@error:
-      sec
-      rts
+      plp ; restore IRQ bit
 
 ;---------------------------------------------------------------------
 ; deselect sd card, puSH CS line to HI and generate few clock cycles
 ; to allow card to deinit
+; in:
+;   A = return code
+; out:
+;   C = 0 on success, C = 1 on error with A =<error code>
 ;---------------------------------------------------------------------
 sd_deselect_card:
       pha
@@ -323,6 +318,12 @@ sd_deselect_card:
       ply
       pla
 
+      cmp #0
+      bne @error
+      clc
+      rts
+@error:
+      sec
       rts
 
 
