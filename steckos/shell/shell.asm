@@ -22,6 +22,7 @@
 
 
 .include "steckos.inc"
+.include "fcntl.inc"
 
 dump_line_length = $10
 
@@ -308,11 +309,18 @@ cmdlist:
         .byte "pd",0
         .word pd
 
+        .byte "bd",0
+        .word bd
+
         .byte "ms",0
         .word ms
 
         .byte "go",0
         .word go
+
+        .byte "load",0
+        .word load
+
 
         ; End of list
         .byte $ff
@@ -540,6 +548,7 @@ exec:
         jmp errmsg
 
 go:
+        ldy #0
         jsr hex2dumpvec
         bcs @error
 
@@ -551,6 +560,7 @@ go:
 
 
 ms:
+        ldy #0
         jsr hex2dumpvec
         bcs @error 
 
@@ -604,6 +614,52 @@ ms:
         jmp mainloop
 
 
+bd:
+        ldy #0
+        lda (paramptr),y
+        tax 
+        iny 
+        lda (paramptr),y 
+        jsr parse_hex       
+        sta lba_addr +3
+
+        iny
+        lda (paramptr),y
+        tax 
+        iny 
+        lda (paramptr),y 
+        jsr parse_hex       
+        sta lba_addr +2
+
+        iny
+        lda (paramptr),y
+        tax 
+        iny 
+        lda (paramptr),y 
+        jsr parse_hex       
+        sta lba_addr +1
+
+        iny
+        lda (paramptr),y
+        tax 
+        iny 
+        lda (paramptr),y 
+        jsr parse_hex       
+        sta lba_addr 
+
+        lda #04
+        sta dumpvec+1
+        stz dumpvec
+
+        lda #05 
+        sta dumpend
+        copypointer dumpvec, sd_blkptr
+
+        jsr krn_sd_read_block
+        bcs @err
+        jmp dump_start
+@err:
+        jmp errmsg
 
 
 pd:
@@ -626,7 +682,7 @@ pd:
 
         iny 
         lda (paramptr),y 
-        beq @go
+        beq dump_start
 
         iny 
         lda (paramptr),y
@@ -641,17 +697,17 @@ pd:
         jsr parse_hex
         
         sta dumpend
-
         crlf
-        bra @go
+        bra dump_start
 
 @error:  
         printstring "parameter error"
         jmp mainloop
-@go:
+dump_start:
         crlf
-        jsr primm
-        .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
+        lda #<pd_header
+        ldx #>pd_header
+        jsr strout
 
         ldx #256 / dump_line_length
 @output_line:
@@ -714,11 +770,55 @@ pd:
         beq @l8
 
         inc dumpvec+1
-        jmp @go
+        jmp dump_start
 @l8:  
         jmp mainloop
 
+load:
+        ldy #0
+        ldx #0
+@read_filename:
+        lda (paramptr),y
+        beq @read_filename_done
+        cmp #' '
+        beq @read_filename_done
+        sta filenamebuf,x
+        iny 
+        inx
+        bne @read_filename
 
+@read_filename_done:
+        stz filenamebuf,x 
+
+        ; skip space
+        lda (paramptr),y 
+        cmp #' '
+        bne :+
+        iny
+:
+
+        jsr hex2dumpvec
+        bcs @err
+
+        lda #<filenamebuf
+        ldx #>filenamebuf
+        ldy #O_RDONLY
+        jsr krn_open     ; X contains fd
+        bcs @err    ; not found or other error, dont care...
+        ldy #0
+:
+        jsr krn_fread_byte
+        bcs @eof
+        sta (dumpvec)
+        inc16 dumpvec
+        bne :-
+@eof:
+        jsr krn_close
+@end:
+        jmp mainloop
+@err:
+        crlf
+        jmp errmsg
 
 ; parse two hex digits to binary
 ; highbyte in X
@@ -739,7 +839,7 @@ parse_hex:
         rts
 
 hex2dumpvec:
-        ldy #0
+        ; ldy #0
         lda (paramptr),y
         beq @err
         stz dumpvec+0
@@ -771,13 +871,16 @@ hex2dumpvec:
 
 
 .data
-PATH: .asciiz "./:/steckos/:/progs/"
+PATH: .asciiz ".:/steckos/:/progs/"
 PRGEXT: .asciiz ".PRG"
+pd_header: .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
+
 
 .bss
 crs_x_prompt:     .res 1
 tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
 cwdbuf:           .res cwdbuf_size
+filenamebuf:      .res 12
 tmp1:     .res 1
 tmp2:     .res 1
