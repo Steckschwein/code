@@ -44,27 +44,27 @@
 ;   executes program with given path (A/X), C=1 and A=<error code> on error
 execv:
       ldy #O_RDONLY
-      jsr fat_fopen         ; A/X - pointer to filename
+      jsr fat_fopen       ; A/X - pointer to filename
       bcc :+
       rts
 
 :     jsr fat_fread_byte  ; start address low
       bcs @l_exit_close
-      sta cmdptr
+      sta filenameptr
       tay
       jsr fat_fread_byte  ; start address high
       bcs @l_exit_close
-      sta cmdptr+1
+      sta filenameptr+1
 
       pha                 ; save start address
       phy
 
 @l:   jsr fat_fread_byte
       bcs @l_is_eof
-      sta (cmdptr)
-      inc cmdptr
+      sta (filenameptr)
+      inc filenameptr
       bne @l
-      inc cmdptr+1
+      inc filenameptr+1
       bne @l
       lda #ERANGE
 @l_is_eof:
@@ -73,9 +73,9 @@ execv:
       pla
 
       ply               ; get back start address
-      sty cmdptr
+      sty filenameptr
       ply
-      sty cmdptr+1
+      sty filenameptr+1
 
       cmp #0
       beq @l_exec_run
@@ -89,4 +89,4 @@ execv:
       ; get return address from stack to prevent stack corruption
       pla
       pla
-      jmp (cmdptr)
+      jmp (filenameptr)

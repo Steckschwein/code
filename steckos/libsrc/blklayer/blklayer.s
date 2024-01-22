@@ -51,98 +51,81 @@ BLKL_WRITE_PENDING = 1<<7
 .endstruct
 
 blklayer_init:
-          m_memset _blkl_store+_blkl_state::blk_lba, $ff, 4
-          stz _blkl_store+_blkl_state::status
-          rts
+            m_memset _blkl_store+_blkl_state::blk_lba, $ff, 4
+            stz _blkl_store+_blkl_state::status
+            rts
 
 blklayer_read_block:
 ;          debug32 "bl r lba", lba_addr
  ;         debug32 "bl r lba last", _blkl_store+_blkl_state::blk_lba
 ;          debug16 "bl r lba blkptr", _blkl_store+_blkl_state::blk_ptr
-          ldx #0
-          _block_loaded @l_read
+            ldx #0
+            _block_loaded @l_read
+            clc
+@l_exit:    rts
 
-          inc sd_blkptr+1  ; fake ptr change - TODO FIXME dev_read_block (sdcard) device driver sideeffect
-          lda #EOK
-          clc
-@l_exit:  rts
-
-@l_read:
-          debug32 "bl r miss >", lba_addr
-          jsr blklayer_flush
-          bcs @l_exit
-          debug32 "bl r sdpt", sd_blkptr
-          jsr dev_read_block
-          ;cmp #EOK
-          bne l_exit_err
+@l_read:  debug32 "bl r miss >", lba_addr
+            jsr blklayer_flush
+            bcs @l_exit
+            debug32 "bl r sdpt", sd_blkptr
+            jsr dev_read_block
+            bcs blkl_exit
 __blkl_save_lba_addr:
-          stz _blkl_store+_blkl_state::status
+            stz _blkl_store+_blkl_state::status
 
-          m_memcpy lba_addr, _blkl_store+_blkl_state::blk_lba, 4
-          lda sd_blkptr
-          sta _blkl_store+_blkl_state::blk_ptr
-          lda sd_blkptr+1
-          dea ; TODO FIXME sd block interface
-          sta _blkl_store+_blkl_state::blk_ptr+1
-          lda #EOK
-          clc
-          rts
+            m_memcpy lba_addr, _blkl_store+_blkl_state::blk_lba, 4
+            lda sd_blkptr
+            sta _blkl_store+_blkl_state::blk_ptr
+            lda sd_blkptr+1
+            sta _blkl_store+_blkl_state::blk_ptr+1
+            rts
 
 blklayer_write_block:
-          debug32 "bl w rlba", lba_addr
-          jsr dev_write_block
-          ;cmp #EOK
-          beq __blkl_save_lba_addr
-l_exit_err:
-          sec
-          rts
+            debug32 "bl w rlba", lba_addr
+            jsr dev_write_block
+            bcc __blkl_save_lba_addr
+blkl_exit:  rts
 
 blklayer_flush:
-          bit _blkl_store+_blkl_state::status ; ? pending write
-          bpl @l_exit
-          debug32 "bl fl l >", _blkl_store+_blkl_state::blk_lba
-          debug16 "bl fl r", sd_blkptr
-          debug16 "bl fl l", _blkl_store+_blkl_state::blk_ptr
+            clc
+            bit _blkl_store+_blkl_state::status ; ? pending write
+            bpl @l_exit
+            debug32 "bl fl l >", _blkl_store+_blkl_state::blk_lba
+            debug16 "bl fl r", sd_blkptr
+            debug16 "bl fl l", _blkl_store+_blkl_state::blk_ptr
 
-          m_memcpy lba_addr, _blkl_store+_blkl_state::tmp_lba, 4
-          lda sd_blkptr
-          sta _blkl_store+_blkl_state::tmp_ptr
-          lda sd_blkptr+1
-          sta _blkl_store+_blkl_state::tmp_ptr+1
+            m_memcpy lba_addr, _blkl_store+_blkl_state::tmp_lba, 4
+            lda sd_blkptr
+            sta _blkl_store+_blkl_state::tmp_ptr
+            lda sd_blkptr+1
+            sta _blkl_store+_blkl_state::tmp_ptr+1
 
-          m_memcpy _blkl_store+_blkl_state::blk_lba, lba_addr, 4
-          lda _blkl_store+_blkl_state::blk_ptr
-          sta sd_blkptr
-          lda _blkl_store+_blkl_state::blk_ptr+1
-          sta sd_blkptr+1
-          jsr dev_write_block
-          pha
-          m_memcpy _blkl_store+_blkl_state::tmp_lba, lba_addr, 4
-          lda _blkl_store+_blkl_state::tmp_ptr
-          sta sd_blkptr
-          lda _blkl_store+_blkl_state::tmp_ptr+1
-          sta sd_blkptr+1
-          pla
-          cmp #EOK
-          bne l_exit_err
-@l_exit:  clc
-          rts
+            m_memcpy _blkl_store+_blkl_state::blk_lba, lba_addr, 4
+            lda _blkl_store+_blkl_state::blk_ptr
+            sta sd_blkptr
+            lda _blkl_store+_blkl_state::blk_ptr+1
+            sta sd_blkptr+1
+            jsr dev_write_block
+            pha
+            m_memcpy _blkl_store+_blkl_state::tmp_lba, lba_addr, 4
+            lda _blkl_store+_blkl_state::tmp_ptr
+            sta sd_blkptr
+            lda _blkl_store+_blkl_state::tmp_ptr+1
+            sta sd_blkptr+1
+            pla
+@l_exit:    rts
 
 blklayer_write_block_buffered:
-          ;debug32 "bl wb rlba", lba_addr
-          ;debug32 "bl wb l", _blkl_store+_blkl_state::blk_lba
-          ;debug16 "bl fl r", sd_blkptr
-          ;debug16 "bl wb l", _blkl_store+_blkl_state::blk_ptr
-          ;cmp32 _blkl_store+_blkl_state::blk_lba, lba_addr, @l_err
-          ;cmp16 _blkl_store+_blkl_state::blk_ptr, sd_blkptr, @l_err
-          lda #BLKL_WRITE_PENDING
-          sta _blkl_store+_blkl_state::status
-          lda #EOK
-          clc
-          rts
-@l_err:
-          sec
-          rts
+            ;debug32 "bl wb rlba", lba_addr
+            ;debug32 "bl wb l", _blkl_store+_blkl_state::blk_lba
+            ;debug16 "bl fl r", sd_blkptr
+            ;debug16 "bl wb l", _blkl_store+_blkl_state::blk_ptr
+            ;cmp32 _blkl_store+_blkl_state::blk_lba, lba_addr, @l_err
+            ;cmp16 _blkl_store+_blkl_state::blk_ptr, sd_blkptr, @l_err
+            lda #BLKL_WRITE_PENDING
+            sta _blkl_store+_blkl_state::status
+            clc
+            rts
 
 .bss
   _blkl_store:

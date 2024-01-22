@@ -37,7 +37,7 @@
 .import spi_rw_byte, spi_r_byte, spi_select_device, spi_deselect
 .import sd_select_card, sd_deselect_card, sd_cmd, sd_cmd_lba
 .import sd_busy_wait
-.import fullblock
+.import _sd_fullblock
 
 .export sd_read_multiblock
 
@@ -66,7 +66,7 @@ sd_read_multiblock:
       bne @exit
 
 @l1:
-      jsr fullblock
+      jsr _sd_fullblock
       bne @exit
       inc sd_blkptr+1
 

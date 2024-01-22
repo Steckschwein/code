@@ -203,7 +203,7 @@ __fat_write_new_direntry:
     jsr __fat_erase_block_fat
 
     ldy volumeID+ VolumeID:: BPB_SecPerClusMask     ; Y = VolumeID::SecPerClus-1 - reamining blocks of the cluster with empty dir entries
-    beq @l_exit
+    beq @l_exit_ok
     debug32 "mkdr er", lba_addr
 @l_erase:
     jsr __inc_lba_address                           ; next block within cluster
@@ -211,7 +211,8 @@ __fat_write_new_direntry:
     bcs @l_exit
     dey
     bne @l_erase                                    ; all blocks written?
-
+@l_exit_ok:
+    tya ; Y=0 => A=EOK
 @l_exit:
     debug "fat_wr_nd"
     rts

@@ -199,7 +199,7 @@ mock_not_implemented:
 mock_read_block:
 		debug32 "mock_read_block lba", lba_addr
 		; defaults to dir entry data
-		load_block_if LBA_BEGIN, block_root_cl, @exit ; load root cl block
+		load_block_if LBA_BEGIN, block_root_cl, @ok ; load root cl block
 
 		; fat block of test cluster read?
 		cmp32_ne lba_addr, (FAT_LBA+(test_start_cluster>>7)), :+
@@ -207,18 +207,18 @@ mock_read_block:
 			set32 block_fat+((test_start_cluster+0)<<2 & (sd_blocksize-1)), (test_start_cluster+3) ; build a fragmented chain
 			set32 block_fat+((test_start_cluster+3)<<2 & (sd_blocksize-1)), (test_start_cluster+7)
 			set32 block_fat+((test_start_cluster+7)<<2 & (sd_blocksize-1)), FAT_EOC
-      jmp @exit_inc
+      jmp @ok
 :
 		; data block read?
 		; - for tests with 2sec/cl
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 0), test_block_data_0_0, @exit  ; block 0, cluster 0
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 1), test_block_data_0_1, @exit  ; block 1, cluster 0
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 0), test_block_data_1_0, @exit  ; block 0, cluster 1
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 1), test_block_data_1_1, @exit  ; block 1, cluster 1
-		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+7) * 2 + 0), test_block_data_2_0, @exit
-;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 1), test_block_data_1_1, @exit
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 0), test_block_data_0_0, @ok  ; block 0, cluster 0
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+0) * 2 + 1), test_block_data_0_1, @ok  ; block 1, cluster 0
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 0), test_block_data_1_0, @ok  ; block 0, cluster 1
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+3) * 2 + 1), test_block_data_1_1, @ok  ; block 1, cluster 1
+		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+7) * 2 + 0), test_block_data_2_0, @ok
+;		load_block_if (LBA_BEGIN - ROOT_CL * 2 + (test_start_cluster+6) * 2 + 1), test_block_data_1_1, @ok
 		; - for tests with 4sec/cl
-		load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL + 0), test_block_data_4sec_cl, @exit
+		load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + test_start_cluster * SEC_PER_CL + 0), test_block_data_4sec_cl, @ok
 
     ; end up here is no valid data
     ldy #0
@@ -227,11 +227,10 @@ mock_read_block:
     sta block_data+$100,y
     iny
     bne :-
-
-@exit_inc:
-		inc sd_blkptr+1 ; => same behavior as real block read implementation
-@exit:
+    fail "read lba not handled!"
+@ok:
 		lda #EOK
+    clc
 		rts
 
 .data

@@ -84,14 +84,7 @@ fat_write_byte:
     phx
     jsr write_block_buffered
     plx
-    cmp #EOK
-    bne @l_exit_err
-    clc
 @l_exit:
-    ply
-    rts
-@l_exit_err:
-    sec
     ply
     rts
 
@@ -427,7 +420,6 @@ __fat_write_block_data:
     phy
 
 .ifdef FAT_NOWRITE
-    lda #EOK
     clc
 .else
     debug32 "f_wr lba", lba_addr
@@ -438,12 +430,6 @@ __fat_write_block_data:
 .endif
 
     ply
-    cmp #EOK
-    bne @l_exit_err
-    clc
-    rts
-@l_exit_err:
-    sec
     rts
 
 
