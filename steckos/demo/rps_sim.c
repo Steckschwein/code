@@ -31,7 +31,7 @@
 #include <steckschwein.h>
 
 
-#define PIECES_COUNT 60
+#define PIECES_COUNT 3*10
 
 #define SCREEN_WIDTH 255
 #define SCREEN_HEIGHT 211
@@ -81,6 +81,64 @@ static char colors[3] = {
   grb(0xffffff),// paper
   grb(0xf0a0a0),// scissor
 };
+
+static const unsigned char clz_tab[32] =
+{
+    31, 22, 30, 21, 18, 10, 29,  2, 20, 17, 15, 13, 9,  6, 28, 1,
+    23, 19, 11,  3, 16, 14,  7, 24, 12,  4,  8, 25, 5, 26, 27, 0
+};
+
+/* LUT for initial square root approximation */
+static const unsigned short sqrt_tab[32] =
+{
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x85ff, 0x8cff, 0x94ff, 0x9aff, 0xa1ff, 0xa7ff, 0xadff, 0xb3ff,
+    0xb9ff, 0xbeff, 0xc4ff, 0xc9ff, 0xceff, 0xd3ff, 0xd8ff, 0xdcff,
+    0xe1ff, 0xe6ff, 0xeaff, 0xeeff, 0xf3ff, 0xf7ff, 0xfbff, 0xffff
+};
+
+
+unsigned char clz (unsigned long a){
+    a |= a >> 16;
+    a |= a >> 8;
+    a |= a >> 4;
+    a |= a >> 2;
+    a |= a >> 1;
+    return clz_tab [0x07c4acdd * a >> 27];
+}
+
+/* table lookup for initial guess followed by division-based Newton iteration */
+unsigned short sqrtl (unsigned long x)
+{
+    unsigned short q, lz, y, i, xh;
+
+    if (x == 0) return x; // early out, code below can't handle zero
+
+    // initial guess based on leading 5 bits of argument normalized to 2.30
+    lz = clz (x);
+    i = ((x << (lz & ~1)) >> 27);
+    y = sqrt_tab[i] >> (lz >> 1);
+    xh = x >> 16; // use for overflow check on divisions
+
+    // first Newton iteration, guard against overflow in division
+    q = 0xffff;
+    if (xh < y) q = x / y; //udiv_32_16 (x, y);
+    y = (q + y) >> 1;
+
+    /*
+    if (lz < 10) {
+        // second Newton iteration, guard against overflow in division
+        q = 0xffff;
+        if (xh < y) q = udiv_32_16 (x, y);
+        y = (q + y) >> 1;
+    }
+    */
+
+    if ( (y * y) > x ) y--; // adjust quotient if too large
+
+    return y; // (uint16_t)sqrt((double)x)
+}
+
 
 /**
  * @brief Initialize pieces list
@@ -217,8 +275,8 @@ static void move(Piece *p1, Piece *p2, short s){
   short dx,dy;
   dx = p2->prev_pos->x - p1->prev_pos->x;
   dy = p2->prev_pos->y - p1->prev_pos->y;
-  //l = divfp(s, sqrts(dx*dx + dy*dy));
-  l = mulfp(s, isqrt(dx*dx + dy*dy));
+  l = divfp(s, sqrts(dx*dx + dy*dy));
+  //l = mulfp(s, isqrt(dx*dx + dy*dy));
   p1->pos->x = (p1->pos->x+mulfp(dx, l));
   p1->pos->y = (p1->pos->y+mulfp(dy, l));
   //printf("%d %d %d %d %d/%d\n", l, s, dx, dy, p1->pos->x, p1->pos->y);
