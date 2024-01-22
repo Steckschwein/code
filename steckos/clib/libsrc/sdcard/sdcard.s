@@ -25,7 +25,9 @@
     sta sd_blkptr
     stx sd_blkptr+1
     jsr sd_read_block
-@exit:
     ldx #0
+    bcs @exit
+    txa
+@exit:
     rts
 .endproc
