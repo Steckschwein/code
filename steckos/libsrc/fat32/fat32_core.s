@@ -514,11 +514,6 @@ __fat_read_block_data:
     phx
     jsr read_block
     plx
-    cmp #EOK
-    bne :+
-    clc
-    rts
-:   sec
     rts
 
     ; in:
