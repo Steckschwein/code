@@ -15,9 +15,6 @@
 .exportzp Itempl, Itemph
 
 .export char_out=krn_chrout
-.export read_block=krn_sd_read_block
-.export write_block=krn_sd_write_block
-
 
 .autoimport
 
@@ -7655,11 +7652,11 @@ LAB_SAVE:
       ldx _fd
       jsr krn_close
 
+vec_restore:
       jsr init_iovectors
 
       SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
       jmp     LAB_1319         ; cleanup and Return to BASIC
-
 
 LAB_LOAD:
       ldy #O_RDONLY
@@ -7680,7 +7677,7 @@ fread_wrapper:
       phx
       phy
       ldx _fd
-      beq @restore
+      beq vec_restore
       jsr krn_fread_byte
       ply
       plx
@@ -7694,10 +7691,6 @@ fread_wrapper:
       jsr krn_close
       stz _fd
       bra @cr
-@restore:
-      jsr init_iovectors
-      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-      jmp     LAB_1319         ; cleanup and Return to BASIC
 
 init_iovectors:
       lda #<krn_chrout
