@@ -342,7 +342,7 @@ __fat_clone_fd:
     inx
     iny
     pla
-    dec
+    dea
     bne @l1
     plx
     rts
