@@ -30,8 +30,6 @@ krn_close:              jmp fat_close
 krn_close_all:          jmp fat_close_all
 .export krn_fread_byte
 krn_fread_byte:         jmp fat_fread_byte
-.export krn_write
-krn_write:              jmp fat_write
 .export krn_write_byte
 krn_write_byte:         jmp fat_write_byte
 .export krn_fseek
