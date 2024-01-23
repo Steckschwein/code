@@ -46,7 +46,7 @@ msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
 dumpvec:  .res 2
-dumpend:  .res 1
+dumpend:  .res 2
 tmpchar:  .res 1
 
 
@@ -319,7 +319,11 @@ cmdlist:
         .word go
 
         .byte "load",0
-        .word load
+        .word loadmem
+
+        .byte "save",0
+        .word savemem
+
 
 
         ; End of list
@@ -774,7 +778,7 @@ dump_start:
 @l8:  
         jmp mainloop
 
-load:
+loadmem:
         ldy #0
         ldx #0
 @read_filename:
@@ -789,16 +793,26 @@ load:
 
 @read_filename_done:
         stz filenamebuf,x 
-
+        iny
         ; skip space
         lda (paramptr),y 
         cmp #' '
         bne :+
         iny
 :
+        tya 
+        jsr hexout
 
         jsr hex2dumpvec
         bcs @err
+
+        crlf
+
+        lda dumpvec+1
+        jsr hexout
+        lda dumpvec
+        jsr hexout
+
 
         lda #<filenamebuf
         ldx #>filenamebuf
@@ -820,6 +834,65 @@ load:
         crlf
         jmp errmsg
 
+savemem:
+        ldy #0
+        jsr hex2dumpvec
+        bcs @usage
+
+        inc16 dumpend
+
+        iny 
+        lda (paramptr),y
+        beq @usage    
+        
+        ldx #0
+@read_filename:
+        lda (paramptr),y
+        beq @read_filename_done
+        cmp #' '
+        bne :+
+        iny  ; skip space
+        bra @read_filename
+:
+        sta filenamebuf,x
+        iny 
+        inx
+        bne @read_filename
+
+@read_filename_done:
+
+        lda #<filenamebuf
+        ldx #>filenamebuf
+        ldy #O_WRONLY
+        jsr krn_open
+        bcs @err
+
+
+:
+        lda (dumpvec)
+        jsr krn_write_byte
+        bcs @err
+
+        inc16 dumpvec
+
+        lda dumpvec
+        cmp dumpend 
+        bne :-
+        lda dumpvec+1
+        cmp dumpend+1
+        bne :-
+        
+        jsr krn_close
+
+        jmp mainloop
+@err:
+        jmp errmsg
+@usage:
+        jsr primm
+        .byte $0a, $0d,"usage: save <from> <to> <filename>",$0a, $0d, $00
+        jmp mainloop
+
+; filename:       .asciiz "save.bin"
 ; parse two hex digits to binary
 ; highbyte in X
 ; lowbyte in A
@@ -838,37 +911,130 @@ parse_hex:
         ora tmpchar
         rts
 
+; hex2dumpvec:
+;         ; ldy #0
+;         lda (paramptr),y
+;         beq @err
+;         stz dumpvec+0
+;         tax
+        
+;         iny
+;         lda (paramptr),y
+;         beq @err
+        
+;         jsr parse_hex
+;         sta dumpvec+1
+
+;         iny
+;         lda (paramptr),y
+;         beq @err
+;         tax 
+
+;         iny
+;         lda (paramptr),y
+;         beq @err
+   
+;         jsr parse_hex
+;         sta dumpvec
+;         clc 
+;         rts
+; @err:
+;         sec
+;         rts
+
 hex2dumpvec:
-        ; ldy #0
+        ldy #0
         lda (paramptr),y
         beq @err
         stz dumpvec+0
-        tax
-        
-        iny
-        lda (paramptr),y
-        beq @err
-        
-        jsr parse_hex
+
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
         sta dumpvec+1
 
         iny
         lda (paramptr),y
         beq @err
-        tax 
+
+        jsr atoi
+        ora dumpvec+1
+        sta dumpvec+1
+
+        iny
+        lda (paramptr),y
+        beq @err
+
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta dumpvec
 
         iny
         lda (paramptr),y
         beq @err
    
-        jsr parse_hex
+        jsr atoi
+        ora dumpvec
         sta dumpvec
+        
+        iny
+        lda (paramptr),y
+        beq @end
+
+        cmp #' '
+        bne :+
+        iny 
+        lda (paramptr),y
+        beq @err
+:
+
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta dumpend+1
+
+        iny
+        lda (paramptr),y
+        beq @err
+
+        jsr atoi
+        ora dumpend+1
+        sta dumpend+1
+        
+        iny
+        lda (paramptr),y
+        beq @err
+
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta dumpend
+
+        iny
+        lda (paramptr),y
+        beq @err
+   
+        jsr atoi
+        ora dumpend
+        sta dumpend
+        
+@end:
         clc 
         rts
 @err:
+        lda #'X'
+        jsr char_out
         sec
         rts
-
 
 .data
 PATH: .asciiz ".:/steckos/:/progs/"
