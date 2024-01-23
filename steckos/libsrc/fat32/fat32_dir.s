@@ -83,11 +83,12 @@ __fat_opendir_nofd:
 ;   C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;   X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
 fat_chdir:
-		jsr __fat_opendir_nofd
-		bcs @l_exit
-    ldy #FD_INDEX_TEMP_FILE
-    ldx #FD_INDEX_CURRENT_DIR
-		jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
+          ldy #FD_INDEX_CURRENT_DIR
+          jsr __fat_opendir_nofd
+          bcs @l_exit
+          ldy #FD_INDEX_TEMP_FILE
+          ldx #FD_INDEX_CURRENT_DIR
+          jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
 @l_exit:
-		debug "fat chdir <"
-		rts
+          debug "fat chdir <"
+          rts

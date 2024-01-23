@@ -44,8 +44,8 @@
 .import fclose
 
 ;.export ppm_data
-.export ppm_width
-.export ppm_height
+;.export ppm_width
+;.export ppm_height
 
 .export ppm_load_image
 .export ppm_parse_header
@@ -201,15 +201,15 @@ ppm_parse_header:
     jsr parse_string
 :
     jsr parse_until_size  ;not, skip until <width> <height>
-    jsr parse_int      ;try parse ppm width
+    jsr parse_int         ;try parse ppm width
     cmp #<MAX_WIDTH
-    bcc @l_invalid_ppm ;
+    bcc @l_invalid_ppm
     sta ppm_width
 
     jsr parse_int0  ;height
     cmp #MAX_HEIGHT+1
     bcs @l_invalid_ppm
-        sta ppm_height
+    sta ppm_height
 
     jsr parse_int0  ;color depth
     cpy #3
