@@ -81,7 +81,7 @@ fat_mkdir:
     jsr __fat_prepare_block_access
 @l_add_dirent:
     debug16 "fat mkd >", dirptr
-    debug32 "fat mkd >", fd_area+FD_INDEX_TEMP_DIR+F32_fd::SeekPos
+    debug32 "fat mkd >", fd_area+FD_INDEX_TEMP_FILE+F32_fd::SeekPos
 
     jsr __fat_alloc_fd                ; allocate a dedicated fd for the new directory
     bcs @l_exit
@@ -182,17 +182,17 @@ __fat_write_new_direntry:
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+0        ; 2nd entry ".."
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+1
 
-    ; use the fd of the temp dir (FD_INDEX_TEMP_DIR) - represents the last visited directory which must be the parent of this one ("..") - we can easily derrive the parent cluster. FTW!
-    debug32 "cd_sln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster
-    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
+    ; use the fd of the temp dir (FD_INDEX_TEMP_FILE) - represents the last visited directory which must be the parent of this one ("..") - we can easily derrive the parent cluster. FTW!
+    debug32 "cd_sln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster
+    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::CurrentCluster
 
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+0
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+0
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+0
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+1
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+1
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+1
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+2
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+2
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+0
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+3
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+3
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+1
 
     jsr __fat_set_fd_start_cluster

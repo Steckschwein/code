@@ -154,7 +154,7 @@ __fat_seek_next_dirent:
 ;   A/X - pointer to string with the file path
 ;   Y  - file descriptor of fd_area denoting the start directory. usually FD_INDEX_CURRENT_DIR is used
 ; out:
-;   X - index into fd_area of the opened file. if a directory was opened then X == FD_INDEX_TEMP_DIR
+;   X - index into fd_area of the opened file or directory
 ;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;   dirptr - last visited directory entry
 ;   lba_addr - last visited directory block
@@ -166,7 +166,7 @@ __fat_open_path:
         sta filenameptr
         stx filenameptr+1         ; save path arg given in a/x
 
-        ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
+        ldx #FD_INDEX_TEMP_FILE    ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
         jsr __fat_clone_fd        ; Y is given as param
 
         ldy #0                    ; trim whitespace at the beginning
@@ -191,7 +191,7 @@ __fat_open_path:
         sta volumeID+VolumeID::fat_filename,x
         inx
         lda (filenameptr),y
-        beq @l_open_file    ; open "." dir
+        beq @l_open         ; open "." dir
         iny
         cmp #'.'
         bne @l_char
@@ -226,19 +226,23 @@ __fat_open_path:
         sec
         rts
 @l_filename_end:
-        cpx #0
-        bne @l_open_file
-        ldx #FD_INDEX_TEMP_DIR  ; end up here from a previous opendir()/changedir()
+        cpx #0                  ; path end reached?
+        bne @l_open
+        jsr __fat_alloc_fd      ; alloc new fd
+        bcs :+
+        ldy #FD_INDEX_TEMP_FILE ; FD_INDEX_TEMP_FILE contains last opened path segment
+        jsr __fat_clone_fd      ; clone temp file fd to newly allocated fd (X)
         clc
-        rts
+:       rts
 @l_open_dir:
-        cpx #0                  ; empty string, we came from '/' match
-        beq @l_open_rootdir
-        jsr @l_open_file        ; return with X as offset into fd_area
+        cpx #0                  ; we came from '/' match
+        beq @l_open_rootdir     ; X=0 empty string, open root dir
+@l_open:
+        jsr @l_open_file        ; return with X = FD_INDEX_TEMP_FILE
         bcc @l_parse_path
         rts
 @l_open_rootdir:
-        ldx #FD_INDEX_TEMP_DIR  ; use fd of the temp directory
+        ldx #FD_INDEX_TEMP_FILE  ; use fd of the temp directory
         jsr __fat_open_rootdir
         bcc @l_parse_path
         rts
@@ -255,60 +259,50 @@ __fat_open_path:
 ; out:
 ;   X - index into fd_area of the opened file
 ;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
-__fat_open_file:
-      phy
-      ldx #FD_INDEX_TEMP_DIR
-      lda #<__fat_match_name
-      ldy #>__fat_match_name
-      jsr __fat_find_first_mask
-      bcs @l_exit
+        phy
+        ldx #FD_INDEX_TEMP_FILE
+        lda #<__fat_match_name
+        ldy #>__fat_match_name
+        jsr __fat_find_first_mask
+        bcs @l_exit
+        ;save 32 bit cluster number from dir entry
+        ldy #F32DirEntry::FstClusHI +1
+        lda (dirptr),y
+        and #$0f      ; cluster nr must be 0x?ffffff7
+        sta fd_area + F32_fd::StartCluster + 3, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::StartCluster + 2, x
 
-      ldy #F32DirEntry::Attr
-      lda (dirptr),y
-      and #DIR_Attr_Mask_Dir    ; directory?
-      bne :+                    ; yes, do not allocate a new fd, use index (X) which is already set to FD_INDEX_TEMP_DIR and just update the fd data
-      jsr __fat_alloc_fd        ; no, then regular file and we allocate a new fd for them
-      bcs @l_exit
-      ;save 32 bit cluster number from dir entry
-:     ldy #F32DirEntry::FstClusHI +1
-      lda (dirptr),y
-      and #$0f      ; cluster nr must be 0x?ffffff7
-      sta fd_area + F32_fd::StartCluster + 3, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::StartCluster + 2, x
+        ldy #F32DirEntry::FstClusLO +1
+        lda (dirptr),y
+        sta fd_area + F32_fd::StartCluster + 1, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::StartCluster + 0, x
 
-      ldy #F32DirEntry::FstClusLO +1
-      lda (dirptr),y
-      sta fd_area + F32_fd::StartCluster + 1, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::StartCluster + 0, x
+        ldy #F32DirEntry::FileSize + 3
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 3, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 2, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 1, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 0, x
 
-      ldy #F32DirEntry::FileSize + 3
-      lda (dirptr),y
-      sta fd_area + F32_fd::FileSize + 3, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::FileSize + 2, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::FileSize + 1, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::FileSize + 0, x
+        ldy #F32DirEntry::Attr
+        lda (dirptr),y
+        sta fd_area + F32_fd::Attr, x
 
-      ldy #F32DirEntry::Attr
-      lda (dirptr),y
-      sta fd_area + F32_fd::Attr, x
-
-      jsr __fat_set_fd_dirlba
-
-      jsr __fat_set_fd_start_cluster_seek_pos
-      ; TODO use jsr __fat_set_fd_start_cluster if alloc_fd is used also for directories
+        jsr __fat_set_fd_dirlba
+        jsr __fat_set_fd_start_cluster_seek_pos
 @l_exit:
-      ply
-      rts
+        ply
+        rts
 
 __fat_match_name:
       debugdump "f match fn", volumeID+VolumeID::fat_filename
@@ -340,7 +334,7 @@ __fat_clone_fd:
     inx
     iny
     pla
-    dec
+    dea
     bne @l1
     plx
     rts
@@ -453,15 +447,15 @@ __fat_open_rootdir:
     sta fd_area + F32_fd::Attr,x
     rts
 
+; init fd with all 0 - Note: start cluster is also set to 0 and not to volumeID::RootClus - the RootClus offset is compensated within calc_lba_addr
 ; in:
 ;  .X - with index to fd_area
 __fat_init_fd:
-    ; init fd with all 0 - Note: start cluster with root cluster nr 0 and not RootClus - the RootClus offset is compensated within calc_lba_addr (@see Note)
     phx
     lda #FD_Entry_Size
 :   stz fd_area,x
     inx
-    dec
+    dea
     bne :-
     plx
     lda #FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY

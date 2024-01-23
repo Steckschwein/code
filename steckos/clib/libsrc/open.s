@@ -21,14 +21,14 @@
 ; SOFTWARE.
 ;
 ;
-; int open(const char *name,int flags,...);
+; int open(const char *name, int flags, ...);
 
       .include "fcntl.inc"
       .include "errno.inc"
       .include "kernel/kernel_jumptable.inc"
 
       .export _open
-      .destructor    closeallfiles, 5
+      .destructor closeallfiles, 5
 
       .import popax
       .import incsp4

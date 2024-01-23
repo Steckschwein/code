@@ -41,6 +41,7 @@
 .export fat_opendir
 
 .export __fat_opendir
+.export __fat_opendir_nofd
 
 .code
 
@@ -51,34 +52,42 @@
 ;	  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;	  X - index into fd_area of the opened directory
 fat_opendir:
-		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
+    		  ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
 ; in:
 ;	  Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
 __fat_opendir:
-		jsr __fat_open_path
-		bcs @l_exit					    ; exit on error
-		lda fd_area + F32_fd::Attr,x
-		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
-		bne @l_exit
-    lda #ENOTDIR				; error "Not a directory"
-    sec
-    jmp __fat_free_fd		; not a directory, so we opened a file. just close them immediately and free the allocated fd
-@l_exit:
-		rts
+          jsr __fat_open_path
+          bcs @l_exit
+          lda fd_area + F32_fd::Attr,x
+          and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
+          bne @l_exit
+          lda #ENOTDIR				    ; error "Not a directory"
+          sec                     ; we opened a file. just close it immediately and free the allocated fd
+          jmp __fat_free_fd
+@l_exit:  rts
+
+; out:
+;   C - C=0 on success, C=1 on error
+;   X - FD_INDEX_TEMP_FILE from __fat_opendir/__fat_open_path
+__fat_opendir_nofd:
+          jsr __fat_opendir
+          bcs @l_exit
+          jsr __fat_free_fd
+          ldx #FD_INDEX_TEMP_FILE
+@l_exit:  rts
 
 
 ;in:
-;  A/X - pointer to string with the file path
+;   A/X - pointer to string with the file path
 ;out:
-;	C - C=0 on success (A=0), C=1 and A=error code otherwise
-;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
+;   C - C=0 on success (A=0), C=1 and A=error code otherwise
+;   X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
 fat_chdir:
-		jsr fat_opendir
+		jsr __fat_opendir_nofd
 		bcs @l_exit
-    ldy #FD_INDEX_TEMP_DIR		; open dir success, the temp dir fd is now set to the found dir
-		ldx #FD_INDEX_CURRENT_DIR
+    ldy #FD_INDEX_TEMP_FILE
+    ldx #FD_INDEX_CURRENT_DIR
 		jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
-    clc
 @l_exit:
 		debug "fat chdir <"
 		rts

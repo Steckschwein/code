@@ -216,7 +216,8 @@ fat_fopen:
     sta fd_area+F32_fd::flags,x
     rts
 @l_eisdir:
-    lda #EISDIR                 ; was directory, we must not free any fd
+    jsr __fat_free_fd           ; was directory, free fd
+    lda #EISDIR                 ; exit
 @l_not_open:
     cmp #EOK                    ; C=1/A=EOK error from open was end of cluster (@see find_first/_next)
     beq @l_add_dirent           ; go on with write check

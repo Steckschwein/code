@@ -213,7 +213,7 @@ FD_STATUS_DIRTY       = 1<<6    ; if set dirty from seek() operation
 FD_Entry_Size         = .sizeof(F32_fd)
 FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size
 FD_INDEX_CURRENT_DIR  = 0*FD_Entry_Size     ; current dir always go to fd #0
-FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size     ; temp dir always go to fd #1
+FD_INDEX_TEMP_FILE     = 1*FD_Entry_Size     ; temp dir always go to fd #1
 
 ; TODO: do we need these?
 ;BS_BootSig      = 38

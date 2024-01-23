@@ -51,7 +51,7 @@ fat_get_root_and_pwd:
     stx volumeID+VolumeID::fat_tmp_0
 
     ldy #FD_INDEX_CURRENT_DIR
-    ldx #FD_INDEX_TEMP_DIR
+    ldx #FD_INDEX_TEMP_FILE
     jsr __fat_clone_fd                  ; start from current directory, clone the cd fd
 
     lda #0
@@ -59,14 +59,14 @@ fat_get_root_and_pwd:
 @l_rd_dir:
     lda #'/'                            ; put the / char to result string
     jsr put_char
-    ldx #FD_INDEX_TEMP_DIR              ; if root, exit to inverse the path string
+    ldx #FD_INDEX_TEMP_FILE             ; if root, exit to inverse the path string
     jsr __fat_is_start_cln_zero
     beq @l_path_trim
-    m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::StartCluster, volumeID+VolumeID::cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
+    m_memcpy fd_area+FD_INDEX_TEMP_FILE+F32_fd::StartCluster, volumeID+VolumeID::cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_FILE (see clone above)
     lda #<l_dot_dot
     ldx #>l_dot_dot
-    ldy #FD_INDEX_TEMP_DIR              ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
-    jsr __fat_opendir
+    ldy #FD_INDEX_TEMP_FILE             ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_FILE) was updated and points to the parent directory
+    jsr __fat_opendir_nofd
     bcs @l_exit
     SetVector cluster_nr_matcher, volumeID+VolumeID::fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
     jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in cluster before we did the cd ".."
