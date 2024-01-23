@@ -44,8 +44,8 @@
 .import fclose
 
 ;.export ppm_data
-;.export ppm_width
-;.export ppm_height
+.export ppm_width
+.export ppm_height
 
 .export ppm_load_image
 .export ppm_parse_header
