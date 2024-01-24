@@ -961,8 +961,6 @@ hex2dumpvec:
         clc 
         rts
 @err:
-        lda #'X'
-        jsr char_out
         sec
         rts
 
