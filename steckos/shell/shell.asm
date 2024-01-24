@@ -334,50 +334,6 @@ cmdlist:
 
 
 
-msg_EOK:        .asciiz "No error"
-msg_ENOENT:     .asciiz "No such file or directory"
-msg_ENOMEM:     .asciiz "Out of memory"
-msg_EACCES:     .asciiz "Permission denied"
-msg_ENODEV:     .asciiz "No such device"
-msg_EMFILE:     .asciiz "Too many open files"
-msg_EBUSY:      .asciiz "Device or resource busy"
-msg_EINVAL:     .asciiz "Invalid argument (0x07)"
-msg_ENOSPC:     .asciiz "No space left on device (0x08)"
-msg_EEXIST:     .asciiz "File exists"
-msg_EAGAIN:     .asciiz "Try again (0x0a)"
-msg_EIO:        .asciiz "I/O error"
-msg_EINTR:      .asciiz "Interrupted system call"
-msg_ENOSYS:     .asciiz "Function not implemented"
-msg_ESPIPE:     .asciiz "Illegal seek"
-msg_ERANGE:     .asciiz "Range error"
-msg_EBADF:      .asciiz "Bad file number"
-msg_ENOEXEC:    .asciiz "Exec format error"
-msg_EISDIR:     .asciiz "Is a directory"
-msg_ENOTDIR:    .asciiz "Not a directory"
-msg_ENOTEMPTY:  .asciiz "Directory not empty"
-
-errors:
-.addr msg_EOK
-.addr msg_ENOENT
-.addr msg_ENOMEM
-.addr msg_EACCES
-.addr msg_ENODEV
-.addr msg_EMFILE
-.addr msg_EBUSY
-.addr msg_EINVAL
-.addr msg_ENOSPC
-.addr msg_EEXIST
-.addr msg_EAGAIN
-.addr msg_EIO
-.addr msg_EINTR
-.addr msg_ENOSYS
-.addr msg_ESPIPE
-.addr msg_ERANGE
-.addr msg_EBADF
-.addr msg_ENOEXEC
-.addr msg_EISDIR
-.addr msg_ENOTDIR
-.addr msg_ENOTEMPTY
 
 errmsg:
         ;TODO FIXME maybe use oserror() from cc65 lib
@@ -785,39 +741,12 @@ dump_start:
 loadmem:
         ldy #0
         ldx #0
-@read_filename:
-        lda (paramptr),y
-        beq @read_filename_done
-        cmp #' '
-        beq @read_filename_done
-        sta filenamebuf,x
-        iny 
-        inx
-        bne @read_filename
 
-@read_filename_done:
-        stz filenamebuf,x 
-        iny
-        ; skip space
-        lda (paramptr),y 
-        cmp #' '
-        bne :+
-        iny
-:
-        tya 
-        jsr hexout
-
+        jsr get_filename
+      
         ldx #1
         jsr hex2dumpvec
-        bcs @err
-
-        crlf
-
-        lda dumpend+1
-        jsr hexout
-        lda dumpend
-        jsr hexout
-
+        bcs @usage
 
         lda #<filenamebuf
         ldx #>filenamebuf
@@ -838,6 +767,10 @@ loadmem:
 @err:
         crlf
         jmp errmsg
+@usage:
+        jsr primm
+        .byte $0a, $0d, "usage: load <file> <addr>", $0a, $0d, 0
+        jsr mainloop
 
 savemem:
         ldx #3
@@ -845,39 +778,12 @@ savemem:
 
         jsr hex2dumpvec
         bcs @usage
-        crlf
-        lda dumpvec+1
-        jsr hexout
-        lda dumpvec+0
-        jsr hexout
-        lda dumpend+1
-        jsr hexout
-        lda dumpend+0
-        jsr hexout
-        crlf
-
-        jmp mainloop
-        inc16 dumpend
 
         iny 
         lda (paramptr),y
         beq @usage    
         
-        ldx #0
-@read_filename:
-        lda (paramptr),y
-        beq @read_filename_done
-        cmp #' '
-        bne :+
-        iny  ; skip space
-        bra @read_filename
-:
-        sta filenamebuf,x
-        iny 
-        inx
-        bne @read_filename
-
-@read_filename_done:
+        jsr get_filename
 
         lda #<filenamebuf
         ldx #>filenamebuf
@@ -886,6 +792,7 @@ savemem:
         bcs @err
 
 
+        inc16 dumpend
 :
         lda (dumpvec)
         jsr krn_write_byte
@@ -910,7 +817,23 @@ savemem:
         .byte $0a, $0d,"usage: save <from> <to> <filename>",$0a, $0d, $00
         jmp mainloop
 
-; filename:       .asciiz "save.bin"
+get_filename:
+        ldx #0
+@read_filename:
+        lda (paramptr),y
+        beq @read_filename_done
+        cmp #' '
+        beq @read_filename_done
+
+        sta filenamebuf,x
+        iny 
+        inx
+        bne @read_filename
+
+@read_filename_done:
+        stz filenamebuf,x
+        rts
+
 ; parse two hex digits to binary
 ; highbyte in X
 ; lowbyte in A
@@ -968,6 +891,50 @@ hex2dumpvec:
 PATH: .asciiz ".:/steckos/:/progs/"
 PRGEXT: .asciiz ".PRG"
 pd_header: .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
+msg_EOK:        .asciiz "No error"
+msg_ENOENT:     .asciiz "No such file or directory"
+msg_ENOMEM:     .asciiz "Out of memory"
+msg_EACCES:     .asciiz "Permission denied"
+msg_ENODEV:     .asciiz "No such device"
+msg_EMFILE:     .asciiz "Too many open files"
+msg_EBUSY:      .asciiz "Device or resource busy"
+msg_EINVAL:     .asciiz "Invalid argument (0x07)"
+msg_ENOSPC:     .asciiz "No space left on device (0x08)"
+msg_EEXIST:     .asciiz "File exists"
+msg_EAGAIN:     .asciiz "Try again (0x0a)"
+msg_EIO:        .asciiz "I/O error"
+msg_EINTR:      .asciiz "Interrupted system call"
+msg_ENOSYS:     .asciiz "Function not implemented"
+msg_ESPIPE:     .asciiz "Illegal seek"
+msg_ERANGE:     .asciiz "Range error"
+msg_EBADF:      .asciiz "Bad file number"
+msg_ENOEXEC:    .asciiz "Exec format error"
+msg_EISDIR:     .asciiz "Is a directory"
+msg_ENOTDIR:    .asciiz "Not a directory"
+msg_ENOTEMPTY:  .asciiz "Directory not empty"
+
+errors:
+.addr msg_EOK
+.addr msg_ENOENT
+.addr msg_ENOMEM
+.addr msg_EACCES
+.addr msg_ENODEV
+.addr msg_EMFILE
+.addr msg_EBUSY
+.addr msg_EINVAL
+.addr msg_ENOSPC
+.addr msg_EEXIST
+.addr msg_EAGAIN
+.addr msg_EIO
+.addr msg_EINTR
+.addr msg_ENOSYS
+.addr msg_ESPIPE
+.addr msg_ERANGE
+.addr msg_EBADF
+.addr msg_ENOEXEC
+.addr msg_EISDIR
+.addr msg_ENOTDIR
+.addr msg_ENOTEMPTY
 
 
 .bss
