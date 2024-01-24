@@ -46,11 +46,11 @@ DIR* __fastcall__ opendir (register const char* name)
     /* Open directory file */
     if ((dir->fd = open (name, O_RDONLY)) != -1) {
 
-          // Skip directory header entry
-          //dir->current_entry = 1;
+        // Skip directory header entry
+        // dir->current_entry = 1;
         memcpy(&dir->name, name, 8+3+1);
 
-        printf("%s\n", dir->name);
+        //printf("opened %s\n", dir->name);
 
         // Return success
         return dir;

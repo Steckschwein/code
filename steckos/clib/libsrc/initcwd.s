@@ -14,6 +14,6 @@
 
 initcwd:
 		  lda	#<__cwd
-		  ldx	#>__cwd
-      ldy #<__cwd_buf_size
+		  ldy	#>__cwd
+      ldx #<__cwd_buf_size
       jmp krn_getcwd

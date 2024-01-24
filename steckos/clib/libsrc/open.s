@@ -94,6 +94,7 @@ dowrite:
 
 .proc  closeallfiles
 
+    stp
     jmp krn_close_all
 
 .endproc
