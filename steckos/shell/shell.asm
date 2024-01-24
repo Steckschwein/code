@@ -512,12 +512,14 @@ exec:
 
 go:
         ldy #0
+        ldx #1
         jsr hex2dumpvec
-        bcs @error
+        bcs @usage
 
-        jmp (dumpvec)
-@error:  
-        printstring "parameter error"
+        jmp (dumpend)
+@usage:  
+        jsr primm
+        .byte $0a, $0d,"usage: go <addr>", $0a, $0d,0
 @end:
         jmp mainloop
 
