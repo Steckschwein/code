@@ -45,6 +45,11 @@ appstart $1000
     .byte "fsinfo             - filesystem info",$0a,$0d
     .byte "nvram              - manage nvram",$0a,$0d
     .byte "setdate            - set rtc date",$0a,$0d
+    .byte "pd <page>          - dump memory page, pd 04 for $0400", $0a, $0d 
+    .byte "ms <addr> <bytes>  - set memory",$0a, $0d
+    .byte "bd <blocknr>       - sd block dump",$0a, $0d 
+    .byte "go <addr>          - execute code at <addr>", $0a, $0d 
+    .byte "load <file> <addr> - load file to memory address", $0a, $0d
     .byte $00
 
     jmp (retvec)
