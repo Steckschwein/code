@@ -550,12 +550,18 @@ ms:
         cmp #' '
         beq @skip 
 
-        tax
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta tmpchar
  
         iny
         lda (paramptr),y
+        jsr atoi
+        ora tmpchar
  
-        jsr parse_hex
         jsr hexout
         sta (dumpend)
 
@@ -610,38 +616,20 @@ bd:
 
 pd:
         ldy #0
-        lda (paramptr),y
-        beq @error
+        ldx #1
+        stz dumpend
+        jsr hex2dumpvec
        
-        stz dumpvec+0
-        
-        tax 
-        iny
-        lda (paramptr),y
-        beq @error
-
-        jsr parse_hex
-
-        sta dumpvec+1
+        lda dumpend + 1
+        sta dumpvec + 1
+ 
+        lda dumpend 
+        bne :+
+        lda dumpvec +1
         sta dumpend
-
-        iny 
-        lda (paramptr),y 
-        beq @start
-
-        iny 
-        lda (paramptr),y
-        tax
-
-        sta dumpend
-        
-        iny
-        lda (paramptr),y
-        beq @error
-
-        jsr parse_hex
-        
-        sta dumpend
+:   
+        stz dumpvec
+   
         crlf
 @start:
         jsr dump_start
@@ -818,24 +806,6 @@ get_filename:
 
 @read_filename_done:
         stz filenamebuf,x
-        rts
-
-; parse two hex digits to binary
-; highbyte in X
-; lowbyte in A
-; returns A
-parse_hex:
-        pha 
-        txa
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
-        sta tmpchar
-        pla 
-        jsr atoi
-        ora tmpchar
         rts
 
 
