@@ -589,11 +589,11 @@ bd:
         dex 
         bpl @copyloop
 
-        lda #04
+        lda #$10
         sta dumpvec+1
         stz dumpvec
 
-        lda #05 
+        lda #$11
         sta dumpend
         copypointer dumpvec, sd_blkptr
 
