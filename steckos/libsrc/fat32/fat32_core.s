@@ -37,7 +37,6 @@
 
 .include "debug.inc"
 
-; external deps - block layer
 .autoimport
 
 .export __fat_find_first
@@ -56,8 +55,6 @@
 .export __fat_read_cluster_block_and_select
 .export __fat_read_block_data
 .export __fat_read_block_fat
-.export __fat_seek_next_dirent
-.export __fat_set_fd_attr_dirlba
 .export __fat_set_fd_dirlba
 .export __fat_set_fd_start_cluster
 .export __fat_set_fd_start_cluster_seek_pos
@@ -166,7 +163,7 @@ __fat_open_path:
         sta filenameptr
         stx filenameptr+1         ; save path arg given in a/x
 
-        ldx #FD_INDEX_TEMP_FILE    ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
+        ldx #FD_INDEX_TEMP_FILE   ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
         jsr __fat_clone_fd        ; Y is given as param
 
         ldy #0                    ; trim whitespace at the beginning

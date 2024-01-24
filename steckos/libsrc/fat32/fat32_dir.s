@@ -40,40 +40,30 @@
 .export fat_chdir
 .export fat_opendir
 
-.export __fat_opendir
-.export __fat_opendir_nofd
-
 .code
 
 ; open directory by given path starting from directory given as file descriptor
 ; in:
 ;	  A/X - pointer to string with the file path
+;   Y - file mode constants - see fcntl.inc (cc65)
+;     O_RDONLY  = $01
+;     O_WRONLY  = $02
+;     O_RDWR    = $03
+;     O_CREAT   = $10
+;     O_TRUNC   = $20
+;     O_APPEND  = $40
+;     O_EXCL    = $80
 ; out:
 ;	  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;	  X - index into fd_area of the opened directory
 fat_opendir:
-    		  ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
-; in:
-;	  Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
-__fat_opendir:
-          jsr __fat_open_path
+          jsr fat_open
           bcs @l_exit
-          lda fd_area + F32_fd::Attr,x
           and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
           bne @l_exit
           lda #ENOTDIR				    ; error "Not a directory"
           sec                     ; we opened a file. just close it immediately and free the allocated fd
           jmp __fat_free_fd
-@l_exit:  rts
-
-; out:
-;   C - C=0 on success, C=1 on error
-;   X - FD_INDEX_TEMP_FILE from __fat_opendir/__fat_open_path
-__fat_opendir_nofd:
-          jsr __fat_opendir
-          bcs @l_exit
-          jsr __fat_free_fd
-          ldx #FD_INDEX_TEMP_FILE
 @l_exit:  rts
 
 
@@ -83,12 +73,12 @@ __fat_opendir_nofd:
 ;   C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;   X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
 fat_chdir:
-          ldy #FD_INDEX_CURRENT_DIR
-          jsr __fat_opendir_nofd
+          ldy #O_RDONLY
+          jsr fat_opendir
           bcs @l_exit
-          ldy #FD_INDEX_TEMP_FILE
+          jsr __fat_free_fd         ; free fd immediately
+          ldy #FD_INDEX_TEMP_FILE   ; open success, FD_INDEX_TEMP_FILE still contains the data from last opened file
           ldx #FD_INDEX_CURRENT_DIR
           jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
-@l_exit:
-          debug "fat chdir <"
+@l_exit:  debug "fat chdir <"
           rts

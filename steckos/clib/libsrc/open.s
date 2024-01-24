@@ -39,6 +39,7 @@
 ;--------------------------------------------------------------------------
 ; _open
 .proc  _open
+      stp
       dey              ; parm count < 4 shouldn't be needed to be checked
       dey              ;     (it generates a c compiler warning)
       dey
@@ -49,14 +50,14 @@
 ; Parameters ok. Pop the flags and save them into tmp3
 
 parmok:
-      jsr popax        ; Get flags
+      jsr popax         ; Get flags
 
 ; Check the flags. We cannot have both, read and write flags set, and we cannot
 ; open a file for writing without creating it.
 
       and #(O_RDWR | O_CREAT)
       cmp #O_RDONLY     ; Open for reading?
-      beq doread       ; Yes: Branch
+      beq doread        ; Yes: Branch
       cmp #(O_WRONLY | O_CREAT)  ; Open for writing?
       beq dowrite
 

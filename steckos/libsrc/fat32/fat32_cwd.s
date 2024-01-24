@@ -66,9 +66,13 @@ fat_get_root_and_pwd:
     lda #<l_dot_dot
     ldx #>l_dot_dot
     ldy #FD_INDEX_TEMP_FILE             ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_FILE) was updated and points to the parent directory
-    jsr __fat_opendir_nofd
+    jsr __fat_open_path
     bcs @l_exit
+    jsr __fat_free_fd
+;    jsr __fat_opendir_nofd
+ ;   bcs @l_exit
     SetVector cluster_nr_matcher, volumeID+VolumeID::fat_vec_matcher  ; set the matcher strategy to the cluster number matcher
+    ldx #FD_INDEX_TEMP_FILE
     jsr __fat_find_first                ; and call find first to find the entry with that cluster number we saved in cluster before we did the cd ".."
     bcs @l_exit
     jsr fat_name_string                 ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
@@ -84,6 +88,19 @@ fat_get_root_and_pwd:
     rts
 l_dot_dot:
     .asciiz ".."
+
+; in:
+;   A/X - pointer to string with the file path
+;   Y  - file descriptor of fd_area denoting the start directory
+; out:
+;   C - C=0 on success, C=1 on error
+;   X - FD_INDEX_TEMP_FILE as a result from __fat_open_path
+__fat_opendir_nofd:
+          jsr __fat_open_path
+          bcs @l_exit
+          jsr __fat_free_fd
+          ldx #FD_INDEX_TEMP_FILE
+@l_exit:  rts
 
 ; in:
 ;   dirptr - pointer to dir entry (F32DirEntry)

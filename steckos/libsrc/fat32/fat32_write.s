@@ -134,7 +134,6 @@ __fat_set_fd_filesize:
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 __fat_fopen_touch:
-
     debug "fop touch >"
     bcc :+
     phy

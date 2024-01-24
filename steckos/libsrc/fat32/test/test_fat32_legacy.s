@@ -173,10 +173,9 @@ setUp:
   jsr __fat_init_fdarea
   init_volume_id SEC_PER_CL ;4s/cl
 
-  ;setup fd0 as root cluster
-  set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-  set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
-  set8 fd_area+(0*FD_Entry_Size)+F32_fd::flags, 0
+  ;setup fd0 (cwd) to root cluster
+  ldx #FD_INDEX_CURRENT_DIR
+  jsr __fat_open_rootdir
 
   ;setup fd1 as test cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster

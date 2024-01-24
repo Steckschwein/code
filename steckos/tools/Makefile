@@ -15,7 +15,7 @@ TOOLS+=\
   date.prg\
   crc7.prg \
   echo.prg\
-  fatbench.prg \
+  iobench.prg \
   keyboard.prg \
   nvram.prg\
   od.prg\
