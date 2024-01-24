@@ -571,37 +571,23 @@ ms:
 
 
 bd:
+        ldx #3
+@clearloop:
+        stz dumpvecs,x 
+        dex 
+        bpl @clearloop
+
         ldy #0
-        lda (paramptr),y
-        tax 
-        iny 
-        lda (paramptr),y 
-        jsr parse_hex       
-        sta lba_addr +3
+        ldx #3
+        jsr hex2dumpvec
+        bcs @usage
 
-        iny
-        lda (paramptr),y
-        tax 
-        iny 
-        lda (paramptr),y 
-        jsr parse_hex       
-        sta lba_addr +2
-
-        iny
-        lda (paramptr),y
-        tax 
-        iny 
-        lda (paramptr),y 
-        jsr parse_hex       
-        sta lba_addr +1
-
-        iny
-        lda (paramptr),y
-        tax 
-        iny 
-        lda (paramptr),y 
-        jsr parse_hex       
-        sta lba_addr 
+        ldx #3
+@copyloop:
+        lda dumpvecs,x
+        sta lba_addr,x 
+        dex 
+        bpl @copyloop
 
         lda #04
         sta dumpvec+1
@@ -617,7 +603,10 @@ bd:
         jmp mainloop
 @err:
         jmp errmsg
-
+@usage:  
+        jsr primm
+        .byte $0a, $0d,"usage: bd <block-no> (4 bytes, 8 hex digits) ", $0a, $0d,0
+        jmp mainloop
 
 pd:
         ldy #0
@@ -625,8 +614,7 @@ pd:
         beq @error
        
         stz dumpvec+0
-        ; stz dumpvec+1
-
+        
         tax 
         iny
         lda (paramptr),y
