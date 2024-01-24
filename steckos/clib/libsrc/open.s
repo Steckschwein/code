@@ -39,7 +39,6 @@
 ;--------------------------------------------------------------------------
 ; _open
 .proc  _open
-      stp
       dey              ; parm count < 4 shouldn't be needed to be checked
       dey              ;     (it generates a c compiler warning)
       dey
