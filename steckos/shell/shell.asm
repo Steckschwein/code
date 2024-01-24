@@ -524,29 +524,23 @@ go:
 
 ms:
         ldy #0
-        ldx #2
+        ldx #1
         jsr hex2dumpvec
-        bcs @error 
-
-        iny
-        lda (paramptr),y
-        beq @error
-        cmp #' '
-        bne @error
+        bcs @usage
 
 @again:
         crlf
-        lda dumpvec+1
+        lda dumpend+1
         jsr hexout
 
-        lda dumpvec
+        lda dumpend 
         jsr hexout 
 
         lda #':'
         jsr char_out
         lda #' '
         jsr char_out
-
+        
 @skip:
         iny
         lda (paramptr),y
@@ -560,22 +554,18 @@ ms:
         lda (paramptr),y
  
         jsr parse_hex
-
-        sta dumpend 
         jsr hexout
+        sta (dumpend)
 
-        sta (dumpvec)
-
-        inc16 dumpvec
+        inc16 dumpend
         bra @again
-        jmp mainloop
 
-
-        beq @error
-@error:  
-        printstring "parameter error"
+@usage:  
+        jsr primm
+        .byte $0a, $0d,"usage: ms <addr> <byte> [<byte>...]", $0a, $0d,0
 @end:
         jmp mainloop
+        
 
 
 bd:
