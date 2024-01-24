@@ -613,7 +613,8 @@ bd:
 
         jsr krn_sd_read_block
         bcs @err
-        jmp dump_start
+        jsr dump_start
+        jmp mainloop
 @err:
         jmp errmsg
 
@@ -638,7 +639,7 @@ pd:
 
         iny 
         lda (paramptr),y 
-        beq dump_start
+        beq @start
 
         iny 
         lda (paramptr),y
@@ -654,11 +655,15 @@ pd:
         
         sta dumpend
         crlf
-        bra dump_start
-
-@error:  
-        printstring "parameter error"
+@start:
+        jsr dump_start
         jmp mainloop
+@error:  
+        jsr primm
+        .byte $0a, $0d,"usage: pd <pageaddr>", $0a, $0d,0
+        jmp mainloop
+
+
 dump_start:
         crlf
         lda #<pd_header
@@ -715,20 +720,21 @@ dump_start:
 
         lda dumpvec+1
         cmp dumpend
-        beq @l8
+        beq @end
         jsr primm
         .byte $0a,$0d,"-- press a key-- ",$00
         
         keyin
         cmp #KEY_CTRL_C
-        beq @l8
+        beq @end
         cmp #KEY_ESCAPE
-        beq @l8
+        beq @end
 
         inc dumpvec+1
         jmp dump_start
-@l8:  
-        jmp mainloop
+@end:  
+        rts
+
 
 loadmem:
         ldy #0
