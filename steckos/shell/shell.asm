@@ -45,9 +45,12 @@ prompt  = '>'
 msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
-dumpvec:  .res 2
-dumpend:  .res 2
 tmpchar:  .res 1
+dumpvecs: .res 4
+
+dumpend = dumpvecs
+dumpvec = dumpvecs+2
+
 
 
 appstart __SHELL_START__
@@ -565,6 +568,7 @@ go:
 
 ms:
         ldy #0
+        ldx #2
         jsr hex2dumpvec
         bcs @error 
 
@@ -803,14 +807,15 @@ loadmem:
         tya 
         jsr hexout
 
+        ldx #1
         jsr hex2dumpvec
         bcs @err
 
         crlf
 
-        lda dumpvec+1
+        lda dumpend+1
         jsr hexout
-        lda dumpvec
+        lda dumpend
         jsr hexout
 
 
@@ -823,8 +828,8 @@ loadmem:
 :
         jsr krn_fread_byte
         bcs @eof
-        sta (dumpvec)
-        inc16 dumpvec
+        sta (dumpend)
+        inc16 dumpend
         bne :-
 @eof:
         jsr krn_close
@@ -835,10 +840,23 @@ loadmem:
         jmp errmsg
 
 savemem:
+        ldx #3
         ldy #0
+
         jsr hex2dumpvec
         bcs @usage
+        crlf
+        lda dumpvec+1
+        jsr hexout
+        lda dumpvec+0
+        jsr hexout
+        lda dumpend+1
+        jsr hexout
+        lda dumpend+0
+        jsr hexout
+        crlf
 
+        jmp mainloop
         inc16 dumpend
 
         iny 
@@ -911,122 +929,34 @@ parse_hex:
         ora tmpchar
         rts
 
-; hex2dumpvec:
-;         ; ldy #0
-;         lda (paramptr),y
-;         beq @err
-;         stz dumpvec+0
-;         tax
-        
-;         iny
-;         lda (paramptr),y
-;         beq @err
-        
-;         jsr parse_hex
-;         sta dumpvec+1
-
-;         iny
-;         lda (paramptr),y
-;         beq @err
-;         tax 
-
-;         iny
-;         lda (paramptr),y
-;         beq @err
-   
-;         jsr parse_hex
-;         sta dumpvec
-;         clc 
-;         rts
-; @err:
-;         sec
-;         rts
 
 hex2dumpvec:
-        ldy #0
+@next_byte:
         lda (paramptr),y
         beq @err
-        stz dumpvec+0
-
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
-        sta dumpvec+1
-
-        iny
-        lda (paramptr),y
-        beq @err
-
-        jsr atoi
-        ora dumpvec+1
-        sta dumpvec+1
-
-        iny
-        lda (paramptr),y
-        beq @err
-
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
-        sta dumpvec
-
-        iny
-        lda (paramptr),y
-        beq @err
-   
-        jsr atoi
-        ora dumpvec
-        sta dumpvec
-        
-        iny
-        lda (paramptr),y
-        beq @end
-
         cmp #' '
         bne :+
         iny 
-        lda (paramptr),y
-        beq @err
+        bra @next_byte
 :
-
         jsr atoi
         asl
         asl
         asl
         asl
-        sta dumpend+1
+        sta dumpvecs,x
 
         iny
         lda (paramptr),y
         beq @err
 
         jsr atoi
-        ora dumpend+1
-        sta dumpend+1
+        ora dumpvecs,x
+        sta dumpvecs,x
         
         iny
-        lda (paramptr),y
-        beq @err
-
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
-        sta dumpend
-
-        iny
-        lda (paramptr),y
-        beq @err
-   
-        jsr atoi
-        ora dumpend
-        sta dumpend
-        
+        dex 
+        bpl @next_byte       
 @end:
         clc 
         rts
