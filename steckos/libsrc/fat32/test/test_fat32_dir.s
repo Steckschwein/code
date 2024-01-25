@@ -24,48 +24,48 @@ TEST_FILE_CL2=$19
 		lda #<test_file_name_1
 		ldx #>test_file_name_1
 		jsr fat_chdir
-		assertCarry 1
 		assertA ENOTDIR
+		assertCarry 1
 
 ; -------------------
 		setup "fat_chdir_enoent"
 		lda #<test_dir_name_enoent
 		ldx #>test_dir_name_enoent
 		jsr fat_chdir
-		assertCarry 1
 		assertA ENOENT
+		assertCarry 1
 
 ; -------------------
 		setup "fat_chdir ."
 		lda #<test_dir_name_dot
 		ldx #>test_dir_name_dot
 		jsr fat_chdir
-		assertCarry 0
 		assertA EOK
+		assertCarry 0
 
 ; -------------------
 		setup "fat_chdir .."
 		lda #<test_dir_name_dotdot
 		ldx #>test_dir_name_dotdot
 		jsr fat_chdir
-		assertCarry 0
 		assertA EOK
+		assertCarry 0
 
 ; -------------------
 		setup "fat_mkdir eexist"
 		lda #<test_dir_name_eexist
 		ldx #>test_dir_name_eexist
 		jsr fat_mkdir
-		assertCarry 1
 		assertA EEXIST
+		assertCarry 1
 
 ; -------------------
 		setup "fat_mkdir"
 		lda #<test_dir_name_new
 		ldx #>test_dir_name_new
 		jsr fat_mkdir
-		assertCarry 0
 		assertA EOK
+		assertCarry 0
     assertDirEntry block_root_dir_00+14*DIR_Entry_Size
       fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size

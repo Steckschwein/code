@@ -22,6 +22,9 @@
 
 
 .include "steckos.inc"
+.include "fcntl.inc"
+
+dump_line_length = $10
 
 BUF_SIZE    = 80 ;TODO maybe too small?
 cwdbuf_size = 80
@@ -42,6 +45,12 @@ prompt  = '>'
 msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
+tmpchar:  .res 1
+dumpvecs: .res 4
+
+dumpend = dumpvecs
+dumpvec = dumpvecs+2
+
 
 
 appstart __SHELL_START__
@@ -253,7 +262,6 @@ compare:
         bra @l1
 
 cmdfound:
-        crlf
         inx
         jmp (cmdlist,x) ; 65c02 FTW!!
 
@@ -261,10 +269,8 @@ try_exec:
         lda (bufptr)
         beq @l1
 
-        crlf
         jmp exec
-
-@l1:
+@l1:  
         jmp mainloop
 
 printbuf:
@@ -303,60 +309,31 @@ cmdlist:
         .byte "up",0
         .word krn_upload
 
+        .byte "pd",0
+        .word pd
 
-.ifdef DEBUG
-        .byte "dump",0
-        .word dump
-.endif
+        .byte "bd",0
+        .word bd
+
+        .byte "ms",0
+        .word ms
+
+        .byte "go",0
+        .word go
+
+        .byte "load",0
+        .word loadmem
+
+        .byte "save",0
+        .word savemem
+
+
+
         ; End of list
         .byte $ff
 
 
 
-msg_EOK:        .asciiz "No error"
-msg_ENOENT:     .asciiz "No such file or directory"
-msg_ENOMEM:     .asciiz "Out of memory"
-msg_EACCES:     .asciiz "Permission denied"
-msg_ENODEV:     .asciiz "No such device"
-msg_EMFILE:     .asciiz "Too many open files"
-msg_EBUSY:      .asciiz "Device or resource busy"
-msg_EINVAL:     .asciiz "Invalid argument (0x07)"
-msg_ENOSPC:     .asciiz "No space left on device (0x08)"
-msg_EEXIST:     .asciiz "File exists"
-msg_EAGAIN:     .asciiz "Try again (0x0a)"
-msg_EIO:        .asciiz "I/O error"
-msg_EINTR:      .asciiz "Interrupted system call"
-msg_ENOSYS:     .asciiz "Function not implemented"
-msg_ESPIPE:     .asciiz "Illegal seek"
-msg_ERANGE:     .asciiz "Range error"
-msg_EBADF:      .asciiz "Bad file number"
-msg_ENOEXEC:    .asciiz "Exec format error"
-msg_EISDIR:     .asciiz "Is a directory"
-msg_ENOTDIR:    .asciiz "Not a directory"
-msg_ENOTEMPTY:  .asciiz "Directory not empty"
-
-errors:
-.addr msg_EOK
-.addr msg_ENOENT
-.addr msg_ENOMEM
-.addr msg_EACCES
-.addr msg_ENODEV
-.addr msg_EMFILE
-.addr msg_EBUSY
-.addr msg_EINVAL
-.addr msg_ENOSPC
-.addr msg_EEXIST
-.addr msg_EAGAIN
-.addr msg_EIO
-.addr msg_EINTR
-.addr msg_ENOSYS
-.addr msg_ESPIPE
-.addr msg_ERANGE
-.addr msg_EBADF
-.addr msg_ENOEXEC
-.addr msg_EISDIR
-.addr msg_ENOTDIR
-.addr msg_ENOTEMPTY
 
 errmsg:
         ;TODO FIXME maybe use oserror() from cc65 lib
@@ -455,6 +432,7 @@ rmdir:
         jmp mainloop
 
 pwd:
+        crlf
         lda #<cwdbuf
         ldx #>cwdbuf
         jsr strout
@@ -471,6 +449,7 @@ exec:
         jmp mainloop
 
 @resolve_path:
+        crlf
         stz tmp2
 @try_path:
         ldx #0
@@ -531,119 +510,394 @@ exec:
         lda #$fe
         jmp errmsg
 
+go:
+        ldy #0
+        ldx #1
+        jsr hex2dumpvec
+        bcs @usage
 
-.ifdef DEBUG
-dumpvec    = $c0
-dumpvec_end     = dumpvec
-dumpvec_start   = dumpvec+2
+        jmp (dumpend)
+@usage:  
+        jsr primm
+        .byte $0a, $0d,"usage: go <addr>", $0a, $0d,0
+@end:
+        jmp mainloop
 
-dump:
-        stz dumpvec+1
-        stz dumpvec+2
-        stz dumpvec+3
 
-        ldy #$00
-        ldx #$03
-@l1:
-        lda (paramptr),y
-        beq @l2
+ms:
+        ldy #0
+        ldx #1
+        jsr hex2dumpvec
+        bcs @usage
 
-        jsr atoi
-        asl
-        asl
-        asl
-        asl
-        sta dumpvec,x
-
-        iny
-        lda (paramptr),y
-        beq @l2
-        jsr atoi
-        ora dumpvec,x
-        sta dumpvec,x
-        dex
-        iny
-        cpy #$04
-        bne @l1
-
-        iny
-        bra @l1
-
-@l2:
-        cpy #$00
-        bne @l3
-
-        printstring "parameter error"
-
-        bra @l8
-@l3:
+@again:
         crlf
-        lda dumpvec_start+1
+        lda dumpend+1
         jsr hexout
-        lda dumpvec_start
+
+        lda dumpend 
+        jsr hexout 
+
+        lda #':'
+        jsr char_out
+        lda #' '
+        jsr char_out
+        
+@skip:
+        iny
+        lda (paramptr),y
+        beq @end
+        cmp #' '
+        beq @skip 
+
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta tmpchar
+ 
+        iny
+        lda (paramptr),y
+        jsr atoi
+        ora tmpchar
+ 
         jsr hexout
+        sta (dumpend)
+
+        inc16 dumpend
+        bra @again
+
+@usage:  
+        jsr primm
+        .byte $0a, $0d,"usage: ms <addr> <byte> [<byte>...]", $0a, $0d,0
+@end:
+        jmp mainloop
+        
+
+
+bd:
+        ldx #3
+@clearloop:
+        stz dumpvecs,x 
+        dex 
+        bpl @clearloop
+
+        ldy #0
+        ldx #3
+        jsr hex2dumpvec
+        bcs @usage
+
+        ldx #3
+@copyloop:
+        lda dumpvecs,x
+        sta lba_addr,x 
+        dex 
+        bpl @copyloop
+
+        lda #$10
+        sta dumpvec+1
+        stz dumpvec
+
+        lda #$11
+        sta dumpend
+        copypointer dumpvec, sd_blkptr
+
+        jsr krn_sd_read_block
+        bcs @err
+        jsr dump_start
+        jmp mainloop
+@err:
+        jmp errmsg
+@usage:  
+        jsr primm
+        .byte $0a, $0d,"usage: bd <block-no> (4 bytes, 8 hex digits) ", $0a, $0d,0
+        jmp mainloop
+
+pd:
+        ldy #0
+        ldx #1
+        stz dumpend
+        jsr hex2dumpvec
+       
+        lda dumpend + 1
+        sta dumpvec + 1
+ 
+        lda dumpend 
+        bne :+
+        lda dumpvec +1
+        sta dumpend
+:   
+        stz dumpvec
+   
+        crlf
+@start:
+        jsr dump_start
+        jmp mainloop
+@error:  
+        jsr primm
+        .byte $0a, $0d,"usage: pd <pageaddr>", $0a, $0d,0
+        jmp mainloop
+
+
+dump_start:
+        crlf
+        lda #<pd_header
+        ldx #>pd_header
+        jsr strout
+
+        ldx #256 / dump_line_length
+@output_line:
+        crlf
+
+        lda dumpvec+1
+        jsr hexout
+        lda dumpvec
+        jsr hexout
+
         lda #':'
         jsr char_out
         lda #' '
         jsr char_out
 
         ldy #$00
-@l4:
-        lda (dumpvec_start),y
+@out_hexbyte:
+        lda (dumpvec),y
         jsr hexout
         lda #' '
         jsr char_out
         iny
-        cpy #$08
-        bne @l4
+        cpy #dump_line_length
+        bne @out_hexbyte
 
         lda #' '
         jsr char_out
 
         ldy #$00
-@l5:
-        lda (dumpvec_start),y
-        cmp #$19
-        bcs @l6
-        lda #'.'
-@l6:
+@out_char:  
+        lda (dumpvec),y
+        cmp #$19 ; printable character?
+        bcs :+   ; 
+        lda #'.' ; no, just print '.'
+:                ; yes, print it
         jsr char_out
         iny
-        cpy #$08
-        bne @l5
+        cpy #dump_line_length
+        bne @out_char
 
-        lda dumpvec_start+1
-        cmp dumpvec_end+1
-        bne @l7
-        lda dumpvec_start
-        cmp dumpvec_end
-        beq @l8
-        bcs @l8
-
-@l7:
-        jsr krn_getkey
-        cmp #$03
-        beq @l8
+        ; update dumpvec
         clc
-        lda dumpvec_start
+        tya 
+        adc dumpvec
+        sta dumpvec
+ 
+        dex 
+        bne @output_line
 
-        adc #$08
-        sta dumpvec_start
-        lda dumpvec_start+1
-        adc #$00
-        sta dumpvec_start+1
-        bra @l3
+        lda dumpvec+1
+        cmp dumpend
+        beq @end
+        jsr primm
+        .byte $0a,$0d,"-- press a key-- ",$00
+        
+        keyin
+        cmp #KEY_CTRL_C
+        beq @end
+        cmp #KEY_ESCAPE
+        beq @end
 
-@l8:  jmp mainloop
-.endif
+        inc dumpvec+1
+        jmp dump_start
+@end:  
+        rts
 
-PATH: .asciiz "./:/steckos/:/progs/"
+
+loadmem:
+        ldy #0
+        ldx #0
+
+        jsr get_filename
+      
+        ldx #1
+        jsr hex2dumpvec
+        bcs @usage
+
+        lda #<filenamebuf
+        ldx #>filenamebuf
+        ldy #O_RDONLY
+        jsr krn_open     ; X contains fd
+        bcs @err    ; not found or other error, dont care...
+        ldy #0
+:
+        jsr krn_fread_byte
+        bcs @eof
+        sta (dumpend)
+        inc16 dumpend
+        bne :-
+@eof:
+        jsr krn_close
+@end:
+        jmp mainloop
+@err:
+        crlf
+        jmp errmsg
+@usage:
+        jsr primm
+        .byte $0a, $0d, "usage: load <file> <addr>", $0a, $0d, 0
+        jsr mainloop
+
+savemem:
+        ldx #3
+        ldy #0
+
+        jsr hex2dumpvec
+        bcs @usage
+
+        iny 
+        lda (paramptr),y
+        beq @usage    
+        
+        jsr get_filename
+
+        lda #<filenamebuf
+        ldx #>filenamebuf
+        ldy #O_WRONLY
+        jsr krn_open
+        bcs @err
+
+
+        inc16 dumpend
+:
+        lda (dumpvec)
+        jsr krn_write_byte
+        bcs @err
+
+        inc16 dumpvec
+
+        lda dumpvec
+        cmp dumpend 
+        bne :-
+        lda dumpvec+1
+        cmp dumpend+1
+        bne :-
+        
+        jsr krn_close
+
+        jmp mainloop
+@err:
+        jmp errmsg
+@usage:
+        jsr primm
+        .byte $0a, $0d,"usage: save <from> <to> <filename>",$0a, $0d, $00
+        jmp mainloop
+
+get_filename:
+        ldx #0
+@read_filename:
+        lda (paramptr),y
+        beq @read_filename_done
+        cmp #' '
+        beq @read_filename_done
+
+        sta filenamebuf,x
+        iny 
+        inx
+        bne @read_filename
+
+@read_filename_done:
+        stz filenamebuf,x
+        rts
+
+
+hex2dumpvec:
+@next_byte:
+        lda (paramptr),y
+        beq @err
+        cmp #' '
+        bne :+
+        iny 
+        bra @next_byte
+:
+        jsr atoi
+        asl
+        asl
+        asl
+        asl
+        sta dumpvecs,x
+
+        iny
+        lda (paramptr),y
+        beq @err
+
+        jsr atoi
+        ora dumpvecs,x
+        sta dumpvecs,x
+        
+        iny
+        dex 
+        bpl @next_byte       
+@end:
+        clc 
+        rts
+@err:
+        sec
+        rts
+
+.data
+PATH: .asciiz ".:/steckos/:/progs/"
 PRGEXT: .asciiz ".PRG"
+pd_header: .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
+msg_EOK:        .asciiz "No error"
+msg_ENOENT:     .asciiz "No such file or directory"
+msg_ENOMEM:     .asciiz "Out of memory"
+msg_EACCES:     .asciiz "Permission denied"
+msg_ENODEV:     .asciiz "No such device"
+msg_EMFILE:     .asciiz "Too many open files"
+msg_EBUSY:      .asciiz "Device or resource busy"
+msg_EINVAL:     .asciiz "Invalid argument (0x07)"
+msg_ENOSPC:     .asciiz "No space left on device (0x08)"
+msg_EEXIST:     .asciiz "File exists"
+msg_EAGAIN:     .asciiz "Try again (0x0a)"
+msg_EIO:        .asciiz "I/O error"
+msg_EINTR:      .asciiz "Interrupted system call"
+msg_ENOSYS:     .asciiz "Function not implemented"
+msg_ESPIPE:     .asciiz "Illegal seek"
+msg_ERANGE:     .asciiz "Range error"
+msg_EBADF:      .asciiz "Bad file number"
+msg_ENOEXEC:    .asciiz "Exec format error"
+msg_EISDIR:     .asciiz "Is a directory"
+msg_ENOTDIR:    .asciiz "Not a directory"
+msg_ENOTEMPTY:  .asciiz "Directory not empty"
+
+errors:
+.addr msg_EOK
+.addr msg_ENOENT
+.addr msg_ENOMEM
+.addr msg_EACCES
+.addr msg_ENODEV
+.addr msg_EMFILE
+.addr msg_EBUSY
+.addr msg_EINVAL
+.addr msg_ENOSPC
+.addr msg_EEXIST
+.addr msg_EAGAIN
+.addr msg_EIO
+.addr msg_EINTR
+.addr msg_ENOSYS
+.addr msg_ESPIPE
+.addr msg_ERANGE
+.addr msg_EBADF
+.addr msg_ENOEXEC
+.addr msg_EISDIR
+.addr msg_ENOTDIR
+.addr msg_ENOTEMPTY
+
 
 .bss
 crs_x_prompt:     .res 1
 tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
 cwdbuf:           .res cwdbuf_size
+filenamebuf:      .res 12
 tmp1:     .res 1
 tmp2:     .res 1

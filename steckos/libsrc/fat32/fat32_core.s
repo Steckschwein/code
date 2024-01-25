@@ -37,7 +37,6 @@
 
 .include "debug.inc"
 
-; external deps - block layer
 .autoimport
 
 .export __fat_find_first
@@ -56,8 +55,6 @@
 .export __fat_read_cluster_block_and_select
 .export __fat_read_block_data
 .export __fat_read_block_fat
-.export __fat_seek_next_dirent
-.export __fat_set_fd_attr_dirlba
 .export __fat_set_fd_dirlba
 .export __fat_set_fd_start_cluster
 .export __fat_set_fd_start_cluster_seek_pos
@@ -154,7 +151,7 @@ __fat_seek_next_dirent:
 ;   A/X - pointer to string with the file path
 ;   Y  - file descriptor of fd_area denoting the start directory. usually FD_INDEX_CURRENT_DIR is used
 ; out:
-;   X - index into fd_area of the opened file. if a directory was opened then X == FD_INDEX_TEMP_DIR
+;   X - index into fd_area of the opened file or directory
 ;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;   dirptr - last visited directory entry
 ;   lba_addr - last visited directory block
@@ -162,155 +159,147 @@ __fat_seek_next_dirent:
 ;   Note: regardless of return value, the dirptr points to the last visited directory entry and the corresponding lba_addr is set to the block where the dir entry resides.
 ;
 __fat_open_path:
-    debug "fat_open_path >"
-    sta filenameptr
-    stx filenameptr+1         ; save path arg given in a/x
+        debug "fat_open_path >"
+        sta filenameptr
+        stx filenameptr+1         ; save path arg given in a/x
 
-    ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
-    jsr __fat_clone_fd        ; Y is given as param
+        ldx #FD_INDEX_TEMP_FILE   ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
+        jsr __fat_clone_fd        ; Y is given as param
 
-    ldy #0                    ; trim whitespace at the beginning
-@l1:
-    lda (filenameptr), y
-    cmp #' '+1
-    bcs @l2
-    iny
-    bne @l1
-    bra @l_err_einval         ; overflow, >255 chars
-@l2:
-    ;  parse input path fragments into fat_filename try to change dirs accordingly
-    ldx #0
-@l_parse_1:
-    lda (filenameptr),y
-    beq @l_filename_end
-    iny
-
-    cmp #'.'
-    bne @l_char
-    cpx #0              ; starts with "." ?
-    bne @l_fill_name    ; no, then fill until end of fat name
+        ldy #0                    ; trim whitespace at the beginning
+@trim:  lda (filenameptr), y
+        cmp #' '+1
+        bcs @l_parse_path
+        iny
+        bne @trim
+        bra @l_err_einval         ; overflow, >255 chars
+@l_parse_path:
+        ;  parse input path fragments into fat_filename try to change dirs accordingly
+        ldx #0
+@l_parse:
+        lda (filenameptr),y
+        beq @l_filename_end
+        iny
+        cmp #'.'
+        bne @l_char
+        cpx #0              ; starts with "." ?
+        bne @l_fill_name    ; no, then fill until end of fat name
 @l_dot:
-    sta volumeID+VolumeID::fat_filename,x
-    inx
-    lda (filenameptr),y
-    beq @l_open_file
-    iny
-    cmp #'.'
-    bne @l_char
-    cpx #1              ; starts with ".." ?
-    beq @l_dot
-    bra @l_err_einval
+        sta volumeID+VolumeID::fat_filename,x
+        inx
+        lda (filenameptr),y
+        beq @l_open         ; open "." dir
+        iny
+        cmp #'.'
+        bne @l_char
+        cpx #1              ; starts with ".." ?
+        beq @l_dot          ; go on, verify no further chars
+        bra @l_err_einval   ; otherwise more then 2 "." at the beginning
+@l_fn:  lda #' '
+        sta volumeID+VolumeID::fat_filename,x
+        inx
 @l_fill_name:
-    lda #' '
-:   cpx #.sizeof(F32DirEntry::Name)
-    bcs @l_parse_1
-    sta volumeID+VolumeID::fat_filename,x
-    debugdump "fat fill nm", volumeID+VolumeID::fat_filename
-    inx
-    bra :-
+        cpx #.sizeof(F32DirEntry::Name)
+        debugdump "fat fill nm", volumeID+VolumeID::fat_filename
+        bcc @l_fn
+        bra @l_parse
 @l_char:
-    cmp #' '+1           ;TODO FIXME support file/dir name with spaces? it's beyond 8.3 file support
-    bcc @l_err_einval
+        cmp #' '+1           ;TODO FIXME support file/dir name with spaces? it's beyond 8.3 file support
+        bcc @l_err_einval
 @l_skip:
-    cmp #'/'
-    beq @l_open_dir
-    cmp #'a' ; Is lowercase?
-    bcc :+
-    cmp #'z'+1
-    bcs :+
-    and #$DF
-:   sta volumeID+VolumeID::fat_filename,x
-    inx
-    cpx #8+3 +1             ; buffer overflow ? - only 8.3 file support yet
-    bne @l_parse_1
+        cmp #'/'
+        beq @l_open_dir
+        cmp #'a' ; Is lowercase?
+        bcc :+
+        cmp #'z'+1
+        bcs :+
+        and #$DF
+:       sta volumeID+VolumeID::fat_filename,x
+        inx
+        cpx #8+3 +1             ; buffer overflow ? - only 8.3 file support yet
+        bne @l_parse
 @l_err_einval:
-    lda #EINVAL
-    sec
-    rts
-@l_open_dir:
-    cpx #0                  ; empty string, we came from '/' match
-    beq @l_open_rootdir
-    jsr @l_open_file        ; return with X as offset into fd_area
-    bcc @l2
-    rts
-@l_open_rootdir:
-    ldx #FD_INDEX_TEMP_DIR  ; use fd of the temp directory
-    jsr __fat_open_rootdir
-    bcc @l2
-    rts
+        lda #EINVAL
+        sec
+        rts
 @l_filename_end:
-    cpx #0
-    bne @l_open_file
-    clc
-    rts
+        cpx #0                  ; path end reached?
+        bne @l_open
+        jsr __fat_alloc_fd      ; alloc new fd
+        bcs :+
+        ldy #FD_INDEX_TEMP_FILE ; FD_INDEX_TEMP_FILE contains last opened path segment
+        jsr __fat_clone_fd      ; clone temp file fd to newly allocated fd (X)
+        clc
+:       rts
+@l_open_dir:
+        cpx #0                  ; we came from '/' match
+        beq @l_open_rootdir     ; X=0 empty string, open root dir
+@l_open:
+        jsr @l_open_file        ; return with X = FD_INDEX_TEMP_FILE
+        bcc @l_parse_path
+        rts
+@l_open_rootdir:
+        ldx #FD_INDEX_TEMP_FILE  ; use fd of the temp directory
+        jsr __fat_open_rootdir
+        bcc @l_parse_path
+        rts
+ :      lda #' '
+        sta volumeID+VolumeID::fat_filename,x
+        inx
 @l_open_file:
-    lda #' '
-:   cpx #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)
-    bcs __fat_open_file
-    sta volumeID+VolumeID::fat_filename,x
-    debugdump "f fill ex", volumeID+VolumeID::fat_filename
-    inx
-    bra :-
+        cpx #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)
+        bcc :-
+        debugdump "f fill ex", volumeID+VolumeID::fat_filename
 
 ; in:
 ;   volumeID+VolumeID::fat_filename set with fat compatible filename to open
 ; out:
 ;   X - index into fd_area of the opened file
 ;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
-__fat_open_file:
-      phy
-      ldx #FD_INDEX_TEMP_DIR
-      lda #<__fat_match_name
-      ldy #>__fat_match_name
-      jsr __fat_find_first_mask
-      bcs @l_exit
+        phy
+        ldx #FD_INDEX_TEMP_FILE
+        lda #<__fat_match_name
+        ldy #>__fat_match_name
+        jsr __fat_find_first_mask
+        bcs @l_exit
+        ;save 32 bit cluster number from dir entry
+        ldy #F32DirEntry::FstClusHI +1
+        lda (dirptr),y
+        and #$0f      ; cluster nr must be 0x?ffffff7
+        sta fd_area + F32_fd::StartCluster + 3, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::StartCluster + 2, x
 
-      ldy #F32DirEntry::Attr
-      lda (dirptr),y
-      and #DIR_Attr_Mask_Dir    ; directory?
-      bne :+                    ; yes, do not allocate a new fd, use index (X) which is already set to FD_INDEX_TEMP_DIR and just update the fd data
-      jsr __fat_alloc_fd        ; no, then regular file and we allocate a new fd for them
-      bcs @l_exit
-      ;save 32 bit cluster number from dir entry
-:     ldy #F32DirEntry::FstClusHI +1
-      lda (dirptr),y
-      and #$0f      ; cluster nr must be 0x?ffffff7
-      sta fd_area + F32_fd::StartCluster + 3, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::StartCluster + 2, x
+        ldy #F32DirEntry::FstClusLO +1
+        lda (dirptr),y
+        sta fd_area + F32_fd::StartCluster + 1, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::StartCluster + 0, x
 
-      ldy #F32DirEntry::FstClusLO +1
-      lda (dirptr),y
-      sta fd_area + F32_fd::StartCluster + 1, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::StartCluster + 0, x
+        ldy #F32DirEntry::FileSize + 3
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 3, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 2, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 1, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 0, x
 
-      ldy #F32DirEntry::FileSize + 3
-      lda (dirptr),y
-      sta fd_area + F32_fd::FileSize + 3, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::FileSize + 2, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::FileSize + 1, x
-      dey
-      lda (dirptr),y
-      sta fd_area + F32_fd::FileSize + 0, x
+        ldy #F32DirEntry::Attr
+        lda (dirptr),y
+        sta fd_area + F32_fd::Attr, x
 
-      ldy #F32DirEntry::Attr
-      lda (dirptr),y
-      sta fd_area + F32_fd::Attr, x
-
-      jsr __fat_set_fd_dirlba
-
-      jsr __fat_set_fd_start_cluster_seek_pos
-      ; TODO use jsr __fat_set_fd_start_cluster if alloc_fd is used also for directories
+        jsr __fat_set_fd_dirlba
+        jsr __fat_set_fd_start_cluster_seek_pos
 @l_exit:
-      ply
-      rts
+        ply
+        rts
 
 __fat_match_name:
       debugdump "f match fn", volumeID+VolumeID::fat_filename
@@ -455,15 +444,15 @@ __fat_open_rootdir:
     sta fd_area + F32_fd::Attr,x
     rts
 
+; init fd with all 0 - Note: start cluster is also set to 0 and not to volumeID::RootClus - the RootClus offset is compensated within calc_lba_addr
 ; in:
 ;  .X - with index to fd_area
 __fat_init_fd:
-    ; init fd with all 0 - Note: start cluster with root cluster nr 0 and not RootClus - the RootClus offset is compensated within calc_lba_addr (@see Note)
     phx
     lda #FD_Entry_Size
 :   stz fd_area,x
     inx
-    dec
+    dea
     bne :-
     plx
     lda #FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
@@ -613,7 +602,7 @@ __calc_fat_lba_addr:
     ; add volumeID+VolumeID::lba_fat and lba_addr
     add32 volumeID+VolumeID::lba_fat, lba_addr, lba_addr
 
-    debug32 "fat_lba", lba_addr
+    debug32 "fat_lba <", lba_addr
     rts
 
 ; extract next cluster number from the 512 fat block buffer or reserve a new one
@@ -627,7 +616,6 @@ __fat_next_cln:
 
     bcc @l_select_next_cln  ; read access, just try to select
 
-@l_write:
     jsr @l_select_next_cln
     bcc @l_exit
    ;cmp #EOK   ; EOK means EOC (C=1/A=0)
