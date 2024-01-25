@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: fat32
 
 .ifdef DEBUG_FAT32 ; debug switch for this module
   debug_enabled=1
@@ -162,6 +163,12 @@ __fat_fseek_cluster:
 ;  X - offset into fd_area
 ;out:
 ;  C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
+
+;@name: "fat_fread_byte"
+;@in: X, "offset into fs area"
+;@out: C, "0 on success, 1 on error"
+;@out: A, "received byte"
+;@desc: "read byte from file"
 fat_fread_byte:
 
     _is_file_open   ; otherwise rts C=1 and A=#EINVAL
@@ -201,6 +208,15 @@ fat_fread_byte:
 ; out:
 ;   X - index into fd_area of the opened file
 ;   C=0 on success, C=1 and A=<error code> otherwise
+
+;@name: "fat_fopen"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@in: Y, "file mode constants O_RDONLY = $01, O_WRONLY = $02, O_RDWR = $03, O_CREAT = $10, O_TRUNC = $20, O_APPEND = $40, O_EXCL = $80
+;@out: C, "0 on success, 1 on error"
+;@out: A, "error code"
+;@out: X, "index into fd_area of the opened file"
+;@desc: "read byte from file"
 fat_fopen:
     debug "fopen >"
     phy                          ; save open flag
@@ -248,6 +264,11 @@ __fat_init_fdarea:
 ;   X - offset into fd_area
 ; out:
 ;   C=0 on success, C=1 on error with A=<error code>
+;@name: "fat_close"
+;@in: X, "index into fd_area of the opened file"
+;@out: C, "0 on success, 1 on error"
+;@out: A, "error code"
+;@desc: "close file, update dir entry and free file descriptor quietly"
 fat_close:
     lda fd_area+F32_fd::flags,x
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; file write access?
@@ -262,6 +283,23 @@ fat_close:
 ; out:
 ;   Z=1 on success (A=0), Z=0 and A=error code otherwise
 ;   C=0 if found and dirptr is set to the dir entry found (requires Z=1), C=1 otherwise
+;@name: "fat_find_first"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: Y, "high byte of pointer to zero terminated string with the file path"
+;@in: X, "file descriptor (index into fd_area) of the directory"
+;@out: Z, "1 on success, 0 on error"
+;@out: A, "error code"
+;@out: C, "0 if found and dirptr is set to the dir entry found (requires Z=1), else 1"
+;@desc: "find first dir entry"
 fat_find_first = __fat_find_first_mask
 
+; in:
+;  X - directory fd index into fd_area
+; out:
+;  C=0 on success (A=0), C=1 and A=<error code> otherwise
+;@name: "fat_find_next"
+;@in: X, "file descriptor (index into fd_area) of the directory"
+;@out: A, "error code"
+;@out: C, "0 on success (A=0), C=1 and A=<error code>, else 1"
+;@desc: "find next dir entry"
 fat_find_next = __fat_find_next

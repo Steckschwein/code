@@ -36,6 +36,7 @@
 .export fat_mkdir
 .export fat_rmdir
 
+;@module: fat32
 .autoimport
 
 ; delete a directory entry denoted by given path in A/X
@@ -43,6 +44,13 @@
 ;  A/X - pointer to the directory path
 ; out:
 ;  C=0 on success, C=1 and A=error code otherwise
+
+;@name: "fat_rmdir"
+;@in: A, "low byte of pointer to directory string"
+;@in: X, "high byte of pointer to directory string"
+;@out: C, "0 on success, 1 on error"
+;@out: A, "error code"
+;@desc: "delete a directory entry denoted by given path in A/X"
 fat_rmdir:
     jsr fat_opendir
     bcs @l_exit
@@ -63,6 +71,12 @@ fat_rmdir:
 ;   A/X - pointer to the directory name
 ; out:
 ;   C=0 on success (A=0), C=1 on error and A=error code otherwise
+;@name: "fat_rmdir"
+;@in: A, "low byte of pointer to directory string"
+;@in: X, "high byte of pointer to directory string"
+;@out: C, "0 on success, 1 on error"
+;@out: A, "error code"
+;@desc: "create directory denoted by given path in A/X"
 fat_mkdir:
     jsr fat_opendir
     bcs :+

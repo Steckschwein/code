@@ -19,7 +19,7 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
+;@module: fat32
 
 .ifdef DEBUG_FAT32_DIR ; debug switch for this module
 	debug_enabled=1
@@ -50,6 +50,12 @@
 ; out:
 ;	  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;	  X - index into fd_area of the opened directory
+;@name: "fat_opendir"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"
+;@out: X, "index into fd_area of the opened directory"
+;@desc: "open directory by given path starting from directory given as file descriptor"
 fat_opendir:
 		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
 ; in:
@@ -72,6 +78,12 @@ __fat_opendir:
 ;out:
 ;	C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
+;@name: "fat_opendir"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"
+;@out: X, "index into fd_area of the opened directory"
+;@desc: "change current directory"
 fat_chdir:
 		jsr fat_opendir
 		bcs @l_exit

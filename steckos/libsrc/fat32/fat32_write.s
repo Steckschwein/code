@@ -19,7 +19,7 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
+;@module: fat32
 
 .ifdef DEBUG_FAT32_WRITE ; debug switch for this module
   debug_enabled=1
@@ -53,6 +53,11 @@
 ;  X - offset into fd_area
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
+;@name: "fat_write_byte"
+;@in: A, "byte to write"
+;@in: X, "offset into fs area"
+;@out: C, "0 on success, 1 on error"
+;@desc: "write byte to file"
 fat_write_byte:
 
     _is_file_open   ; otherwise rts C=1 and A=#EINVAL
@@ -507,7 +512,7 @@ __fat_mark_cluster:
     sta (sd_blkptr), y
     rts
 
-; try to find a free cluster and store them in volumeId+VolumeID::cluster
+; try to find a freefrom cluster and store them in volumeId+VolumeID::cluster
 ; out:
 ;   sd_blkptr points to the free cluster position within the fat block
 ;   C=0 on success, Y=offset in block_fat of found cluster. lba_addr of the fat block where the found cluster resides
@@ -557,6 +562,11 @@ __fat_find_free_cluster:
 ;  A/X - pointer to string with the file path
 ; out:
 ;  Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;@name: "fat_unlink"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@out: Z, "1 on success (A=0), 0 and A=error code otherwise"
+;@desc: "unlink (delete) a file denoted by given path in A/X"
 fat_unlink:
     ldy #O_RDONLY
     jsr fat_fopen    ; try to open as regular file
