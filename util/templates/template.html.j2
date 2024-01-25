@@ -12,11 +12,11 @@
 {% for module in modules|sort()  %}
 <h3 id="{{ module }}">{{ module }}</h3>
   <ul>
-  {% for name in doc_struct[module] %}
+  {% for name in doc_struct[module]|sort() %}
   <li><a href="#{{ name }}">{{ name }}</a></li> 
   {% endfor %}
   </ul>
-  {% for proc in doc_struct[module] %}
+  {% for proc in doc_struct[module]|sort() %}
     <h4 id="{{ proc }}">{{ proc }}</h4>
     {% for procinfo in doc_struct[module][proc]|sort() %}
       <dl>
