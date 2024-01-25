@@ -3,8 +3,15 @@ import os
 import fnmatch
 from jinja2 import Environment, PackageLoader, select_autoescape
 import argparse
+import json
 
-
+def get_filelist(directory, filespec):
+    filelist = []
+    for root, dir, files in os.walk(directory):
+            for items in fnmatch.filter(files, filespec):
+                    filelist.append("%s/%s" % (root, items))
+    return (filelist)
+     
 def main():
     env = Environment(
         loader=PackageLoader("asmdoc"),
@@ -23,30 +30,32 @@ def main():
 
     args = parser.parse_args()
 
-    filelist = []
-    for root, dir, files in os.walk(args.directory):
-            for items in fnmatch.filter(files, args.filespec):
-                    filelist.append("%s/%s" % (root, items))
-        
-
     params = []
     doc_struct = {}
-    for filename in filelist:
+    for filename in get_filelist(args.directory, args.filespec):
         with open(filename, "r") as f:
             for line in f:
                 if not line.startswith(";@"):
                     continue
 
-                line = line.strip()
-                try:
-                    params.append(line.split("@")[1].split(':'))
-                except IndexError as e:
-                    print(e)
+                line = line.strip().replace(";@", '').partition(':')
+
+                params.append((line[0], line[2]))
+                
+                # print(line.split("@")[1].split(':'))
+                # try:
+                #     params.append(line.split("@")[1].split(':'))
+                # except IndexError as e:
+                #     print(e)
+
+    # print (json.dumps(params))
+    # return 
+
     module = None
     proc_name = None   
     for (name, value) in params:
         name = name.strip()
-        value = value.strip()
+        value = value.strip().replace('"', '')
 
         if name == 'module':
             module = value
@@ -57,24 +66,23 @@ def main():
                     doc_struct[module] = {}
             continue
         if name == 'name':
-            proc_name = value.replace('"', '')
+            proc_name = value
             doc_struct[module][proc_name] = {}
             continue
-
+        
+        
         try:
             doc_struct[module][proc_name][name].append(value)
         except KeyError:
             doc_struct[module][proc_name][name] = [value]
         
-    
 
     template = env.get_template("template.html.j2")
 
     with open(args.file, "w") as f:
-        f.write(template.render(
-            modules=doc_struct.keys(),
-            doc_struct=doc_struct
-        ))
+        f.write(template.render(doc_struct=doc_struct))
+
+    # print(json.dumps(doc_struct))
     # for module in doc_struct.keys():
     #     for proc_name in doc_struct[module].keys():
 
