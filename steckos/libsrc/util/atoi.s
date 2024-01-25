@@ -21,13 +21,18 @@
 ; SOFTWARE.
 
 .export atoi
-
+;@module: util
 
 .code
 ; atoi
 ; convert ascii digit to binary
 ; in:   A ASCII digit
 ; out:  A bin digit
+;@name: "atoi"
+;@in: A, "value to convert"
+;@out: A, "binary number"
+;@desc: "convert ascii digit to binary"
+
 atoi:
         cmp #'9'+1
         bcc @l1   ; 0-9?
