@@ -1,0 +1,34 @@
+<html>
+<body>
+<h1>ASMDOC</h1>
+
+<h2 id="modules">Modules</h2>
+<ul>
+{% for module in modules|sort() %}
+<li><a href="#{{ module }}">{{ module }}</a></li>
+{% endfor %}
+</ul>
+
+{% for module in modules|sort()  %}
+<h3 id="{{ module }}">{{ module }}</h3>
+  <ul>
+  {% for name in doc_struct[module] %}
+  <li><a href="#{{ name }}">{{ name }}</a></li> 
+  {% endfor %}
+  </ul>
+  {% for proc in doc_struct[module] %}
+    <h4 id="{{ proc }}">{{ proc }}</h4>
+    {% for procinfo in doc_struct[module][proc]|sort() %}
+      <dl>
+      {% for info in doc_struct[module][proc][procinfo] %}
+      <dt>{{procinfo}}</dt>
+      <dd>{{info}}</dt>
+      {% endfor %}
+      </dl>  
+    {% endfor %}
+{% endfor %}
+
+{% endfor %}
+
+</body>
+</html>
