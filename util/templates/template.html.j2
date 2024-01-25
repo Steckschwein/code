@@ -17,7 +17,7 @@ dl dt { font-weight: bold;}
 <li><a href="#{{ module }}">{{ module }}</a></li>
 {% endfor %}
 </ul>
-
+<hr />
 {% for module in doc_struct.keys()|sort()  %}
 <h2 id="{{ module }}">{{ module }}</h2>
   <ul>
@@ -48,6 +48,7 @@ dl dt { font-weight: bold;}
     </dl>
     <!-- {{ info }} -->
   {% endfor %}
+  <hr />
 {% endfor %}
 </body>
 </html>
