@@ -134,7 +134,6 @@ __fat_set_fd_filesize:
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 __fat_fopen_touch:
-
     debug "fop touch >"
     bcc :+
     phy
@@ -556,7 +555,7 @@ __fat_find_free_cluster:
 ; in:
 ;  A/X - pointer to string with the file path
 ; out:
-;  Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 fat_unlink:
     ldy #O_RDONLY
     jsr fat_fopen    ; try to open as regular file

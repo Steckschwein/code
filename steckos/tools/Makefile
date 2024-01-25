@@ -1,4 +1,4 @@
-CC65FLAGS=-I ../clib/include -I ../clib/ --cpu 65c02 # --standard c89 #-Or
+CC65FLAGS=-I ../clib/include -I ../clib/ --cpu 65c02 --debug-info # --standard c89 #-Or
 CA65FLAGS=-I ../asminc -I ../kernel --cpu 65c02
 LIBS=../lib/steckschwein.a
 CLIB=../clib/lib/steckschwein-clib.a
@@ -15,15 +15,15 @@ TOOLS+=\
   date.prg\
   crc7.prg \
   echo.prg\
-  fatbench.prg \
+  iobench.prg \
   keyboard.prg \
   nvram.prg\
   od.prg\
   setdate.prg \
   uname.prg \
   fsinfo.prg \
+	dirtest.prg \
 	stecklnk.prg
-
 
 .PHONY: all clean
 
@@ -34,6 +34,9 @@ clean:
 
 %.prg: %.c $(LIBS) $(CLIB)
 	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
+
+%.s: %.c $(LIBS) $(CLIB)
+	cc65 -t none $(CC65FLAGS) $< -o $@
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(@:.o=.asm)

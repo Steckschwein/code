@@ -33,14 +33,14 @@
 .autoimport
 
 .export char_out=krn_chrout
-.export fopen=krn_open
+.export fopen=krn_fopen
 .export fread_byte=krn_fread_byte
 .export fclose=krn_close
 
 appstart $1000
 .code
-;    lda #<filename
-;    ldx #>filename
+    ;    lda #<filename
+    ;    ldx #>filename
     jsr gfxui_on
 
     lda paramptr
@@ -52,20 +52,22 @@ appstart $1000
 
     jsr gfxui_off
 exit:
-        jmp (retvec)
+    jmp (retvec)
 
 io_error:
-        jsr gfxui_off
-        cmp #0
-        beq :+
-        jsr primm
+    jsr gfxui_off
+    cmp #0
+    beq :+
+    jsr primm
     .byte $0a,"Not a valid ppm file! Must be type P6 with 256x192px and 8bpp colors.",0
-        jmp exit
-:       jsr primm
-        .byte $0a,"i/o error, code: ",0
-        txa
-        jsr hexout
-        jmp exit
+    bra exit
+
+:   phx
+    jsr primm
+    .byte $0a,"i/o error: ",0
+    pla
+    jsr hexout_s
+    bra exit
 
 gfxui_on:
     jsr krn_textui_disable      ;disable textui
@@ -79,17 +81,17 @@ gfxui_on:
     rts
 
 gfxui_off:
-      sei
+    sei
 
-      pha
-      phx
-      vdp_sreg v_reg9_nt, v_reg9  ; 192px
-      jsr krn_textui_init
-      plx
-      pla
+    pha
+    phx
+    vdp_sreg v_reg9_nt, v_reg9  ; 192px
+    jsr krn_textui_init
+    plx
+    pla
 
-      cli
+    cli
 
-      rts
+    rts
 .bss
 irqsafe: .res 2

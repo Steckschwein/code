@@ -42,6 +42,7 @@
 
 .autoimport
 
+.export fat_open
 .export fat_fopen
 .export fat_fread_byte
 .export fat_fseek
@@ -165,7 +166,10 @@ __fat_fseek_cluster:
 fat_fread_byte:
 
     _is_file_open   ; otherwise rts C=1 and A=#EINVAL
-    _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
+
+    lda fd_area+F32_fd::Attr,x
+    and #DIR_Attr_Mask_Dir		; is directory
+    bne :+                    ; skip file size check
 
     _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
     lda #EOK
@@ -188,6 +192,33 @@ fat_fread_byte:
     debug16 "rd_ex", __volatile_ptr
     rts
 
+; open file/directory
+; in:
+;   A/X - pointer to zero terminated string with the file path
+;   Y - file mode constants - see fcntl.inc (cc65)
+;     O_RDONLY  = $01
+;     O_WRONLY  = $02
+;     O_RDWR    = $03
+;     O_CREAT   = $10
+;     O_TRUNC   = $20
+;     O_APPEND  = $40
+;     O_EXCL    = $80
+; out:
+;   X - index into fd_area of the opened file
+;   A - file attr as stored in FAT32 directory entry
+;   C=0 on success, C=1 and A=<error code> otherwise
+fat_open:
+          debug "fopen >"
+          phy                          ; save open flag
+          ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
+          jsr __fat_open_path
+          ply
+          bcs @l_exit
+          tya
+          sta fd_area+F32_fd::flags,x
+          lda fd_area+F32_fd::Attr,x
+@l_exit:  rts
+
 ; in:
 ;   A/X - pointer to zero terminated string with the file path
 ;   Y - file mode constants - see fcntl.inc (cc65)
@@ -202,46 +233,38 @@ fat_fread_byte:
 ;   X - index into fd_area of the opened file
 ;   C=0 on success, C=1 and A=<error code> otherwise
 fat_fopen:
-    debug "fopen >"
-    phy                          ; save open flag
-    ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
-    jsr __fat_open_path
-    ply
-    bcs @l_not_open
-    lda fd_area+F32_fd::Attr,x
-    and #DIR_Attr_Mask_Dir      ; file or directory?
-    bne @l_eisdir               ; dir opened
-    tya
-    sta fd_area+F32_fd::flags,x
-    rts
-@l_eisdir:
-    lda #EISDIR                 ; was directory, we must not free any fd
+          jsr fat_open
+          bcs @l_not_open
+          and #DIR_Attr_Mask_Dir      ; file or directory opened?
+          beq @l_exit
+          jsr __fat_free_fd           ; was directory, free fd
+          lda #EISDIR                 ; exit
 @l_not_open:
-    cmp #EOK                    ; C=1/A=EOK error from open was end of cluster (@see find_first/_next)
-    beq @l_add_dirent           ; go on with write check
-    cmp #ENOENT                 ; no such file or directory ?
-    bne @l_exit_err
-    clc                         ; C=0 to skip prepare block below
+          debug "ffopen >"
+          cmp #EOK                    ; C=1/A=EOK error from open was end of cluster (@see find_first/_next)
+          beq @l_add_dirent           ; go on with write check
+          cmp #ENOENT                 ; no such file or directory ?
+          bne @l_exit_err
 @l_add_dirent:
-    tya                         ; get open flags
-    and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)  ; check write access
-    beq @l_enoent               ; if so, we create a new file
-    jmp __fat_fopen_touch
+          tya                         ; get back open flags - from fat_open() above
+          and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)  ; check write access
+          beq @l_enoent
+          jmp __fat_fopen_touch       ; write access, we create a new file
 @l_enoent:
-    lda #ENOENT                 ; no "write" flags set, exit with ENOENT
+          lda #ENOENT                 ; no "write" flags set, exit with ENOENT
 @l_exit_err:
-    sec
-    rts
+          sec
+@l_exit:  rts
 
 
 fat_close_all:
-    ldx #(2*FD_Entry_Size)  ; skip first 2 entries, they're reserved for current and temp dir
+          ldx #(2*FD_Entry_Size)  ; skip first 2 entries, they're reserved for current dir and temp file
 __fat_init_fdarea:
-    stz fd_area,x
-    inx
-    cpx #(FD_Entry_Size*FD_Entries_Max)
-    bne __fat_init_fdarea
-    rts
+          stz fd_area,x
+          inx
+          cpx #(FD_Entry_Size*FD_Entries_Max)
+          bne __fat_init_fdarea
+          rts
 
 ; close file, update dir entry and free file descriptor quietly
 ; in:
