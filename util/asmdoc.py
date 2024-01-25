@@ -26,6 +26,7 @@ def main():
     parser.add_argument('-d', '--directory', help="source path to scan", default=".")
     parser.add_argument('-f', '--file', help="output file", default="asmdoc.html")
     parser.add_argument('--filespec', help="filespec to search files", default="*.s")
+    parser.add_argument('--format', help="output file format, html, md", default="html")
 
 
     args = parser.parse_args()
@@ -77,7 +78,7 @@ def main():
             doc_struct[module][proc_name][name] = [value]
         
 
-    template = env.get_template("template.html.j2")
+    template = env.get_template("template.%s.j2" % args.format)
 
     with open(args.file, "w") as f:
         f.write(template.render(doc_struct=doc_struct))
