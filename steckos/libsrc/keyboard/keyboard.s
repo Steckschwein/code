@@ -30,12 +30,17 @@
 .import spi_set_device
 
 .export getkey, fetchkey
+;@module: keyboard
 
 .code
 ; Select Keyboard controller on SPI, read one byte
 ;	in: -
 ;	out:
 ;		C=1 key was fetched and A=<key code>, C=0 otherwise and A=<error / status code> e.g. #EBUSY
+;@name: "fetchkey"
+;@out: A, "fetched key / error code"
+;@out:  C, "1 - key was fetched, 0 - nothing fetched"
+;@desc: "fetch byte from keyboard controller"
 fetchkey:
 		lda #spi_device_keyboard
 		jsr spi_select_device
@@ -58,6 +63,10 @@ fetchkey:
 ;	in: -
 ;	out:
 ;		C=1 key was pressed and A=<key code>, C=0 otherwise
+;@name: "getkey"
+;@out: A, "fetched key"
+;@out:  C, "1 - key was fetched, 0 - nothing fetched"
+;@desc: "get byte from keyboard buffer"
 getkey:
     lda key
     beq exit
