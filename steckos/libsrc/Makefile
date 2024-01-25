@@ -22,6 +22,8 @@ ASMUNIT_VERBOSE=true
 #DEBUG += -DFAT_DUMP_FAT_WRITE
 #DEBUG += -DDEBUG_SDCARD
 #DEBUG += -DDEBUG_SDCARD_READ_MULTIBLOCK
+# block layer
+# DEBUG += -DDEBUG_BLKLAYER
 # debug util
 #DEBUG += -DDEBUG_UTIL
 #DEBUG += -DDEBUG_DS1306
@@ -85,6 +87,7 @@ SRCDIRS +=  lcd
 SRCDIRS +=  debug
 SRCDIRS +=  xmodem
 SRCDIRS +=  edlib
+SRCDIRS += 	blklayer
 
 vpath %.s $(SRCDIRS)
 vpath %.c $(SRCDIRS)

@@ -25,8 +25,10 @@
 .include "kernel_jumptable.inc"
 .include "fat32.inc"
 .include "appstart.inc"
+
 .export char_out=krn_chrout
-.import primm
+
+.autoimport
 
 appstart $1000
 
@@ -76,7 +78,12 @@ next:
 	bra @loop
 
 rename:
-	SetVector filename, filenameptr
+  lda #<fat_dirname_mask
+  ldy #>fat_dirname_mask
+  jsr string_fat_mask ; build fat dir entry mask from user input
+
+  lda #<string_fat_mask_matcher
+  ldy #>string_fat_mask_matcher
 	ldx #FD_INDEX_CURRENT_DIR
 	jsr krn_find_first
 	bcc @go
@@ -95,11 +102,11 @@ rename:
 	bpl @l
 
 	; set write pointer accordingly and
-	SetVector block_data, write_blkptr
+	SetVector block_data, sd_blkptr
 
 	; just write back the block. lba_address still contains the right address
 	jsr krn_sd_write_block
-	bne wrerror
+	bcs wrerror
 	jmp (retvec)
 
 error:
@@ -117,3 +124,6 @@ filename:
 	.byte $00
 normalizedfilename:
 	.res 11
+
+.bss
+fat_dirname_mask: .res 8+3

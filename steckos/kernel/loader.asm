@@ -52,16 +52,11 @@ loop:
    sta (p_tgt),y
    iny
    bne loop
-   lda p_src+1
-   cmp #>payload_end
-   bne @skip
-   cpy #<payload_end
-   beq end
-@skip:
    inc p_src+1
    inc p_tgt+1
+   lda p_src+1
+   cmp #>payload_end
    bne loop
-end:
    ; jump to reset vector
    jmp ($fffc)
 

@@ -37,10 +37,8 @@
 
 .include "debug.inc"
 
-; external deps - block layer
 .autoimport
 
-.export __fat_read_cluster_block_and_select
 .export __fat_find_first
 .export __fat_find_first_mask
 .export __fat_find_next
@@ -54,28 +52,27 @@
 .export __fat_open_rootdir
 .export __fat_prepare_block_access
 .export __fat_prepare_block_access_read
+.export __fat_read_cluster_block_and_select
 .export __fat_read_block_data
 .export __fat_read_block_fat
-.export __fat_seek_next_dirent
-.export __fat_set_fd_attr_dirlba
 .export __fat_set_fd_dirlba
 .export __fat_set_fd_start_cluster
 .export __fat_set_fd_start_cluster_seek_pos
-.export __fat_save_lba_addr
-.export __fat_set_root_clus_lba_addr
+.export __fat_set_root_cluster_lba_addr
 .export __calc_lba_addr
+.export __calc_fat_lba_addr
 .export __fat_shift_lba_addr
 .export __inc_lba_address
 
 
 ; in:
-;  .X - file descriptor (index into fd_area) of the directory
+;   X - file descriptor (index into fd_area) of the directory
+;   A/Y - pointer to matcher strategy
 ; out:
 ;   C=0 on success and entry was found, C=1 and A=<error code> otherwise
 __fat_find_first_mask:
-    SetVector (volumeID+VolumeID::fat_dirname_mask), s_ptr2  ; build fat dir entry mask from user input
-    jsr string_fat_mask
-    SetVector dirname_mask_matcher, volumeID+VolumeID::fat_vec_matcher
+    sta volumeID+VolumeID::fat_vec_matcher+0
+    sty volumeID+VolumeID::fat_vec_matcher+1
 
 ; in:
 ;  .X - file descriptor (index into fd_area) of the directory to search
@@ -102,6 +99,7 @@ __ff_match:
 
     jsr __fat_matcher       ; call matcher strategy
     bcs __ff_found          ; if C=1 we had a match
+
 ; in:
 ;  X - directory fd index into fd_area
 ; out:
@@ -153,127 +151,171 @@ __fat_seek_next_dirent:
 ;   A/X - pointer to string with the file path
 ;   Y  - file descriptor of fd_area denoting the start directory. usually FD_INDEX_CURRENT_DIR is used
 ; out:
-;   X - index into fd_area of the opened file. if a directory was opened then X == FD_INDEX_TEMP_DIR
+;   X - index into fd_area of the opened file or directory
 ;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
 ;   dirptr - last visited directory entry
 ;   lba_addr - last visited directory block
+;
 ;   Note: regardless of return value, the dirptr points to the last visited directory entry and the corresponding lba_addr is set to the block where the dir entry resides.
-;      furthermore the filenameptr points to the last inspected path fragment of the given input path
+;
 __fat_open_path:
-    sta s_ptr1
-    stx s_ptr1+1              ; save path arg given in a/x
+        debug "fat_open_path >"
+        sta filenameptr
+        stx filenameptr+1         ; save path arg given in a/x
 
-    ldx #FD_INDEX_TEMP_DIR    ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
-    jsr __fat_clone_fd        ; Y is given as param
+        ldx #FD_INDEX_TEMP_FILE   ; we use the temp dir fd to not clobber the given directory (.Y), maybe we will run into an error
+        jsr __fat_clone_fd        ; Y is given as param
 
-    ldy #0                    ; trim wildcard at the beginning
-@l1:
-    lda (s_ptr1), y
-    cmp #' '+1
-    bcs @l2
-    iny
-    bne @l1
-    bra @l_err_einval    ; overflow, >255 chars
-@l2:
-    SetVector filename_buf, filenameptr  ; filenameptr to filename_buf
-@l3:  ;  parse input path fragments into filename_buf try to change dirs accordingly
-    ldx #0
-@l_parse_1:
-    lda (s_ptr1), y
-    beq @l_openfile
-    cmp #' '           ;TODO FIXME support file/dir name with spaces? it's beyond 8.3 file support
-    beq @l_openfile
-    cmp #'/'
-    beq @l_open_dir
-
-    sta filename_buf, x
-    iny
-    inx
-    cpx #8+1+3 + 1          ; buffer overflow ? - only 8.3 file support yet
-    bne @l_parse_1
-    bra @l_err_einval
-@l_open_dir:
-    cpx #0                  ; empty string, we came from '/' match
-    bne :+
-    ldx #FD_INDEX_TEMP_DIR  ; use fd of the temp directory
-    jsr __fat_open_rootdir
-    bcc @l_next
-
-:   stz filename_buf, x     ; \0 terminate the current path fragment
-    jsr __fat_open_file     ; return with X as offset into fd_area with new allocated file descriptor
-    bcs @l_exit
-@l_next:
-    iny
-    bne @l3                 ;overflow - <path argument> exceeds 255 chars
+        ldy #0                    ; trim whitespace at the beginning
+@trim:  lda (filenameptr), y
+        cmp #' '+1
+        bcs @l_parse_path
+        iny
+        bne @trim
+        bra @l_err_einval         ; overflow, >255 chars
+@l_parse_path:
+        ;  parse input path fragments into fat_filename try to change dirs accordingly
+        ldx #0
+@l_parse:
+        lda (filenameptr),y
+        beq @l_filename_end
+        iny
+        cmp #'.'
+        bne @l_char
+        cpx #0              ; starts with "." ?
+        bne @l_fill_name    ; no, then fill until end of fat name
+@l_dot:
+        sta volumeID+VolumeID::fat_filename,x
+        inx
+        lda (filenameptr),y
+        beq @l_open         ; open "." dir
+        iny
+        cmp #'.'
+        bne @l_char
+        cpx #1              ; starts with ".." ?
+        beq @l_dot          ; go on, verify no further chars
+        bra @l_err_einval   ; otherwise more then 2 "." at the beginning
+@l_fn:  lda #' '
+        sta volumeID+VolumeID::fat_filename,x
+        inx
+@l_fill_name:
+        cpx #.sizeof(F32DirEntry::Name)
+        debugdump "fat fill nm", volumeID+VolumeID::fat_filename
+        bcc @l_fn
+        bra @l_parse
+@l_char:
+        cmp #' '+1           ;TODO FIXME support file/dir name with spaces? it's beyond 8.3 file support
+        bcc @l_err_einval
+@l_skip:
+        cmp #'/'
+        beq @l_open_dir
+        cmp #'a' ; Is lowercase?
+        bcc :+
+        cmp #'z'+1
+        bcs :+
+        and #$DF
+:       sta volumeID+VolumeID::fat_filename,x
+        inx
+        cpx #8+3 +1             ; buffer overflow ? - only 8.3 file support yet
+        bne @l_parse
 @l_err_einval:
-    lda #EINVAL
-    sec
+        lda #EINVAL
+        sec
+        rts
+@l_filename_end:
+        cpx #0                  ; path end reached?
+        bne @l_open
+        jsr __fat_alloc_fd      ; alloc new fd
+        bcs :+
+        ldy #FD_INDEX_TEMP_FILE ; FD_INDEX_TEMP_FILE contains last opened path segment
+        jsr __fat_clone_fd      ; clone temp file fd to newly allocated fd (X)
+        clc
+:       rts
+@l_open_dir:
+        cpx #0                  ; we came from '/' match
+        beq @l_open_rootdir     ; X=0 empty string, open root dir
+@l_open:
+        jsr @l_open_file        ; return with X = FD_INDEX_TEMP_FILE
+        bcc @l_parse_path
+        rts
+@l_open_rootdir:
+        ldx #FD_INDEX_TEMP_FILE  ; use fd of the temp directory
+        jsr __fat_open_rootdir
+        bcc @l_parse_path
+        rts
+ :      lda #' '
+        sta volumeID+VolumeID::fat_filename,x
+        inx
+@l_open_file:
+        cpx #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)
+        bcc :-
+        debugdump "f fill ex", volumeID+VolumeID::fat_filename
+
+; in:
+;   volumeID+VolumeID::fat_filename set with fat compatible filename to open
+; out:
+;   X - index into fd_area of the opened file
+;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
+        phy
+        ldx #FD_INDEX_TEMP_FILE
+        lda #<__fat_match_name
+        ldy #>__fat_match_name
+        jsr __fat_find_first_mask
+        bcs @l_exit
+        ;save 32 bit cluster number from dir entry
+        ldy #F32DirEntry::FstClusHI +1
+        lda (dirptr),y
+        and #$0f      ; cluster nr must be 0x?ffffff7
+        sta fd_area + F32_fd::StartCluster + 3, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::StartCluster + 2, x
+
+        ldy #F32DirEntry::FstClusLO +1
+        lda (dirptr),y
+        sta fd_area + F32_fd::StartCluster + 1, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::StartCluster + 0, x
+
+        ldy #F32DirEntry::FileSize + 3
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 3, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 2, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 1, x
+        dey
+        lda (dirptr),y
+        sta fd_area + F32_fd::FileSize + 0, x
+
+        ldy #F32DirEntry::Attr
+        lda (dirptr),y
+        sta fd_area + F32_fd::Attr, x
+
+        jsr __fat_set_fd_dirlba
+        jsr __fat_set_fd_start_cluster_seek_pos
 @l_exit:
-    rts
-@l_openfile:
-    cpx #0                  ; empty string, then we're done
-    bne :+
-    clc
-    rts
-:   stz filename_buf, x      ;\0 terminate the current path fragment
+        ply
+        rts
 
-;in:
-;  filenameptr - ptr to the filename
-;out:
-;  X - index into fd_area of the opened file
-;  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
-__fat_open_file:
-    phy
-    ldx #FD_INDEX_TEMP_DIR
-    jsr __fat_find_first_mask
-    bcs @l_exit
-
-    ldy #F32DirEntry::Attr
-    lda (dirptr),y
-    and #DIR_Attr_Mask_Dir    ; directory?
-    bne :+                    ; yes, do not allocate a new fd, use index (X) which is already set to FD_INDEX_TEMP_DIR and just update the fd data
-    jsr __fat_alloc_fd        ; no, then regular file and we allocate a new fd for them
-    bcs @l_exit
-    ;save 32 bit cluster number from dir entry
-:   ldy #F32DirEntry::FstClusHI +1
-    lda (dirptr),y
-    and #$0f      ; cluster nr must be 0x?ffffff7
-    sta fd_area + F32_fd::StartCluster + 3, x
-    dey
-    lda (dirptr),y
-    sta fd_area + F32_fd::StartCluster + 2, x
-
-    ldy #F32DirEntry::FstClusLO +1
-    lda (dirptr),y
-    sta fd_area + F32_fd::StartCluster + 1, x
-    dey
-    lda (dirptr),y
-    sta fd_area + F32_fd::StartCluster + 0, x
-
-    ldy #F32DirEntry::FileSize + 3
-    lda (dirptr),y
-    sta fd_area + F32_fd::FileSize + 3, x
-    dey
-    lda (dirptr),y
-    sta fd_area + F32_fd::FileSize + 2, x
-    dey
-    lda (dirptr),y
-    sta fd_area + F32_fd::FileSize + 1, x
-    dey
-    lda (dirptr),y
-    sta fd_area + F32_fd::FileSize + 0, x
-
-    ldy #F32DirEntry::Attr
-    lda (dirptr),y
-    sta fd_area + F32_fd::Attr, x
-
-    jsr __fat_set_fd_dirlba
-
-    jsr __fat_set_fd_start_cluster_seek_pos
-    ; TODO use jsr __fat_set_fd_start_cluster if alloc_fd is used also for directories
+__fat_match_name:
+      debugdump "f match fn", volumeID+VolumeID::fat_filename
+      debugdumpptr "f match dp", dirptr
+      debugdirentry
+      ldy #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)-1
+@l0:  lda volumeID+VolumeID::fat_filename,y
+      cmp (dirptr),y
+      bne @l_exit
+      dey
+      bpl @l0
+      sec
+      rts
 @l_exit:
-    ply
-    rts
+      clc
+      rts
 
 ; clone source file descriptor with offset y into fd_area to target fd with x
 ; in:
@@ -282,13 +324,14 @@ __fat_open_file:
 __fat_clone_fd:
     phx
     lda #FD_Entry_Size
-    sta s_tmp1
 @l1:
+    pha
     lda fd_area, y
     sta fd_area, x
     inx
     iny
-    dec s_tmp1
+    pla
+    dea
     bne @l1
     plx
     rts
@@ -305,7 +348,7 @@ __fat_prepare_block_access_read:
 ;   A/Y pointer to data block for read/write access
 __fat_prepare_block_access:
 
-    bit fd_area+F32_fd::status,x      ; dirty?
+    bit fd_area+F32_fd::status,x              ; dirty from seek?
     debug "fp ba >"
     bvs @l_seek
 
@@ -401,15 +444,15 @@ __fat_open_rootdir:
     sta fd_area + F32_fd::Attr,x
     rts
 
+; init fd with all 0 - Note: start cluster is also set to 0 and not to volumeID::RootClus - the RootClus offset is compensated within calc_lba_addr
 ; in:
 ;  .X - with index to fd_area
 __fat_init_fd:
-    ; init fd with all 0 - Note: start cluster with root cluster nr 0 and not RootClus - the RootClus offset is compensated within calc_lba_addr (@see Note)
     phx
     lda #FD_Entry_Size
 :   stz fd_area,x
     inx
-    dec
+    dea
     bne :-
     plx
     lda #FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
@@ -454,36 +497,12 @@ __fat_read_block_fat:
     bra :+
 __fat_read_block_data:
     lda #>block_data
-:   sta read_blkptr+1
-    stz read_blkptr+0
+:   sta sd_blkptr+1
+    stz sd_blkptr+0
 
-    debug32 "fat_rb lba", lba_addr
-    debug32 "fat_rb lba last", volumeID+VolumeID::lba_addr_last
-    cmp32 volumeID+VolumeID::lba_addr_last, lba_addr, @l_read
-    clc
-    rts
-
-@l_read:
     phx
-;    debug16 "fat_rb_ptr", read_blkptr
     jsr read_block
-    dec read_blkptr+1    ; TODO FIXME clarification with TW - read_block increments block ptr highbyte - which is a sideeffect and should be avoided
     plx
-    cmp #EOK
-    beq __fat_save_lba_addr
-    sec
-    rts
-
-__fat_save_lba_addr:
-    lda lba_addr+0
-    sta volumeID+VolumeID::lba_addr_last+0
-    lda lba_addr+1
-    sta volumeID+VolumeID::lba_addr_last+1
-    lda lba_addr+2
-    sta volumeID+VolumeID::lba_addr_last+2
-    lda lba_addr+3
-    sta volumeID+VolumeID::lba_addr_last+3
-    clc ; success
     rts
 
     ; in:
@@ -494,7 +513,7 @@ __fat_save_lba_addr:
 __prepare_calc_lba_addr:
     jsr  __fat_is_cln_zero
     bne  l_scl
-__fat_set_root_clus_lba_addr:
+__fat_set_root_cluster_lba_addr:
     .repeat 4,i
       lda volumeID + VolumeID::BPB_RootClus + i
       sta lba_addr + i
@@ -560,8 +579,10 @@ __calc_lba_addr:
 ;  X - file descriptor
 ; out:
 ;  vol->LbaFat + (cluster_nr>>7); => div 128 -> 4 (32bit) * 128 cluster numbers per block (512 bytes)
-__calc_fat_lba_addr:
+__calc_fat_lba_addr_from_fd:
     jsr __prepare_calc_lba_addr
+
+__calc_fat_lba_addr:
     ;instead of shift right 7 times in a loop, we copy over the entire byte (same as >>8) - and simply shift left 1 bit (<<1)
     lda lba_addr+0
     asl
@@ -581,7 +602,7 @@ __calc_fat_lba_addr:
     ; add volumeID+VolumeID::lba_fat and lba_addr
     add32 volumeID+VolumeID::lba_fat, lba_addr, lba_addr
 
-    debug32 "fat_lba", lba_addr
+    debug32 "fat_lba <", lba_addr
     rts
 
 ; extract next cluster number from the 512 fat block buffer or reserve a new one
@@ -595,7 +616,6 @@ __fat_next_cln:
 
     bcc @l_select_next_cln  ; read access, just try to select
 
-@l_write:
     jsr @l_select_next_cln
     bcc @l_exit
    ;cmp #EOK   ; EOK means EOC (C=1/A=0)
@@ -609,36 +629,36 @@ __fat_next_cln:
   ;  bcc @l_exit
     bne @l_exit ; other error, then exit
     debug "f n cl w"
-    lda volumeID + VolumeID::LastClus + 0 ;
-    sta (read_blkptr), y
+    lda volumeID + VolumeID::cluster + 0 ;
+    sta (sd_blkptr), y
     iny
-    lda volumeID + VolumeID::LastClus + 1
-    sta (read_blkptr), y
+    lda volumeID + VolumeID::cluster + 1
+    sta (sd_blkptr), y
     iny
-    lda volumeID + VolumeID::LastClus + 2
-    sta (read_blkptr), y
+    lda volumeID + VolumeID::cluster + 2
+    sta (sd_blkptr), y
     iny
-    lda volumeID + VolumeID::LastClus + 3
-    sta (read_blkptr), y
+    lda volumeID + VolumeID::cluster + 3
+    sta (sd_blkptr), y
 
     jsr __fat_write_fat_blocks    ; write fat block with updated chain
     bcs @l_exit
 
 @l_select_next_cln:
     jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
-    debug16 "sel nxt (eoc)", read_blkptr
+    debug16 "sel nxt (eoc)", sd_blkptr
     bcs @l_exit
 
-    lda (read_blkptr), y
+    lda (sd_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+0, x
     iny
-    lda (read_blkptr), y
+    lda (sd_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+1, x
     iny
-    lda (read_blkptr), y
+    lda (sd_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+2, x
     iny
-    lda (read_blkptr), y
+    lda (sd_blkptr), y
     sta fd_area + F32_fd::CurrentCluster+3, x
 @l_exit:
     debug32 "fat next cln <", fd_area+(FD_Entry_Size*2)+F32_fd::CurrentCluster
@@ -669,11 +689,11 @@ __fat_set_fd_start_cluster:
 ; in:
 ;  X - file descriptor
 ; out:
-;  read_blkptr - setup to block_fat either low/high page
+;  sd_blkptr - setup to block_fat either low/high page
 ;  Y - offset within block_fat to clnr
 ;  C=0 on success, C=1 if the cluster number is the EOC and A=EOK or C=1 and A=<error code> otherwise
 __fat_read_cluster_block_and_select:
-    jsr __calc_fat_lba_addr
+    jsr __calc_fat_lba_addr_from_fd
     jsr __fat_read_block_fat
     bcs @l_exit
     jsr __fat_is_cln_zero          ; is root clnr? - which is all zero due to offset compensation, therefore we have to select the root cluster explicitly
@@ -685,7 +705,7 @@ __fat_read_cluster_block_and_select:
 @l_clnr_page:
     bit #$40                                ; clnr within 2nd page of the 512 byte block ?
     beq @l_clnr
-    inc read_blkptr+1            ; yes, set read_blkptr to 2nd page of block_fat
+    inc sd_blkptr+1            ; yes, set sd_blkptr to 2nd page of block_fat
 @l_clnr:
     asl                    ; block offset = clnr*4
     asl
@@ -695,20 +715,20 @@ __fat_read_cluster_block_and_select:
 ;  C=1 if clnr is EOC and A=EOK, C=0 otherwise
 @l_is_eoc:
     phy
-    lda (read_blkptr),y
+    lda (sd_blkptr),y
     and #$f8              ; 0x?FFFFFF8 - 0x?FFFFFFF - eoc compatible check
     cmp #$f8
     bcc @l_not_eoc
     iny
-    lda (read_blkptr),y
+    lda (sd_blkptr),y
     cmp #<(FAT_EOC>>8)
     bne @l_not_eoc
     iny
-    lda (read_blkptr),y
+    lda (sd_blkptr),y
     cmp #<(FAT_EOC>>16)
     bne @l_not_eoc
     iny
-    lda (read_blkptr),y
+    lda (sd_blkptr),y
     and #<(FAT_EOC>>24)
     cmp #<(FAT_EOC>>24)
     beq @l_eoc

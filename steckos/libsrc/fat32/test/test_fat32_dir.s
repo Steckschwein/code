@@ -3,20 +3,19 @@
 .autoimport
 
 ; mock defines
-.export read_block=mock_read_block
-.export write_block=mock_write_block
+.export dev_read_block=         mock_read_block
+.export read_block=             blklayer_read_block
+.export dev_write_block=        mock_write_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
+.export write_flush=            blklayer_flush
 .export rtc_systime_update=mock_rtc
-.export cluster_nr_matcher=mock_not_implemented
-.export fat_name_string=mock_not_implemented
-.export path_inverse=mock_not_implemented
-.export put_char=mock_not_implemented
 
 debug_enabled=1
 
 ; cluster search will find following clustes
 TEST_FILE_CL=$10
 TEST_FILE_CL2=$19
-
 
 .code
 
@@ -25,34 +24,50 @@ TEST_FILE_CL2=$19
 		lda #<test_file_name_1
 		ldx #>test_file_name_1
 		jsr fat_chdir
-		assertCarry 1
 		assertA ENOTDIR
+		assertCarry 1
 
 ; -------------------
 		setup "fat_chdir_enoent"
 		lda #<test_dir_name_enoent
 		ldx #>test_dir_name_enoent
 		jsr fat_chdir
-		assertCarry 1
 		assertA ENOENT
+		assertCarry 1
+
+; -------------------
+		setup "fat_chdir ."
+		lda #<test_dir_name_dot
+		ldx #>test_dir_name_dot
+		jsr fat_chdir
+		assertA EOK
+		assertCarry 0
+
+; -------------------
+		setup "fat_chdir .."
+		lda #<test_dir_name_dotdot
+		ldx #>test_dir_name_dotdot
+		jsr fat_chdir
+		assertA EOK
+		assertCarry 0
 
 ; -------------------
 		setup "fat_mkdir eexist"
-		lda #<test_dir_name_2
-		ldx #>test_dir_name_2
+		lda #<test_dir_name_eexist
+		ldx #>test_dir_name_eexist
 		jsr fat_mkdir
-		assertCarry 1
 		assertA EEXIST
+		assertCarry 1
 
 ; -------------------
 		setup "fat_mkdir"
 		lda #<test_dir_name_new
 		ldx #>test_dir_name_new
 		jsr fat_mkdir
-		assertCarry 0
 		assertA EOK
+		assertCarry 0
     assertDirEntry block_root_dir_00+14*DIR_Entry_Size
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size
       fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL
     assertDirEntry block_data_cl10_00+1*DIR_Entry_Size
@@ -63,7 +78,27 @@ TEST_FILE_CL2=$19
     assert32 $10, block_fsinfo+F32FSInfo::LastClus
 
 ; -------------------
+		setup "fat_mkdir numeric"
+		lda #<test_dir_name_numeric
+		ldx #>test_dir_name_numeric
+		jsr fat_mkdir
+		assertCarry 0
+		assertA EOK
+    assertDirEntry block_root_dir_00+14*DIR_Entry_Size
+      fat32_dir_entry_dir "12345678", "9AB", TEST_FILE_CL
+    assertDirEntry block_data_cl10_00+0*DIR_Entry_Size
+      fat32_dir_entry_dir ".       ", "   ", TEST_FILE_CL
+    assertDirEntry block_data_cl10_00+1*DIR_Entry_Size
+      fat32_dir_entry_dir "..      ", "   ", 0
+    assert8 0, block_data_cl10_00+2*DIR_Entry_Size
+
+    assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $10, block_fsinfo+F32FSInfo::LastClus
+
+
+; -------------------
 		setup "fat_mkdir end of block (4s/cl)"
+
     setDirEntry block_root_dir_00+14*DIR_Entry_Size
       fat32_dir_entry_dir "DIR0D   ", "   ", 0
 
@@ -73,7 +108,7 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 		assertA EOK
     assertDirEntry block_root_dir_00+15*DIR_Entry_Size  ; expect new dirent at end of 1st block
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL
     assert8 0, block_root_dir_01+0*DIR_Entry_Size  ; expect eod at begin of 2nd block
 
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size
@@ -111,7 +146,7 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 		assertA EOK
     assertDirEntry block_root_dir_03+15*DIR_Entry_Size
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL
     ; end of cluster, read to next dir entry end up in eoc
 
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size
@@ -148,7 +183,7 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 		assertA EOK
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL2
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL2
     assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
 
     assertDirEntry block_data_cl19_00+0*DIR_Entry_Size
@@ -182,7 +217,7 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 		assertA EOK
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
-      fat32_dir_entry_dir "DIRTEST ", "   ", TEST_FILE_CL2
+      fat32_dir_entry_dir "DIRTEST ", "EXT", TEST_FILE_CL2
     assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
 
     assertDirEntry block_data_cl19_00+0*DIR_Entry_Size
@@ -199,7 +234,7 @@ TEST_FILE_CL2=$19
     assert32 $fe, block_fsinfo+F32FSInfo::FreeClus
     assert32 TEST_FILE_CL2, block_fsinfo+F32FSInfo::LastClus
 
-		test_end
+test_end
 
 data_loader  ; define data loader
 data_writer ; define data writer
@@ -211,6 +246,7 @@ mock_rtc:
 mock_read_block:
     tax ; mock destruction of X
     debug32 "mock_read_block lba", lba_addr
+    debug16 "mock_read_block blkptr", sd_blkptr
 
 		load_block_if (LBA_BEGIN+0), block_root_dir_00, @ok ; load root cl block
     load_block_if (LBA_BEGIN+1), block_root_dir_01, @ok ;
@@ -225,13 +261,13 @@ mock_read_block:
 
     fail "read lba not handled!"
 @ok:
-    lda #EOK
+    clc
 		rts
 
 mock_write_block:
     tax ; mock destruction of X
     debug32 "mock_write_block lba", lba_addr
-    debug16 "mock_write_block wptr", write_blkptr
+    debug16 "mock_write_block blkptr", sd_blkptr
     store_block_if (LBA_BEGIN+0), block_root_dir_00, @ok
     store_block_if (LBA_BEGIN+1), block_root_dir_01, @ok
 
@@ -253,14 +289,16 @@ mock_write_block:
 
     fail "write lba not handled!"
 @ok:
-    lda #EOK
+    clc
     rts
 
 
 mock_not_implemented:
-		fail "mock!"
+    fail "unexpected mock call!"
 
 setUp:
+    jsr blklayer_init
+
     init_volume_id SEC_PER_CL
 		jsr __fat_init_fdarea
 		;setup fd0 (cwd) to root cluster
@@ -295,15 +333,18 @@ setUp:
 		rts
 
 .data
-	test_file_name_1: .asciiz "file01.dat"
-	test_dir_name_1: .asciiz "dir01"
-	test_dir_name_2: .asciiz "dir02"
-	test_dir_name_enoent: .asciiz "enoent"
-  test_dir_name_new: .asciiz "dirtest"
+	test_file_name_1:       .asciiz "file01.dat"
+	test_dir_name_1:        .asciiz "dir01"
+	test_dir_name_eexist:   .asciiz "dir02"
+	test_dir_name_enoent:   .asciiz "enoent"
+  test_dir_name_new:      .asciiz "dirtest.ext"
+  test_dir_name_numeric:  .asciiz "12345678.9ab"
+  test_dir_name_dot:      .asciiz "."
+  test_dir_name_dotdot:   .asciiz ".."
 
 block_root_dir_init_00:
-	fat32_dir_entry_dir 	"DIR00   ", "   ", 0
-	fat32_dir_entry_dir 	"DIR01   ", "   ", 0
+	fat32_dir_entry_dir 	".       ", "   ", 0
+	fat32_dir_entry_dir 	"..      ", "   ", 0
 	fat32_dir_entry_dir 	"DIR02   ", "   ", 0
 	fat32_dir_entry_dir 	"DIR03   ", "   ", 0
 	fat32_dir_entry_dir 	"DIR04   ", "   ", 0

@@ -64,49 +64,49 @@ fat_rmdir:
 ; out:
 ;   C=0 on success (A=0), C=1 on error and A=error code otherwise
 fat_mkdir:
-    jsr fat_opendir
-    bcs :+
-    lda #EEXIST                       ; C=0 - open success, file/dir exists already, exit
+        ldy #O_CREAT
+        jsr fat_opendir
+        bcs :+
+        lda #EEXIST                       ; C=0 - open success, file/dir exists already, exit
 @l_exit_err:
-    sec
-    rts
+        sec
+        rts
+:       cmp #ENOENT                       ; we expect 'no such file or directory' error
+        beq @l_add_dirent
+        cmp #EOK                          ; or error from open was end of cluster (@see find_first/_next)?
+        bne @l_exit_err                   ; exit on other error
 
-:   cmp #ENOENT                       ; we expect 'no such file or directory' error
-    beq @l_add_dirent
-    cmp #EOK                          ; or error from open was end of cluster (@see find_first/_next)?
-    bne @l_exit_err                   ; exit on other error
-
-    debug "fat mkd pba >"
-    sec                               ; if eoc we have to prepare block access first to write new dir entry
-    jsr __fat_prepare_block_access
+        debug "fat mkd pba >"
+        sec                               ; if eoc we have to prepare block access first to write new dir entry
+        jsr __fat_prepare_block_access
 @l_add_dirent:
-    debug16 "fat mkd >", dirptr
-    debug32 "fat mkd >", fd_area+FD_INDEX_TEMP_DIR+F32_fd::SeekPos
+        debug16 "fat mkd >", dirptr
+        debug32 "fat mkd >", fd_area+FD_INDEX_TEMP_FILE+F32_fd::SeekPos
 
-    jsr __fat_alloc_fd                ; allocate a dedicated fd for the new directory
-    bcs @l_exit
+        jsr __fat_alloc_fd                ; allocate a dedicated fd for the new directory
+        bcs @l_exit
 
-    jsr __fat_set_fd_dirlba           ; save the dir entry lba and offset to new allocated fd
+        jsr __fat_set_fd_dirlba           ; save the dir entry lba and offset to new allocated fd
 
-    jsr __fat_reserve_start_cluster   ; reserve a cluster for the new directory and store them in fd_area with X at F32_fd::StartCluster
-    bcs @l_exit_close
+        jsr __fat_reserve_start_cluster   ; reserve a cluster for the new directory and store them in fd_area with X at F32_fd::StartCluster
+        bcs @l_exit_close
 
-    lda #DIR_Attr_Mask_Dir            ; set type directory
-    sta fd_area+F32_fd::Attr,x
-    jsr __fat_add_direntry            ; create and write new directory entry
-    bcs @l_exit_close
+        lda #DIR_Attr_Mask_Dir            ; set type directory
+        sta fd_area+F32_fd::Attr,x
+        jsr __fat_add_direntry            ; create and write new directory entry
+        bcs @l_exit_close
 
-    jsr __fat_write_new_direntry      ; write the data of the newly created directory with prepared data from dirptr
+        jsr __fat_write_new_direntry      ; write the data of the newly created directory with prepared data from dirptr
 @l_exit_close:
-    jsr __fat_free_fd
+        jsr __fat_free_fd
 @l_exit:
-    debug "fat mkdir <"
-    rts
+        debug "fat mkdir <"
+        rts
 
-    ; in:
-    ;  X - file descriptor of directory
-    ; out:
-    ;  C=0 if directory is empty or contains <=2 entries ("." and ".."), C=1 otherwise
+; in:
+;   X - file descriptor of directory
+; out:
+;   C=0 if directory is empty or contains <=2 entries ("." and ".."), C=1 otherwise
 __fat_dir_isempty:
     phx
     jsr __fat_count_direntries
@@ -117,25 +117,37 @@ __fat_dir_isempty:
     plx
     rts
 
+
+; in:
+;  X - file descriptor of directory
+; out:
+;  A - number of directory entries (with "." and "..")
 __fat_count_direntries:
-    stz s_tmp3
-    SetVector @l_all, filenameptr
+    lda #<@match_always
+    ldy #>@match_always
     jsr __fat_find_first_mask    ; find within dir given in X
     bcs @l_exit
+    ldy #0
 @l_next:
     lda (dirptr)
     cmp #DIR_Entry_Deleted
     beq @l_find_next
-    inc  s_tmp3
+    iny
 @l_find_next:
+    phy
     jsr __fat_find_next
-    bcs  @l_next
+    ply
+    bcc @l_next
 @l_exit:
-    lda s_tmp3
+    tya
     debug "f_cnt_d"
     rts
-@l_all:
-    .asciiz "*.*"
+@match_always:
+    clc
+    lda (dirptr)
+    beq :+  ; deleted, C=0 no match
+    sec
+:   rts
 
 
 ; create the "." and ".." entry of the new directory
@@ -170,17 +182,17 @@ __fat_write_new_direntry:
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+0        ; 2nd entry ".."
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+1
 
-    ; use the fd of the temp dir (FD_INDEX_TEMP_DIR) - represents the last visited directory which must be the parent of this one ("..") - we can easily derrive the parent cluster. FTW!
-    debug32 "cd_sln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster
-    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
+    ; use the fd of the temp dir (FD_INDEX_TEMP_FILE) - represents the last visited directory which must be the parent of this one ("..") - we can easily derrive the parent cluster. FTW!
+    debug32 "cd_sln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster
+    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::CurrentCluster
 
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+0
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+0
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+0
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+1
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+1
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+1
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+2
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+2
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+0
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+3
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+3
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+1
 
     jsr __fat_set_fd_start_cluster
@@ -191,7 +203,7 @@ __fat_write_new_direntry:
     jsr __fat_erase_block_fat
 
     ldy volumeID+ VolumeID:: BPB_SecPerClusMask     ; Y = VolumeID::SecPerClus-1 - reamining blocks of the cluster with empty dir entries
-    beq @l_exit
+    beq @l_exit_ok
     debug32 "mkdr er", lba_addr
 @l_erase:
     jsr __inc_lba_address                           ; next block within cluster
@@ -199,7 +211,8 @@ __fat_write_new_direntry:
     bcs @l_exit
     dey
     bne @l_erase                                    ; all blocks written?
-
+@l_exit_ok:
+    tya ; Y=0 => A=EOK
 @l_exit:
     debug "fat_wr_nd"
     rts

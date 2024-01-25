@@ -29,8 +29,15 @@
 
 .autoimport
 
-.export read_block=sd_read_block
-.export write_block=sd_write_block
+; expose high level read_/write_block api
+.export read_block=             blklayer_read_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
+.export write_flush=            blklayer_flush
+; configure low level or device read_/write_block api
+.export dev_read_block=         sd_read_block
+.export dev_write_block=        sd_write_block
+
 .export char_out=ansi_chrout         ; account for page crossing
 
 .export crc16_lo=BUFFER_0
@@ -46,6 +53,8 @@
 nvram = $1000
 
 kern_init:
+
+    jsr blklayer_init
 
     SetVector user_isr_default, user_isr
     jsr textui_init0
@@ -177,19 +186,19 @@ do_irq:
     dec frame
     lda frame
     and #$0f            ; every 16 frames we try to update rtc, gives 320ms clock resolution
-    bne @exit
+    bne @spi_busy
     jsr rtc_systime_update     ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
     jsr __automount
 
-@exit:
+@spi_busy:
     lda via1portb
     and #spi_device_deselect
     cmp #spi_device_deselect
-    beq :+
-    lda #Medium_Red<<4|Medium_Red
+    beq @exit
+    lda #Medium_Red<<4|Medium_Red ; indicates busy spi
     jsr vdp_bgcolor
-    sys_delay_us 128
-:
+
+@exit:
     lda #Medium_Green<<4|Black
     jsr vdp_bgcolor
 
@@ -216,10 +225,10 @@ do_nmi:
     stx save_stat + save_status::XREG
     sty save_stat + save_status::YREG
 
-    tsx 
-    stx save_stat + save_status::SP 
+    tsx
+    stx save_stat + save_status::SP
 
-    pla 
+    pla
     sta save_stat + save_status::STATUS
     pla
     sta save_stat + save_status::PC
@@ -229,12 +238,12 @@ do_nmi:
 
     ldx #3
 :
-    lda slot0,x 
-    sta save_stat + save_status::SLOT0,x 
-    dex 
+    lda slot0,x
+    sta save_stat + save_status::SLOT0,x
+    dex
     bpl :-
 
-    jsr primm 
+    jsr primm
     .byte CODE_LF, "PC   S0 S1 S2 S3 AC XR YR SP NV-BDIZC", CODE_LF,0
 
     lda save_stat + save_status::PC+1
@@ -252,7 +261,7 @@ do_nmi:
 
     lda #' '
     jsr char_out
-    inx 
+    inx
     cpx #save_status::STATUS
     bne :-
 
@@ -266,29 +275,29 @@ do_nmi:
     bcs @set
     lda #'0'
     bra @skip
-@set:    
+@set:
     lda #'1'
 @skip:
     jsr char_out
-    inx 
+    inx
     cpx #8
     bne @next
 
     lda #CODE_LF
     jsr char_out
 
-    ldx save_stat + save_status::SP 
-    txs 
+    ldx save_stat + save_status::SP
+    txs
 
     lda save_stat + save_status::PC+1
-    pha 
+    pha
     lda save_stat + save_status::PC
-    pha 
+    pha
 
     lda save_stat + save_status::STATUS
-    pha 
-    
-    
+    pha
+
+
 
     lda save_stat + save_status::ACC
     ldx save_stat + save_status::XREG

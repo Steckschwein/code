@@ -116,19 +116,21 @@ PartType_FAT32_LBA    = $0c
 ; struct VolumeID like we keep it in memory
 .struct VolumeID
   BPB_SecPerClus      .byte
-  BPB_SecPerClusMask  .byte ; BPB_SecPerClus-1
-  BPB_SecPerClusCount .byte ; pre calculated counter from BPB_SecPerClus bit set - e.g. $00 => 0, $01 => 1, $02 => 2, $04 => 3 ...
+  BPB_SecPerClusMask  .byte   ; BPB_SecPerClus-1
+  BPB_SecPerClusCount .byte   ; pre calculated counter from BPB_SecPerClus bit set - e.g. $00 => 0, $01 => 1, $02 => 2, $04 => 3 ...
   BPB_RootClus        .dword
-  BPB_FATSz32         .dword ; sectors per fat
+  BPB_FATSz32         .dword  ; sectors per fat
   lba_data            .dword
-  lba_fat             .dword
-  lba_fat2            .dword ; mirror fat lba
+  lba_fat             .dword  ;
+  lba_fat2            .dword  ; mirror fat lba
   lba_fsinfo          .dword
-  LastClus            .dword ; mirror of fsinfo LastClus - used for free cluster search
-  lba_addr_last       .dword ; last lba_addr
-  temp_dword          .dword
-  fat_vec_matcher     .addr     ; (2 byte) jump vector
-  fat_dirname_mask    .byte 11  ; (11 byte, fat32 name and ext)
+  cluster             .dword  ; mirror of fsinfo LastClus - used for free cluster search
+  cluster_seek_cnt    .dword
+  fat_cluster_add     .byte     ; cluster reservation addend
+  fat_tmp_0           .byte     ; temp variable
+  fat_tmp_1           .byte     ; temp variable
+  fat_vec_matcher     .addr     ; 2 byte jump vector
+  fat_filename        .byte 8+3 ; 11 byte fat file name used in open to match given filename
 .endstruct
 
 ;--------------------------------------------------------------------------------------
@@ -159,7 +161,7 @@ PartType_FAT32_LBA    = $0c
    WrtTime         .word   ; hours as 0-23 bit 15-11, minutes as 0-59 bit 10-5, seconds/2 as 0-29 bit 4-0
    WrtDate         .word   ; year 0-119 (0=1980...127=2107) bit 15-9, month 1-12 bit 8-5, day 1-31 bit 4-0
    FstClusLO       .word
-   FileSize        .dword  ;
+   FileSize        .dword
 .endstruct
 
 DIR_Attr_Mask_ReadOnly  = 1<<0;
@@ -211,7 +213,7 @@ FD_STATUS_DIRTY       = 1<<6    ; if set dirty from seek() operation
 FD_Entry_Size         = .sizeof(F32_fd)
 FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size
 FD_INDEX_CURRENT_DIR  = 0*FD_Entry_Size     ; current dir always go to fd #0
-FD_INDEX_TEMP_DIR     = 1*FD_Entry_Size     ; temp dir always go to fd #1
+FD_INDEX_TEMP_FILE     = 1*FD_Entry_Size     ; temp dir always go to fd #1
 
 ; TODO: do we need these?
 ;BS_BootSig      = 38
@@ -223,11 +225,10 @@ FAT_EOC  = $0fffffff   ; end of cluster chain marker
 
 ; memory locations for fat32 driver
 volumeID              = $0300 ; address of VolumeID (@see rtc.inc)
-filename_buf          = volumeID + .sizeof(VolumeID) ; (13 byte, 8.3 + \0) file name buffer
 
-.assert filename_buf+13 <= fd_area, error, "fat metadata overflow!"
-fd_area               = filename_buf+13 ; File descriptor area until $0400
+fd_area               = volumeID+.sizeof(VolumeID) ; File descriptor area until $0400
 fd_area_end           = $0400
+.assert fd_area+3*FD_Entry_Size <= fd_area_end, error, "fat metadata overflow! at least one FD is needed."
 
 sd_blocksize          = $200  ; block size
 block_data            = BUFFER_0 ; $0400-$5ff

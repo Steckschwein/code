@@ -41,24 +41,24 @@ sd_write_multiblock:
       ; wait for command response.
       lda #$00
       jsr sd_wait
-      bne @exit
+      bcs @exit
 
 @block:
       lda #sd_data_token
       jsr spi_rw_byte
 
       ldy #$00
-@l2:  lda (write_blkptr),y
+@l2:  lda (sd_blkptr),y
       phy
       jsr spi_rw_byte
       ply
       iny
       bne @l2
 
-      inc write_blkptr+1
+      inc sd_blkptr+1
 
       ldy #$00
-@l3:  lda (write_blkptr),y
+@l3:  lda (sd_blkptr),y
       phy
       jsr spi_rw_byte
       ply
@@ -71,7 +71,7 @@ sd_write_multiblock:
       lda #$00
       jsr spi_rw_byte
 
-      inc write_blkptr+1
+      inc sd_blkptr+1
 
       dec blocks
       bne @block

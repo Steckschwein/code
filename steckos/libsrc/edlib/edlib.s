@@ -66,7 +66,7 @@ fm_file_arrdata = ptr7
 ;;// JCH_FM_INIT subroutine, this routine needs to be called to initialize the FM music
 ;;// ----------------------------------------------------------------------------------------------------------
 
-.zeropage
+.segment "ZEROPAGE_LIB": zeropage
     ptr2:  .res 2
     ptr3:  .res 2
     ptr4:  .res 2

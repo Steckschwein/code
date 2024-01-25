@@ -3,22 +3,22 @@
 .autoimport
 
 ; mock defines
-.export read_block=mock_read_block
-.export write_block=mock_write_block
+.export dev_read_block=         mock_read_block
+.export dev_write_block=        mock_write_block
+
+.export read_block=             blklayer_read_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
+.export write_flush=            blklayer_flush
+
 .export rtc_systime_update=mock_rtc
-.export cluster_nr_matcher=mock_not_implemented1
-.export fat_name_string=mock_not_implemented2
-.export path_inverse=mock_not_implemented3
-.export put_char=mock_not_implemented4
 
 debug_enabled=1
 
 .code
 
 ; -------------------
-
     setup "fat_write O_CREAT 1 byte 4s/cl"
-test_end
     ldy #O_CREAT
     lda #<test_file_name_1cl
     ldx #>test_file_name_1cl
@@ -33,11 +33,11 @@ test_end
 
     ; set file size and write ptr
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 1; 1 block must be written
-    SetVector write_target, write_blkptr
+    SetVector write_data_src, sd_blkptr
     jsr fat_write
     assertCarry 0
     assertX FD_Entry_Size*2  ; assert FD reserved
-    assert16 write_target+1*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
+    assert16 write_data_src+1*sd_blocksize, sd_blkptr ; expect write ptr updated accordingly
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_CREAT, FD_STATUS_FILE_OPEN
 
@@ -61,11 +61,11 @@ test_end
 
     ; set file size and write ptr
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (3*sd_blocksize+3) ; 4 blocks must be written
-    SetVector write_target, write_blkptr
+    SetVector write_data_src, sd_blkptr
     jsr fat_write
     assertCarry 0
     assertX FD_Entry_Size*2  ; assert FD reserved
-    assert16 write_target+4*sd_blocksize, write_blkptr ; expect write ptr updated accordingly
+    assert16 write_data_src+4*sd_blocksize, sd_blkptr ; expect write ptr updated accordingly
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (3*sd_blocksize+3), O_CREAT, FD_STATUS_FILE_OPEN
 
@@ -90,7 +90,7 @@ test_end
         fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
     ; size to 4 blocks + 3 byte ;) - we use 4 SEC_PER_CL - hence a new cluster must be reserved and the chain build
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (4 * sd_blocksize + 3) ; size is greater then 1 cl
-    SetVector write_target, write_blkptr
+    SetVector write_data_src, sd_blkptr
     jsr fat_write
     assertCarry 1 ; write failed due to blocks to write > sec/cl => expect write error C=1
     assertX FD_Entry_Size*2  ; assert FD
@@ -100,8 +100,7 @@ test_end
     assertDirEntry block_root_cl+4*DIR_Entry_Size
       fat32_dir_entry_file "TST_02CL", "TST", TEST_FILE_CL, (4 * sd_blocksize + 3); cluster reserved but no blocks are written, filesize is wrong here!!!
 
-    brk
-
+test_end
 
 data_loader  ; define data loader
 data_writer ; define data writer
@@ -139,61 +138,44 @@ mock_read_block:
       m_memset block_fat+$000, $ff, $40  ; simulate reserved, next free cluster is TEST_FILE_CL ($10)
       m_memset block_fat+$100, $ff, $40  ;
       m_memset block_fat+$40, $0, 4 ;
-      bra @dummy_read
+      bra @ok
 :
-    assert32 FAT_EOC, lba_addr ; fail
-
-@dummy_read:
-    inc read_blkptr+1 ; => same behaviour as real block read implementation
+    fail "read lba not handled!"
 @ok:
-    lda #EOK
+    clc
     rts
 
 mock_write_block:
     tax ; mock destruction of X
     debug32 "mock_write_block lba", lba_addr
-    debug16 "mock_write_block wptr", write_blkptr
+    debug16 "mock_write_block wptr", sd_blkptr
     store_block_if LBA_BEGIN, block_root_cl, @ok ; write root cl block
     store_block_if FS_INFO_LBA, block_fsinfo, @ok ;
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), block_data_00, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), block_data_01, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), block_data_02, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), block_data_03, @ok
-;    cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+0), @dummy_write
-;    cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+1), @dummy_write
-;    cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+2), @dummy_write
-;    cmp32_eq lba_addr, (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL)+3), @dummy_write
-;    cmp32_eq lba_addr, FAT_LBA, @dummy_write
-;    cmp32_eq lba_addr, FAT2_LBA, @dummy_write
+
     store_block_if FAT_LBA, block_fat_0, @ok
     store_block_if FAT2_LBA, block_fat2_0, @ok
 
     fail "mock write invalid lba called!" ; fail if we end up here !!!
-@dummy_write:
-    debug "dummy write"
-    inc write_blkptr+1 ; => same behaviour as real block read implementation
 @ok:
-    lda #EOK
+    clc
     rts
 
 
-mock_not_implemented1:
-    fail "mock cluster_nr_matcher called!"
-mock_not_implemented2:
-    fail "mock fat_name_string called!"
-mock_not_implemented3:
-    fail "mock path_inverse called!"
-mock_not_implemented4:
-    fail "mock put_char called!"
+mock_not_implemented:
+    fail "unexpected mock call!"
 
 setUp:
+  jsr blklayer_init
   jsr __fat_init_fdarea
   init_volume_id SEC_PER_CL ;4s/cl
 
-  ;setup fd0 as root cluster
-  set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-  set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
-  set8 fd_area+(0*FD_Entry_Size)+F32_fd::flags, 0
+  ;setup fd0 (cwd) to root cluster
+  ldx #FD_INDEX_CURRENT_DIR
+  jsr __fat_open_rootdir
 
   ;setup fd1 as test cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
@@ -242,4 +224,5 @@ block_data_07:  .res sd_blocksize
 block_data_08:  .res sd_blocksize
 block_data_09:  .res sd_blocksize
 block_data_0a:  .res sd_blocksize
-write_target:
+
+write_data_src:

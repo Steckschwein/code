@@ -14,7 +14,7 @@
 .import hexout, hexout_s
 .import xmodem_rcvbuffer
 
-.zeropage
+.segment "ZEROPAGE_LIB": zeropage
   ptr:  .res 2    ; data pointer (two byte variable)
   ptrh  = ptr+1   ;   "    "
   bflag:  .res 1 ; block flag

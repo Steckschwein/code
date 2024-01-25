@@ -1,16 +1,16 @@
 #!/bin/bash
 size=128M
-
 img="steckos.img"
-
 TARGET=::/
+
+version=$(git rev-parse --short HEAD)
 
 if [ -e ${img} ] ; then
   rm ${img}
 fi
 
 truncate -s $size ${img}
-mkfs -t fat -F 32 -s 2  ${img} -n "STECKOS 2_0"
+mkfs -t fat -F 32 -s 2  ${img} -n ${version^^}
 
 
 mmd -i ${img} ::/steckos ::/demo ::/games ::/progs ::/basic
@@ -32,5 +32,5 @@ mcopy -i ${img} $PROGS $TARGET/progs/
 mcopy -i ${img} progs/ehbasic_65c02/demo/* $TARGET/basic
 
 if [ -d "../local" ] ; then
-	mcopy -snvo -i ${img} ../local/* $TARGET/
+	mcopy -snvom -i ${img} ../local/* $TARGET/
 fi

@@ -15,9 +15,6 @@
 .exportzp Itempl, Itemph
 
 .export char_out=krn_chrout
-.export read_block=krn_sd_read_block
-.export write_block=krn_sd_write_block
-
 
 .autoimport
 
@@ -336,6 +333,9 @@ Rbyte3          = Rbyte4+3   ; least significant PRNG byte
 Decss           = Rbyte3+1   ; number to decimal string start
 Decssp1         = Decss+1    ; number to decimal string start
 ZPLastByte      = Decss+17   ; last declared byte in Page Zero
+
+; .out .sprintf("Last ZP Address: %x", ZPLastByte)
+.assert ZPLastByte < $d0, error, "ZP usage clash with kernel"
 
 ; Note: C02BIOS uses Page Zero locations from $E0 - $FF
 ; C02Monitor uses Page Zero locations from $B0 - $DF
@@ -7613,7 +7613,7 @@ LAB_2D05
 
 openfile:
       jsr termstrparam
-      jsr krn_open
+      jsr krn_fopen
       bcs io_error
       stx _fd
       rts
@@ -7652,11 +7652,11 @@ LAB_SAVE:
       ldx _fd
       jsr krn_close
 
+vec_restore:
       jsr init_iovectors
 
       SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
       jmp     LAB_1319         ; cleanup and Return to BASIC
-
 
 LAB_LOAD:
       ldy #O_RDONLY
@@ -7671,28 +7671,26 @@ LAB_LOAD:
       sta VEC_OUT
       lda #>outvec_dummy
       sta VEC_OUT+1
-      JMP   LAB_1319 ; reset and return
+      JMP LAB_1319 ; reset and return
 
 fread_wrapper:
       phx
       phy
       ldx _fd
+      beq vec_restore
       jsr krn_fread_byte
+      ply
+      plx
       bcs @eof
       cmp #KEY_LF ; replace with "basic end of line"
       bne :+
-      lda #KEY_CR
-:     ply
-      plx
-      cmp #0
+@cr:  lda #KEY_CR
+:     cmp #0
       rts
 @eof:
       jsr krn_close
-
-      jsr init_iovectors
-
-      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-      jmp     LAB_1319         ; cleanup and Return to BASIC
+      stz _fd
+      bra @cr
 
 init_iovectors:
       lda #<krn_chrout
@@ -7733,9 +7731,14 @@ LAB_DIR:
     SetVector pattern, filenameptr
 @skip:
 
-
     jsr LAB_CRLF
 
+    lda #<_fat_dirname_mask
+    ldy #>_fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
     bcs @end
@@ -7869,7 +7872,7 @@ termstrparam:
     stx str_pl
     sty str_ph
 
-    ; overwrite last " with 0 to make it compatible with krn_open
+    ; overwrite last " with 0 to make it compatible with krn_fopen
     tay
     lda #0
     sta (str_pl),y
@@ -8826,6 +8829,8 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
 exit:		jmp (retvec)
+
 .bss
-_fd:        .res 1
+_fd:                .res 1
+_fat_dirname_mask:  .res 8+3
  .END

@@ -3,13 +3,14 @@
 .autoimport
 
 ; mock defines
-.export read_block=mock_read_block
-.export write_block=mock_write_block
+.export dev_read_block=         mock_read_block
+.export read_block=             blklayer_read_block
+.export dev_write_block=        mock_write_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
+.export write_flush=            blklayer_flush
+
 .export rtc_systime_update=mock_rtc
-.export cluster_nr_matcher=mock_not_implemented1
-.export fat_name_string=mock_not_implemented2
-.export path_inverse=mock_not_implemented3
-.export put_char=mock_not_implemented4
 
 debug_enabled=1
 
@@ -18,7 +19,7 @@ TEST_FILE_CL10=$10
 TEST_FILE_CL19=$19
 
 .code
-;    jmp single_test
+    jmp single_test
 ; -------------------
     setup "fat_fopen O_RDWR EISDIR"
     ldy #O_RDWR
@@ -80,7 +81,7 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
-    assertA EOK
+    assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertDirEntry (block_root_dir_00+(4*DIR_Entry_Size)) ;expect 4th entry created
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
@@ -91,7 +92,6 @@ TEST_FILE_CL19=$19
 
 ; -------------------
 		setup "fat_open end of last block in cl (4s/cl)" ; expect new dirent at the end of last block in cluster
-
     ; fill directory blocks
     .repeat 16, i
       setDirEntry block_root_dir_00+i*DIR_Entry_Size
@@ -111,7 +111,6 @@ TEST_FILE_CL19=$19
 		ldx #>test_file_name_1
 		jsr fat_fopen
 		assertC 0
-		assertA EOK
     assertDirEntry block_root_dir_03+15*DIR_Entry_Size
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -142,7 +141,6 @@ TEST_FILE_CL19=$19
 		ldx #>test_file_name_1
 		jsr fat_fopen
 		assertC 0
-		assertA EOK
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
@@ -172,7 +170,6 @@ TEST_FILE_CL19=$19
 		ldx #>test_file_name_1
 		jsr fat_fopen
 		assertC 0
-		assertA EOK
     assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
       fat32_dir_entry_file "TEST01  ", "TST", 0, 0    ; 0 - no cluster reserved yet, file length 0
     assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
@@ -187,18 +184,45 @@ TEST_FILE_CL19=$19
 
 
 ; -------------------
-    setup "fat_write_byte 1 byte 4s/cl";
-    ldy #O_RDWR
+    setup "fat_write_byte 1 byte 4s/cl try open";
+    ldy #O_RDONLY
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
-    assertA EOK
+    assertC 1
+
+    ldy #O_WRONLY
+    lda #<test_file_name_1
+    ldx #>test_file_name_1
+    jsr fat_fopen
+    assertC 0
+    assertX FD_Entry_Size*2  ; assert FD preserved
+
+    lda #'X'
+    jsr fat_write_byte
+    assertC 0
+    lda #'Y'
+    jsr fat_write_byte
+    assertC 0
+    lda #'Z'
+    jsr fat_write_byte
+    assertC 0
+
+    jsr fat_close
+    assertC 0
+
+; -------------------
+    setup "fat_write_byte 1 byte 4s/cl";
+    ldy #O_WRONLY
+    lda #<test_file_name_1
+    ldx #>test_file_name_1
+    jsr fat_fopen
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertDirEntry block_root_dir_00+4*DIR_Entry_Size
         fat32_dir_entry_file "TEST01  ", "TST", 0, 0  ; no cluster reserved yet
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
+        fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_WRONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
 
     ldy #$31
     lda #'F'
@@ -207,7 +231,7 @@ TEST_FILE_CL19=$19
     assertC 0
     assertY $31 ; preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
-        fd_entry_file TEST_FILE_CL10, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_RDWR, FD_STATUS_FILE_OPEN
+        fd_entry_file TEST_FILE_CL10, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_WRONLY, FD_STATUS_FILE_OPEN
 
     jsr fat_close
 
@@ -237,7 +261,6 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
 
@@ -302,7 +325,6 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_1
     ldx #>test_file_name_1
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
 
@@ -411,7 +433,6 @@ TEST_FILE_CL19=$19
     lda #<test_file_name_2
     ldx #>test_file_name_2
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -470,16 +491,16 @@ TEST_FILE_CL19=$19
 
     jsr fat_close
 
+    assert32 $fe, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $19, block_fsinfo+F32FSInfo::LastClus
 
 ; -------------------
-single_test:
     setup "fat_write seek 2048+512 4s/cl";
 
     ldy #O_RDWR
     lda #<test_file_name_2
     ldx #>test_file_name_2
     jsr fat_fopen
-    assertA EOK
     assertC 0
     assertX FD_Entry_Size*2  ; assert FD preserved
     assertFdEntry fd_area + (FD_Entry_Size*2)
@@ -538,7 +559,73 @@ single_test:
 
     jsr fat_close
 
-    test_end
+    assert32 $fe, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $19, block_fsinfo+F32FSInfo::LastClus
+
+
+; -------------------
+single_test:
+		setup "fat_open test find free cluster(4s/cl)"
+
+    ldy #0
+    lda #$ff
+:   sta block_fat_1+$000,y
+    sta block_fat_1+$100,y
+    sta block_fat_2+$000,y
+    sta block_fat_2+$100,y
+    sta block_fat_3+$000,y
+    sta block_fat_3+$100,y
+    sta block_fat_4+$000,y
+    sta block_fat_4+$100,y
+    iny
+    bne :-
+    set32 block_fat_1+($00<<2), 0 ; as free
+    set32 block_fat_1+($23<<2), 0 ; as free
+    set32 block_fat_1+($24<<2), 0 ; as free
+    set32 block_fat_1+($25<<2), 0 ; as free
+    set32 block_fat_2+($11<<2), 0 ; as free
+    set32 block_fat_2+($3f<<2), 0 ; as free
+    set32 block_fat_2+($7f<<2), 0 ; as free
+    set32 block_fat_3+($00<<2), 0 ; as free
+    set32 block_fat_3+($41<<2), 0 ; as free
+    set32 block_fat_4+($50<<2), 0 ; as free
+
+    ldy #O_RDWR
+    lda #<test_file_name_2
+    ldx #>test_file_name_2
+    jsr fat_fopen
+    assertC 0
+    assertX FD_Entry_Size*2  ; assert FD preserved
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+        fd_entry_file_seek 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0
+    assertDirEntry block_root_dir_00+$80
+      fat32_dir_entry_file "TEST02  ", "TST", 0, 0 ; no cluster reserved yet
+
+    set32 test_seek+Seek::Offset, (11*4*$200+1025) ; 22k file size - 4s/cl - requires at least 11 cluster fat blocks
+    lda #<test_seek
+    ldy #>test_seek
+		jsr fat_fseek
+		assertC 0
+		assertX FD_Entry_Size*2 ; assert FD preserved
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+      fd_entry_file_all 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_RDWR, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, (11*4*$200+1025), 0
+
+    lda #'X'
+    jsr fat_write_byte
+    assertC 0
+    assertX FD_Entry_Size*2  ; assert FD preserved
+    assertFdEntry fd_area + (FD_Entry_Size*2)
+        fd_entry_file_all $250, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (11*4*$200+1025+1), O_RDWR, FD_STATUS_FILE_OPEN, (11*4*$200+1025+1), TEST_FILE_CL10
+
+    jsr fat_close
+
+    assertDirEntry block_root_dir_00+$80
+      fat32_dir_entry_file "TEST02  ", "TST", TEST_FILE_CL10,  (11*4*$200+1025+1)
+
+    assert32 $f4, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $250, block_fsinfo+F32FSInfo::LastClus
+
+test_end
 
 
 data_loader  ; define data loader
@@ -556,6 +643,7 @@ test_seek:
 mock_read_block:
     tax ; mock X destruction
     debug32 "mock_read_block lba", lba_addr
+    debug32 "mock_read_block ptr", sd_blkptr
 		load_block_if (LBA_BEGIN+0), block_root_dir_00, @ok ; load root cl block
     load_block_if (LBA_BEGIN+1), block_root_dir_01, @ok ;
     load_block_if (LBA_BEGIN+2), block_root_dir_02, @ok ;
@@ -565,6 +653,11 @@ mock_read_block:
     load_block_if (FAT_LBA+(TEST_FILE_CL10>>7)), block_fat_0, @ok
     load_block_if (FAT2_LBA+(TEST_FILE_CL10>>7)), block_fat2_0, @ok
 
+    load_block_if (FAT_LBA+($080>>7)), block_fat_1, @ok
+    load_block_if (FAT_LBA+($100>>7)), block_fat_2, @ok
+    load_block_if (FAT_LBA+($180>>7)), block_fat_3, @ok
+    load_block_if (FAT_LBA+($200>>7)), block_fat_4, @ok
+
 		load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + TEST_FILE_CL10 * SEC_PER_CL + 0), block_data_cl10_00 , @ok
 		load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + TEST_FILE_CL10 * SEC_PER_CL + 1), block_data_cl10_01 , @ok
 		load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + TEST_FILE_CL10 * SEC_PER_CL + 2), block_data_cl10_02 , @ok
@@ -573,18 +666,19 @@ mock_read_block:
     load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + TEST_FILE_CL19 * SEC_PER_CL + 0), block_data_cl19_00, @ok
     load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + TEST_FILE_CL19 * SEC_PER_CL + 1), block_data_cl19_01, @ok
 
-    fail "read lba not handled!"
+;    load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + $250 * SEC_PER_CL + 0), block_data_cl250_00, @ok
+ ;   load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + $250 * SEC_PER_CL + 1), block_data_cl250_01, @ok
+    load_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + $250 * SEC_PER_CL + 2), block_data_cl250_02, @ok
 
-@exit_inc:
-    inc read_blkptr+1 ; => same behaviour as real block read implementation
+    fail "read lba not handled!"
 @ok:
-    lda #EOK
+    clc
     rts
 
 mock_write_block:
     tax ; mock destruction of X
     debug32 "mock_write_block lba", lba_addr
-    debug16 "mock_write_block wptr", write_blkptr
+    debug16 "mock_write_block ptr", sd_blkptr
     store_block_if (LBA_BEGIN+0), block_root_dir_00, @ok
     store_block_if (LBA_BEGIN+1), block_root_dir_01, @ok
     store_block_if (LBA_BEGIN+3), block_root_dir_03, @ok
@@ -601,12 +695,24 @@ mock_write_block:
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL19)+2), block_data_cl19_02, @ok
     store_block_if (LBA_BEGIN - (ROOT_CL * SEC_PER_CL) + (SEC_PER_CL * TEST_FILE_CL19)+3), block_data_cl19_03, @ok
 
+    store_block_if (LBA_BEGIN - ROOT_CL * SEC_PER_CL + $250 * SEC_PER_CL + 2), block_data_cl250_02, @ok
+
     store_block_if (FAT_LBA+(TEST_FILE_CL10>>7)), block_fat_0, @ok
     store_block_if (FAT2_LBA+(TEST_FILE_CL10>>7)), block_fat2_0, @ok
 
+    store_block_if (FAT_LBA+($080>>7)), block_fat_1, @ok
+    store_block_if (FAT_LBA+($100>>7)), block_fat_2, @ok
+    store_block_if (FAT_LBA+($180>>7)), block_fat_3, @ok
+    store_block_if (FAT_LBA+($200>>7)), block_fat_4, @ok
+
+    store_block_if (FAT2_LBA+($080>>7)), block_fat_1, @ok
+    store_block_if (FAT2_LBA+($100>>7)), block_fat_2, @ok
+    store_block_if (FAT2_LBA+($180>>7)), block_fat_3, @ok
+    store_block_if (FAT2_LBA+($200>>7)), block_fat_4, @ok
+
     fail "write lba not handled!"
 @ok:
-    lda #EOK
+    clc
     rts
 
 mock_not_implemented1:
@@ -619,6 +725,7 @@ mock_not_implemented4:
     fail "mock put_char called!"
 
 setUp:
+  jsr blklayer_init
   jsr __fat_init_fdarea
   init_volume_id SEC_PER_CL
 
@@ -673,9 +780,14 @@ _rtc_ts:
     rts
 
 .bss
-block_fsinfo:   .res sd_blocksize
+block_fsinfo:         .res sd_blocksize
 
 block_fat_0:    .res sd_blocksize
+block_fat_1:    .res sd_blocksize
+block_fat_2:    .res sd_blocksize
+block_fat_3:    .res sd_blocksize
+block_fat_4:    .res sd_blocksize
+
 block_fat2_0:   .res sd_blocksize
 
 block_root_dir_00:  .res sd_blocksize
@@ -692,3 +804,7 @@ block_data_cl19_00:  .res sd_blocksize
 block_data_cl19_01:  .res sd_blocksize
 block_data_cl19_02:  .res sd_blocksize
 block_data_cl19_03:  .res sd_blocksize
+
+block_data_cl250_00:      .res sd_blocksize
+block_data_cl250_01:      .res sd_blocksize
+block_data_cl250_02:      .res sd_blocksize

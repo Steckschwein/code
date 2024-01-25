@@ -2,16 +2,8 @@
 
 .include "fat32.inc"
 
-.import dir_show_entry, pagecnt, entries_per_page, dir_attrib_mask
-.import dword2asc
-.import char_out
-.import print_filesize,print_fat_date,print_fat_time, print_filename
+.autoimport
 .importzp dirptr
-.zeropage
-tmp1:	.res 1
-tmp2:	.res 1
-tmp3:	.res 1
-.exportzp tmp1, tmp2, tmp3
 .code
     lda #<direntry
     sta dirptr
@@ -20,15 +12,16 @@ tmp3:	.res 1
 
     test "fat_entry_filesize"
 
-
     ldy #42
 
     jsr print_filesize
-    assertOut "  246543"
+    assertOut ">64k "
     assertY 42
     assert16 direntry, dirptr
 
     test "fat_entry_wrtdate"
+
+    ldy #F32DirEntry::WrtDate
 
     jsr print_fat_date
     assertY F32DirEntry::WrtDate
@@ -36,6 +29,8 @@ tmp3:	.res 1
 
     test "fat_entry_wrttime"
 
+    ldy #F32DirEntry::WrtTime+1
+    
     jsr print_fat_time
     assertOut "00:0"
 
@@ -43,7 +38,7 @@ tmp3:	.res 1
     test "fat_entry_filename"
 
     jsr print_filename
-    assertOut "FOOBAR  BAZ"
+    assertOut "foobar.baz "
 
 
 	brk

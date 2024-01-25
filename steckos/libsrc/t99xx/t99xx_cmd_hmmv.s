@@ -52,13 +52,12 @@ vdp_cmd_hmmv:
 	iny
 	cpy #08
 	bne @loop
-	
+
 	pla 					; color (r#44)
-	sta a_vregi				
+	sta a_vregi
 
 	vdp_wait_s 2
-	lda #0
-	sta a_vregi
+	stz a_vregi
 
 	vdp_wait_s 2
 	lda #v_cmd_hmmv

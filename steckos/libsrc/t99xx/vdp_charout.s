@@ -27,8 +27,9 @@
 .include "keyboard.inc"
 .include "zeropage.inc"
 
-.importzp tmp1,tmp2
-.importzp ptr1,ptr2
+.zeropage
+  v_rd: .res 2
+  v_wr: .res 2
 
 .code
 
@@ -45,36 +46,36 @@ ROWS=23
 _vdp_scroll_up:
       phx
 
-      SetVector  (ADDRESS_TEXT_SCREEN+COLS), ptr1            ; +COLS - offset second row
-      SetVector  (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr2  ; offset first row as "write adress"
+      SetVector  (ADDRESS_TEXT_SCREEN+COLS), v_rd            ; +COLS - offset second row
+      SetVector  (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), v_wr  ; offset first row as "write adress"
 @l1:
 @l2:
-      lda  ptr1+0  ; 3cl
+      lda  v_rd+0  ; 3cl
       sta  a_vreg
       nop
-      lda  ptr1+1  ; 3cl
+      lda  v_rd+1  ; 3cl
       sta  a_vreg
       vdp_wait_l    ; wait 2µs, 8Mhz = 16cl => 8 nop
       ldx  a_vram  ;
       vdp_wait_l
 
-      lda  ptr2+0  ; 3cl
+      lda  v_wr+0  ; 3cl
       sta  a_vreg
       vdp_wait_l
-      lda  ptr2+1  ; 3cl
+      lda  v_wr+1  ; 3cl
       sta a_vreg
       vdp_wait_l
       stx  a_vram
-      inc  ptr1+0  ; 5cl
+      inc  v_rd+0  ; 5cl
       bne  @l3    ; 3cl
-      inc  ptr1+1
-      lda  ptr1+1
+      inc  v_rd+1
+      lda  v_rd+1
       cmp  #>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))  ;screen ram end reached?
       beq  @l4
 @l3:
-      inc  ptr2+0  ; 5cl
+      inc  v_wr+0  ; 5cl
       bne  @l2    ; 3cl
-      inc  ptr2+1
+      inc  v_wr+1
       bra  @l1
 @l4:
       ldx  #COLS  ; write address is already setup from loop

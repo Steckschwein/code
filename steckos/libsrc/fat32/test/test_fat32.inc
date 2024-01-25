@@ -47,10 +47,10 @@
 	set32 volumeID+VolumeID::BPB_RootClus, ROOT_CL
   set32 volumeID + VolumeID::BPB_FATSz32, (FAT2_LBA - FAT_LBA)
   set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * sec_per_cl)
-  set32 volumeID+VolumeID::lba_addr_last, $ffffffff
 	set32 volumeID+VolumeID::lba_fat, FAT_LBA		;fat lba
   set32 volumeID+VolumeID::lba_fat2, FAT2_LBA
   set32 volumeID+VolumeID::lba_fsinfo, FS_INFO_LBA
+  set32 volumeID+VolumeID::cluster, 0
 .endmacro
 
 .macro fd_entry_file clnr, dir_entry, dir_lba, attr, filesize, flags, status
@@ -131,9 +131,9 @@
 
 .macro init_block src, dst
     lda #<src
-    sta write_blkptr
+    sta sd_blkptr
     lda #>src
-    sta write_blkptr+1
+    sta sd_blkptr+1
     lda #<dst
     ldy #>dst
     jsr store_test_data
@@ -146,10 +146,13 @@ store_test_data:
     sty test_data_ptr+1
     ldy #0
     jsr @cp
-    inc write_blkptr+1  ; leave with same sideeffect as sdcard block impl. write_blkptr is incremented
+    inc sd_blkptr+1
     inc test_data_ptr+1
+    jsr @cp
+    dec sd_blkptr+1
+    rts
 @cp:
-    lda (write_blkptr),y
+    lda (sd_blkptr),y
     sta (test_data_ptr),y
     iny
     bne @cp
@@ -172,11 +175,14 @@ load_test_data:
     sty test_data_ptr+1
     ldy #0
     jsr @cp
-    inc read_blkptr+1
+    inc sd_blkptr+1
     inc test_data_ptr+1
+    jsr @cp
+    dec sd_blkptr+1
+    rts
 @cp:
     lda (test_data_ptr),y
-    sta (read_blkptr),y
+    sta (sd_blkptr),y
     iny
     bne @cp
     rts

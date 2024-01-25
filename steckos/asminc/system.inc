@@ -31,9 +31,11 @@ IRQ_VIA			= 1<<5		; irq from VIA (6522)
 IRQ_IO0			= 1<<4		; i/o port 0
 ;...
 
-clockspeed  = 10	; in Mhz
+clockspeed  =10	; in Mhz
 
 ctrl_port	= $0230
+
+stack = $0100
 
 slot0 = ctrl_port+0
 slot1 = ctrl_port+1

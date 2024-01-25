@@ -39,29 +39,26 @@
 .export fat_read
 .export fat_write
 
-
-    ;in:
-    ;  X - offset into fd_area
-    ;out:
-    ;  Z=1 on success (A=0), Z=0 and A=error code otherwise
+;in:
+;  X - offset into fd_area
+;out:
+;  C - C=0 on success (A=0), C=1 and A=error code otherwise
 fat_read:
-    bit fd_area + F32_fd::CurrentCluster+3, x
-    bmi @l_err_exit
+
+    _is_file_open     ; otherwise rts C=1 and A=#EINVAL
+    _is_file_dir      ; otherwise rts C=1 and A=#EISDIR
 
     jsr __calc_blocks
     beq @l_exit          ; if Z=0, no blocks to read. we return with "EOK", 0 bytes read
     jsr __calc_lba_addr
-    jsr sd_read_multiblock
-    rts
-@l_err_exit:
-    lda #EINVAL
+    jmp sd_read_multiblock
 @l_exit:
     rts
 
 ; NOTE: only max blocks in first cluster are supported
 ; in:
 ;  X - offset into fd_area
-;  write_blkptr - set to the address with data we have to write
+;  sd_blkptr - set to the address with data we have to write
 ; out:
 ;  C - C=0 on success (A=0), C=1 and A=error code otherwise
 fat_write:
@@ -69,9 +66,20 @@ fat_write:
     _is_file_open     ; otherwise rts C=1 and A=#EINVAL
     _is_file_dir      ; otherwise rts C=1 and A=#EISDIR
 
-    jsr __fat_fseek_cluster
+    lda sd_blkptr
+    sta __volatile_ptr
+    lda sd_blkptr+1
+    sta __volatile_ptr+1
+
+    sec
+    jsr __fat_prepare_block_access  ; at least the start cluster is initialized if not done already
     bcs @l_exit
-@l_write:
+
+    lda __volatile_ptr
+    sta sd_blkptr
+    lda __volatile_ptr+1
+    sta sd_blkptr+1
+
     jsr __calc_blocks               ; calc blocks
     beq @l_update                   ; Z=1 - no blocks to write
     lda blocks                      ; > max sec/cl
@@ -84,17 +92,19 @@ fat_write:
     debug32 "fat_wr lba", lba_addr
 .ifdef MULTIBLOCK_WRITE
     .warning "SD multiblock writes are EXPERIMENTAL"
-    debug16 "fat_wr wptr", write_blkptr
+    debug16 "fat_wr wptr", sd_blkptr
     .import sd_write_multiblock
     jsr sd_write_multiblock
 .else
 @l: debug8 "fat_wr blks", blocks
-    debug16 "fat_wr wptr", write_blkptr
-    jsr __fat_write_block_data
+    debug16 "fat_wr wptr", sd_blkptr
+    phx
+    jsr write_block
+    plx
     bcs @l_exit
     jsr __inc_lba_address              ; increment lba address to write next block
-    inc write_blkptr+1
-    inc write_blkptr+1
+    inc sd_blkptr+1
+    inc sd_blkptr+1
     dec blocks
     bne @l
 .endif

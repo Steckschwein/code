@@ -47,7 +47,6 @@
 fat_mount:
 
     m_memclr volumeID, .sizeof(VolumeID)
-    m_memset volumeID+VolumeID::lba_addr_last, $ff, 4
 
     ; set lba_addr to $00000000 since we want to read the bootsector
     m_memclr lba_addr, 4
@@ -98,7 +97,7 @@ fat_mount:
     dec
     sta volumeID + VolumeID::BPB_SecPerClusMask
 
-    lda volumeID + VolumeID::BPB_SecPerClus
+    inc
 :   lsr
     beq @l7
     inc volumeID + VolumeID::BPB_SecPerClusCount
@@ -136,8 +135,8 @@ fat_mount:
 
     ; performance optimization - the RootClus offset is compensated within calc_lba_addr - we avoid the substraction of the RootClus from lba_data on each calculation
     ; lba_cluster_m2 = cluster_begin_lba - (VolumeID::RootClus * VolumeID::SecPerClus)
-    jsr __fat_set_root_clus_lba_addr  ; root cluster to lba_addr
-    jsr __fat_shift_lba_addr          ; * sec/cl
+    jsr __fat_set_root_cluster_lba_addr   ; root cluster to lba_addr
+    jsr __fat_shift_lba_addr              ; * sec/cl
 
     sec          ;  subtract from volumeID + VolumeID::lba_data
     lda volumeID + VolumeID::lba_data+0
@@ -162,7 +161,7 @@ fat_mount:
     debug32 "fat lba",  volumeID+VolumeID::lba_fat
     debug32 "fat2_lba", volumeID+VolumeID::lba_fat2
     debug32 "data lba", volumeID+VolumeID::lba_data
-    debug16 "fbuf",   filename_buf
+    debug16 "fbuf",   volumeID+VolumeID::filename_buf
 
     ldx #0  ; init file descriptor area
     jsr __fat_init_fdarea
