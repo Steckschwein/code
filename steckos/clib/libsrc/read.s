@@ -38,11 +38,12 @@
 
 ; read bytes loop
 @r0:
-    inc    ptr2       ; count bytes read ?
-    bne    @r1
-    inc    ptr2+1
-    beq    @exit
+    inc ptr2       ; count bytes read ?
+    bne @r1
+    inc ptr2+1
+    beq @exit
 @r1:
+;    stp
     jsr krn_fread_byte
     bcs @eof
 

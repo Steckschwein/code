@@ -49,11 +49,8 @@ int main(void)
     printf("contents of \"%s\":\n", name);
     while ((E = readdir (D)) != 0) {
         printf ("dirent.d_name[] : \"%s\"\n", E->d_name);
-/*
-        printf ("dirent.d_blocks : %10u\n",   E->d_blocks);
-        printf ("dirent.d_type   : %10d\n",   E->d_type);
-*/
-        printf ("telldir()       : %10lu\n",  telldir (D));
+        printf ("dirent.d_type   : %10d\n",   E->d_attr);
+        //printf ("telldir()       : %10lu\n",  telldir (D));
         printf ("---\n");
         if (!go) {
             switch (cgetc ()) {

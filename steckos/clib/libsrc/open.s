@@ -92,9 +92,4 @@ dowrite:
 ;--------------------------------------------------------------------------
 ; closeallfiles: Close all open files.
 
-.proc  closeallfiles
-
-    stp
-    jmp krn_close_all
-
-.endproc
+closeallfiles = krn_close_all

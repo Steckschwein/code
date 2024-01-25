@@ -166,7 +166,10 @@ __fat_fseek_cluster:
 fat_fread_byte:
 
     _is_file_open   ; otherwise rts C=1 and A=#EINVAL
-    _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
+
+    lda fd_area+F32_fd::Attr,x
+    and #DIR_Attr_Mask_Dir		; is directory
+    bne :+                    ; skip file size check
 
     _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
     lda #EOK
@@ -255,7 +258,7 @@ fat_fopen:
 
 
 fat_close_all:
-          ldx #(2*FD_Entry_Size)  ; skip first 2 entries, they're reserved for current and temp dir
+          ldx #(2*FD_Entry_Size)  ; skip first 2 entries, they're reserved for current dir and temp file
 __fat_init_fdarea:
           stz fd_area,x
           inx

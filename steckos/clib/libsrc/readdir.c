@@ -30,30 +30,66 @@
 
 
 
+#include <stdio.h>
+#include <string.h>
 #include <stddef.h>
 #include <unistd.h>
+
 #include <dirent.h>
-#include "dir.h"
-
-
+#include <dir.h>
 
 /*****************************************************************************/
 /*                                   Code                                    */
 /*****************************************************************************/
 
+void fat_name(register DIR* d, char* t){
+
+    unsigned char i, j = 0;
+    unsigned char c;
+    for(i=0;i<sizeof(((DIR *)0)->f32_dirent.name);i++){
+      c = d->f32_dirent.name[i];
+      if(c == ' '){
+        break;
+      }
+      t[j++] = c;
+    }
+    for(i=0;i<sizeof(((DIR *)0)->f32_dirent.ext);i++){
+      c = d->f32_dirent.ext[i];
+      if(c == ' '){
+        break;
+      }else if (i == 0) {
+        t[j++] = '.';
+      }
+      t[j++] = c;
+    }
+    t[j] = 0;
+}
+
 
 
 struct dirent* __fastcall__ readdir (register DIR* dir)
 {
-    register unsigned char* entry;
+    register struct dirent* entry = &dir->current_entry;
 
-    if (read (dir->fd, NULL, 0)) {
-
-        /* Just return failure as read() has */
-        /* set errno if (and only if) no EOF */
-        return NULL;
+    if (read(dir->fd, &dir->f32_dirent, sizeof(dir->f32_dirent)) != sizeof(dir->f32_dirent)) {
+      /* Just return failure as read() has */
+      /* set errno if (and only if) no EOF */
+      return NULL;
     }
 
+    if(dir->f32_dirent.name[0] == 0){ // eod?
+      return NULL;
+    }
+
+    fat_name(dir, entry->d_name);
+
+    //printf("dirent: %d %s\n", strlen(entry->d_name), entry->d_name);
+
+    entry->d_off = dir->off;
+    entry->d_attr = dir->f32_dirent.attr;
+
+    dir->off += sizeof(dir->f32_dirent);
+
     /* Return success */
-    return (struct dirent*)&entry;
+    return entry;
 }

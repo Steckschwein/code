@@ -42,13 +42,10 @@
 typedef struct DIR DIR;
 
 struct dirent {
-    char                d_name[8+1+3+1];
-    unsigned int        d_off;
-    unsigned int        d_blocks;
-    unsigned char       d_type;         /* See _CBM_T_xxx defines */
+    unsigned char       d_name[8+1+3+1];  // name - trailing 0
+    unsigned char       d_attr;
 
-    /* bsd extensions */
-    unsigned char       d_namlen;
+    unsigned int        d_off;
 };
 
 
