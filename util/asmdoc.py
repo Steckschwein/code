@@ -16,14 +16,16 @@ def main():
         description='Generate documentation from annotated assembly source'
     )
     
-    parser.add_argument('-f', '--file', default="asmdoc.html")
-    parser.add_argument('-d', '--directory', default=".")
+    parser.add_argument('-d', '--directory', help="source path to scan", default=".")
+    parser.add_argument('-f', '--file', help="output file", default="asmdoc.html")
+    parser.add_argument('--filespec', help="filespec to search files", default="*.s")
+
 
     args = parser.parse_args()
-    
+
     filelist = []
     for root, dir, files in os.walk(args.directory):
-            for items in fnmatch.filter(files, "*.s"):
+            for items in fnmatch.filter(files, args.filespec):
                     filelist.append("%s/%s" % (root, items))
         
 
