@@ -68,20 +68,20 @@ _i:     .res 1
 ; out:
 ;   C=0 success and image loaded to vram (mode 7), C=1 otherwise with A/X error code - A ppm specific error, X i/o specific error
 .proc ppm_load_image
-    stz fd
+        stz fd
 
-		ldy #O_RDONLY
-		jsr fopen
-		bcs @io_error
-		stx fd
+        ldy #O_RDONLY
+        jsr fopen
+        bcs @io_error
+        stx fd
 
-    jsr ppm_parse_header
-    bcc @ppm_ok
-    ldx #0
-    bra @error
+        jsr ppm_parse_header
+        bcc @ppm_ok
+        ldx #0
+        bra @error
 @ppm_ok:
-    jsr load_image ; timing critical
-    bcc @close_exit
+        jsr load_image ; timing critical
+        bcc @close_exit
 @io_error:
         tax
         lda #0
@@ -91,36 +91,36 @@ _i:     .res 1
         php
         phx
         pha
-    ldx fd
-    beq @l_exit
-    jsr fclose
+        ldx fd
+        beq @l_exit
+        jsr fclose
 @l_exit:
         pla
         plx
         plp
-    rts
+        rts
 .endproc
 
 load_image:
-    stz cols
-    stz rows
+        stz cols
+        stz rows
 
         php
         sei ;critical section, avoid vdp irq here
 
-    jsr set_screen_addr  ; initial vram address
-    jsr copy_to_vram
-    bcs @l_err
+        jsr set_screen_addr  ; initial vram address
+        jsr copy_to_vram
+        bcs @l_err
         plp
-    clc
-    rts
+        clc
+        rts
 @l_err:
         plp
-    sec
-    rts
+        sec
+        rts
 
 next_byte:
-    jmp fread_byte
+        jmp fread_byte
 
 copy_to_vram:
     jsr rgb_bytes_to_grb
@@ -201,15 +201,15 @@ ppm_parse_header:
     jsr parse_string
 :
     jsr parse_until_size  ;not, skip until <width> <height>
-    jsr parse_int      ;try parse ppm width
+    jsr parse_int         ;try parse ppm width
     cmp #<MAX_WIDTH
-    bcc @l_invalid_ppm ;
+    bcc @l_invalid_ppm
     sta ppm_width
 
     jsr parse_int0  ;height
     cmp #MAX_HEIGHT+1
     bcs @l_invalid_ppm
-        sta ppm_height
+    sta ppm_height
 
     jsr parse_int0  ;color depth
     cpy #3

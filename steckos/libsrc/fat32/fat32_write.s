@@ -139,7 +139,6 @@ __fat_set_fd_filesize:
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 __fat_fopen_touch:
-
     debug "fop touch >"
     bcc :+
     phy
@@ -557,15 +556,10 @@ __fat_find_free_cluster:
         clc
         rts
 
-; unlink a file denoted by given path in A/X
-; in:
-;  A/X - pointer to string with the file path
-; out:
-;  Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
 ;@name: "fat_unlink"
 ;@in: A, "low byte of pointer to zero terminated string with the file path"
 ;@in: X, "high byte of pointer to zero terminated string with the file path"
-;@out: Z, "1 on success (A=0), 0 and A=error code otherwise"
+;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"
 ;@desc: "unlink (delete) a file denoted by given path in A/X"
 fat_unlink:
     ldy #O_RDONLY

@@ -12,10 +12,12 @@ krn_upload:             jmp do_upload
 krn_execv:              jmp execv
 
 ; filesystem stuff
-.export krn_mount
-krn_mount:              jmp fat_mount
 .export krn_open
-krn_open:               jmp fat_fopen
+krn_open:               jmp fat_open      ; file open, regardless of file/dir
+.export krn_fopen
+krn_fopen:              jmp fat_fopen     ; file open (not directory)
+.export krn_chdir
+krn_opendir:            jmp fat_opendir   ; open directory
 .export krn_chdir
 krn_chdir:              jmp fat_chdir
 .export krn_unlink
@@ -30,8 +32,6 @@ krn_close:              jmp fat_close
 krn_close_all:          jmp fat_close_all
 .export krn_fread_byte
 krn_fread_byte:         jmp fat_fread_byte
-.export krn_write
-krn_write:              jmp fat_write
 .export krn_write_byte
 krn_write_byte:         jmp fat_write_byte
 .export krn_fseek
@@ -61,7 +61,7 @@ krn_textui_crs_onoff:   jmp textui_cursor_onoff
 .export krn_sd_write_block
 krn_sd_write_block:     jmp sd_write_block
 .export krn_sd_read_block
-krn_sd_read_block:     jmp sd_read_block
+krn_sd_read_block:      jmp sd_read_block
 
 ; spi stuff
 .export krn_spi_select_device

@@ -78,44 +78,44 @@ fat_rmdir:
 ;@out: A, "error code"
 ;@desc: "create directory denoted by given path in A/X"
 fat_mkdir:
-    jsr fat_opendir
-    bcs :+
-    lda #EEXIST                       ; C=0 - open success, file/dir exists already, exit
+        ldy #O_CREAT
+        jsr fat_opendir
+        bcs :+
+        lda #EEXIST                       ; C=0 - open success, file/dir exists already, exit
 @l_exit_err:
-    sec
-    rts
+        sec
+        rts
+:       cmp #ENOENT                       ; we expect 'no such file or directory' error
+        beq @l_add_dirent
+        cmp #EOK                          ; or error from open was end of cluster (@see find_first/_next)?
+        bne @l_exit_err                   ; exit on other error
 
-:   cmp #ENOENT                       ; we expect 'no such file or directory' error
-    beq @l_add_dirent
-    cmp #EOK                          ; or error from open was end of cluster (@see find_first/_next)?
-    bne @l_exit_err                   ; exit on other error
-
-    debug "fat mkd pba >"
-    sec                               ; if eoc we have to prepare block access first to write new dir entry
-    jsr __fat_prepare_block_access
+        debug "fat mkd pba >"
+        sec                               ; if eoc we have to prepare block access first to write new dir entry
+        jsr __fat_prepare_block_access
 @l_add_dirent:
-    debug16 "fat mkd >", dirptr
-    debug32 "fat mkd >", fd_area+FD_INDEX_TEMP_DIR+F32_fd::SeekPos
+        debug16 "fat mkd >", dirptr
+        debug32 "fat mkd >", fd_area+FD_INDEX_TEMP_FILE+F32_fd::SeekPos
 
-    jsr __fat_alloc_fd                ; allocate a dedicated fd for the new directory
-    bcs @l_exit
+        jsr __fat_alloc_fd                ; allocate a dedicated fd for the new directory
+        bcs @l_exit
 
-    jsr __fat_set_fd_dirlba           ; save the dir entry lba and offset to new allocated fd
+        jsr __fat_set_fd_dirlba           ; save the dir entry lba and offset to new allocated fd
 
-    jsr __fat_reserve_start_cluster   ; reserve a cluster for the new directory and store them in fd_area with X at F32_fd::StartCluster
-    bcs @l_exit_close
+        jsr __fat_reserve_start_cluster   ; reserve a cluster for the new directory and store them in fd_area with X at F32_fd::StartCluster
+        bcs @l_exit_close
 
-    lda #DIR_Attr_Mask_Dir            ; set type directory
-    sta fd_area+F32_fd::Attr,x
-    jsr __fat_add_direntry            ; create and write new directory entry
-    bcs @l_exit_close
+        lda #DIR_Attr_Mask_Dir            ; set type directory
+        sta fd_area+F32_fd::Attr,x
+        jsr __fat_add_direntry            ; create and write new directory entry
+        bcs @l_exit_close
 
-    jsr __fat_write_new_direntry      ; write the data of the newly created directory with prepared data from dirptr
+        jsr __fat_write_new_direntry      ; write the data of the newly created directory with prepared data from dirptr
 @l_exit_close:
-    jsr __fat_free_fd
+        jsr __fat_free_fd
 @l_exit:
-    debug "fat mkdir <"
-    rts
+        debug "fat mkdir <"
+        rts
 
 ; in:
 ;   X - file descriptor of directory
@@ -196,17 +196,17 @@ __fat_write_new_direntry:
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+0        ; 2nd entry ".."
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+1
 
-    ; use the fd of the temp dir (FD_INDEX_TEMP_DIR) - represents the last visited directory which must be the parent of this one ("..") - we can easily derrive the parent cluster. FTW!
-    debug32 "cd_sln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster
-    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_DIR + F32_fd::CurrentCluster
+    ; use the fd of the temp dir (FD_INDEX_TEMP_FILE) - represents the last visited directory which must be the parent of this one ("..") - we can easily derrive the parent cluster. FTW!
+    debug32 "cd_sln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster
+    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::CurrentCluster
 
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+0
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+0
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+0
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+1
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+1
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+1
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+2
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+2
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+0
-    lda fd_area + FD_INDEX_TEMP_DIR + F32_fd::StartCluster+3
+    lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+3
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+1
 
     jsr __fat_set_fd_start_cluster

@@ -7613,7 +7613,7 @@ LAB_2D05
 
 openfile:
       jsr termstrparam
-      jsr krn_open
+      jsr krn_fopen
       bcs io_error
       stx _fd
       rts
@@ -7872,7 +7872,7 @@ termstrparam:
     stx str_pl
     sty str_ph
 
-    ; overwrite last " with 0 to make it compatible with krn_open
+    ; overwrite last " with 0 to make it compatible with krn_fopen
     tay
     lda #0
     sta (str_pl),y

@@ -4,10 +4,11 @@
 
 ; mock defines
 .export dev_read_block=         mock_read_block
-.export read_block=             blklayer_read_block
 .export dev_write_block=        mock_write_block
-.export write_block=            mock_not_implemented
-.export write_block_buffered=   mock_not_implemented
+
+.export read_block=             blklayer_read_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
 .export write_flush=            blklayer_flush
 
 .export rtc_systime_update=mock_rtc
@@ -17,9 +18,7 @@ debug_enabled=1
 .code
 
 ; -------------------
-
     setup "fat_write O_CREAT 1 byte 4s/cl"
-test_end
     ldy #O_CREAT
     lda #<test_file_name_1cl
     ldx #>test_file_name_1cl
@@ -34,11 +33,11 @@ test_end
 
     ; set file size and write ptr
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 1; 1 block must be written
-    SetVector write_target, sd_blkptr
+    SetVector write_data_src, sd_blkptr
     jsr fat_write
     assertCarry 0
     assertX FD_Entry_Size*2  ; assert FD reserved
-    assert16 write_target+1*sd_blocksize, sd_blkptr ; expect write ptr updated accordingly
+    assert16 write_data_src+1*sd_blocksize, sd_blkptr ; expect write ptr updated accordingly
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 1, O_CREAT, FD_STATUS_FILE_OPEN
 
@@ -62,11 +61,11 @@ test_end
 
     ; set file size and write ptr
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (3*sd_blocksize+3) ; 4 blocks must be written
-    SetVector write_target, sd_blkptr
+    SetVector write_data_src, sd_blkptr
     jsr fat_write
     assertCarry 0
     assertX FD_Entry_Size*2  ; assert FD reserved
-    assert16 write_target+4*sd_blocksize, sd_blkptr ; expect write ptr updated accordingly
+    assert16 write_data_src+4*sd_blocksize, sd_blkptr ; expect write ptr updated accordingly
     assertFdEntry fd_area + (FD_Entry_Size*2)
       fd_entry_file TEST_FILE_CL, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, (3*sd_blocksize+3), O_CREAT, FD_STATUS_FILE_OPEN
 
@@ -91,7 +90,7 @@ test_end
         fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
     ; size to 4 blocks + 3 byte ;) - we use 4 SEC_PER_CL - hence a new cluster must be reserved and the chain build
     set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, (4 * sd_blocksize + 3) ; size is greater then 1 cl
-    SetVector write_target, sd_blkptr
+    SetVector write_data_src, sd_blkptr
     jsr fat_write
     assertCarry 1 ; write failed due to blocks to write > sec/cl => expect write error C=1
     assertX FD_Entry_Size*2  ; assert FD
@@ -143,7 +142,6 @@ mock_read_block:
 :
     fail "read lba not handled!"
 @ok:
-    lda #EOK
     clc
     rts
 
@@ -175,10 +173,9 @@ setUp:
   jsr __fat_init_fdarea
   init_volume_id SEC_PER_CL ;4s/cl
 
-  ;setup fd0 as root cluster
-  set32 fd_area+(0*FD_Entry_Size)+F32_fd::CurrentCluster, 0
-  set32 fd_area+(0*FD_Entry_Size)+F32_fd::SeekPos, 0
-  set8 fd_area+(0*FD_Entry_Size)+F32_fd::flags, 0
+  ;setup fd0 (cwd) to root cluster
+  ldx #FD_INDEX_CURRENT_DIR
+  jsr __fat_open_rootdir
 
   ;setup fd1 as test cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster
@@ -227,4 +224,5 @@ block_data_07:  .res sd_blocksize
 block_data_08:  .res sd_blocksize
 block_data_09:  .res sd_blocksize
 block_data_0a:  .res sd_blocksize
-write_target:
+
+write_data_src:
