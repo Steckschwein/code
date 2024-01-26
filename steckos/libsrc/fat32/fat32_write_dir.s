@@ -144,8 +144,9 @@ __fat_count_direntries:
     rts
 
 __fat_match_all:
-    clc
     lda (dirptr)
+    cmp #DIR_Entry_Deleted
+    clc
     beq :+  ; deleted, C=0 no match
     sec
 :   rts

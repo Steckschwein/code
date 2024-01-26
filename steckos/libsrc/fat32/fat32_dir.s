@@ -39,6 +39,7 @@
 
 .export fat_chdir
 .export fat_opendir
+.export fat_readdir
 
 .code
 
@@ -64,6 +65,7 @@ fat_opendir:
           lda #ENOTDIR				    ; error "Not a directory"
           sec                     ; we opened a file. just close it immediately and free the allocated fd
           jmp __fat_free_fd
+@l_ok:    lda #EOK
 @l_exit:  rts
 
 
@@ -84,10 +86,54 @@ fat_chdir:
           rts
 
 
+;@desc: readdir expects a pointer in A/Y to store the next F32DirEntry structure representing the next FAT32 directory entry in the directory stream pointed of directory X.
+;@name: fat_readdir
+;@in: X - file descriptor to fd_area of the directory
+;@in: A/Y - pointer to target buffer which must be .sizeof(F32DirEntry)
+;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise
+fat_readdir:
+          sta __volatile_ptr
+          sty __volatile_ptr+1
 
-; @in: A
-; @in: X - pointer to string with the file path
-;out:
-;   C - C=0 on success (A=0), C=1 and A=error code otherwise
-;   X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
-fat_readdir
+          lda fd_area+F32_fd::Attr, x
+          and #DIR_Attr_Mask_Dir		; is directory?
+          bne @l_read
+          lda #ENOTDIR
+          sec
+          rts
+
+@l_read:  jsr __fat_prepare_block_access_read
+          bcs @l_exit
+          sta dirptr
+          sty dirptr+1
+
+@l_match: lda (dirptr)
+          debug16 "ff rd dirptr", dirptr
+          beq @l_enoent               ; first byte of dir entry is $00 (end of directory)
+          cmp #DIR_Entry_Deleted
+          beq @l_next
+
+          ldy #F32DirEntry::Attr      ; else check if long filename entry
+          lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
+          cmp #DIR_Attr_Mask_LongFilename
+          beq @l_next
+
+          ldy #.sizeof(F32DirEntry)
+:         lda (dirptr),y
+          sta (__volatile_ptr),y
+          dey
+          bpl :-
+          jmp __fat_seek_next_dirent
+
+@l_next:  jsr __fat_seek_next_dirent
+          .assert >block_data & $01 = 0, error, "block_data address must be $0200 aligned!"
+          lda dirptr+1 ; block_data start at $?200 ?
+          and #$01
+          ora dirptr
+          beq @l_read
+          bra @l_match
+@l_enoent:
+          lda #ENOENT
+          sec ; nothing found C=1 and return
+          debug "ff exit <"
+@l_exit:  rts
