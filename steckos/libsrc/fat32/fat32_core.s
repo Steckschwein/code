@@ -39,7 +39,6 @@
 
 .autoimport
 
-.export __fat_find_first
 .export __fat_find_first_mask
 .export __fat_find_next
 .export __fat_alloc_fd
@@ -73,13 +72,7 @@
 __fat_find_first_mask:
     sta volumeID+VolumeID::fat_vec_matcher+0
     sty volumeID+VolumeID::fat_vec_matcher+1
-
-; in:
-;  .X - file descriptor (index into fd_area) of the directory to search
-; out:
-;  C=0 if dir entry was found with dirptr pointing to that entry, C=1 and A=<error code> otherwise or A=EOK if end of directory or EOC
-__fat_find_first:
-    jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos
+    jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos to 0
 
 __ff_loop:
     jsr __fat_prepare_block_access_read
