@@ -135,5 +135,5 @@ fat_readdir:
 @l_enoent:
           lda #ENOENT
           sec ; nothing found C=1 and return
-          debug "ff exit <"
+          debug "ff rd exit <"
 @l_exit:  rts
