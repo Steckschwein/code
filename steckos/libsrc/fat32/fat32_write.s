@@ -511,7 +511,7 @@ __fat_mark_cluster:
     sta (sd_blkptr), y
     rts
 
-; try to find a freefrom cluster and store them in volumeId+VolumeID::cluster
+; try to find a free cluster and store them in volumeId+VolumeID::cluster
 ; out:
 ;   sd_blkptr points to the free cluster position within the fat block
 ;   C=0 on success, Y=offset in block_fat of found cluster. lba_addr of the fat block where the found cluster resides
