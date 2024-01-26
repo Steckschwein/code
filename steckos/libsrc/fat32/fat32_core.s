@@ -246,11 +246,6 @@ __fat_open_path:
         bcc :-
         debugdump "f fill ex", volumeID+VolumeID::fat_filename
 
-; in:
-;   volumeID+VolumeID::fat_filename set with fat compatible filename to open
-; out:
-;   X - index into fd_area of the opened file
-;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
         phy
         ldx #FD_INDEX_TEMP_FILE
         lda #<__fat_match_name
