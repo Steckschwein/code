@@ -82,3 +82,12 @@ fat_chdir:
           jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
 @l_exit:  debug "fat chdir <"
           rts
+
+
+
+; @in: A
+; @in: X - pointer to string with the file path
+;out:
+;   C - C=0 on success (A=0), C=1 and A=error code otherwise
+;   X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
+fat_readdir
