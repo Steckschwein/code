@@ -28,8 +28,8 @@
 
 .code
 
-;@desc: wait unril a pending command has been finished
 ;@name: vdp_wait_cmd
+;@desc: wait until a pending command has been finished
 ;@in: -
 ;@out: -
 vdp_wait_cmd:
