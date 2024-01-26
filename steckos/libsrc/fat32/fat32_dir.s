@@ -78,7 +78,7 @@ fat_opendir:
 ;out:
 ;	C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
-;@name: "fat_opendir"
+;@name: "fat_chdir"
 ;@in: A, "low byte of pointer to zero terminated string with the file path"
 ;@in: X, "high byte of pointer to zero terminated string with the file path"
 ;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"

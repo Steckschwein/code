@@ -71,7 +71,7 @@ fat_rmdir:
 ;   A/X - pointer to the directory name
 ; out:
 ;   C=0 on success (A=0), C=1 on error and A=error code otherwise
-;@name: "fat_rmdir"
+;@name: "fat_mkdir"
 ;@in: A, "low byte of pointer to directory string"
 ;@in: X, "high byte of pointer to directory string"
 ;@out: C, "0 on success, 1 on error"
