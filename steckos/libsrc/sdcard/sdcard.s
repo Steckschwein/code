@@ -19,7 +19,7 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
+;@module: sdcard
 
 ; enable debug for this module
 .ifdef DEBUG_SDCARD
@@ -62,6 +62,11 @@ sdcard_detect:
 ;
 ;  out:  Z=1 on success, Z=0 otherwise and A=<error>
 ;---------------------------------------------------------------------
+;@name: "sdcard_init"
+;@out: Z,"1 on success, 0 on error"
+;@out: A, "error code"
+;@clobbers: A,X,Y
+;@desc: "initialize sd card in SPI mode"
 sdcard_init:
       lda #spi_device_sdcard
       jsr spi_select_device
@@ -227,6 +232,12 @@ _sys_delay_4us:
 ; out:
 ;  A - SD Card R1 status byte in
 ;---------------------------------------------------------------------
+;@name: "sd_cmd"
+;@in: A, "command byte"
+;@in: sd_cmd_param, "command parameters"
+;@out: A, "SD Card R1 status byte"
+;@clobbers: A,X,Y
+;@desc: "send command to sd card"
 sd_cmd:
       pha
       jsr sd_busy_wait
@@ -281,6 +292,13 @@ sd_exit:
 ;out:
 ;  C = 0 on success, C = 1 and A=<error code> otherwise
 ;---------------------------------------------------------------------
+;@name: "sd_read_block"
+;@in: lba_addr, "LBA address of block"
+;@in: sd_blkptr, "target adress for the block data to be read"
+;@out: A, "error code"
+;@out: C, "0 - success, 1 - error"
+;@clobbers: A,X,Y
+;@desc: "Read block from SD Card"
 sd_read_block:
       php
       sei
@@ -303,6 +321,11 @@ sd_read_block:
 ; out:
 ;   C = 0 on success, C = 1 on error with A =<error code>
 ;---------------------------------------------------------------------
+;@name: "sd_deselect_card"
+;@out: A, "error code"
+;@out: C, "0 - success, 1 - error"
+;@clobbers: X
+;@desc: "Read block from SD Card"
 sd_deselect_card:
       pha
       phy
@@ -356,6 +379,7 @@ halfblock:
 ; in: A - value to wait for
 ; out: C = 0 on success, C = 1 and A = error (timeout) otherwise
 ;---------------------------------------------------------------------
+
 sd_wait:
       ldy #sd_data_token_retries
       ldx #0
@@ -382,6 +406,10 @@ sd_wait:
 ; out:
 ;   see below
 ;---------------------------------------------------------------------
+;@name: "sd_select_card"
+;@out: C, "C = 0 on success, C = 1 on error (timeout)"
+;@clobbers: A,X,Y
+;@desc: "select sd card, pull CS line to low with busy wait"
 sd_select_card:
       lda #spi_device_sdcard
       sta via1portb
@@ -392,6 +420,10 @@ sd_select_card:
 ; wait while sd card is busy
 ; C = 0 on success, C = 1 on error (timeout)
 ;---------------------------------------------------------------------
+;@name: "sd_busy_wait"
+;@out: C, "C = 0 on success, C = 1 on error (timeout)"
+;@clobbers: A,X,Y
+;@desc: "wait while sd card is busy"
 sd_busy_wait:
       ldx #$ff
 @l1:  lda #$ff

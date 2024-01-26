@@ -30,13 +30,18 @@
 .importzp spi_sr
 
 .export spi_rw_byte
-
+;@module: spi
 .code
 ;----------------------------------------------------------------------------------------------
 ; Transmit byte VIA SPI
 ; Byte to transmit in A, received byte in A at exit
 ; Destructive: A,X,Y
 ;----------------------------------------------------------------------------------------------
+;@name: "spi_rw_byte"
+;@in: A, "byte to transmit"
+;@out: A, "received byte"
+;@clobbers: A,X,Y
+;@desc: "transmit byte via SPI"
 spi_rw_byte:
     sta spi_sr    ; zu transferierendes byte im akku retten
 

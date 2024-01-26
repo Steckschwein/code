@@ -7,6 +7,7 @@ clean:
 	(cd steckos; make clean)
 	(cd asmunit; make clean)
 	if [ -e steckos.img ] ; then rm steckos.img ; fi
+	rm libsrc.html
 
 
 build:
@@ -20,3 +21,6 @@ test: build
 
 img: build
 	./mkimg.sh
+
+doc:
+	./util/asmdoc.py -d steckos/libsrc/ -f libsrc.html

@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: sdcard
 
 ; enable debug for this module
 .ifdef DEBUG_SDCARD
@@ -52,6 +53,13 @@
 ;out:
 ;  C = 0 on success, C = 1 on error and A =<error code> otherwise
 ;---------------------------------------------------------------------
+;@name: "sd_read_block"
+;@in: lba_addr, "LBA address of block"
+;@in: sd_blkptr, "target adress for the block data to be read"
+;@out: A, "error code"
+;@out: C, "0 - success, 1 - error"
+;@clobbers: A,X,Y
+;@desc: "Write block to SD Card"
 sd_write_block:
       phx
       phy
