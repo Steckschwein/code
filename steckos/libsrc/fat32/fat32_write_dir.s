@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: fat32
 
 .ifdef DEBUG_FAT32_WRITE_DIR ; debug switch for this module
   debug_enabled=1
@@ -36,7 +37,6 @@
 .export fat_mkdir
 .export fat_rmdir
 
-;@module: fat32
 .autoimport
 
 ; delete a directory entry denoted by given path in A/X

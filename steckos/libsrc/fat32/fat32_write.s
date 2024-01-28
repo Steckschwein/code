@@ -78,7 +78,7 @@ fat_write_byte:
     debug "f_wr byte"
     sta (__volatile_ptr)
 
-    _inc32_x fd_area+F32_fd::SeekPos    ; seek+1
+    jsr __fat_inc_seekpos               ; seek+1
 
     jsr __fat_set_fd_filesize
 

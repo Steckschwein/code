@@ -26,9 +26,6 @@
   debug_enabled=1
 .endif
 
-; TODO OPTIMIZATIONS
-;  1. avoid fat block read - calculate fat lba address, but before reading a the fat block, compare the new lba_addr with the previously saved fat_lba
-;
 .include "zeropage.inc"
 .include "common.inc"
 .include "fat32.inc"
@@ -46,7 +43,6 @@
 .export fat_open
 .export fat_fopen
 .export fat_fread_byte
-.export fat_fseek
 .export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
 
@@ -54,53 +50,6 @@
 .export __fat_init_fdarea
 
 .code
-
-;  seek n bytes within file denoted by the given FD
-;in:
-;  X   - offset into fd_area
-;  A/Y - pointer to seek_struct - @see fat32.inc
-;out:
-;  C=0 on success (A=0), C=1 and A=<error code> or C=1 and A=0 (EOK) if EOF reached
-fat_fseek:
-
-    _is_file_open   ; otherwise rts C=1 and A=#EINVAL
-    _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
-
-    sta __volatile_ptr
-    sty __volatile_ptr+1
-
-    ldy #Seek::Whence
-    lda (__volatile_ptr),y
-    debug "fat fseek >"
-    cmp #SEEK_SET
-    ; TODO support SEEK_CUR, SEEK_END
-    bne @l_exit_err
-    ; save new seek pos
-    ldy #Seek::Offset
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::SeekPos+0,x
-    iny
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::SeekPos+1,x
-    iny
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::SeekPos+2,x
-    iny
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::SeekPos+3,x
-
-    lda fd_area+F32_fd::status,x
-    ora #FD_STATUS_DIRTY                 ; set dirty - @see __fat_prepare_block_access
-    sta fd_area+F32_fd::status,x
-
-    lda #EOK
-    clc
-    debug "fat fseek <"
-    rts
-@l_exit_err:
-    lda #EINVAL
-    sec
-    rts
 
 ; in:
 ;   X - fd
@@ -160,56 +109,9 @@ __fat_fseek_cluster:
     rts
 
 
-;@desc: the file denoted by given file descriptor (X) is read until EOF and data is stored at given address
-;@name: fat_fread_vollgas
-;@in: X - offset into fd_area
-;@in: A/Y - pointer to target address
-;@out: C = 0 on success, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
-fat_fread_vollgas:
-          _is_file_open   ; otherwise rts C=1 and A=#EINVAL
-          _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
-
-;          phx
-          pha
-          phy
-
-          jsr __fat_prepare_block_access_read
-
-          jsr __calc_lba_addr
-          jsr read_block
-          bcs @l_exit
-
-          inc sd_blkptr+1
-          inc sd_blkptr+1
-
-          clc
-          lda fd_area+F32_fd::SeekPos+1,x
-          adc #>sd_blocksize
-          sta fd_area+F32_fd::SeekPos+1,x
-          lda fd_area+F32_fd::SeekPos+2,x
-          adc #0
-          sta fd_area+F32_fd::SeekPos+2,x
-          lda fd_area+F32_fd::SeekPos+3,x
-          adc #0
-          lda fd_area+F32_fd::SeekPos+3,x
-          sta fd_area+F32_fd::SeekPos+3,x
-
-;    _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
-
-          plx
-
-@l_exit:
-          rts
-
-;in:
-;  X - offset into fd_area
-;out:
-;  C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
-
 ;@name: "fat_fread_byte"
-;@in: X, "offset into fs area"
-;@out: C, "0 on success, 1 on error"
-;@out: A, "received byte"
+;@in: X, "offset into fd_area"
+;@out: C=0 on success and A="received byte", C=1 on error and A="error code" or C=1 and A=0 (EOK) if EOF is reached
 ;@desc: "read byte from file"
 fat_fread_byte:
 
@@ -231,9 +133,10 @@ fat_fread_byte:
     sta __volatile_ptr
     sty __volatile_ptr+1
 
-    lda (__volatile_ptr)
+    jsr __fat_inc_seekpos   ; seek+1
 
-    _inc32_x fd_area+F32_fd::SeekPos
+    lda (__volatile_ptr)    ; read byte
+
     clc
 @l_exit:
     ply

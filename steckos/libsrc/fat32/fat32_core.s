@@ -39,11 +39,13 @@
 
 .autoimport
 
+.export __fat_add_seekpos
 .export __fat_find_first_mask
 .export __fat_find_next
 .export __fat_alloc_fd
 .export __fat_clone_fd
 .export __fat_free_fd
+.export __fat_inc_seekpos
 .export __fat_is_cln_zero
 .export __fat_is_start_cln_zero
 .export __fat_next_cln
@@ -65,6 +67,22 @@
 .export __inc_lba_address
 
 
+;
+__fat_inc_seekpos:
+            lda #1
+            ldy #0
+__fat_add_seekpos:
+            clc
+            adc fd_area+F32_fd::SeekPos+0,x
+            sta fd_area+F32_fd::SeekPos+0,x
+            tya
+            adc fd_area+F32_fd::SeekPos+1,x
+            sta fd_area+F32_fd::SeekPos+1,x
+            bcc @l_exit
+            inc fd_area+F32_fd::SeekPos+2,x
+            bne @l_exit
+            inc fd_area+F32_fd::SeekPos+3,x
+@l_exit:    rts
 
 ; in:
 ;   X - file descriptor (index into fd_area) of the directory
