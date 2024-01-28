@@ -755,13 +755,13 @@ savemem:
         iny 
         lda (paramptr),y
         beq @usage    
-        
+
         jsr get_filename
 
         lda #<filenamebuf
         ldx #>filenamebuf
         ldy #O_WRONLY
-        jsr krn_open
+        jsr krn_fopen
         bcs @err
 
 
