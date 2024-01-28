@@ -159,6 +159,47 @@ __fat_fseek_cluster:
     rts
 
 
+;@desc: the file denoted by given file descriptor (X) is read until EOF and data is stored at given address
+;@name: fat_fread_vollgas
+;@in: X - offset into fd_area
+;@in: A/Y - pointer to target address
+;@out: C = 0 on success, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
+fat_fread_vollgas:
+          _is_file_open   ; otherwise rts C=1 and A=#EINVAL
+          _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
+
+;          phx
+          pha
+          phy
+
+          jsr __fat_prepare_block_access_read
+
+          jsr __calc_lba_addr
+          jsr read_block
+          bcs @l_exit
+
+          inc sd_blkptr+1
+          inc sd_blkptr+1
+
+          clc
+          lda fd_area+F32_fd::SeekPos+1,x
+          adc #>sd_blocksize
+          sta fd_area+F32_fd::SeekPos+1,x
+          lda fd_area+F32_fd::SeekPos+2,x
+          adc #0
+          sta fd_area+F32_fd::SeekPos+2,x
+          lda fd_area+F32_fd::SeekPos+3,x
+          adc #0
+          lda fd_area+F32_fd::SeekPos+3,x
+          sta fd_area+F32_fd::SeekPos+3,x
+
+;    _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
+
+          plx
+
+@l_exit:
+          rts
+
 ;in:
 ;  X - offset into fd_area
 ;out:

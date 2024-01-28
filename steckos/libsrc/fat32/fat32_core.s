@@ -348,7 +348,7 @@ __fat_prepare_block_access:
     lsr
     debug32 "fp ba 0 >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
     bcs @l_restore_read                       ; not at block start (multiple of $02??)
-    and volumeID+VolumeID::BPB_SecPerClusMask ; otherwise mask with sec per cluster mask
+    and volumeID+VolumeID::BPB_SecPerClusMask ; mask with sec per cluster mask
     ora fd_area+F32_fd::SeekPos+0,x           ; and test whether SeekPos is at the beginning of a block (multiple of $??00) ?
     debug "fp ba 1 >"
     bne @l_restore_read                       ; not at the beginning of a cluster, just read the block
