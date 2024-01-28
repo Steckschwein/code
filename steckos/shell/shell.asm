@@ -326,12 +326,11 @@ cmdlist:
         .byte "save",0
         .word savemem
 
-
+        .byte "cls",0
+        .word cls
 
         ; End of list
         .byte $ff
-
-
 
 
 errmsg:
@@ -790,6 +789,13 @@ savemem:
         .byte $0a, $0d,"usage: save <from> <to> <filename>",$0a, $0d, $00
         jmp mainloop
 
+
+cls:
+        jsr primm
+        .byte 27,"[2J "
+        .byte $00
+        jmp mainloop
+        
 get_filename:
         ldx #0
 @read_filename:
