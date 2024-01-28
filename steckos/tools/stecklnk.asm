@@ -150,7 +150,7 @@ header_block:
       lda #<fname
       ldx #>fname
       ldy #O_CREAT
-      jsr krn_open
+      jsr krn_fopen
       bcc :+
       pha
       jsr primm
