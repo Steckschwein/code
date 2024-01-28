@@ -19,7 +19,7 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
+;@module: fat32
 
 .ifdef DEBUG_FAT32_WRITE ; debug switch for this module
   debug_enabled=1
@@ -53,6 +53,11 @@
 ;  X - offset into fd_area
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
+;@name: "fat_write_byte"
+;@in: A, "byte to write"
+;@in: X, "offset into fs area"
+;@out: C, "0 on success, 1 on error"
+;@desc: "write byte to file"
 fat_write_byte:
 
     _is_file_open   ; otherwise rts C=1 and A=#EINVAL
@@ -551,11 +556,11 @@ __fat_find_free_cluster:
         clc
         rts
 
-; unlink a file denoted by given path in A/X
-; in:
-;  A/X - pointer to string with the file path
-; out:
-;  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
+;@name: "fat_unlink"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"
+;@desc: "unlink (delete) a file denoted by given path in A/X"
 fat_unlink:
     ldy #O_RDONLY
     jsr fat_fopen    ; try to open as regular file

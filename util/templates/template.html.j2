@@ -1,0 +1,54 @@
+<html>
+<head>
+<style>
+body {background-color: #FFFFFF; font-family: sans-serif;}
+ul {list-style: none;}
+ul li {display: inline-block;}
+a:link { color: rgb(96,221,108);}
+a:visited { color: rgb(48,110,54);}
+a:hover { color: hotpink;}
+dl dt { font-weight: bold;}
+</style>
+</head>
+<body>
+<h1 id="modules">Modules</h1>
+<ul>
+{% for module in doc_struct.keys()|sort() %}
+<li><a href="#{{ module }}">{{ module }}</a></li>
+{% endfor %}
+</ul>
+<hr />
+{% for module in doc_struct.keys()|sort()  %}
+<h2 id="{{ module }}">{{ module }}</h2>
+  <ul>
+  {% for name in doc_struct[module]|sort() %}
+  <li><a href="#{{ name }}">{{ name }}</a>  </li> 
+  {% endfor %}
+  </ul>
+  {% for proc in doc_struct[module]|sort() %}
+    <h3 id="{{ proc }}">{{ proc }}</h3>
+
+    {% set info = doc_struct[module][proc] %}
+    <p>{{ "".join(info.desc) }}</p>
+    <dl>
+      {% if info.in %}
+      <dt>In:</dt>
+      <dd>{{ "<br />".join(info.in) }}</dd>
+      {% endif %}
+  
+      {% if info.out %}
+      <dt>Out:</dt>
+      <dd>{{ "<br />".join(info.out) }}</dd>
+      {% endif %}
+
+      {% if info.clobbers %}
+      <dt>Clobbers:</dt>
+      <dd>{{ "<br />".join(info.clobbers) }}</dd>
+      {% endif %}
+    </dl>
+    <!-- {{ info }} -->
+  {% endfor %}
+  <hr />
+{% endfor %}
+</body>
+</html>

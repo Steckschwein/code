@@ -3,11 +3,14 @@
        .include "uart.inc"
        .include "nvram.inc"
        .importzp __volatile_ptr
+;@module: uart
 .code
 ;----------------------------------------------------------------------------------------------
 ; init UART
-;  in: .A/.Y - pointer to parameter structure
 ;----------------------------------------------------------------------------------------------
+;@name: "uart_init"
+;@clobbers: A,X,Y
+;@desc: "initialize UART with parameters from nvram"
 uart_init:
       pha
       phy

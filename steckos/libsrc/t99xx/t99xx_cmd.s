@@ -20,11 +20,18 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
 .export vdp_wait_cmd
 
 .code
+
+;@name: vdp_wait_cmd
+;@desc: wait until a pending command has been finished
+;@in: -
+;@out: -
 vdp_wait_cmd:
 	 vdp_sreg 2, v_reg15			; 2 - to select status register S#2
 @wait:

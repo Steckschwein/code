@@ -45,7 +45,6 @@ prompt  = '>'
 msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
-tmpchar:  .res 1
 dumpvecs: .res 4
 
 dumpend = dumpvecs
@@ -555,12 +554,12 @@ ms:
         asl
         asl
         asl
-        sta tmpchar
+        sta tmp1
  
         iny
         lda (paramptr),y
         jsr atoi
-        ora tmpchar
+        ora tmp1
  
         jsr hexout
         sta (dumpend)

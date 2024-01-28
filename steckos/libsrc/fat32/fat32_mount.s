@@ -37,13 +37,17 @@
 .autoimport
 
 .export fat_mount
-
+;@module: fat32
 .code
 ;---------------------------------------------------------------------
 ; Mount FAT32 on Partition 0
 ;---------------------------------------------------------------------
 ; out:
 ;   C=0 on success, C=1 otherwise with A=<error code>
+;@name: "fat_mount"
+;@out: C, "0 on success, 1 on error"
+;@out: A, "error code"
+;@desc: "mount fat32 file system"
 fat_mount:
 
     m_memclr volumeID, .sizeof(VolumeID)

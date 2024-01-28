@@ -36,11 +36,21 @@
 .autoimport
 
 .code
+;@module: fat32
+
 ;in:
 ;  A/Y - address to write the current work directory string into
 ;  X  - size of result buffer/string
 ;out:
 ;  C - C=0 on success (A=0), C=1 and A=error code otherwise
+
+;@name: "fat_get_root_and_pwd"
+;@in: A, "low byte of address to write the current work directory string into"
+;@in: Y, "high byte address to write the current work directory string into"
+;@in: X, "size of result buffer pointet to by A/X"
+;@out: C, "0 on success, 1 on error"
+;@out: A, "error code"
+;@desc: "get current directory"
 fat_get_root_and_pwd:
 
               php
@@ -93,6 +103,7 @@ l_dot_dot:
 ;   dirptr - pointer to dir entry (F32DirEntry)
 ; out:
 ;   C=0 not found, C=1 found
+
 cluster_nr_matcher:
               ldy #F32DirEntry::Name
               lda (dirptr),y

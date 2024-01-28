@@ -2,8 +2,12 @@
 .export b2ad2
 .import char_out
 
+;@module: util
 .code
 ; A to 3 digit ASCII
+;@name: "b2ad2"
+;@in: A, "value to output"
+;@desc: "output 8bit value as 3 digit decimal"
 b2ad2:
 		phx
 		ldx #$00
