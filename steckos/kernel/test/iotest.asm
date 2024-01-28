@@ -22,7 +22,7 @@ main:
       lda paramptr
       ldx paramptr+1
       ldy #O_CREAT    ; "touch like", only create new file
-      jsr krn_open
+      jsr krn_fopen
       jsr test_result
       bcc :+
       jmp exit
@@ -33,7 +33,7 @@ main:
       lda paramptr
       ldx paramptr+1
       ldy #O_RDONLY
-      jsr krn_open
+      jsr krn_fopen
       jsr test_result
       bcc :+
       jmp exit
@@ -44,7 +44,7 @@ main:
       lda paramptr
       ldx paramptr+1
       ldy #O_WRONLY
-      jsr krn_open
+      jsr krn_fopen
       jsr test_result
       bcc :+
       jmp exit
@@ -64,7 +64,7 @@ main:
       lda paramptr
       ldx paramptr+1
       ldy #O_RDONLY
-      jsr krn_open
+      jsr krn_fopen
       bcc @ro_read
       jmp exit
 @ro_read:
@@ -103,7 +103,7 @@ test_not_exist:
     lda #<file_notexist
     ldx #>file_notexist
     ldy #O_RDONLY
-    jsr krn_open
+    jsr krn_fopen
     beq @fail  ; anti test, expect open failed
     lda #0
     rts

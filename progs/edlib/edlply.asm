@@ -201,7 +201,7 @@ loadfile:
 		lda paramptr
 		ldx paramptr+1
 		ldy #O_RDONLY
-		jsr krn_open
+		jsr krn_fopen
     bcs @l_exit
 
     lda fd_area+F32_fd::FileSize+1,x
