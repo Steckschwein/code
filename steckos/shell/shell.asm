@@ -724,7 +724,7 @@ loadmem:
         lda #<filenamebuf
         ldx #>filenamebuf
         ldy #O_RDONLY
-        jsr krn_open     ; X contains fd
+        jsr krn_fopen     ; X contains fd
         bcs @err    ; not found or other error, dont care...
         ldy #0
 :
