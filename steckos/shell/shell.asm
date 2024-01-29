@@ -317,6 +317,9 @@ cmdlist:
         .byte "ms",0
         .word ms
 
+        .byte "bank",0
+        .word bank
+
         .byte "go",0
         .word go
 
@@ -521,7 +524,23 @@ go:
 @end:
         jmp mainloop
 
+bank:
+        ldy #0
+        ldx #1
+        jsr hex2dumpvec
+        bcs @usage
 
+        lda dumpend+1
+        tax 
+        lda dumpend 
+        sta ctrl_port,x 
+
+        bra @end
+@usage:
+        jsr primm
+        .byte $0a, $0d,"usage: bank <slot> <bank>", $0a, $0d,0
+@end:
+        jmp mainloop
 ms:
         ldy #0
         ldx #1
