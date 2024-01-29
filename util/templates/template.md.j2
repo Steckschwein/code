@@ -1,7 +1,6 @@
 # Modules
 
 {% for module in doc_struct.keys()|sort() %}[{{ module }}](#{{ module }}) | {% endfor %}
-
 ***
 
 {% for module in doc_struct.keys()|sort()  %}
@@ -29,6 +28,6 @@ Out
 Clobbers
 : {{ "<br />".join(info.clobbers) }} 
 {% endif %}
-{% endfor %}
 ***
+{% endfor %}
 {% endfor %}
