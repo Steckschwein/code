@@ -269,7 +269,7 @@ try_exec:
         beq @l1
 
         jmp exec
-@l1:  
+@l1:
         jmp mainloop
 
 printbuf:
@@ -326,12 +326,11 @@ cmdlist:
         .byte "save",0
         .word savemem
 
-
+        .byte "cls",0
+        .word cls
 
         ; End of list
         .byte $ff
-
-
 
 
 errmsg:
@@ -516,7 +515,7 @@ go:
         bcs @usage
 
         jmp (dumpend)
-@usage:  
+@usage:
         jsr primm
         .byte $0a, $0d,"usage: go <addr>", $0a, $0d,0
 @end:
@@ -534,20 +533,20 @@ ms:
         lda dumpend+1
         jsr hexout
 
-        lda dumpend 
-        jsr hexout 
+        lda dumpend
+        jsr hexout
 
         lda #':'
         jsr char_out
         lda #' '
         jsr char_out
-        
+
 @skip:
         iny
         lda (paramptr),y
         beq @end
         cmp #' '
-        beq @skip 
+        beq @skip
 
         jsr atoi
         asl
@@ -555,31 +554,31 @@ ms:
         asl
         asl
         sta tmp1
- 
+
         iny
         lda (paramptr),y
         jsr atoi
         ora tmp1
- 
+
         jsr hexout
         sta (dumpend)
 
         inc16 dumpend
         bra @again
 
-@usage:  
+@usage:
         jsr primm
         .byte $0a, $0d,"usage: ms <addr> <byte> [<byte>...]", $0a, $0d,0
 @end:
         jmp mainloop
-        
+
 
 
 bd:
         ldx #3
 @clearloop:
-        stz dumpvecs,x 
-        dex 
+        stz dumpvecs,x
+        dex
         bpl @clearloop
 
         ldy #0
@@ -590,8 +589,8 @@ bd:
         ldx #3
 @copyloop:
         lda dumpvecs,x
-        sta lba_addr,x 
-        dex 
+        sta lba_addr,x
+        dex
         bpl @copyloop
 
         lda #$10
@@ -608,7 +607,7 @@ bd:
         jmp mainloop
 @err:
         jmp errmsg
-@usage:  
+@usage:
         jsr primm
         .byte $0a, $0d,"usage: bd <block-no> (4 bytes, 8 hex digits) ", $0a, $0d,0
         jmp mainloop
@@ -618,22 +617,22 @@ pd:
         ldx #1
         stz dumpend
         jsr hex2dumpvec
-       
+
         lda dumpend + 1
         sta dumpvec + 1
- 
-        lda dumpend 
+
+        lda dumpend
         bne :+
         lda dumpvec +1
         sta dumpend
-:   
+:
         stz dumpvec
-   
+
         crlf
 @start:
         jsr dump_start
         jmp mainloop
-@error:  
+@error:
         jsr primm
         .byte $0a, $0d,"usage: pd <pageaddr>", $0a, $0d,0
         jmp mainloop
@@ -673,10 +672,10 @@ dump_start:
         jsr char_out
 
         ldy #$00
-@out_char:  
+@out_char:
         lda (dumpvec),y
         cmp #$19 ; printable character?
-        bcs :+   ; 
+        bcs :+   ;
         lda #'.' ; no, just print '.'
 :                ; yes, print it
         jsr char_out
@@ -686,11 +685,11 @@ dump_start:
 
         ; update dumpvec
         clc
-        tya 
+        tya
         adc dumpvec
         sta dumpvec
- 
-        dex 
+
+        dex
         bne @output_line
 
         lda dumpvec+1
@@ -698,7 +697,7 @@ dump_start:
         beq @end
         jsr primm
         .byte $0a,$0d,"-- press a key-- ",$00
-        
+
         keyin
         cmp #KEY_CTRL_C
         beq @end
@@ -707,7 +706,7 @@ dump_start:
 
         inc dumpvec+1
         jmp dump_start
-@end:  
+@end:
         rts
 
 
@@ -716,7 +715,7 @@ loadmem:
         ldx #0
 
         jsr get_filename
-      
+
         ldx #1
         jsr hex2dumpvec
         bcs @usage
@@ -752,9 +751,9 @@ savemem:
         jsr hex2dumpvec
         bcs @usage
 
-        iny 
+        iny
         lda (paramptr),y
-        beq @usage    
+        beq @usage
 
         jsr get_filename
 
@@ -774,12 +773,12 @@ savemem:
         inc16 dumpvec
 
         lda dumpvec
-        cmp dumpend 
+        cmp dumpend
         bne :-
         lda dumpvec+1
         cmp dumpend+1
         bne :-
-        
+
         jsr krn_close
 
         jmp mainloop
@@ -790,6 +789,13 @@ savemem:
         .byte $0a, $0d,"usage: save <from> <to> <filename>",$0a, $0d, $00
         jmp mainloop
 
+
+cls:
+        jsr primm
+        .byte 27,"[2J "
+        .byte $00
+        jmp mainloop
+        
 get_filename:
         ldx #0
 @read_filename:
@@ -799,7 +805,7 @@ get_filename:
         beq @read_filename_done
 
         sta filenamebuf,x
-        iny 
+        iny
         inx
         bne @read_filename
 
@@ -814,7 +820,7 @@ hex2dumpvec:
         beq @err
         cmp #' '
         bne :+
-        iny 
+        iny
         bra @next_byte
 :
         jsr atoi
@@ -831,12 +837,12 @@ hex2dumpvec:
         jsr atoi
         ora dumpvecs,x
         sta dumpvecs,x
-        
+
         iny
-        dex 
-        bpl @next_byte       
+        dex
+        bpl @next_byte
 @end:
-        clc 
+        clc
         rts
 @err:
         sec
