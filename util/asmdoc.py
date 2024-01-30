@@ -68,7 +68,7 @@ def main():
             continue
         if name == 'name':
             proc_name = value
-            doc_struct[module][proc_name] = {"git":"https://github.com/Steckschwein/code/tree/master/%s#L%d" % (filename, ln)}
+            doc_struct[module][proc_name] = {"git":"https://github.com/Steckschwein/code/tree/master/%s#L%d" % (filename, ln+1)}
             continue
 
 
