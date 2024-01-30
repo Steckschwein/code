@@ -10,7 +10,8 @@
 ***
 
 {% for proc in doc_struct[module]|sort() %}
-### {{ proc }}
+### {{ proc }} 
+[{{ proc }} on github]({{doc_struct[module][proc].git}})
 
 {% set info = doc_struct[module][proc] %}
 > {{ "".join(info.desc) }}
@@ -26,7 +27,7 @@ Out
 {% endif %}
 {% if info.clobbers %}
 Clobbers
-: {{ "<br />".join(info.clobbers) }} 
+: {{ "<br />".join(info.clobbers) }}
 {% endif %}
 ***
 {% endfor %}

@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
 
 .include "vdp.inc"
 .include "gfx.inc"
@@ -62,8 +63,9 @@ _gfx_prepare_x_y:
 
       rts
 
-; A/Y ptr to plot_t struct
-;
+;@name: gfx_plot
+;@desc: plot pixel
+;@in: A/Y - pointer to plot_t struct
 gfx_plot:
       php
       sei
