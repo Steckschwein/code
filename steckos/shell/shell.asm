@@ -317,6 +317,9 @@ cmdlist:
         .byte "ms",0
         .word ms
 
+        .byte "bank",0
+        .word bank
+
         .byte "go",0
         .word go
 
@@ -326,12 +329,11 @@ cmdlist:
         .byte "save",0
         .word savemem
 
-
+        .byte "cls",0
+        .word cls
 
         ; End of list
         .byte $ff
-
-
 
 
 errmsg:
@@ -522,7 +524,44 @@ go:
 @end:
         jmp mainloop
 
+bank:
+        ldy #0
+        lda (paramptr),y
+        beq @status
 
+        ldx #1
+        jsr hex2dumpvec
+        bcs @usage
+
+        lda dumpend+1
+        tax 
+        lda dumpend 
+        sta ctrl_port,x 
+
+        bra @status
+@usage:
+        jsr primm
+        .byte $0a, $0d,"usage: bank <slot> <bank>", $0a, $0d,0
+        bra @end 
+@status:
+        
+        ldx #0
+@next:        
+        crlf
+
+        txa
+        jsr hexout
+        lda #':'
+        jsr char_out
+        lda #' '
+        jsr char_out
+        lda ctrl_port,x 
+        jsr hexout
+        inx
+        cpx #4
+        bne @next
+@end:
+        jmp mainloop
 ms:
         ldy #0
         ldx #1
@@ -790,6 +829,13 @@ savemem:
         .byte $0a, $0d,"usage: save <from> <to> <filename>",$0a, $0d, $00
         jmp mainloop
 
+
+cls:
+        jsr primm
+        .byte 27,"[2J "
+        .byte $00
+        jmp mainloop
+        
 get_filename:
         ldx #0
 @read_filename:
