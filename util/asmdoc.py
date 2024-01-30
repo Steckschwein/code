@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import os
 import fnmatch
+import re
 from jinja2 import Environment, PackageLoader, select_autoescape
 import argparse
 
@@ -35,15 +36,17 @@ def main():
     for filename in get_filelist(args.directory, args.filespec):
         with open(filename, "r") as f:
             for (ln, line) in enumerate(f):
-                if not line.startswith(";@"):
+                m = re.findall(";[\s]?@([a-z]+):?(.*)", line.strip())
+                if not m:
                     continue
+                try:
+                    label = m[0][0].strip()
+                    value = m[0][1].strip().replace('"', '')
+                  
+                    params.append((label, value, filename, ln))
+                except IndexError:
+                    print ("Syntax error in %s:%d\n%s" % (filename, ln, line))
 
-                tmp = line.strip().replace(";@", '').partition(':')
-
-                if tmp[1] != ':':
-                     print("Syntax error in %s:%d\n%s" % (filename, ln, line))
-                params.append((tmp[0], tmp[2]))
-                
                 # print(line.split("@")[1].split(':'))
                 # try:
                 #     params.append(line.split("@")[1].split(':'))
@@ -56,9 +59,6 @@ def main():
     module = None
     proc_name = None
     for (name, value, filename, ln) in params:
-        name = name.strip()
-        value = value.strip().replace('"', '')
-
         if name == 'module':
             module = value
             try:
