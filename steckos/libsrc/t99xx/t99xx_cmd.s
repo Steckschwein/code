@@ -30,14 +30,12 @@
 
 ;@name: vdp_wait_cmd
 ;@desc: wait until a pending command has been finished
-;@in: -
-;@out: -
 vdp_wait_cmd:
-	 vdp_sreg 2, v_reg15			; 2 - to select status register S#2
+   vdp_sreg 2, v_reg15      ; 2 - to select status register S#2
 @wait:
-	 vdp_wait_s 5
-	 lda a_vreg
-	 ror
-	 bcs @wait
-	 vdp_sreg 0, v_reg15			; 0 - reset status register selection to S#0
-	 rts
+   vdp_wait_s 5
+   lda a_vreg
+   ror
+   bcs @wait
+   vdp_sreg 0, v_reg15      ; 0 - reset status register selection to S#0
+   rts
