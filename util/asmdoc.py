@@ -3,7 +3,6 @@ import os
 import fnmatch
 from jinja2 import Environment, PackageLoader, select_autoescape
 import argparse
-import json
 
 def get_filelist(directory, filespec):
     filelist = []
@@ -39,9 +38,11 @@ def main():
                 if not line.startswith(";@"):
                     continue
 
-                line = line.strip().replace(";@", '').partition(':')
+                tmp = line.strip().replace(";@", '').partition(':')
 
-                params.append((line[0], line[2]))
+                if tmp[1] != ':':
+                     print("Syntax error in %s:%d\n%s" % (filename, ln, line))
+                params.append((tmp[0], tmp[2]))
                 
                 # print(line.split("@")[1].split(':'))
                 # try:
