@@ -39,7 +39,6 @@
 
 .autoimport
 
-.export __fat_find_first
 .export __fat_find_first_mask
 .export __fat_find_next
 .export __fat_alloc_fd
@@ -55,6 +54,7 @@
 .export __fat_read_cluster_block_and_select
 .export __fat_read_block_data
 .export __fat_read_block_fat
+.export __fat_seek_next_dirent
 .export __fat_set_fd_dirlba
 .export __fat_set_fd_start_cluster
 .export __fat_set_fd_start_cluster_seek_pos
@@ -65,6 +65,7 @@
 .export __inc_lba_address
 
 
+
 ; in:
 ;   X - file descriptor (index into fd_area) of the directory
 ;   A/Y - pointer to matcher strategy
@@ -73,13 +74,7 @@
 __fat_find_first_mask:
     sta volumeID+VolumeID::fat_vec_matcher+0
     sty volumeID+VolumeID::fat_vec_matcher+1
-
-; in:
-;  .X - file descriptor (index into fd_area) of the directory to search
-; out:
-;  C=0 if dir entry was found with dirptr pointing to that entry, C=1 and A=<error code> otherwise or A=EOK if end of directory or EOC
-__fat_find_first:
-    jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos
+    jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos to 0
 
 __ff_loop:
     jsr __fat_prepare_block_access_read
@@ -251,11 +246,6 @@ __fat_open_path:
         bcc :-
         debugdump "f fill ex", volumeID+VolumeID::fat_filename
 
-; in:
-;   volumeID+VolumeID::fat_filename set with fat compatible filename to open
-; out:
-;   X - index into fd_area of the opened file
-;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
         phy
         ldx #FD_INDEX_TEMP_FILE
         lda #<__fat_match_name

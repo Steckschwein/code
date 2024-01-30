@@ -247,7 +247,7 @@ fat_open:
 ;@out: C, "0 on success, 1 on error"
 ;@out: A, "error code"
 ;@out: X, "index into fd_area of the opened file"
-;@desc: "read byte from file"
+;@desc: "open file"
 fat_fopen:
           jsr fat_open
           bcs @l_not_open

@@ -1,0 +1,34 @@
+# Modules
+
+{% for module in doc_struct.keys()|sort() %}[{{ module }}](#{{ module }}) | {% endfor %}
+***
+
+{% for module in doc_struct.keys()|sort()  %}
+## {{ module }}
+{% for name in doc_struct[module]|sort() %}[{{ name }}](#{{ name }}) | {% endfor %}
+
+***
+
+{% for proc in doc_struct[module]|sort() %}
+### {{ proc }} 
+[{{ proc }} on github]({{doc_struct[module][proc].git}})
+
+{% set info = doc_struct[module][proc] %}
+> {{ "".join(info.desc) }}
+
+
+{% if info.in %}
+In
+: {{ "<br />".join(info.in) }}
+{% endif %}
+{% if info.out %}
+Out
+: {{ "<br />".join(info.out) }}
+{% endif %}
+{% if info.clobbers %}
+Clobbers
+: {{ "<br />".join(info.clobbers) }}
+{% endif %}
+***
+{% endfor %}
+{% endfor %}

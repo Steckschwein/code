@@ -249,10 +249,10 @@ block_fat             = BUFFER_2 ; $0600-$07ff
    pha
    lda fd_area+F32_fd::Attr, x
    and #DIR_Attr_Mask_Dir		; is directory?
-   cmp #DIR_Attr_Mask_Dir   ; C=1 if set
+   beq :+
    pla
-   bcc :+
    lda #EISDIR
+   sec
    rts
-:
+:  pla
 .endmacro

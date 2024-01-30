@@ -20,6 +20,54 @@ TEST_FILE_CL2=$19
 .code
 
 ; -------------------
+		setup "fat_opendir ENOTDIR"
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+		jsr fat_opendir
+		assertCarry 1
+		assertA ENOTDIR
+
+; -------------------
+		setup "fat_opendir and close"
+		lda #<test_dir_name_eexist
+		ldx #>test_dir_name_eexist
+		jsr fat_opendir
+		assertCarry 0
+		assertX 2*FD_Entry_Size
+
+; -------------------
+		setup "fat_readdir"
+		lda #<test_dir_name_eexist
+		ldx #>test_dir_name_eexist
+		jsr fat_opendir
+		assertCarry 0
+		assertX 2*FD_Entry_Size
+
+		lda #<test_dirent
+		ldy #>test_dirent
+		jsr fat_readdir
+		assertCarry 0
+		assertX 2*FD_Entry_Size
+    assertDirEntry test_dirent
+      fat32_dir_entry_dir ".       ", "   ", 0
+
+		lda #<test_dirent
+		ldy #>test_dirent
+		jsr fat_readdir
+		assertCarry 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_dir "..      ", "   ", 0
+
+		lda #<test_dirent
+		ldy #>test_dirent
+		jsr fat_readdir
+		assertCarry 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_dir "DIR02   ", "   ", 0
+
+    jsr fat_close
+
+; -------------------
 		setup "fat_chdir_enotdir"
 		lda #<test_file_name_1
 		ldx #>test_file_name_1
@@ -402,3 +450,5 @@ block_data_cl19_00:  .res sd_blocksize
 block_data_cl19_01:  .res sd_blocksize
 block_data_cl19_02:  .res sd_blocksize
 block_data_cl19_03:  .res sd_blocksize
+
+test_dirent:  .res .sizeof(F32DirEntry)

@@ -137,8 +137,8 @@ __fat_dir_isempty:
 ; out:
 ;  A - number of directory entries (with "." and "..")
 __fat_count_direntries:
-    lda #<@match_always
-    ldy #>@match_always
+    lda #<__fat_match_all
+    ldy #>__fat_match_all
     jsr __fat_find_first_mask    ; find within dir given in X
     bcs @l_exit
     ldy #0
@@ -156,9 +156,11 @@ __fat_count_direntries:
     tya
     debug "f_cnt_d"
     rts
-@match_always:
-    clc
+
+__fat_match_all:
     lda (dirptr)
+    cmp #DIR_Entry_Deleted
+    clc
     beq :+  ; deleted, C=0 no match
     sec
 :   rts

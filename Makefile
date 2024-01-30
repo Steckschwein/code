@@ -7,7 +7,7 @@ clean:
 	(cd steckos; make clean)
 	(cd asmunit; make clean)
 	if [ -e steckos.img ] ; then rm steckos.img ; fi
-	rm libsrc.html
+	if [ -e libsrc.html ] ; then rm libsrc.html ; fi
 
 
 build:

@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
 .export vdp_cmd_hmmv
@@ -29,40 +31,41 @@
 .importzp vdp_ptr
 
 .code
-;
-; execure highspeed memory move (vdp/vram) or "fill"
-;	A/X - ptr to rectangle coordinates (4 word with x1,y1, len x, len y)
-; 	Y - color to fill in (reg #44)
+
+;@name: vdp_cmd_hmmv
+;@desc: execute highspeed memory move (vdp/vram) or "fill"
+;@in: A/X - ptr to rectangle coordinates (4 word with x1,y1, len x, len y)
+;@in: Y - color to fill in (reg #44)
 vdp_cmd_hmmv:
-	php
-	sei
+  php
+  sei
 
-	sta vdp_ptr
-	stx vdp_ptr+1
+  sta vdp_ptr
+  stx vdp_ptr+1
 
-	vdp_sreg 36, v_reg17 	; set reg index to #36
+  vdp_sreg 36, v_reg17   ; set reg index to #36
 
-	phy						; safe color
+  phy            ; safe color
 
-	ldy #0
+  ldy #0
 @loop:
-	vdp_wait_s 5
-	lda (vdp_ptr),y
-	sta a_vregi
-	iny
-	cpy #08
-	bne @loop
+  vdp_wait_s 5
+  lda (vdp_ptr),y
+  sta a_vregi
+  iny
+  cpy #08
+  bne @loop
 
-	pla 					; color (r#44)
-	sta a_vregi
+  pla           ; color (r#44)
+  sta a_vregi
 
-	vdp_wait_s 2
-	stz a_vregi
+  vdp_wait_s 2
+  stz a_vregi
 
-	vdp_wait_s 2
-	lda #v_cmd_hmmv
-	sta a_vregi
+  vdp_wait_s 2
+  lda #v_cmd_hmmv
+  sta a_vregi
 
-	jsr vdp_wait_cmd
-	plp
-	rts
+  jsr vdp_wait_cmd
+  plp
+  rts
