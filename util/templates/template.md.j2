@@ -10,7 +10,8 @@
 ***
 
 {% for proc in doc_struct[module]|sort() %}
-### [{{ proc }}]({{doc_struct[module][proc].git}})
+### {{ proc }} 
+[{{ proc }} on github]({{doc_struct[module][proc].git}})
 
 {% set info = doc_struct[module][proc] %}
 > {{ "".join(info.desc) }}
