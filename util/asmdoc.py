@@ -11,7 +11,7 @@ def get_filelist(directory, filespec):
             for items in fnmatch.filter(files, filespec):
                     filelist.append("%s/%s" % (root, items))
     return (filelist)
-     
+
 def main():
     env = Environment(
         loader=PackageLoader("asmdoc"),
@@ -22,7 +22,7 @@ def main():
         prog='asmdoc',
         description='Generate documentation from annotated assembly source'
     )
-    
+
     parser.add_argument('-d', '--directory', help="source path to scan", default=".")
     parser.add_argument('-f', '--file', help="output file", default="asmdoc.html")
     parser.add_argument('--filespec', help="filespec to search files", default="*.s")
@@ -35,14 +35,14 @@ def main():
     doc_struct = {}
     for filename in get_filelist(args.directory, args.filespec):
         with open(filename, "r") as f:
-            for line in f:
+            for (ln, line) in enumerate(f):
                 if not line.startswith(";@"):
                     continue
 
                 line = line.strip().replace(";@", '').partition(':')
 
-                params.append((line[0], line[2]))
-                
+                params.append((line[0], line[2], filename, ln))
+
                 # print(line.split("@")[1].split(':'))
                 # try:
                 #     params.append(line.split("@")[1].split(':'))
@@ -50,11 +50,11 @@ def main():
                 #     print(e)
 
     # print (json.dumps(params))
-    # return 
+    # return
 
     module = None
-    proc_name = None   
-    for (name, value) in params:
+    proc_name = None
+    for (name, value, filename, ln) in params:
         name = name.strip()
         value = value.strip().replace('"', '')
 
@@ -68,15 +68,15 @@ def main():
             continue
         if name == 'name':
             proc_name = value
-            doc_struct[module][proc_name] = {}
+            doc_struct[module][proc_name] = {"git":"https://github.com/Steckschwein/code/tree/master/%s#L%d" % (filename, ln)}
             continue
-        
-        
+
+
         try:
             doc_struct[module][proc_name][name].append(value)
         except KeyError:
             doc_struct[module][proc_name][name] = [value]
-        
+
 
     template = env.get_template("template.%s.j2" % args.format)
 
