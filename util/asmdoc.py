@@ -55,31 +55,32 @@ def main():
                   
                 params.append((label, value, filename, ln))
 
-
-    module = None
+    module_name = None
     proc_name = None
+    
     for (name, value, filename, ln) in params:
         if name == 'module':
-            module = value
+            module_name = value
             try:
-                if not doc_struct[module]:
-                    doc_struct[module] = {}
+                if doc_struct[module_name]:
+                    continue
             except KeyError:
-                    doc_struct[module] = {}
+                    doc_struct[module_name] = {}
             continue
+            
         if name == 'name':
             proc_name = value
-            doc_struct[module][proc_name] = {
+            doc_struct[module_name][proc_name] = {
                 "filename": filename,
                 "line": ln+1            
             }
             continue
 
-
+        
         try:
-            doc_struct[module][proc_name][name].append(value)
+            doc_struct[module_name][proc_name][name].append(value)
         except KeyError:
-            doc_struct[module][proc_name][name] = [value]
+            doc_struct[module_name][proc_name][name] = [value]
 
     render_template(args.file, args.format, doc_struct)
 
