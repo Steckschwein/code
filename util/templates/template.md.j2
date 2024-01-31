@@ -10,9 +10,7 @@
 ***
 
 {% for proc in doc_struct[module]|sort() %}
-### {{ proc }} 
-[{{ proc }} on github]({{doc_struct[module][proc].git}})
-
+### <a name="{{proc}}" target="_blank" href="https://github.com/Steckschwein/code/tree/master/{{doc_struct[module][proc].filename}}#L{{doc_struct[module][proc].line}}">{{ proc }}</a>
 {% set info = doc_struct[module][proc] %}
 > {{ "".join(info.desc) }}
 

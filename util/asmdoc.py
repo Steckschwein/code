@@ -33,28 +33,21 @@ def main():
 
     params = []
     doc_struct = {}
+    regex = re.compile(";[\s]?@([a-z]+):?(.*)")
     for filename in get_filelist(args.directory, args.filespec):
         with open(filename, "r") as f:
             for (ln, line) in enumerate(f):
-                m = re.findall(";[\s]?@([a-z]+):?(.*)", line.strip())
+                m = regex.findall(line.strip())
                 if not m:
                     continue
-                try:
-                    label = m[0][0].strip()
-                    value = m[0][1].strip().replace('"', '')
+
+                m = m.pop()
+            
+                label = m[0].strip()
+                value = m[1].strip().replace('"', '')
                   
-                    params.append((label, value, filename, ln))
-                except IndexError:
-                    print ("Syntax error in %s:%d\n%s" % (filename, ln, line))
+                params.append((label, value, filename, ln))
 
-                # print(line.split("@")[1].split(':'))
-                # try:
-                #     params.append(line.split("@")[1].split(':'))
-                # except IndexError as e:
-                #     print(e)
-
-    # print (json.dumps(params))
-    # return
 
     module = None
     proc_name = None
@@ -69,7 +62,11 @@ def main():
             continue
         if name == 'name':
             proc_name = value
-            doc_struct[module][proc_name] = {"git":"https://github.com/Steckschwein/code/tree/master/%s#L%d" % (filename, ln+1)}
+            doc_struct[module][proc_name] = {
+                "filename": filename,
+                "line": ln+1,
+                "git":"https://github.com/Steckschwein/code/tree/master/%s#L%d" % (filename, ln+1)
+            }
             continue
 
 
