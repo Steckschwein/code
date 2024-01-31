@@ -35,29 +35,28 @@
 ;@in: X - length of init table, corresponds to video register to start R#+X - e.g. X=10 start with R#10
 ;@in: A/Y - pointer to vdp init table
 vdp_init_reg:
-  php
-  sei
+      php
+      sei
 
-  sta vdp_ptr
-  sty vdp_ptr+1
-  txa      ; x length of init table
-  tay
-  ora #$80  ; bit 7 = 1 => register write
-  tax
-@l:
-  vdp_wait_s 4
-  lda (vdp_ptr),y ; 5c
-  sta a_vreg
-  vdp_wait_s
-  stx a_vreg
-  dex        ;2c
-  dey        ;2c
-  bpl @l     ;3c
+      sta vdp_ptr
+      sty vdp_ptr+1
+      txa      ; x length of init table
+      tay
+      ora #$80  ; bit 7 = 1 => register write
+      tax
+@l:   vdp_wait_s 7
+      lda (vdp_ptr),y ; 5c
+      sta a_vreg
+      vdp_wait_s
+      stx a_vreg
+      dex        ;2c
+      dey        ;2c
+      bpl @l     ;3c
 
 .ifdef V9958
-     vdp_sreg 0, v_reg23  ; reset vertical scroll
-  vdp_sreg v_reg25_wait, v_reg25  ; enable V9958 /WAIT pin
+      vdp_sreg 0, v_reg23  ; reset vertical scroll
+      vdp_sreg v_reg25_wait, v_reg25  ; enable V9958 /WAIT pin
 .endif
 
-     plp
-  rts
+      plp
+      rts

@@ -31,9 +31,9 @@
 .code
 
 ;@name: vdp_memcpy
-;@desc: copy memory to vdp VRAM page wise
-;@in X - amount of 256byte blocks (page counter)
-;@in A/Y - pointer to source data
+;@desc: copy data from host memory denoted by pointer (A/Y) to vdp VRAM (page wise). the VRAM address must be setup beforehand e.g. with macro vdp_vram_w <address>
+;@in: X - amount of 256byte blocks (page counter)
+;@in: A/Y - pointer to source data
 vdp_memcpy:
     sta vdp_ptr
     sty vdp_ptr+1
@@ -58,7 +58,7 @@ vdp_memcpy:
 ;@name: vdp_memcpys
 ;@desc: copy memory to vdp VRAM page wise
 ;@in: X - amount of bytes to copy
-;@in A/Y - pointer to data
+;@in: A/Y - pointer to data
 vdp_memcpys:
     sta vdp_ptr
     sty vdp_ptr+1
