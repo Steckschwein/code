@@ -38,9 +38,12 @@ def main():
 
     args = parser.parse_args()
 
-    params = []
     doc_struct = {}
     regex = re.compile(";[\s]?@([a-z]+):?(.*)")
+
+    # module_name = None
+    # proc_name = None
+
     for filename in get_filelist(args.directory, args.filespec):
         with open(filename, "r") as f:
             for (ln, line) in enumerate(f):
@@ -50,37 +53,31 @@ def main():
 
                 m = m.pop()
             
-                label = m[0].strip()
+                name = m[0].strip()
                 value = m[1].strip().replace('"', '')
                   
-                params.append((label, value, filename, ln))
-
-    module_name = None
-    proc_name = None
-    
-    for (name, value, filename, ln) in params:
-        if name == 'module':
-            module_name = value
-            try:
-                if doc_struct[module_name]:
+                if name == 'module':
+                    module_name = value
+                    try:
+                        if doc_struct[module_name]:
+                            continue
+                    except KeyError:
+                            doc_struct[module_name] = {}
                     continue
-            except KeyError:
-                    doc_struct[module_name] = {}
-            continue
-            
-        if name == 'name':
-            proc_name = value
-            doc_struct[module_name][proc_name] = {
-                "filename": filename,
-                "line": ln+1            
-            }
-            continue
+                    
+                if name == 'name':
+                    proc_name = value
+                    doc_struct[module_name][proc_name] = {
+                        "filename": filename,
+                        "line": ln+1            
+                    }
+                    continue
 
-        
-        try:
-            doc_struct[module_name][proc_name][name].append(value)
-        except KeyError:
-            doc_struct[module_name][proc_name][name] = [value]
+                
+                try:
+                    doc_struct[module_name][proc_name][name].append(value)
+                except KeyError:
+                    doc_struct[module_name][proc_name][name] = [value]
 
     render_template(args.file, args.format, doc_struct)
 
