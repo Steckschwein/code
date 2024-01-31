@@ -36,7 +36,7 @@
 
 ;@name: gfx_line
 ;@desc: draw line according to data in given line struct
-;@in A/Y ptr to line_t struct
+;@in: A/Y ptr to line_t struct
 gfx_line:
       php
       sei
