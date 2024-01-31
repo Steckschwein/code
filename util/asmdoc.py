@@ -12,11 +12,18 @@ def get_filelist(directory, filespec):
                     filelist.append("%s/%s" % (root, items))
     return (filelist)
 
-def main():
+def render_template(filename, format, doc_struct):
     env = Environment(
         loader=PackageLoader("asmdoc"),
         autoescape=select_autoescape()
     )
+
+    template = env.get_template("template.%s.j2" % format)
+
+    with open(filename, "w") as f:
+        f.write(template.render(doc_struct=doc_struct))
+
+def main():
 
     parser = argparse.ArgumentParser(
         prog='asmdoc',
@@ -64,8 +71,7 @@ def main():
             proc_name = value
             doc_struct[module][proc_name] = {
                 "filename": filename,
-                "line": ln+1,
-                "git":"https://github.com/Steckschwein/code/tree/master/%s#L%d" % (filename, ln+1)
+                "line": ln+1            
             }
             continue
 
@@ -75,20 +81,7 @@ def main():
         except KeyError:
             doc_struct[module][proc_name][name] = [value]
 
-
-    template = env.get_template("template.%s.j2" % args.format)
-
-    with open(args.file, "w") as f:
-        f.write(template.render(doc_struct=doc_struct))
-
-    # print(json.dumps(doc_struct))
-    # for module in doc_struct.keys():
-    #     for proc_name in doc_struct[module].keys():
-
-    #         print (module, proc_name)
-    #         for par in doc_struct[module][proc_name].keys():
-    #             print ("\t%s:\t\t%s" % (par, "; ".join(doc_struct[module][proc_name][par])))
-
+    render_template(args.file, args.format, doc_struct)
 
 if __name__ == "__main__":
      main()
