@@ -381,7 +381,13 @@ __fat_prepare_block_access:
     pla
 @l_read:
     jsr __calc_lba_addr
-    jsr __fat_read_block_data
+;    jsr __fat_read_block_data
+    lda #>block_data
+    sta sd_blkptr+1
+    stz sd_blkptr
+    phx
+    jsr read_block
+    plx
     bcs @l_exit
     .assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
     lda fd_area+F32_fd::SeekPos+1,x

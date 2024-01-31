@@ -57,7 +57,7 @@ fat_fread_vollgas:
           sty p_data+1
 
 @l_blockstart:
-          lda fd_area+F32_fd::SeekPos+1,x
+          lda fd_area+F32_fd::SeekPos+1,x     ; read until we are block aligned (multiple of $200)
           and #$01
           ora fd_area+F32_fd::SeekPos+0,x
           beq @l_read_blocks
@@ -78,9 +78,9 @@ fat_fread_vollgas:
           ror
           tay
           lda fd_area + F32_fd::FileSize + 0,x
-          beq @l_exit
+          beq :+
           iny
-
+:
           lda p_data
           ldy p_data+1
           jsr __fat_prepare_block_access_read

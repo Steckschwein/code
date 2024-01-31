@@ -328,11 +328,11 @@ __fat_set_direntry_filesize:
 ;  C=0 on success, C=1 on error and A=error code
 __fat_free_cluster:
     jsr __fat_read_cluster_block_and_select  ; Y offset in block
-    bne @l_exit        ; read error
-    bcc @l_exit        ; EOC? (C=1) expected here in order to free - TODO FIXME cluster chain during deletion not supported yet
-    lda #1
+    bne @l_exit         ; read error
+    bcc @l_exit         ; EOC? (C=1) expected here in order to free - TODO FIXME cluster chain during deletion not supported yet
+    lda #1              ; +1
     sta volumeID+VolumeID::fat_cluster_add
-    dec
+    dea
     bra __fat_update_cluster
 @l_exit:
     rts
@@ -367,7 +367,7 @@ __fat_reserve_cluster:
     bcc :+
     rts
 
-:   lda #$ff
+:   lda #$ff  ; -1
     sta volumeID+VolumeID::fat_cluster_add
 ; update cluster
 ; in:

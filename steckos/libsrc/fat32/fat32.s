@@ -58,7 +58,7 @@ __fat_fseek_cluster:
     debug "seek cl >"
 
     stz __volatile_tmp
-    bcc :+  ; read or write access?
+    bcc :+  ; C=0 read access
 
     jsr __fat_is_start_cln_zero
     bne :+
