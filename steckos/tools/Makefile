@@ -4,7 +4,9 @@ LIBS=../lib/steckschwein.a
 CLIB=../clib/lib/steckschwein-clib.a
 LDFLAGS=-C ../prg.ld65.cfg -m $<.map $(LIBS)
 
-TOOLS=ls.prg stat.prg attrib.prg rename.prg help.prg touch.prg cp.prg keycode.prg vramtest.prg wozmon.prg
+#TOOLS=ls.prg stat.prg attrib.prg rename.prg help.prg touch.prg cp.prg keycode.prg vramtest.prg wozmon.prg
+TOOLS=stat.prg attrib.prg rename.prg help.prg touch.prg cp.prg keycode.prg vramtest.prg wozmon.prg
+
 # c tools
 TOOLS+=\
   banner.prg \
