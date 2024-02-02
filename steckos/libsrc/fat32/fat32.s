@@ -127,7 +127,7 @@ fat_fread_byte:
 
 :   phy
 
-    jsr __fat_prepare_block_access_read
+    jsr __fat_prepare_data_block_access_read
     bcs @l_exit
 
     sta __volatile_ptr

@@ -114,7 +114,7 @@ fat_readdir:
           sec
           rts
 
-@l_read:  jsr __fat_prepare_block_access_read
+@l_read:  jsr __fat_prepare_data_block_access_read
           bcs @l_exit
           sta dirptr
           sty dirptr+1

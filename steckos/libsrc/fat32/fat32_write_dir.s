@@ -92,7 +92,7 @@ fat_mkdir:
 
         debug "fat mkd pba >"
         sec                               ; if eoc we have to prepare block access first to write new dir entry
-        jsr __fat_prepare_block_access
+        jsr __fat_prepare_data_block_access
 @l_add_dirent:
         debug16 "fat mkd >", dirptr
         debug32 "fat mkd >", fd_area+FD_INDEX_TEMP_FILE+F32_fd::SeekPos

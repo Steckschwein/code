@@ -83,7 +83,7 @@ fat_fread_vollgas:
 :
           lda p_data
           ldy p_data+1
-          jsr __fat_prepare_block_access_read
+          jsr __fat_prepare_data_block_access_read
 
           inc p_data+1
           inc p_data+1

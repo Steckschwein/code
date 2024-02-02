@@ -51,8 +51,8 @@
 .export __fat_next_cln
 .export __fat_open_path
 .export __fat_open_rootdir
-.export __fat_prepare_block_access
-.export __fat_prepare_block_access_read
+.export __fat_prepare_data_block_access
+.export __fat_prepare_data_block_access_read
 .export __fat_read_cluster_block_and_select
 .export __fat_read_block_data
 .export __fat_read_block_fat
@@ -95,7 +95,7 @@ __fat_find_first_mask:
     jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos to 0
 
 __ff_loop:
-    jsr __fat_prepare_block_access_read
+    jsr __fat_prepare_data_block_access_read
     bcs __ff_exit
     sta dirptr
     sty dirptr+1
@@ -345,7 +345,7 @@ __fat_clone_fd:
     rts
 
 
-__fat_prepare_block_access_read:
+__fat_prepare_data_block_access_read:
     clc
 ; prepare read/write access by fetching the appropriate block from device
 ; in:
@@ -354,53 +354,69 @@ __fat_prepare_block_access_read:
 ; out:
 ;   C=0 on success, C=1 on error with A=<error code>
 ;   A/Y pointer to data block for read/write access
+__fat_prepare_data_block_access:
+    lda #<block_data
+    ldy #>block_data
+; in:
+;   X - file descriptor
+;   C - C=0 read access, C=1 write access
+;   A/Y - pointer to block target
+; out:
+;   C=0 on success, C=1 on error with A=<error code>
+;   A/Y pointer to data block for read/write access
 __fat_prepare_block_access:
 
-    bit fd_area+F32_fd::status,x              ; dirty from seek?
-    debug "fp ba >"
-    bvs @l_seek
+              bit fd_area+F32_fd::status,x              ; dirty from seek?
+              debug "fp ba >"
+              bvs @l_seek
 
-    php ; save carry given as parameter
+              pha
 
-    lda fd_area+F32_fd::SeekPos+1,x
-    lsr
-    debug32 "fp ba 0 >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-    bcs @l_restore_read                       ; not at block start (multiple of $02??)
-    and volumeID+VolumeID::BPB_SecPerClusMask ; mask with sec per cluster mask
-    ora fd_area+F32_fd::SeekPos+0,x           ; and test whether SeekPos is at the beginning of a block (multiple of $??00) ?
-    debug "fp ba 1 >"
-    bne @l_restore_read                       ; not at the beginning of a cluster, just read the block
+              lda fd_area+F32_fd::SeekPos+1,x
+              bit #$01                                  ; test block start (multiple of $02??)
+              bne @l_read
 
-    plp                                       ; restore carry
-    debug "fp ba 2 >"
-    jsr __fat_next_cln                        ; select next cluster, carry denotes read/write access
-    debug "fp ba 2 <"
-    bcc @l_read                               ; exit on error or EOC (C=1)
-    rts
-@l_restore_read:
-    pla
-@l_read:
-    jsr __calc_lba_addr
-;    jsr __fat_read_block_data
-    lda #>block_data
-    sta sd_blkptr+1
-    stz sd_blkptr
-    phx
-    jsr read_block
-    plx
-    bcs @l_exit
-    .assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
-    lda fd_area+F32_fd::SeekPos+1,x
-    and #$01
-    ora #>block_data
-    tay
-    lda fd_area+F32_fd::SeekPos+0,x
-@l_exit:
-    rts
-@l_seek:
-    jsr __fat_fseek_cluster                   ; yes, then we have to seek first to ensure correct cluster is selected, Carry is given as param for read/write access
-    bcc @l_read
-    rts
+              php ; save carry given as parameter
+              lsr
+              debug32 "fp ba 0 >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
+              and volumeID+VolumeID::BPB_SecPerClusMask ; mask with sec per cluster mask
+              ora fd_area+F32_fd::SeekPos+0,x           ; and test whether SeekPos is at the beginning of a block (multiple of $??00) ?
+              debug "fp ba 1 >"
+              bne @l_read_res                           ; not at the beginning of a cluster, just read the block
+
+              plp                                       ; restore carry
+              debug "fp ba 2 >"
+              phy
+              jsr __fat_next_cln                        ; select next cluster, carry denotes read/write access
+              ply
+              debug "fp ba 2 <"
+              bcc @l_read                               ; exit on error or EOC (C=1)
+@l_exit_err:  ply                                       ; correct stack, Y to not clobber A (error code)
+              rts
+
+@l_seek:      pha
+              phy
+              jsr __fat_fseek_cluster                   ; yes, then we have to seek first to ensure correct cluster is selected, Carry is given as param for read/write access
+              ply
+              bcc @l_read
+              bra @l_exit_err
+
+@l_read_res:  pla
+@l_read:      pla
+              sta sd_blkptr
+              sty sd_blkptr+1
+              jsr __calc_lba_addr
+              phx
+              jsr read_block
+              plx
+              bcs @l_exit
+              .assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
+              lda fd_area+F32_fd::SeekPos+1,x
+              and #$01
+              ora #>block_data
+              tay
+              lda fd_area+F32_fd::SeekPos+0,x
+@l_exit:      rts
 
 
 ; update the dir entry position and dir lba_addr of the given file descriptor

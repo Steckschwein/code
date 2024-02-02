@@ -76,7 +76,7 @@ fat_fseek:
     sta fd_area+F32_fd::SeekPos+3,x
 
     lda fd_area+F32_fd::status,x
-    ora #FD_STATUS_DIRTY                 ; set dirty - @see __fat_prepare_block_access
+    ora #FD_STATUS_DIRTY                 ; set dirty - @see __fat_prepare_data_block_access
     sta fd_area+F32_fd::status,x
 
     lda #EOK

@@ -67,7 +67,7 @@ fat_write_byte:
     pha
 
     sec ; write access
-    jsr __fat_prepare_block_access
+    jsr __fat_prepare_data_block_access
 
     sta __volatile_ptr                  ; A/Y pointer to data block
     sty __volatile_ptr+1
@@ -142,7 +142,7 @@ __fat_fopen_touch:
     debug "fop touch >"
     bcc :+
     phy
-    jsr __fat_prepare_block_access    ; write access - if eoc we have to prepare block access first to write new dir entry
+    jsr __fat_prepare_data_block_access    ; write access - if eoc we have to prepare block access first to write new dir entry
     ply
     bcs @l_exit
 
