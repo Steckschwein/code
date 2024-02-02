@@ -447,7 +447,6 @@ rmdir:
         jmp mainloop
 
 pwd:
-        crlf
         lda #<cwdbuf
         ldx #>cwdbuf
         jsr strout
@@ -1069,7 +1068,7 @@ do_ls:
 dir_show_entry_short:
         dec cnt
         bne @l1
-        ; crlf
+        crlf
         lda #5
         sta cnt
 @l1:
