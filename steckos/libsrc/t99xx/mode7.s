@@ -22,10 +22,7 @@
 
 .include "vdp.inc"
 
-.import vdp_init_reg
-.import vdp_nopslide_2m
-.import vdp_nopslide_8m
-.import vdp_cmd_hmmv
+.autoimport
 
 .export vdp_mode7_on
 .export vdp_mode7_blank
@@ -35,7 +32,6 @@
 ;@name: vdp_mode7_on
 ;@desc: gfx 7 - each pixel can be addressed - e.g. for image
 vdp_mode7_on:
-vdp_gfx7_on:
       lda #<vdp_init_bytes_gfx7
       ldy #>vdp_init_bytes_gfx7
       ldx #<(vdp_init_bytes_gfx7_end-vdp_init_bytes_gfx7)-1

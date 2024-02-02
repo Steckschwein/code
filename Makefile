@@ -23,4 +23,4 @@ img: build
 	./mkimg.sh
 
 doc:
-	./util/asmdoc.py -d steckos/libsrc/ -f libsrc.html
+	./util/asmdoc.py -d steckos/libsrc/ --format md -f libsrc.md
