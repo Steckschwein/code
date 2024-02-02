@@ -1202,19 +1202,10 @@ print_cluster_no:
 
 
 usage:
-        jsr primm
-        .byte "Usage: ls [OPTION]... [FILE]...",$0a, $0d
-        .byte "options:",$0a,$0d
-        .byte "   -a   show file attributes",$0a,$0d
-        .byte "   -c   show number of first cluster",$0a,$0d
-        .byte "   -d   show creation date",$0a,$0d
-        .byte "   -h   show hidden files",$0a,$0d
-        .byte "   -l   use a long listing format",$0a,$0d
-        .byte "   -p   paginate output",$0a,$0d
-        .byte "   -v   show volume ID ",$0a,$0d
-        .byte "   -?   show this useful message",$0a,$0d
-        .byte 0
-        rts
+        lda #<usage_txt
+        ldx #>usage_txt
+        jsr strout
+        jmp mainloop
 
 
 
@@ -1270,6 +1261,18 @@ errors:
 .addr msg_EISDIR
 .addr msg_ENOTDIR
 .addr msg_ENOTEMPTY
+usage_txt:
+.byte "Usage: ls [OPTION]... [FILE]...",$0a, $0d
+.byte "options:",$0a,$0d
+.byte "   -a   show file attributes",$0a,$0d
+.byte "   -c   show number of first cluster",$0a,$0d
+.byte "   -d   show creation date",$0a,$0d
+.byte "   -h   show hidden files",$0a,$0d
+.byte "   -l   use a long listing format",$0a,$0d
+.byte "   -p   paginate output",$0a,$0d
+.byte "   -v   show volume ID ",$0a,$0d
+.byte "   -?   show this useful message",$0a,$0d
+.byte 0
 
 
 .bss
