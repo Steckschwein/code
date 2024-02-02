@@ -330,23 +330,22 @@ __fat_match_name:
 ;   Y - source file descriptor (offset into fd_area)
 ;   X - target file descriptor (offset into fd_area)
 __fat_clone_fd:
-    phx
-    lda #FD_Entry_Size
-@l1:
-    pha
-    lda fd_area, y
-    sta fd_area, x
-    inx
-    iny
-    pla
-    dea
-    bne @l1
-    plx
-    rts
+              phx
+              lda #FD_Entry_Size
+@l1:          pha
+              lda fd_area, y
+              sta fd_area, x
+              inx
+              iny
+              pla
+              dea
+              bne @l1
+              plx
+              rts
 
 
 __fat_prepare_data_block_access_read:
-    clc
+              clc
 ; prepare read/write access by fetching the appropriate block from device
 ; in:
 ;   X - file descriptor
@@ -355,8 +354,8 @@ __fat_prepare_data_block_access_read:
 ;   C=0 on success, C=1 on error with A=<error code>
 ;   A/Y pointer to data block for read/write access
 __fat_prepare_data_block_access:
-    lda #<block_data
-    ldy #>block_data
+              lda #<block_data
+              ldy #>block_data
 ; in:
 ;   X - file descriptor
 ;   C - C=0 read access, C=1 write access
@@ -366,11 +365,11 @@ __fat_prepare_data_block_access:
 ;   A/Y pointer to data block for read/write access
 __fat_prepare_block_access:
 
+              pha                                       ; save block target address low byte
+
               bit fd_area+F32_fd::status,x              ; dirty from seek?
               debug "fp ba >"
               bvs @l_seek
-
-              pha
 
               lda fd_area+F32_fd::SeekPos+1,x
               bit #$01                                  ; test block start (multiple of $02??)
@@ -386,16 +385,13 @@ __fat_prepare_block_access:
 
               plp                                       ; restore carry
               debug "fp ba 2 >"
-              phy
               jsr __fat_next_cln                        ; select next cluster, carry denotes read/write access
-              ply
               debug "fp ba 2 <"
               bcc @l_read                               ; exit on error or EOC (C=1)
 @l_exit_err:  ply                                       ; correct stack, Y to not clobber A (error code)
               rts
 
-@l_seek:      pha
-              phy
+@l_seek:      phy
               jsr __fat_fseek_cluster                   ; yes, then we have to seek first to ensure correct cluster is selected, Carry is given as param for read/write access
               ply
               bcc @l_read
@@ -410,6 +406,7 @@ __fat_prepare_block_access:
               jsr read_block
               plx
               bcs @l_exit
+
               .assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
               lda fd_area+F32_fd::SeekPos+1,x
               and #$01
@@ -643,23 +640,27 @@ __calc_fat_lba_addr:
 ; out:
 ;  C=0 on success, C=1 on failure with A=<error code>, C=1 if EOC reached and A=0 (EOK)
 __fat_next_cln:
+    phy
+    jsr @fat_next_cln
+    ply
+    rts
+
+@fat_next_cln:
 
     bcc @l_select_next_cln  ; read access, just try to select
 
-    jsr @l_select_next_cln
-    bcc @l_exit
-   ;cmp #EOK   ; EOK means EOC (C=1/A=0)
-    bne @l_exit ; other error, then exit
+    jsr @l_select_next_cln  ; write access
+    bcc @l_exit             ; next cluster selected, exit
+    bne @l_exit             ; not EOC (C=1/A=0) then other error, exit
     ; A=0 here
     debug "f n cl w >"
-    jsr __fat_reserve_cluster ; otherwise reserve a cluster
+    jsr __fat_reserve_cluster ; EOC, try to reserve a cluster
     bcs @l_exit
 
-    jsr __fat_read_cluster_block_and_select      ; read fat block of the current cluster, Y will offset
-  ;  bcc @l_exit
-    bne @l_exit ; other error, then exit
+    jsr __fat_read_cluster_block_and_select       ; read fat block of the current cluster, Y will offset
+    bne @l_exit                                   ; we expect EOC here (C=1/A=0), otherwise error and exit
     debug "f n cl w"
-    lda volumeID + VolumeID::cluster + 0 ;
+    lda volumeID + VolumeID::cluster + 0 ;        ; set reserved cluster from above to the selected EOC cluster entry
     sta (sd_blkptr), y
     iny
     lda volumeID + VolumeID::cluster + 1
@@ -671,7 +672,7 @@ __fat_next_cln:
     lda volumeID + VolumeID::cluster + 3
     sta (sd_blkptr), y
 
-    jsr __fat_write_fat_blocks    ; write fat block with updated chain
+    jsr __fat_write_fat_blocks    ; write fat blocks with updated chain
     bcs @l_exit
 
 @l_select_next_cln:

@@ -57,13 +57,13 @@
 __fat_fseek_cluster:
     debug "seek cl >"
 
-    stz __volatile_tmp
+    ldy #0
     bcc :+  ; C=0 read access
 
     jsr __fat_is_start_cln_zero
     bne :+
     jsr __fat_reserve_start_cluster ; start cluster zero, write access, we have to reserve the start cluster
-    inc __volatile_tmp  ; save write access, set bit 0
+    ldy #1  ; save write access, set bit 0
 
 :   jsr __fat_set_fd_start_cluster
 
@@ -75,11 +75,11 @@ __fat_fseek_cluster:
     lda fd_area+F32_fd::SeekPos+1,x
     sta volumeID+VolumeID::cluster_seek_cnt+0
 
-    ldy volumeID+VolumeID::BPB_SecPerClusCount ; Count + 1 cause SeekPos / $200 gives amount of blocks/sectors, so we need at least one iteration
+    lda volumeID+VolumeID::BPB_SecPerClusCount ; Count + 1 cause SeekPos / $200 gives amount of blocks/sectors, so we need at least one iteration
 :   lsr volumeID+VolumeID::cluster_seek_cnt+2
     ror volumeID+VolumeID::cluster_seek_cnt+1
     ror volumeID+VolumeID::cluster_seek_cnt+0
-    dey
+    dea
     bpl :-
 
 @l_seek:
@@ -91,8 +91,8 @@ __fat_fseek_cluster:
     debug32 "seek cnt", volumeID+VolumeID::cluster_seek_cnt
     beq @l_exit_ok
 @seek_cln:
-    lda __volatile_tmp
-    lsr ; restore carry
+    tya                       ; read/write access
+    lsr                       ; restore carry
     jsr __fat_next_cln
     bcs @l_exit
     _dec24 volumeID+VolumeID::cluster_seek_cnt

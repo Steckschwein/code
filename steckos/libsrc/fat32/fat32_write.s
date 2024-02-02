@@ -521,7 +521,7 @@ __fat_find_free_cluster:
         debug32 "fcl flba", volumeID+VolumeID::lba_fat
 @l_search:
         _inc32 volumeID+VolumeID::cluster
-        m_memcpy volumeID+VolumeID::cluster, lba_addr, 4   ; init lba_addr with last cluster (if cluster is zero, it will  we start from lba_fat)
+        m_memcpy volumeID+VolumeID::cluster, lba_addr, 4   ; init lba_addr with last cluster (if cluster is zero, we calc_fat_lba_addr to lba_fat)
         jsr __calc_fat_lba_addr
         cmp32 volumeID+VolumeID::lba_fat2, lba_addr, @l_read  ; end of fat reached?
         lda #ENOSPC ; yes, C=1 answer ENOSPC - "No space left on device"
