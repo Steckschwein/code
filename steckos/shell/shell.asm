@@ -40,7 +40,12 @@ BUF_SIZE    = 80 ;TODO maybe too small?
 cwdbuf_size = 80
 prompt  = '>'
 
-
+.export dev_read_block=         sd_read_block
+.export read_block=             blklayer_read_block
+.export dev_write_block=        sd_write_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
+.export write_flush=            blklayer_flush
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
@@ -309,6 +314,9 @@ cmdlist:
         .byte "ls",0
         .word do_ls
 
+        .byte "l",0
+        .word do_l
+
 
         .byte "mkdir",0
         .word mkdir
@@ -346,6 +354,8 @@ cmdlist:
         .byte "cls",0
         .word cls
 
+        .byte "path",0
+        .word path
         ; End of list
         .byte $ff
 
@@ -1020,7 +1030,7 @@ do_ls:
         jmp @exit
 @l4:
         lda (dirptr)
-        cmp #$e5
+        cmp #DIR_Entry_Deleted
         beq @l3
 
         ldy #F32DirEntry::Attr
@@ -1204,11 +1214,60 @@ print_cluster_no:
 usage:
         lda #<usage_txt
         ldx #>usage_txt
-        jsr strout
+        jmp strout
+
+do_l:
+        crlf
+        lda #<cwdbuf
+        ldx #>cwdbuf
+        jsr fat_opendir
+        bcs @error
+@read_next:        
+        lda #<dirent
+        ldy #>dirent
+        sta dirptr
+        sty dirptr+1
+        jsr fat_readdir
+        bcs @end
+       
+        phx
+        
+        lda (dirptr)
+        cmp #DIR_Entry_Deleted
+        beq @read_next
+
+        ldy #F32DirEntry::Attr
+        lda (dirptr),y
+        bit dir_attrib_mask ; Hidden attribute set, skip
+        bne @read_next
+
+        jsr dir_show_entry_long
+
+        plx
+        bra @read_next
+
+@error:
+        jsr hexout
+        cmp #0
+        beq @end
+        jsr fat_close
+
+        jmp errmsg
+
+@end:   
+        jsr fat_close
         jmp mainloop
 
+space:
+        lda #' '
+        jsr char_out
+        rts
 
-
+path:
+        lda #<PATH
+        ldx #>PATH
+        jsr strout
+        jmp mainloop
 
 .data
 PATH: .asciiz "./:/steckos/:/progs/"
@@ -1287,3 +1346,4 @@ fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 options:          .res 1
 pagecnt:          .res 1
 entries_per_page: .res 1
+dirent:           .res .sizeof(F32DirEntry)
