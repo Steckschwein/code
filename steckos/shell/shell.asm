@@ -40,21 +40,21 @@ BUF_SIZE    = 80 ;TODO maybe too small?
 cwdbuf_size = 80
 prompt  = '>'
 
-.export dev_read_block=         sd_read_block
-.export read_block=             blklayer_read_block
-.export dev_write_block=        sd_write_block
-.export write_block=            blklayer_write_block
-.export write_block_buffered=   blklayer_write_block_buffered
-.export write_flush=            blklayer_flush
+.autoimport
+.export dev_read_block          = krn_sd_read_block
+.export read_block              = krn_read_block
+.export dev_write_block         = krn_sd_write_block
+.export write_block             = krn_write_block
+.export write_block_buffered    = krn_write_block_buffered
+
+.export char_out                = krn_chrout
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
 ;  - print welcome message
 ;---------------------------------------------------------------------------------------------------------
 
-.export char_out=krn_chrout
 
-.autoimport
 
 .zeropage
 msg_ptr:  .res 2
@@ -312,11 +312,10 @@ cmdlist:
         .word rm
 
         .byte "ls",0
-        .word do_l
+        .word do_ls
 
         .byte "dir",0
         .word do_dir
-
 
         .byte "mkdir",0
         .word mkdir
@@ -758,8 +757,10 @@ dump_start:
         lda dumpvec+1
         cmp dumpend
         beq @end
-        jsr primm
-        .byte $0a,$0d,"-- press a key-- ",$00
+        crlf
+        lda #<press_key_msg
+        ldx #>press_key_msg
+        jsr strout
 
         keyin
         cmp #KEY_CTRL_C
@@ -912,169 +913,6 @@ hex2dumpvec:
         rts
 
 
-do_ls:
-;         crlf
-;         SetVector pattern, filenameptr
-
-;         lda #entries_short
-;         sta pagecnt
-;         sta entries_per_page
-
-;         stz options
-        
-;         ldy #0
-; @parseloop:
-;         lda (paramptr),y
-;         bne :+
-;         jmp @read
-; : 
-;         cmp #' '
-;         beq @set_filenameptr
-;         cmp #'-'
-;         beq @option
-;         bne @set_filenameptr
-
-; @next_opt:
-;         iny 
-;         bne @parseloop 
-;         bra @set_filenameptr
-
-; @option:
-;         iny
-;         lda (paramptr),y  
-;         beq @parseloop    
-;         cmp #' '
-;         beq @next_opt
-        
-;         cmp #'?'
-;         bne :+
-;         jsr usage
-;         jmp @exit
-; :
-;         cmp #'l'
-;         bne :+
-;         lda #opts_long
-;         jsr setopt
-
-;         lda #entries_long
-;         sta pagecnt
-;         sta entries_per_page
-; :
-;         ; show all files (remove hidden bit from mask)
-;         cmp #'h'
-;         bne :+
-;         lda #<~DIR_Attr_Mask_Hidden
-;         jsr setmask
-;         bra @option
-; :
-;         ; show volume id (remove volid bit from mask)
-;         cmp #'v'
-;         bne :+
-;         lda #<~DIR_Attr_Mask_Volume
-;         jsr setmask
-; :
-;         cmp #'c'
-;         bne :+
-;         lda #opts_cluster
-;         jsr setopt
-;         bra @option
-; :
-;         cmp #'d'
-;         bne :+
-;         lda #opts_crtdate
-;         jsr setopt
-;         bra @option
-; :
-;         cmp #'p'
-;         bne :+
-;         lda #opts_paging
-;         jsr setopt
-;         bra @option
-; :
-;         cmp #'a'
-;         bne :+
-;         lda #opts_attribs
-;         jsr setopt
-; :
-;         bra @option 
-
-; @set_filenameptr: 
-;         iny
-;         lda (paramptr),y
-;         beq @l2
-;         dey
-
-;         copypointer paramptr, filenameptr
-
-;         tya 
-;         clc 
-;         adc filenameptr
-;         sta filenameptr
-
-; @read:
-
-; @l2:
-;         lda #<fat_dirname_mask
-;         ldy #>fat_dirname_mask
-;         jsr string_fat_mask ; build fat dir entry mask from user input
-
-;         ldx #FD_INDEX_CURRENT_DIR
-;         lda #<string_fat_mask_matcher
-;         ldy #>string_fat_mask_matcher
-;         jsr krn_find_first
-;         bcc @l4
-;         jmp errmsg
-; @l3:
-;         ldx #FD_INDEX_CURRENT_DIR
-;         jsr krn_find_next
-;         bcc @l4
-;         jmp @exit
-; @l4:
-;         lda (dirptr)
-;         cmp #DIR_Entry_Deleted
-;         beq @l3
-
-;         ldy #F32DirEntry::Attr
-;         lda (dirptr),y
-;         bit dir_attrib_mask ; Hidden attribute set, skip
-;         bne @l3
-        
-;         lda options
-;         and #opts_long 
-;         beq :+
-;         jsr dir_show_entry_long
-;         bra @next
-; :
-;         jsr dir_show_entry_short
-
-; @next:
-;         lda options
-;         and #opts_paging
-;         beq @l
-;         dec pagecnt
-;         bne @l
-;         keyin
-;         cmp #13 ; enter pages line by line
-;         beq @lx
-
-;         ; check ctrl c
-;         bit flags
-;         bmi @exit
-
-;         lda entries_per_page
-;         sta pagecnt
-;         bra @l
-; @lx:
-;         lda #1
-;         sta pagecnt
-; @l:
-;         bit flags
-;         bmi @exit
-;         jmp @l3
-
-@exit:
-        jmp mainloop
-
 dir_show_entry:
         phx
         lda options
@@ -1222,10 +1060,10 @@ usage:
         jmp strout
 
 do_dir:
-        lda #opts_long
-        jsr setopt
-        bra dir
-do_l:
+        ; lda #opts_long 
+        ; stz options
+        ; bra dir
+do_ls:
         stz options
 dir:
         crlf
@@ -1332,12 +1170,12 @@ dir:
         
         lda #<cwdbuf
         ldx #>cwdbuf
-        jsr fat_opendir
+        jsr krn_opendir
         bcs @error
 @read_next:        
         lda #<dirent
         ldy #>dirent
-        jsr fat_readdir
+        jsr krn_readdir
         rol 
         cmp #1
         beq @end
@@ -1361,6 +1199,11 @@ dir:
         beq @l
         dec pagecnt
         bne @l
+
+        lda #<press_key_msg
+        ldx #>press_key_msg
+        jsr strout
+
         keyin
         cmp #13 ; enter pages line by line
         beq @lx
@@ -1591,6 +1434,7 @@ pattern:        .byte "*.*",$00
 dir_attrib_mask:.byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
 attr_tbl:       .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
 attr_lbl:       .byte 'R','H','S','A'
+press_key_msg:  .byte "-- press a key-- ",$00
 
 cnt:            .byte 6
 msg_EOK:        .asciiz "No error"

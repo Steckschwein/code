@@ -16,7 +16,7 @@ krn_execv:              jmp execv
 krn_open:               jmp fat_open      ; file open, regardless of file/dir
 .export krn_fopen
 krn_fopen:              jmp fat_fopen     ; file open (not directory)
-.export krn_chdir
+.export krn_opendir
 krn_opendir:            jmp fat_opendir   ; open directory
 .export krn_chdir
 krn_chdir:              jmp fat_chdir
@@ -36,12 +36,15 @@ krn_fread_byte:         jmp fat_fread_byte
 krn_write_byte:         jmp fat_write_byte
 .export krn_fseek
 krn_fseek:              jmp fat_fseek
-.export krn_find_first
-krn_find_first:         jmp fat_find_first
-.export krn_find_next
-krn_find_next:          jmp fat_find_next
+; .export krn_find_first
+; krn_find_first:         jmp fat_find_first
+; .export krn_find_next
+; krn_find_next:          jmp fat_find_next
 .export krn_getcwd
 krn_getcwd:             jmp fat_get_root_and_pwd
+.export krn_readdir
+krn_readdir:             jmp fat_readdir
+
 
 ; display stuff
 .export krn_textui_init
@@ -56,6 +59,15 @@ krn_textui_update_crs_ptr:  jmp textui_update_crs_ptr
 krn_textui_setmode:     jmp textui_setmode
 .export krn_textui_crs_onoff
 krn_textui_crs_onoff:   jmp textui_cursor_onoff
+
+; block stuff
+.export krn_write_block
+krn_write_block:     jmp blklayer_write_block
+.export krn_write_block_buffered
+krn_write_block_buffered:     jmp blklayer_write_block_buffered
+.export krn_read_block
+krn_read_block:     jmp blklayer_read_block
+
 
 ; sd card stuff
 .export krn_sd_write_block
