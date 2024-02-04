@@ -575,8 +575,7 @@ bank:
         jsr hexout
         lda #':'
         jsr char_out
-        lda #' '
-        jsr char_out
+        jsr space 
         lda ctrl_port,x 
         jsr hexout
         inx
@@ -600,9 +599,8 @@ ms:
 
         lda #':'
         jsr char_out
-        lda #' '
-        jsr char_out
-
+        jsr space 
+   
 @skip:
         iny
         lda (paramptr),y
@@ -717,21 +715,18 @@ dump_start:
 
         lda #':'
         jsr char_out
-        lda #' '
-        jsr char_out
+        jsr space 
 
         ldy #$00
 @out_hexbyte:
         lda (dumpvec),y
         jsr hexout
-        lda #' '
-        jsr char_out
+        jsr space 
         iny
         cpy #dump_line_length
         bne @out_hexbyte
 
-        lda #' '
-        jsr char_out
+        jsr space 
 
         ldy #$00
 @out_char:
@@ -1008,8 +1003,7 @@ dir_show_entry_long:
 @x:
         jsr print_fat_date
 
-        lda #' '
-        jsr char_out
+        jsr space 
 
         lda #opts_crtdate
         and options
