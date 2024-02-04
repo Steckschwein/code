@@ -1069,6 +1069,9 @@ dir:
         crlf
         SetVector pattern, filenameptr
 
+        lda #DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
+        sta dir_attrib_mask
+        
         lda #entries_short
         sta pagecnt
         sta entries_per_page
@@ -1124,6 +1127,7 @@ dir:
         bne :+
         lda #<~DIR_Attr_Mask_Volume
         jsr setmask
+        bra @option
 :
         cmp #'c'
         bne :+
@@ -1225,11 +1229,11 @@ dir:
         bra @read_next
 
 @error:
-        jsr fat_close
+        jsr krn_close
         jmp errmsg
 
 @end:   
-        jsr fat_close
+        jsr krn_close
 @exit:
         jmp mainloop
 
