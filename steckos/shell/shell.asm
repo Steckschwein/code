@@ -1326,7 +1326,10 @@ dir:
         sta filenameptr
 
 @readdir:
-
+        lda #<fat_dirname_mask
+        ldy #>fat_dirname_mask
+        jsr string_fat_mask
+        
         lda #<cwdbuf
         ldx #>cwdbuf
         jsr fat_opendir
@@ -1347,6 +1350,9 @@ dir:
         lda dirent,y
         bit dir_attrib_mask ; Hidden attribute set, skip
         bne @read_next
+
+        jsr string_fat_mask_matcher
+        bcc @read_next
 
         jsr dir_show_entry
         bra @read_next
@@ -1527,6 +1533,21 @@ print_attribs:
     bpl @al
     rts
 
+string_fat_mask_matcher:
+        ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) - 1
+__dmm:
+        lda fat_dirname_mask,y
+        cmp #'?'
+        beq __dmm_next
+        cmp dirent,y
+        bne __dmm_neq
+__dmm_next:
+        dey
+        bpl __dmm
+        rts ;exit, C=1 here from cmp above
+__dmm_neq:
+        clc
+        rts
 
 space:
         lda #' '
