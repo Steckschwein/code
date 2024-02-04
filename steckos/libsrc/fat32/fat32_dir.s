@@ -102,7 +102,7 @@ fat_chdir:
 ;@name: fat_readdir
 ;@in: X - file descriptor to fd_area of the directory
 ;@in: A/Y - pointer to target buffer which must be .sizeof(F32DirEntry)
-;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise
+;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise. C=1/A=EOK if end of directory is reached
 fat_readdir:
           sta __volatile_ptr
           sty __volatile_ptr+1
@@ -145,7 +145,7 @@ fat_readdir:
           beq @l_read
           bra @l_match
 @l_enoent:
-          lda #ENOENT
-          sec ; nothing found C=1 and return
+          lda #EOK
+          sec ; eod reachead, C=0/A=EOK
           debug "ff rd exit <"
 @l_exit:  rts
