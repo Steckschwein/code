@@ -1451,42 +1451,42 @@ print_fat_date:
         rts
 
 print_fat_time:
-    lda dirent,y
-    tax
-    lsr
-    lsr
-    lsr
+        lda dirent,y
+        tax
+        lsr
+        lsr
+        lsr
 
-    jsr b2ad
+        jsr b2ad
 
-    lda #':'
-    jsr char_out
+        lda #':'
+        jsr char_out
 
-    txa
-    and #%00000111
-    sta tmp1
-    dey
-    lda dirent,y
+        txa
+        and #%00000111
+        sta tmp1
+        dey
+        lda dirent,y
 
-    ldx #5
+        ldx #5
 @loop:
-    lsr tmp1
-    ror
+        lsr tmp1
+        ror
 
-    dex 
-    bne @loop
+        dex 
+        bne @loop
 
-    jsr b2ad
+        jsr b2ad
 
-    lda #':'
-    jsr char_out
+        lda #':'
+        jsr char_out
 
-    lda dirent,y
-    and #%00011111
+        lda dirent,y
+        and #%00011111
 
-    jsr b2ad
+        jsr b2ad
 
-    rts
+        rts
 
 print_filesize:
         phy
@@ -1511,27 +1511,26 @@ print_filesize:
         rts
 
 print_attribs:
-    ldy #F32DirEntry::Attr
-    lda dirent,y
+        ldy #F32DirEntry::Attr
+        lda dirent,y
 
-    ldx #3
+        ldx #3
 @al:
-    bit attr_tbl,x
-    beq @skip
-    pha
-    lda attr_lbl,x
-    jsr char_out
-    pla
-    bra @next
+        bit attr_tbl,x
+        beq @skip
+        pha
+        lda attr_lbl,x
+        jsr char_out
+        pla
+        bra @next
 @skip:
-    pha
-    lda #' '
-    jsr char_out
-    pla
+        pha
+        jsr space
+        pla
 @next:
-    dex 
-    bpl @al
-    rts
+        dex 
+        bpl @al
+        rts
 
 string_fat_mask_matcher:
         ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) - 1
