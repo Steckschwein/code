@@ -121,7 +121,7 @@ fat_readdir:
 
 @l_match: lda (dirptr)
           debug16 "ff rd dirptr", dirptr
-          beq @l_enoent               ; first byte of dir entry is $00 (end of directory)
+          beq @l_exit_ok              ; first byte of dir entry is $00 (end of directory)
           cmp #DIR_Entry_Deleted
           beq @l_next
 
@@ -144,8 +144,7 @@ fat_readdir:
           ora dirptr
           beq @l_read
           bra @l_match
-@l_enoent:
-          lda #EOK
+@l_exit_ok:
           sec ; eod reachead, C=0/A=EOK
           debug "ff rd exit <"
 @l_exit:  rts
