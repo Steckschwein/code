@@ -312,10 +312,10 @@ cmdlist:
         .word rm
 
         .byte "ls",0
-        .word do_ls
-
-        .byte "l",0
         .word do_l
+
+        .byte "dir",0
+        .word do_dir
 
 
         .byte "mkdir",0
@@ -911,21 +911,336 @@ hex2dumpvec:
         sec
         rts
 
+
 do_ls:
+;         crlf
+;         SetVector pattern, filenameptr
+
+;         lda #entries_short
+;         sta pagecnt
+;         sta entries_per_page
+
+;         stz options
+        
+;         ldy #0
+; @parseloop:
+;         lda (paramptr),y
+;         bne :+
+;         jmp @read
+; : 
+;         cmp #' '
+;         beq @set_filenameptr
+;         cmp #'-'
+;         beq @option
+;         bne @set_filenameptr
+
+; @next_opt:
+;         iny 
+;         bne @parseloop 
+;         bra @set_filenameptr
+
+; @option:
+;         iny
+;         lda (paramptr),y  
+;         beq @parseloop    
+;         cmp #' '
+;         beq @next_opt
+        
+;         cmp #'?'
+;         bne :+
+;         jsr usage
+;         jmp @exit
+; :
+;         cmp #'l'
+;         bne :+
+;         lda #opts_long
+;         jsr setopt
+
+;         lda #entries_long
+;         sta pagecnt
+;         sta entries_per_page
+; :
+;         ; show all files (remove hidden bit from mask)
+;         cmp #'h'
+;         bne :+
+;         lda #<~DIR_Attr_Mask_Hidden
+;         jsr setmask
+;         bra @option
+; :
+;         ; show volume id (remove volid bit from mask)
+;         cmp #'v'
+;         bne :+
+;         lda #<~DIR_Attr_Mask_Volume
+;         jsr setmask
+; :
+;         cmp #'c'
+;         bne :+
+;         lda #opts_cluster
+;         jsr setopt
+;         bra @option
+; :
+;         cmp #'d'
+;         bne :+
+;         lda #opts_crtdate
+;         jsr setopt
+;         bra @option
+; :
+;         cmp #'p'
+;         bne :+
+;         lda #opts_paging
+;         jsr setopt
+;         bra @option
+; :
+;         cmp #'a'
+;         bne :+
+;         lda #opts_attribs
+;         jsr setopt
+; :
+;         bra @option 
+
+; @set_filenameptr: 
+;         iny
+;         lda (paramptr),y
+;         beq @l2
+;         dey
+
+;         copypointer paramptr, filenameptr
+
+;         tya 
+;         clc 
+;         adc filenameptr
+;         sta filenameptr
+
+; @read:
+
+; @l2:
+;         lda #<fat_dirname_mask
+;         ldy #>fat_dirname_mask
+;         jsr string_fat_mask ; build fat dir entry mask from user input
+
+;         ldx #FD_INDEX_CURRENT_DIR
+;         lda #<string_fat_mask_matcher
+;         ldy #>string_fat_mask_matcher
+;         jsr krn_find_first
+;         bcc @l4
+;         jmp errmsg
+; @l3:
+;         ldx #FD_INDEX_CURRENT_DIR
+;         jsr krn_find_next
+;         bcc @l4
+;         jmp @exit
+; @l4:
+;         lda (dirptr)
+;         cmp #DIR_Entry_Deleted
+;         beq @l3
+
+;         ldy #F32DirEntry::Attr
+;         lda (dirptr),y
+;         bit dir_attrib_mask ; Hidden attribute set, skip
+;         bne @l3
+        
+;         lda options
+;         and #opts_long 
+;         beq :+
+;         jsr dir_show_entry_long
+;         bra @next
+; :
+;         jsr dir_show_entry_short
+
+; @next:
+;         lda options
+;         and #opts_paging
+;         beq @l
+;         dec pagecnt
+;         bne @l
+;         keyin
+;         cmp #13 ; enter pages line by line
+;         beq @lx
+
+;         ; check ctrl c
+;         bit flags
+;         bmi @exit
+
+;         lda entries_per_page
+;         sta pagecnt
+;         bra @l
+; @lx:
+;         lda #1
+;         sta pagecnt
+; @l:
+;         bit flags
+;         bmi @exit
+;         jmp @l3
+
+@exit:
+        jmp mainloop
+
+dir_show_entry:
+        phx
+        lda options
+        and #opts_long 
+        beq :+
+        jsr dir_show_entry_long
+        bra @end
+:
+        jsr dir_show_entry_short
+@end:
+        plx
+        rts
+
+dir_show_entry_short:
+        dec cnt
+        bne @l1
         crlf
-        SetVector pattern, filenameptr
+        lda #5
+        sta cnt
+@l1:
+        ldy #F32DirEntry::Attr
+        lda dirent,y
+
+        bit #DIR_Attr_Mask_Dir
+        beq :+
+        lda #'['
+        jsr char_out
+        bra @print
+:
+        jsr space
+            
+@print:
+        jsr print_filename
+
+        ldy #F32DirEntry::Attr
+        lda dirent,y
+
+        bit #DIR_Attr_Mask_Dir
+        beq :+
+        lda #']'
+        jsr char_out
+        bra @pad
+:
+
+        jsr space
+@pad:
+        jsr space
+        rts 
+
+dir_show_entry_long:
+        pha
+        jsr print_filename
+
+        jsr space
+
+        lda options
+        and #opts_cluster
+        beq :+
+        jsr print_cluster_no
+:   
+
+        lda options
+        and #opts_attribs   
+        beq :+
+        jsr space
+        jsr print_attribs
+:
+
+        ldy #F32DirEntry::Attr
+        lda dirent,y
+
+        bit #DIR_Attr_Mask_Dir
+        beq @l
+        jsr primm
+        .asciiz " <DIR> "
+        bra @date       ; no point displaying directory size as its always zeros
+                        ; just print some spaces and skip to date display
+@l:
+        jsr space
+
+        jsr print_filesize
+
+        jsr space
+
+@date:
+        lda #opts_crtdate
+        and options
+        bne :+
+        ldy #F32DirEntry::WrtDate
+        bra @x
+:
+        ldy #F32DirEntry::CrtDate
+@x:
+        jsr print_fat_date
+
+        lda #' '
+        jsr char_out
+
+        lda #opts_crtdate
+        and options
+        bne :+
+        ldy #F32DirEntry::WrtTime+1
+        bra @y
+:
+        ldy #F32DirEntry::CrtTime+1
+@y:
+
+        jsr print_fat_time
+        crlf
+
+        pla
+        rts
+
+setopt:
+        ora options
+        sta options
+        rts
+
+setmask:
+        and dir_attrib_mask
+        sta dir_attrib_mask
+        rts 
+
+
+print_cluster_no:
+        ldy #F32DirEntry::FstClusHI+1
+        lda dirent,y
+        jsr hexout
+        dey
+        lda dirent,y
+        jsr hexout
+        
+        ldy #F32DirEntry::FstClusLO+1
+        lda dirent,y
+        jsr hexout
+        dey
+        lda dirent,y
+        jsr hexout
+        rts
+
+
+usage:
+        lda #<usage_txt
+        ldx #>usage_txt
+        jmp strout
+
+do_dir:
+        lda #opts_long
+        jsr setopt
+        bra dir
+do_l:
+        stz options
+dir:
+        crlf
+        ; SetVector pattern, filenameptr
 
         lda #entries_short
         sta pagecnt
         sta entries_per_page
 
-        stz options
         
         ldy #0
 @parseloop:
         lda (paramptr),y
         bne :+
-        jmp @read
+        jmp @readdir
 : 
         cmp #' '
         beq @set_filenameptr
@@ -1000,7 +1315,7 @@ do_ls:
 @set_filenameptr: 
         iny
         lda (paramptr),y
-        beq @l2
+        beq @readdir
         dey
 
         copypointer paramptr, filenameptr
@@ -1010,214 +1325,8 @@ do_ls:
         adc filenameptr
         sta filenameptr
 
-@read:
+@readdir:
 
-@l2:
-        lda #<fat_dirname_mask
-        ldy #>fat_dirname_mask
-        jsr string_fat_mask ; build fat dir entry mask from user input
-
-        ldx #FD_INDEX_CURRENT_DIR
-        lda #<string_fat_mask_matcher
-        ldy #>string_fat_mask_matcher
-        jsr krn_find_first
-        bcc @l4
-        jmp errmsg
-@l3:
-        ldx #FD_INDEX_CURRENT_DIR
-        jsr krn_find_next
-        bcc @l4
-        jmp @exit
-@l4:
-        lda (dirptr)
-        cmp #DIR_Entry_Deleted
-        beq @l3
-
-        ldy #F32DirEntry::Attr
-        lda (dirptr),y
-        bit dir_attrib_mask ; Hidden attribute set, skip
-        bne @l3
-        
-        lda options
-        and #opts_long 
-        beq :+
-        jsr dir_show_entry_long
-        bra @next
-:
-        jsr dir_show_entry_short
-
-@next:
-        lda options
-        and #opts_paging
-        beq @l
-        dec pagecnt
-        bne @l
-        keyin
-        cmp #13 ; enter pages line by line
-        beq @lx
-
-        ; check ctrl c
-        bit flags
-        bmi @exit
-
-        lda entries_per_page
-        sta pagecnt
-        bra @l
-@lx:
-        lda #1
-        sta pagecnt
-@l:
-        bit flags
-        bmi @exit
-        jmp @l3
-
-@exit:
-        jmp mainloop
-
-
-dir_show_entry_short:
-        dec cnt
-        bne @l1
-        crlf
-        lda #5
-        sta cnt
-@l1:
-        ldy #F32DirEntry::Attr
-        lda (dirptr),y
-
-        bit #DIR_Attr_Mask_Dir
-        beq :+
-        lda #'['
-        jsr char_out
-        bra @print
-:
-        lda #' '
-        jsr char_out
-    
-@print:
-        jsr print_filename
-
-        ldy #F32DirEntry::Attr
-        lda (dirptr),y
-
-        bit #DIR_Attr_Mask_Dir
-        beq :+
-        lda #']'
-        jsr char_out
-        bra @pad
-:
-
-        lda #' '
-        jsr char_out
-@pad:
-        lda #' '
-        jsr char_out
-        rts 
-
-dir_show_entry_long:
-        pha
-        jsr print_filename
-
-        lda #' '
-        jsr char_out
-
-
-        lda options
-        and #opts_cluster
-        beq :+
-        jsr print_cluster_no
-:   
-
-        lda options
-        and #opts_attribs   
-        beq :+
-        lda #' '
-        jsr char_out
-        jsr print_attribs
-:
-
-        ldy #F32DirEntry::Attr
-        lda (dirptr),y
-
-        bit #DIR_Attr_Mask_Dir
-        beq @l
-        jsr primm
-        .asciiz " <DIR> "
-        bra @date       ; no point displaying directory size as its always zeros
-                        ; just print some spaces and skip to date display
-@l:
-        lda #' '
-        jsr char_out
-
-        jsr print_filesize
-
-        lda #' '
-        jsr char_out
-
-@date:
-        lda #opts_crtdate
-        and options
-        bne :+
-        ldy #F32DirEntry::WrtDate
-        bra @x
-:
-        ldy #F32DirEntry::CrtDate
-@x:
-        jsr print_fat_date
-
-        lda #' '
-        jsr char_out
-
-        lda #opts_crtdate
-        and options
-        bne :+
-        ldy #F32DirEntry::WrtTime+1
-        bra @y
-:
-        ldy #F32DirEntry::CrtTime+1
-@y:
-
-        jsr print_fat_time
-        crlf
-
-        pla
-        rts
-
-setopt:
-        ora options
-        sta options
-        rts
-
-setmask:
-        and dir_attrib_mask
-        sta dir_attrib_mask
-        rts 
-
-
-print_cluster_no:
-        ldy #F32DirEntry::FstClusHI+1
-        lda (dirptr),y
-        jsr hexout
-        dey
-        lda (dirptr),y
-        jsr hexout
-        
-        ldy #F32DirEntry::FstClusLO+1
-        lda (dirptr),y
-        jsr hexout
-        dey
-        lda (dirptr),y
-        jsr hexout
-        rts
-
-
-usage:
-        lda #<usage_txt
-        ldx #>usage_txt
-        jmp strout
-
-do_l:
-        crlf
         lda #<cwdbuf
         ldx #>cwdbuf
         jsr fat_opendir
@@ -1225,38 +1334,199 @@ do_l:
 @read_next:        
         lda #<dirent
         ldy #>dirent
-        sta dirptr
-        sty dirptr+1
         jsr fat_readdir
-        bcs @end
-       
-        phx
-        
-        lda (dirptr)
+        rol 
+        cmp #1
+        beq @end
+
+        lda dirent
         cmp #DIR_Entry_Deleted
         beq @read_next
 
         ldy #F32DirEntry::Attr
-        lda (dirptr),y
+        lda dirent,y
         bit dir_attrib_mask ; Hidden attribute set, skip
         bne @read_next
 
-        jsr dir_show_entry_long
-
-        plx
+        jsr dir_show_entry
         bra @read_next
 
 @error:
-        jsr hexout
-        cmp #0
-        beq @end
         jsr fat_close
-
         jmp errmsg
 
 @end:   
         jsr fat_close
+@exit:
         jmp mainloop
+
+print_filename:
+        ldx #0
+        ldy #F32DirEntry::Name
+@name:
+        lda dirent,y
+        cmp #' '
+        beq @ext  
+
+        tolower
+        jsr char_out
+        inx
+        iny
+        cpy #F32DirEntry::Ext
+        bne @name
+
+@ext:
+        ldy #F32DirEntry::Ext
+        lda dirent,y
+        cmp #' '
+        beq @spcloop
+
+        lda #'.'
+        jsr char_out
+        inx
+
+        ldy #F32DirEntry::Ext
+@foo:
+        lda dirent,y
+
+        tolower
+        jsr char_out
+        inx
+        iny
+        cpy #F32DirEntry::Ext + 3
+        bne @foo
+    
+@spcloop:
+        cpx #12
+        bcs @done
+        jsr space
+        inx 
+        bne @spcloop
+    
+@done:
+        rts
+
+
+print_fat_date:
+        lda dirent,y
+        and #%00011111
+        jsr b2ad
+
+        lda #'.'
+        jsr char_out
+
+        ; month
+        iny
+        lda dirent,y
+        lsr
+        tax
+        dey
+        lda dirent,y
+        ror
+        lsr
+        lsr
+        lsr
+        lsr
+
+        jsr b2ad
+
+        lda #'.'
+        jsr char_out
+
+        txa
+        clc
+        adc #80   	; add begin of msdos epoch (1980)
+        cmp #100
+        bcc @l6		; greater than 100 (post-2000)
+        sec 		; yes, substract 100
+        sbc #100
+@l6:
+        jsr b2ad ; there we go
+        rts
+
+print_fat_time:
+    lda dirent,y
+    tax
+    lsr
+    lsr
+    lsr
+
+    jsr b2ad
+
+    lda #':'
+    jsr char_out
+
+    txa
+    and #%00000111
+    sta tmp1
+    dey
+    lda dirent,y
+
+    ldx #5
+@loop:
+    lsr tmp1
+    ror
+
+    dex 
+    bne @loop
+
+    jsr b2ad
+
+    lda #':'
+    jsr char_out
+
+    lda dirent,y
+    and #%00011111
+
+    jsr b2ad
+
+    rts
+
+print_filesize:
+        phy
+        clc
+        ldy #F32DirEntry::FileSize+3
+        lda dirent,y
+        ldy #F32DirEntry::FileSize+2
+        adc dirent,y
+        beq :+
+        jsr primm
+        .asciiz ">64k "
+        ply
+        rts
+:
+        ldy #F32DirEntry::FileSize+1
+        lda dirent,y
+        tax 
+        dey 
+        lda dirent,y
+        jsr dpb2ad
+        ply
+        rts
+
+print_attribs:
+    ldy #F32DirEntry::Attr
+    lda dirent,y
+
+    ldx #3
+@al:
+    bit attr_tbl,x
+    beq @skip
+    pha
+    lda attr_lbl,x
+    jsr char_out
+    pla
+    bra @next
+@skip:
+    pha
+    lda #' '
+    jsr char_out
+    pla
+@next:
+    dex 
+    bpl @al
+    rts
+
 
 space:
         lda #' '
@@ -1275,6 +1545,9 @@ PRGEXT: .asciiz ".PRG"
 pd_header: .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
 pattern:    .byte "*.*",$00
 dir_attrib_mask:  .byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
+attr_tbl:   .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
+attr_lbl:   .byte 'R','H','S','A'
+
 cnt:        .byte 6
 msg_EOK:        .asciiz "No error"
 msg_ENOENT:     .asciiz "No such file or directory"
