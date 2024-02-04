@@ -1071,7 +1071,7 @@ dir:
 
         lda #DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
         sta dir_attrib_mask
-        
+
         lda #entries_short
         sta pagecnt
         sta entries_per_page
@@ -1435,7 +1435,6 @@ PATH:           .asciiz "./:/steckos/:/progs/"
 PRGEXT:         .asciiz ".PRG"
 pd_header:      .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
 pattern:        .byte "*.*",$00
-dir_attrib_mask:.byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
 attr_tbl:       .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
 attr_lbl:       .byte 'R','H','S','A'
 press_key_msg:  .byte "-- press a key-- ",$00
@@ -1509,6 +1508,7 @@ tmp1:             .res 1
 tmp2:             .res 1
 fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 options:          .res 1
+dir_attrib_mask:  .res 1
 pagecnt:          .res 1
 entries_per_page: .res 1
 dirent:           .res .sizeof(F32DirEntry)
