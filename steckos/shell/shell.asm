@@ -1229,7 +1229,7 @@ do_l:
         stz options
 dir:
         crlf
-        ; SetVector pattern, filenameptr
+        SetVector pattern, filenameptr
 
         lda #entries_short
         sta pagecnt
