@@ -1355,6 +1355,30 @@ dir:
         bcc @read_next
 
         jsr dir_show_entry
+
+        lda options
+        and #opts_paging
+        beq @l
+        dec pagecnt
+        bne @l
+        keyin
+        cmp #13 ; enter pages line by line
+        beq @lx
+
+        ; check ctrl c
+        bit flags
+        bmi @exit
+
+        lda entries_per_page
+        sta pagecnt
+        bra @l
+@lx:
+        lda #1
+        sta pagecnt
+@l:
+        bit flags
+        bmi @exit
+
         bra @read_next
 
 @error:
