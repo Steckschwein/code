@@ -1560,15 +1560,15 @@ path:
         jmp mainloop
 
 .data
-PATH: .asciiz "./:/steckos/:/progs/"
-PRGEXT: .asciiz ".PRG"
-pd_header: .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
-pattern:    .byte "*.*",$00
-dir_attrib_mask:  .byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
-attr_tbl:   .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
-attr_lbl:   .byte 'R','H','S','A'
+PATH:           .asciiz "./:/steckos/:/progs/"
+PRGEXT:         .asciiz ".PRG"
+pd_header:      .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
+pattern:        .byte "*.*",$00
+dir_attrib_mask:.byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
+attr_tbl:       .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
+attr_lbl:       .byte 'R','H','S','A'
 
-cnt:        .byte 6
+cnt:            .byte 6
 msg_EOK:        .asciiz "No error"
 msg_ENOENT:     .asciiz "No such file or directory"
 msg_ENOMEM:     .asciiz "Out of memory"
