@@ -65,6 +65,25 @@ TEST_FILE_CL2=$19
     assertDirEntry test_dirent
       fat32_dir_entry_dir "DIR02   ", "   ", 0
 
+    ldy #11
+:   phy
+		lda #<test_dirent
+		ldy #>test_dirent
+		jsr fat_readdir
+    ply
+		assertCarry 0
+    dey
+    bne :-
+
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+		lda #<test_dirent
+		ldy #>test_dirent
+		jsr fat_readdir
+		assertCarry 1
+    assertA EOK
+
     jsr fat_close
 
 ; -------------------
