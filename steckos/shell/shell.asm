@@ -1072,6 +1072,9 @@ dir:
         lda #DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
         sta dir_attrib_mask
 
+        lda #6
+        sta cnt 
+        
         lda #entries_short
         sta pagecnt
         sta entries_per_page
@@ -1439,7 +1442,6 @@ attr_tbl:       .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask
 attr_lbl:       .byte 'R','H','S','A'
 press_key_msg:  .byte "-- press a key-- ",$00
 
-cnt:            .byte 6
 msg_EOK:        .asciiz "No error"
 msg_ENOENT:     .asciiz "No such file or directory"
 msg_ENOMEM:     .asciiz "Out of memory"
@@ -1510,5 +1512,6 @@ fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 options:          .res 1
 dir_attrib_mask:  .res 1
 pagecnt:          .res 1
+cnt:              .res 1
 entries_per_page: .res 1
 dirent:           .res .sizeof(F32DirEntry)
