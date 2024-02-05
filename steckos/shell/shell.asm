@@ -297,77 +297,9 @@ printbuf:
         rts
 
 
-cmdlist:
-        .byte "cd",0
-        .word cd
-
-        .byte "rm",0
-        .word rm
-
-        .byte "ls",0
-        .word do_ls
-
-        .byte "dir",0
-        .word do_dir
-
-        .byte "mkdir",0
-        .word mkdir
-
-        .byte "rmdir",0
-        .word rmdir
-
-        .byte "pwd",0
-        .word pwd
-
-        .byte "up",0
-        .word krn_upload
-
-        .byte "pd",0
-        .word pd
-
-        .byte "bd",0
-        .word bd
-
-        .byte "ms",0
-        .word ms
-
-        .byte "bank",0
-        .word bank
-
-        .byte "go",0
-        .word go
-
-        .byte "load",0
-        .word loadmem
-
-        .byte "save",0
-        .word savemem
-
-        .byte "cls",0
-        .word cls
-
-        .byte "path",0
-        .word path
-        ; End of list
-        .byte $ff
 
 
 errmsg:
-        ;TODO FIXME maybe use oserror() from cc65 lib
-        cmp #$f1
-        bne @l1
-        jsr primm
-        .byte CODE_LF,"invalid command",CODE_LF,$00
-        jmp mainloop
-
-@l1:
-        cmp #$f2
-        bne @l2
-        jsr primm
-        .byte CODE_LF,"invalid directory",CODE_LF,$00
-        jmp mainloop
-
-@l2:
         cmp #$15
         bcs @l_unknown
         asl
@@ -390,8 +322,9 @@ errmsg:
         pla
         jsr hexout_s
 @l_exit:
-        lda #CODE_LF
-        jsr char_out
+        crlf
+        ; lda #CODE_LF
+        ; jsr char_out
         jmp mainloop
 
 mode_toggle:
@@ -479,12 +412,12 @@ exec:
         inx
         iny
         bne @cp_path
-        lda #$f0
+        lda #1
         jmp errmsg
 @check_path:    ;PATH end reached and nothing to prefix
         cpy tmp2
         bne @cp_next_piece  ;end of path, no iny
-        lda #$f1        ;nothing found, "Invalid command"
+        lda #1    ;nothing found, "Invalid command"
         jmp errmsg
 @cp_next:
         iny
@@ -534,8 +467,9 @@ go:
 
         jmp (dumpend)
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: go <addr>", $0a, $0d,0
+        lda #<go_usage_txt
+        ldx #>go_usage_txt
+        jsr strout
 @end:
         jmp mainloop
 
@@ -555,8 +489,9 @@ bank:
 
         bra @status
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: bank <slot> <bank>", $0a, $0d,0
+        lda #<bank_usage_txt
+        ldx #>bank_usage_txt
+        jsr strout
         bra @end 
 @status:
         
@@ -576,6 +511,8 @@ bank:
         bne @next
 @end:
         jmp mainloop
+
+
 ms:
         ldy #0
         ldx #1
@@ -620,8 +557,9 @@ ms:
         bra @again
 
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: ms <addr> <byte> [<byte>...]", $0a, $0d,0
+        lda #<ms_usage_txt
+        ldx #>ms_usage_txt
+        jsr strout
 @end:
         jmp mainloop
 
@@ -661,10 +599,10 @@ bd:
 @err:
         jmp errmsg
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: bd <block-no> (4 bytes, 8 hex digits) ", $0a, $0d,0
+        lda #<bd_usage_txt
+        ldx #>bd_usage_txt
+        jsr strout
         jmp mainloop
-
 pd:
         ldy #0
         ldx #1
@@ -686,8 +624,9 @@ pd:
         jsr dump_start
         jmp mainloop
 @error:
-        jsr primm
-        .byte $0a, $0d,"usage: pd <pageaddr>", $0a, $0d,0
+        lda #<pd_usage_txt
+        ldx #>pd_usage_txt
+        jsr strout
         jmp mainloop
 
 
@@ -792,9 +731,10 @@ loadmem:
         crlf
         jmp errmsg
 @usage:
-        jsr primm
-        .byte $0a, $0d, "usage: load <file> <addr>", $0a, $0d, 0
-        jsr mainloop
+        lda #<load_usage_txt
+        ldx #>load_usage_txt
+        jsr strout
+        jmp mainloop
 
 savemem:
         ldx #3
@@ -837,8 +777,9 @@ savemem:
 @err:
         jmp errmsg
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: save <from> <to> <filename>",$0a, $0d, $00
+        lda #<save_usage_txt
+        ldx #>save_usage_txt
+        jsr strout
         jmp mainloop
 
 
@@ -1042,14 +983,14 @@ print_cluster_no:
 
 
 usage:
-        lda #<usage_txt
-        ldx #>usage_txt
+        lda #<ls_usage_txt
+        ldx #>ls_usage_txt
         jmp strout
 
 do_dir:
-        ; lda #opts_long 
-        ; stz options
-        ; bra dir
+        lda #opts_long 
+        sta options
+        bra dir
 do_ls:
         stz options
 dir:
@@ -1420,19 +1361,6 @@ path:
         jsr strout
         jmp mainloop
 
-usage_txt:
-.byte "Usage: ls [OPTION]... [FILE]...",$0a, $0d
-.byte "options:",$0a,$0d
-.byte "   -a   show file attributes",$0a,$0d
-.byte "   -c   show number of first cluster",$0a,$0d
-.byte "   -d   show creation date",$0a,$0d
-.byte "   -h   show hidden files",$0a,$0d
-.byte "   -l   use a long listing format",$0a,$0d
-.byte "   -p   paginate output",$0a,$0d
-.byte "   -v   show volume ID ",$0a,$0d
-.byte "   -?   show this useful message",$0a,$0d
-.byte 0
-; .data
 PATH:           .asciiz "./:/steckos/:/progs/"
 PRGEXT:         .asciiz ".PRG"
 pd_header:      .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
@@ -1485,7 +1413,85 @@ errors:
 .addr msg_EISDIR
 .addr msg_ENOTDIR
 .addr msg_ENOTEMPTY
+bank_usage_txt:
+        .byte $0a, $0d,"usage: bank <slot> <bank>", $0a, $0d,0
+go_usage_txt:
+        .byte $0a, $0d,"usage: go <addr>", $0a, $0d,0
+ms_usage_txt:
+        .byte $0a, $0d,"usage: ms <addr> <byte> [<byte>...]", $0a, $0d,0
+bd_usage_txt:
+        .byte $0a, $0d,"usage: bd <block-no> (4 bytes, 8 hex digits) ", $0a, $0d,0
+pd_usage_txt:
+        .byte $0a, $0d,"usage: pd <pageaddr>", $0a, $0d,0
+load_usage_txt:
+        .byte $0a, $0d, "usage: load <file> <addr>", $0a, $0d, 0
+save_usage_txt:
+        .byte $0a, $0d,"usage: save <from> >to> <filename>",$0a, $0d, $00
+ls_usage_txt:
+.byte "Usage: ls [OPTION]... [FILE]...",$0a, $0d
+.byte "options:",$0a,$0d
+.byte "   -a   show file attributes",$0a,$0d
+.byte "   -c   show number of first cluster",$0a,$0d
+.byte "   -d   show creation date",$0a,$0d
+.byte "   -h   show hidden files",$0a,$0d
+.byte "   -l   use a long listing format",$0a,$0d
+.byte "   -p   paginate output",$0a,$0d
+.byte "   -v   show volume ID ",$0a,$0d
+.byte "   -?   show this useful message",$0a,$0d
+.byte 0
+cmdlist:
+.byte "cd",0
+.word cd
 
+.byte "rm",0
+.word rm
+
+.byte "ls",0
+.word do_ls
+
+.byte "dir",0
+.word do_dir
+
+.byte "mkdir",0
+.word mkdir
+
+.byte "rmdir",0
+.word rmdir
+
+.byte "pwd",0
+.word pwd
+
+.byte "up",0
+.word krn_upload
+
+.byte "pd",0
+.word pd
+
+.byte "bd",0
+.word bd
+
+.byte "ms",0
+.word ms
+
+.byte "bank",0
+.word bank
+
+.byte "go",0
+.word go
+
+.byte "load",0
+.word loadmem
+
+.byte "save",0
+.word savemem
+
+.byte "cls",0
+.word cls
+
+.byte "path",0
+.word path
+; End of list
+.byte $ff
 
 
 .bss
@@ -1502,5 +1508,3 @@ dir_attrib_mask:  .res 1
 pagecnt:          .res 1
 cnt:              .res 1
 entries_per_page: .res 1
-
-.out .sprintf("F32DirEntry: %d", .sizeof(F32DirEntry))
