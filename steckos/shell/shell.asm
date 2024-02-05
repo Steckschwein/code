@@ -118,7 +118,6 @@ mainloop:
         .byte ']', prompt, 0
 
         lda crs_x
-        sta crs_x_prompt
 
         ; reset input buffer
         ldy #0
@@ -1427,7 +1426,19 @@ path:
         jsr strout
         jmp mainloop
 
-.data
+usage_txt:
+.byte "Usage: ls [OPTION]... [FILE]...",$0a, $0d
+.byte "options:",$0a,$0d
+.byte "   -a   show file attributes",$0a,$0d
+.byte "   -c   show number of first cluster",$0a,$0d
+.byte "   -d   show creation date",$0a,$0d
+.byte "   -h   show hidden files",$0a,$0d
+.byte "   -l   use a long listing format",$0a,$0d
+.byte "   -p   paginate output",$0a,$0d
+.byte "   -v   show volume ID ",$0a,$0d
+.byte "   -?   show this useful message",$0a,$0d
+.byte 0
+; .data
 PATH:           .asciiz "./:/steckos/:/progs/"
 PRGEXT:         .asciiz ".PRG"
 pd_header:      .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
@@ -1480,32 +1491,22 @@ errors:
 .addr msg_EISDIR
 .addr msg_ENOTDIR
 .addr msg_ENOTEMPTY
-usage_txt:
-.byte "Usage: ls [OPTION]... [FILE]...",$0a, $0d
-.byte "options:",$0a,$0d
-.byte "   -a   show file attributes",$0a,$0d
-.byte "   -c   show number of first cluster",$0a,$0d
-.byte "   -d   show creation date",$0a,$0d
-.byte "   -h   show hidden files",$0a,$0d
-.byte "   -l   use a long listing format",$0a,$0d
-.byte "   -p   paginate output",$0a,$0d
-.byte "   -v   show volume ID ",$0a,$0d
-.byte "   -?   show this useful message",$0a,$0d
-.byte 0
+
 
 
 .bss
-crs_x_prompt:     .res 1
 tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
-cwdbuf:           .res cwdbuf_size
+cwdbuf:           .res 30
+dirent:           .res .sizeof(F32DirEntry)
 filenamebuf:      .res 12
+fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 tmp1:             .res 1
 tmp2:             .res 1
-fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 options:          .res 1
 dir_attrib_mask:  .res 1
 pagecnt:          .res 1
 cnt:              .res 1
 entries_per_page: .res 1
-dirent:           .res .sizeof(F32DirEntry)
+
+.out .sprintf("F32DirEntry: %d", .sizeof(F32DirEntry))
