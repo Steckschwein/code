@@ -193,10 +193,6 @@ key_fn3:
         ldx #>cmd_basic
         bra inject_cmd
 
-key_crs_up:
-key_crs_down:
-key_tab:        
-        bra inputloop
 
 inject_cmd:
         sta paramptr
@@ -209,6 +205,9 @@ inject_cmd:
         jsr char_out
         iny
         bne :-
+key_crs_up:
+key_crs_down:
+key_tab:        
         bra inputloop
 
 terminate:
