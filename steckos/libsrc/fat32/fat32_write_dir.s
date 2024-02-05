@@ -176,32 +176,32 @@ __fat_write_new_direntry:
 
     jsr __fat_erase_block_fat
 
-    ldy #F32DirEntry::Attr                                   ; copy data of the dir entry (dirptr) created beforehand to easily take over create time, mod time etc., cluster nr
+    ldy #DIR_Entry_Size-1                                   ; copy data of the dir entry (dirptr) created beforehand to easily take over create time, mod time, cluster nr etc.,
 @l_dir_cp:
     lda (dirptr), y
-    debug16 "f wr nd", dirptr
-    sta block_fat+0*DIR_Entry_Size, y                        ; 1st dir entry
-    sta block_fat+1*DIR_Entry_Size, y                        ; 2nd dir entry
-    iny
-    cpy #DIR_Entry_Size
-    bne @l_dir_cp
-
-    ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) -1  ; fill name with ' ' and build the "." and ".." entries
+    sta block_fat+0*DIR_Entry_Size, y                       ; 1st dir entry
+    sta block_fat+1*DIR_Entry_Size, y                       ; 2nd dir entry
     lda #' '
-@l_clr_name:
-    sta block_fat+0*DIR_Entry_Size, y                        ; 1st dir entry
-    sta block_fat+1*DIR_Entry_Size, y                        ; 2nd dir entry
+    sta block_fat+0*DIR_Entry_Size-(F32DirEntry::Attr), y   ; erase name:ext 1st dir entry - Note: we erase some more bytes, saves a loop and values are copied over above
+    sta block_fat+1*DIR_Entry_Size-(F32DirEntry::Attr), y   ; erase name:ext 2nd dir entry
     dey
-    bne @l_clr_name
+    cpy #F32DirEntry::Attr-1
+    bne @l_dir_cp
     lda #'.'
-    sta block_fat+0*DIR_Entry_Size+F32DirEntry::Name+0        ; 1st entry "."
-    sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+0        ; 2nd entry ".."
+    sta block_fat+0*DIR_Entry_Size+F32DirEntry::Name+0      ; 1st entry "."
+    sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+0      ; 2nd entry ".."
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+1
 
     ; use the fd of the temp dir (FD_INDEX_TEMP_FILE) - represents the last visited directory which must be the parent of this one ("..") - we can easily derrive the parent cluster. FTW!
     debug32 "cd_sln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster
-    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::CurrentCluster
 
+    stz block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+0
+    stz block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+1
+    stz block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+0
+    stz block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+1
+
+    cmp32eq fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster, volumeID + VolumeID::BPB_RootClus, @l_skip ; if root cluster, we have to write $00000000 hence skip, block was erased above
+    debug "f wr dirent neq"
     lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+0
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+0
     lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+1
@@ -211,6 +211,9 @@ __fat_write_new_direntry:
     lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+3
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+1
 
+@l_skip:
+    debug "f wr dirent fat"
+    debugdirentry
     jsr __fat_set_fd_start_cluster
     jsr __calc_lba_addr
     jsr __fat_write_block_fat
@@ -218,7 +221,7 @@ __fat_write_new_direntry:
 
     jsr __fat_erase_block_fat
 
-    ldy volumeID+ VolumeID:: BPB_SecPerClusMask     ; Y = VolumeID::SecPerClus-1 - reamining blocks of the cluster with empty dir entries
+    ldy volumeID + VolumeID::BPB_SecPerClusMask     ; Y = VolumeID::SecPerClus-1 - reamining blocks of the cluster with empty dir entries
     beq @l_exit_ok
     debug32 "mkdr er", lba_addr
 @l_erase:

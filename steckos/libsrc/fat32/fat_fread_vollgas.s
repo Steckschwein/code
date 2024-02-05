@@ -72,18 +72,25 @@ fat_fread_vollgas:
           bra @l_blockstart
 
 @l_read_blocks:
-          lda fd_area + F32_fd::FileSize + 2,x
-          lsr
           lda fd_area + F32_fd::FileSize + 1,x
-          ror
+          and #$80
           tay
-          lda fd_area + F32_fd::FileSize + 0,x
-          beq :+
-          iny
-:
+          ora fd_area + F32_fd::FileSize + 2,x
+          ora fd_area + F32_fd::FileSize + 3,x
+          bne @l_err_range                      ; file too big >32k
+
+          tya                                   ; (filesize - seek pos) / $200 (block size) gives amount of blocks to read
+          lsr
+          tay
+
+@l_read_block:
+          beq @l_exit
+
+          phy
           lda p_data
           ldy p_data+1
-          jsr __fat_prepare_data_block_access_read
+          clc
+          jsr __fat_prepare_block_access
 
           inc p_data+1
           inc p_data+1
@@ -91,7 +98,15 @@ fat_fread_vollgas:
           lda #<sd_blocksize
           ldy #>sd_blocksize
           jsr __fat_add_seekpos
+          ply
+          dey
+          bra @l_read_block
+
 
 ;    _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
 @l_exit:
+          rts
+@l_err_range:
+          lda #ERANGE
+          sec
           rts

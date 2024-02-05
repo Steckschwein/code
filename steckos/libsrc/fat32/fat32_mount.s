@@ -171,8 +171,7 @@ fat_mount:
     jsr __fat_init_fdarea
 
     ; alloc file descriptor for current dir. which is cluster number 0 on fat32 - !!! Note: the RootClus offset is compensated within calc_lba_addr
-    ldx #FD_INDEX_CURRENT_DIR
-    jmp __fat_open_rootdir
+    jmp __fat_open_rootdir_cwd
 
 fat_check_signature:
     lda block_data + BootSector::Signature

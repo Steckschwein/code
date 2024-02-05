@@ -54,18 +54,22 @@
 ; in:
 ;   X - fd
 ;   C - C=0 read access, C=1 write access
+; out:
+;   C=0 on success, C=1 on error and A=error code or C=1/A=0 EOC
 __fat_fseek_cluster:
-    debug "seek cl >"
+    debug32 "seek cl >", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
 
-    ldy #0
-    bcc :+  ; C=0 read access
-
-    jsr __fat_is_start_cln_zero
+    jsr __fat_set_fd_start_cluster
+    jsr __fat_is_cln_zero
     bne :+
-    jsr __fat_reserve_start_cluster ; start cluster zero, write access, we have to reserve the start cluster
-    ldy #1  ; save write access, set bit 0
 
-:   jsr __fat_set_fd_start_cluster
+    bcc @l_exit_err ; C=0 read access, and no start cluster available exit (C=1/A=0)
+    jsr __fat_reserve_start_cluster ; start cluster zero, write access, we have to reserve the start cluster first
+    bcs @l_exit
+    sec   ; restore write access set C=1
+
+:   rol   ; save read/write access, set bit 0 save in Y
+    tay
 
     ; calculate amount of clusters required for requested seek position - "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
     lda fd_area+F32_fd::SeekPos+3,x
@@ -88,26 +92,27 @@ __fat_fseek_cluster:
     lda volumeID+VolumeID::cluster_seek_cnt+2
     ora volumeID+VolumeID::cluster_seek_cnt+1
     ora volumeID+VolumeID::cluster_seek_cnt+0
-    debug32 "seek cnt", volumeID+VolumeID::cluster_seek_cnt
+    debug32 "seek 0", volumeID+VolumeID::cluster_seek_cnt
     beq @l_exit_ok
 @seek_cln:
-    tya                       ; read/write access
+    tya                       ; read/write access to A
     lsr                       ; restore carry
     jsr __fat_next_cln
     bcs @l_exit
     _dec24 volumeID+VolumeID::cluster_seek_cnt
-    debug32 "seek nxt", volumeID+VolumeID::cluster_seek_cnt
+    debug32 "seek c", volumeID+VolumeID::cluster_seek_cnt
     bne @seek_cln
 @l_exit_ok:
+    clc
+@l_exit:
     lda fd_area+F32_fd::status,x
     and #<~FD_STATUS_DIRTY                 ; clear dirty
     sta fd_area+F32_fd::status,x
-    clc
-@l_exit:
-    debug32 "seek pos <", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
-    debug32 "seek cl <", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+    debug32 "seek <", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
     rts
-
+@l_exit_err:
+    sec
+    rts
 
 ;@name: "fat_fread_byte"
 ;@in: X, "offset into fd_area"
@@ -122,6 +127,7 @@ fat_fread_byte:
     bne :+                    ; skip file size check
 
     _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
+    debug16 "rd byte eof <", __volatile_ptr
     lda #EOK
     rts ; exit - EOK (0) and C=1
 
@@ -140,7 +146,7 @@ fat_fread_byte:
     clc
 @l_exit:
     ply
-    debug16 "rd_ex", __volatile_ptr
+    debug16 "rd byte <", __volatile_ptr
     rts
 
 ; open file/directory
@@ -168,7 +174,8 @@ fat_open:
           tya
           sta fd_area+F32_fd::flags,x
           lda fd_area+F32_fd::Attr,x
-@l_exit:  rts
+@l_exit:  debug "fopen <"
+          rts
 
 ; in:
 ;   A/X - pointer to zero terminated string with the file path

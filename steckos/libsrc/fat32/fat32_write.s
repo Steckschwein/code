@@ -342,6 +342,7 @@ __fat_free_cluster:
 ; out:
 ;  C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
 __fat_reserve_start_cluster:
+    phy
     jsr __fat_reserve_cluster
     bcs @l_exit
     lda volumeID + VolumeID::cluster + 3
@@ -352,7 +353,9 @@ __fat_reserve_start_cluster:
     sta fd_area + F32_fd::StartCluster + 1, x
     lda volumeID + VolumeID::cluster + 0
     sta fd_area + F32_fd::StartCluster + 0, x
+    jsr __fat_set_fd_start_cluster
 @l_exit:
+    ply
     debug32 "reserve strt cl <", volumeID + VolumeID::cluster
     rts
 

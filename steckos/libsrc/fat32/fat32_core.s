@@ -47,10 +47,10 @@
 .export __fat_free_fd
 .export __fat_inc_seekpos
 .export __fat_is_cln_zero
-.export __fat_is_start_cln_zero
 .export __fat_next_cln
 .export __fat_open_path
 .export __fat_open_rootdir
+.export __fat_open_rootdir_cwd
 .export __fat_prepare_data_block_access
 .export __fat_prepare_data_block_access_read
 .export __fat_read_cluster_block_and_select
@@ -59,7 +59,6 @@
 .export __fat_seek_next_dirent
 .export __fat_set_fd_dirlba
 .export __fat_set_fd_start_cluster
-.export __fat_set_fd_start_cluster_seek_pos
 .export __fat_set_root_cluster_lba_addr
 .export __calc_lba_addr
 .export __calc_fat_lba_addr
@@ -69,7 +68,7 @@
 
 ;
 __fat_inc_seekpos:
-            lda #1
+            lda #1  ; +1
             ldy #0
 __fat_add_seekpos:
             clc
@@ -92,7 +91,7 @@ __fat_add_seekpos:
 __fat_find_first_mask:
     sta volumeID+VolumeID::fat_vec_matcher+0
     sty volumeID+VolumeID::fat_vec_matcher+1
-    jsr __fat_set_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos to 0
+    jsr __fat_reset_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos to 0
 
 __ff_loop:
     jsr __fat_prepare_data_block_access_read
@@ -304,7 +303,7 @@ __fat_open_path:
         sta fd_area + F32_fd::Attr, x
 
         jsr __fat_set_fd_dirlba
-        jsr __fat_set_fd_start_cluster_seek_pos
+        jsr __fat_reset_fd_start_cluster_seek_pos
 @l_exit:
         ply
         rts
@@ -377,16 +376,15 @@ __fat_prepare_block_access:
 
               php ; save carry given as parameter
               lsr
-              debug32 "fp ba 0 >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
               and volumeID+VolumeID::BPB_SecPerClusMask ; mask with sec per cluster mask
               ora fd_area+F32_fd::SeekPos+0,x           ; and test whether SeekPos is at the beginning of a block (multiple of $??00) ?
-              debug "fp ba 1 >"
+              debug32 "fp ba seek", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
               bne @l_read_res                           ; not at the beginning of a cluster, just read the block
 
               plp                                       ; restore carry
-              debug "fp ba 2 >"
+              debug "fp ba cl >"
               jsr __fat_next_cln                        ; select next cluster, carry denotes read/write access
-              debug "fp ba 2 <"
+              debug "fp ba cl <"
               bcc @l_read                               ; exit on error or EOC (C=1)
 @l_exit_err:  ply                                       ; correct stack, Y to not clobber A (error code)
               rts
@@ -465,8 +463,18 @@ __fat_alloc_fd:
 ;   .X - fd for open the root directory
 ; out:
 ;   C=0 on success
+__fat_open_rootdir_cwd:
+    ldx #FD_INDEX_CURRENT_DIR
 __fat_open_rootdir:
     jsr __fat_init_fd
+    lda volumeID + VolumeID::BPB_RootClus+3
+    sta fd_area + F32_fd::StartCluster+3,x
+    lda volumeID + VolumeID::BPB_RootClus+2
+    sta fd_area + F32_fd::StartCluster+2,x
+    lda volumeID + VolumeID::BPB_RootClus+1
+    sta fd_area + F32_fd::StartCluster+1,x
+    lda volumeID + VolumeID::BPB_RootClus+0
+    sta fd_area + F32_fd::StartCluster+0,x
     lda #DIR_Attr_Mask_Dir
     sta fd_area + F32_fd::Attr,x
     rts
@@ -506,13 +514,6 @@ __fat_is_cln_zero:
     ora fd_area+F32_fd::CurrentCluster+2,x
     ora fd_area+F32_fd::CurrentCluster+1,x
     ora fd_area+F32_fd::CurrentCluster+0,x
-    rts
-
-__fat_is_start_cln_zero:
-    lda fd_area+F32_fd::StartCluster+3,x        ; check whether start cluster is the root dir cluster nr (0x00000000) as initial set by fat_alloc_fd
-    ora fd_area+F32_fd::StartCluster+2,x
-    ora fd_area+F32_fd::StartCluster+1,x
-    ora fd_area+F32_fd::StartCluster+0,x
     rts
 
 ; internal read block
@@ -644,7 +645,6 @@ __fat_next_cln:
     jsr @fat_next_cln
     ply
     rts
-
 @fat_next_cln:
 
     bcc @l_select_next_cln  ; read access, just try to select
@@ -696,14 +696,13 @@ __fat_next_cln:
     rts
 
 
-__fat_set_fd_start_cluster_seek_pos:
+__fat_reset_fd_start_cluster_seek_pos:
     stz fd_area+F32_fd::SeekPos+3,x
     stz fd_area+F32_fd::SeekPos+2,x
     stz fd_area+F32_fd::SeekPos+1,x
     stz fd_area+F32_fd::SeekPos+0,x
 
-    lda fd_area+F32_fd::status,x
-    ora #FD_STATUS_DIRTY
+    lda #FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
     sta fd_area+F32_fd::status,x
 
 __fat_set_fd_start_cluster:
