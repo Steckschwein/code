@@ -41,12 +41,6 @@ cwdbuf_size = 80
 prompt  = '>'
 
 .autoimport
-.export dev_read_block          = krn_sd_read_block
-.export read_block              = krn_read_block
-.export dev_write_block         = krn_sd_write_block
-.export write_block             = krn_write_block
-.export write_block_buffered    = krn_write_block_buffered
-
 .export char_out                = krn_chrout
 
 ;---------------------------------------------------------------------------------------------------------

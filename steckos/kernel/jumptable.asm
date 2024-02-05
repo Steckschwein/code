@@ -60,14 +60,6 @@ krn_textui_setmode:     jmp textui_setmode
 .export krn_textui_crs_onoff
 krn_textui_crs_onoff:   jmp textui_cursor_onoff
 
-; block stuff
-.export krn_write_block
-krn_write_block:     jmp blklayer_write_block
-.export krn_write_block_buffered
-krn_write_block_buffered:     jmp blklayer_write_block_buffered
-.export krn_read_block
-krn_read_block:     jmp blklayer_read_block
-
 
 ; sd card stuff
 .export krn_sd_write_block
