@@ -43,27 +43,13 @@
 
 .code
 
-; open directory by given path starting from directory given as file descriptor
-; in:
-;	  A/X - pointer to string with the file path
-;   Y - file mode constants - see fcntl.inc (cc65)
-;     O_RDONLY  = $01
-;     O_WRONLY  = $02
-;     O_RDWR    = $03
-;     O_CREAT   = $10
-;     O_TRUNC   = $20
-;     O_APPEND  = $40
-;     O_EXCL    = $80
-; out:
-;	  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
-;	  X - index into fd_area of the opened directory
 ;@name: "fat_opendir"
-;@in: A, "low byte of pointer to zero terminated string with the file path"
-;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@in: A/X - pointer to string with the file path
 ;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"
 ;@out: X, "index into fd_area of the opened directory"
 ;@desc: "open directory by given path starting from directory given as file descriptor"
 fat_opendir:
+          ldy #O_RDONLY
           jsr fat_open
           bcs @l_exit
           and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
