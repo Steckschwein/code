@@ -65,16 +65,10 @@ appstart __SHELL_START__
 .export __APP_SIZE__=kernel_start-__SHELL_START__ ; adjust __APP_SIZE__ for linker accordingly
 .code
 init:
-        jsr primm
-        ;.byte 27,"[2J "
+        lda #<hello_msg 
+        ldx #>hello_msg
+        jsr strout
 
-        ;.byte 27,"[3B" ; move cursor down 3 lines
-
-        .byte "steckOS shell  "
-    ;    .byte 27,"[5D" ; move cursor left 5 pos
-
-        .include "version.inc"
-        .byte CODE_LF,0
 exit_from_prg:
         cld
         jsr  krn_textui_init
@@ -89,9 +83,10 @@ exit_from_prg:
         SetVector buf, paramptr ; set param to empty buffer
         SetVector PATH, pathptr
 mainloop:
-        jsr primm
-        .byte CODE_LF, '[', 0
-
+        crlf 
+        lda #'['
+        jsr char_out
+        
         ; output current path
         lda #<cwdbuf
         ldy #>cwdbuf
@@ -108,8 +103,11 @@ mainloop:
         lda #'?'
         jsr char_out
 @prompt:
-        jsr primm
-        .byte ']', prompt, 0
+        lda #']'
+        jsr char_out
+
+        lda #prompt
+        jsr char_out
 
         lda crs_x
 
@@ -317,14 +315,13 @@ errmsg:
         bne :-
 @l_unknown:
         pha
-        jsr primm
-        .asciiz "unknown error "
+        lda #<unknown_error_msg
+        ldx #>unknown_error_msg
+        jsr strout
         pla
         jsr hexout_s
 @l_exit:
         crlf
-        ; lda #CODE_LF
-        ; jsr char_out
         jmp mainloop
 
 mode_toggle:
@@ -784,10 +781,13 @@ savemem:
 
 
 cls:
-        jsr primm
-        .byte 27,"[2J "
-        .byte $00
+        lda #<cls_seq_txt
+        ldx #>cls_seq_txt
+        jsr strout
+
         jmp mainloop
+cls_seq_txt:
+        .byte 27,"[2J ",0
         
 get_filename:
         ldx #0
@@ -915,8 +915,9 @@ dir_show_entry_long:
 
         bit #DIR_Attr_Mask_Dir
         beq @l
-        jsr primm
-        .asciiz " <DIR> "
+        lda #<dir_marker_txt
+        ldx #>dir_marker_txt
+        jsr strout
         bra @date       ; no point displaying directory size as its always zeros
                         ; just print some spaces and skip to date display
 @l:
@@ -1298,8 +1299,10 @@ print_filesize:
         ldy #F32DirEntry::FileSize+2
         adc dirent,y
         beq :+
-        jsr primm
-        .asciiz ">64k "
+        lda #<bigfile_marker_txt
+        ldx #>bigfile_marker_txt
+        
+        jsr strout
         ply
         rts
 :
@@ -1368,6 +1371,9 @@ pattern:        .byte "*.*",$00
 attr_tbl:       .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
 attr_lbl:       .byte 'R','H','S','A'
 press_key_msg:  .byte "-- press a key-- ",$00
+dir_marker_txt: .asciiz " <DIR> "
+bigfile_marker_txt:
+                .asciiz ">64k "
 
 msg_EOK:        .asciiz "No error"
 msg_ENOENT:     .asciiz "No such file or directory"
@@ -1439,6 +1445,17 @@ ls_usage_txt:
 .byte "   -v   show volume ID ",$0a,$0d
 .byte "   -?   show this useful message",$0a,$0d
 .byte 0
+hello_msg:
+;.byte 27,"[2J "
+;.byte 27,"[3B" ; move cursor down 3 lines
+.byte "steckOS shell  "
+;    .byte 27,"[5D" ; move cursor left 5 pos
+.include "version.inc"
+.byte CODE_LF,0
+unknown_error_msg:
+        .asciiz "unknown error "
+
+
 cmdlist:
 .byte "cd",0
 .word cd
