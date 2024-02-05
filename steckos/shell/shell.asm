@@ -37,7 +37,7 @@ opts_crtdate    = (1 << 4)
 dump_line_length = $10
 
 BUF_SIZE    = 80 ;TODO maybe too small?
-cwdbuf_size = 80
+cwdbuf_size = 30
 prompt  = '>'
 
 .autoimport
@@ -118,9 +118,9 @@ mainloop:
   ; put input into buffer until return is pressed
 inputloop:
 @l_input:
-
-        jsr krn_getkey
-        bcc @l_input
+        keyin
+        ; jsr krn_getkey
+        ; bcc @l_input
 
         cmp #KEY_RETURN ; return?
         beq parse
@@ -137,8 +137,21 @@ inputloop:
         cmp #KEY_CRSR_DOWN
         beq key_crs_down
 
+        cmp #KEY_TAB
+        beq key_tab
+
+        cmp #KEY_FN1
+        beq key_fn1
+
+        cmp #KEY_FN2
+        beq key_fn2
+
+        cmp #KEY_FN3
+        beq key_fn3
+        
         cmp #KEY_FN12
         beq key_fn12
+
 
         ; prevent overflow of input buffer
         cpy #BUF_SIZE
@@ -165,11 +178,37 @@ escape:
 
 key_fn12:
         jmp mode_toggle
+key_fn1:
+        lda #<cmd_help
+        ldx #>cmd_help
+        bra inject_cmd
+        
+key_fn2:
+        lda #<cmd_dir
+        ldx #>cmd_dir
+        bra inject_cmd
+
+key_fn3:
+        lda #<cmd_basic
+        ldx #>cmd_basic
+        bra inject_cmd
 
 key_crs_up:
+key_crs_down:
+key_tab:        
         bra inputloop
 
-key_crs_down:
+inject_cmd:
+        sta paramptr
+        stx paramptr+1
+        ldy #0
+:
+        lda (paramptr),y 
+        beq parse
+        sta (bufptr),y 
+        jsr char_out
+        iny
+        bne :-
         bra inputloop
 
 terminate:
@@ -1466,6 +1505,7 @@ cmdlist:
 .byte "ls",0
 .word do_ls
 
+cmd_dir:
 .byte "dir",0
 .word do_dir
 
@@ -1509,12 +1549,15 @@ cmdlist:
 .word path
 ; End of list
 .byte $ff
-
+cmd_help:
+.byte "help",0
+cmd_basic:
+.byte "basic.prg",0
 
 .bss
 tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
-cwdbuf:           .res 30
+cwdbuf:           .res cwdbuf_size
 dirent:           .res .sizeof(F32DirEntry)
 filenamebuf:      .res 12
 fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
