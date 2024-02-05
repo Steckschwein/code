@@ -205,6 +205,13 @@ inject_cmd:
 key_crs_up:
 key_crs_down:
 key_tab:        
+        lda #<dirent
+        ldy #>dirent
+        ldx #FD_INDEX_CURRENT_DIR
+        jsr krn_readdir
+
+        jsr print_filename        
+
         bra inputloop
 
 terminate:
