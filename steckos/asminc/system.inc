@@ -31,9 +31,11 @@ IRQ_VIA			= 1<<5		; irq from VIA (6522)
 IRQ_IO0			= 1<<4		; i/o port 0
 ;...
 
-clockspeed  = 10	; in Mhz
+clockspeed  =10	; in Mhz
 
 ctrl_port	= $0230
+
+stack = $0100
 
 slot0 = ctrl_port+0
 slot1 = ctrl_port+1
@@ -53,6 +55,18 @@ SYS_VECTOR_NMI = $fffa
 SYS_VECTOR_RESET = $fffc
 SYS_VECTOR_IRQ = $fffe
 
+.struct save_status
+SLOT0   .byte
+SLOT1   .byte
+SLOT2   .byte
+SLOT3   .byte
+ACC     .byte
+XREG    .byte
+YREG    .byte
+SP      .byte
+STATUS  .byte
+PC      .word
+.endstruct
 
 
 .endif

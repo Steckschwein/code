@@ -8,42 +8,28 @@
 .zeropage
 
 ; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
-.exportzp cmdptr    = $e0
-.exportzp paramptr  = $e2
-
-; pointer and temps - internally used by library
-.exportzp s_ptr1  = $e4  ; 2 bytes
-.exportzp s_ptr2  = $e6  ; 2 bytes
-.exportzp s_ptr3  = $e8  ; 2 bytes
-
-.exportzp s_tmp1  = $ea
-.exportzp s_tmp2  = s_tmp1+1  ; single byte
-.exportzp s_tmp3  = s_tmp1+2  ; single byte
+.exportzp cmdptr    = location_cmdptr
+.exportzp paramptr  = location_paramptr
 
 ; have to use fixed zp locations to avoid ehbasic clashes
-.exportzp vdp_ptr   =$ed
-.exportzp vdp_tmp   =$ef
+.exportzp vdp_ptr   = location_vdp_ptr
+.exportzp vdp_tmp   = location_vdp_tmp
+
 
 ; FAT32
-.exportzp filenameptr   = $f0  ; 2 byte
-.exportzp dirptr        = $f2  ; 2 byte
+.exportzp filenameptr   = location_filenameptr  ; 2 byte
+.exportzp dirptr        = location_dirptr       ; 2 byte
 
 ; SDCARD/storage block pointer
-.exportzp read_blkptr    = $f4
-.exportzp write_blkptr   = $f6
+.exportzp sd_blkptr    = location_sdblock_ptr
 
 ; spi shift register location
-.exportzp spi_sr            = $f9
-.exportzp __volatile_ptr    = $fa
-.exportzp __volatile_tmp    = $fc
+.exportzp spi_sr            = location_spi_sr
+.exportzp __volatile_ptr    = location___volatile_ptr
+.exportzp __volatile_tmp    = location___volatile_tmp
 
 ; flags/signals (like ctrl-c, etc)
-.exportzp flags             = $fd
-
-;.exportzp ansi_state       = $f9
-;.exportzp ansi_index       = $fa
-;.exportzp ansi_param1      = $fb
-;.exportzp ansi_param2      = $fc
+.exportzp flags             = location_flags
 
 .export retvec    = $fff8
 

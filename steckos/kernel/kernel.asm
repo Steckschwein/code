@@ -29,8 +29,15 @@
 
 .autoimport
 
-.export read_block=sd_read_block
-.export write_block=sd_write_block
+; expose high level read_/write_block api
+.export read_block=             blklayer_read_block
+.export write_block=            blklayer_write_block
+.export write_block_buffered=   blklayer_write_block_buffered
+.export write_flush=            blklayer_flush
+; configure low level or device read_/write_block api
+.export dev_read_block=         sd_read_block
+.export dev_write_block=        sd_write_block
+
 .export char_out=ansi_chrout         ; account for page crossing
 
 .export crc16_lo=BUFFER_0
@@ -46,14 +53,8 @@
 nvram = $1000
 
 kern_init:
-    ; copy trampolin code for ml monitor entry to ram
-    ldx #$00
-@copy:
-    lda trampolin_code,x
-    sta trampolin,x
-    inx
-    cpx #(trampolin_code_end - trampolin_code)
-    bne @copy
+
+    jsr blklayer_init
 
     SetVector user_isr_default, user_isr
     jsr textui_init0
@@ -96,7 +97,7 @@ kern_init:
 
     SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
     jsr __automount_init
-    bne do_upload
+    bcs do_upload
 
     lda #<filename
     ldx #>filename
@@ -154,8 +155,8 @@ do_irq:
 @check_via:
     bit via1ifr    ; Interrupt from VIA?
     bpl @check_opl
-    lda #Light_Green
-    jsr vdp_bgcolor
+;    lda #Light_Green
+ ;   jsr vdp_bgcolor
     ; via irq handling code
     ;
 
@@ -163,16 +164,16 @@ do_irq:
     bit opl_stat  ; IRQ from OPL?
     bpl @check_spi_rtc
 ;    lda #Light_Yellow<<4|Light_Yellow
- ;   jsr vdp_bgcolor
+;    jsr vdp_bgcolor
 
 @check_spi_rtc:
-;    jsr rtc_irq0_ack
- ;   bcc @check_spi_keyboard
-  ;  lda #Cyan<<4|Cyan
-   ; jsr vdp_bgcolor
+    jsr rtc_irq0_ack
+    bcc @check_spi_keyboard
+;    lda #Cyan<<4|Cyan
+;    jsr vdp_bgcolor
 
 @check_spi_keyboard:
-    jsr fetchkey        ; fetch key (to satisfy the IRQ of the avr)
+    jsr fetchkey        ; fetch key
     bcc @system
     cmp #KEY_CTRL_C     ; was it ctrl c?
     bne @system  ; no
@@ -185,20 +186,19 @@ do_irq:
     dec frame
     lda frame
     and #$0f            ; every 16 frames we try to update rtc, gives 320ms clock resolution
-    bne @exit
+    bne @spi_busy
     jsr rtc_systime_update     ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
     jsr __automount
 
-@exit:
+@spi_busy:
     lda via1portb
     and #spi_device_deselect
     cmp #spi_device_deselect
-    beq :+
-    lda #Medium_Red<<4|Medium_Red
+    beq @exit
+    lda #Medium_Red<<4|Medium_Red ; indicates busy spi
     jsr vdp_bgcolor
-    sys_delay_us 128
 
-:
+@exit:
     lda #Medium_Green<<4|Black
     jsr vdp_bgcolor
 
@@ -216,23 +216,94 @@ frame:
 ;----------------------------------------------------------------------------------------------
 ; IO_NMI Routine. Handle NMI
 ;----------------------------------------------------------------------------------------------
-ACC = $45
-XREG = $46
-YREG = $47
-STATUS = $48
-SPNT = $49
 
+
+
+.code
 do_nmi:
-  sta ACC
-  stx XREG
-  sty YREG
-  pla
-  sta STATUS
-  tsx
-  stx SPNT
+    sta save_stat + save_status::ACC
+    stx save_stat + save_status::XREG
+    sty save_stat + save_status::YREG
 
-  jmp trampolin
+    tsx
+    stx save_stat + save_status::SP
 
+    pla
+    sta save_stat + save_status::STATUS
+    pla
+    sta save_stat + save_status::PC
+    pla
+    sta save_stat + save_status::PC+1
+
+
+    ldx #3
+:
+    lda slot0,x
+    sta save_stat + save_status::SLOT0,x
+    dex
+    bpl :-
+
+    jsr primm
+    .byte CODE_LF, "PC   S0 S1 S2 S3 AC XR YR SP NV-BDIZC", CODE_LF,0
+
+    lda save_stat + save_status::PC+1
+    jsr hexout
+    lda save_stat + save_status::PC
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+
+    ldx #save_status::SLOT0
+:
+    lda save_stat,x
+    jsr hexout
+
+    lda #' '
+    jsr char_out
+    inx
+    cpx #save_status::STATUS
+    bne :-
+
+
+    lda save_stat + save_status::STATUS
+    sta atmp
+
+    ldx #0
+@next:
+    asl atmp
+    bcs @set
+    lda #'0'
+    bra @skip
+@set:
+    lda #'1'
+@skip:
+    jsr char_out
+    inx
+    cpx #8
+    bne @next
+
+    lda #CODE_LF
+    jsr char_out
+
+    ldx save_stat + save_status::SP
+    txs
+
+    lda save_stat + save_status::PC+1
+    pha
+    lda save_stat + save_status::PC
+    pha
+
+    lda save_stat + save_status::STATUS
+    pha
+
+
+
+    lda save_stat + save_status::ACC
+    ldx save_stat + save_status::XREG
+    ldy save_stat + save_status::YREG
+
+    rti
 
 do_reset:
   ; disable interrupt
@@ -247,19 +318,9 @@ do_reset:
   jmp kern_init
 
 
-filename: .asciiz "steckos/shell.prg"
 
-; trampolin code to enter ML monitor on NMI
-; this code gets copied to $10 and executed there
-trampolin_code:
-  sei
-  ; switch to ROM bank 1
-  lda #$02
-  sta $0230
-  ; go!
-  brk
-  ;jmp $f000
-trampolin_code_end:
+
+filename: .asciiz "/steckos/shell.prg"
 
 
 .segment "VECTORS"
@@ -279,3 +340,5 @@ trampolin_code_end:
 
 .bss
 startaddr:  .res 2
+save_stat: .res   .sizeof(save_status)
+atmp: .res 1

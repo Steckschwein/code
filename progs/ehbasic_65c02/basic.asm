@@ -16,15 +16,10 @@
 
 .export char_out=krn_chrout
 
-.import gfx_mode
-.import LAB_GFX_PLOT
-.import LAB_GFX_POINT
-.import LAB_GFX_LINE
-.import LAB_GFX_CIRCLE
-.import LAB_GFX_SCNCLR
-.import LAB_GFX_SCNWAIT
+.autoimport
 
-__APPSTART__ = $b100
+
+__APPSTART__ = $8000
 appstart __APPSTART__
 
 ;
@@ -338,6 +333,9 @@ Rbyte3          = Rbyte4+3   ; least significant PRNG byte
 Decss           = Rbyte3+1   ; number to decimal string start
 Decssp1         = Decss+1    ; number to decimal string start
 ZPLastByte      = Decss+17   ; last declared byte in Page Zero
+
+; .out .sprintf("Last ZP Address: %x", ZPLastByte)
+.assert ZPLastByte < $d0, error, "ZP usage clash with kernel"
 
 ; Note: C02BIOS uses Page Zero locations from $E0 - $FF
 ; C02Monitor uses Page Zero locations from $B0 - $DF
@@ -7615,7 +7613,7 @@ LAB_2D05
 
 openfile:
       jsr termstrparam
-      jsr krn_open
+      jsr krn_fopen
       bcs io_error
       stx _fd
       rts
@@ -7626,8 +7624,39 @@ io_error:
       ldx #$24 ; "Generate "File not found error"
       jmp LAB_XERR
 
-LAB_SAVE:
+; we need to wrap krn_write_byte in order to get the file descriptor
+; into X first
+fwrite_wrapper:
+      save
+
+      ldx _fd
+      jsr krn_write_byte
+
+      restore
       rts
+
+LAB_SAVE:
+      ldy #O_CREAT
+      jsr openfile
+
+      ; set output vector to filesystem wrapper
+      lda #<fwrite_wrapper
+      sta VEC_OUT
+      lda #>fwrite_wrapper
+      sta VEC_OUT+1
+
+      ; list program
+      sec ; set carry to make LIST do anything
+      jsr LAB_14BD ; jump into LIST routine
+
+      ldx _fd
+      jsr krn_close
+
+vec_restore:
+      jsr init_iovectors
+
+      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+      jmp     LAB_1319         ; cleanup and Return to BASIC
 
 LAB_LOAD:
       ldy #O_RDONLY
@@ -7642,28 +7671,26 @@ LAB_LOAD:
       sta VEC_OUT
       lda #>outvec_dummy
       sta VEC_OUT+1
-      JMP   LAB_1319 ; reset and return
+      JMP LAB_1319 ; reset and return
 
 fread_wrapper:
       phx
       phy
       ldx _fd
+      beq vec_restore
       jsr krn_fread_byte
+      ply
+      plx
       bcs @eof
       cmp #KEY_LF ; replace with "basic end of line"
       bne :+
-      lda #KEY_CR
-:     ply
-      plx
-      cmp #0
+@cr:  lda #KEY_CR
+:     cmp #0
       rts
 @eof:
       jsr krn_close
-
-      jsr init_iovectors
-
-      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-      jmp     LAB_1319         ; cleanup and Return to BASIC
+      stz _fd
+      bra @cr
 
 init_iovectors:
       lda #<krn_chrout
@@ -7704,21 +7731,22 @@ LAB_DIR:
     SetVector pattern, filenameptr
 @skip:
 
-
     jsr LAB_CRLF
 
+    lda #<_fat_dirname_mask
+    ldy #>_fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
-
-    bcs @l2_1
-    bra @end
-@l2_1:
-    bcs @l4
-    bra @l5
+    bcs @end
+    bra @l4
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcc @l5
+    bcs @end
 @l4:
     lda (dirptr)
     cmp #$e5
@@ -7741,7 +7769,7 @@ LAB_DIR:
     jsr LAB_CRLF
 
     bra @l3
-@l5:
+
 @end:
     ply
     plx
@@ -7844,7 +7872,7 @@ termstrparam:
     stx str_pl
     sty str_ph
 
-    ; overwrite last " with 0 to make it compatible with krn_open
+    ; overwrite last " with 0 to make it compatible with krn_fopen
     tay
     lda #0
     sta (str_pl),y
@@ -8801,6 +8829,8 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
 exit:		jmp (retvec)
+
 .bss
-_fd:        .res 1
+_fd:                .res 1
+_fat_dirname_mask:  .res 8+3
  .END

@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
 
 .include "vdp.inc"
 .include "gfx.inc"
@@ -32,15 +33,17 @@
 
 .export gfx_point
 
-; A/Y ptr to point_t struct
-;
+;@name: gfx_point
+;@desc: read pixel value
+;@in: A/Y - pointer to plot_t struct
+;@out: Y - color of pixel at given plot_t
 gfx_point:
       php
       sei
 
       ldx #32
       jsr _gfx_prepare_x_y
-      
+
       vdp_sreg 0, v_reg45     ; VRAM read
       vdp_sreg v_cmd_point, v_reg46      ; R#46 ; POINT
 
@@ -49,7 +52,7 @@ gfx_point:
       vdp_sreg 7, v_reg15	; select status register S#7
       vdp_wait_s
       ldy a_vreg              ; read color value - result to Y
-      
+
       vdp_sreg 0, v_reg15     ; reset status register selection to S#0
 
       plp

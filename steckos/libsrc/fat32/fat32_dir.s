@@ -19,18 +19,18 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
+;@module: fat32
 
 .ifdef DEBUG_FAT32_DIR ; debug switch for this module
-	debug_enabled=1
+  debug_enabled=1
 .endif
 
 .include "zeropage.inc"
 .include "common.inc"
 .include "fat32.inc"
 .include "rtc.inc"
-.include "errno.inc"	; from ca65 api
-.include "fcntl.inc"	; from ca65 api
+.include "errno.inc"  ; from ca65 api
+.include "fcntl.inc"  ; from ca65 api
 
 .include "debug.inc"
 
@@ -38,54 +38,114 @@
 .autoimport
 
 .export fat_chdir
-.export __fat_opendir
-.export __fat_opendir_cwd
+.export fat_opendir
+.export fat_readdir
 
 .code
 
-; open directory by given path starting from current directory
-;in:
-;	A/X - pointer to string with the file path
-;out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
-;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
-__fat_opendir_cwd:
-		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
-
 ; open directory by given path starting from directory given as file descriptor
 ; in:
-;	A/X - pointer to string with the file path
-;	Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
+;	  A/X - pointer to string with the file path
+;   Y - file mode constants - see fcntl.inc (cc65)
+;     O_RDONLY  = $01
+;     O_WRONLY  = $02
+;     O_RDWR    = $03
+;     O_CREAT   = $10
+;     O_TRUNC   = $20
+;     O_APPEND  = $40
+;     O_EXCL    = $80
 ; out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
-;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
-__fat_opendir:
-		jsr __fat_open_path
-		bcs @l_exit					; exit on error
-		lda fd_area + F32_fd::Attr,x
-		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
-		beq @l_exit_close
-		lda #EOK						; ok
-@l_exit:
-		debug "fod"
-		rts
-@l_exit_close:
-		lda #ENOTDIR				; error "Not a directory"
-		jmp __fat_free_fd		; not a directory, so we opened a file. just close them immediately and free the allocated fd
+;	  C - C=0 on success (A=0), C=1 and A=<error code> otherwise
+;	  X - index into fd_area of the opened directory
+;@name: "fat_opendir"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"
+;@out: X, "index into fd_area of the opened directory"
+;@desc: "open directory by given path starting from directory given as file descriptor"
+fat_opendir:
+          jsr fat_open
+          bcs @l_exit
+          and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
+          bne @l_exit
+          lda #ENOTDIR				    ; error "Not a directory"
+          sec                     ; we opened a file. just close it immediately and free the allocated fd
+          jmp __fat_free_fd
+@l_ok:    lda #EOK
+@l_exit:  rts
 
 
 ;in:
-;	A/X - pointer to string with the file path
+;   A/X - pointer to string with the file path
 ;out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
+;@name: "fat_chdir"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"
+;@out: X, "index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)"
+;@desc: "change current directory"
 fat_chdir:
-		jsr __fat_opendir_cwd
-		bne @l_exit
-		ldy #FD_INDEX_TEMP_DIR		  ; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
-		ldx #FD_INDEX_CURRENT_DIR
-		jsr __fat_clone_fd				; therefore we can simply clone the temp dir to current dir fd - FTW!
-		lda #EOK						; ok
-@l_exit:
-		debug "fcd"
-		rts
+          ldy #O_RDONLY
+          jsr fat_opendir
+          bcs @l_exit
+          jsr __fat_free_fd         ; free fd immediately
+          ldy #FD_INDEX_TEMP_FILE   ; open success, FD_INDEX_TEMP_FILE still contains the data from last opened file
+          ldx #FD_INDEX_CURRENT_DIR
+          jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
+@l_exit:  debug "fat chdir <"
+          rts
+
+
+;@desc: readdir expects a pointer in A/Y to store the next F32DirEntry structure representing the next FAT32 directory entry in the directory stream pointed of directory X.
+;@name: fat_readdir
+;@in: X - file descriptor to fd_area of the directory
+;@in: A/Y - pointer to target buffer which must be .sizeof(F32DirEntry)
+;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise
+fat_readdir:
+          sta __volatile_ptr
+          sty __volatile_ptr+1
+
+          lda fd_area+F32_fd::Attr, x
+          and #DIR_Attr_Mask_Dir		; is directory?
+          bne @l_read
+          lda #ENOTDIR
+          sec
+          rts
+
+@l_read:  jsr __fat_prepare_block_access_read
+          bcs @l_exit
+          sta dirptr
+          sty dirptr+1
+
+@l_match: lda (dirptr)
+          debug16 "ff rd dirptr", dirptr
+          beq @l_enoent               ; first byte of dir entry is $00 (end of directory)
+          cmp #DIR_Entry_Deleted
+          beq @l_next
+
+          ldy #F32DirEntry::Attr      ; else check if long filename entry
+          lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
+          cmp #DIR_Attr_Mask_LongFilename
+          beq @l_next
+
+          ldy #.sizeof(F32DirEntry)
+:         lda (dirptr),y
+          sta (__volatile_ptr),y
+          dey
+          bpl :-
+          jmp __fat_seek_next_dirent
+
+@l_next:  jsr __fat_seek_next_dirent
+          .assert >block_data & $01 = 0, error, "block_data address must be $0200 aligned!"
+          lda dirptr+1 ; block_data start at $?200 ?
+          and #$01
+          ora dirptr
+          beq @l_read
+          bra @l_match
+@l_enoent:
+          lda #ENOENT
+          sec ; nothing found C=1 and return
+          debug "ff rd exit <"
+@l_exit:  rts

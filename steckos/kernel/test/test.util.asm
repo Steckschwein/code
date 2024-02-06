@@ -1,10 +1,9 @@
 .include "asmunit.inc" 	; unit test api
-	
+
 .include "common.inc"
 .include "zeropage.inc"
 
 .import string_fat_mask		; uut
-.import string_fat_name		; uut
 
 .import asmunit_chrout
 .export krn_chrout=asmunit_chrout
@@ -17,23 +16,23 @@
 	SetVector test_data_01, filenameptr
 	jsr string_fat_mask
 	assert8 $0, output	; expect zero length string
-	
+
 	SetVector test_data_02, filenameptr
 	jsr string_fat_mask
 	assertString "AB         ", output
-	
+
 	SetVector test_data_03, filenameptr
 	jsr string_fat_mask
 	assertString "LS      PRG", output
-	
+
 	SetVector test_data_04, filenameptr
 	jsr string_fat_mask
 	assertString "LS         ", output
-	
+
 	SetVector test_data_05, filenameptr
 	jsr string_fat_mask
 	assertString "LS      ???", output
-	
+
 	SetVector test_data_06, filenameptr
 	jsr string_fat_mask
 	assertString "????????PRG", output
@@ -45,7 +44,7 @@
 	SetVector test_data_08, filenameptr
 	jsr string_fat_mask
 	assertString "???????????", output
-	
+
 	SetVector test_data_09, filenameptr
 	jsr string_fat_mask
 	assertString "FI?ONA?IP?G", output
@@ -57,14 +56,14 @@
 	SetVector test_data_11, filenameptr
 	jsr string_fat_mask
 	assertString "LS??????   ", output
-	
+
 	SetVector test_data_12, filenameptr
 	jsr string_fat_mask
 ;	assertString "L???????   ", output ; TODO FIXME
-	
+
 	brk
 
-output:	
+output:
 	.res 11,0
 test_data_01:
 	.asciiz "   "

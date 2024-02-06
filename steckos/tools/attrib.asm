@@ -29,11 +29,10 @@
 
 .export char_out=krn_chrout
 
-
-.import primm
+.autoimport
 
 appstart $1000
-.code 
+.code
 		ldy #$00
 @loop:
 		lda (paramptr),y
@@ -93,12 +92,16 @@ wuerg:
 		bra @loop
 
 attrib:
-
-
 		SetVector filename, filenameptr
+    lda #<fat_dirname_mask
+    ldy #>fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
 		ldx #FD_INDEX_CURRENT_DIR
 		jsr krn_find_first
-		bcs @found
+		bcc @found
 		printstring "i/o error"
 		jmp (retvec)
 
@@ -116,11 +119,11 @@ attrib:
 
 @save:
 		; set write pointer accordingly and
-		SetVector block_data, write_blkptr
+		SetVector block_data, sd_blkptr
 
 		; just write back the block. lba_address still contains the right address
 		jsr krn_sd_write_block
-		bne wrerror
+		bcs wrerror
 
 		jmp (retvec)
 
@@ -136,18 +139,8 @@ attrib:
 		lda #':'
 		jsr krn_chrout
 
-		lda (dirptr),y
-		ldx #$03
-@al:
-		bit attr_tbl,x
-		beq @skip
-		pha
-		lda attr_lbl,x
-		jsr krn_chrout
-		pla
-@skip:
-		dex
-		bpl @al
+		jsr print_attribs
+
 @out:
 		jmp (retvec)
 
@@ -185,8 +178,12 @@ attr_tbl:
 attr_lbl:
 		.byte 'R','H','S','A'
 
+.data
 filename:
-		.res 11
-		.byte $00
+	  	.res 11
+  		.byte $00
 op:		.byte $00
 atr:	.byte $00
+
+.bss
+fat_dirname_mask: .res 8+3

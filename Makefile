@@ -7,10 +7,8 @@ clean:
 	(cd steckos; make clean)
 	(cd asmunit; make clean)
 	if [ -e steckos.img ] ; then rm steckos.img ; fi
+	if [ -e libsrc.html ] ; then rm libsrc.html ; fi
 
-distclean:
-	rm -rf dist/LOADER.PRG dist/STECKOS dist/GAMES dist/DEMO dist/PROGS/EDLPLY.PRG dist/PROGS/BASIC.PRG dist/PROGS/IMF.PRG
-	if [ -e steckos.img ] ; then rm steckos.img ; fi
 
 build:
 	(cd asmunit; make)
@@ -21,9 +19,8 @@ build:
 test: build
 	(cd steckos; make test)
 
-
-dist: build
-	./mkdist.sh
-
-img: dist
+img: build
 	./mkimg.sh
+
+doc:
+	./util/asmdoc.py -d steckos/libsrc/ --format md -f libsrc.md

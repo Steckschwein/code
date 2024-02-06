@@ -22,6 +22,8 @@
 
 ; greez fly to https://atariwiki.org/wiki/Wiki.jsp and Super%20fast%20circle%20routine
 
+;@module: vdp
+
 .include "gfx.inc"
 .include "vdp.inc"
 
@@ -31,8 +33,9 @@
 
 .export gfx_circle
 
-; A/Y ptr to circle_t struct
-;
+;@name: gfx_circle
+;@desc: draw circle
+;@in: A/Y - pointer to circle_t struct
 gfx_circle:
       php
       sei

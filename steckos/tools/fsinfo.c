@@ -137,7 +137,7 @@ int main (/*int argc, const char* argv[]*/)
 
   memcpy(partitions, bootsector->partition, sizeof(partitions));
 
-  
+
   printf("Partition table:\n");
   for (i=0; i<=3; i++)
   {
@@ -163,7 +163,7 @@ int main (/*int argc, const char* argv[]*/)
   {
     printf("no partitions\n");
   }
-  
+
 
   printf("\n");
   r = read_block(buf, partitions[0].LBABegin);
@@ -204,7 +204,7 @@ int main (/*int argc, const char* argv[]*/)
   printf("Last cluster   : %lu\n", fsinfo->LastClus);
 
   printf("fs bytes       : %lu\n", TotalSects * BytsPerSec);
- 
+
   printf("bytes free     : %lu\n", fsinfo->FreeClus * SecPerClus * BytsPerSec);
 
   /*
@@ -251,6 +251,6 @@ int main (/*int argc, const char* argv[]*/)
   printf("Free clusters (counted) : %lu\n", free);
   printf("Used clusters (counted) : %lu\n", used);
 */
-  
+
   return EXIT_SUCCESS;
 }

@@ -185,7 +185,7 @@ textui_cursor:
   beq _vram_crs_ptr_write_saved
   trb screen_status
   lda #CURSOR_CHAR
-;  sta saved_char
+  ;  sta saved_char
   bra _vram_crs_ptr_write
 _vram_crs_ptr_write_saved:
   lda saved_char
@@ -256,63 +256,9 @@ textui_cursor_onoff:
   sta screen_status
   rts
 
-.ifdef TEXTUI_STROUT
-;----------------------------------------------------------------------------------------------
-; Output string on screen
-; in:
-;  A - lowbyte  of string address
-;  X - highbyte of string address
-;----------------------------------------------------------------------------------------------
-textui_strout:
-  sta s_ptr3      ;init for output below
-  stx s_ptr3+1
-
-  inc screen_write_lock   ;write lock on
-  ldy   #$00
-@l1:
-  lda   (s_ptr3),y
-  beq   @l2
-  jsr __textui_dispatch_char
-  iny
-  bne   @l1
-@l2:
-  stz screen_write_lock   ;write lock off
-  rts
-.endif
-
-;----------------------------------------------------------------------------------------------
-; Put the string following in-line until a NULL out to the console
-; jsr primm
-; .byte "Example Text!",$00
-;----------------------------------------------------------------------------------------------
-.ifdef TEXTUI_PRIMM
-textui_primm:
-    pla                ; Get the low part of "return" address
-    sta s_ptr3
-    pla                ; Get the high part of "return" address
-    sta s_ptr3+1
-
-    inc screen_write_lock
-    ; Note: actually we're pointing one short
-PSINB:  inc s_ptr3         ; update the pointer
-    bne  PSICHO       ; if not, we're pointing to next character
-    inc  s_ptr3+1         ; account for page crossing
-PSICHO: lda  (s_ptr3)        ; Get the next string character
-    beq  PSIX1        ; don't print the final NULL
-    jsr  __textui_dispatch_char      ; write it out
-    bra  PSINB        ; back around
-PSIX1:  inc  s_ptr3         ;
-    bne  PSIX2        ;
-    inc  s_ptr3+1         ; account for page crossing
-PSIX2:
-    stz screen_write_lock
-    jmp  (s_ptr3)        ; return to byte following final NULL
-.endif
 
 textui_put:
-;  inc screen_write_lock     ; write on
   sta saved_char
-;  stz screen_write_lock     ; write off
   rts
 
 textui_chrout:
@@ -378,17 +324,17 @@ __textui_dispatch_char:
 @exit:
   rts
 @l4:
-  sta saved_char          ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
-  lda crs_x
-  inc
+    sta saved_char          ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
+    lda crs_x
+    inc
     bit video_mode
     bvs :+
     cmp #40
     beq @l5
 :   cmp #80
-  beq @l5
-  sta crs_x
-  jmp textui_update_crs_ptr
+    beq @l5
+    sta crs_x
+    jmp textui_update_crs_ptr
 @l5:
   stz crs_x
 

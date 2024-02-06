@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
 .import vdp_init_reg
@@ -30,24 +32,24 @@
 
 .importzp vdp_ptr, vdp_tmp
 .code
-;
-;  gfx 6 - 512x192/212px, 16colors, sprite mode 2
-;
+
+;@name: vdp_mode6_on
+;@desc: gfx 6 - 512x192/212px, 16colors, sprite mode 2
 vdp_mode6_on:
-    lda #<vdp_init_bytes_gfx6
-    ldy #>vdp_init_bytes_gfx6
-    ldx #<(vdp_init_bytes_gfx6_end-vdp_init_bytes_gfx6)-1
+    lda #<@vdp_init_bytes_gfx6
+    ldy #>@vdp_init_bytes_gfx6
+    ldx #<(@vdp_init_bytes_gfx6_end-@vdp_init_bytes_gfx6)-1
     jmp vdp_init_reg
 
-vdp_init_bytes_gfx6:
-    .byte v_reg0_m5|v_reg0_m3                        ; reg0 mode bits
-    .byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int       ; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
+@vdp_init_bytes_gfx6:
+    .byte v_reg0_m5|v_reg0_m3                             ; reg0 mode bits
+    .byte v_reg1_display_on|v_reg1_spr_size|v_reg1_int    ; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
     .byte >(ADDRESS_GFX7_SCREEN>>3) | $1f  ; => 00<A16>1 1111 - bank 0 (offset $0000) or bank 1 (offset $10000)
     .byte $0
     .byte $0
-    .byte  >(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
-    .byte  >(ADDRESS_GFX6_SPRITE_PATTERN>>3);
-    .byte  Black
+    .byte >(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
+    .byte >(ADDRESS_GFX6_SPRITE_PATTERN>>3);
+    .byte Black
     .byte v_reg8_SPD | v_reg8_VR  ; SPD - sprite disabled, VR - 64k VRAM  - R#8
     .byte v_reg9_nt | v_reg9_ln ; NTSC/262, PAL/313 => v_reg9_nt | v_reg9_ln
     .byte 0
@@ -56,17 +58,18 @@ vdp_init_bytes_gfx6:
     .byte 0;  #R12
     .byte 0;  #R13
     .byte <.HIWORD(ADDRESS_GFX6_SCREEN<<2) ; #R14
-vdp_init_bytes_gfx6_end:
+@vdp_init_bytes_gfx6_end:
 
 ;
-; blank gfx mode 6 with given color
-; .Y - color to fill 4|4 Bit
+;@name: vdp_mode6_blank
+;@desc: blank gfx mode 6 with given color
+;@in: Y - color to fill 4|4 Bit
 vdp_mode6_blank:    ; 64K
-  lda #<_cmd_hmmv_data
-  ldx #>_cmd_hmmv_data
+  lda #<@cmd_hmmv_data
+  ldx #>@cmd_hmmv_data
   jmp vdp_cmd_hmmv
 
-_cmd_hmmv_data:
+ @cmd_hmmv_data:
   .word 0 ;x #36/#37
   .word (ADDRESS_GFX6_SCREEN>>8) ;y - from page offset
   .word 512 ; len x #40/#41

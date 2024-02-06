@@ -20,10 +20,11 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: sdcard
 
 ; enable debug for this module
 .ifdef DEBUG_SDCARD
-	debug_enabled=1
+  debug_enabled=1
 .endif
 
 .include "common.inc"
@@ -46,47 +47,56 @@
 ;---------------------------------------------------------------------
 ; Write block to SD Card
 ;in:
-;	A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
-;	block lba in lba_addr
-;  write_blkptr - pointer to data
+;  A - sd card cmd byte (cmd17, cmd18, cmd24, cmd25)
+;  block lba in lba_addr
+;  sd_blkptr - pointer to data
 ;out:
-;	A - A = 0 on success, error code otherwise
+;  C = 0 on success, C = 1 on error and A =<error code> otherwise
 ;---------------------------------------------------------------------
+;@name: "sd_read_block"
+;@in: lba_addr, "LBA address of block"
+;@in: sd_blkptr, "target adress for the block data to be read"
+;@out: A, "error code"
+;@out: C, "0 - success, 1 - error"
+;@clobbers: A,X,Y
+;@desc: "Write block to SD Card"
 sd_write_block:
-			phx
-			phy
-			jsr sd_select_card
+      phx
+      phy
+      jsr sd_select_card
 
-			jsr sd_cmd_lba
-			lda #cmd24
-			jsr sd_cmd
-			bne @exit
+      jsr sd_cmd_lba
+      lda #cmd24
+      jsr sd_cmd
+      bne @exit
 
-			lda #sd_data_token
-			jsr spi_rw_byte
+      lda #sd_data_token
+      jsr spi_rw_byte
 
-			ldy #0
+      ldy #0
 
-			jsr __sd_write_block_halfblock
-			jsr __sd_write_block_halfblock
+      jsr __sd_write_block_halfblock
+      inc sd_blkptr+1
+      jsr __sd_write_block_halfblock
+      dec sd_blkptr+1
 
-			; Send fake CRC bytes
-			lda #$00
-			jsr spi_rw_byte
-			lda #$00
-			jsr spi_rw_byte
-			lda #$00
+      ; Send fake CRC bytes
+      lda #$00
+      jsr spi_rw_byte
+      lda #$00
+      jsr spi_rw_byte
+
+      lda #$00  ; success
 @exit:
-			ply
-			plx
-        	jmp sd_deselect_card
+      ply
+      plx
+      jmp sd_deselect_card
 
 __sd_write_block_halfblock:
-:			lda (write_blkptr),y
-			phy
-			jsr spi_rw_byte
-			ply
-			iny
-			bne :-
-			inc write_blkptr+1
-			rts
+:     lda (sd_blkptr),y
+      phy
+      jsr spi_rw_byte
+      ply
+      iny
+      bne :-
+      rts

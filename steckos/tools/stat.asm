@@ -20,19 +20,14 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
+.include "steckos.inc"
 .include "fat32.inc"
-.include "appstart.inc"
 
-.import print_filename, dpb2ad, print_fat_date, print_fat_time, bin2dual, hexout, primm
+.autoimport
 
 .export char_out=krn_chrout
-.zeropage
-tmp1: .res 1
-tmp2: .res 1
-tmp3: .res 2
+entries = 23
+
 
 appstart $1000
 
@@ -45,16 +40,22 @@ l1:
     beq @l2
     copypointer paramptr, filenameptr
 @l2:
+    lda #<fat_dirname_mask
+    ldy #>fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
+
+    lda #<string_fat_mask_matcher
+    ldy #>string_fat_mask_matcher
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_first
-    bcs @l4
+    bcc @l4
     jsr hexout
     printstring " i/o error"
     bra @exit
 @l3:
     ldx #FD_INDEX_CURRENT_DIR
     jsr krn_find_next
-    bcc @exit
+    bcs @exit
 @l4:
     lda (dirptr)
     cmp #$e5
@@ -87,84 +88,81 @@ l1:
     jmp (retvec)
 
 dir_show_entry:
-	pha
-	jsr primm
-	.byte "Name: ",$00
-	jsr print_filename
-	crlf
+		pha
+		jsr primm
+		.byte "Name: ",$00
+		jsr print_filename
+		crlf
 
-	jsr primm
-	.byte "Size: ",$00
-	ldy #F32DirEntry::FileSize +1
-	lda (dirptr),y
-	tax
-	ldy #F32DirEntry::FileSize
-	lda (dirptr),y
-	jsr dpb2ad
+		jsr primm
+		.byte "Size: ",$00
+		jsr print_filesize
 
-	jsr primm
-	.byte "  Cluster#1: ",$00
+		jsr primm
+		.byte "  Cluster#1: ",$00
 
-	ldy #F32DirEntry::FstClusHI+1
-	lda (dirptr),y
-	jsr hexout
-	dey
-	lda (dirptr),y
-	jsr hexout
-	ldy #F32DirEntry::FstClusLO+1
-	lda (dirptr),y
-	jsr hexout
-	dey
-	lda (dirptr),y
-	jsr hexout
+		ldy #F32DirEntry::FstClusHI+1
+		lda (dirptr),y
+		jsr hexout
+		dey
+		lda (dirptr),y
+		jsr hexout
+		ldy #F32DirEntry::FstClusLO+1
+		lda (dirptr),y
+		jsr hexout
+		dey
+		lda (dirptr),y
+		jsr hexout
 
-	crlf
+		crlf
 
-	jsr primm
-	.byte "Attribute: "
-	.byte "--ADVSHR",$00
-	crlf
+		jsr primm
+		.byte "Attribute: "
+		.byte "--ADVSHR",$00
+		crlf
 
-	jsr primm
-	.byte "           ",$00
+		jsr primm
+		.byte "           ",$00
 
-	ldy #F32DirEntry::Attr
-	lda (dirptr),y
+		ldy #F32DirEntry::Attr
+		lda (dirptr),y
 
-	jsr bin2dual
-	crlf
+		jsr bin2dual
+		crlf
 
 
-	jsr primm
-	.byte "Created  : ",$00
-	ldy #F32DirEntry::CrtDate
-	jsr print_fat_date
+		jsr primm
+		.byte "Created  : ",$00
+		ldy #F32DirEntry::CrtDate
+		jsr print_fat_date
 
-	lda #' '
-	jsr krn_chrout
+		lda #' '
+		jsr krn_chrout
 
-	ldy #F32DirEntry::CrtTime +1
-	jsr print_fat_time
-	crlf
+		ldy #F32DirEntry::CrtTime +1
+		jsr print_fat_time
+		crlf
 
-	jsr primm
-	.byte "Modified : ",$00
-	ldy #F32DirEntry::WrtDate
-	jsr print_fat_date
+		jsr primm
+		.byte "Modified : ",$00
+		ldy #F32DirEntry::WrtDate
+		jsr print_fat_date
 
-	lda #' '
-	jsr krn_chrout
+		lda #' '
+		jsr krn_chrout
 
-	ldy #F32DirEntry::WrtTime +1
-	jsr print_fat_time
-	crlf
+		ldy #F32DirEntry::WrtTime +1
+		jsr print_fat_time
+		crlf
 
-	pla
-	rts
+		pla
+		rts
 
+
+.data
 pattern:  .byte "*.*",$00
-cnt:      .byte $04
-entries = 23
-dir_attrib_mask:  .byte $0a
 entries_per_page: .byte entries
 pagecnt:          .byte entries
+
+.bss
+fat_dirname_mask: .res 8+3

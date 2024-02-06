@@ -1,28 +1,28 @@
-CC65FLAGS=-I ../clib/include -I ../clib/ --cpu 65c02 # --standard c89 #-Or
+CC65FLAGS=-I ../clib/include -I ../clib/ --cpu 65c02 --debug-info # --standard c89 #-Or
 CA65FLAGS=-I ../asminc -I ../kernel --cpu 65c02
 LIBS=../lib/steckschwein.a
 CLIB=../clib/lib/steckschwein-clib.a
 LDFLAGS=-C ../prg.ld65.cfg -m $<.map $(LIBS)
 
-#TOOLS=ls.prg ll.prg stat.prg fsinfo.prg attrib.prg rename.prg help.prg view.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg keycode.prg fig.prg vramtest.prg wozmon.prg rx.prg
+#TOOLS=ls.prg stat.prg attrib.prg rename.prg help.prg touch.prg cp.prg keycode.prg vramtest.prg wozmon.prg
+TOOLS=stat.prg attrib.prg rename.prg help.prg touch.prg cp.prg keycode.prg vramtest.prg wozmon.prg
 
-TOOLS=cls.prg ls.prg ll.prg stat.prg attrib.prg rename.prg help.prg touch.prg rmdir.prg mkdir.prg cp.prg pwd.prg rm.prg keycode.prg vramtest.prg wozmon.prg 
 # c tools
 TOOLS+=\
   banner.prg \
   cat.prg \
-  clear.prg\
   date.prg\
   crc7.prg \
   echo.prg\
-  fatbench.prg \
+  iobench.prg \
   keyboard.prg \
   nvram.prg\
   od.prg\
   setdate.prg \
   uname.prg \
-  fsinfo.prg
-
+  fsinfo.prg \
+	dirtest.prg \
+	stecklnk.prg
 
 .PHONY: all clean
 
@@ -33,6 +33,9 @@ clean:
 
 %.prg: %.c $(LIBS) $(CLIB)
 	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
+
+%.s: %.c $(LIBS) $(CLIB)
+	cc65 -t none $(CC65FLAGS) $< -o $@
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(@:.o=.asm)

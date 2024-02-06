@@ -19,24 +19,38 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
+.ifndef _BLKLAYER_INC_
+  _BLKLAYER_INC_ = 1
 
-.include "steckos.inc"
-.autoimport
+; Z=1 if equal, Z=0 otherwise and branch to given label
+;
+.macro _blkl_cmp32_x op1, op2, _label
+   lda op1+0, x
+   cmp op2+0
+   bne _label
+   lda op1+1, x
+   cmp op2+1
+   bne _label
+   lda op1+2, x
+   cmp op2+2
+   bne _label
+   lda op1+3, x
+   cmp op2+3
+   bne _label
+.endmacro
 
-.export char_out=krn_chrout
+.macro _blkl_cmp16_x op1, op2, _label
+  lda op1+0, x
+  cmp op2+0
+  bne _label
+  lda op1+1, x
+  cmp op2+1
+  bne _label
+.endmacro
 
-appstart $1000
-    lda paramptr
-    ldx paramptr+1
+.macro _block_loaded _label
+  _blkl_cmp32_x _blkl_store+_blkl_state::blk_lba, lba_addr, _label
+  _blkl_cmp16_x _blkl_store+_blkl_state::blk_ptr, sd_blkptr, _label
+.endmacro
 
-    ;TODO -p support by using krn_opendir and call krn_mkdir on "does not exist error"
-    jsr krn_mkdir
-    bcc @exit
-    ;TODO FIXME maybe use oserror() from cc65 lib
-    pha
-    jsr primm
-    .asciiz "Error: "
-    pla
-    jsr hexout
-@exit:
-	jmp (retvec)
+.endif  ; _BLKLAYER_INC_

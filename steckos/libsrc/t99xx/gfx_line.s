@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "debug.inc"
 
 .include "vdp.inc"
@@ -32,8 +34,9 @@
 
 .export gfx_line
 
-; A/Y ptr to line_t struct
-;
+;@name: gfx_line
+;@desc: draw line according to data in given line struct
+;@in: A/Y ptr to line_t struct
 gfx_line:
       php
       sei
@@ -86,7 +89,7 @@ gfx_line:
       lda #v_reg45_diy        ; y1<y2, y transfer down
       trb __volatile_tmp      ; clear bit
 :
-      ; TODO FIXME - hard wired to SCREEN 8 - adjust y offset according to current gfx mode
+      ; TODO FIXME - hard wired to mode 7 - adjust y offset according to current gfx mode
       lda #ADDRESS_GFX7_SCREEN>>16
       sta a_vregi             ; vdp #r39
 

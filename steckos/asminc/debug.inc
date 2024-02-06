@@ -25,11 +25,11 @@
 
 .import _debugout, _debugout8, _debugout16, _debugout32
 .import _debugout32p
-.import _debugdump
+.import _debugdump,_debugdumpptr
 .import _debugdirentry
 
 .macro dbg
-   sei       ; disable interrupt to avoid further isr during debug
+   sei     ; disable interrupt to avoid further isr during debug
    stp		 ; break to debugger (emulator)
 .endmacro
 
@@ -81,7 +81,7 @@
 
 .macro debugdumpptr msg, ptr
 .if .defined(debug_enabled)
-		jsr _debugdump
+    jsr _debugdumpptr
 		.word ptr
 		.asciiz msg
 .endif

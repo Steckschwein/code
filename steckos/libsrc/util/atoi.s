@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschein.de
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -19,19 +19,29 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
-.include "appstart.inc"
 
-.export char_out=krn_chrout
-.import primm 
-
-appstart $1000
+.export atoi
+;@module: util
 
 .code
+; atoi
+; convert ascii digit to binary
+; in:   A ASCII digit
+; out:  A bin digit
+;@name: "atoi"
+;@in: A, "value to convert"
+;@out: A, "binary number"
+;@desc: "convert ascii digit to binary"
 
-    jsr primm
-    .byte 27,"[2J "
-    .byte $00
+atoi:
+        cmp #'9'+1
+        bcc @l1   ; 0-9?
+        ; must be hex digit
+        adc #$08
+        and #$0f
+        rts
 
-    jmp (retvec)
+@l1:
+        sec
+        sbc #$30
+        rts
