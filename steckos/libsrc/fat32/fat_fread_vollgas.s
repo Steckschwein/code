@@ -73,38 +73,26 @@ fat_fread_vollgas:
           lsr
           tay
           debug16 "frv blocks", p_data
-          beq @read_bytes  ; read remaining bytes and exit
 
 @l_read_blocks:
+          beq @read_bytes  ; zero blocks - read remaining bytes and exit
           phy
+
           lda p_data
           ldy p_data+1
           clc
           jsr __fat_prepare_block_access
 
-          inc p_data+1
+          inc p_data+1  ; +512 byte (sd_blocksize)
           inc p_data+1
 
           lda #<sd_blocksize
           ldy #>sd_blocksize
           jsr __fat_add_seekpos
+
           ply
           dey
-          bne @l_read_blocks
-
-          jsr @read_bytes
-          bcs @l_exit
-;    _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
-          debug16 "fread vollgas <", p_data
-@l_exit_ok:
-          clc
-@l_exit:
-          rts
-@l_err_range:
-          lda #ERANGE
-@l_exit_eof:
-          sec
-          rts
+          bra @l_read_blocks
 
 ; at beginning we need to read until we are block aligned
 ; and after blocks where read we read the remaining bytes until eof
@@ -122,5 +110,13 @@ fat_fread_vollgas:
           inc p_data
           bne @read_end_of_block_or_file
           inc p_data+1
-          bra @read_end_of_block_or_file
+          bne @read_end_of_block_or_file
+@l_err_range:
+          lda #ERANGE
+          sec
+@l_exit:  debug16 "fread vollgas <", p_data
+          rts
+@l_exit_ok:
+          clc
+          rts
 
