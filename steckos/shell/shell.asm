@@ -178,8 +178,8 @@ key_fn1:
         bra inject_cmd
         
 key_fn2:
-        lda #<cmd_dir
-        ldx #>cmd_dir
+        lda #<cmd_lsdir
+        ldx #>cmd_lsdir
         bra inject_cmd
 
 key_fn3:
@@ -369,7 +369,7 @@ mode_toggle:
         jsr hexout
         jsr krn_textui_setmode
         jmp mainloop
-cd:
+cmd_cd:
         lda paramptr
         ldx paramptr+1
         jsr krn_chdir
@@ -379,7 +379,7 @@ cd:
         jmp mainloop
 
 
-rm:
+cmd_rm:
         lda (paramptr)
         beq @exit
 
@@ -391,7 +391,7 @@ rm:
         jsr errmsg
 @exit:
         jmp mainloop
-mkdir:
+cmd_mkdir:
         lda (paramptr)
         beq @exit
 
@@ -404,7 +404,7 @@ mkdir:
 @exit:
         jmp mainloop
 
-rmdir:
+cmd_rmdir:
         lda (paramptr)
         beq @exit
 
@@ -417,7 +417,7 @@ rmdir:
 @exit:
         jmp mainloop
 
-pwd:
+cmd_pwd:
         lda #<cwdbuf
         ldx #>cwdbuf
         jsr strout
@@ -495,7 +495,7 @@ exec:
         lda #$fe
         jmp errmsg
 
-go:
+cmd_go:
         ldy #0
         ldx #1
         jsr hex2dumpvec
@@ -509,7 +509,7 @@ go:
 @end:
         jmp mainloop
 
-bank:
+cmd_bank:
         ldy #0
         lda (paramptr),y
         beq @status
@@ -549,7 +549,7 @@ bank:
         jmp mainloop
 
 
-ms:
+cmd_ms:
         ldy #0
         ldx #1
         jsr hex2dumpvec
@@ -601,7 +601,7 @@ ms:
 
 
 
-bd:
+cmd_bd:
         ldx #3
 @clearloop:
         stz dumpvecs,x
@@ -639,7 +639,7 @@ bd:
         ldx #>bd_usage_txt
         jsr strout
         jmp mainloop
-pd:
+cmd_pd:
         ldy #0
         ldx #1
         stz dumpend
@@ -737,7 +737,7 @@ dump_start:
         rts
 
 
-loadmem:
+cmd_loadmem:
         ldy #0
         ldx #0
 
@@ -772,7 +772,7 @@ loadmem:
         jsr strout
         jmp mainloop
 
-savemem:
+cmd_savemem:
         ldx #3
         ldy #0
 
@@ -819,7 +819,7 @@ savemem:
         jmp mainloop
 
 
-cls:
+cmd_cls:
         lda #<cls_seq_txt
         ldx #>cls_seq_txt
         jsr strout
@@ -1027,11 +1027,11 @@ usage:
         ldx #>ls_usage_txt
         jmp strout
 
-do_dir:
+cmd_dir:
         lda #opts_long 
         sta options
         bra dir
-do_ls:
+cmd_ls:
         stz options
 dir:
         crlf
@@ -1397,7 +1397,7 @@ space:
         jsr char_out
         rts
 
-path:
+cmd_path:
         lda #<PATH
         ldx #>PATH
         jsr strout
@@ -1497,56 +1497,56 @@ unknown_error_msg:
 
 cmdlist:
 .byte "cd",0
-.word cd
+.word cmd_cd
 
 .byte "rm",0
-.word rm
+.word cmd_rm
 
 .byte "ls",0
-.word do_ls
+.word cmd_ls
 
-cmd_dir:
+cmd_lsdir:
 .byte "dir",0
-.word do_dir
+.word cmd_dir
 
 .byte "mkdir",0
-.word mkdir
+.word cmd_mkdir
 
 .byte "rmdir",0
-.word rmdir
+.word cmd_rmdir
 
 .byte "pwd",0
-.word pwd
+.word cmd_pwd
 
 .byte "up",0
 .word krn_upload
 
 .byte "pd",0
-.word pd
+.word cmd_pd
 
 .byte "bd",0
-.word bd
+.word cmd_bd
 
 .byte "ms",0
-.word ms
+.word cmd_ms
 
 .byte "bank",0
-.word bank
+.word cmd_bank
 
 .byte "go",0
-.word go
+.word cmd_go
 
 .byte "load",0
-.word loadmem
+.word cmd_loadmem
 
 .byte "save",0
-.word savemem
+.word cmd_savemem
 
 .byte "cls",0
-.word cls
+.word cmd_cls
 
 .byte "path",0
-.word path
+.word cmd_path
 ; End of list
 .byte $ff
 cmd_help:
