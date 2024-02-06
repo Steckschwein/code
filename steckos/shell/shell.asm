@@ -820,13 +820,9 @@ cmd_savemem:
 
 
 cmd_cls:
-        lda #<cls_seq_txt
-        ldx #>cls_seq_txt
-        jsr strout
-
-        jmp mainloop
-cls_seq_txt:
+        jsr primm
         .byte 27,"[2J ",0
+        jmp mainloop
         
 get_filename:
         ldx #0
