@@ -61,12 +61,10 @@ execv:
       pla
 
       jsr fat_fread_vollgas
-      bcs @l_is_eof
- @l_is_eof:
       pha
       jsr fat_close
       pla
-      cmp #0
+      cmp #EOK
       beq @l_exec_run
       sec
       rts
