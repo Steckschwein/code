@@ -51,7 +51,14 @@ KEY_ESCAPE        = 27
 KEY_FN1           = $f1
 KEY_FN2           = $f2
 KEY_FN3           = $f3
-
+KEY_FN4           = $f4
+KEY_FN5           = $f5
+KEY_FN6           = $f6
+KEY_FN7           = $f7
+KEY_FN8           = $f8
+KEY_FN9           = $f9
+KEY_FN10          = $fa
+KEY_FN11          = $fb
 KEY_FN12          = $fc
 
 

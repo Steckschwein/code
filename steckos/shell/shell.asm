@@ -55,7 +55,6 @@ msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
 dumpvecs: .res 4
-
 dumpend = dumpvecs
 dumpvec = dumpvecs+2
 
@@ -115,41 +114,29 @@ mainloop:
         ldy #0
         jsr terminate
 
+
   ; put input into buffer until return is pressed
 inputloop:
         keyin
 
-        cmp #KEY_RETURN ; return?
-        beq parse
 
-        cmp #KEY_BACKSPACE
-        beq backspace
-
-        cmp #KEY_ESCAPE
-        beq escape
-
-        cmp #KEY_CRSR_UP
-        beq key_crs_up
-
-        cmp #KEY_CRSR_DOWN
-        beq key_crs_down
-
-        cmp #KEY_TAB
-        beq key_tab
-
-        cmp #KEY_FN1
-        beq key_fn1
-
-        cmp #KEY_FN2
-        beq key_fn2
-
-        cmp #KEY_FN3
-        beq key_fn3
+        ; special key?
+        ; check in lookup table
+        ldx #0
+:
+        cmp key_code_tbl,x 
+        beq @found
+        inx
+        cpx #key_code_tbl_end - key_code_tbl
+        bne :-
+        bra @notfound
+@found:
+        txa 
+        asl 
+        tax 
+        jmp (key_addr_tbl,x)        
         
-        cmp #KEY_FN12
-        beq key_fn12
-
-
+@notfound:
         ; prevent overflow of input buffer
         cpy #BUF_SIZE
         beq inputloop
@@ -159,13 +146,23 @@ inputloop:
 line_end:
         jsr char_out
         jsr terminate
+key_fn4:
+key_fn5:
+key_fn6:
+key_fn7:
+key_fn8:
+key_fn9:
+key_fn10:
+key_fn11:
 
         bra inputloop
+
 
 backspace:
         cpy #$00
         beq inputloop
         dey
+        lda #KEY_BACKSPACE
         bra line_end
 
 escape:
@@ -1556,6 +1553,48 @@ cmd_help:
 .byte "help",0
 cmd_basic:
 .byte "basic.prg",0
+
+key_code_tbl:
+        .byte KEY_RETURN
+        .byte KEY_BACKSPACE
+        .byte KEY_ESCAPE
+        .byte KEY_CRSR_UP
+        .byte KEY_CRSR_DOWN
+        .byte KEY_TAB
+        .byte KEY_FN1
+        .byte KEY_FN2
+        .byte KEY_FN3 
+        .byte KEY_FN4 
+        .byte KEY_FN5 
+        .byte KEY_FN6 
+        .byte KEY_FN7 
+        .byte KEY_FN8 
+        .byte KEY_FN9 
+        .byte KEY_FN10 
+        .byte KEY_FN11
+        .byte KEY_FN12
+key_code_tbl_end:
+ 
+key_addr_tbl:
+        .word parse 
+        .word backspace
+        .word escape
+        .word key_crs_up
+        .word key_crs_down
+        .word key_tab 
+        .word key_fn1
+        .word key_fn2
+        .word key_fn3
+        .word key_fn4
+        .word key_fn5
+        .word key_fn6
+        .word key_fn7
+        .word key_fn8
+        .word key_fn9
+        .word key_fn10
+        .word key_fn11
+        .word key_fn12 
+
 
 .bss
 tmpbuf:           .res BUF_SIZE
