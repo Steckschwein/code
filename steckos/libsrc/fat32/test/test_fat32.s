@@ -54,22 +54,25 @@ TEST_FILE_CL2=$19
 ; -------------------
     setup "__fat_is_cln_zero"
 
+    set32 fd_area+0*FD_Entry_Size+F32_fd::CurrentCluster, 0
     ldx #(0*FD_Entry_Size)
     jsr __fat_is_cln_zero
-    assertZero 1    ; expect fd0 - "is root"
+    assertZero 1    ; expect fd0 - "is zero" - no cluster reserved yet
     assertX (0*FD_Entry_Size)
 
     ldx #(1*FD_Entry_Size)
     jsr __fat_is_cln_zero
-    assertZero 0    ; expect fd0 - "is not root"
+    assertZero 0    ; expect fd0 - "is not zero" - cluster reserved
     assertX (1*FD_Entry_Size)
 
 ; -------------------
     setup "__calc_lba_addr with root"
+
+    set32 fd_area+0*FD_Entry_Size+F32_fd::CurrentCluster, 2
     ldx #(0*FD_Entry_Size)
     jsr __calc_lba_addr
     assertX (0*FD_Entry_Size)
-    assert32 LBA_BEGIN, lba_addr
+    assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + ROOT_CL * SEC_PER_CL, lba_addr
 
 ; -------------------
     setup "__calc_lba_addr with some clnr"

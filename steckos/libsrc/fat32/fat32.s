@@ -59,17 +59,18 @@
 __fat_fseek_cluster:
     debug32 "seek cl >", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
 
-    jsr __fat_set_fd_start_cluster
+    bcc :+ ; C=0 read access
+
     jsr __fat_is_cln_zero
     bne :+
-
-    bcc @l_exit_err ; C=0 read access, and no start cluster available exit (C=1/A=0)
     jsr __fat_reserve_start_cluster ; start cluster zero, write access, we have to reserve the start cluster first
     bcs @l_exit
     sec   ; restore write access set C=1
 
 :   rol   ; save read/write access, set bit 0 save in Y
     tay
+
+    jsr __fat_set_fd_start_cluster
 
     ; calculate amount of clusters required for requested seek position - "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
     lda fd_area+F32_fd::SeekPos+3,x
@@ -109,9 +110,6 @@ __fat_fseek_cluster:
     and #<~FD_STATUS_DIRTY                 ; clear dirty
     sta fd_area+F32_fd::status,x
     debug32 "seek <", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
-    rts
-@l_exit_err:
-    sec
     rts
 
 ;@name: "fat_fread_byte"
@@ -207,7 +205,7 @@ fat_fopen:
           jsr __fat_free_fd           ; was directory, free fd
           lda #EISDIR                 ; exit
 @l_not_open:
-          debug "ffopen >"
+          debug "ffopen"
           cmp #EOK                    ; C=1/A=EOK error from open was end of cluster (@see find_first/_next)
           beq @l_add_dirent           ; go on with write check
           cmp #ENOENT                 ; no such file or directory ?
@@ -221,7 +219,8 @@ fat_fopen:
           lda #ENOENT                 ; no "write" flags set, exit with ENOENT
 @l_exit_err:
           sec
-@l_exit:  rts
+@l_exit:  debug "ffopen <"
+          rts
 
 
 fat_close_all:

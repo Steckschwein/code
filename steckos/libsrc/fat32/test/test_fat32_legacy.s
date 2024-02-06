@@ -32,7 +32,7 @@ debug_enabled=1
       fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
 
     ; set file size and write ptr
-    set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 1; 1 block must be written
+    set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 1; 1 byte size, at least 1 block must be written
     SetVector write_data_src, sd_blkptr
     jsr fat_write
     assertCarry 0

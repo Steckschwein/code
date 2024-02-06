@@ -168,13 +168,15 @@ __fat_match_all:
 
 ; create the "." and ".." entry of the new directory
 ; in:
-;   .X - the file descriptor into fd_area of the dir entry
+;   X - the file descriptor into fd_area of the dir entry
 ;   dirptr - set to dir entry within block_data buffer
 ; out:
 ;   C=0 on success, C=1 otherwise and A=error code
 __fat_write_new_direntry:
 
     jsr __fat_erase_block_fat
+
+    ; TODO FIXME - for ".." dir entry all date and time fields must be set to the same value as that for the containing directory
 
     ldy #DIR_Entry_Size-1                                   ; copy data of the dir entry (dirptr) created beforehand to easily take over create time, mod time, cluster nr etc.,
 @l_dir_cp:
@@ -195,13 +197,6 @@ __fat_write_new_direntry:
     ; use the fd of the temp dir (FD_INDEX_TEMP_FILE) - represents the last visited directory which must be the parent of this one ("..") - we can easily derrive the parent cluster. FTW!
     debug32 "cd_sln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster
 
-    stz block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+0
-    stz block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+1
-    stz block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+0
-    stz block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+1
-
-    cmp32eq fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster, volumeID + VolumeID::BPB_RootClus, @l_skip ; if root cluster, we have to write $00000000 hence skip, block was erased above
-    debug "f wr dirent neq"
     lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+0
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+0
     lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+1

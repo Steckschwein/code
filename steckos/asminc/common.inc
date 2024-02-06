@@ -325,21 +325,19 @@
   cmp16 op1+2, op2+2, _label
 .endmacro
 
-.macro _sub32 op1, op2
-    sec
-    lda op1+0
-    sbc op2+0
-    lda op1+1
-    sbc op2+1
-    lda op1+2
-    sbc op2+2
-    lda op1+3
-    sbc op2+3
-.endmacro
-
 ; compare 32 bit - branch if equal
 .macro cmp32eq op1, op2, _eq_label
-    _sub32 op1, op2
+    lda op1+0
+    cmp op2+0
+    bne :+
+    lda op1+1
+    cmp op2+1
+    bne :+
+    lda op1+2
+    cmp op2+2
+    bne :+
+    lda op1+3
+    cmp op2+3
     beq _eq_label
 :
 .endmacro

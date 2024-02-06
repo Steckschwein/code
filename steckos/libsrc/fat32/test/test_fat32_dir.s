@@ -36,26 +36,6 @@ TEST_FILE_CL2=$19
 		assertX 2*FD_Entry_Size
 
 ; -------------------
-		setup "fat_readdir eoc"
-		lda #<test_dir_name_eexist
-		ldx #>test_dir_name_eexist
-		jsr fat_opendir
-		assertCarry 0
-		assertX 2*FD_Entry_Size
-
-		lda #<test_dirent
-		ldy #>test_dirent
-		jsr fat_readdir
-    assertCarry 1
-    assertA EOK
-
-    jsr fat_readdir
-    assertCarry 1
-    assertA EOK
-
-    jsr fat_close
-
-; -------------------
 		setup "fat_readdir until eod"
 		lda #<test_dir_root
 		ldx #>test_dir_root

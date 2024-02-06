@@ -56,36 +56,26 @@ fat_fread_vollgas:
           sta p_data
           sty p_data+1
 
-@l_blockstart:
-          lda fd_area+F32_fd::SeekPos+1,x     ; read until we are block aligned (multiple of $200)
-          and #$01
-          ora fd_area+F32_fd::SeekPos+0,x
-          beq @l_read_blocks
-
-          jsr fat_fread_byte
+          jsr @read_end_of_block_or_file
+          debug16 "frv 0", p_data
           bcs @l_exit
 
-          sta (p_data)
-          inc p_data
-          bne @l_blockstart
-          inc p_data+1
-          bra @l_blockstart
-
-@l_read_blocks:
           lda fd_area + F32_fd::FileSize + 1,x
           and #$80
-          tay
           ora fd_area + F32_fd::FileSize + 2,x
           ora fd_area + F32_fd::FileSize + 3,x
           bne @l_err_range                      ; file too big >32k
 
-          tya                                   ; (filesize - seek pos) / $200 (block size) gives amount of blocks to read
+          ; (filesize - seek pos) / $200 (block size) gives amount of blocks to read
+          sec
+          lda fd_area + F32_fd::FileSize + 1,x
+          sbc fd_area + F32_fd::SeekPos + 1,x
           lsr
           tay
+          debug16 "frv blocks", p_data
+          beq @read_bytes  ; read remaining bytes and exit
 
-@l_read_block:
-          beq @l_exit
-
+@l_read_blocks:
           phy
           lda p_data
           ldy p_data+1
@@ -100,13 +90,37 @@ fat_fread_vollgas:
           jsr __fat_add_seekpos
           ply
           dey
-          bra @l_read_block
+          bne @l_read_blocks
 
-
+          jsr @read_bytes
+          bcs @l_exit
 ;    _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
+          debug16 "fread vollgas <", p_data
+@l_exit_ok:
+          clc
 @l_exit:
           rts
 @l_err_range:
           lda #ERANGE
+@l_exit_eof:
           sec
           rts
+
+; at beginning we need to read until we are block aligned
+; and after blocks where read we read the remaining bytes until eof
+@read_end_of_block_or_file:
+          lda fd_area+F32_fd::SeekPos+1,x     ; read until we are block aligned (multiple of $200)
+          and #$01
+          ora fd_area+F32_fd::SeekPos+0,x
+          beq @l_exit_ok
+
+@read_bytes:
+          jsr fat_fread_byte                  ; ... or end of file is reached
+          bcs @l_exit
+
+          sta (p_data)
+          inc p_data
+          bne @read_end_of_block_or_file
+          inc p_data+1
+          bra @read_end_of_block_or_file
+
