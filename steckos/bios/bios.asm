@@ -294,7 +294,7 @@ boot_from_card:
       print_dot
       lda startaddr
       ldy startaddr+1
-@l:   jsr fat_fread_vollgas
+      jsr fat_fread_vollgas
 @l_is_eof:
       pha
       jsr fat_close    ; close after read to free fd, regardless of error

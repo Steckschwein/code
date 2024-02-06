@@ -51,16 +51,14 @@ execv:
 :     jsr fat_fread_byte  ; start address low
       bcs @l_exit_close
       sta filenameptr
-      tay
       jsr fat_fread_byte  ; start address high
       bcs @l_exit_close
       sta filenameptr+1
 
-      phy
       tay
-      pla
-
+      lda filenameptr
       jsr fat_fread_vollgas
+
       pha
       jsr fat_close
       pla
