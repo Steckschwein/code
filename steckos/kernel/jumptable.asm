@@ -16,7 +16,7 @@ krn_execv:              jmp execv
 krn_open:               jmp fat_open      ; file open, regardless of file/dir
 .export krn_fopen
 krn_fopen:              jmp fat_fopen     ; file open (not directory)
-.export krn_chdir
+.export krn_opendir
 krn_opendir:            jmp fat_opendir   ; open directory
 .export krn_chdir
 krn_chdir:              jmp fat_chdir
@@ -42,6 +42,9 @@ krn_find_first:         jmp fat_find_first
 krn_find_next:          jmp fat_find_next
 .export krn_getcwd
 krn_getcwd:             jmp fat_get_root_and_pwd
+.export krn_readdir
+krn_readdir:             jmp fat_readdir
+
 
 ; display stuff
 .export krn_textui_init
@@ -56,6 +59,7 @@ krn_textui_update_crs_ptr:  jmp textui_update_crs_ptr
 krn_textui_setmode:     jmp textui_setmode
 .export krn_textui_crs_onoff
 krn_textui_crs_onoff:   jmp textui_cursor_onoff
+
 
 ; sd card stuff
 .export krn_sd_write_block

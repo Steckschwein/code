@@ -20,14 +20,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: fat32
 
 .ifdef DEBUG_FAT32 ; debug switch for this module
   debug_enabled=1
 .endif
 
-; TODO OPTIMIZATIONS
-;  1. avoid fat block read - calculate fat lba address, but before reading a the fat block, compare the new lba_addr with the previously saved fat_lba
-;
 .include "zeropage.inc"
 .include "common.inc"
 .include "fat32.inc"
@@ -45,7 +43,6 @@
 .export fat_open
 .export fat_fopen
 .export fat_fread_byte
-.export fat_fseek
 .export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
 
@@ -54,68 +51,26 @@
 
 .code
 
-;  seek n bytes within file denoted by the given FD
-;in:
-;  X   - offset into fd_area
-;  A/Y - pointer to seek_struct - @see fat32.inc
-;out:
-;  C=0 on success (A=0), C=1 and A=<error code> or C=1 and A=0 (EOK) if EOF reached
-fat_fseek:
-
-    _is_file_open   ; otherwise rts C=1 and A=#EINVAL
-    _is_file_dir    ; otherwise rts C=1 and A=#EISDIR
-
-    sta __volatile_ptr
-    sty __volatile_ptr+1
-
-    ldy #Seek::Whence
-    lda (__volatile_ptr),y
-    debug "fat fseek >"
-    cmp #SEEK_SET
-    ; TODO support SEEK_CUR, SEEK_END
-    bne @l_exit_err
-    ; save new seek pos
-    ldy #Seek::Offset
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::SeekPos+0,x
-    iny
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::SeekPos+1,x
-    iny
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::SeekPos+2,x
-    iny
-    lda (__volatile_ptr),y
-    sta fd_area+F32_fd::SeekPos+3,x
-
-    lda fd_area+F32_fd::status,x
-    ora #FD_STATUS_DIRTY                 ; set dirty - @see __fat_prepare_block_access
-    sta fd_area+F32_fd::status,x
-
-    lda #EOK
-    clc
-    debug "fat fseek <"
-    rts
-@l_exit_err:
-    lda #EINVAL
-    sec
-    rts
-
 ; in:
 ;   X - fd
 ;   C - C=0 read access, C=1 write access
+; out:
+;   C=0 on success, C=1 on error and A=error code or C=1/A=0 EOC
 __fat_fseek_cluster:
-    debug "seek cl >"
+    debug32 "seek cl >", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
 
-    stz __volatile_tmp
-    bcc :+  ; read or write access?
+    bcc :+ ; C=0 read access
 
-    jsr __fat_is_start_cln_zero
+    jsr __fat_is_cln_zero
     bne :+
-    jsr __fat_reserve_start_cluster ; start cluster zero, write access, we have to reserve the start cluster
-    inc __volatile_tmp  ; save write access, set bit 0
+    jsr __fat_reserve_start_cluster ; start cluster zero, write access, we have to reserve the start cluster first
+    bcs @l_exit
+    sec   ; restore write access set C=1
 
-:   jsr __fat_set_fd_start_cluster
+:   rol   ; save read/write access, set bit 0 save in Y
+    tay
+
+    jsr __fat_set_fd_start_cluster
 
     ; calculate amount of clusters required for requested seek position - "SeekPos" / ($200 * "sec per cluster") => (SeekPos(3 to 1) >> 1) >> "bit(sec_per_cluster)"
     lda fd_area+F32_fd::SeekPos+3,x
@@ -125,11 +80,11 @@ __fat_fseek_cluster:
     lda fd_area+F32_fd::SeekPos+1,x
     sta volumeID+VolumeID::cluster_seek_cnt+0
 
-    ldy volumeID+VolumeID::BPB_SecPerClusCount ; Count + 1 cause SeekPos / $200 gives amount of blocks/sectors, so we need at least one iteration
+    lda volumeID+VolumeID::BPB_SecPerClusCount ; Count + 1 cause SeekPos / $200 gives amount of blocks/sectors, so we need at least one iteration
 :   lsr volumeID+VolumeID::cluster_seek_cnt+2
     ror volumeID+VolumeID::cluster_seek_cnt+1
     ror volumeID+VolumeID::cluster_seek_cnt+0
-    dey
+    dea
     bpl :-
 
 @l_seek:
@@ -138,31 +93,29 @@ __fat_fseek_cluster:
     lda volumeID+VolumeID::cluster_seek_cnt+2
     ora volumeID+VolumeID::cluster_seek_cnt+1
     ora volumeID+VolumeID::cluster_seek_cnt+0
-    debug32 "seek cnt", volumeID+VolumeID::cluster_seek_cnt
+    debug32 "seek 0", volumeID+VolumeID::cluster_seek_cnt
     beq @l_exit_ok
 @seek_cln:
-    lda __volatile_tmp
-    lsr ; restore carry
+    tya                       ; read/write access to A
+    lsr                       ; restore carry
     jsr __fat_next_cln
     bcs @l_exit
     _dec24 volumeID+VolumeID::cluster_seek_cnt
-    debug32 "seek nxt", volumeID+VolumeID::cluster_seek_cnt
+    debug32 "seek c", volumeID+VolumeID::cluster_seek_cnt
     bne @seek_cln
 @l_exit_ok:
+    clc
+@l_exit:
     lda fd_area+F32_fd::status,x
     and #<~FD_STATUS_DIRTY                 ; clear dirty
     sta fd_area+F32_fd::status,x
-    clc
-@l_exit:
-    debug32 "seek pos <", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
-    debug32 "seek cl <", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
+    debug32 "seek <", fd_area+(2*FD_Entry_Size)+F32_fd::CurrentCluster
     rts
 
-
-;in:
-;  X - offset into fd_area
-;out:
-;  C=0 on success and A=<byte>, C=1 on error and A=<error code> or C=1 and A=0 (EOK) if EOF reached
+;@name: "fat_fread_byte"
+;@in: X, "offset into fd_area"
+;@out: C=0 on success and A="received byte", C=1 on error and A="error code" or C=1 and A=0 (EOK) if EOF is reached
+;@desc: "read byte from file"
 fat_fread_byte:
 
     _is_file_open   ; otherwise rts C=1 and A=#EINVAL
@@ -172,24 +125,26 @@ fat_fread_byte:
     bne :+                    ; skip file size check
 
     _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
+    debug16 "rd byte eof <", __volatile_ptr
     lda #EOK
     rts ; exit - EOK (0) and C=1
 
 :   phy
 
-    jsr __fat_prepare_block_access_read
+    jsr __fat_prepare_data_block_access_read
     bcs @l_exit
 
     sta __volatile_ptr
     sty __volatile_ptr+1
 
-    lda (__volatile_ptr)
+    jsr __fat_inc_seekpos   ; seek+1
 
-    _inc32_x fd_area+F32_fd::SeekPos
+    lda (__volatile_ptr)    ; read byte
+
     clc
 @l_exit:
     ply
-    debug16 "rd_ex", __volatile_ptr
+    debug16 "rd byte <", __volatile_ptr
     rts
 
 ; open file/directory
@@ -217,7 +172,8 @@ fat_open:
           tya
           sta fd_area+F32_fd::flags,x
           lda fd_area+F32_fd::Attr,x
-@l_exit:  rts
+@l_exit:  debug "fopen <"
+          rts
 
 ; in:
 ;   A/X - pointer to zero terminated string with the file path
@@ -232,6 +188,15 @@ fat_open:
 ; out:
 ;   X - index into fd_area of the opened file
 ;   C=0 on success, C=1 and A=<error code> otherwise
+
+;@name: "fat_fopen"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@in: Y, "file mode constants O_RDONLY = $01, O_WRONLY = $02, O_RDWR = $03, O_CREAT = $10, O_TRUNC = $20, O_APPEND = $40, O_EXCL = $80
+;@out: C, "0 on success, 1 on error"
+;@out: A, "error code"
+;@out: X, "index into fd_area of the opened file"
+;@desc: "open file"
 fat_fopen:
           jsr fat_open
           bcs @l_not_open
@@ -240,7 +205,7 @@ fat_fopen:
           jsr __fat_free_fd           ; was directory, free fd
           lda #EISDIR                 ; exit
 @l_not_open:
-          debug "ffopen >"
+          debug "ffopen"
           cmp #EOK                    ; C=1/A=EOK error from open was end of cluster (@see find_first/_next)
           beq @l_add_dirent           ; go on with write check
           cmp #ENOENT                 ; no such file or directory ?
@@ -254,7 +219,8 @@ fat_fopen:
           lda #ENOENT                 ; no "write" flags set, exit with ENOENT
 @l_exit_err:
           sec
-@l_exit:  rts
+@l_exit:  debug "ffopen <"
+          rts
 
 
 fat_close_all:
@@ -271,6 +237,11 @@ __fat_init_fdarea:
 ;   X - offset into fd_area
 ; out:
 ;   C=0 on success, C=1 on error with A=<error code>
+;@name: "fat_close"
+;@in: X, "index into fd_area of the opened file"
+;@out: C, "0 on success, 1 on error"
+;@out: A, "error code"
+;@desc: "close file, update dir entry and free file descriptor quietly"
 fat_close:
     lda fd_area+F32_fd::flags,x
     and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; file write access?
@@ -285,6 +256,23 @@ fat_close:
 ; out:
 ;   Z=1 on success (A=0), Z=0 and A=error code otherwise
 ;   C=0 if found and dirptr is set to the dir entry found (requires Z=1), C=1 otherwise
+;@name: "fat_find_first"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: Y, "high byte of pointer to zero terminated string with the file path"
+;@in: X, "file descriptor (index into fd_area) of the directory"
+;@out: Z, "1 on success, 0 on error"
+;@out: A, "error code"
+;@out: C, "0 if found and dirptr is set to the dir entry found (requires Z=1), else 1"
+;@desc: "find first dir entry"
 fat_find_first = __fat_find_first_mask
 
+; in:
+;  X - directory fd index into fd_area
+; out:
+;  C=0 on success (A=0), C=1 and A=<error code> otherwise
+;@name: "fat_find_next"
+;@in: X, "file descriptor (index into fd_area) of the directory"
+;@out: A, "error code"
+;@out: C, "0 on success (A=0), C=1 and A=<error code>, else 1"
+;@desc: "find next dir entry"
 fat_find_next = __fat_find_next

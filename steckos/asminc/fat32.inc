@@ -208,7 +208,6 @@ DIR_Entry_Deleted            = $e5
 
 FD_STATUS_FILE_OPEN   = 1<<7    ; if set the file is open, closed otherwise
 FD_STATUS_DIRTY       = 1<<6    ; if set dirty from seek() operation
-;FD_STATUS_WRITE       = 1<<0    ; if set denotes the file (or directory, e.g. mkdir()) is opened with write access
 
 FD_Entry_Size         = .sizeof(F32_fd)
 FD_Entries_Max        = (fd_area_end - fd_area) / FD_Entry_Size
@@ -249,10 +248,10 @@ block_fat             = BUFFER_2 ; $0600-$07ff
    pha
    lda fd_area+F32_fd::Attr, x
    and #DIR_Attr_Mask_Dir		; is directory?
-   cmp #DIR_Attr_Mask_Dir   ; C=1 if set
+   beq :+
    pla
-   bcc :+
    lda #EISDIR
+   sec
    rts
-:
+:  pla
 .endmacro

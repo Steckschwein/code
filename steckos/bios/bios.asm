@@ -286,21 +286,15 @@ boot_from_card:
       jsr fat_fread_byte  ; start address low
       bcs load_error
       sta startaddr+0
-      sta ptr1+0
       print_dot
 
       jsr fat_fread_byte ; start address high
       bcs load_error
       sta startaddr+1
-      sta ptr1+1
       print_dot
-@l:   jsr fat_fread_byte
-      bcs @l_is_eof
-      sta (ptr1)
-      inc ptr1+0
-      bne @l
-      inc ptr1+1
-      bne @l
+      lda startaddr
+      ldy startaddr+1
+      jsr fat_fread_vollgas
 @l_is_eof:
       pha
       jsr fat_close    ; close after read to free fd, regardless of error

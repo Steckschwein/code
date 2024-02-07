@@ -45,7 +45,7 @@
     set8 volumeID+VolumeID::BPB_SecPerClusCount, (sec_per_cl / 2) ; !!! works for 4, 2, 1 only
   .endif
 	set32 volumeID+VolumeID::BPB_RootClus, ROOT_CL
-  set32 volumeID + VolumeID::BPB_FATSz32, (FAT2_LBA - FAT_LBA)
+  set32 volumeID+VolumeID::BPB_FATSz32, (FAT2_LBA - FAT_LBA)
   set32 volumeID+VolumeID::lba_data, (LBA_BEGIN - ROOT_CL * sec_per_cl)
 	set32 volumeID+VolumeID::lba_fat, FAT_LBA		;fat lba
   set32 volumeID+VolumeID::lba_fat2, FAT2_LBA
@@ -72,6 +72,23 @@
   .dword seekpos
   .byte flags
   .byte status
+.endmacro
+
+.macro assertReadBytes _string
+      .local @input, @expect
+      ldy #0
+:     jsr fat_fread_byte
+      assertC 0
+      sta @input,y
+      iny
+      cpy #.strlen(_string)
+      bne :-
+      bra :+
+@input:
+      .res .strlen(_string)
+:     assertMemory @input, .strlen(_string)
+@expect:
+      .byte _string
 .endmacro
 
 .macro assertFdEntry address

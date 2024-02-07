@@ -22,20 +22,16 @@
 
 .include "vdp.inc"
 
-.import vdp_init_reg
-.import vdp_nopslide_2m
-.import vdp_nopslide_8m
-.import vdp_cmd_hmmv
+.autoimport
 
 .export vdp_mode7_on
 .export vdp_mode7_blank
 
 .code
-;
-;  gfx 7 - each pixel can be addressed - e.g. for image
-;
+
+;@name: vdp_mode7_on
+;@desc: gfx 7 - each pixel can be addressed - e.g. for image
 vdp_mode7_on:
-vdp_gfx7_on:
       lda #<vdp_init_bytes_gfx7
       ldy #>vdp_init_bytes_gfx7
       ldx #<(vdp_init_bytes_gfx7_end-vdp_init_bytes_gfx7)-1
@@ -58,16 +54,16 @@ vdp_init_bytes_gfx7:
       .byte 0;  #R13
       .byte <.HIWORD(ADDRESS_GFX7_SCREEN<<2) ; #R14
 vdp_init_bytes_gfx7_end:
-;
-; blank gfx mode 7 with
-;   Y - color to fill in GRB (3+3+2)
-;
+
+;@name: vdp_mode7_blank
+;@desc: blank gfx mode 7 with
+;@in: Y - color to fill in GRB (3+3+2)
 vdp_mode7_blank:
-  lda #<_cmd_hmmv_data
-  ldx #>_cmd_hmmv_data
+  lda #<@cmd_hmmv_data
+  ldx #>@cmd_hmmv_data
   jmp vdp_cmd_hmmv
 
-_cmd_hmmv_data:
+@cmd_hmmv_data:
   .word 0 ;x #36/#37
   .word (ADDRESS_GFX7_SCREEN>>8) ;y - from page offset
   .word 256 ; len x #40/#41

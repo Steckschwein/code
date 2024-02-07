@@ -628,8 +628,8 @@ single_test:
 test_end
 
 
-data_loader  ; define data loader
-data_writer ; define data writer
+data_loader   ; define data loader
+data_writer   ; define data writer
 
 mock_rtc:
     m_memcpy  _rtc_ts, rtc_systime_t, 8
@@ -730,8 +730,7 @@ setUp:
   init_volume_id SEC_PER_CL
 
   ;setup fd0 (cwd) to root cluster
-  ldx #FD_INDEX_CURRENT_DIR
-  jsr __fat_open_rootdir
+  jsr __fat_open_rootdir_cwd
 
   ; fill fat block
   m_memset block_fat_0+$000, $ff, $80  ; simulate reserved
