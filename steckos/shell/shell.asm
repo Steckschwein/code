@@ -37,26 +37,24 @@ opts_crtdate    = (1 << 4)
 dump_line_length = $10
 
 BUF_SIZE    = 80 ;TODO maybe too small?
-cwdbuf_size = 80
+cwdbuf_size = 30
 prompt  = '>'
 
-
+.autoimport
+.export char_out                = krn_chrout
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
 ;  - print welcome message
 ;---------------------------------------------------------------------------------------------------------
 
-.export char_out=krn_chrout
 
-.autoimport
 
 .zeropage
 msg_ptr:  .res 2
 bufptr:   .res 2
 pathptr:  .res 2
 dumpvecs: .res 4
-
 dumpend = dumpvecs
 dumpvec = dumpvecs+2
 
@@ -66,16 +64,10 @@ appstart __SHELL_START__
 .export __APP_SIZE__=kernel_start-__SHELL_START__ ; adjust __APP_SIZE__ for linker accordingly
 .code
 init:
-        jsr primm
-        ;.byte 27,"[2J "
+        lda #<hello_msg 
+        ldx #>hello_msg
+        jsr strout
 
-        ;.byte 27,"[3B" ; move cursor down 3 lines
-
-        .byte "steckOS shell  "
-    ;    .byte 27,"[5D" ; move cursor left 5 pos
-
-        .include "version.inc"
-        .byte CODE_LF,0
 exit_from_prg:
         cld
         jsr  krn_textui_init
@@ -90,9 +82,10 @@ exit_from_prg:
         SetVector buf, paramptr ; set param to empty buffer
         SetVector PATH, pathptr
 mainloop:
-        jsr primm
-        .byte CODE_LF, '[', 0
-
+        crlf 
+        lda #'['
+        jsr char_out
+        
         ; output current path
         lda #<cwdbuf
         ldy #>cwdbuf
@@ -109,41 +102,41 @@ mainloop:
         lda #'?'
         jsr char_out
 @prompt:
-        jsr primm
-        .byte ']', prompt, 0
+        lda #']'
+        jsr char_out
+
+        lda #prompt
+        jsr char_out
 
         lda crs_x
-        sta crs_x_prompt
 
         ; reset input buffer
         ldy #0
         jsr terminate
 
+
   ; put input into buffer until return is pressed
 inputloop:
-@l_input:
+        keyin
 
-        jsr krn_getkey
-        bcc @l_input
 
-        cmp #KEY_RETURN ; return?
-        beq parse
-
-        cmp #KEY_BACKSPACE
-        beq backspace
-
-        cmp #KEY_ESCAPE
-        beq escape
-
-        cmp #KEY_CRSR_UP
-        beq key_crs_up
-
-        cmp #KEY_CRSR_DOWN
-        beq key_crs_down
-
-        cmp #KEY_FN12
-        beq key_fn12
-
+        ; special key?
+        ; check in lookup table
+        ldx #0
+:
+        cmp key_code_tbl,x 
+        beq @found
+        inx
+        cpx #key_code_tbl_end - key_code_tbl
+        bne :-
+        bra @notfound
+@found:
+        txa 
+        asl 
+        tax 
+        jmp (key_addr_tbl,x)        
+        
+@notfound:
         ; prevent overflow of input buffer
         cpy #BUF_SIZE
         beq inputloop
@@ -153,13 +146,23 @@ inputloop:
 line_end:
         jsr char_out
         jsr terminate
+key_fn4:
+key_fn5:
+key_fn6:
+key_fn7:
+key_fn8:
+key_fn9:
+key_fn10:
+key_fn11:
 
         bra inputloop
+
 
 backspace:
         cpy #$00
         beq inputloop
         dey
+        lda #KEY_BACKSPACE
         bra line_end
 
 escape:
@@ -169,11 +172,43 @@ escape:
 
 key_fn12:
         jmp mode_toggle
+key_fn1:
+        lda #<cmd_help
+        ldx #>cmd_help
+        bra inject_cmd
+        
+key_fn2:
+        lda #<cmd_lsdir
+        ldx #>cmd_lsdir
+        bra inject_cmd
 
+key_fn3:
+        lda #<cmd_basic
+        ldx #>cmd_basic
+        bra inject_cmd
+
+
+inject_cmd:
+        sta paramptr
+        stx paramptr+1
+        ldy #0
+:
+        lda (paramptr),y 
+        beq parse
+        sta (bufptr),y 
+        jsr char_out
+        iny
+        bne :-
 key_crs_up:
-        bra inputloop
-
 key_crs_down:
+key_tab:        
+        lda #<dirent
+        ldy #>dirent
+        ldx #FD_INDEX_CURRENT_DIR
+        jsr krn_readdir
+
+        jsr print_filename        
+
         bra inputloop
 
 terminate:
@@ -299,73 +334,9 @@ printbuf:
         rts
 
 
-cmdlist:
-        .byte "cd",0
-        .word cd
-
-        .byte "rm",0
-        .word rm
-
-        .byte "ls",0
-        .word do_ls
-
-
-        .byte "mkdir",0
-        .word mkdir
-
-        .byte "rmdir",0
-        .word rmdir
-
-        .byte "pwd",0
-        .word pwd
-
-        .byte "up",0
-        .word krn_upload
-
-        .byte "pd",0
-        .word pd
-
-        .byte "bd",0
-        .word bd
-
-        .byte "ms",0
-        .word ms
-
-        .byte "bank",0
-        .word bank
-
-        .byte "go",0
-        .word go
-
-        .byte "load",0
-        .word loadmem
-
-        .byte "save",0
-        .word savemem
-
-        .byte "cls",0
-        .word cls
-
-        ; End of list
-        .byte $ff
 
 
 errmsg:
-        ;TODO FIXME maybe use oserror() from cc65 lib
-        cmp #$f1
-        bne @l1
-        jsr primm
-        .byte CODE_LF,"invalid command",CODE_LF,$00
-        jmp mainloop
-
-@l1:
-        cmp #$f2
-        bne @l2
-        jsr primm
-        .byte CODE_LF,"invalid directory",CODE_LF,$00
-        jmp mainloop
-
-@l2:
         cmp #$15
         bcs @l_unknown
         asl
@@ -383,13 +354,13 @@ errmsg:
         bne :-
 @l_unknown:
         pha
-        jsr primm
-        .asciiz "unknown error "
+        lda #<unknown_error_msg
+        ldx #>unknown_error_msg
+        jsr strout
         pla
         jsr hexout_s
 @l_exit:
-        lda #CODE_LF
-        jsr char_out
+        crlf
         jmp mainloop
 
 mode_toggle:
@@ -398,7 +369,7 @@ mode_toggle:
         jsr hexout
         jsr krn_textui_setmode
         jmp mainloop
-cd:
+cmd_cd:
         lda paramptr
         ldx paramptr+1
         jsr krn_chdir
@@ -408,7 +379,7 @@ cd:
         jmp mainloop
 
 
-rm:
+cmd_rm:
         lda (paramptr)
         beq @exit
 
@@ -420,7 +391,7 @@ rm:
         jsr errmsg
 @exit:
         jmp mainloop
-mkdir:
+cmd_mkdir:
         lda (paramptr)
         beq @exit
 
@@ -433,7 +404,7 @@ mkdir:
 @exit:
         jmp mainloop
 
-rmdir:
+cmd_rmdir:
         lda (paramptr)
         beq @exit
 
@@ -446,7 +417,7 @@ rmdir:
 @exit:
         jmp mainloop
 
-pwd:
+cmd_pwd:
         lda #<cwdbuf
         ldx #>cwdbuf
         jsr strout
@@ -477,12 +448,12 @@ exec:
         inx
         iny
         bne @cp_path
-        lda #$f0
+        lda #1
         jmp errmsg
 @check_path:    ;PATH end reached and nothing to prefix
         cpy tmp2
         bne @cp_next_piece  ;end of path, no iny
-        lda #$f1        ;nothing found, "Invalid command"
+        lda #1    ;nothing found, "Invalid command"
         jmp errmsg
 @cp_next:
         iny
@@ -524,7 +495,7 @@ exec:
         lda #$fe
         jmp errmsg
 
-go:
+cmd_go:
         ldy #0
         ldx #1
         jsr hex2dumpvec
@@ -532,12 +503,13 @@ go:
 
         jmp (dumpend)
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: go <addr>", $0a, $0d,0
+        lda #<go_usage_txt
+        ldx #>go_usage_txt
+        jsr strout
 @end:
         jmp mainloop
 
-bank:
+cmd_bank:
         ldy #0
         lda (paramptr),y
         beq @status
@@ -553,8 +525,9 @@ bank:
 
         bra @status
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: bank <slot> <bank>", $0a, $0d,0
+        lda #<bank_usage_txt
+        ldx #>bank_usage_txt
+        jsr strout
         bra @end 
 @status:
         
@@ -566,8 +539,7 @@ bank:
         jsr hexout
         lda #':'
         jsr char_out
-        lda #' '
-        jsr char_out
+        jsr space 
         lda ctrl_port,x 
         jsr hexout
         inx
@@ -575,7 +547,9 @@ bank:
         bne @next
 @end:
         jmp mainloop
-ms:
+
+
+cmd_ms:
         ldy #0
         ldx #1
         jsr hex2dumpvec
@@ -591,9 +565,8 @@ ms:
 
         lda #':'
         jsr char_out
-        lda #' '
-        jsr char_out
-
+        jsr space 
+   
 @skip:
         iny
         lda (paramptr),y
@@ -620,14 +593,15 @@ ms:
         bra @again
 
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: ms <addr> <byte> [<byte>...]", $0a, $0d,0
+        lda #<ms_usage_txt
+        ldx #>ms_usage_txt
+        jsr strout
 @end:
         jmp mainloop
 
 
 
-bd:
+cmd_bd:
         ldx #3
 @clearloop:
         stz dumpvecs,x
@@ -661,11 +635,11 @@ bd:
 @err:
         jmp errmsg
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: bd <block-no> (4 bytes, 8 hex digits) ", $0a, $0d,0
+        lda #<bd_usage_txt
+        ldx #>bd_usage_txt
+        jsr strout
         jmp mainloop
-
-pd:
+cmd_pd:
         ldy #0
         ldx #1
         stz dumpend
@@ -686,8 +660,9 @@ pd:
         jsr dump_start
         jmp mainloop
 @error:
-        jsr primm
-        .byte $0a, $0d,"usage: pd <pageaddr>", $0a, $0d,0
+        lda #<pd_usage_txt
+        ldx #>pd_usage_txt
+        jsr strout
         jmp mainloop
 
 
@@ -708,21 +683,18 @@ dump_start:
 
         lda #':'
         jsr char_out
-        lda #' '
-        jsr char_out
+        jsr space 
 
         ldy #$00
 @out_hexbyte:
         lda (dumpvec),y
         jsr hexout
-        lda #' '
-        jsr char_out
+        jsr space 
         iny
         cpy #dump_line_length
         bne @out_hexbyte
 
-        lda #' '
-        jsr char_out
+        jsr space 
 
         ldy #$00
 @out_char:
@@ -748,8 +720,10 @@ dump_start:
         lda dumpvec+1
         cmp dumpend
         beq @end
-        jsr primm
-        .byte $0a,$0d,"-- press a key-- ",$00
+        crlf
+        lda #<press_key_msg
+        ldx #>press_key_msg
+        jsr strout
 
         keyin
         cmp #KEY_CTRL_C
@@ -763,7 +737,7 @@ dump_start:
         rts
 
 
-loadmem:
+cmd_loadmem:
         ldy #0
         ldx #0
 
@@ -793,11 +767,12 @@ loadmem:
         crlf
         jmp errmsg
 @usage:
-        jsr primm
-        .byte $0a, $0d, "usage: load <file> <addr>", $0a, $0d, 0
-        jsr mainloop
+        lda #<load_usage_txt
+        ldx #>load_usage_txt
+        jsr strout
+        jmp mainloop
 
-savemem:
+cmd_savemem:
         ldx #3
         ldy #0
 
@@ -838,15 +813,15 @@ savemem:
 @err:
         jmp errmsg
 @usage:
-        jsr primm
-        .byte $0a, $0d,"usage: save <from> <to> <filename>",$0a, $0d, $00
+        lda #<save_usage_txt
+        ldx #>save_usage_txt
+        jsr strout
         jmp mainloop
 
 
-cls:
+cmd_cls:
         jsr primm
-        .byte 27,"[2J "
-        .byte $00
+        .byte 27,"[2J ",0
         jmp mainloop
         
 get_filename:
@@ -901,21 +876,179 @@ hex2dumpvec:
         sec
         rts
 
-do_ls:
+
+dir_show_entry:
+        phx
+        lda options
+        and #opts_long 
+        beq :+
+        jsr dir_show_entry_long
+        bra @end
+:
+        jsr dir_show_entry_short
+@end:
+        plx
+        rts
+
+dir_show_entry_short:
+        dec cnt
+        bne @l1
+        crlf
+        lda #5
+        sta cnt
+@l1:
+        ldy #F32DirEntry::Attr
+        lda dirent,y
+
+        bit #DIR_Attr_Mask_Dir
+        beq :+
+        lda #'['
+        jsr char_out
+        bra @print
+:
+        jsr space
+            
+@print:
+        jsr print_filename
+
+        ldy #F32DirEntry::Attr
+        lda dirent,y
+
+        bit #DIR_Attr_Mask_Dir
+        beq :+
+        lda #']'
+        jsr char_out
+        bra @pad
+:
+
+        jsr space
+@pad:
+        jsr space
+        rts 
+
+dir_show_entry_long:
+        pha
+        jsr print_filename
+
+        jsr space
+
+        lda options
+        and #opts_cluster
+        beq :+
+        jsr print_cluster_no
+:   
+
+        lda options
+        and #opts_attribs   
+        beq :+
+        jsr space
+        jsr print_attribs
+:
+
+        ldy #F32DirEntry::Attr
+        lda dirent,y
+
+        bit #DIR_Attr_Mask_Dir
+        beq @l
+        lda #<dir_marker_txt
+        ldx #>dir_marker_txt
+        jsr strout
+        bra @date       ; no point displaying directory size as its always zeros
+                        ; just print some spaces and skip to date display
+@l:
+        jsr space
+
+        jsr print_filesize
+
+        jsr space
+
+@date:
+        lda #opts_crtdate
+        and options
+        bne :+
+        ldy #F32DirEntry::WrtDate
+        bra @x
+:
+        ldy #F32DirEntry::CrtDate
+@x:
+        jsr print_fat_date
+
+        jsr space 
+
+        lda #opts_crtdate
+        and options
+        bne :+
+        ldy #F32DirEntry::WrtTime+1
+        bra @y
+:
+        ldy #F32DirEntry::CrtTime+1
+@y:
+
+        jsr print_fat_time
+        crlf
+
+        pla
+        rts
+
+setopt:
+        ora options
+        sta options
+        rts
+
+setmask:
+        and dir_attrib_mask
+        sta dir_attrib_mask
+        rts 
+
+
+print_cluster_no:
+        ldy #F32DirEntry::FstClusHI+1
+        lda dirent,y
+        jsr hexout
+        dey
+        lda dirent,y
+        jsr hexout
+        
+        ldy #F32DirEntry::FstClusLO+1
+        lda dirent,y
+        jsr hexout
+        dey
+        lda dirent,y
+        jsr hexout
+        rts
+
+
+usage:
+        lda #<ls_usage_txt
+        ldx #>ls_usage_txt
+        jmp strout
+
+cmd_dir:
+        lda #opts_long 
+        sta options
+        bra dir
+cmd_ls:
+        stz options
+dir:
         crlf
         SetVector pattern, filenameptr
 
+        lda #DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
+        sta dir_attrib_mask
+
+        lda #6
+        sta cnt 
+        
         lda #entries_short
         sta pagecnt
         sta entries_per_page
 
-        stz options
         
         ldy #0
 @parseloop:
         lda (paramptr),y
         bne :+
-        jmp @read
+        jmp @readdir
 : 
         cmp #' '
         beq @set_filenameptr
@@ -961,6 +1094,7 @@ do_ls:
         bne :+
         lda #<~DIR_Attr_Mask_Volume
         jsr setmask
+        bra @option
 :
         cmp #'c'
         bne :+
@@ -990,7 +1124,7 @@ do_ls:
 @set_filenameptr: 
         iny
         lda (paramptr),y
-        beq @l2
+        beq @readdir
         dey
 
         copypointer paramptr, filenameptr
@@ -1000,48 +1134,47 @@ do_ls:
         adc filenameptr
         sta filenameptr
 
-@read:
-
-@l2:
+@readdir:
         lda #<fat_dirname_mask
         ldy #>fat_dirname_mask
-        jsr string_fat_mask ; build fat dir entry mask from user input
+        jsr string_fat_mask
+        
+        lda #<cwdbuf
+        ldx #>cwdbuf
+        jsr krn_opendir
+        bcs @error
+@read_next:        
+        lda #<dirent
+        ldy #>dirent
+        jsr krn_readdir
+        rol 
+        cmp #1
+        beq @end
 
-        ldx #FD_INDEX_CURRENT_DIR
-        lda #<string_fat_mask_matcher
-        ldy #>string_fat_mask_matcher
-        jsr krn_find_first
-        bcc @l4
-        jmp errmsg
-@l3:
-        ldx #FD_INDEX_CURRENT_DIR
-        jsr krn_find_next
-        bcc @l4
-        jmp @exit
-@l4:
-        lda (dirptr)
-        cmp #$e5
-        beq @l3
+        lda dirent
+        cmp #DIR_Entry_Deleted
+        beq @read_next
 
         ldy #F32DirEntry::Attr
-        lda (dirptr),y
+        lda dirent,y
         bit dir_attrib_mask ; Hidden attribute set, skip
-        bne @l3
-        
-        lda options
-        and #opts_long 
-        beq :+
-        jsr dir_show_entry_long
-        bra @next
-:
-        jsr dir_show_entry_short
+        bne @read_next
 
-@next:
+        jsr string_fat_mask_matcher
+        bcc @read_next
+
+        jsr dir_show_entry
+
         lda options
         and #opts_paging
         beq @l
         dec pagecnt
         bne @l
+
+        lda #<press_key_msg
+        ldx #>press_key_msg
+        jsr strout
+
         keyin
         cmp #13 ; enter pages line by line
         beq @lx
@@ -1059,164 +1192,224 @@ do_ls:
 @l:
         bit flags
         bmi @exit
-        jmp @l3
 
+        bra @read_next
+
+@error:
+        jsr krn_close
+        jmp errmsg
+
+@end:   
+        jsr krn_close
 @exit:
         jmp mainloop
 
+print_filename:
+        ldx #0
+        ldy #F32DirEntry::Name
+@name:
+        lda dirent,y
+        cmp #' '
+        beq @ext  
 
-dir_show_entry_short:
-        dec cnt
-        bne @l1
-        crlf
-        lda #5
-        sta cnt
-@l1:
-        ldy #F32DirEntry::Attr
-        lda (dirptr),y
+        tolower
+        jsr char_out
+        inx
+        iny
+        cpy #F32DirEntry::Ext
+        bne @name
 
-        bit #DIR_Attr_Mask_Dir
-        beq :+
-        lda #'['
+@ext:
+        ldy #F32DirEntry::Ext
+        lda dirent,y
+        cmp #' '
+        beq @spcloop
+
+        lda #'.'
         jsr char_out
-        bra @print
-:
-        lda #' '
+        inx
+
+        ldy #F32DirEntry::Ext
+@foo:
+        lda dirent,y
+
+        tolower
         jsr char_out
+        inx
+        iny
+        cpy #F32DirEntry::Ext + 3
+        bne @foo
     
-@print:
-        jsr print_filename
-
-        ldy #F32DirEntry::Attr
-        lda (dirptr),y
-
-        bit #DIR_Attr_Mask_Dir
-        beq :+
-        lda #']'
-        jsr char_out
-        bra @pad
-:
-
-        lda #' '
-        jsr char_out
-@pad:
-        lda #' '
-        jsr char_out
-        rts 
-
-dir_show_entry_long:
-        pha
-        jsr print_filename
-
-        lda #' '
-        jsr char_out
-
-
-        lda options
-        and #opts_cluster
-        beq :+
-        jsr print_cluster_no
-:   
-
-        lda options
-        and #opts_attribs   
-        beq :+
-        lda #' '
-        jsr char_out
-        jsr print_attribs
-:
-
-        ldy #F32DirEntry::Attr
-        lda (dirptr),y
-
-        bit #DIR_Attr_Mask_Dir
-        beq @l
-        jsr primm
-        .asciiz " <DIR> "
-        bra @date       ; no point displaying directory size as its always zeros
-                        ; just print some spaces and skip to date display
-@l:
-        lda #' '
-        jsr char_out
-
-        jsr print_filesize
-
-        lda #' '
-        jsr char_out
-
-@date:
-        lda #opts_crtdate
-        and options
-        bne :+
-        ldy #F32DirEntry::WrtDate
-        bra @x
-:
-        ldy #F32DirEntry::CrtDate
-@x:
-        jsr print_fat_date
-
-        lda #' '
-        jsr char_out
-
-        lda #opts_crtdate
-        and options
-        bne :+
-        ldy #F32DirEntry::WrtTime+1
-        bra @y
-:
-        ldy #F32DirEntry::CrtTime+1
-@y:
-
-        jsr print_fat_time
-        crlf
-
-        pla
+@spcloop:
+        cpx #12
+        bcs @done
+        jsr space
+        inx 
+        bne @spcloop
+    
+@done:
         rts
 
-setopt:
-        ora options
-        sta options
-        rts
 
-setmask:
-        and dir_attrib_mask
-        sta dir_attrib_mask
-        rts 
+print_fat_date:
+        lda dirent,y
+        and #%00011111
+        jsr b2ad
 
+        lda #'.'
+        jsr char_out
 
-print_cluster_no:
-        ldy #F32DirEntry::FstClusHI+1
-        lda (dirptr),y
-        jsr hexout
+        ; month
+        iny
+        lda dirent,y
+        lsr
+        tax
         dey
-        lda (dirptr),y
-        jsr hexout
+        lda dirent,y
+        ror
+        lsr
+        lsr
+        lsr
+        lsr
+
+        jsr b2ad
+
+        lda #'.'
+        jsr char_out
+
+        txa
+        clc
+        adc #80   	; add begin of msdos epoch (1980)
+        cmp #100
+        bcc @l6		; greater than 100 (post-2000)
+        sec 		; yes, substract 100
+        sbc #100
+@l6:
+        jsr b2ad ; there we go
+        rts
+
+print_fat_time:
+        lda dirent,y
+        tax
+        lsr
+        lsr
+        lsr
+
+        jsr b2ad
+
+        lda #':'
+        jsr char_out
+
+        txa
+        and #%00000111
+        sta tmp1
+        dey
+        lda dirent,y
+
+        ldx #5
+@loop:
+        lsr tmp1
+        ror
+
+        dex 
+        bne @loop
+
+        jsr b2ad
+
+        lda #':'
+        jsr char_out
+
+        lda dirent,y
+        and #%00011111
+
+        jsr b2ad
+
+        rts
+
+print_filesize:
+        phy
+        clc
+        ldy #F32DirEntry::FileSize+3
+        lda dirent,y
+        ldy #F32DirEntry::FileSize+2
+        adc dirent,y
+        beq :+
+        lda #<bigfile_marker_txt
+        ldx #>bigfile_marker_txt
         
-        ldy #F32DirEntry::FstClusLO+1
-        lda (dirptr),y
-        jsr hexout
-        dey
-        lda (dirptr),y
-        jsr hexout
+        jsr strout
+        ply
+        rts
+:
+        ldy #F32DirEntry::FileSize+1
+        lda dirent,y
+        tax 
+        dey 
+        lda dirent,y
+        jsr dpb2ad
+        ply
         rts
 
+print_attribs:
+        ldy #F32DirEntry::Attr
+        lda dirent,y
 
-usage:
-        lda #<usage_txt
-        ldx #>usage_txt
+        ldx #3
+@al:
+        bit attr_tbl,x
+        beq @skip
+        pha
+        lda attr_lbl,x
+        jsr char_out
+        pla
+        bra @next
+@skip:
+        pha
+        jsr space
+        pla
+@next:
+        dex 
+        bpl @al
+        rts
+
+string_fat_mask_matcher:
+        ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) - 1
+__dmm:
+        lda fat_dirname_mask,y
+        cmp #'?'
+        beq __dmm_next
+        cmp dirent,y
+        bne __dmm_neq
+__dmm_next:
+        dey
+        bpl __dmm
+        rts ;exit, C=1 here from cmp above
+__dmm_neq:
+        clc
+        rts
+
+space:
+        lda #' '
+        jsr char_out
+        rts
+
+cmd_path:
+        lda #<PATH
+        ldx #>PATH
         jsr strout
         jmp mainloop
 
+PATH:           .asciiz "./:/steckos/:/progs/"
+PRGEXT:         .asciiz ".PRG"
+pd_header:      .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
+pattern:        .byte "*.*",$00
+attr_tbl:       .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
+attr_lbl:       .byte 'R','H','S','A'
+press_key_msg:  .byte "-- press a key-- ",$00
+dir_marker_txt: .asciiz " <DIR> "
+bigfile_marker_txt:
+                .asciiz ">64k "
 
-
-
-.data
-PATH: .asciiz "./:/steckos/:/progs/"
-PRGEXT: .asciiz ".PRG"
-pd_header: .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
-pattern:    .byte "*.*",$00
-dir_attrib_mask:  .byte DIR_Attr_Mask_Volume|DIR_Attr_Mask_Hidden
-cnt:        .byte 6
 msg_EOK:        .asciiz "No error"
 msg_ENOENT:     .asciiz "No such file or directory"
 msg_ENOMEM:     .asciiz "Out of memory"
@@ -1261,7 +1454,21 @@ errors:
 .addr msg_EISDIR
 .addr msg_ENOTDIR
 .addr msg_ENOTEMPTY
-usage_txt:
+bank_usage_txt:
+        .byte $0a, $0d,"usage: bank <slot> <bank>", $0a, $0d,0
+go_usage_txt:
+        .byte $0a, $0d,"usage: go <addr>", $0a, $0d,0
+ms_usage_txt:
+        .byte $0a, $0d,"usage: ms <addr> <byte> [<byte>...]", $0a, $0d,0
+bd_usage_txt:
+        .byte $0a, $0d,"usage: bd <block-no> (4 bytes, 8 hex digits) ", $0a, $0d,0
+pd_usage_txt:
+        .byte $0a, $0d,"usage: pd <pageaddr>", $0a, $0d,0
+load_usage_txt:
+        .byte $0a, $0d, "usage: load <file> <addr>", $0a, $0d, 0
+save_usage_txt:
+        .byte $0a, $0d,"usage: save <from> >to> <filename>",$0a, $0d, $00
+ls_usage_txt:
 .byte "Usage: ls [OPTION]... [FILE]...",$0a, $0d
 .byte "options:",$0a,$0d
 .byte "   -a   show file attributes",$0a,$0d
@@ -1273,17 +1480,129 @@ usage_txt:
 .byte "   -v   show volume ID ",$0a,$0d
 .byte "   -?   show this useful message",$0a,$0d
 .byte 0
+hello_msg:
+;.byte 27,"[2J "
+;.byte 27,"[3B" ; move cursor down 3 lines
+.byte "steckOS shell  "
+;    .byte 27,"[5D" ; move cursor left 5 pos
+.include "version.inc"
+.byte CODE_LF,0
+unknown_error_msg:
+        .asciiz "unknown error "
+
+
+cmdlist:
+.byte "cd",0
+.word cmd_cd
+
+.byte "rm",0
+.word cmd_rm
+
+.byte "ls",0
+.word cmd_ls
+
+cmd_lsdir:
+.byte "dir",0
+.word cmd_dir
+
+.byte "mkdir",0
+.word cmd_mkdir
+
+.byte "rmdir",0
+.word cmd_rmdir
+
+.byte "pwd",0
+.word cmd_pwd
+
+.byte "up",0
+.word krn_upload
+
+.byte "pd",0
+.word cmd_pd
+
+.byte "bd",0
+.word cmd_bd
+
+.byte "ms",0
+.word cmd_ms
+
+.byte "bank",0
+.word cmd_bank
+
+.byte "go",0
+.word cmd_go
+
+.byte "load",0
+.word cmd_loadmem
+
+.byte "save",0
+.word cmd_savemem
+
+.byte "cls",0
+.word cmd_cls
+
+.byte "path",0
+.word cmd_path
+; End of list
+.byte $ff
+cmd_help:
+.byte "help",0
+cmd_basic:
+.byte "basic.prg",0
+
+key_code_tbl:
+        .byte KEY_RETURN
+        .byte KEY_BACKSPACE
+        .byte KEY_ESCAPE
+        .byte KEY_CRSR_UP
+        .byte KEY_CRSR_DOWN
+        .byte KEY_TAB
+        .byte KEY_FN1
+        .byte KEY_FN2
+        .byte KEY_FN3 
+        .byte KEY_FN4 
+        .byte KEY_FN5 
+        .byte KEY_FN6 
+        .byte KEY_FN7 
+        .byte KEY_FN8 
+        .byte KEY_FN9 
+        .byte KEY_FN10 
+        .byte KEY_FN11
+        .byte KEY_FN12
+key_code_tbl_end:
+ 
+key_addr_tbl:
+        .word parse 
+        .word backspace
+        .word escape
+        .word key_crs_up
+        .word key_crs_down
+        .word key_tab 
+        .word key_fn1
+        .word key_fn2
+        .word key_fn3
+        .word key_fn4
+        .word key_fn5
+        .word key_fn6
+        .word key_fn7
+        .word key_fn8
+        .word key_fn9
+        .word key_fn10
+        .word key_fn11
+        .word key_fn12 
 
 
 .bss
-crs_x_prompt:     .res 1
 tmpbuf:           .res BUF_SIZE
 buf:              .res BUF_SIZE
 cwdbuf:           .res cwdbuf_size
+dirent:           .res .sizeof(F32DirEntry)
 filenamebuf:      .res 12
+fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 tmp1:             .res 1
 tmp2:             .res 1
-fat_dirname_mask: .res 8+3 ;8.3 fat mask <name><ext>
 options:          .res 1
+dir_attrib_mask:  .res 1
 pagecnt:          .res 1
+cnt:              .res 1
 entries_per_page: .res 1

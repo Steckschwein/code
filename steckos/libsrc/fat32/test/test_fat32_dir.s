@@ -36,9 +36,9 @@ TEST_FILE_CL2=$19
 		assertX 2*FD_Entry_Size
 
 ; -------------------
-		setup "fat_readdir"
-		lda #<test_dir_name_eexist
-		ldx #>test_dir_name_eexist
+		setup "fat_readdir until eod"
+		lda #<test_dir_root
+		ldx #>test_dir_root
 		jsr fat_opendir
 		assertCarry 0
 		assertX 2*FD_Entry_Size
@@ -46,6 +46,8 @@ TEST_FILE_CL2=$19
 		lda #<test_dirent
 		ldy #>test_dirent
 		jsr fat_readdir
+    assertCarry 0
+
 		assertCarry 0
 		assertX 2*FD_Entry_Size
     assertDirEntry test_dirent
@@ -64,6 +66,25 @@ TEST_FILE_CL2=$19
 		assertCarry 0
     assertDirEntry test_dirent
       fat32_dir_entry_dir "DIR02   ", "   ", 0
+
+    ldy #11
+:   phy
+		lda #<test_dirent
+		ldy #>test_dirent
+		jsr fat_readdir
+    ply
+		assertCarry 0
+    dey
+    bne :-
+
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+		lda #<test_dirent
+		ldy #>test_dirent
+		jsr fat_readdir
+		assertCarry 1
+    assertA EOK
 
     jsr fat_close
 
@@ -350,8 +371,7 @@ setUp:
     init_volume_id SEC_PER_CL
 		jsr __fat_init_fdarea
 		;setup fd0 (cwd) to root cluster
-    ldx #FD_INDEX_CURRENT_DIR
-    jsr __fat_open_rootdir
+    jsr __fat_open_rootdir_cwd
 
     ; fill fat block
     m_memset block_fat_0+$000, $ff, $80  ; simulate reserved
@@ -382,6 +402,7 @@ setUp:
 
 .data
 	test_file_name_1:       .asciiz "file01.dat"
+	test_dir_root:          .asciiz "/"
 	test_dir_name_1:        .asciiz "dir01"
 	test_dir_name_eexist:   .asciiz "dir02"
 	test_dir_name_enoent:   .asciiz "enoent"

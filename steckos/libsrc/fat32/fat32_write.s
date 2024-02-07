@@ -67,7 +67,7 @@ fat_write_byte:
     pha
 
     sec ; write access
-    jsr __fat_prepare_block_access
+    jsr __fat_prepare_data_block_access
 
     sta __volatile_ptr                  ; A/Y pointer to data block
     sty __volatile_ptr+1
@@ -78,7 +78,7 @@ fat_write_byte:
     debug "f_wr byte"
     sta (__volatile_ptr)
 
-    _inc32_x fd_area+F32_fd::SeekPos    ; seek+1
+    jsr __fat_inc_seekpos               ; seek+1
 
     jsr __fat_set_fd_filesize
 
@@ -142,7 +142,7 @@ __fat_fopen_touch:
     debug "fop touch >"
     bcc :+
     phy
-    jsr __fat_prepare_block_access    ; write access - if eoc we have to prepare block access first to write new dir entry
+    jsr __fat_prepare_data_block_access    ; write access - if eoc we have to prepare block access first to write new dir entry
     ply
     bcs @l_exit
 
@@ -328,11 +328,11 @@ __fat_set_direntry_filesize:
 ;  C=0 on success, C=1 on error and A=error code
 __fat_free_cluster:
     jsr __fat_read_cluster_block_and_select  ; Y offset in block
-    bne @l_exit        ; read error
-    bcc @l_exit        ; EOC? (C=1) expected here in order to free - TODO FIXME cluster chain during deletion not supported yet
-    lda #1
+    bne @l_exit         ; read error
+    bcc @l_exit         ; EOC? (C=1) expected here in order to free - TODO FIXME cluster chain during deletion not supported yet
+    lda #1              ; +1
     sta volumeID+VolumeID::fat_cluster_add
-    dec
+    dea
     bra __fat_update_cluster
 @l_exit:
     rts
@@ -342,6 +342,7 @@ __fat_free_cluster:
 ; out:
 ;  C=0 on success and fd::StartCluster initialized with a valid cluster, C=1 otherwise and A=<error code>
 __fat_reserve_start_cluster:
+    phy
     jsr __fat_reserve_cluster
     bcs @l_exit
     lda volumeID + VolumeID::cluster + 3
@@ -352,7 +353,9 @@ __fat_reserve_start_cluster:
     sta fd_area + F32_fd::StartCluster + 1, x
     lda volumeID + VolumeID::cluster + 0
     sta fd_area + F32_fd::StartCluster + 0, x
+    jsr __fat_set_fd_start_cluster
 @l_exit:
+    ply
     debug32 "reserve strt cl <", volumeID + VolumeID::cluster
     rts
 
@@ -367,7 +370,7 @@ __fat_reserve_cluster:
     bcc :+
     rts
 
-:   lda #$ff
+:   lda #$ff  ; -1
     sta volumeID+VolumeID::fat_cluster_add
 ; update cluster
 ; in:
@@ -521,7 +524,7 @@ __fat_find_free_cluster:
         debug32 "fcl flba", volumeID+VolumeID::lba_fat
 @l_search:
         _inc32 volumeID+VolumeID::cluster
-        m_memcpy volumeID+VolumeID::cluster, lba_addr, 4   ; init lba_addr with last cluster (if cluster is zero, it will  we start from lba_fat)
+        m_memcpy volumeID+VolumeID::cluster, lba_addr, 4   ; init lba_addr with last cluster (if cluster is zero, we calc_fat_lba_addr to lba_fat)
         jsr __calc_fat_lba_addr
         cmp32 volumeID+VolumeID::lba_fat2, lba_addr, @l_read  ; end of fat reached?
         lda #ENOSPC ; yes, C=1 answer ENOSPC - "No space left on device"
