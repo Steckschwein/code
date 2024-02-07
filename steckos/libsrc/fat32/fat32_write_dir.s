@@ -20,6 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: fat32
 
 .ifdef DEBUG_FAT32_WRITE_DIR ; debug switch for this module
   debug_enabled=1
@@ -36,7 +37,6 @@
 .export fat_mkdir
 .export fat_rmdir
 
-;@module: fat32
 .autoimport
 
 ; delete a directory entry denoted by given path in A/X
@@ -92,7 +92,7 @@ fat_mkdir:
 
         debug "fat mkd pba >"
         sec                               ; if eoc we have to prepare block access first to write new dir entry
-        jsr __fat_prepare_block_access
+        jsr __fat_prepare_data_block_access
 @l_add_dirent:
         debug16 "fat mkd >", dirptr
         debug32 "fat mkd >", fd_area+FD_INDEX_TEMP_FILE+F32_fd::SeekPos
@@ -168,7 +168,7 @@ __fat_match_all:
 
 ; create the "." and ".." entry of the new directory
 ; in:
-;   .X - the file descriptor into fd_area of the dir entry
+;   X - the file descriptor into fd_area of the dir entry
 ;   dirptr - set to dir entry within block_data buffer
 ; out:
 ;   C=0 on success, C=1 otherwise and A=error code
@@ -176,31 +176,26 @@ __fat_write_new_direntry:
 
     jsr __fat_erase_block_fat
 
-    ldy #F32DirEntry::Attr                                   ; copy data of the dir entry (dirptr) created beforehand to easily take over create time, mod time etc., cluster nr
+    ; TODO FIXME - for ".." dir entry all date and time fields must be set to the same value as that for the containing directory
+
+    ldy #DIR_Entry_Size-1                                   ; copy data of the dir entry (dirptr) created beforehand to easily take over create time, mod time, cluster nr etc.,
 @l_dir_cp:
     lda (dirptr), y
-    debug16 "f wr nd", dirptr
-    sta block_fat+0*DIR_Entry_Size, y                        ; 1st dir entry
-    sta block_fat+1*DIR_Entry_Size, y                        ; 2nd dir entry
-    iny
-    cpy #DIR_Entry_Size
-    bne @l_dir_cp
-
-    ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) -1  ; fill name with ' ' and build the "." and ".." entries
+    sta block_fat+0*DIR_Entry_Size, y                       ; 1st dir entry
+    sta block_fat+1*DIR_Entry_Size, y                       ; 2nd dir entry
     lda #' '
-@l_clr_name:
-    sta block_fat+0*DIR_Entry_Size, y                        ; 1st dir entry
-    sta block_fat+1*DIR_Entry_Size, y                        ; 2nd dir entry
+    sta block_fat+0*DIR_Entry_Size-(F32DirEntry::Attr), y   ; erase name:ext 1st dir entry - Note: we erase some more bytes, saves a loop and values are copied over above
+    sta block_fat+1*DIR_Entry_Size-(F32DirEntry::Attr), y   ; erase name:ext 2nd dir entry
     dey
-    bne @l_clr_name
+    cpy #F32DirEntry::Attr-1
+    bne @l_dir_cp
     lda #'.'
-    sta block_fat+0*DIR_Entry_Size+F32DirEntry::Name+0        ; 1st entry "."
-    sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+0        ; 2nd entry ".."
+    sta block_fat+0*DIR_Entry_Size+F32DirEntry::Name+0      ; 1st entry "."
+    sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+0      ; 2nd entry ".."
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::Name+1
 
     ; use the fd of the temp dir (FD_INDEX_TEMP_FILE) - represents the last visited directory which must be the parent of this one ("..") - we can easily derrive the parent cluster. FTW!
     debug32 "cd_sln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster
-    debug32 "cd_cln", fd_area + FD_INDEX_TEMP_FILE + F32_fd::CurrentCluster
 
     lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+0
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusLO+0
@@ -211,6 +206,9 @@ __fat_write_new_direntry:
     lda fd_area + FD_INDEX_TEMP_FILE + F32_fd::StartCluster+3
     sta block_fat+1*DIR_Entry_Size+F32DirEntry::FstClusHI+1
 
+@l_skip:
+    debug "f wr dirent fat"
+    debugdirentry
     jsr __fat_set_fd_start_cluster
     jsr __calc_lba_addr
     jsr __fat_write_block_fat
@@ -218,7 +216,7 @@ __fat_write_new_direntry:
 
     jsr __fat_erase_block_fat
 
-    ldy volumeID+ VolumeID:: BPB_SecPerClusMask     ; Y = VolumeID::SecPerClus-1 - reamining blocks of the cluster with empty dir entries
+    ldy volumeID + VolumeID::BPB_SecPerClusMask     ; Y = VolumeID::SecPerClus-1 - reamining blocks of the cluster with empty dir entries
     beq @l_exit_ok
     debug32 "mkdr er", lba_addr
 @l_erase:

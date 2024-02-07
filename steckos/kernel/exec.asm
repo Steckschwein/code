@@ -34,7 +34,7 @@
 
 .code
 
-.import fat_fopen, fat_close, fat_fread_byte
+.autoimport
 
 .export execv
 
@@ -51,33 +51,18 @@ execv:
 :     jsr fat_fread_byte  ; start address low
       bcs @l_exit_close
       sta filenameptr
-      tay
       jsr fat_fread_byte  ; start address high
       bcs @l_exit_close
       sta filenameptr+1
 
-      pha                 ; save start address
-      phy
+      tay
+      lda filenameptr
+      jsr fat_fread_vollgas
 
-@l:   jsr fat_fread_byte
-      bcs @l_is_eof
-      sta (filenameptr)
-      inc filenameptr
-      bne @l
-      inc filenameptr+1
-      bne @l
-      lda #ERANGE
-@l_is_eof:
       pha
       jsr fat_close
       pla
-
-      ply               ; get back start address
-      sty filenameptr
-      ply
-      sty filenameptr+1
-
-      cmp #0
+      cmp #EOK
       beq @l_exec_run
       sec
       rts

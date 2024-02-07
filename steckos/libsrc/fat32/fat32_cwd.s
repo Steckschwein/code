@@ -62,32 +62,37 @@ fat_get_root_and_pwd:
 
               ldy #FD_INDEX_CURRENT_DIR
               ldx #FD_INDEX_TEMP_FILE
-              jsr __fat_clone_fd                  ; start from current directory, clone the cd fd
+              jsr __fat_clone_fd                    ; start from current directory, clone the cwd fd
 
               lda #0
-              jsr put_char                        ; \0 terminated end of buffer
+              jsr put_char                          ; \0 terminated end of buffer
 
-@l_rd_dir:    lda #'/'                            ; put the / char to result string
+@l_rd_dir:    lda #'/'                              ; put the / char to result string
               jsr put_char
-              ldx #FD_INDEX_TEMP_FILE             ; if root, exit to inverse the path string
-              jsr __fat_is_start_cln_zero
+              ldx #FD_INDEX_TEMP_FILE               ; if root, exit to inverse the path string
+              ; check whether start cluster is the root dir cluster nr (VolumeID::BPB_RootClus)
+              ;cmp32eq  fd_area + FD_INDEX_TEMP_FILE+F32_fd::StartCluster, volumeID+VolumeID::BPB_RootClus, @l_path_trim
+              lda fd_area+F32_fd::StartCluster+3,x  ; check whether start cluster is the root dir cluster nr (0x00000000)
+              ora fd_area+F32_fd::StartCluster+2,x
+              ora fd_area+F32_fd::StartCluster+1,x
+              ora fd_area+F32_fd::StartCluster+0,x
               beq @l_path_trim
-              m_memcpy fd_area+FD_INDEX_TEMP_FILE+F32_fd::StartCluster, volumeID+VolumeID::cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_FILE (see clone above)
+              m_memcpy fd_area + FD_INDEX_TEMP_FILE+F32_fd::StartCluster, volumeID+VolumeID::cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_FILE (see clone above)
               lda #<l_dot_dot
               ldx #>l_dot_dot
-              ldy #FD_INDEX_TEMP_FILE             ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_FILE) was updated and points to the parent directory
+              ldy #FD_INDEX_TEMP_FILE               ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_FILE) was updated and points to the parent directory
               jsr __fat_open_path
               bcs @l_exit
-              jsr __fat_free_fd
-              lda #<cluster_nr_matcher            ; matcher strategy of the cluster number matcher
+              jsr __fat_free_fd                     ; free fd immediately
+              lda #<cluster_nr_matcher              ; matcher strategy of the cluster number matcher
               ldy #>cluster_nr_matcher
               ldx #FD_INDEX_TEMP_FILE
-              jsr __fat_find_first_mask           ; and call find first to find the entry with that cluster number we saved in cluster before we did the cd ".."
+              jsr __fat_find_first_mask             ; call find first to find the entry with that cluster number we saved in cluster before we did the cd ".."
               bcs @l_exit
-              jsr fat_name_string                 ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
-              bra @l_rd_dir                       ; go on with bottom up walk until root is reached
+              jsr fat_name_string                   ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
+              bra @l_rd_dir                         ; go on with bottom up walk until root is reached
 @l_path_trim:
-              jsr path_trim                       ; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
+              jsr path_trim                         ; the dir entry names are captured bottom up along the path and stored in the given buffer (A/Y) starting from the end. just need to trim the whitespaces at the beginning
               plp
               clc
               rts

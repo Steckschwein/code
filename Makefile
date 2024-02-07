@@ -6,8 +6,8 @@ clean:
 	(cd games; make clean)
 	(cd steckos; make clean)
 	(cd asmunit; make clean)
-	if [ -e steckos.img ] ; then rm steckos.img ; fi
-	if [ -e libsrc.html ] ; then rm libsrc.html ; fi
+	rm -f steckos.img
+	rm -f libsrc.html
 
 
 build:

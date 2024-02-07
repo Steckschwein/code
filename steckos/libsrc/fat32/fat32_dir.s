@@ -22,7 +22,7 @@
 ;@module: fat32
 
 .ifdef DEBUG_FAT32_DIR ; debug switch for this module
-  debug_enabled=1
+          debug_enabled=1
 .endif
 
 .include "zeropage.inc"
@@ -95,19 +95,16 @@ fat_readdir:
 
           lda fd_area+F32_fd::Attr, x
           and #DIR_Attr_Mask_Dir		; is directory?
-          bne @l_read
-          lda #ENOTDIR
-          sec
-          rts
+          beq @l_exit_notdir
 
-@l_read:  jsr __fat_prepare_block_access_read
+@l_read:  jsr __fat_prepare_data_block_access_read
           bcs @l_exit
           sta dirptr
           sty dirptr+1
 
 @l_match: lda (dirptr)
           debug16 "ff rd dirptr", dirptr
-          beq @l_exit_ok              ; first byte of dir entry is $00 (end of directory)
+          beq @l_exit_eod              ; first byte of dir entry is $00 (end of directory)
           cmp #DIR_Entry_Deleted
           beq @l_next
 
@@ -125,12 +122,11 @@ fat_readdir:
 
 @l_next:  jsr __fat_seek_next_dirent
           .assert >block_data & $01 = 0, error, "block_data address must be $0200 aligned!"
-          lda dirptr+1 ; block_data start at $?200 ?
-          and #$01
-          ora dirptr
           beq @l_read
           bra @l_match
-@l_exit_ok:
+@l_exit_notdir:
+          lda #ENOTDIR
+@l_exit_eod:
           sec ; eod reachead, C=0/A=EOK
           debug "ff rd exit <"
 @l_exit:  rts

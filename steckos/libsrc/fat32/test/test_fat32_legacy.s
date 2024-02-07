@@ -32,7 +32,7 @@ debug_enabled=1
       fd_entry_file 0, $40, LBA_BEGIN, DIR_Attr_Mask_Archive, 0, O_CREAT, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY
 
     ; set file size and write ptr
-    set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 1; 1 block must be written
+    set32 fd_area + (FD_Entry_Size*2) + F32_fd::FileSize, 1; 1 byte size, at least 1 block must be written
     SetVector write_data_src, sd_blkptr
     jsr fat_write
     assertCarry 0
@@ -174,8 +174,7 @@ setUp:
   init_volume_id SEC_PER_CL ;4s/cl
 
   ;setup fd0 (cwd) to root cluster
-  ldx #FD_INDEX_CURRENT_DIR
-  jsr __fat_open_rootdir
+  jsr __fat_open_rootdir_cwd
 
   ;setup fd1 as test cluster
   set32 fd_area+(1*FD_Entry_Size)+F32_fd::CurrentCluster, test_start_cluster

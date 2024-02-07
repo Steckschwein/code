@@ -54,22 +54,25 @@ TEST_FILE_CL2=$19
 ; -------------------
     setup "__fat_is_cln_zero"
 
+    set32 fd_area+0*FD_Entry_Size+F32_fd::CurrentCluster, 0
     ldx #(0*FD_Entry_Size)
     jsr __fat_is_cln_zero
-    assertZero 1    ; expect fd0 - "is root"
+    assertZero 1    ; expect fd0 - "is zero" - no cluster reserved yet
     assertX (0*FD_Entry_Size)
 
     ldx #(1*FD_Entry_Size)
     jsr __fat_is_cln_zero
-    assertZero 0    ; expect fd0 - "is not root"
+    assertZero 0    ; expect fd0 - "is not zero" - cluster reserved
     assertX (1*FD_Entry_Size)
 
 ; -------------------
     setup "__calc_lba_addr with root"
+
+    set32 fd_area+0*FD_Entry_Size+F32_fd::CurrentCluster, 2
     ldx #(0*FD_Entry_Size)
     jsr __calc_lba_addr
     assertX (0*FD_Entry_Size)
-    assert32 LBA_BEGIN, lba_addr
+    assert32 LBA_BEGIN - ROOT_CL * SEC_PER_CL + ROOT_CL * SEC_PER_CL, lba_addr
 
 ; -------------------
     setup "__calc_lba_addr with some clnr"
@@ -112,7 +115,7 @@ TEST_FILE_CL2=$19
 ; -------------------
     setup "fat_fopen O_RDONLY overflow"
 
-    ldy #FD_Entries_Max-2 ; -2 => 2 entries for cd and temp dir
+    ldy #FD_Entries_Max-2 ; -2 => 2 entries for cwd and temp file
     .assert FD_Entries_Max > 2, error, "too few file descriptors available :/"
 :   phy
     ldy #O_RDONLY
@@ -422,8 +425,7 @@ setUp:
     init_volume_id SEC_PER_CL
     jsr __fat_init_fdarea
     ;setup fd0 (cwd) to root cluster
-    ldx #FD_INDEX_CURRENT_DIR
-    jsr __fat_open_rootdir
+    jsr __fat_open_rootdir_cwd
 
     ; fill fat block
     m_memset block_fat_0+$000, $ff, $80  ; simulate reserved

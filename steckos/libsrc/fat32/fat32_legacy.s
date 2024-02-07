@@ -72,7 +72,7 @@ fat_write:
     sta __volatile_ptr+1
 
     sec
-    jsr __fat_prepare_block_access  ; at least the start cluster is initialized if not done already
+    jsr __fat_prepare_data_block_access  ; at least the start cluster is initialized if not done already
     bcs @l_exit
 
     lda __volatile_ptr
