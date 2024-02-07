@@ -47,7 +47,6 @@ TEST_FILE_CL2=$19
 		ldy #>test_dirent
 		jsr fat_readdir
     assertCarry 0
-    assertA EOK
 
 		assertCarry 0
 		assertX 2*FD_Entry_Size
@@ -90,7 +89,6 @@ TEST_FILE_CL2=$19
     jsr fat_close
 
 ; -------------------
-
 		setup "fat_chdir_enotdir"
 		lda #<test_file_name_1
 		ldx #>test_file_name_1

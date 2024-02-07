@@ -82,7 +82,7 @@ __fat_add_seekpos:
               inc fd_area+F32_fd::SeekPos+2,x
               bne @l_exit
               inc fd_area+F32_fd::SeekPos+3,x
-@l_exit:    rts
+@l_exit:      rts
 
 ; in:
 ;   X - file descriptor (index into fd_area) of the directory
@@ -121,9 +121,6 @@ __fat_find_next:
               jsr __fat_seek_next_dirent
               debug32 "ff nxt seek <", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
               .assert >block_data & $01 = 0, error, "block_data address must be $0200 aligned!"
-              lda dirptr+1 ; block_data start at $?200 ?
-              and #$01
-              ora dirptr
               beq __ff_loop
               bra __ff_match
 __ff_exit_enoent:
@@ -139,23 +136,21 @@ __ff_found:
 
 
 __fat_seek_next_dirent:
-              clc
-              lda fd_area+F32_fd::SeekPos+0,x
-              adc #DIR_Entry_Size
-              sta fd_area+F32_fd::SeekPos+0,x
-              sta dirptr+0
+              lda #DIR_Entry_Size
+              ldy #0
+              jsr __fat_add_seekpos
+
               lda fd_area+F32_fd::SeekPos+1,x
-              adc #0
-              sta fd_area+F32_fd::SeekPos+1,x
               and #$01
               ora #>block_data
               sta dirptr+1
-              lda fd_area+F32_fd::SeekPos+2,x
-              adc #0
-              sta fd_area+F32_fd::SeekPos+2,x
-              lda fd_area+F32_fd::SeekPos+3,x
-              adc #0
-              sta fd_area+F32_fd::SeekPos+3,x
+              lda fd_area+F32_fd::SeekPos+0,x
+              sta dirptr
+
+              lda dirptr+1 ; block_data start at $?200 ?
+              and #$01
+              ora dirptr
+
               rts
 
 
