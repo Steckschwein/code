@@ -986,7 +986,6 @@ dir_show_entry_long:
 @y:
 
         jsr print_fat_time
-        ; crlf
 
         pla
         rts
