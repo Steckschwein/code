@@ -720,7 +720,7 @@ dump_start:
         lda dumpvec+1
         cmp dumpend
         beq @end
-        crlf
+        
         lda #<press_key_msg
         ldx #>press_key_msg
         jsr strout
@@ -928,6 +928,7 @@ dir_show_entry_short:
 
 dir_show_entry_long:
         pha
+        crlf
         jsr print_filename
 
         jsr space
@@ -985,7 +986,7 @@ dir_show_entry_long:
 @y:
 
         jsr print_fat_time
-        crlf
+        ; crlf
 
         pla
         rts
@@ -1039,7 +1040,7 @@ dir:
         lda #6
         sta cnt 
         
-        lda #entries_short
+        lda #entries_long
         sta pagecnt
         sta entries_per_page
 
@@ -1143,6 +1144,7 @@ dir:
         ldx #>cwdbuf
         jsr krn_opendir
         bcs @error
+
 @read_next:        
         lda #<dirent
         ldy #>dirent
@@ -1167,32 +1169,32 @@ dir:
 
         lda options
         and #opts_paging
-        beq @l
+        beq @read_next
         dec pagecnt
-        bne @l
+        bne @read_next
 
+        phx
         lda #<press_key_msg
         ldx #>press_key_msg
         jsr strout
+        plx
 
         keyin
         cmp #13 ; enter pages line by line
         beq @lx
 
+        cmp #KEY_ESCAPE
+        beq @end
         ; check ctrl c
-        bit flags
-        bmi @exit
+        ; bit flags
+        ; bmi @end
 
         lda entries_per_page
         sta pagecnt
-        bra @l
+        bra @read_next
 @lx:
         lda #1
         sta pagecnt
-@l:
-        bit flags
-        bmi @exit
-
         bra @read_next
 
 @error:
@@ -1405,7 +1407,7 @@ pd_header:      .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  
 pattern:        .byte "*.*",$00
 attr_tbl:       .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
 attr_lbl:       .byte 'R','H','S','A'
-press_key_msg:  .byte "-- press a key-- ",$00
+press_key_msg:  .byte $0a, $0d,"-- press a key-- ",$00
 dir_marker_txt: .asciiz " <DIR> "
 bigfile_marker_txt:
                 .asciiz ">64k "
