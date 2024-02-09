@@ -119,9 +119,17 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 
 ; -------------------
-		setup "fat_mkdir eexist"
+		setup "fat_mkdir dir exists"
 		lda #<test_dir_name_eexist
 		ldx #>test_dir_name_eexist
+		jsr fat_mkdir
+		assertA EEXIST
+		assertCarry 1
+
+; -------------------
+		setup "fat_mkdir file exists"
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
 		jsr fat_mkdir
 		assertA EEXIST
 		assertCarry 1

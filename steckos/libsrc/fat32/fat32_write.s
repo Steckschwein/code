@@ -139,14 +139,18 @@ __fat_set_fd_filesize:
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 __fat_fopen_touch:
+
     debug "f op tch >"
+
     bcc :+
     phy
     jsr __fat_prepare_data_block_access    ; write access - if eoc we have to prepare block access first to write new dir entry
     sta dirptr
     sty dirptr+1
     ply
-    bcs @l_exit
+    bcc :+
+@l_exit:
+    rts
 
 :   jsr __fat_alloc_fd              ; allocate a dedicated fd for the new directory
     bcs @l_exit
@@ -156,13 +160,6 @@ __fat_fopen_touch:
 
     tya
     sta fd_area+F32_fd::flags,x
-
-    ; TODO fall through
-    jsr __fat_add_direntry       ; create dir entry at current dirptr
-
-@l_exit:
-    debug "f op tch <"
-    rts
 
 ; create a new dir entry at given dirptr and set a new end of directory marker
 ; in:
@@ -223,6 +220,7 @@ __fat_update_direntry_write:
     debugdirentry
 
     jmp __fat_write_block_data              ; lba_addr is already set from read, see above
+
 
 ; read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
 ; in:

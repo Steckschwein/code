@@ -52,20 +52,22 @@
 ;@out: A, "error code"
 ;@desc: "delete a directory entry denoted by given path in A/X"
 fat_rmdir:
-    jsr fat_opendir
-    bcs @l_exit
-    debugdirentry
-    jsr __fat_is_dot_dir
-    beq @l_err_einval
-    jsr __fat_dir_isempty
-    bcs @l_exit
-    jmp __fat_unlink
+            jsr fat_opendir
+            bcs @l_exit
+            debugdirentry
+            jsr __fat_is_dot_dir
+            beq @l_err_einval
+            jsr __fat_dir_isempty
+            bcs @l_exit_err
+            jmp __fat_unlink
 @l_err_einval:
-    lda #EINVAL
-    sec
+            lda #EINVAL
+@l_exit_err:
+            sec
+            jsr __fat_free_fd
 @l_exit:
-    debug "rmdir <"
-    rts
+            debug "rmdir <"
+            rts
 
 ; in:
 ;   A/X - pointer to the directory name
@@ -78,9 +80,10 @@ fat_rmdir:
 ;@out: A, "error code"
 ;@desc: "create directory denoted by given path in A/X"
 fat_mkdir:
-        ldy #O_CREAT
+        ldy #O_RDONLY
         jsr fat_open
         bcs :+
+        jsr fat_close
         lda #EEXIST                       ; C=0 - open success, file/dir exists already, exit
 @l_exit_err:
         sec
