@@ -1040,7 +1040,7 @@ dir:
         lda #6
         sta cnt 
         
-        lda #entries_long
+        lda #entries_short
         sta pagecnt
         sta entries_per_page
 
