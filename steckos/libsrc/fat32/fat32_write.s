@@ -143,6 +143,8 @@ __fat_fopen_touch:
     bcc :+
     phy
     jsr __fat_prepare_data_block_access    ; write access - if eoc we have to prepare block access first to write new dir entry
+    sta dirptr
+    sty dirptr+1
     ply
     bcs @l_exit
 
