@@ -89,15 +89,15 @@ fat_write:
     lda #EINVAL
     rts
 :   jsr __calc_lba_addr             ; calc lba file payload
-    debug32 "fat_wr lba", lba_addr
+    debug32 "f wr lba", lba_addr
 .ifdef MULTIBLOCK_WRITE
     .warning "SD multiblock writes are EXPERIMENTAL"
-    debug16 "fat_wr wptr", sd_blkptr
+    debug16 "f wr bpt", sd_blkptr
     .import sd_write_multiblock
     jsr sd_write_multiblock
 .else
-@l: debug8 "fat_wr blks", blocks
-    debug16 "fat_wr wptr", sd_blkptr
+@l: debug8 "f wr blks", blocks
+    debug16 "f wr bpt", sd_blkptr
     phx
     jsr write_block
     plx
@@ -136,5 +136,5 @@ __calc_blocks: ;blocks = filesize / BLOCKSIZE -> filesize >> 9 (div 512) - +1 if
     beq @l_exit
     inc blocks
 @l_exit:
-    debug8 "__calc_blocks", blocks
+    debug8 "f clc bs <", blocks
     rts

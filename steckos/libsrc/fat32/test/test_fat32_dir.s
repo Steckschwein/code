@@ -47,8 +47,6 @@ TEST_FILE_CL2=$19
 		ldy #>test_dirent
 		jsr fat_readdir
     assertCarry 0
-
-		assertCarry 0
 		assertX 2*FD_Entry_Size
     assertDirEntry test_dirent
       fat32_dir_entry_dir ".       ", "   ", 0
@@ -84,12 +82,12 @@ TEST_FILE_CL2=$19
 		ldy #>test_dirent
 		jsr fat_readdir
 		assertCarry 1
-    assertA EOK
+    assertA ENOENT
 
     jsr fat_close
 
 ; -------------------
-		setup "fat_chdir_enotdir"
+		setup "fat_chdir enotdir"
 		lda #<test_file_name_1
 		ldx #>test_file_name_1
 		jsr fat_chdir
@@ -97,7 +95,7 @@ TEST_FILE_CL2=$19
 		assertCarry 1
 
 ; -------------------
-		setup "fat_chdir_enoent"
+		setup "fat_chdir enoent"
 		lda #<test_dir_name_enoent
 		ldx #>test_dir_name_enoent
 		jsr fat_chdir
@@ -192,13 +190,10 @@ TEST_FILE_CL2=$19
 
 ; -------------------
 		setup "fat_mkdir end of last block in cl (4s/cl)" ; expect new dirent at the end of last block in cluster
-
     ; fill directory blocks
-    .repeat 2, i
-      setDirEntry block_root_dir_00+(14+i)*DIR_Entry_Size
-        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
-    .endrepeat
     .repeat 16, i
+      setDirEntry block_root_dir_00+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
       setDirEntry block_root_dir_01+i*DIR_Entry_Size
         fat32_dir_entry_dir .sprintf("BLCK1_%02d", i), "   ", 0
       setDirEntry block_root_dir_02+i*DIR_Entry_Size
@@ -228,13 +223,11 @@ TEST_FILE_CL2=$19
 
 
 ; -------------------
-		setup "fat_mkdir in next cl (4s/cl)"  ; test whether dirent is created in the next cluster of the directory
+		setup "fat_mkdir in next cl (4s/cl)"  ; test whether dirent is created in the next cluster of the directory. the cluster is already available
     ; fill directory blocks until all blocks of the cluster are reserved
-    .repeat 2, i
-      setDirEntry block_root_dir_00+(14+i)*DIR_Entry_Size
-        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
-    .endrepeat
     .repeat 16, i
+      setDirEntry block_root_dir_00+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
       setDirEntry block_root_dir_01+i*DIR_Entry_Size
         fat32_dir_entry_dir .sprintf("BLCK1_%02d", i), "   ", 0
       setDirEntry block_root_dir_02+i*DIR_Entry_Size
@@ -267,11 +260,9 @@ TEST_FILE_CL2=$19
 ; -------------------
 		setup "fat_mkdir in next cl build cl chain (4s/cl)"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
     ; fill directory blocks until all blocks of the cluster are reserved
-    .repeat 2, i
-      setDirEntry block_root_dir_00+(14+i)*DIR_Entry_Size
-        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
-    .endrepeat
     .repeat 16, i
+      setDirEntry block_root_dir_00+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
       setDirEntry block_root_dir_01+i*DIR_Entry_Size
         fat32_dir_entry_dir .sprintf("BLCK1_%02d", i), "   ", 0
       setDirEntry block_root_dir_02+i*DIR_Entry_Size

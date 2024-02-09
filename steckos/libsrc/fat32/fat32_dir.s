@@ -41,6 +41,9 @@
 .export fat_opendir
 .export fat_readdir
 
+.export __fat_readdir
+.export __fat_readdir_next
+
 .code
 
 ;@name: "fat_opendir"
@@ -57,7 +60,6 @@ fat_opendir:
           lda #ENOTDIR				    ; error "Not a directory"
           sec                     ; we opened a file. just close it immediately and free the allocated fd
           jmp __fat_free_fd
-@l_ok:    lda #EOK
 @l_exit:  rts
 
 
@@ -73,14 +75,13 @@ fat_opendir:
 ;@out: X, "index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)"
 ;@desc: "change current directory"
 fat_chdir:
-          ldy #O_RDONLY
           jsr fat_opendir
           bcs @l_exit
           jsr __fat_free_fd         ; free fd immediately
           ldy #FD_INDEX_TEMP_FILE   ; open success, FD_INDEX_TEMP_FILE still contains the data from last opened file
           ldx #FD_INDEX_CURRENT_DIR
           jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
-@l_exit:  debug "fat chdir <"
+@l_exit:  debug "f cd <"
           rts
 
 
@@ -95,38 +96,46 @@ fat_readdir:
 
           lda fd_area+F32_fd::Attr, x
           and #DIR_Attr_Mask_Dir		; is directory?
-          beq @l_exit_notdir
+          bne :+
+          lda #ENOTDIR
+          sec
+@l_exit:  rts
 
-@l_read:  jsr __fat_prepare_data_block_access_read
+:         jsr __fat_readdir
           bcs @l_exit
-          sta dirptr
-          sty dirptr+1
-
-@l_match: lda (dirptr)
-          debug16 "ff rd dirptr", dirptr
-          beq @l_exit_eod              ; first byte of dir entry is $00 (end of directory)
-          cmp #DIR_Entry_Deleted
-          beq @l_next
-
-          ldy #F32DirEntry::Attr      ; else check if long filename entry
-          lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
-          cmp #DIR_Attr_Mask_LongFilename
-          beq @l_next
 
           ldy #.sizeof(F32DirEntry)
 :         lda (dirptr),y
           sta (__volatile_ptr),y
           dey
           bpl :-
-          jmp __fat_seek_next_dirent
+__fat_readdir_seek:
+          lda #DIR_Entry_Size
+          ldy #0
+          jmp __fat_add_seekpos
 
-@l_next:  jsr __fat_seek_next_dirent
-          .assert >block_data & $01 = 0, error, "block_data address must be $0200 aligned!"
-          beq @l_read
-          bra @l_match
-@l_exit_notdir:
-          lda #ENOTDIR
+__fat_readdir_next:
+          jsr __fat_readdir_seek
+__fat_readdir:
+          jsr __fat_prepare_data_block_access_read
+          bcs @l_exit
+          sta dirptr
+          sty dirptr+1
+
+          lda (dirptr)
+          beq @l_exit_eod             ; first byte of dir entry is $00 (end of directory)
+          cmp #DIR_Entry_Deleted
+          beq __fat_readdir_next
+
+          ldy #F32DirEntry::Attr      ; else check if long filename entry
+          lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
+          cmp #DIR_Attr_Mask_LongFilename
+          beq __fat_readdir_next
+          clc
+@l_exit:  debug16 "f rd <", dirptr
+          rts
 @l_exit_eod:
+          lda #ENOENT
+          debug16 "f rd eod <", dirptr
           sec ; eod reachead, C=0/A=EOK
-          debug "ff rd exit <"
-@l_exit:  rts
+          rts

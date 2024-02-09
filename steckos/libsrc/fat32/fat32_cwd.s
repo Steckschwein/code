@@ -88,7 +88,7 @@ fat_get_root_and_pwd:
               ldy #>cluster_nr_matcher
               ldx #FD_INDEX_TEMP_FILE
               jsr __fat_find_first_mask             ; call find first to find the entry with that cluster number we saved in cluster before we did the cd ".."
-              bcs @l_exit
+              bcs @l_exit                           ; not found
               jsr fat_name_string                   ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
               bra @l_rd_dir                         ; go on with bottom up walk until root is reached
 @l_path_trim:

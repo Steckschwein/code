@@ -57,7 +57,7 @@ fat_fseek:
 
     ldy #Seek::Whence
     lda (__volatile_ptr),y
-    debug "fat fseek >"
+    debug "f seek >"
     cmp #SEEK_SET
     ; TODO support SEEK_CUR, SEEK_END
     bne @l_exit_err
@@ -81,7 +81,7 @@ fat_fseek:
 
     lda #EOK
     clc
-    debug "fat fseek <"
+    debug "f seek <"
     rts
 @l_exit_err:
     lda #EINVAL

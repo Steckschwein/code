@@ -75,7 +75,7 @@ fat_write_byte:
     pla                                 ; get back byte to write
     bcs @l_exit                         ; C=1 prepare above was an error, exit
 
-    debug "f_wr byte"
+    debug "f wr byt"
     sta (__volatile_ptr)
 
     jsr __fat_inc_seekpos               ; seek+1
@@ -139,25 +139,27 @@ __fat_set_fd_filesize:
 ; out:
 ;  C=0 on success, C=1 on error and A=<error code>
 __fat_fopen_touch:
-    debug "fop touch >"
+    debug "f op tch >"
     bcc :+
     phy
     jsr __fat_prepare_data_block_access    ; write access - if eoc we have to prepare block access first to write new dir entry
     ply
     bcs @l_exit
 
-:   jsr __fat_alloc_fd           ; allocate a dedicated fd for the new directory
+:   jsr __fat_alloc_fd              ; allocate a dedicated fd for the new directory
     bcs @l_exit
 
-    jsr __fat_set_fd_dirlba      ; save the dir entry lba and offset to new allocated fd
+    lda #DIR_Attr_Mask_Archive      ; create as regular file with archive bit set
+    jsr __fat_set_fd_dirlba_attr    ; save the dir entry lba and offset to new allocated fd
 
     tya
     sta fd_area+F32_fd::flags,x
-    lda #DIR_Attr_Mask_Archive   ; create as regular file with archive bit set
-    sta fd_area+F32_fd::Attr,x
+
+    ; TODO fall through
     jsr __fat_add_direntry       ; create dir entry at current dirptr
+
 @l_exit:
-    debug "fop touch <"
+    debug "f op tch <"
     rts
 
 ; create a new dir entry at given dirptr and set a new end of directory marker
@@ -170,7 +172,8 @@ __fat_fopen_touch:
 __fat_add_direntry:
 
     ldy #F32DirEntry::Attr              ; store type attribute
-    sta (dirptr), y
+    lda fd_area+F32_fd::Attr,x
+    sta (dirptr),y
 
     ldy #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)-1
 :   lda volumeID+VolumeID::fat_filename,y
@@ -178,17 +181,20 @@ __fat_add_direntry:
     dey
     bpl :-
 
-    debugdumpptr "dirent dptr", dirptr
-    debugdump "dirent nm", volumeID+VolumeID::fat_filename
+    debug16 "dirnt dptr >", dirptr
+    debugdumpptr "dirnt dptr", dirptr
+    debugdump "dirnt nm", volumeID+VolumeID::fat_filename
+
+    jsr __fat_set_direntry_create_datetime
 
     jsr __fat_set_lba_from_fd_dirlba
-    jsr __fat_set_direntry_create_datetime
     bra __fat_update_direntry_write
 
 ; out:
 ;   C=0 on success, C=1 and A=<error> otherwise
 __fat_update_direntry:
     jsr __fat_read_direntry                  ; read dir entry, dirptr is set accordingly
+    debug "upd dirnt >"
     bcc :+
     rts
 
@@ -211,6 +217,8 @@ __fat_update_direntry_write:
     sta (dirptr),y
 
     jsr __fat_set_direntry_filesize         ; set filesize of directory entry via dirptr
+
+    debugdirentry
 
     jmp __fat_write_block_data              ; lba_addr is already set from read, see above
 
@@ -247,7 +255,7 @@ __fat_set_lba_from_fd_dirlba:
     sta lba_addr+1
     lda fd_area+F32_fd::DirEntryLBA+0 , x
     sta lba_addr+0
-    debug32 "fat set dir lba <", lba_addr
+    debug32 "f set lba <", lba_addr
     rts
 
 ; write new timestamp to direntry entry given as dirptr
@@ -356,7 +364,7 @@ __fat_reserve_start_cluster:
     jsr __fat_set_fd_start_cluster
 @l_exit:
     ply
-    debug32 "reserve strt cl <", volumeID + VolumeID::cluster
+    debug32 "res strt cl <", volumeID + VolumeID::cluster
     rts
 
 
@@ -399,7 +407,7 @@ __fat_update_cluster:
     sty block_fat+F32FSInfo::LastClus+2
     ldy volumeID+VolumeID::cluster+3
     sty block_fat+F32FSInfo::LastClus+3
-:   debug32 "fs_info", block_fat+F32FSInfo::FreeClus
+:   debug32 "fs info", block_fat+F32FSInfo::FreeClus
     clc
     adc block_fat+F32FSInfo::FreeClus+0
     sta block_fat+F32FSInfo::FreeClus+0
@@ -420,7 +428,7 @@ __fat_write_block_fat:
 __fat_write_block_data:
     lda #>block_data
 .ifdef FAT_DUMP_FAT_WRITE
-    debugdump "fat_wb dmp", block_fat
+    debugdump "f wb dmp", block_fat
 .endif
 :   sta sd_blkptr+1
     stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
@@ -429,8 +437,8 @@ __fat_write_block_data:
 .ifdef FAT_NOWRITE
     clc
 .else
-    debug32 "f_wr lba", lba_addr
-    debug16 "f_wr bpt", sd_blkptr
+    debug32 "f wr lba", lba_addr
+    debug16 "f wr bpt", sd_blkptr
     phx
     jsr write_block
     plx
@@ -451,7 +459,7 @@ __fat_write_fat_blocks:
     .endrepeat
     jsr __fat_write_block_fat        ; write to fat mirror (fat2)
 @err_exit:
-    debug "fw_blocks"
+    debug "fw blks"
     rts
 
 
@@ -498,6 +506,7 @@ __fat_rtc_date:
     ora volumeID+VolumeID::fat_tmp_1
     rts
 
+; TODO inline
 ; mark cluster according to A
 ; in:
 ;  A - 0x00 free, 0xff EOC
@@ -520,44 +529,47 @@ __fat_mark_cluster:
 ;   C=0 on success, Y=offset in block_fat of found cluster. lba_addr of the fat block where the found cluster resides
 ;   C=1 on error and A=<error code>
 __fat_find_free_cluster:
-        debug32 "fcl cl >", volumeID+VolumeID::cluster
-        debug32 "fcl flba", volumeID+VolumeID::lba_fat
+            debug32 "fcl cl >", volumeID+VolumeID::cluster
+            debug32 "fcl flba", volumeID+VolumeID::lba_fat
 @l_search:
-        _inc32 volumeID+VolumeID::cluster
-        m_memcpy volumeID+VolumeID::cluster, lba_addr, 4   ; init lba_addr with last cluster (if cluster is zero, we calc_fat_lba_addr to lba_fat)
-        jsr __calc_fat_lba_addr
-        cmp32 volumeID+VolumeID::lba_fat2, lba_addr, @l_read  ; end of fat reached?
-        lda #ENOSPC ; yes, C=1 answer ENOSPC - "No space left on device"
-@l_exit_err:
-        rts
-@l_read:
-        jsr __fat_read_block_fat  ; read fat block
-        bcs @l_exit_err
+            _inc32 volumeID+VolumeID::cluster
+            m_memcpy volumeID+VolumeID::cluster, lba_addr, 4   ; init lba_addr with last cluster (if cluster is zero, we calc_fat_lba_addr to lba_fat)
+            jsr __calc_fat_lba_addr
+            cmp32 volumeID+VolumeID::lba_fat2, lba_addr, @l_read  ; end of fat reached?
+            lda #ENOSPC ; yes, C=1 answer ENOSPC - "No space left on device"
+@l_exit:    rts
 
-        lda volumeID+VolumeID::cluster+0
-        sta sd_blkptr
-        lda #0
-        asl sd_blkptr
-        rol
-        asl sd_blkptr
-        rol
-        ora #>block_fat
-        sta sd_blkptr+1
-        debug16 "fcl bp", sd_blkptr
+@l_read:    jsr __fat_read_block_fat  ; read fat block
+            bcs @l_exit
 
-        ldy #3
-        lda (sd_blkptr),y   ; find cluster entry with ?0 00 00 00
-        and #$0f
-        dey
-        ora (sd_blkptr),y
-        dey
-        ora (sd_blkptr),y
-        dey
-        ora (sd_blkptr)
-        bne @l_search
-        debug32 "fat find cl <", volumeID+VolumeID::cluster ; found, cluster is set already
-        clc
-        rts
+            ; TODO
+            ;   - replace with block_fat and Y access, without pointer
+            ;   - mark cluster EOC
+            ;   - inline code in reserve cluster
+            lda volumeID+VolumeID::cluster+0
+            sta sd_blkptr
+            lda #0
+            asl sd_blkptr
+            rol
+            asl sd_blkptr
+            rol
+            ora #>block_fat
+            sta sd_blkptr+1
+            debug16 "fcl bp", sd_blkptr
+
+            ldy #3
+            lda (sd_blkptr),y   ; find cluster entry with ?0 00 00 00
+            and #$0f
+            dey
+            ora (sd_blkptr),y
+            dey
+            ora (sd_blkptr),y
+            dey
+            ora (sd_blkptr)
+            bne @l_search
+            debug32 "fat cl <", volumeID+VolumeID::cluster ; found, cluster is set already
+            clc
+            rts
 
 ;@name: "fat_unlink"
 ;@in: A, "low byte of pointer to zero terminated string with the file path"

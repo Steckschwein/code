@@ -57,7 +57,7 @@
 ; out:
 ;   C=0 on success, C=1 on error and A=error code or C=1/A=0 EOC
 __fat_fseek_cluster:
-    debug32 "seek cl >", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+    debug32 "seek cl >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 
     bcc :+ ; C=0 read access
 
@@ -125,7 +125,7 @@ fat_fread_byte:
     bne :+                    ; skip file size check
 
     _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
-    debug16 "rd byte eof <", __volatile_ptr
+    debug16 "rd byt eof <", __volatile_ptr
     lda #EOK
     rts ; exit - EOK (0) and C=1
 
@@ -144,7 +144,7 @@ fat_fread_byte:
     clc
 @l_exit:
     ply
-    debug16 "rd byte <", __volatile_ptr
+    debug16 "rd byt <", __volatile_ptr
     rts
 
 ; open file/directory
@@ -163,7 +163,7 @@ fat_fread_byte:
 ;   A - file attr as stored in FAT32 directory entry
 ;   C=0 on success, C=1 and A=<error code> otherwise
 fat_open:
-          debug "fopen >"
+          debug "f open >"
           phy                          ; save open flag
           ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
           jsr __fat_open_path
@@ -172,7 +172,7 @@ fat_open:
           tya
           sta fd_area+F32_fd::flags,x
           lda fd_area+F32_fd::Attr,x
-@l_exit:  debug "fopen <"
+@l_exit:  debug "f open <"
           rts
 
 ; in:
@@ -205,11 +205,12 @@ fat_fopen:
           jsr __fat_free_fd           ; was directory, free fd
           lda #EISDIR                 ; exit
 @l_not_open:
-          debug "ffopen"
-          cmp #EOK                    ; C=1/A=EOK error from open was end of cluster (@see find_first/_next)
+          debug "f fopen >"
+          cmp #EOK                    ; C=1/A=EOK error from fat_open was end of cluster
           beq @l_add_dirent           ; go on with write check
           cmp #ENOENT                 ; no such file or directory ?
           bne @l_exit_err
+          clc                         ; C=0, otherwise we'll end up calling __fat_fopen_touch with C=1 which results in new reserved block
 @l_add_dirent:
           tya                         ; get back open flags - from fat_open() above
           and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)  ; check write access
@@ -219,7 +220,7 @@ fat_fopen:
           lda #ENOENT                 ; no "write" flags set, exit with ENOENT
 @l_exit_err:
           sec
-@l_exit:  debug "ffopen <"
+@l_exit:  debug "f fopen <"
           rts
 
 

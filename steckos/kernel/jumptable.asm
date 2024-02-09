@@ -43,7 +43,7 @@ krn_find_next:          jmp fat_find_next
 .export krn_getcwd
 krn_getcwd:             jmp fat_get_root_and_pwd
 .export krn_readdir
-krn_readdir:             jmp fat_readdir
+krn_readdir:            jmp fat_readdir
 
 
 ; display stuff

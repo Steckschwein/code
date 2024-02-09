@@ -147,16 +147,16 @@ TEST_FILE_CL2=$19
       fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
 
 ; -------------------
-    setup "fat_fopen O_RWONLY"
+    setup "fat_fopen O_WRONLY"
 
-    ldy #O_RDONLY
+    ldy #O_WRONLY
     lda #<test_file_name_2
     ldx #>test_file_name_2
     jsr fat_fopen
     assertCarry 0
     assertX 2*FD_Entry_Size
     assertFdEntry fd_area + (FD_Entry_Size*2)
-      fd_entry_file_all 5, 3*DIR_Entry_Size>>1, LBA_BEGIN, DIR_Attr_Mask_Archive, 12, O_RDONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0, 5
+      fd_entry_file_all 5, 3*DIR_Entry_Size>>1, LBA_BEGIN, DIR_Attr_Mask_Archive, 12, O_WRONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0, 5
 
 ; -------------------
     setup "fat_fread_byte with error"
