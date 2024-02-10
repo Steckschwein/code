@@ -75,7 +75,7 @@ fat_get_root_and_pwd:
               ora fd_area+F32_fd::StartCluster+1,x
               ora fd_area+F32_fd::StartCluster+0,x
               beq @l_path_trim
-              m_memcpy fd_area + FD_INDEX_TEMP_FILE+F32_fd::StartCluster, volumeID+VolumeID::cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_FILE (see clone above)
+              m_memcpy fd_area+FD_INDEX_TEMP_FILE+F32_fd::StartCluster, __fat_cwd_cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_FILE (see clone above)
               lda #<l_dot_dot
               ldx #>l_dot_dot
               ldy #FD_INDEX_TEMP_FILE               ; call __fat_open_path function with ".."
@@ -84,25 +84,25 @@ fat_get_root_and_pwd:
               jsr __fat_readdir                     ; open path success the fd points to the parent directory
               bra :+
 @l_find_next: jsr __fat_readdir_next
-:             bcs :+
+:             bcs @l_exit_read
               ldy #F32DirEntry::FstClusLO+0
-              lda volumeID+VolumeID::cluster+0
+              lda __fat_cwd_cluster+0
               cmp (dirptr),y
               bne @l_find_next
               iny
-              lda volumeID+VolumeID::cluster+1
+              lda __fat_cwd_cluster+1
               cmp (dirptr),y
               bne @l_find_next
               ldy #F32DirEntry::FstClusHI+0
-              lda volumeID+VolumeID::cluster+2
+              lda __fat_cwd_cluster+2
               cmp (dirptr),y
               bne @l_find_next
               iny
-              lda volumeID+VolumeID::cluster+3
+              lda __fat_cwd_cluster+3
               cmp (dirptr),y
               bne @l_find_next
               clc
-:             jsr __fat_free_fd                     ; free fd immediately
+@l_exit_read: jsr __fat_free_fd                     ; free fd immediately
               bcs @l_exit                           ; not found
               jsr fat_name_string                   ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
               bra @l_rd_dir                         ; go on with bottom up walk until root is reached
@@ -163,3 +163,6 @@ put_char:     phy
               sta (__volatile_ptr),y
 @l_exit:      ply
               rts
+
+.bss
+  __fat_cwd_cluster:  .res 4

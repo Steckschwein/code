@@ -129,7 +129,6 @@ PartType_FAT32_LBA    = $0c
   fat_cluster_add     .byte     ; cluster reservation addend
   fat_tmp_0           .byte     ; temp variable
   fat_tmp_1           .byte     ; temp variable
-  fat_vec_matcher     .addr     ; 2 byte jump vector
   fat_filename        .byte 8+3 ; 11 byte fat file name used in open to match given filename
 .endstruct
 

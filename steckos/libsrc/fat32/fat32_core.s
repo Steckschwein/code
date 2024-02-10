@@ -691,6 +691,3 @@ __fat_read_cluster_block_and_select:
 __inc_lba_address:
               _inc32 lba_addr
               rts
-
-__fat_matcher:
-              jmp  (volumeID+VolumeID::fat_vec_matcher)
