@@ -40,6 +40,7 @@
 .export fat_chdir
 .export fat_opendir
 .export fat_readdir
+.export fat_read_direntry
 
 .export __fat_readdir
 .export __fat_readdir_next
