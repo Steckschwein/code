@@ -56,15 +56,11 @@ fat_opendir:
               jsr fat_open
               bcs @l_exit
               and #DIR_Attr_Mask_Dir	; check for directory
-              bne @l_exit_ok
+              bne @l_exit
               jsr __fat_free_fd       ; we opened a file. close it immediately and free the allocated fd
               lda #ENOTDIR				    ; error "Not a directory"
-@l_exit_err:  sec
-              rts
-@l_exit:      cmp #EOK                ; EOC ?
-              bne @l_exit_err
-              lda #ENOENT
-@l_exit_ok:   rts
+              sec
+@l_exit:      rts
 
 
 ;in:
