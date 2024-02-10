@@ -21,13 +21,11 @@
 ; SOFTWARE.
 
 
-.include "common.inc"
-.include "../kernel/kernel.inc"
-.include "../kernel/kernel_jumptable.inc"
+.include "steckos.inc"
 .include "fat32.inc"
-.include "appstart.inc"
 
 .export char_out=krn_chrout
+.export dirent
 
 .autoimport
 
@@ -187,3 +185,4 @@ atr:	.byte $00
 
 .bss
 fat_dirname_mask: .res 8+3
+dirent:           .res .sizeof(F32DirEntry)
