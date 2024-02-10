@@ -329,10 +329,8 @@ __fat_set_fd_dirlba_attr:
 
               lda dirptr+1
               .assert >block_data & $01 = 0, error, "block_data must be $0200 aligned!"
- ;             lda fd_area + F32_fd::SeekPos + 1,x
               lsr         ; div 2 (DIR_Entry_Size), just bit 0 of high byte must be taken into account. dirptr must be $0200 aligned
               lda dirptr
-   ;           lda fd_area + F32_fd::SeekPos + 0,x
               ror
               debug "dirnt pos"
               sta fd_area + F32_fd::DirEntryPos,x
