@@ -10,5 +10,5 @@
 appstart
 .code
 main:
-		jsr intro_main
-		jmp (retvec)
+    jsr intro_main
+    jmp (retvec)
