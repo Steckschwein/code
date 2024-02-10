@@ -222,26 +222,6 @@ __fat_update_direntry_write:
     jmp __fat_write_block_data              ; lba_addr is already set from read, see above
 
 
-; read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
-; in:
-;   X - file descriptor of the file the directory entry should be read
-; out:
-;   C - C=0 on success (A=0), C=1 and A=<error code> otherwise
-;   dirptr pointing to the corresponding directory entry of type F32DirEntry
-__fat_read_direntry:
-    jsr __fat_set_lba_from_fd_dirlba      ; setup lba address from fd
-    jsr __fat_read_block_data             ; and read the block with the dir entry
-    bcs @l_exit
-
-    lda fd_area+F32_fd::DirEntryPos, x    ; setup dirptr
-    asl
-    sta dirptr
-    lda #>block_data
-    adc #0 ;+Carry
-    sta dirptr+1
-@l_exit:
-    rts
-
 ; in:
 ;  X - file descriptor
 ; out:
