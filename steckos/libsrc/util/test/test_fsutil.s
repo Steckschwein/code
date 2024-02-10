@@ -3,7 +3,6 @@
 .include "fat32.inc"
 
 .autoimport
-; .importzp dirptr
 .export dirent
 .code
 
