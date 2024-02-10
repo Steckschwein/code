@@ -56,7 +56,6 @@
 .export __fat_read_cluster_block_and_select
 .export __fat_read_block_data
 .export __fat_read_block_fat
-.export __fat_seek_next_dirent
 .export __fat_set_fd_dirlba_attr
 .export __fat_set_fd_start_cluster
 .export __fat_set_root_cluster_lba_addr
@@ -64,6 +63,9 @@
 .export __calc_fat_lba_addr
 .export __fat_shift_lba_addr
 .export __inc_lba_address
+
+
+.code
 
 __fat_inc_seekpos:
               lda #1  ; +1
@@ -81,74 +83,6 @@ __fat_add_seekpos:
               inc fd_area+F32_fd::SeekPos+3,x
 @l_exit:      rts
 
-; in:
-;   X - file descriptor (index into fd_area) of the directory
-;   A/Y - pointer to matcher strategy
-; out:
-;   C=0 on success and entry was found, C=1 and A=<error code> otherwise
-__fat_find_first_mask:
-              sta volumeID+VolumeID::fat_vec_matcher+0
-              sty volumeID+VolumeID::fat_vec_matcher+1
-              jsr __fat_reset_fd_start_cluster_seek_pos  ; set start cluster to current, reset seek pos to 0
-
-__ff_loop:
-              jsr __fat_prepare_data_block_access_read
-              bcs __ff_exit
-              sta dirptr
-              sty dirptr+1
-
-__ff_match:
-              lda (dirptr)
-              debug16 "ff mtch dptr", dirptr
-              beq __ff_exit_enoent        ; first byte of dir entry is $00 (end of directory)
-
-              ldy #F32DirEntry::Attr      ; else check if long filename entry
-              lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
-              cmp #DIR_Attr_Mask_LongFilename
-              beq __fat_find_next
-
-              jsr __fat_matcher       ; call matcher strategy
-              bcs __ff_found          ; if C=1 we had a match
-
-; in:
-;  X - directory fd index into fd_area
-; out:
-;  C=0 on success (A=0), C=1 and A=<error code> otherwise
-__fat_find_next:
-              jsr __fat_seek_next_dirent
-              debug32 "ff nxt seek <", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
-              .assert >block_data & $01 = 0, error, "block_data address must be $0200 aligned!"
-              beq __ff_loop
-              bra __ff_match
-__ff_exit_enoent:
-              lda #ENOENT
-              sec ; nothing found C=1 and return
-__ff_exit:
-              debug "ff exit <"
-              rts
-__ff_found:
-              clc
-              debug "ff fnd <"
-              rts
-
-
-__fat_seek_next_dirent:
-              lda #DIR_Entry_Size
-              ldy #0
-              jsr __fat_add_seekpos
-
-              lda fd_area+F32_fd::SeekPos+1,x
-              and #$01
-              ora #>block_data
-              sta dirptr+1
-              lda fd_area+F32_fd::SeekPos+0,x
-              sta dirptr
-
-              lda dirptr+1 ; block_data start at $?200 ?
-              and #$01
-              ora dirptr
-
-              rts
 
 
 ; open a path to a file or directory starting from current directory
