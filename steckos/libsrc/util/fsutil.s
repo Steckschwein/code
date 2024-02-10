@@ -2,7 +2,7 @@
 .include "common.inc"
 
 
-.export print_filename, print_fat_date, print_fat_time, print_filesize, print_attribs
+.export print_filename, print_fat_date, print_fat_time, print_filesize, print_attribs, print_cluster_no, space
 
 .importzp dirptr
 .autoimport 
@@ -11,7 +11,7 @@ print_filename:
     ldx #0
     ldy #F32DirEntry::Name
 @name:
-    lda (dirptr),y
+    lda dirent,y
     cmp #' '
     beq @ext  
 
@@ -24,7 +24,7 @@ print_filename:
 
 @ext:
     ldy #F32DirEntry::Ext
-    lda (dirptr),y
+    lda dirent,y
     cmp #' '
     beq @spcloop
 
@@ -34,7 +34,7 @@ print_filename:
 
     ldy #F32DirEntry::Ext
 @foo:
-    lda (dirptr),y
+    lda dirent,y
 
     tolower
     jsr char_out
@@ -46,16 +46,53 @@ print_filename:
 @spcloop:
     cpx #12
     bcs @done
-    lda #' '
-    jsr char_out
+    jsr space
     inx 
     bne @spcloop
     
 @done:
     rts
 
+print_fat_time:
+    lda dirent,y
+    tax
+    lsr
+    lsr
+    lsr
+
+    jsr b2ad
+
+    lda #':'
+    jsr char_out
+
+    txa
+    and #%00000111
+    sta tmp1
+    dey
+    lda dirent,y
+
+    ldx #5
+@loop:
+    lsr tmp1
+    ror
+
+    dex 
+    bne @loop
+
+    jsr b2ad
+
+    lda #':'
+    jsr char_out
+
+    lda dirent,y
+    and #%00011111
+
+    jsr b2ad
+
+    rts
+
 print_fat_date:
-    lda (dirptr),y
+    lda dirent,y
     and #%00011111
     jsr b2ad
 
@@ -64,11 +101,11 @@ print_fat_date:
 
     ; month
     iny
-    lda (dirptr),y
+    lda dirent,y
     lsr
     tax
     dey
-    lda (dirptr),y
+    lda dirent,y
     ror
     lsr
     lsr
@@ -91,71 +128,33 @@ print_fat_date:
     jsr b2ad ; there we go
     rts
 
-print_fat_time:
-    lda (dirptr),y
-    tax
-    lsr
-    lsr
-    lsr
-
-    jsr b2ad
-
-    lda #':'
-    jsr char_out
-
-    txa
-    and #%00000111
-    sta tmp1
-    dey
-    lda (dirptr),y
-
-    ldx #5
-@loop:
-    lsr tmp1
-    ror
-
-    dex 
-    bne @loop
-
-    jsr b2ad
-
-    lda #':'
-    jsr char_out
-
-    lda (dirptr),y
-    and #%00011111
-
-    jsr b2ad
-
-    rts
-
 print_filesize:
     phy
-	clc
+    clc
     ldy #F32DirEntry::FileSize+3
-    lda (dirptr),y
+    lda dirent,y
     ldy #F32DirEntry::FileSize+2
-    adc (dirptr),y
-
+    adc dirent,y
     beq :+
-    jsr primm
-    .asciiz ">64k "
-		ply
+    lda #<bigfile_marker_txt
+    ldx #>bigfile_marker_txt
+    
+    jsr strout
+    ply
     rts
 :
     ldy #F32DirEntry::FileSize+1
-    lda (dirptr),y
+    lda dirent,y
     tax 
     dey 
-    lda (dirptr),y
-
+    lda dirent,y
     jsr dpb2ad
-	ply
+    ply
     rts
 
 print_attribs:
     ldy #F32DirEntry::Attr
-    lda (dirptr),y
+    lda dirent,y
 
     ldx #3
 @al:
@@ -168,17 +167,39 @@ print_attribs:
     bra @next
 @skip:
     pha
-    lda #' '
-    jsr char_out
+    jsr space
     pla
 @next:
     dex 
     bpl @al
     rts
-.data
+
+print_cluster_no:
+    ldy #F32DirEntry::FstClusHI+1
+    lda dirent,y
+    jsr hexout
+    dey
+    lda dirent,y
+    jsr hexout
+    
+    ldy #F32DirEntry::FstClusLO+1
+    lda dirent,y
+    jsr hexout
+    dey
+    lda dirent,y
+    jsr hexout
+    rts
+
+space:
+    lda #' '
+    jsr char_out
+    rts
+
 attr_tbl:   .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
 attr_lbl:   .byte 'R','H','S','A'
-
+bigfile_marker_txt:
+                .asciiz ">64k "
+.data
 .bss
 tmp1: .res 1
 tmp2: .res 1

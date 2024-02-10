@@ -37,11 +37,25 @@ opts_crtdate    = (1 << 4)
 dump_line_length = $10
 
 BUF_SIZE    = 80 ;TODO maybe too small?
-cwdbuf_size = 30
+cwdbuf_size = 25
 prompt  = '>'
 
 .autoimport
+; .import kernel_start
+; .import __SHELL_START__
+; .import dpb2ad
+; .import b2ad
+; .import hexout, hexout_s
+; .import primm
+; .import strout
+; .import atoi
+; .import print_filename
+; .import space
+; .import print_filesize,print_attribs, print_cluster_no
+; .import string_fat_mask
+
 .export char_out                = krn_chrout
+.export dirent
 
 ;---------------------------------------------------------------------------------------------------------
 ; init shell
@@ -202,12 +216,12 @@ inject_cmd:
 key_crs_up:
 key_crs_down:
 key_tab:        
-        lda #<dirent
-        ldy #>dirent
-        ldx #FD_INDEX_CURRENT_DIR
-        jsr krn_readdir
+        ; lda #<dirent
+        ; ldy #>dirent
+        ; ldx #FD_INDEX_CURRENT_DIR
+        ; jsr krn_readdir
 
-        jsr print_filename        
+        ; jsr print_filename        
 
         bra inputloop
 
@@ -1001,21 +1015,7 @@ setmask:
         rts 
 
 
-print_cluster_no:
-        ldy #F32DirEntry::FstClusHI+1
-        lda dirent,y
-        jsr hexout
-        dey
-        lda dirent,y
-        jsr hexout
-        
-        ldy #F32DirEntry::FstClusLO+1
-        lda dirent,y
-        jsr hexout
-        dey
-        lda dirent,y
-        jsr hexout
-        rts
+
 
 
 usage:
@@ -1205,173 +1205,14 @@ dir:
 @exit:
         jmp mainloop
 
-print_filename:
-        ldx #0
-        ldy #F32DirEntry::Name
-@name:
-        lda dirent,y
-        cmp #' '
-        beq @ext  
-
-        tolower
-        jsr char_out
-        inx
-        iny
-        cpy #F32DirEntry::Ext
-        bne @name
-
-@ext:
-        ldy #F32DirEntry::Ext
-        lda dirent,y
-        cmp #' '
-        beq @spcloop
-
-        lda #'.'
-        jsr char_out
-        inx
-
-        ldy #F32DirEntry::Ext
-@foo:
-        lda dirent,y
-
-        tolower
-        jsr char_out
-        inx
-        iny
-        cpy #F32DirEntry::Ext + 3
-        bne @foo
-    
-@spcloop:
-        cpx #12
-        bcs @done
-        jsr space
-        inx 
-        bne @spcloop
-    
-@done:
-        rts
 
 
-print_fat_date:
-        lda dirent,y
-        and #%00011111
-        jsr b2ad
 
-        lda #'.'
-        jsr char_out
 
-        ; month
-        iny
-        lda dirent,y
-        lsr
-        tax
-        dey
-        lda dirent,y
-        ror
-        lsr
-        lsr
-        lsr
-        lsr
 
-        jsr b2ad
 
-        lda #'.'
-        jsr char_out
 
-        txa
-        clc
-        adc #80   	; add begin of msdos epoch (1980)
-        cmp #100
-        bcc @l6		; greater than 100 (post-2000)
-        sec 		; yes, substract 100
-        sbc #100
-@l6:
-        jsr b2ad ; there we go
-        rts
 
-print_fat_time:
-        lda dirent,y
-        tax
-        lsr
-        lsr
-        lsr
-
-        jsr b2ad
-
-        lda #':'
-        jsr char_out
-
-        txa
-        and #%00000111
-        sta tmp1
-        dey
-        lda dirent,y
-
-        ldx #5
-@loop:
-        lsr tmp1
-        ror
-
-        dex 
-        bne @loop
-
-        jsr b2ad
-
-        lda #':'
-        jsr char_out
-
-        lda dirent,y
-        and #%00011111
-
-        jsr b2ad
-
-        rts
-
-print_filesize:
-        phy
-        clc
-        ldy #F32DirEntry::FileSize+3
-        lda dirent,y
-        ldy #F32DirEntry::FileSize+2
-        adc dirent,y
-        beq :+
-        lda #<bigfile_marker_txt
-        ldx #>bigfile_marker_txt
-        
-        jsr strout
-        ply
-        rts
-:
-        ldy #F32DirEntry::FileSize+1
-        lda dirent,y
-        tax 
-        dey 
-        lda dirent,y
-        jsr dpb2ad
-        ply
-        rts
-
-print_attribs:
-        ldy #F32DirEntry::Attr
-        lda dirent,y
-
-        ldx #3
-@al:
-        bit attr_tbl,x
-        beq @skip
-        pha
-        lda attr_lbl,x
-        jsr char_out
-        pla
-        bra @next
-@skip:
-        pha
-        jsr space
-        pla
-@next:
-        dex 
-        bpl @al
-        rts
 
 string_fat_mask_matcher:
         ldy #.sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) - 1
@@ -1389,10 +1230,7 @@ __dmm_neq:
         clc
         rts
 
-space:
-        lda #' '
-        jsr char_out
-        rts
+
 
 cmd_path:
         lda #<PATH
@@ -1404,12 +1242,9 @@ PATH:           .asciiz "./:/steckos/:/progs/"
 PRGEXT:         .asciiz ".PRG"
 pd_header:      .asciiz "####   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123457890ABCDEF"
 pattern:        .byte "*.*",$00
-attr_tbl:       .byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
-attr_lbl:       .byte 'R','H','S','A'
 press_key_msg:  .byte $0a, $0d,"-- press a key-- ",$00
 dir_marker_txt: .asciiz " <DIR> "
-bigfile_marker_txt:
-                .asciiz ">64k "
+
 
 msg_EOK:        .asciiz "No error"
 msg_ENOENT:     .asciiz "No such file or directory"
