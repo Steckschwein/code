@@ -385,7 +385,17 @@ __fat_reserve_cluster:
 ;  .A - mark cluster in fat block eihter with EOC (0x0fffffff) or free 0x00000000
 ;  volumeID+VolumeID::fat_cluster_add amount of  clusters to be reserved/freed with A [-128...127]
 __fat_update_cluster:
-    jsr __fat_mark_cluster
+    ; mark cluster according to A (A - 0x00 free, 0xff EOC), Y - offset in block
+    ; sd_blkptr - points to block_fat either 1st or 2nd page
+    sta (sd_blkptr), y
+    iny
+    sta (sd_blkptr), y
+    iny
+    sta (sd_blkptr), y
+    iny
+    and #$0f
+    sta (sd_blkptr), y
+
     jsr __fat_write_fat_blocks  ; write the updated fat block for 1st and 2nd FAT to the device
     bcc :+                      ; exit on error, otherwise fall through and update the fsinfo sector/block
 @l_exit:
@@ -506,22 +516,6 @@ __fat_rtc_date:
     ora volumeID+VolumeID::fat_tmp_1
     rts
 
-; TODO inline
-; mark cluster according to A
-; in:
-;  A - 0x00 free, 0xff EOC
-;  Y - offset in block
-;   sd_blkptr - points to block_fat either 1st or 2nd page
-__fat_mark_cluster:
-    sta (sd_blkptr), y
-    iny
-    sta (sd_blkptr), y
-    iny
-    sta (sd_blkptr), y
-    iny
-    and #$0f
-    sta (sd_blkptr), y
-    rts
 
 ; try to find a free cluster and store them in volumeId+VolumeID::cluster
 ; out:

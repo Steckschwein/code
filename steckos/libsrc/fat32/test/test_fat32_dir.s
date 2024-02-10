@@ -82,7 +82,7 @@ TEST_FILE_CL2=$19
 		ldy #>test_dirent
 		jsr fat_readdir
 		assertCarry 1
-    assertA ENOENT
+    assertA EOK
 
     jsr fat_close
 
@@ -99,8 +99,8 @@ TEST_FILE_CL2=$19
 		lda #<test_dir_name_enoent
 		ldx #>test_dir_name_enoent
 		jsr fat_chdir
-		assertA ENOENT
 		assertCarry 1
+		assertA ENOENT
 
 ; -------------------
 		setup "fat_chdir ."

@@ -40,8 +40,6 @@
 .autoimport
 
 .export __fat_add_seekpos
-.export __fat_find_first_mask
-.export __fat_find_next
 .export __fat_alloc_fd
 .export __fat_alloc_fd_from_fd_tmp
 .export __fat_clone_fd
@@ -66,8 +64,6 @@
 .export __calc_fat_lba_addr
 .export __fat_shift_lba_addr
 .export __inc_lba_address
-
-.export __fat_dirent_buffer
 
 __fat_inc_seekpos:
               lda #1  ; +1
@@ -303,7 +299,7 @@ __fat_open_path:
 @l_find_next: jsr __fat_readdir_next
 :             bcs @l_exit_err
               debugdump "f mtch fn", volumeID+VolumeID::fat_filename
-  ;            debugdumpptr "f mtch dp", dirptr
+              debugdumpptr "f mtch dp", dirptr
               debugdirentry
               ldy #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)-1
 :             lda volumeID+VolumeID::fat_filename,y
@@ -766,6 +762,3 @@ __inc_lba_address:
 
 __fat_matcher:
               jmp  (volumeID+VolumeID::fat_vec_matcher)
-
-.bss
-  __fat_dirent_buffer: .res DIR_Entry_Size
