@@ -162,7 +162,7 @@ TEST_FILE_CL2=$19
     setup "fat_fread_byte with error"
     ldx #(2*FD_Entry_Size) ; use fd(2) - i/o error cause not open
     jsr fat_fread_byte
-    assertA EINVAL
+    assertA EBADF
     assertCarry 1; expect error
     assertX (2*FD_Entry_Size); expect X unchanged, and read address still unchanged
 

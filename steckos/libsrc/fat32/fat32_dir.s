@@ -106,11 +106,9 @@ fat_readdir:
 
 @l_read_dir:  jsr __fat_readdir
               bcs @l_exit_eod
-              ldy #.sizeof(F32DirEntry)
-:             lda (dirptr),y
-              sta (__volatile_ptr),y
-              dey
-              bpl :-
+
+              jsr __fat_dir_copy_dirent
+
 __fat_readdir_seek:
               lda #DIR_Entry_Size
               ldy #0
@@ -140,3 +138,29 @@ __fat_readdir:
               sec ; eod reachead, C=1/A=EOK
               debug16 "f rd eod <", dirptr
               rts
+
+__fat_dir_copy_dirent:
+              ldy #.sizeof(F32DirEntry)
+:             lda (dirptr),y
+              sta (__volatile_ptr),y
+              dey
+              bpl :-
+              rts
+
+;@desc: readdir expects a pointer in A/Y to store the F32DirEntry structure representing the requested FAT32 directory entry for the given fd (X).
+;@name: fat_read_direntry
+;@in: X - file descriptor to fd_area of the file
+;@in: A/Y - pointer to target buffer which must be .sizeof(F32DirEntry)
+;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise. C=1/A=EOK if end of directory is reached
+fat_read_direntry:
+              _is_file_open
+
+              sta __volatile_ptr
+              sty __volatile_ptr+1
+
+              jsr __fat_read_direntry
+              bcs @l_exit
+
+              jmp __fat_dir_copy_dirent
+@l_exit:      rts
+

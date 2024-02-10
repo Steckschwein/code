@@ -237,7 +237,7 @@ block_fat             = BUFFER_2 ; $0600-$07ff
 .macro _is_file_open
    bit fd_area + F32_fd::status, x ; is open
    bmi :+
-   lda #EINVAL
+   lda #EBADF
    sec
    rts
 :

@@ -53,9 +53,10 @@
 .export __fat_prepare_block_access
 .export __fat_prepare_data_block_access
 .export __fat_prepare_data_block_access_read
-.export __fat_read_cluster_block_and_select
 .export __fat_read_block_data
 .export __fat_read_block_fat
+.export __fat_read_cluster_block_and_select
+.export __fat_read_direntry
 .export __fat_set_fd_dirlba_attr
 .export __fat_set_fd_start_cluster
 .export __fat_set_root_cluster_lba_addr
@@ -244,6 +245,25 @@ __fat_open_path:
               clc ; found, C=0 ok, A ignored
 @l_exit_err:  debug "fnd dirnt <"
               rts
+
+
+;@name: fat_read_direntry
+;@desc: read the block with the directory entry of the given file descriptor, dirptr is adjusted accordingly
+;@in: X - file descriptor of the file the directory entry should be read
+;@out: C - C=0 on success (A=0), C=1 and A=<error code> otherwise
+;@out: dirptr pointing to the corresponding directory entry of type F32DirEntry
+__fat_read_direntry:
+              jsr __fat_set_lba_from_fd_dirlba      ; setup lba address from fd
+              jsr __fat_read_block_data             ; and read the block with the dir entry
+              bcs @l_exit
+
+              lda fd_area+F32_fd::DirEntryPos, x    ; setup dirptr
+              asl
+              sta dirptr
+              lda #>block_data
+              adc #0 ;+Carry
+              sta dirptr+1
+@l_exit:      rts
 
 
 __fat_prepare_data_block_access_read:
