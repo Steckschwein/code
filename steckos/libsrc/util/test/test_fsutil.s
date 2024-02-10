@@ -3,12 +3,10 @@
 .include "fat32.inc"
 
 .autoimport
-.importzp dirptr
+; .importzp dirptr
+.export dirent
 .code
-    lda #<direntry
-    sta dirptr
-    lda #>direntry
-    sta dirptr+1
+
 
     test "fat_entry_filesize"
 
@@ -17,7 +15,7 @@
     jsr print_filesize
     assertOut ">64k "
     assertY 42
-    assert16 direntry, dirptr
+ 
 
     test "fat_entry_wrtdate"
 
@@ -46,7 +44,7 @@
 cnt: 	.byte $04
 dirs:	.byte $00
 files:	.byte $00
-direntry:
+dirent:
     .byte "FOOBAR  BAZ" ; filename+ext
     .byte 0             ; attribute
     .byte 0             ; Reserved
