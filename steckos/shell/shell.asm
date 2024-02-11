@@ -1144,6 +1144,7 @@ dir:
         jsr krn_opendir
         bcs @error
 
+
 @read_next:        
         lda #<dirent
         ldy #>dirent
@@ -1151,10 +1152,6 @@ dir:
         rol 
         cmp #1
         beq @end
-
-        lda dirent
-        cmp #DIR_Entry_Deleted
-        beq @read_next
 
         ldy #F32DirEntry::Attr
         lda dirent,y
@@ -1204,14 +1201,6 @@ dir:
         jsr krn_close
 @exit:
         jmp mainloop
-
-
-
-
-
-
-
-
 
 
 string_fat_mask_matcher:
