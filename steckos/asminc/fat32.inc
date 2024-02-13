@@ -233,14 +233,14 @@ block_data            = BUFFER_0 ; $0400-$5ff
 block_fat             = BUFFER_2 ; $0600-$07ff
 
 ; macros
-
 .macro _is_file_open
-   bit fd_area + F32_fd::status, x ; is open
-   bmi :+
-   lda #EBADF
+   bit fd_area + F32_fd::status,x ; is open
+   bmi :++
+:  lda #EBADF
    sec
    rts
-:
+:  cpx #FD_INDEX_CURRENT_DIR
+   beq :--
 .endmacro
 
 .macro _is_file_dir

@@ -159,7 +159,15 @@ TEST_FILE_CL2=$19
       fd_entry_file_all 5, 3*DIR_Entry_Size>>1, LBA_BEGIN, DIR_Attr_Mask_Archive, 12, O_WRONLY, FD_STATUS_FILE_OPEN | FD_STATUS_DIRTY, 0, 5
 
 ; -------------------
-    setup "fat_fread_byte with error"
+    setup "fat_fread_byte ebadf"
+    ldx #FD_INDEX_CURRENT_DIR
+    jsr fat_fread_byte
+    assertA EBADF
+    assertCarry 1; expect error
+    assertX FD_INDEX_CURRENT_DIR
+
+; -------------------
+    setup "fat_fread_byte file not open"
     ldx #(2*FD_Entry_Size) ; use fd(2) - i/o error cause not open
     jsr fat_fread_byte
     assertA EBADF

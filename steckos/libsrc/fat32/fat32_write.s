@@ -82,12 +82,8 @@ fat_write_byte:
 
     jsr __fat_set_fd_filesize
 
-    ; write block buffered
-    lda #>block_data
-    sta sd_blkptr+1
-    stz sd_blkptr  ;block_data, block_fat address are page aligned - see fat32.inc
     phx
-    jsr write_block_buffered
+    jsr write_block_buffered            ; write block buffered
     plx
 @l_exit:
     ply
