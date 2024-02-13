@@ -83,9 +83,8 @@ fat_mkdir:
         ldy #O_RDONLY
         jsr fat_open
         bcs :+
-        lda #EEXIST                       ; C=0 - open success, file/dir exists already, exit
-        sec
-        jmp __fat_free_fd
+        jsr __fat_free_fd                 ; C=0 - open success file/dir exists already
+        lda #EEXIST                       ; EEXIST and exit
 
 :       cmp #ENOENT                       ; we expect 'no such file or directory' error
         beq @l_add_dirent
@@ -116,7 +115,7 @@ fat_mkdir:
         jsr __fat_add_direntry            ; create and write new directory entry
         bcs @l_exit_close
 
-        jsr __fat_write_new_direntry      ; write the data of the newly created directory with prepared data from dirptr
+        jsr __fat_write_new_direntry      ; finally write data of newly created directory with prepared data from dirptr
 @l_exit_close:
         jsr __fat_free_fd
 @l_exit:

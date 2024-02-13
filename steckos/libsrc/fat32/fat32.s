@@ -198,13 +198,13 @@ fat_open:
 ;@desc: "open file"
 fat_fopen:
               jsr fat_open
-              bcs @l_not_open
+              bcs :+
               and #DIR_Attr_Mask_Dir      ; file or directory opened?
               beq @l_exit
               jsr __fat_free_fd           ; was directory, free fd
-              lda #EISDIR                 ; exit
-@l_not_open:
-              debug "f fopen >"
+              lda #EISDIR                 ; EISDIR and exit
+
+:             debug "f fopen >"
               cmp #EOK                    ; C=1/A=EOK error from fat_open was end of cluster
               beq @l_add_dirent
               cmp #ENOENT                 ; no such file or directory ?
@@ -222,13 +222,13 @@ fat_fopen:
 
 
 fat_close_all:
-          ldx #(2*FD_Entry_Size)  ; skip first 2 entries, they're reserved for current dir and temp file
+              ldx #(2*FD_Entry_Size)  ; skip first 2 entries, they're reserved for current dir and temp file
 __fat_init_fdarea:
-          stz fd_area,x
-          inx
-          cpx #(FD_Entry_Size*FD_Entries_Max)
-          bne __fat_init_fdarea
-          rts
+              stz fd_area,x
+              inx
+              cpx #(FD_Entry_Size*FD_Entries_Max)
+              bne __fat_init_fdarea
+              rts
 
 ; close file, update dir entry and free file descriptor quietly
 ; in:
