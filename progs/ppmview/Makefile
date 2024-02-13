@@ -31,4 +31,4 @@ test.%: test.%.bin
 	../../xmodem.sh $<
 
 emu: ppmview.prg
-	steckschwein-emu -rom ../../bios/bios.bin -sdcard ../../../steckos.img -upload $^
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $^
