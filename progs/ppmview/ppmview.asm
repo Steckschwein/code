@@ -121,8 +121,6 @@ next_ppm_file:
               lda direntry,y
               cmp #'M'
               bne @l_next
-              lda #CODE_LF
-              jsr char_out
 
               phx
               ldy #0
@@ -131,7 +129,6 @@ next_ppm_file:
               cmp #' '
               beq @skip
               sta _ppmfile,x
-;              jsr char_out
               inx
 @skip:        iny
               cpy #.sizeof(F32DirEntry::Name)
@@ -142,13 +139,6 @@ next_ppm_file:
 @l_ext:       cpy #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)
               bne :-
               stz _ppmfile,x
-              ldx #0
-:             lda _ppmfile,x
-              beq :+
-              jsr char_out
-              inx
-              bne :-
-:
               plx
               clc
 @l_exit:
@@ -179,12 +169,10 @@ gfxui_off:
     rts
 
 .data
-  _dotdir:  .asciiz "."
   _ppmext:  .asciiz "ppm"
 
 .bss
 fd_dir:   .res 1
-irqsafe:  .res 2
 direntry: .res DIR_Entry_Size
 _cwd:     .res 64
 _cwd_end:
