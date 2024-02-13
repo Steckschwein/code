@@ -62,11 +62,9 @@ _i:     .res 1
 
 .code
 
-;
-; in:
-;   A/X file name to load
-; out:
-;   C=0 success and image loaded to vram (mode 7), C=1 otherwise with A/X error code - A ppm specific error, X i/o specific error
+;@name: ppm_load_image
+;@in: A/X file name to load
+;@out: C=0 success and image loaded to vram (mode 7), C=1 otherwise with A/X error code where X ppm specific error, A i/o specific error
 .proc ppm_load_image
         stz fd
 
@@ -77,14 +75,14 @@ _i:     .res 1
 
         jsr ppm_parse_header
         bcc @ppm_ok
-        ldx #0
+        lda #0
+        ldx #$ff
         bra @error
 @ppm_ok:
-        jsr load_image ; timing critical
+        jsr load_image
         bcc @close_exit
 @io_error:
-        tax
-        lda #0
+        ldx #0
 @error:
         sec
 @close_exit:
@@ -119,9 +117,6 @@ load_image:
         sec
         rts
 
-next_byte:
-        jmp fread_byte
-
 copy_to_vram:
     jsr rgb_bytes_to_grb
     bcs @exit
@@ -142,19 +137,19 @@ copy_to_vram:
     rts
 
 rgb_bytes_to_grb:  ; GRB 332 format
-    jsr next_byte  ;R
+    jsr fread_byte  ;R
     bcs @exit
     and #$e0
     lsr
     lsr
     lsr
     sta _i
-    jsr next_byte  ;G
+    jsr fread_byte  ;G
     bcs @exit
     and #$e0
     ora _i
     sta _i
-    jsr next_byte  ;B
+    jsr fread_byte  ;B
     bcs @exit
     rol
     rol
@@ -188,11 +183,11 @@ set_screen_addr:
     rts
 
 ppm_parse_header:
-    jsr next_byte
+    jsr fread_byte
     bcs @l_invalid_ppm
     cmp #'P'
     bne @l_invalid_ppm
-    jsr next_byte
+    jsr fread_byte
     bcs @l_invalid_ppm
     cmp #'3'
     beq :+
@@ -218,12 +213,12 @@ ppm_parse_header:
     rts
 
 @l_invalid_ppm:
-        sec
+    sec
     rts
 
 ; C=0 parse ok, C=1 on error
 parse_int0:
-    jsr next_byte
+    jsr fread_byte
     bcc parse_int
     rts
 parse_int:
@@ -251,7 +246,7 @@ parse_int:
     sta _i
     iny
     phy
-    jsr next_byte
+    jsr fread_byte
     ply
     bcc @l_toi ; C=1 on error
 @l_exit:
@@ -259,7 +254,7 @@ parse_int:
     rts
 
 parse_until_size:
-    jsr next_byte
+    jsr fread_byte
     bcs @l
     cmp #'#'        ; skip comments
     bne @l
@@ -268,7 +263,7 @@ parse_until_size:
 @l:    rts
 
 parse_string:
-@l0:  jsr next_byte
+@l0:  jsr fread_byte
     bcs @le ; C=1 on error
     cmp #$20    ; < $20 - control characters are treat as string delimiter
     bcc @le
