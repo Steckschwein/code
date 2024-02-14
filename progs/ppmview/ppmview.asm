@@ -23,9 +23,6 @@
 ;
 ; use imagemagick $convert <image> -geometry 256 -colors 256 <image.ppm>
 ;
-.include "zeropage.inc"
-.include "common.inc"
-; .include "vdp.inc"
 .include "fat32.inc"
 .include "steckos.inc"
 
@@ -35,9 +32,6 @@
 .export fopen=krn_fopen
 .export fread_byte=krn_fread_byte
 .export fclose=krn_close
-
-.zeropage
-  ptr:  .res 2
 
 appstart $1000
 .code
@@ -65,7 +59,11 @@ appstart $1000
     ldx #>_ppmfile
     jsr ppm_load_image
     bcs ppm_error
+
     keyin
+    cmp #KEY_ESCAPE
+    beq @l_closedir
+
     bra @l_next_ppm
 
 @l_closedir:
@@ -75,11 +73,11 @@ appstart $1000
 
 @l_openfile:
     lda #<paramptr
-    ldx #>paramptr
+    ldx #>paramptr+1
     jsr ppm_load_image
     bcs ppm_error
-
     keyin
+
 exit:
     jsr gfxui_off
     jmp (retvec)
@@ -103,26 +101,21 @@ ppm_error:
     bra exit
 
 next_ppm_file:
-@l_next:
-              lda #<direntry
+@l_next:      lda #<direntry
               ldy #>direntry
               ldx fd_dir
               jsr krn_readdir
               bcs @l_exit
               ldy #F32DirEntry::Ext
-              lda direntry,y
-              cmp #'P'
+              ldx #0
+:             lda direntry,y
+              cmp _ppmext,x
               bne @l_next
               iny
-              lda direntry,y
-              cmp #'P'
-              bne @l_next
-              iny
-              lda direntry,y
-              cmp #'M'
-              bne @l_next
+              inx
+              cpx #(_ppmext_end-_ppmext)
+              bne :-
 
-              phx
               ldy #0
               ldx #0
 :             lda direntry,y
@@ -139,10 +132,8 @@ next_ppm_file:
 @l_ext:       cpy #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)
               bne :-
               stz _ppmfile,x
-              plx
               clc
-@l_exit:
-              rts
+@l_exit:      rts
 
 gfxui_on:
     jsr krn_textui_disable      ;disable textui
@@ -169,7 +160,8 @@ gfxui_off:
     rts
 
 .data
-  _ppmext:  .asciiz "ppm"
+  _ppmext:  .byte "PPM"
+  _ppmext_end:
 
 .bss
 fd_dir:   .res 1
