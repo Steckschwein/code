@@ -27,7 +27,7 @@
 .include "keyboard.inc"
 .include "zeropage.inc"
 
-.zeropage
+.segment "ZEROPAGE_LIB": zeropage
   v_rd: .res 2
   v_wr: .res 2
 
@@ -85,15 +85,6 @@ _vdp_scroll_up:
       bne  @l5
       rts
 
-_inc_cursor_y:
-      lda crs_y
-      cmp  #ROWS    ;last line ?
-      bne  @l1
-      bra  _vdp_scroll_up  ; scroll up, dont inc y, exit
-@l1:
-      inc crs_y
-      rts
-
 vdp_charout:
       cmp  #KEY_CR      ;cariage return ?
       bne  @l1
@@ -102,8 +93,16 @@ vdp_charout:
 @l1:
       cmp  #CODE_LF      ;line feed
       bne  @l2
+@inc_cursor_y:
       stz  crs_x
-      bra  _inc_cursor_y
+      lda crs_y
+      cmp  #ROWS    ;last line ?
+      bne  @l_y
+      bra  _vdp_scroll_up  ; scroll up, dont inc y, exit
+@l_y:
+      inc crs_y
+      rts
+
 @l2:
       cmp  #KEY_BACKSPACE
       bne  @l3
@@ -119,27 +118,21 @@ vdp_charout:
       sta  crs_x
 @l5:
       lda #' '
-      bra  vdp_putchar
-
-@l3:
-      jsr  vdp_putchar
-      lda  crs_x
-      cmp  #(COLS-1)
-      beq @l7
-      inc  crs_x
-@l6:
-      rts
-@l7:
-      stz  crs_x
-      bra  _inc_cursor_y
-
-vdp_putchar:
+@vdp_putchar:
       pha
       jsr vdp_set_addr
       pla
       vdp_wait_l 8
       sta a_vram
       rts
+@l3:
+      jsr  @vdp_putchar
+      lda  crs_x
+      cmp  #(COLS-1)
+      beq @inc_cursor_y
+      inc  crs_x
+@l6:  rts
+
 
 .ifndef CHAR6x8
 vdp_set_addr:        ; set the vdp vram adress, write A to vram
