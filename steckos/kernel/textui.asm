@@ -62,9 +62,9 @@ textui_scroll_up:
   lda #<ADDRESS_TEXT_SCREEN
   clc
   bit video_mode
-   bvc :+
-   adc #40
-:  adc #40
+  bvc :+
+  adc #40
+: adc #40
   sta a_r
   lda #>ADDRESS_TEXT_SCREEN
   sta a_r+1
@@ -185,7 +185,7 @@ textui_cursor:
   beq _vram_crs_ptr_write_saved
   trb screen_status
   lda #CURSOR_CHAR
-  ;  sta saved_char
+  ;sta saved_char
   bra _vram_crs_ptr_write
 _vram_crs_ptr_write_saved:
   lda saved_char
