@@ -278,7 +278,6 @@ boot_from_card:
       ldy #O_RDONLY
       jsr fat_fopen          ; A/X - pointer to filename
       bcc @loadfile
-@loop_end:
       println " not found."
       bra do_upload
 @loadfile:
