@@ -55,10 +55,9 @@ vdp_text_blank:
   ldx #72 ; 26.5*80 = 2120 => 2120 - 2048 = 72 bytes left to clear
   jsr vdp_fills
   vdp_vram_w ADDRESS_TEXT_COLOR
-  lda #0
-  ldx #0
-  jmp vdp_fills
-
+  lda #Transparent<<4|Transparent
+  ldx #2
+  jmp vdp_fill
 
 ;@name: vdp_text_on
 ;@desc: text mode - 40x24/80x24 character mode, 2 colors

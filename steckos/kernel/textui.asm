@@ -33,7 +33,7 @@ ROWS=24
 CURSOR_BLANK=' '
 CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
 
-STATE_CURSOR_OFF    =1<<1
+STATE_CURSOR_OFF      =1<<1
 STATE_CURSOR_BLINK    =1<<2
 STATE_TEXTUI_ENABLED  =1<<7
 
@@ -62,9 +62,9 @@ textui_scroll_up:
   lda #<ADDRESS_TEXT_SCREEN
   clc
   bit video_mode
-   bvc :+
-   adc #40
-:  adc #40
+  bvc :+
+  adc #40
+: adc #40
   sta a_r
   lda #>ADDRESS_TEXT_SCREEN
   sta a_r+1
@@ -185,7 +185,7 @@ textui_cursor:
   beq _vram_crs_ptr_write_saved
   trb screen_status
   lda #CURSOR_CHAR
-  ;  sta saved_char
+  ;sta saved_char
   bra _vram_crs_ptr_write
 _vram_crs_ptr_write_saved:
   lda saved_char
@@ -280,7 +280,7 @@ textui_blank:
   bit video_mode
   bvc :+
   ldx #8
-:  php
+: php
   sei
   vdp_vram_w ADDRESS_TEXT_SCREEN
   lda #CURSOR_BLANK
