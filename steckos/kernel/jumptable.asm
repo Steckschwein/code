@@ -45,7 +45,9 @@ krn_getcwd:             jmp fat_get_root_and_pwd
 .export krn_readdir
 krn_readdir:            jmp fat_readdir
 .export krn_read_direntry
-krn_read_direntry:            jmp fat_read_direntry
+krn_read_direntry:      jmp fat_read_direntry
+.export krn_update_direntry
+krn_update_direntry:    jmp fat_update_direntry
 
 ; display stuff
 .export krn_textui_init
