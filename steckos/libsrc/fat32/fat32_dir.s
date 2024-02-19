@@ -141,7 +141,7 @@ __fat_readdir:
               rts
 
 __fat_dir_copy_dirent:
-              ldy #.sizeof(F32DirEntry)
+              ldy #.sizeof(F32DirEntry)-1
 :             lda (dirptr),y
               sta (__volatile_ptr),y
               dey
@@ -164,4 +164,3 @@ fat_read_direntry:
 
               jmp __fat_dir_copy_dirent
 @l_exit:      rts
-

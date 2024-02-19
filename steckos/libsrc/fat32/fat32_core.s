@@ -442,6 +442,7 @@ __fat_init_fd:
 __fat_free_fd:
               debug "f free <"
               stz fd_area + F32_fd::status,x
+              clc
               rts
 
 ; check whether cluster of fd is the root cluster number - 0x00000000 (not VolumeID::RootClus due to lba calc optimization)

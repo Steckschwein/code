@@ -153,6 +153,103 @@ TEST_FILE_CL2=$19
     assert32 $10, block_fsinfo+F32FSInfo::LastClus
 
 ; -------------------
+		setup "fat_read_direntry"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+    ldy #O_RDONLY
+    jsr fat_open
+    assertC 0
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+    jsr fat_close
+    assertC 0
+
+; -------------------
+		setup "fat_update_direntry ebadf"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+    ldy #O_RDONLY
+    jsr fat_open
+    assertC 0
+
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_update_direntry
+    assertC 1
+    assertA EBADF ; bad fd cause of opened as O_RDONLY
+
+    jsr fat_close
+    assertC 0
+
+; -------------------
+		setup "fat_update_direntry attribute einval"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+    ldy #O_WRONLY
+    jsr fat_open
+    assertC 0
+
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+    set8 test_dirent+F32DirEntry::Attr, DIR_Attr_Mask_Dir
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_update_direntry
+    assertC 1
+    assertA EINVAL
+
+    jsr fat_close
+    assertC 0
+
+; -------------------
+		setup "fat_update_direntry name,ext,attr"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+    ldy #O_WRONLY
+    jsr fat_open
+    assertC 0
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+    setMemory test_dirent, 8+3+1
+      .byte "NEWNAME TXT",DIR_Attr_Mask_Archive|DIR_Attr_Mask_Hidden
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_update_direntry
+    assertC 0
+
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry "NEWNAME ", "TXT", DIR_Attr_Mask_Archive|DIR_Attr_Mask_Hidden, 0, 0
+
+    jsr fat_close
+    assertC 0
+
+; -------------------
 		setup "fat_mkdir numeric"
 		lda #<test_dir_name_numeric
 		ldx #>test_dir_name_numeric
@@ -410,6 +507,7 @@ TEST_FILE_CL2=$19
 
     assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
     assert32 TEST_FILE_CL, block_fsinfo+F32FSInfo::LastClus ; newly reserved block for root dir cluster chain is last
+
 
 test_end
 

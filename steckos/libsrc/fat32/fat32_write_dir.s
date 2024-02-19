@@ -36,6 +36,7 @@
 
 .export fat_mkdir
 .export fat_rmdir
+.export fat_update_direntry
 
 .autoimport
 
@@ -52,22 +53,19 @@
 ;@out: A, "error code"
 ;@desc: "delete a directory entry denoted by given path in A/X"
 fat_rmdir:
-            jsr fat_opendir
-            bcs @l_exit
-            debugdirentry
-            jsr __fat_is_dot_dir
-            beq @l_err_einval
-            jsr __fat_dir_isempty
-            bcs @l_exit_err
-            jmp __fat_unlink
-@l_err_einval:
-            lda #EINVAL
-@l_exit_err:
-            sec
-            jsr __fat_free_fd
-@l_exit:
-            debug "rmdir <"
-            rts
+              jsr fat_opendir
+              bcs @exit
+              debugdirentry
+              jsr __fat_is_dot_dir
+              beq @err_einval
+              jsr __fat_dir_isempty
+              bcs @err_exit
+              jmp __fat_unlink
+@err_einval:  lda #EINVAL
+@err_exit:    sec
+              jsr __fat_free_fd
+@exit:        debug "rmdir <"
+              rts
 
 ; in:
 ;   A/X - pointer to the directory name
@@ -181,14 +179,13 @@ __fat_write_new_direntry:
 
 
 __fat_erase_block_fat:
-    ldy #0                      ; safely, fill the new dir block with 0 to mark end-of-directory
-    tya
-@l_erase:
-    sta block_fat+$000, y
-    sta block_fat+$100, y
-    iny
-    bne @l_erase
-    rts
+              ldy #0                      ; safely, fill the new dir block with 0 to mark end-of-directory
+              tya
+@l_erase:     sta block_fat+$000, y
+              sta block_fat+$100, y
+              iny
+              bne @l_erase
+              rts
 
 ; in:
 ;   X - file descriptor of directory
@@ -242,3 +239,46 @@ __fat_is_dot_dir:
     bne @l_next
 @l_exit:
     rts
+
+
+;@desc: update direntry given as pointer (A/Y) to FAT32 directory entry structure for file fd (X).
+;@name: fat_update_direntry
+;@in: X - file descriptor to fd_area of the file
+;@in: A/Y - pointer to direntry buffer with updated direntry data of type F32DirEntry
+;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise. C=1/A=EOK if end of directory is reached
+fat_update_direntry:
+              _is_file_open
+
+              sta __volatile_ptr
+              sty __volatile_ptr+1
+              debugdumpptr "dirent >", __volatile_ptr
+
+              jsr __fat_read_direntry
+              bcs @exit
+              debugdirentry
+              debugdumpptr "dirent <", __volatile_ptr
+
+              ldy #EBADF  ; prepare if error
+              lda fd_area+F32_fd::flags,x
+              and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; file write access?
+              beq @exit_err
+
+              ldy #F32DirEntry::Attr-1
+:             lda (__volatile_ptr),y
+              sta (dirptr),y
+              dey
+              bpl :-
+
+              ldy #F32DirEntry::Attr
+              lda (__volatile_ptr),y
+              and #DIR_Attr_Mask_Dir|DIR_Attr_Mask_Archive
+              cmp (dirptr),y  ; changed file type, exit EINVAL
+              bne @exit_einval
+              lda (__volatile_ptr),y
+              sta (dirptr),y
+              ; jsr __fat_set_direntry_modify_datetime - timestamp is maintained during fat_close()
+              jmp __fat_write_block_data
+@exit_einval: ldy #EINVAL
+@exit_err:    tya
+              sec
+@exit:        rts
