@@ -111,10 +111,10 @@ attrib:
 
 		lda atr
 		ldx op
+		ldy #F32DirEntry::Attr
 		cpx #'+'
 		bne @l1
 		
-		ldy #F32DirEntry::Attr
 		ora dirent,y
 		
 		bra @save
@@ -125,7 +125,6 @@ attrib:
 		
 		lda atr
 		eor #$ff 				; make complement mask
-		ldy #F32DirEntry::Attr
 		and dirent,y
 
 @save:
