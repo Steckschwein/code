@@ -23,6 +23,8 @@
 
 .include "steckos.inc"
 .include "fat32.inc"
+.include "fcntl.inc"
+
 
 .export char_out=krn_chrout
 .export dirent
@@ -50,18 +52,22 @@ param:
 		iny
 
 		lda (paramptr),y
-		and #$DF
+		toupper
+		; and #$DF
 		ldx #$00
 		cmp #'A'
 		bne @l1
 		ldx #DIR_Attr_Mask_Archive
-@l1:	cmp #'H'
+@l1:	
+		cmp #'H'
 		bne @l2
 		ldx #DIR_Attr_Mask_Hidden
-@l2:	cmp #'R'
+@l2:	
+		cmp #'R'
 		bne @l3
 		ldx #DIR_Attr_Mask_ReadOnly
-@l3:	cmp #'S'
+@l3:	
+		cmp #'S'
 		bne @l4
 		ldx #DIR_Attr_Mask_System
 @l4:
@@ -90,38 +96,48 @@ wuerg:
 		bra @loop
 
 attrib:
-		SetVector filename, filenameptr
-    lda #<fat_dirname_mask
-    ldy #>fat_dirname_mask
-    jsr string_fat_mask ; build fat dir entry mask from user input
+	  lda #<filename
+    ldx #>filename
+		ldy #O_WRONLY
+    jsr krn_open
+		bcs error
 
-    lda #<string_fat_mask_matcher
-    ldy #>string_fat_mask_matcher
-		ldx #FD_INDEX_CURRENT_DIR
-		jsr krn_find_first
-		bcc @found
-		printstring "i/o error"
-		jmp (retvec)
+		lda #<dirent
+    ldy #>dirent
+    jsr krn_read_direntry
+		bcs error
 
-@found:
+		phx
 
 		lda atr
 		ldx op
 		cpx #'+'
 		bne @l1
-		jsr set_attrib
+		
+		ldy #F32DirEntry::Attr
+		ora dirent,y
+		
 		bra @save
-@l1:	cpx #'-'
+@l1:	
+		cpx #'-'
 		bne @view
-		jsr unset_attrib
+
+		
+		lda atr
+		eor #$ff 				; make complement mask
+		ldy #F32DirEntry::Attr
+		and dirent,y
 
 @save:
-		; set write pointer accordingly and
-		SetVector block_data, sd_blkptr
+		sta dirent,y
+		plx
 
-		; just write back the block. lba_address still contains the right address
-		jsr krn_sd_write_block
-		bcs wrerror
+    lda #<dirent
+    ldy #>dirent
+    jsr krn_update_direntry
+    bcs wrerror
+
+		jsr krn_close
 
 		jmp (retvec)
 
@@ -147,42 +163,16 @@ error:
 		.asciiz "open error"
 		jmp (retvec)
 wrerror:
+		jsr hexout
+		jsr krn_close
+
 		jsr primm
-		.asciiz "write error"
+		.asciiz " write error"
 		jmp (retvec)
 
 
-; set attribute bit
-; in:
-;   A - attribute bit to set
-set_attrib:
-		ldy #F32DirEntry::Attr
-		ora (dirptr),y
-		sta (dirptr),y
-		rts
-
-; clear attribute bit
-; in:
-;   A - attribute bit to unset
-unset_attrib:
-		eor #$ff 				; make complement mask
-		ldy #F32DirEntry::Attr
-		and (dirptr),y
-		sta (dirptr),y
-		rts
-
-attr_tbl:
-		.byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
-attr_lbl:
-		.byte 'R','H','S','A'
-
-.data
-filename:
-	  	.res 11
-  		.byte $00
-op:		.byte $00
-atr:	.byte $00
-
 .bss
-fat_dirname_mask: .res 8+3
-dirent:           .res .sizeof(F32DirEntry)
+filename:	.res 12
+op:				.res 1
+atr:			.res 1
+dirent:   .res .sizeof(F32DirEntry)
