@@ -471,7 +471,7 @@ vdp_init_bytes_gfx:
 vdp_init_bytes_gfx_end:
 
 sprite_pattern:
-;.include "ship.res"
+.include "ship.res"
 ;.include "shot.res"
 ;.include "shot2.res"
 ;.include "shot3.res"

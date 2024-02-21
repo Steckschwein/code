@@ -27,8 +27,8 @@
       COLOR_LIGHTBLUE         = $0E
       COLOR_GRAY3             = $0F
 
-HLine_Border=$f9
-HLine_Last=$ff
+HLine_Border=$fa
+HLine_Last=32 ; $ff
 
 .assert __BSS_RUN__ < VRAM_SPRITE_PATTERN, error, "bss overflow!"
 

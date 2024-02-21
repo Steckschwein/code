@@ -1,8 +1,4 @@
-      ;.p02
-      .setcpu "65c02"
-
       .include "zeropage.inc"
-;      .smart
       .autoimport
 
         Color_Blinky  = Color_Red

@@ -1,6 +1,6 @@
 DEBUG=-D__DEBUG
 DEBUG+=-D__NO_SOUND
-#DEBUG+=-D__NO_BOOT
+DEBUG+=-D__NO_BOOT
 DEBUG+=-D__NO_INTRO
 
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
@@ -99,3 +99,6 @@ pacman64.dis: pacman64.prg
 
 %: %.prg
 	../../xmodem.sh $<
+
+%.emu: %.prg
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -rotate -sdcard ../../steckos.img -upload $<
