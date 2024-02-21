@@ -263,13 +263,8 @@ fat_update_direntry:
               and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC) ; file write access?
               beq @exit_err
 
-              ldy #F32DirEntry::Attr-1
-:             lda (__volatile_ptr),y
-              sta (dirptr),y
-              dey
-              bpl :-
-
               ldy #F32DirEntry::Attr
+
               lda (__volatile_ptr),y
               and #DIR_Attr_Mask_LongFilename ; long filename?
               cmp #DIR_Attr_Mask_LongFilename
@@ -283,10 +278,13 @@ fat_update_direntry:
               cmp #DIR_Attr_Mask_Dir|DIR_Attr_Mask_Archive
               beq @exit_einval
 
-              lda (__volatile_ptr),y
+:             lda (__volatile_ptr),y
               sta (dirptr),y
+              dey
+              bpl :-
               ; jsr __fat_set_direntry_modify_datetime - timestamp is maintained during fat_close()
               jmp __fat_write_block_data
+
 @exit_einval: ldy #EINVAL
 @exit_err:    tya
               sec
