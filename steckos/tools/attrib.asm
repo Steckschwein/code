@@ -44,7 +44,7 @@ appstart $1000
     iny
     bne @loop
 
-    jmp get_filename
+    bra get_filename
 
 param:
     sta op
@@ -52,7 +52,7 @@ param:
 
     lda (paramptr),y
     toupper
-    ; and #$DF
+    
     ldx #$00
     cmp #'A'
     bne @l1
@@ -72,14 +72,6 @@ param:
 @l4:
 
     stx atr
-    lda atr
-;     bne @l5
-;     jsr primm
-;     .byte "invalid attribute",$00
-;     jmp (retvec)
-; @l5:
-
-    ; iny
 
     ; everything until <space> in the parameter string is the source file name
     iny
