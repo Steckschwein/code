@@ -22,6 +22,10 @@
 
 .include "steckos.inc"
 .include "fat32.inc"
+.include "fcntl.inc"
+
+filename_length = .sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) 
+
 
 .export char_out=krn_chrout
 
@@ -30,97 +34,95 @@
 appstart $1000
 
   ; everything until <space> in the parameter string is the source file name
-  ldy #$00
+    ldy #$00
 @loop:
-  lda (paramptr),y
-  beq rename
-  cmp #' '
-  beq next
-  sta filename,y
-  iny
-  lda #$00
-  sta filename,y
-  bra @loop
+    lda (paramptr),y
+    beq rename
+    cmp #' '
+    beq next
+    sta filename,y
+    iny
+    lda #$00
+    sta filename,y
+    bra @loop
+
+
+next:
+    ; first we init the buffer with spaces so we just need to fill in the filename and extension
+    ldx #filename_length
+    lda #' '
+@l:
+    sta new_filename,x
+    dex
+    bne @l
+
+    iny
+    ldx #$00
+@loop:
+    lda (paramptr),y
+    beq rename
+    cmp #'.'
+    bne @skip
+
+    ; found the dot. advance x to pos. 8, point y to the next byte and go again
+    iny
+    ldx #8
+    bra @loop
+
+@skip:
+    toupper
+    sta new_filename,x
+    inx
+    iny
+    bra @loop
+
+
+rename:
+    lda #<filename
+    ldx #>filename
+    ldy #O_WRONLY
+    jsr krn_open
+    bcs error
+    
+    phx 
+    lda #<dirent
+    ldy #>dirent
+    jsr krn_read_direntry
+    bcs error
+
+    ldy #filename_length
+  :
+    lda new_filename,y
+    sta dirent,y
+    dey 
+    bpl :-
+
 
   ; after <space> there comes the destination filename
   ; copy and normalize it FAT dir entry style
 
-next:
-  ; first we init the buffer with spaces so we just need to fill in the filename and extension
-  ldx #$0b
-  lda #' '
-@l:
-  sta normalizedfilename,x
-  dex
-  bne @l
+    plx 
 
-  iny
-  ldx #$00
-@loop:
-  lda (paramptr),y
-  beq rename
-  cmp #'.'
-  bne @skip
+    lda #<dirent
+    ldy #>dirent
+    jsr krn_update_direntry
 
-  ; found the dot. advance x to pos. 8, point y to the next byte and go again
-  iny
-  ldx #8
-  bra @loop
+    bcs wrerror
 
-@skip:
-  toupper
-  sta normalizedfilename,x
-  inx
-  iny
-  bra @loop
-
-rename:
-  lda #<fat_dirname_mask
-  ldy #>fat_dirname_mask
-  jsr string_fat_mask ; build fat dir entry mask from user input
-
-  lda #<string_fat_mask_matcher
-  ldy #>string_fat_mask_matcher
-  ldx #FD_INDEX_CURRENT_DIR
-  jsr krn_find_first
-  bcc @go
-  printstring "i/o error"
-
-  jmp (retvec)
-@go:	bcs @found
-  bra error
-@found:
-  ; dirptr still points to the correct dir entry, so just overwrite the name
-  ldy #$0b -1
-@l:
-  lda normalizedfilename,y
-  sta (dirptr),y
-  dey
-  bpl @l
-
-  ; set write pointer accordingly and
-  SetVector block_data, sd_blkptr
-
-  ; just write back the block. lba_address still contains the right address
-  jsr krn_sd_write_block
-  bcs wrerror
-  jmp (retvec)
+    jsr krn_close
+    jmp (retvec)
 
 error:
-  jsr primm
-  .asciiz "open error"
-  jmp (retvec)
+    jsr primm
+    .asciiz "open error"
+    jmp (retvec)
 wrerror:
-  jsr primm
-  .asciiz "write error"
-  jmp (retvec)
-
-
-filename:
-  .res 11
-  .byte $00
-normalizedfilename:
-  .res 11
+    jsr hexout
+    jsr primm
+    .asciiz " write error"
+    jmp (retvec)
 
 .bss
-fat_dirname_mask: .res 8+3
+filename:	    .res filename_length
+new_filename:	.res filename_length
+dirent:       .res .sizeof(F32DirEntry)
