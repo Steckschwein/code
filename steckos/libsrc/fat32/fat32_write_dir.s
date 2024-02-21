@@ -271,9 +271,18 @@ fat_update_direntry:
 
               ldy #F32DirEntry::Attr
               lda (__volatile_ptr),y
-              and #DIR_Attr_Mask_Dir|DIR_Attr_Mask_Archive
-              cmp (dirptr),y  ; changed file type, exit EINVAL
+              and #DIR_Attr_Mask_LongFilename ; long filename?
+              cmp #DIR_Attr_Mask_LongFilename
+              beq @exit_einval
+              and #DIR_Attr_Mask_System|DIR_Attr_Mask_Volume
               bne @exit_einval
+
+              lda (__volatile_ptr),y
+              ora (dirptr),y  ; file type changed?
+              and #DIR_Attr_Mask_Dir|DIR_Attr_Mask_Archive ; exit EINVAL
+              cmp #DIR_Attr_Mask_Dir|DIR_Attr_Mask_Archive
+              beq @exit_einval
+
               lda (__volatile_ptr),y
               sta (dirptr),y
               ; jsr __fat_set_direntry_modify_datetime - timestamp is maintained during fat_close()

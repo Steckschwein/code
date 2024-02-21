@@ -208,6 +208,7 @@ TEST_FILE_CL2=$19
     assertDirEntry test_dirent
       fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
 
+    ; try to change file type
     set8 test_dirent+F32DirEntry::Attr, DIR_Attr_Mask_Dir
     lda #<test_dirent
     ldy #>test_dirent
@@ -233,7 +234,7 @@ TEST_FILE_CL2=$19
       fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
 
     setMemory test_dirent, 8+3+1
-      .byte "NEWNAME TXT",DIR_Attr_Mask_Archive|DIR_Attr_Mask_Hidden
+      .byte "NEWNAME TXT",DIR_Attr_Mask_Archive|DIR_Attr_Mask_Hidden|DIR_Attr_Mask_ReadOnly
     lda #<test_dirent
     ldy #>test_dirent
     jsr fat_update_direntry
@@ -244,7 +245,7 @@ TEST_FILE_CL2=$19
     jsr fat_read_direntry
     assertC 0
     assertDirEntry test_dirent
-      fat32_dir_entry "NEWNAME ", "TXT", DIR_Attr_Mask_Archive|DIR_Attr_Mask_Hidden, 0, 0
+      fat32_dir_entry "NEWNAME ", "TXT", DIR_Attr_Mask_Archive|DIR_Attr_Mask_Hidden|DIR_Attr_Mask_ReadOnly, 0, 0
 
     jsr fat_close
     assertC 0
