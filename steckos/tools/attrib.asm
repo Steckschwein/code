@@ -33,145 +33,144 @@
 
 appstart $1000
 .code
-		ldy #$00
+    ldy #$00
 @loop:
-		lda (paramptr),y
-		cmp #'+'
-		beq param
-		cmp #'-'
-		beq param
+    lda (paramptr),y
+    cmp #'+'
+    beq param
+    cmp #'-'
+    beq param
 
-		iny
-		bne @loop
-end:
+    iny
+    bne @loop
 
-		jmp wuerg
+    jmp get_filename
 
 param:
-		sta op
-		iny
+    sta op
+    iny
 
-		lda (paramptr),y
-		toupper
-		; and #$DF
-		ldx #$00
-		cmp #'A'
-		bne @l1
-		ldx #DIR_Attr_Mask_Archive
+    lda (paramptr),y
+    toupper
+    ; and #$DF
+    ldx #$00
+    cmp #'A'
+    bne @l1
+    ldx #DIR_Attr_Mask_Archive
 @l1:	
-		cmp #'H'
-		bne @l2
-		ldx #DIR_Attr_Mask_Hidden
+    cmp #'H'
+    bne @l2
+    ldx #DIR_Attr_Mask_Hidden
 @l2:	
-		cmp #'R'
-		bne @l3
-		ldx #DIR_Attr_Mask_ReadOnly
+    cmp #'R'
+    bne @l3
+    ldx #DIR_Attr_Mask_ReadOnly
 @l3:	
-		cmp #'S'
-		bne @l4
-		ldx #DIR_Attr_Mask_System
+    cmp #'S'
+    bne @l4
+    ldx #DIR_Attr_Mask_System
 @l4:
 
-		stx atr
-		lda atr
-		bne @l5
-		jsr primm
-		.byte "invalid attribute",$00
-		jmp (retvec)
-@l5:
+    stx atr
+    lda atr
+;     bne @l5
+;     jsr primm
+;     .byte "invalid attribute",$00
+;     jmp (retvec)
+; @l5:
 
-		iny
+    ; iny
 
-		; everything until <space> in the parameter string is the source file name
-		iny
-wuerg:
-		ldx #$00
+    ; everything until <space> in the parameter string is the source file name
+    iny
+get_filename:
+    ldx #$00
 @loop:
-		lda (paramptr),y
-		beq attrib
-		sta filename,x
-		iny
-		inx
-		stz filename,x
-		bra @loop
+    lda (paramptr),y
+    beq attrib
+    cmp #' '
+    beq @skip
+    sta filename,x
+    inx
+    stz filename,x
+@skip:
+    iny
+    bra @loop
 
 attrib:
-	  lda #<filename
+    lda #<filename
     ldx #>filename
-		ldy #O_WRONLY
+    ldy #O_WRONLY
     jsr krn_open
-		bcs error
+    bcs error
 
-		lda #<dirent
+    lda #<dirent
     ldy #>dirent
     jsr krn_read_direntry
-		bcs error
+    bcs error
 
-		phx
+    phx
 
-		lda atr
-		ldx op
-		ldy #F32DirEntry::Attr
-		cpx #'+'
-		bne @l1
-		
-		ora dirent,y
-		
-		bra @save
+    lda atr
+    ldx op
+    ldy #F32DirEntry::Attr
+    cpx #'+'
+    bne @l1
+    
+    ora dirent,y
+    
+    bra @save
 @l1:	
-		cpx #'-'
-		bne @view
+    cpx #'-'
+    bne @view
 
-		
-		lda atr
-		eor #$ff 				; make complement mask
-		and dirent,y
+    eor #$ff 				; make complement mask
+    and dirent,y
 
 @save:
-		sta dirent,y
-		plx
+    sta dirent,y
+    plx
 
     lda #<dirent
     ldy #>dirent
     jsr krn_update_direntry
     bcs wrerror
 
-		jsr krn_close
+    jsr krn_close
 
-		jmp (retvec)
+    bra out
 
 @view:
-		ldy #F32DirEntry::Name
+    ldy #F32DirEntry::Name
 @l2:
-		lda (dirptr),y
-		jsr krn_chrout
-		iny
-		cpy #F32DirEntry::Attr
-		bne @l2
+    lda (dirptr),y
+    jsr krn_chrout
+    iny
+    cpy #F32DirEntry::Attr
+    bne @l2
 
-		lda #':'
-		jsr krn_chrout
+    lda #':'
+    jsr krn_chrout
 
-		jsr print_attribs
-
-@out:
-		jmp (retvec)
+    jsr print_attribs
+    bra out
 
 error:
-		jsr primm
-		.asciiz "open error"
-		jmp (retvec)
+    jsr primm
+    .asciiz "open error"
+    bra out
 wrerror:
-		jsr hexout
-		jsr krn_close
+    jsr hexout
+    jsr krn_close
 
-		jsr primm
-		.asciiz " write error"
-		jmp (retvec)
+    jsr primm
+    .asciiz " write error"
+out:
+    jmp (retvec)
 
 
 .bss
-filename:	.res 12
+filename:	.res .sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) + 1
+dirent:   .res .sizeof(F32DirEntry)
 op:				.res 1
 atr:			.res 1
-dirent:   .res .sizeof(F32DirEntry)
