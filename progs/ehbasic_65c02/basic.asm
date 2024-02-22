@@ -7782,8 +7782,6 @@ LAB_DIR:
     plx
     pla
     rts
-pattern:
-    .asciiz "*.*"
 
 
 LAB_CD:
@@ -8836,6 +8834,7 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
 exit:		jmp (retvec)
+pattern:    .asciiz "*.*"
 
 .bss
 _fd:                .res 1
