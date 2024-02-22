@@ -78,13 +78,14 @@ appstart __SHELL_START__
 .export __APP_SIZE__=kernel_start-__SHELL_START__ ; adjust __APP_SIZE__ for linker accordingly
 .code
 init:
-        lda #<hello_msg 
+        lda #<hello_msg
         ldx #>hello_msg
         jsr strout
 
 exit_from_prg:
         cld
-        jsr  krn_textui_init
+        jsr krn_close_all   ; make sure all fd's are closed
+        jsr krn_textui_init
 
         ldx #BUF_SIZE
 :       stz tmpbuf,x
@@ -96,10 +97,10 @@ exit_from_prg:
         SetVector buf, paramptr ; set param to empty buffer
         SetVector PATH, pathptr
 mainloop:
-        crlf 
+        crlf
         lda #'['
         jsr char_out
-        
+
         ; output current path
         lda #<cwdbuf
         ldy #>cwdbuf
@@ -138,18 +139,18 @@ inputloop:
         ; check in lookup table
         ldx #0
 :
-        cmp key_code_tbl,x 
+        cmp key_code_tbl,x
         beq @found
         inx
         cpx #key_code_tbl_end - key_code_tbl
         bne :-
         bra @notfound
 @found:
-        txa 
-        asl 
-        tax 
-        jmp (key_addr_tbl,x)        
-        
+        txa
+        asl
+        tax
+        jmp (key_addr_tbl,x)
+
 @notfound:
         ; prevent overflow of input buffer
         cpy #BUF_SIZE
@@ -190,7 +191,7 @@ key_fn1:
         lda #<cmd_help
         ldx #>cmd_help
         bra inject_cmd
-        
+
 key_fn2:
         lda #<cmd_lsdir
         ldx #>cmd_lsdir
@@ -207,21 +208,21 @@ inject_cmd:
         stx paramptr+1
         ldy #0
 :
-        lda (paramptr),y 
+        lda (paramptr),y
         beq parse
-        sta (bufptr),y 
+        sta (bufptr),y
         jsr char_out
         iny
         bne :-
 key_crs_up:
 key_crs_down:
-key_tab:        
+key_tab:
         ; lda #<dirent
         ; ldy #>dirent
         ; ldx #FD_INDEX_CURRENT_DIR
         ; jsr krn_readdir
 
-        ; jsr print_filename        
+        ; jsr print_filename
 
         bra inputloop
 
@@ -533,28 +534,28 @@ cmd_bank:
         bcs @usage
 
         lda dumpend+1
-        tax 
-        lda dumpend 
-        sta ctrl_port,x 
+        tax
+        lda dumpend
+        sta ctrl_port,x
 
         bra @status
 @usage:
         lda #<bank_usage_txt
         ldx #>bank_usage_txt
         jsr strout
-        bra @end 
+        bra @end
 @status:
-        
+
         ldx #0
-@next:        
+@next:
         crlf
 
         txa
         jsr hexout
         lda #':'
         jsr char_out
-        jsr space 
-        lda ctrl_port,x 
+        jsr space
+        lda ctrl_port,x
         jsr hexout
         inx
         cpx #4
@@ -579,8 +580,8 @@ cmd_ms:
 
         lda #':'
         jsr char_out
-        jsr space 
-   
+        jsr space
+
 @skip:
         iny
         lda (paramptr),y
@@ -697,18 +698,18 @@ dump_start:
 
         lda #':'
         jsr char_out
-        jsr space 
+        jsr space
 
         ldy #$00
 @out_hexbyte:
         lda (dumpvec),y
         jsr hexout
-        jsr space 
+        jsr space
         iny
         cpy #dump_line_length
         bne @out_hexbyte
 
-        jsr space 
+        jsr space
 
         ldy #$00
 @out_char:
@@ -734,7 +735,7 @@ dump_start:
         lda dumpvec+1
         cmp dumpend
         beq @end
-        
+
         lda #<press_key_msg
         ldx #>press_key_msg
         jsr strout
@@ -837,7 +838,7 @@ cmd_cls:
         jsr primm
         .byte 27,"[2J ",0
         jmp mainloop
-        
+
 get_filename:
         ldx #0
 @read_filename:
@@ -894,7 +895,7 @@ hex2dumpvec:
 dir_show_entry:
         phx
         lda options
-        and #opts_long 
+        and #opts_long
         beq :+
         jsr dir_show_entry_long
         bra @end
@@ -921,7 +922,7 @@ dir_show_entry_short:
         bra @print
 :
         jsr space
-            
+
 @print:
         jsr print_filename
 
@@ -938,7 +939,7 @@ dir_show_entry_short:
         jsr space
 @pad:
         jsr space
-        rts 
+        rts
 
 dir_show_entry_long:
         pha
@@ -951,10 +952,10 @@ dir_show_entry_long:
         and #opts_cluster
         beq :+
         jsr print_cluster_no
-:   
+:
 
         lda options
-        and #opts_attribs   
+        and #opts_attribs
         beq :+
         jsr space
         jsr print_attribs
@@ -988,7 +989,7 @@ dir_show_entry_long:
 @x:
         jsr print_fat_date
 
-        jsr space 
+        jsr space
 
         lda #opts_crtdate
         and options
@@ -1012,7 +1013,7 @@ setopt:
 setmask:
         and dir_attrib_mask
         sta dir_attrib_mask
-        rts 
+        rts
 
 
 
@@ -1024,7 +1025,7 @@ usage:
         jmp strout
 
 cmd_dir:
-        lda #opts_long 
+        lda #opts_long
         sta options
         bra dir
 cmd_ls:
@@ -1037,19 +1038,19 @@ dir:
         sta dir_attrib_mask
 
         lda #6
-        sta cnt 
-        
+        sta cnt
+
         lda #entries_short
         sta pagecnt
         sta entries_per_page
 
-        
+
         ldy #0
 @parseloop:
         lda (paramptr),y
         bne :+
         jmp @readdir
-: 
+:
         cmp #' '
         beq @set_filenameptr
         cmp #'-'
@@ -1057,17 +1058,17 @@ dir:
         bne @set_filenameptr
 
 @next_opt:
-        iny 
-        bne @parseloop 
+        iny
+        bne @parseloop
         bra @set_filenameptr
 
 @option:
         iny
-        lda (paramptr),y  
-        beq @parseloop    
+        lda (paramptr),y
+        beq @parseloop
         cmp #' '
         beq @next_opt
-        
+
         cmp #'?'
         bne :+
         jsr usage
@@ -1119,9 +1120,9 @@ dir:
         lda #opts_attribs
         jsr setopt
 :
-        bra @option 
+        bra @option
 
-@set_filenameptr: 
+@set_filenameptr:
         iny
         lda (paramptr),y
         beq @readdir
@@ -1129,8 +1130,8 @@ dir:
 
         copypointer paramptr, filenameptr
 
-        tya 
-        clc 
+        tya
+        clc
         adc filenameptr
         sta filenameptr
 
@@ -1138,18 +1139,18 @@ dir:
         lda #<fat_dirname_mask
         ldy #>fat_dirname_mask
         jsr string_fat_mask
-        
+
         lda #<cwdbuf
         ldx #>cwdbuf
         jsr krn_opendir
         bcs @error
 
 
-@read_next:        
+@read_next:
         lda #<dirent
         ldy #>dirent
         jsr krn_readdir
-        rol 
+        rol
         cmp #1
         beq @end
 
@@ -1197,7 +1198,7 @@ dir:
         jsr krn_close
         jmp errmsg
 
-@end:   
+@end:
         jsr krn_close
 @exit:
         jmp mainloop
@@ -1384,25 +1385,25 @@ key_code_tbl:
         .byte KEY_TAB
         .byte KEY_FN1
         .byte KEY_FN2
-        .byte KEY_FN3 
-        .byte KEY_FN4 
-        .byte KEY_FN5 
-        .byte KEY_FN6 
-        .byte KEY_FN7 
-        .byte KEY_FN8 
-        .byte KEY_FN9 
-        .byte KEY_FN10 
+        .byte KEY_FN3
+        .byte KEY_FN4
+        .byte KEY_FN5
+        .byte KEY_FN6
+        .byte KEY_FN7
+        .byte KEY_FN8
+        .byte KEY_FN9
+        .byte KEY_FN10
         .byte KEY_FN11
         .byte KEY_FN12
 key_code_tbl_end:
- 
+
 key_addr_tbl:
-        .word parse 
+        .word parse
         .word backspace
         .word escape
         .word key_crs_up
         .word key_crs_down
-        .word key_tab 
+        .word key_tab
         .word key_fn1
         .word key_fn2
         .word key_fn3
@@ -1414,7 +1415,7 @@ key_addr_tbl:
         .word key_fn9
         .word key_fn10
         .word key_fn11
-        .word key_fn12 
+        .word key_fn12
 
 
 .bss
