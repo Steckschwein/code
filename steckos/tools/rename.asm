@@ -49,7 +49,7 @@ appstart $1000
 
 next:
     ; first we init the buffer with spaces so we just need to fill in the filename and extension
-    ldx #filename_length
+    ldx #filename_length -1
     lda #' '
 @l:
     sta new_filename,x
@@ -90,7 +90,7 @@ rename:
     jsr krn_read_direntry
     bcs error
 
-    ldy #filename_length
+    ldy #filename_length -1
   :
     lda new_filename,y
     sta dirent,y
