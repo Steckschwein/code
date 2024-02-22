@@ -34,16 +34,14 @@ def main():
     parser.add_argument('-f', '--file', help="output file", default="asmdoc.html")
     parser.add_argument('--filespec', help="filespec to search files", default="*.s")
     parser.add_argument('--format', help="output file format, html, md", default="html")
+    parser.add_argument('--debug', action="store_true", help="debug mode", default=False)
+    
 
 
     args = parser.parse_args()
 
     doc_struct = {}
     regex = re.compile(";[\s]?@([a-z]+):?(.*)")
-
-    # module_name = None
-    # proc_name = None
-
     for filename in get_filelist(args.directory, args.filespec):
         with open(filename, "r") as f:
             for (ln, line) in enumerate(f):
@@ -72,12 +70,15 @@ def main():
                         "line": ln+1            
                     }
                     continue
-
+                
+                if args.debug:
+                    print ("[%s] [%s] [%s] [%s]" % (module_name, proc_name, name, value))
                 
                 try:
                     doc_struct[module_name][proc_name][name].append(value)
                 except KeyError:
                     doc_struct[module_name][proc_name][name] = [value]
+                    # print ("%s: %d: %s" % (filename, ln, line)) 
 
     render_template(args.file, args.format, doc_struct)
 
