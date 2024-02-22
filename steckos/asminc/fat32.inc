@@ -129,7 +129,6 @@ PartType_FAT32_LBA    = $0c
   fat_cluster_add     .byte     ; cluster reservation addend
   fat_tmp_0           .byte     ; temp variable
   fat_tmp_1           .byte     ; temp variable
-  fat_vec_matcher     .addr     ; 2 byte jump vector
   fat_filename        .byte 8+3 ; 11 byte fat file name used in open to match given filename
 .endstruct
 
@@ -171,7 +170,7 @@ DIR_Attr_Mask_Volume    = 1<<3;
 DIR_Attr_Mask_Dir       = 1<<4;
 DIR_Attr_Mask_Archive   = 1<<5;
 
-DIR_Attr_Mask_LongFilename   = 1<<0 | 1<<1 | 1<<2 | 1<<3;
+DIR_Attr_Mask_LongFilename   = DIR_Attr_Mask_ReadOnly | DIR_Attr_Mask_Hidden | DIR_Attr_Mask_System | DIR_Attr_Mask_Volume
 
 DIR_Entry_Size               = .sizeof(F32DirEntry)
 DIR_Entry_Deleted            = $e5
@@ -234,14 +233,14 @@ block_data            = BUFFER_0 ; $0400-$5ff
 block_fat             = BUFFER_2 ; $0600-$07ff
 
 ; macros
-
 .macro _is_file_open
-   bit fd_area + F32_fd::status, x ; is open
-   bmi :+
-   lda #EINVAL
+   bit fd_area + F32_fd::status,x ; is open
+   bmi :++
+:  lda #EBADF
    sec
    rts
-:
+:  cpx #FD_INDEX_CURRENT_DIR
+   beq :--
 .endmacro
 
 .macro _is_file_dir
