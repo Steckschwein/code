@@ -174,8 +174,7 @@ fat_open:
 @l_exit:  debug "f open <"
           rts
 
-; in:
-;   A/X - pointer to zero terminated string with the file path
+
 ;   Y - file mode constants - see fcntl.inc (cc65)
 ;     O_RDONLY  = $01
 ;     O_WRONLY  = $02
@@ -184,10 +183,7 @@ fat_open:
 ;     O_TRUNC   = $20
 ;     O_APPEND  = $40
 ;     O_EXCL    = $80
-; out:
-;   X - index into fd_area of the opened file
-;   C=0 on success, C=1 and A=<error code> otherwise
-
+;
 ;@name: "fat_fopen"
 ;@in: A, "low byte of pointer to zero terminated string with the file path"
 ;@in: X, "high byte of pointer to zero terminated string with the file path"
