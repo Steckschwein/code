@@ -1,5 +1,5 @@
 MAKEFILE=Makefile
-all: build
+all: build doc
 
 clean:
 	(cd progs; make clean)
@@ -7,7 +7,7 @@ clean:
 	(cd steckos; make clean)
 	(cd asmunit; make clean)
 	rm -f steckos.img
-	rm -f libsrc.html
+	rm -f libsrc.md
 
 
 build:
