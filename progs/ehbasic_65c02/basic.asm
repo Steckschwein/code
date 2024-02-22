@@ -18,6 +18,8 @@
 
 .autoimport
 
+cwdbuf_size = 25
+.export dirent
 
 __APPSTART__ = $8000
 appstart __APPSTART__
@@ -7713,6 +7715,7 @@ LAB_SCREEN:       ; SCREEN  - set gfx mode
       ASL
       JMP gfx_mode
 
+
 LAB_DIR:
     pha
     phx
@@ -7737,34 +7740,38 @@ LAB_DIR:
     ldy #>_fat_dirname_mask
     jsr string_fat_mask ; build fat dir entry mask from user input
 
-    lda #<string_fat_mask_matcher
-    ldy #>string_fat_mask_matcher
-    ldx #FD_INDEX_CURRENT_DIR
-    jsr krn_find_first
+    lda #<cwdbuf
+    ldy #>cwdbuf
+    ldx #cwdbuf_size
+    jsr krn_getcwd
+
+    lda #<cwdbuf
+    ldx #>cwdbuf
+    ldy #O_RDONLY
+    jsr krn_opendir
     bcs @end
-    bra @l4
+
 @l3:
-    ldx #FD_INDEX_CURRENT_DIR
-    jsr krn_find_next
-    bcs @end
-@l4:
-    lda (dirptr)
-    cmp #$e5
-    beq @l3
+
+    lda #<dirent
+    ldy #>dirent
+    jsr krn_readdir
+    rol
+    cmp #1
+    beq @end
 
     ldy #F32DirEntry::Attr
-    lda (dirptr),y
+    lda dirent,y
 
-    bit #$0a ; Hidden attribute set, skip
+    bit #DIR_Attr_Mask_Hidden | DIR_Attr_Mask_Volume  ; Hidden attribute set, skip
     bne @l3
 
-    ldy #$00
-@outloop:
-    lda (dirptr),y
-    jsr LAB_PRNA
-    iny
-    cpy #11
-    bne @outloop
+    jsr string_fat_mask_matcher
+    bcc @l3
+
+    phx
+    jsr print_filename
+    plx
 
     jsr LAB_CRLF
 
@@ -7775,8 +7782,6 @@ LAB_DIR:
     plx
     pla
     rts
-pattern:
-    .asciiz "*.*"
 
 
 LAB_CD:
@@ -8829,8 +8834,11 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
 exit:		jmp (retvec)
+pattern:    .asciiz "*.*"
 
 .bss
 _fd:                .res 1
 _fat_dirname_mask:  .res 8+3
+cwdbuf: .res cwdbuf_size
+dirent: .res .sizeof(F32DirEntry)
  .END

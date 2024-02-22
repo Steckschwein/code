@@ -70,29 +70,44 @@ fat_get_root_and_pwd:
 @l_rd_dir:    lda #'/'                              ; put the / char to result string
               jsr put_char
               ldx #FD_INDEX_TEMP_FILE               ; if root, exit to inverse the path string
-              ; check whether start cluster is the root dir cluster nr (VolumeID::BPB_RootClus)
-              ;cmp32eq  fd_area + FD_INDEX_TEMP_FILE+F32_fd::StartCluster, volumeID+VolumeID::BPB_RootClus, @l_path_trim
               lda fd_area+F32_fd::StartCluster+3,x  ; check whether start cluster is the root dir cluster nr (0x00000000)
               ora fd_area+F32_fd::StartCluster+2,x
               ora fd_area+F32_fd::StartCluster+1,x
               ora fd_area+F32_fd::StartCluster+0,x
               beq @l_path_trim
-              m_memcpy fd_area + FD_INDEX_TEMP_FILE+F32_fd::StartCluster, volumeID+VolumeID::cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_FILE (see clone above)
+              m_memcpy fd_area+FD_INDEX_TEMP_FILE+F32_fd::StartCluster, __fat_cwd_cluster, 4  ; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_FILE (see clone above)
               lda #<l_dot_dot
               ldx #>l_dot_dot
-              ldy #FD_INDEX_TEMP_FILE               ; call opendir function with "..", on success the fd (FD_INDEX_TEMP_FILE) was updated and points to the parent directory
+              ldy #FD_INDEX_TEMP_FILE               ; call __fat_open_path function with ".."
               jsr __fat_open_path
               bcs @l_exit
-              jsr __fat_free_fd                     ; free fd immediately
-              lda #<cluster_nr_matcher              ; matcher strategy of the cluster number matcher
-              ldy #>cluster_nr_matcher
-              ldx #FD_INDEX_TEMP_FILE
-              jsr __fat_find_first_mask             ; call find first to find the entry with that cluster number we saved in cluster before we did the cd ".."
-              bcs @l_exit
+              jsr __fat_readdir                     ; open path success the fd points to the parent directory
+              bra :+
+@l_find_next: jsr __fat_readdir_next
+:             bcs @l_exit_read
+              ldy #F32DirEntry::FstClusLO+0
+              lda __fat_cwd_cluster+0
+              cmp (dirptr),y
+              bne @l_find_next
+              iny
+              lda __fat_cwd_cluster+1
+              cmp (dirptr),y
+              bne @l_find_next
+              ldy #F32DirEntry::FstClusHI+0
+              lda __fat_cwd_cluster+2
+              cmp (dirptr),y
+              bne @l_find_next
+              iny
+              lda __fat_cwd_cluster+3
+              cmp (dirptr),y
+              bne @l_find_next
+              clc
+@l_exit_read: jsr __fat_free_fd                     ; free fd immediately
+              bcs @l_exit                           ; not found
               jsr fat_name_string                   ; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
               bra @l_rd_dir                         ; go on with bottom up walk until root is reached
-@l_path_trim:
-              jsr path_trim                         ; the dir entry names are captured bottom up along the path and stored in the given buffer (A/Y) starting from the end. just need to trim the whitespaces at the beginning
+
+@l_path_trim: jsr path_trim                         ; the dir entry names are captured bottom up along the path and stored in the given buffer (A/Y) starting from the end. just need to trim the whitespaces at the beginning
               plp
               clc
               rts
@@ -103,35 +118,6 @@ fat_get_root_and_pwd:
 l_dot_dot:
               .asciiz ".."
 
-
-; in:
-;   dirptr - pointer to dir entry (F32DirEntry)
-; out:
-;   C=0 not found, C=1 found
-
-cluster_nr_matcher:
-              ldy #F32DirEntry::Name
-              lda (dirptr),y
-              cmp #DIR_Entry_Deleted
-              beq @l_notfound
-              ldy #F32DirEntry::FstClusLO+0
-              lda volumeID+VolumeID::cluster+0
-              cmp (dirptr),y
-              bne @l_notfound
-              iny
-              lda volumeID+VolumeID::cluster+1
-              cmp (dirptr),y
-              bne @l_notfound
-              ldy #F32DirEntry::FstClusHI+0
-              lda volumeID+VolumeID::cluster+2
-              cmp (dirptr),y
-              bne @l_notfound
-              iny
-              lda volumeID+VolumeID::cluster+3
-              cmp (dirptr),y
-              beq @l_found
-@l_notfound:  clc
-@l_found:     rts
 
 path_trim:
               ldy #0
@@ -177,3 +163,6 @@ put_char:     phy
               sta (__volatile_ptr),y
 @l_exit:      ply
               rts
+
+.bss
+  __fat_cwd_cluster:  .res 4

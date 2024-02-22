@@ -21,169 +21,148 @@
 ; SOFTWARE.
 
 
-.include "common.inc"
-.include "../kernel/kernel.inc"
-.include "../kernel/kernel_jumptable.inc"
+.include "steckos.inc"
 .include "fat32.inc"
-.include "appstart.inc"
+.include "fcntl.inc"
+
 
 .export char_out=krn_chrout
+.export dirent
 
 .autoimport
 
 appstart $1000
 .code
-		ldy #$00
+    ldy #$00
 @loop:
-		lda (paramptr),y
-		cmp #'+'
-		beq param
-		cmp #'-'
-		beq param
+    lda (paramptr),y
+    cmp #'+'
+    beq param
+    cmp #'-'
+    beq param
 
-		iny
-		bne @loop
-end:
+    iny
+    bne @loop
 
-		jmp wuerg
+    bra get_filename
 
 param:
-		sta op
-		iny
+    sta op
+    iny
 
-		lda (paramptr),y
-		and #$DF
-		ldx #$00
-		cmp #'A'
-		bne @l1
-		ldx #DIR_Attr_Mask_Archive
-@l1:	cmp #'H'
-		bne @l2
-		ldx #DIR_Attr_Mask_Hidden
-@l2:	cmp #'R'
-		bne @l3
-		ldx #DIR_Attr_Mask_ReadOnly
-@l3:	cmp #'S'
-		bne @l4
-		ldx #DIR_Attr_Mask_System
+    lda (paramptr),y
+    toupper
+    
+    ldx #$00
+    cmp #'A'
+    bne @l1
+    ldx #DIR_Attr_Mask_Archive
+@l1:	
+    cmp #'H'
+    bne @l2
+    ldx #DIR_Attr_Mask_Hidden
+@l2:	
+    cmp #'R'
+    bne @l3
+    ldx #DIR_Attr_Mask_ReadOnly
+@l3:	
+    cmp #'S'
+    bne @l4
+    ldx #DIR_Attr_Mask_System
 @l4:
 
-		stx atr
-		lda atr
-		bne @l5
-		jsr primm
-		.byte "invalid attribute",$00
-		jmp (retvec)
-@l5:
+    stx atr
 
-		iny
-
-		; everything until <space> in the parameter string is the source file name
-		iny
-wuerg:
-		ldx #$00
+    ; everything until <space> in the parameter string is the source file name
+    iny
+get_filename:
+    ldx #$00
 @loop:
-		lda (paramptr),y
-		beq attrib
-		sta filename,x
-		iny
-		inx
-		stz filename,x
-		bra @loop
+    lda (paramptr),y
+    beq attrib
+    cmp #' '
+    beq @skip
+    sta filename,x
+    inx
+    stz filename,x
+@skip:
+    iny
+    bra @loop
 
 attrib:
-		SetVector filename, filenameptr
-    lda #<fat_dirname_mask
-    ldy #>fat_dirname_mask
-    jsr string_fat_mask ; build fat dir entry mask from user input
+    lda #<filename
+    ldx #>filename
+    ldy #O_WRONLY
+    jsr krn_open
+    bcs error
 
-    lda #<string_fat_mask_matcher
-    ldy #>string_fat_mask_matcher
-		ldx #FD_INDEX_CURRENT_DIR
-		jsr krn_find_first
-		bcc @found
-		printstring "i/o error"
-		jmp (retvec)
+    lda #<dirent
+    ldy #>dirent
+    jsr krn_read_direntry
+    bcs error
 
-@found:
+    phx
 
-		lda atr
-		ldx op
-		cpx #'+'
-		bne @l1
-		jsr set_attrib
-		bra @save
-@l1:	cpx #'-'
-		bne @view
-		jsr unset_attrib
+    lda atr
+    ldx op
+    ldy #F32DirEntry::Attr
+    cpx #'+'
+    bne @l1
+    
+    ora dirent,y
+    
+    bra @save
+@l1:	
+    cpx #'-'
+    bne @view
+
+    eor #$ff 				; make complement mask
+    and dirent,y
 
 @save:
-		; set write pointer accordingly and
-		SetVector block_data, sd_blkptr
+    sta dirent,y
+    plx
 
-		; just write back the block. lba_address still contains the right address
-		jsr krn_sd_write_block
-		bcs wrerror
+    lda #<dirent
+    ldy #>dirent
+    jsr krn_update_direntry
+    bcs wrerror
 
-		jmp (retvec)
+    jsr krn_close
+
+    bra out
 
 @view:
-		ldy #F32DirEntry::Name
+    ldy #F32DirEntry::Name
 @l2:
-		lda (dirptr),y
-		jsr krn_chrout
-		iny
-		cpy #F32DirEntry::Attr
-		bne @l2
+    lda (dirptr),y
+    jsr krn_chrout
+    iny
+    cpy #F32DirEntry::Attr
+    bne @l2
 
-		lda #':'
-		jsr krn_chrout
+    lda #':'
+    jsr krn_chrout
 
-		jsr print_attribs
-
-@out:
-		jmp (retvec)
+    jsr print_attribs
+    bra out
 
 error:
-		jsr primm
-		.asciiz "open error"
-		jmp (retvec)
+    jsr primm
+    .asciiz "open error"
+    bra out
 wrerror:
-		jsr primm
-		.asciiz "write error"
-		jmp (retvec)
+    jsr hexout
+    jsr krn_close
 
+    jsr primm
+    .asciiz " write error"
+out:
+    jmp (retvec)
 
-; set attribute bit
-; in:
-;   A - attribute bit to set
-set_attrib:
-		ldy #F32DirEntry::Attr
-		ora (dirptr),y
-		sta (dirptr),y
-		rts
-
-; clear attribute bit
-; in:
-;   A - attribute bit to unset
-unset_attrib:
-		eor #$ff 				; make complement mask
-		ldy #F32DirEntry::Attr
-		and (dirptr),y
-		sta (dirptr),y
-		rts
-
-attr_tbl:
-		.byte DIR_Attr_Mask_ReadOnly, DIR_Attr_Mask_Hidden,DIR_Attr_Mask_System,DIR_Attr_Mask_Archive
-attr_lbl:
-		.byte 'R','H','S','A'
-
-.data
-filename:
-	  	.res 11
-  		.byte $00
-op:		.byte $00
-atr:	.byte $00
 
 .bss
-fat_dirname_mask: .res 8+3
+filename:	.res .sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) + 1
+dirent:   .res .sizeof(F32DirEntry)
+op:				.res 1
+atr:			.res 1

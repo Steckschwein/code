@@ -93,11 +93,11 @@ _debugdirentry:
 
 _debugdumpptr:
     jsr _debugout_enter
-    lda #$4b
+    lda #$4f
     bra _debugout0
 _debugdump:
     jsr _debugout_enter
-    lda #11
+    lda #15
     bra _debugout0
 _debugout32:
     jsr _debugout_enter

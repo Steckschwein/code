@@ -43,10 +43,6 @@
 .define _MODE_FAIL 1<<1
 .define _MODE_TESTNAME 1<<2
 
-
-_tst_ptr=$0
-_tst_inp_ptr=$2
-
 asmunit_addr_instrument = $0202
 
 .macro cmp16_ne address, _16Bit, _label
@@ -70,13 +66,18 @@ asmunit_addr_instrument = $0202
 :
 .endmacro
 
+.macro setString address, string
+  setMemory address, .strlen(string)
+  .byte string
+.endmacro
+
 .macro setMemory address, length
   .local @src
   .assert length <= $80, error, "length must be 0..$80!"
-  ldx #length-1
-: lda @src,x
-  sta address,x
-  dex
+  ldy #length-1
+: lda @src,y
+  sta address,y
+  dey
   bpl :-
   bra @src+length
 @src:
@@ -206,8 +207,6 @@ asmunit_addr_instrument = $0202
     .import asmunit_l_flag_d1
      asmunit_assertFlag asmunit_l_flag_d1, _FLAG_D0
   .endif
-;    bra :++
-;:    _pass
 :
 .endmacro
 

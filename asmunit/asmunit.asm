@@ -43,6 +43,10 @@
 .export asmunit_l_flag_z0
 .export asmunit_l_flag_z1
 
+.zeropage
+  _tst_ptr: .res 2
+  _tst_inp_ptr: .res 2
+
 .code
 asmunit_char_out_buffer:  .res _EXPECT_MAX_LENGTH,0
 asmunit_char_out_ix:      .res 1,0
@@ -154,7 +158,7 @@ l_return:
 
       sed
       clc
-      lda tst_cnt             ; count in deciaml
+      lda tst_cnt             ; count in decimal
       adc #1
       sta tst_cnt
 
@@ -210,10 +214,8 @@ _assert_fail_arg3:
     brk                    ; fail immediately, we will end up in monitor
 
 _assert_print_fail_prefix:
-    lda #$0a
-    jsr asmunit_chrout
-    lda #'('
-    jsr asmunit_chrout
+    ldy #<(_l_msg_fail_prefix_s1-_l_messages)  ; "\n("
+    jsr _print
     lda tst_cnt
     jsr _hexout
     ldy #<(_l_msg_fail_prefix-_l_messages)  ; ouput ") FAIL "
@@ -308,8 +310,9 @@ asmunit_chrout:
     rts
 
 _l_messages:
-_l_msg_pass:       .byte _l_msg_fail_prefix -_l_msg_pass-1, $0a,"PASS"
-_l_msg_fail_prefix:  .byte _l_msg_fail_suffix - _l_msg_fail_prefix-1, ") FAIL "
+_l_msg_pass:          .byte _l_msg_fail_prefix -_l_msg_pass-1, $0a,"PASS"
+_l_msg_fail_prefix_s1:.byte _l_msg_fail_prefix-_l_msg_fail_prefix_s1, $0a,"("
+_l_msg_fail_prefix:   .byte _l_msg_fail_suffix - _l_msg_fail_prefix-1, ") FAIL "
 _l_msg_fail_suffix:   .byte _l_msg_fail_exp - _l_msg_fail_suffix-1, "- "
 _l_msg_fail_exp:    .byte asmunit_l_flag_c0 - _l_msg_fail_exp-1, " found, but expected "
 asmunit_l_flag_c0:  .byte _FLAG_C0
