@@ -5,10 +5,12 @@
  */
 extern void __fastcall__ _delay_ms(unsigned int);
 
+// #define sleep(sec) _delay_ms(sec * 1000)
 
-extern long __fastcall__ random(void);
+// extern long __fastcall__ random(void);
 
+#define random(i) (rand() % i)
 
-extern short __fastcall__ sqrts(short);
+extern void __fastcall__ sound(unsigned int);
 
-extern int __fastcall__ sqrti(int);
+extern void __fastcall__ nosound();

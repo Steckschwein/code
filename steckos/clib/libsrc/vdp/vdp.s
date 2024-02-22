@@ -22,12 +22,13 @@
 
 .include "kernel/kernel_jumptable.inc"
 .include "asminc/vdp.inc"
+.include "asminc/gfx.inc"
+.include "asminc/zeropage.inc"
+
 .include "asminc/debug.inc"
 
-.importzp ptr1, tmp1, tmp2
-
 .autoimport
-.export char_out=_cputc
+
 ;----------------------------------------------------------------------------
 .code
 
@@ -59,6 +60,13 @@ _gfx_mode_table:
     .word vdp_mode7_on ; 7
 gfx_notimplemented:
     rts
+
+; void __fastcall__ vdp_putpixel (unsigned int x, unsigned char y);
+.export _vdp_putpixel
+.proc _vdp_putpixel
+    jsr pusha                     ; push y
+    lda _vdp_line_t+line_t::color ; load color
+.endproc
 
 ; void __fastcall__ vdp_plot (unsigned int x, unsigned char y, unsigned char color);
 .export _vdp_plot
@@ -107,6 +115,55 @@ GFX_7_Plot:
     pla
     jmp vdp_mode7_set_pixel
 
+
+; int __fastcall__ vdp_getcolor();
+.export _vdp_getcolor
+.proc _vdp_getcolor
+        lda _vdp_line_t+line_t::color
+        ldx #0
+        rts
+.endproc
+
+; void __fastcall__ vdp_textxy (unsigned int x, unsigned char y, char *s);
+.export _vdp_textxy
+.proc _vdp_textxy
+        sta __volatile_ptr
+        stx __volatile_ptr+1
+        lda slot2
+        pha
+        lda #$80
+        sta slot2 ; char rom
+        ldy #0
+        lda (__volatile_ptr),y
+        beq :+
+:       pla
+        sta slot2
+        rts
+.endproc
+
+; void __fastcall__ vdp_line(int x1, char y1, int x2, char y2);
+.export _vdp_line
+.proc _vdp_line
+        sta _vdp_line_t+line_t::y2
+        jsr popax
+        sta _vdp_line_t+line_t::x2
+        stx _vdp_line_t+line_t::x2+1
+        jsr popa
+        sta _vdp_line_t+line_t::y1
+        jsr popax
+        sta _vdp_line_t+line_t::x1
+        stx _vdp_line_t+line_t::x1+1
+        lda #<_vdp_line_t
+        ldy #>_vdp_line_t
+        jmp gfx_line
+.endproc
+
+; void __fastcall__ vdp_setcolor (unsigned char color);
+.export _vdp_setcolor
+.proc _vdp_setcolor
+    sta _vdp_line_t+line_t::color
+    rts
+.endproc
 
 ; void __fastcall__ vdp_blank (unsigned char color);
 .export _vdp_blank
@@ -166,6 +223,6 @@ gfx_blank_table:
 
 .bss
   _vdp_mode:      .res 1
-  _vdp_px_color:  .res 1
   _vdp_px_x:      .res 1
   _vdp_px_y:      .res 1
+  _vdp_line_t:    .tag line_t
