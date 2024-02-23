@@ -33,16 +33,23 @@ int main(int argc, char* argv){
 
   vdp_screen(7);
   vdp_blank(0);
-
+/*
   for(x=0;x<256;x++){
     for(y=0;y<212;y++){
       vdp_plot(x,y,x);
+
       vdp_setcolor(x);
       vdp_putpixel(255-x,y);
     }
   }
+*/
 
-  while (!kbhit());
+    for(x=0;x<=15;x++){
+      vdp_setcolor(x<<4);
+      vdp_textxy(0x10, (x<<3), "Hallo Steckschwein!");
+    }
+  while (!kbhit()){
+  }
 
   return EXIT_SUCCESS;
 }

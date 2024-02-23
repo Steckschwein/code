@@ -1,3 +1,5 @@
+#ifndef _STECKSCHWEIN_H
+#define _STECKSCHWEIN_H
 
 
 /**
@@ -9,8 +11,14 @@ extern void __fastcall__ _delay_ms(unsigned int);
 
 // extern long __fastcall__ random(void);
 
-#define random(i) (rand() % i)
+extern void __fastcall__ _randomize(void);
 
 extern void __fastcall__ sound(unsigned int);
 
 extern void __fastcall__ nosound();
+
+#define randomize(void)
+
+#define random(i) (rand() % i)
+
+#endif

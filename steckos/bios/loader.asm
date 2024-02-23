@@ -48,9 +48,9 @@ appstart $1000
 
       ; enable RAM to load bios into
       lda #$02
-      sta slot2
+      sta slot2_ctrl
       lda #$03
-      sta slot3
+      sta slot3_ctrl
 
       lda #<bios_start
       sta p_tgt

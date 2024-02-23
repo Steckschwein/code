@@ -29,6 +29,9 @@
 
 .autoimport
 
+.importzp __volatile_ptr
+.importzp __volatile_tmp
+
 ;----------------------------------------------------------------------------
 .code
 
@@ -115,6 +118,33 @@ GFX_7_Plot:
     pla
     jmp vdp_mode7_set_pixel
 
+; void __fastcall__ vdp_rectangle( int left, int top, int right, int bottom );
+.export _vdp_rectangle
+.proc _vdp_rectangle
+        stp
+        rts
+.endproc
+
+; void __fastcall__ vdp_fill( int x, int y, int border );
+.export _vdp_fill
+.proc _vdp_fill
+        rts
+.endproc
+
+; int __fastcall__  vdp_maxx();
+.export _vdp_maxx
+.proc _vdp_maxx
+        lda #$ff  ; TODO
+        ldx #0
+        rts
+.endproc
+
+; char __fastcall__ vdp_maxy();
+.export _vdp_maxy
+.proc _vdp_maxy
+        lda #212  ; TODO
+        rts
+.endproc
 
 ; int __fastcall__ vdp_getcolor();
 .export _vdp_getcolor
@@ -127,18 +157,78 @@ GFX_7_Plot:
 ; void __fastcall__ vdp_textxy (unsigned int x, unsigned char y, char *s);
 .export _vdp_textxy
 .proc _vdp_textxy
+        php
+        sei
         sta __volatile_ptr
         stx __volatile_ptr+1
-        lda slot2
+        jsr popa
+        sta _vdp_px_y
+        jsr popax
+        sta _vdp_px_x
+
+        lda slot3_ctrl
         pha
         lda #$80
-        sta slot2 ; char rom
+        sta slot3_ctrl ; char rom
         ldy #0
-        lda (__volatile_ptr),y
-        beq :+
-:       pla
-        sta slot2
+
+@loop:  lda (__volatile_ptr),y
+        beq @done
+        stz vdp_ptr+1
+        asl
+        rol vdp_ptr+1
+        asl
+        rol vdp_ptr+1
+        asl
+        sta vdp_ptr
+        lda vdp_ptr+1
+        rol
+        ora #>slot3
+        sta vdp_ptr+1
+
+        phy
+
+        ldy _vdp_px_y
+
+@row:   lda _vdp_px_x
+        sta _vdp_line_t+line_t::x1
+        lda (vdp_ptr)
+        sta vdp_tmp
+
+        ldx #8
+@col:   rol vdp_tmp
+        bcc @col_next
+        phx
+        ldx _vdp_line_t+line_t::x1
+        lda _vdp_line_t+line_t::color
+        ;jsr @plot ; TODO mode independent
+        jsr vdp_mode7_set_pixel
+        plx
+@col_next:
+        inc _vdp_line_t+line_t::x1
+        dex
+        bne @col
+
+        iny ; next row, also px_y
+        inc vdp_ptr
+        lda vdp_ptr
+        and #$07
+        bne @row
+
+        lda _vdp_line_t+line_t::x1
+        sta _vdp_px_x ; new px_x
+
+        ply
+        iny
+        bne @loop
+
+@done:  pla
+        sta slot3_ctrl
+
+        plp
         rts
+
+;@plot:  jmp (gfx_plot_table,x)
 .endproc
 
 ; void __fastcall__ vdp_line(int x1, char y1, int x2, char y2);
