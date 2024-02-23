@@ -1,13 +1,31 @@
 .autoimport
 .segment "JUMPTABLE"    ; "kernel" jumptable
+;@module: jumptable
 
 ; basic kernel stuff
+;@name: krn_getkey
+;@out: A, "fetched key"
+;@out:  C, "1 - key was fetched, 0 - nothing fetched"
+;@desc: "get byte from keyboard buffer"
 .export krn_getkey
 krn_getkey:             jmp getkey
+
+;@name: krn_chrout
+;@in: A, "character to output"
+;@desc: "output character"
 .export krn_chrout
 krn_chrout:             jmp char_out
+
+;@name: krn_upload
+;@desc: "jump to kernel XMODEM upload"
 .export krn_upload
 krn_upload:             jmp do_upload
+;@name: krn_execv
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@out: A error code on error
+;out:  C=1 on error 
+;@desc: "load PRG file at path and execute it"
 .export krn_execv
 krn_execv:              jmp execv
 
@@ -67,17 +85,39 @@ krn_sd_write_block:     jmp sd_write_block
 krn_sd_read_block:      jmp sd_read_block
 
 ; spi stuff
+;@name: krn_spi_select_device
+;@in; A, "spi device, one of devices see spi.inc"
+;@out: Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
+;@desc: select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
+
 .export krn_spi_select_device
 krn_spi_select_device:  jmp spi_select_device
+;@name: "krn_spi_deselect"
+;@desc: "deselect all SPI devices"
 .export krn_spi_deselect
 krn_spi_deselect:       jmp spi_deselect
+;@name: "spi_rw_byte"
+;@in: A, "byte to transmit"
+;@out: A, "received byte"
+;@clobbers: A,X,Y
+;@desc: "transmit byte via SPI"
 .export krn_spi_rw_byte
 krn_spi_rw_byte:        jmp spi_rw_byte
+;@name: "spi_r_byte"
+;@out: A, "received byte"
+;@clobbers: A,X
+;@desc: "read byte via SPI"
 .export krn_spi_r_byte
 krn_spi_r_byte:         jmp spi_r_byte
 
 ; serial stuff
+;@name: "uart_tx"
+;@in: A, "byte to send"
+;@desc: "send byte via serial interface"
 .export krn_uart_tx
 krn_uart_tx:            jmp uart_tx
+;@name: "uart_rx"
+;@out: A, "received byte"
+;@desc: "receive byte via serial interface"
 .export krn_uart_rx
 krn_uart_rx:            jmp uart_rx

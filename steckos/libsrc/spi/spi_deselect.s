@@ -29,7 +29,9 @@
 
 .code
 .export spi_deselect
-
+;@module: spi
+;@name: "spi_deselect"
+;@desc: "deselect all SPI devices"
 spi_deselect:
 		pha
 		lda #spi_device_deselect
