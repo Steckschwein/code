@@ -5,7 +5,7 @@
 .include "gfx.inc"
 
 .import gfx_line
-.importzp __volatile_tmp
+.importzp vdp_tmp
 
 debug_enabled=1
 .code
@@ -20,7 +20,7 @@ debug_enabled=1
       jsr gfx_line
       ;assertCycles 376
 
-      assertMemory __volatile_tmp, 1
+      assertMemory vdp_tmp, 1
          .byte linectrl
 
       assertMemory input, 8
