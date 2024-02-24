@@ -44,8 +44,8 @@
 
 .code
 
-;@desc: read the file denoted by given file descriptor (X) until EOF and store data at given address (A/Y)
 ;@name: fat_fread_vollgas
+;@desc: read the file denoted by given file descriptor (X) until EOF and store data at given address (A/Y)
 ;@in: X - offset into fd_area
 ;@in: A/Y - pointer to target address
 ;@out: C=0 on success, C=1 on error and A="error code" or C=1 and A=0 (EOK) if EOF is reached
