@@ -86,8 +86,8 @@ fat_chdir:
               rts
 
 
-;@desc: readdir expects a pointer in A/Y to store the next F32DirEntry structure representing the next FAT32 directory entry in the directory stream pointed of directory X.
 ;@name: fat_readdir
+;@desc: readdir expects a pointer in A/Y to store the next F32DirEntry structure representing the next FAT32 directory entry in the directory stream pointed of directory X.
 ;@in: X - file descriptor to fd_area of the directory
 ;@in: A/Y - pointer to target buffer which must be .sizeof(F32DirEntry)
 ;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise. C=1/A=EOK if end of directory is reached
@@ -148,8 +148,8 @@ __fat_dir_copy_dirent:
               bpl :-
               rts
 
-;@desc: readdir expects a pointer in A/Y to store the F32DirEntry structure representing the requested FAT32 directory entry for the given fd (X).
 ;@name: fat_read_direntry
+;@desc: readdir expects a pointer in A/Y to store the F32DirEntry structure representing the requested FAT32 directory entry for the given fd (X).
 ;@in: X - file descriptor to fd_area of the file
 ;@in: A/Y - pointer to target buffer which must be .sizeof(F32DirEntry)
 ;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise. C=1/A=EOK if end of directory is reached

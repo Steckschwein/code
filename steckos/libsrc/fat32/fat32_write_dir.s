@@ -241,8 +241,8 @@ __fat_is_dot_dir:
     rts
 
 
-;@desc: update direntry given as pointer (A/Y) to FAT32 directory entry structure for file fd (X).
 ;@name: fat_update_direntry
+;@desc: update direntry given as pointer (A/Y) to FAT32 directory entry structure for file fd (X).
 ;@in: X - file descriptor to fd_area of the file
 ;@in: A/Y - pointer to direntry buffer with updated direntry data of type F32DirEntry
 ;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise. C=1/A=EOK if end of directory is reached
