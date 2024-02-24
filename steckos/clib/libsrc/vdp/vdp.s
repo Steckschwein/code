@@ -118,11 +118,11 @@ GFX_7_Plot:
     pla
     jmp vdp_mode7_set_pixel
 
-; void __fastcall__ vdp_rectangle( int left, int top, int right, int bottom );
+; void __fastcall__ vdp_rectangle( int left, char top, int right, char bottom );
 .export _vdp_rectangle
 .proc _vdp_rectangle
-        stp
-        rts
+        jsr _vdp_fill_line_t
+        jmp gfx_rectangle
 .endproc
 
 ; void __fastcall__ vdp_fill( int x, int y, int border );
@@ -234,6 +234,11 @@ GFX_7_Plot:
 ; void __fastcall__ vdp_line(int x1, char y1, int x2, char y2);
 .export _vdp_line
 .proc _vdp_line
+        jsr _vdp_fill_line_t
+        jmp gfx_line
+.endproc
+
+_vdp_fill_line_t:
         sta _vdp_line_t+line_t::y2
         jsr popax
         sta _vdp_line_t+line_t::x2
@@ -245,8 +250,7 @@ GFX_7_Plot:
         stx _vdp_line_t+line_t::x1+1
         lda #<_vdp_line_t
         ldy #>_vdp_line_t
-        jmp gfx_line
-.endproc
+        rts
 
 ; void __fastcall__ vdp_setcolor (unsigned char color);
 .export _vdp_setcolor
@@ -315,4 +319,5 @@ gfx_blank_table:
   _vdp_mode:      .res 1
   _vdp_px_x:      .res 1
   _vdp_px_y:      .res 1
+  _vdp_rect_t:
   _vdp_line_t:    .tag line_t

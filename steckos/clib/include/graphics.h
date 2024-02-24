@@ -19,14 +19,17 @@ static const enum colors { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTG
 // of these keys are pressed, getch will return a zero followed by one
 // of these values. This is the same way that it works in conio for
 // dos applications.
+#define KEY_ESCAPE      27
+#define KEY_SPACE       0x20
+
 #define KEY_HOME        71
-#define KEY_UP          72
+#define KEY_UP          0x1e
 #define KEY_PGUP        73
-#define KEY_LEFT        75
+#define KEY_LEFT        0x11
 #define KEY_CENTER      76
-#define KEY_RIGHT       77
+#define KEY_RIGHT       0x10
 #define KEY_END         79
-#define KEY_DOWN        80
+#define KEY_DOWN        0x1d
 #define KEY_PGDN        81
 #define KEY_INSERT      82
 #define KEY_DELETE      83
@@ -40,18 +43,21 @@ static const enum colors { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTG
 #define KEY_F8          66
 #define KEY_F9          67
 
-#define getch() kbhit()
+#define getch() ( \
+    asm("@l_%s:", __LINE__), \
+    __AX__ = kbhit(), \
+    asm("cmp #0"), \
+//    asm("beq @l_%s", __LINE__), \
+    __AX__)
 
 #define getmaxx() vdp_maxx()
 #define getmaxy() vdp_maxy()
 
 #define putpixel(x, y, c) vdp_plot(x, y, (c & MAXCOLORS))
 
-
 #define outtextxy(x, y, s) vdp_textxy(x, y, s)
 
-
-#define setcolor(color) vdp_setcolor(color<<2)
+#define setcolor(color) vdp_setcolor(color<<4)
 #define getcolor() vdp_getcolor()
 
 #define settextstyle(font, direction, charsize)
@@ -60,9 +66,9 @@ static const enum colors { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTG
 #define rectangle( left, top, right, bottom ) vdp_rectangle(left, top, right, bottom)
 #define floodfill( x, y, border ) vdp_fill(x, y, border)
 
-#define cleardevice() vdp_blank(0)
+#define cleardevice() vdp_blank(0x6d)
 
-#define line(x1,y1, x2,y2) vdp_line(x1,y1, x2,y2, getcolor())
+#define line(x1,y1, x2,y2) vdp_line(x1,y1, x2,y2)
 
 #define delay(ms) _delay_ms(ms)
 
