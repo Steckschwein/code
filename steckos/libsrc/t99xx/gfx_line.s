@@ -122,7 +122,7 @@ gfx_line:
 
       ; meta
       lda vdp_tmp
-      vdp_wait_s 3
+      vdp_wait_s
       sta a_vregi             ; vdp r#45
 
       iny ; ldy #line_t::operator

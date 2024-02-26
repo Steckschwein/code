@@ -18,6 +18,7 @@
 	.import		_graphics_initgraph
 	.import		_graphics_textxy
 	.import		_graphics_setcolor
+	.import		_graphics_setfillstyle
 	.import		_graphics_bar
 	.export		_main
 
@@ -65,7 +66,7 @@ L0025:
 	jsr     _getch
 	ldx     #$00
 	txa
-L0050:	ldy     #$02
+L0051:	ldy     #$02
 	jsr     staxysp
 	cmp     #$10
 	txa
@@ -90,13 +91,13 @@ L001C:	bpl     L0016
 	ldy     #$03
 	jsr     ldaxysp
 	ina
-	bne     L0050
+	bne     L0051
 	inx
-	bra     L0050
+	bra     L0051
 L0016:	jsr     _getch
 	ldx     #$00
 	txa
-L0051:	ldy     #$02
+L0052:	ldy     #$02
 	jsr     staxysp
 	cmp     #$10
 	txa
@@ -104,9 +105,10 @@ L0051:	ldy     #$02
 	bvc     L002F
 	eor     #$80
 L002F:	bpl     L0029
-	ldy     #$02
+	jsr     push0
+	ldy     #$04
 	lda     (sp),y
-	jsr     _graphics_setcolor
+	jsr     _graphics_setfillstyle
 	lda     #$0A
 	jsr     pusha0
 	ldy     #$05
@@ -126,20 +128,20 @@ L002F:	bpl     L0029
 	ldy     #$03
 	jsr     ldaxysp
 	ina
-	bne     L0051
+	bne     L0052
 	inx
-	bra     L0051
+	bra     L0052
 L0029:	jsr     _getch
 	ldx     #$00
 	txa
-L0052:	ldy     #$02
+L0053:	ldy     #$02
 	jsr     staxysp
 	cmp     #$FF
 	txa
 	sbc     #$00
-	bvc     L0041
+	bvc     L0042
 	eor     #$80
-L0041:	bpl     L003B
+L0042:	bpl     L003C
 	ldy     #$02
 	lda     (sp),y
 	jsr     _graphics_setcolor
@@ -163,10 +165,10 @@ L0041:	bpl     L003B
 	ldy     #$03
 	jsr     ldaxysp
 	ina
-	bne     L0052
+	bne     L0053
 	inx
-	bra     L0052
-L003B:	jsr     _getch
+	bra     L0053
+L003C:	jsr     _getch
 	ldx     #$00
 	txa
 	jmp     incsp8

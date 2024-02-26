@@ -56,7 +56,7 @@ int main(int argc, char* argv){
   getch();
 
   for(x=0;x<=15;x++){
-    setcolor(x);
+    setfillstyle(0,x);
     bar(10, 10+x*10, 100, 20+x*10);
   }
   getch();
