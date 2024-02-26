@@ -44,14 +44,13 @@ gfx_line:
       sta vdp_ptr
       sty vdp_ptr+1
 
+      vdp_sreg 36, v_reg17    ; setup index register, start at r#36
+
       lda #v_reg45_dix | v_reg45_diy | v_reg45_maj    ; initial x transfer left, y transfer up and y as long side
       sta vdp_tmp
 
-      vdp_sreg 36, v_reg17    ; setup index register, start at r#36
-
       ; dx
       lda (vdp_ptr)    ; line_t::x1+0
-      vdp_wait_s 5
       sta a_vregi             ; vdp #r36
       ldy #line_t::x2+0
       sec

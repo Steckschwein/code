@@ -23,7 +23,7 @@
 
 .segment	"RODATA"
 
-L0016:
+L0025:
 	.byte	$48,$61,$6C,$6C,$6F,$20,$53,$74,$65,$63,$6B,$73,$63,$68,$77,$65
 	.byte	$69,$6E,$21,$00
 
@@ -40,18 +40,39 @@ L0016:
 	jsr     decsp4
 	lda     #$07
 	jsr     _graphics_initgraph
-	lda     #$6D
+	lda     #$00
 	jsr     _vdp_blank
+	lda     #$0F
+	jsr     _graphics_setcolor
+	lda     #$01
+	jsr     pusha0
+	ina
+	jsr     pusha
+	dea
+	jsr     pusha0
+	lda     #$64
+	jsr     _vdp_rectangle
+	lda     #$0E
+	jsr     _graphics_setcolor
+	lda     #$01
+	jsr     pusha0
+	ina
+	jsr     pusha
+	lda     #$64
+	jsr     pusha0
+	lda     #$02
+	jsr     _vdp_rectangle
+	jsr     _getch
 	ldx     #$00
 	txa
-L0041:	ldy     #$02
+L0050:	ldy     #$02
 	jsr     staxysp
 	cmp     #$10
 	txa
 	sbc     #$00
-	bvc     L000D
+	bvc     L001C
 	eor     #$80
-L000D:	bpl     L0007
+L001C:	bpl     L0016
 	ldy     #$02
 	lda     (sp),y
 	jsr     _graphics_setcolor
@@ -63,26 +84,26 @@ L000D:	bpl     L0007
 	asl     a
 	asl     a
 	jsr     pusha
-	lda     #<(L0016)
-	ldx     #>(L0016)
+	lda     #<(L0025)
+	ldx     #>(L0025)
 	jsr     _graphics_textxy
 	ldy     #$03
 	jsr     ldaxysp
 	ina
-	bne     L0041
+	bne     L0050
 	inx
-	bra     L0041
-L0007:	jsr     _getch
+	bra     L0050
+L0016:	jsr     _getch
 	ldx     #$00
 	txa
-L0042:	ldy     #$02
+L0051:	ldy     #$02
 	jsr     staxysp
 	cmp     #$10
 	txa
 	sbc     #$00
-	bvc     L0020
+	bvc     L002F
 	eor     #$80
-L0020:	bpl     L001A
+L002F:	bpl     L0029
 	ldy     #$02
 	lda     (sp),y
 	jsr     _graphics_setcolor
@@ -105,20 +126,20 @@ L0020:	bpl     L001A
 	ldy     #$03
 	jsr     ldaxysp
 	ina
-	bne     L0042
+	bne     L0051
 	inx
-	bra     L0042
-L001A:	jsr     _getch
+	bra     L0051
+L0029:	jsr     _getch
 	ldx     #$00
 	txa
-L0043:	ldy     #$02
+L0052:	ldy     #$02
 	jsr     staxysp
 	cmp     #$FF
 	txa
 	sbc     #$00
-	bvc     L0032
+	bvc     L0041
 	eor     #$80
-L0032:	bpl     L002C
+L0041:	bpl     L003B
 	ldy     #$02
 	lda     (sp),y
 	jsr     _graphics_setcolor
@@ -142,10 +163,10 @@ L0032:	bpl     L002C
 	ldy     #$03
 	jsr     ldaxysp
 	ina
-	bne     L0043
+	bne     L0052
 	inx
-	bra     L0043
-L002C:	jsr     _getch
+	bra     L0052
+L003B:	jsr     _getch
 	ldx     #$00
 	txa
 	jmp     incsp8

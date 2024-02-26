@@ -43,6 +43,12 @@ int main(int argc, char* argv){
     }
   }
 */
+  setcolor(WHITE);
+  rectangle(1,2,1,100);
+  setcolor(YELLOW);
+  rectangle(1,2,100,2);
+  getch();
+
   for(x=0;x<=15;x++){
     setcolor(x);
     outtextxy(0x10, (x<<3), "Hallo Steckschwein!");
@@ -55,12 +61,10 @@ int main(int argc, char* argv){
   }
   getch();
 
-
   for(x=0;x<255;x++){
     setcolor(x);
     rectangle(x,x+16,x+32,x+32);
   }
-
   getch();
 
   return EXIT_SUCCESS;

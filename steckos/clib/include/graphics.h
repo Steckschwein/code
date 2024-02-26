@@ -12,6 +12,12 @@ static const enum colors { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTG
               LIGHTBLUE, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE
 };
 
+// The standard fill styles
+enum fill_styles { EMPTY_FILL, SOLID_FILL, LINE_FILL, LTSLASH_FILL, SLASH_FILL,
+                   BKSLASH_FILL, LTBKSLASH_FILL, HATCH_FILL, XHATCH_FILL, INTERLEAVE_FILL,
+                   WIDE_DOT_FILL, CLOSE_DOT_FILL, USER_FILL };
+
+
 // ---------------------------------------------------------------------------
 //                          Definitions
 // ---------------------------------------------------------------------------
@@ -67,7 +73,9 @@ void __fastcall__ graphics_setcolor (unsigned char color);
 // TODO not implemented yet
 #define settextstyle(font, direction, charsize)
 #define settextjustify(horizontal, vertical)
-#define setfillstyle(pattern, color)
+
+void __fastcall__ graphics_setfillstyle ( int pattern, unsigned char color);
+#define setfillstyle(pattern, color) graphics_setfillstyle(pattern, color)
 
 #define rectangle( left, top, right, bottom ) vdp_rectangle(left, top, right, bottom)
 

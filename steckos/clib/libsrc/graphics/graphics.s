@@ -90,7 +90,7 @@
         sta _graphics_ix
         ply
 @row:   ldx _graphics_ix
-@col:   lda _graphics_color
+@col:   lda _graphics_color_fill
         jsr vdp_mode7_set_pixel
         inx
         cpx _graphics_x
@@ -174,33 +174,46 @@
 ;@plot:  jmp (gfx_plot_table,x)
 .endproc
 
+; void __fastcall__ graphics_setfillstyle ( int pattern, unsigned char color);
+.export _graphics_setfillstyle
+.proc _graphics_setfillstyle
+        jsr graphics_colors
+        sta _graphics_color_fill
+        jmp popax
+.endproc
+
 ; void __fastcall__ graphics_setcolor (unsigned char color);
 .export _graphics_setcolor
 .proc _graphics_setcolor
-    and #$0f
-    tay
-    lda @colors,y
-    sta _graphics_color
-    jmp _vdp_setcolor
-@colors:
-; { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTGRAY, DARKGRAY, LIGHTBLUE, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE }
-    vdp_rgb 0,0,0
-    vdp_rgb 0,0,255
-    vdp_rgb 0,255,0
-    vdp_rgb 0,255,255 ; CYAN
-    vdp_rgb 255,0,0
-    vdp_rgb 255,0,255 ; MAGENTA
-    vdp_rgb 128,64,0
-    vdp_rgb 200,200,200
-    vdp_rgb 128,128,128 ; DARKGRAY
-    vdp_rgb 128,128,255 ; LIGHTBLUE
-    vdp_rgb 128,255,128 ; LIGHTGREEN
-    vdp_rgb 128,255,255
-    vdp_rgb 255,128,128 ; LIGHTRED
-    vdp_rgb 255,128,255 ; LIGHTMAGENTA
-    vdp_rgb 255,255,0
-    vdp_rgb 255,255,255 ; WHITE
+        jsr graphics_colors
+        sta _graphics_color
+        jmp _vdp_setcolor
 .endproc
 
+graphics_colors:
+        and #$0f
+        tay
+        lda @colors,y
+        rts
+@colors:
+    ; { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTGRAY, DARKGRAY, LIGHTBLUE, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE }
+        vdp_rgb 0,0,0
+        vdp_rgb 0,0,255
+        vdp_rgb 0,255,0
+        vdp_rgb 0,255,255 ; CYAN
+        vdp_rgb 255,0,0
+        vdp_rgb 255,0,255 ; MAGENTA
+        vdp_rgb 128,64,0
+        vdp_rgb 200,200,200
+        vdp_rgb 128,128,128 ; DARKGRAY
+        vdp_rgb 128,128,255 ; LIGHTBLUE
+        vdp_rgb 128,255,128 ; LIGHTGREEN
+        vdp_rgb 128,255,255
+        vdp_rgb 255,128,128 ; LIGHTRED
+        vdp_rgb 255,128,255 ; LIGHTMAGENTA
+        vdp_rgb 255,255,0
+        vdp_rgb 255,255,255 ; WHITE
+
 .bss
-  _graphics_color:  .res 1
+  _graphics_color:      .res 1
+  _graphics_color_fill: .res 1
