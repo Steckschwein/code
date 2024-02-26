@@ -158,7 +158,7 @@ krn_readdir:            jmp fat_readdir
 .export krn_read_direntry
 krn_read_direntry:      jmp fat_read_direntry
 
-;@name: fat_update_direntry
+;@name: krn_update_direntry
 ;@desc: update direntry given as pointer (A/Y) to FAT32 directory entry structure for file fd (X).
 ;@in: X - file descriptor to fd_area of the file
 ;@in: A/Y - pointer to direntry buffer with updated direntry data of type F32DirEntry

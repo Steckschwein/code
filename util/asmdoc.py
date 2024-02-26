@@ -12,7 +12,7 @@ def get_filelist(directory, filespec):
                     filelist.append("%s/%s" % (root, items))
     return (filelist)
 
-def render_template(filename, format, doc_struct):
+def render_template(filename, format, title, doc_struct):
     env = Environment(
         loader=PackageLoader("asmdoc"),
         autoescape=select_autoescape()
@@ -21,7 +21,7 @@ def render_template(filename, format, doc_struct):
     template = env.get_template("template.%s.j2" % format)
 
     with open(filename, "w") as f:
-        f.write(template.render(doc_struct=doc_struct))
+        f.write(template.render(doc_struct=doc_struct, title=title))
 
 def main():
 
@@ -34,15 +34,14 @@ def main():
     parser.add_argument('-f', '--file', help="output file", default="asmdoc.html")
     parser.add_argument('--filespec', help="filespec to search files", default="*.s")
     parser.add_argument('--format', help="output file format, html, md", default="html")
+    parser.add_argument('--title', help="document title", default="No Title")
+    
 
 
     args = parser.parse_args()
 
-    doc_struct = {}
+    doc_struct = {  }
     regex = re.compile(";[\s]?@([a-z]+):?(.*)")
-
-    # module_name = None
-    # proc_name = None
 
     for filename in get_filelist(args.directory, args.filespec):
         with open(filename, "r") as f:
@@ -79,7 +78,7 @@ def main():
                 except KeyError:
                     doc_struct[module_name][proc_name][name] = [value]
 
-    render_template(args.file, args.format, doc_struct)
+    render_template(args.file, args.format, args.title, doc_struct)
 
 if __name__ == "__main__":
      main()
