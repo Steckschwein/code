@@ -57,8 +57,6 @@ void __fastcall__ vdp_fill( int x, int y, int border );
 int  __fastcall__ vdp_getcolor();
 void __fastcall__ vdp_setcolor(unsigned char color);
 
-void __fastcall__ vdp_textxy (unsigned int x, unsigned char y, char *s);
-
 void __fastcall__ vdp_blank (unsigned char color);
 
 void __fastcall__ vdp_restore(void);

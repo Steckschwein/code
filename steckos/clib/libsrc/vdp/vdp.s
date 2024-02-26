@@ -163,7 +163,7 @@ _vdp_fill_line_t:
 ; void __fastcall__ vdp_setcolor (unsigned char color);
 .export _vdp_setcolor
 .proc _vdp_setcolor
-    sta _vdp_line_t+line_t::color
+    sta _vdp_line_t+line_t::color ; set to line_t struct, to have the color in place
     rts
 .endproc
 

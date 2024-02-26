@@ -41,8 +41,8 @@
 ; int __fastcall__  vdp_maxx();
 .export _graphics_getmaxx
 .proc _graphics_getmaxx
-        lda #$ff  ; TODO
         ldx #0
+        lda #$ff  ; TODO
         rts
 .endproc
 
@@ -153,6 +153,7 @@
     and #$0f
     tay
     lda @colors,y
+    sta _graphics_color
     jmp _vdp_setcolor
 @colors:
 ; { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTGRAY, DARKGRAY, LIGHTBLUE, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE }
