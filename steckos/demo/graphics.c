@@ -31,7 +31,7 @@ int main(int argc, char* argv){
   int x;
   int y;
 
-  vdp_screen(7);
+  initgraph(NULL, 7, NULL);
   cleardevice();
 /*
   for(x=0;x<256;x++){
@@ -46,17 +46,22 @@ int main(int argc, char* argv){
   for(x=0;x<=15;x++){
     setcolor(x);
     outtextxy(0x10, (x<<3), "Hallo Steckschwein!");
-
   }
+  getch();
+
+  for(x=0;x<=15;x++){
+    setcolor(x);
+    bar(10, 10+x*10, 100, 20+x*10);
+  }
+  getch();
+
+
   for(x=0;x<255;x++){
     setcolor(x);
     rectangle(x,x+16,x+32,x+32);
   }
 
-  line(10,30,40,100);
-  rectangle(10,20,30,40);
-
-  while (!kbhit());
+  getch();
 
   return EXIT_SUCCESS;
 }

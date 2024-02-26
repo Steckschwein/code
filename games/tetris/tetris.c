@@ -5,8 +5,11 @@
 #include <graphics.h>
 #include <time.h>
 
+#define ROWS 20
+#define COLS 10
+
 //The tetris matrix (2d array)
-int board[35][13];
+int board[ROWS][COLS];
 //Different versions of T block (rotated)
 int t_[8] = { 1, 0, 1, 1, 1, 2, 2, 1 };
 int t_90[8] = { 0, 1, 1, 0, 1, 1, 2, 1 };
@@ -123,14 +126,14 @@ isDrawable (int newrow, int newcol, int blockversion)
 	{
 //check if block goes out of the matrix (up or down)
 
-	  if (newrow + blockarray[i] > 34 || newrow + blockarray[i] < 0)
+	  if (newrow + blockarray[i] > ROWS-1 || newrow + blockarray[i] < 0)
 		{
 		  flag = 0;
 		  break;
 		}
 //check if block goes out of the matrix (left or right)
 
-	  if (newcol + blockarray[i + 1] > 12 || newcol + blockarray[i + 1] < 0)
+	  if (newcol + blockarray[i + 1] > COLS-1 || newcol + blockarray[i + 1] < 0)
 		{
 		  flag = 0;
 		  break;
@@ -164,8 +167,8 @@ clearOldBlockVersion ()
 	  board[r][c] = 0;
 	  setfillstyle (EMPTY_FILL, BLACK);
 	  setcolor (BLACK);
-	        bar (2 + c * 13, 2 + r * 13, 2 + c * 13 + 13, 2 + r * 13 + 13);
-	  rectangle (2 + c * 13, 2 + r * 13, 2 + c * 13 + 13, 2 + r * 13 + 13);
+	        bar (2 + c * COLS, 2 + r * COLS, 2 + c * COLS + COLS, 2 + r * COLS + COLS);
+	  rectangle (2 + c * COLS, 2 + r * COLS, 2 + c * COLS + COLS, 2 + r * COLS + COLS);
 	}
 }
 
@@ -190,8 +193,8 @@ drawNewBlockVersion ()
 	  board[r][c] = 1;
 	  setfillstyle (XHATCH_FILL, CYAN);
 	  setcolor (GREEN);
-          bar (2 + c * 13, 2 + r * 13, 2 + c * 13 + 13, 2 + r * 13 + 13);
-	  rectangle (2 + c * 13, 2 + r * 13, 2 + c * 13 + 13, 2 + r * 13 + 13);
+          bar (2 + c * COLS, 2 + r * COLS, 2 + c * COLS + COLS, 2 + r * COLS + COLS);
+	  rectangle (2 + c * COLS, 2 + r * COLS, 2 + c * COLS + COLS, 2 + r * COLS + COLS);
 	}
 }
 
@@ -204,8 +207,6 @@ called after every move.
 Game is over when tetris matrix is filled.
 
 */
-
-
 int
 isGameOver ()
 {
@@ -227,7 +228,7 @@ isAtBottom ()
   for (i = 0; i < 8; i += 2)
 	if (*(blockarray + i) > max)
 	  max = *(blockarray + i);
-  if (fallingBlockRow + max >= 34)
+  if (fallingBlockRow + max >= ROWS-1)
 	return 1;
   for (i = 0; i < 8; i += 2)
 	{
@@ -249,12 +250,12 @@ showScore ()
   setcolor (BLACK);
   setfillstyle (EMPTY_FILL, BLACK);
   left = getmaxx () - 100;
-  top = getmaxy () / 2;
-  bar3d (left, top, left + 60, top + 70, 2, 1);
-  setcolor (YELLOW);
-  settextstyle (TRIPLEX_FONT, HORIZ_DIR, 2);
-  outtextxy (getmaxx () - 100, getmaxy () / 2, "Score: ");
-  outtextxy (getmaxx () - 100, getmaxy () / 2 + 20, itoa (myscore, scorestr, 10));
+  top = getmaxy()/2;
+  bar3d(left,top,left+80,top+70,2,1);
+  setcolor(YELLOW);
+  settextstyle(TRIPLEX_FONT, HORIZ_DIR,2);
+  outtextxy(left, top, "Score: ");
+  outtextxy(left, top+20, itoa(++myscore,scorestr,10));
 }
 
 /*
@@ -269,12 +270,12 @@ void
 CollapseFullRow ()
 {
   int i, j, k, sum, copyskipover = 0, r;
-  for (i = 34; i >= 0;)
+  for (i = ROWS-1; i >= 0;)
 	{
 	  sum = 0;					//full flag
-	  for (j = 0; j < 13; j++)
+	  for (j = 0; j < COLS; j++)
 		sum += board[i][j];
-	  if (sum == 2 * 13)		//row full
+	  if (sum == 2 * COLS)		//row full
 		{
 		  myscore += scoreInc;
 		  copyskipover++;
@@ -284,7 +285,7 @@ CollapseFullRow ()
 	  i--;
 	  if (copyskipover > 0)
 		{
-		  for (j = 0; j < 13; j++)
+		  for (j = 0; j < COLS; j++)
 			{
 			  r = i + copyskipover;
 			  board[r][j] = board[i][j];
@@ -292,17 +293,14 @@ CollapseFullRow ()
 				{
 				  setfillstyle (EMPTY_FILL, BLACK);	//empty yo hatch
 				  setcolor (BLACK);
-				  bar (2 + j * 13, 2 + r * 13, 2 + j * 13 + 13,
-					   2 + r * 13 + 13);
+				  bar (2 + j * COLS, 2 + r * COLS, 2 + j * COLS + COLS, 2 + r * COLS + COLS);
 				}
 			  else
 				{
 				  setfillstyle (XHATCH_FILL, CYAN);
 				  setcolor (GREEN);
-				  bar (2 + j * 13, 2 + r * 13, 2 + j * 13 + 13,
-					   2 + r * 13 + 13);
-				  rectangle (2 + j * 13, 2 + r * 13, 2 + j * 13 + 13,
-							 2 + r * 13 + 13);
+				  bar (2 + j * COLS, 2 + r * COLS, 2 + j * COLS + COLS, 2 + r * COLS + COLS);
+				  rectangle (2 + j * COLS, 2 + r * COLS, 2 + j * COLS + COLS, 2 + r * COLS + COLS);
 				}
 			}
 		}
@@ -310,12 +308,12 @@ CollapseFullRow ()
   for (k = 0; k < copyskipover; k++)
 	{
 	  r = i + k;
-	  for (j = 0; j < 13; j++)
+	  for (j = 0; j < COLS; j++)
 		{
 		  board[r][j] = 0;
 		  setfillstyle (XHATCH_FILL, BLACK);
 		  setcolor (BLACK);
-		  bar (2 + j * 13, 2 + r * 13, 2 + j * 13 + 13, 2 + r * 13 + 13);
+		  bar (2 + j * COLS, 2 + r * COLS, 2 + j * COLS + COLS, 2 + r * COLS + COLS);
 		}
 	}
   showScore ();
@@ -332,9 +330,9 @@ int main ()
   int i, j, k = 1, spawn = 1, tversion;
   motiondelay = startdelay;
   scorestr = (char *) malloc (sizeof (char) * 10);
-  for (i = 0; i < 35; i++)
-	for (j = 0; j < 13; j++)
-	  board[i][j] = 0;
+  for (i = 0; i < ROWS; i++)
+	  for (j = 0; j < COLS; j++)
+	    board[i][j] = 0;
 /*
 to get the ascii characters for up arrow key.
 When any of arrow key is pressed, two characters
@@ -351,25 +349,25 @@ The second one is of value 72 for up arrow.
 	}
 
   //initgraph (&gd, &gm, "C:\\TURBOC3\\BGI\\");
-  vdp_screen(7);
+  initgraph (NULL, 7, NULL);
   cleardevice ();
 
   setcolor (YELLOW);
-  rectangle (0, 0, 13 * 13 + 6, 35 * 13 + 6);
+  rectangle (0, 0, COLS * COLS + 3, ROWS * COLS + 3);
   srand (time (NULL));
   showScore ();
   setcolor (RED);
   settextstyle (SMALL_FONT, HORIZ_DIR, 6);
-  outtextxy (getmaxx () - 200, getmaxy () / 2 - 25, "Press 'Q' to quit.");
+  outtextxy (getmaxx () - 144, getmaxy () / 2 - 25, "Press 'Q' to quit.");
 
   while (ch != 'q' && ch != 'Q' && k != 'q' && k != 'Q')
 	{
 	  if (kbhit () && spawn == 0)
 		{
-		  ch = getch ();
+		  k = getch ();
 		  if (1) //ch == arrowpre)	//if an arrow key pressed
 			{
-			  k = getch ();
+			  //k = getch ();
 			  if (k == KEY_UP)		//if up arrow key is pressed
 				{
 				  if (fallingblockNum == 0 || fallingblockNum == 1)

@@ -45,6 +45,7 @@
     jsr krn_textui_disable			;disable textui
     ldx _vdp_mode
     jsr _gfx_set_mode
+    vdp_sreg v_reg9_nt | v_reg9_ln, v_reg9   ; lines - 0 - 192 lines, 1 - 212 lines ; ntsc - 0 / pal - 1
     plp
     rts
 .endproc

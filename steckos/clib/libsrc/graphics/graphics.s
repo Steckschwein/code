@@ -33,10 +33,19 @@
 .importzp __volatile_tmp
 
 .zeropage
+  _graphics_x:  .res 1
+  _graphics_y:  .res 1
   _graphics_ix: .res 1
 
 ;----------------------------------------------------------------------------
 .code
+
+; void __fastcall__ graphics_initgraph( char graphmode );
+.export _graphics_initgraph
+.proc _graphics_initgraph
+        jmp _vdp_screen
+.endproc
+
 
 ; int __fastcall__  vdp_maxx();
 .export _graphics_getmaxx
@@ -50,7 +59,7 @@
 .export _graphics_getmaxy
 .proc _graphics_getmaxy
         ldx #0
-        lda #191  ; TODO
+        lda #211  ; TODO
         rts
 .endproc
 
@@ -65,15 +74,33 @@
 ; void __fastcall__ graphics_putpixel(int x, char y, char color);
 .export _graphics_putpixel
 .proc _graphics_putpixel
-        and #$0f
-        tax
-        lda @colors,x
+        jsr _graphics_setcolor
         jmp _vdp_plot
-@colors:
-        vdp_rgb 0,0,0 ; black
-        vdp_rgb 1,1,1
-
 .endproc
+
+; void __fastcall__ graphics_bar( int left, char top, int right, char bottom );
+.export _graphics_bar
+.proc _graphics_bar
+        sta _graphics_y
+        jsr popax
+        sta _graphics_x
+        jsr popa
+        pha
+        jsr popax
+        sta _graphics_ix
+        ply
+@row:   ldx _graphics_ix
+@col:   lda _graphics_color
+        jsr vdp_mode7_set_pixel
+        inx
+        cpx _graphics_x
+        bne @col
+        iny
+        cpy _graphics_y
+        bne @row
+        rts
+.endproc
+
 
 ; void __fastcall__ _graphics_textxy (unsigned int x, unsigned char y, char *s);
 .export _graphics_textxy
@@ -176,6 +203,4 @@
 .endproc
 
 .bss
-  _graphics_x:      .res 1
-  _graphics_y:      .res 1
   _graphics_color:  .res 1

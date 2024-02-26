@@ -44,6 +44,9 @@ static const enum colors { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTG
 #define KEY_F9          67
 
 
+#define initgraph( graphdriver, graphmode, pathtodriver ) graphics_initgraph(graphmode)
+void __fastcall__ graphics_initgraph( char mode );
+
 int __fastcall__  graphics_getmaxx();
 #define getmaxx() graphics_getmaxx()
 
@@ -68,11 +71,13 @@ void __fastcall__ graphics_setcolor (unsigned char color);
 
 #define rectangle( left, top, right, bottom ) vdp_rectangle(left, top, right, bottom)
 
-#define bar( left, top, right, bottom ) rectangle( left, top, right, bottom )
-#define bar3d( left, top, right, bottom, depth, topflag ) rectangle( left, top, right, bottom )
+void __fastcall__ graphics_bar( int left, char top, int right, char bottom );
+#define bar( left, top, right, bottom ) graphics_bar( left, top, right, bottom )
+#define bar3d( left, top, right, bottom, depth, topflag ) graphics_bar( left, top, right, bottom )
+
 #define floodfill( x, y, border ) vdp_fill(x, y, border)
 
-#define cleardevice() vdp_blank(0x6d)
+#define cleardevice() vdp_blank(0x0)
 
 #define line(x1,y1, x2,y2) vdp_line(x1,y1, x2,y2)
 
