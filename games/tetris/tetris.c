@@ -324,12 +324,19 @@ void GameOver ();
 
 int main ()
 {
-  int scorespeedctrl = 0;
-  char arrowpre, ch, timehalving = 0;
+  int scorespeedctrl;
+  char arrowpre, ch, timehalving;
   //int gd = DETECT, gm, i, j, k = 1, spawn = 1, tversion;
-  int i, j, k = 1, spawn = 1, tversion;
-  motiondelay = startdelay;
+  int i, j, k, spawn, tversion;
   scorestr = (char *) malloc (sizeof (char) * 10);
+
+restart:
+  scorespeedctrl = 0;
+  timehalving = 0;
+  k = 1;
+  spawn = 1;
+  motiondelay = startdelay;
+
   for (i = 0; i < ROWS; i++)
 	  for (j = 0; j < COLS; j++)
 	    board[i][j] = 0;
@@ -339,15 +346,15 @@ When any of arrow key is pressed, two characters
 are sent to buffer. The first one may be different
 on different compilers and systems.
 The second one is of value 72 for up arrow.
-*/
+
   while (k != KEY_UP)
 	{
 	  printf ("press 'up' arrow key to start\n");
-	  //arrowpre = getch ();
+	  arrowpre = getch ();
 	  if (kbhit ())
 		  k = getch ();
 	}
-
+*/
   //initgraph (&gd, &gm, "C:\\TURBOC3\\BGI\\");
   initgraph (NULL, 7, NULL);
   cleardevice ();
@@ -441,7 +448,7 @@ The second one is of value 72 for up arrow.
 		  if (isGameOver ())
 			{
 			  GameOver ();
-			  return EXIT_SUCCESS;
+			  goto restart;
 			}
 		}
 	  else
@@ -475,5 +482,4 @@ GameOver ()
   settextstyle (style, HORIZ_DIR, size);
   outtextxy (getmaxx () / 2 - 10, getmaxy () / 2, "Game Over.\n");
   getch ();
-  main ();
 }
