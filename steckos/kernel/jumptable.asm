@@ -25,7 +25,7 @@ krn_upload:             jmp do_upload
 ;@in: A, "low byte of pointer to zero terminated string with the file path"
 ;@in: X, "high byte of pointer to zero terminated string with the file path"
 ;@out: A error code on error
-;out:  C=1 on error 
+;out:  C=1 on error
 ;@desc: "load PRG file at path and execute it"
 .export krn_execv
 krn_execv:              jmp execv

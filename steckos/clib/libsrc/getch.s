@@ -21,14 +21,15 @@
 ; SOFTWARE.
 
 
-; unsigned char kbhit (void);
+.include "kernel/kernel_jumptable.inc"
+
+.export			_getch
+
+; unsigned int getch (void);
 ;
-.include "asminc/zeropage.inc"
-
-.export			_kbhit
-
-.proc	_kbhit
-        ldx #0				  ; High byte of return is always zero
-        lda key
+.proc	_getch
+:       jsr krn_getkey
+        bcc :-
+        ldx #0
         rts
 .endproc

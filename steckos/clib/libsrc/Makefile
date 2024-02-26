@@ -48,6 +48,7 @@ SRCDIR=.
 SRCDIRS = $(SRCDIR)
 SRCDIRS += common
 SRCDIRS += t99xx
+SRCDIRS += graphics
 SRCDIRS += joystick
 SRCDIRS += ym3812
 SRCDIRS += vdp

@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <conio.h>
 
-#include <vdp.h>
+#include <graphics.h>
 
 int main(int argc, char* argv){
 
@@ -32,22 +32,31 @@ int main(int argc, char* argv){
   int y;
 
   vdp_screen(7);
-  vdp_blank(0);
+  cleardevice();
+/*
+  for(x=0;x<256;x++){
+    for(y=0;y<212;y++){
+      vdp_plot(x,y,x);
 
-  do{
-    for(x=0;x<256;x++){
-      for(y=0;y<212;y++){
-        vdp_plot(x,y,x);
-
-        vdp_setcolor(x);
-        vdp_putpixel(255-x,y);
-
-      }
-      vdp_line(x,0,128,96);
-      vdp_setcolor(x^0xff);
-      vdp_rectangle(x,x+16,x+32,x+32);
+      vdp_setcolor(x);
+      vdp_putpixel(255-x,y);
     }
-  } while (!kbhit());
+  }
+*/
+  for(x=0;x<=15;x++){
+    setcolor(x);
+    outtextxy(0x10, (x<<3), "Hallo Steckschwein!");
+
+  }
+  for(x=0;x<255;x++){
+    setcolor(x);
+    rectangle(x,x+16,x+32,x+32);
+  }
+
+  line(10,30,40,100);
+  rectangle(10,20,30,40);
+
+  while (!kbhit());
 
   return EXIT_SUCCESS;
 }

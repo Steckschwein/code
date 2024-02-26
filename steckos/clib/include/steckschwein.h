@@ -2,6 +2,9 @@
 #define _STECKSCHWEIN_H
 
 
+extern unsigned int __fastcall__ getch(void);
+
+
 /**
  * delay millis
  */

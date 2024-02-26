@@ -43,27 +43,33 @@ static const enum colors { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTG
 #define KEY_F8          66
 #define KEY_F9          67
 
-#define getch() ( \
-    asm("@l_%s:", __LINE__), \
-    __AX__ = kbhit(), \
-    asm("cmp #0"), \
-//    asm("beq @l_%s", __LINE__), \
-    __AX__)
 
-#define getmaxx() vdp_maxx()
-#define getmaxy() vdp_maxy()
+int __fastcall__  graphics_getmaxx();
+#define getmaxx() graphics_getmaxx()
 
-#define putpixel(x, y, c) vdp_plot(x, y, (c & MAXCOLORS))
+int __fastcall__ graphics_getmaxy();
+#define getmaxy() graphics_getmaxy()
 
-#define outtextxy(x, y, s) vdp_textxy(x, y, s)
+void __fastcall__ graphics_putpixel(int x, char y, char c);
+#define putpixel(x, y, c) graphics_putpixel(x, y, c)
 
-#define setcolor(color) vdp_setcolor(color<<4)
-#define getcolor() vdp_getcolor()
+void __fastcall__ graphics_textxy (unsigned int x, unsigned char y, char *s);
+#define outtextxy(x, y, s) graphics_textxy(x, y, s)
 
+void __fastcall__ graphics_setcolor (unsigned char color);
+#define setcolor(color) graphics_setcolor(color)
+
+#define getcolor() graphics_getcolor()
+
+// TODO not implemented yet
 #define settextstyle(font, direction, charsize)
+#define settextjustify(horizontal, vertical)
 #define setfillstyle(pattern, color)
 
 #define rectangle( left, top, right, bottom ) vdp_rectangle(left, top, right, bottom)
+
+#define bar( left, top, right, bottom ) rectangle( left, top, right, bottom )
+#define bar3d( left, top, right, bottom, depth, topflag ) rectangle( left, top, right, bottom )
 #define floodfill( x, y, border ) vdp_fill(x, y, border)
 
 #define cleardevice() vdp_blank(0x6d)
