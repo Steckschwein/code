@@ -80,6 +80,14 @@ io_isr:
     and #$f7            ; vic trick to open border - clean 24/25 rows bit
     sta VIC_CTRL1
 
+    lda #$00
+    sta VIC_SPR0_Y
+    sta VIC_SPR1_Y
+    sta VIC_SPR2_Y
+    sta VIC_SPR3_Y
+    sta VIC_SPR4_Y
+    sta VIC_SPR5_Y
+
     lda #COLOR_BLUE
 ;    sta VIC_BORDERCOLOR
     sta VIC_BG_COLOR0
@@ -97,13 +105,6 @@ io_isr:
     lda #HLine_Last     ; next irq last line
     sta VIC_HLINE
 
-    lda #$00
-    sta VIC_SPR0_Y
-    sta VIC_SPR1_Y
-    sta VIC_SPR2_Y
-    sta VIC_SPR3_Y
-    sta VIC_SPR4_Y
-    sta VIC_SPR5_Y
 
     inc VIC_IRR   ; ack
 

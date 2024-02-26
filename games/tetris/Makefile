@@ -1,4 +1,4 @@
-CC65FLAGS=-I ../../steckos/clib/include -I ../../steckos/clib/include/vdp -I ../../steckos/clib --cpu 65c02 --debug-info # --standard c99 #-Or
+CC65FLAGS=-I ../../steckos/clib/include -I ../../steckos/clib/include/vdp -I ../../steckos/clib --cpu 65c02 --debug-info -Osir -Cl
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
 CA65FLAGS=-I ../../steckos/asminc -I ../../asmunit -I ../../steckos/kernel
 LIBS=../../steckos/lib/steckschwein.a
