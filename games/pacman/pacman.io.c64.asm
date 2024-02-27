@@ -67,9 +67,6 @@ io_isr:
     sta VIC_BORDERCOLOR
     sta VIC_BG_COLOR0
 
-    lda #$ff
-    sta $3fff
-
     inc VIC_IRR   ; ack
 
     lda #$80        ; bit 7 to signal vblank irq
@@ -80,34 +77,39 @@ io_isr:
     and #$f7            ; vic trick to open border - clean 24/25 rows bit
     sta VIC_CTRL1
 
-    lda #COLOR_BLUE
-;    sta VIC_BORDERCOLOR
+    lda Color_Border
     sta VIC_BG_COLOR0
+;    lda #HLine_Border
+ ;   sta VIC_SPR0_Y
+  ;  sta VIC_SPR1_Y
+   ; sta VIC_SPR2_Y
+    ;sta VIC_SPR3_Y
+    ;sta VIC_SPR4_Y
+    ;sta VIC_SPR5_Y
+            ldx #0
+            ldy #HLine_Border+1
+@char:      lda VRAM_PATTERN+$d3<<3,x
+            eor #$ff
+@hblank:    cpy VIC_HLINE
+            bne @hblank
+            sta BANK_GHOSTBYTE
+            inx
+            iny
+            cpy #<(HLine_Border+1+8)
+            bne @char
+            lda Color_Bg
+            ldx #$ff                 ; #$ff (black) ghost byte
+:           cpy VIC_HLINE
+            bne :-
+            stx BANK_GHOSTBYTE
+            sta VIC_BG_COLOR0
 
-    lda #$7f
-    ldy #<(HLine_Border+1)
-:   sta $3fff
-    lsr
-:   cpy VIC_HLINE
-    bne :-
-    iny
-    cpy #<(HLine_Border+4+8)
-    bne :--
+            lda #HLine_Last     ; next irq last line
+            sta VIC_HLINE
 
-    lda #HLine_Last     ; next irq last line
-    sta VIC_HLINE
+            inc VIC_IRR   ; ack
 
-    lda #$00
-    sta VIC_SPR0_Y
-    sta VIC_SPR1_Y
-    sta VIC_SPR2_Y
-    sta VIC_SPR3_Y
-    sta VIC_SPR4_Y
-    sta VIC_SPR5_Y
-
-    inc VIC_IRR   ; ack
-
-    lda #0
+            lda #0
 @rts:
     rts
 

@@ -1,39 +1,8 @@
-    .p02
-
     .export game
 
     .include "pacman.inc"
 
-    .import gfx_vram_xy
-    .import gfx_vram_ay
-    .import gfx_blank_screen
-    .import gfx_hires_off
-    .import gfx_charout
-    .import gfx_rotate_pal
-    .import gfx_update
-    .import gfx_display_maze
-    .import gfx_pause
-
-    .import out_digit,out_digits
-    .import out_hex_digits
-    .import out_text
-
-    .import sound_init
-    .import sound_init_game_start
-    .import sound_play
-
-    .import io_joystick_read
-    .import io_getkey
-    .import io_player_direction
-    .import io_detect_joystick
-    .import io_irq
-
-    .import ai_blinky
-    .import ai_inky
-    .import ai_pinky
-    .import ai_clyde
-
-    .import game_state
+    .autoimport
 
 game:
     sei

@@ -1,17 +1,20 @@
-      .include "zeropage.inc"
-      .autoimport
+.include "zeropage.inc"
 
-        Color_Blinky  = Color_Red
-        Color_Inky    = Color_Cyan
-        Color_Clyde   = Color_Orange
-        Color_Pinky   = Color_Pink
-        Color_Pacman  = Color_Yellow
-        Color_Food    = Color_Dark_Pink
-        Color_Border  = Color_Blue
-        Color_Text    = Color_Gray
+.autoimport
 
-        KEY_EXIT = 27
-        MAX_DOTS=226+4  ; food + superfood
+SYS_VECTOR_IRQ = $fffe
+
+Color_Blinky  = Color_Red
+Color_Inky    = Color_Cyan
+Color_Clyde   = Color_Orange
+Color_Pinky   = Color_Pink
+Color_Pacman  = Color_Yellow
+Color_Food    = Color_Dark_Pink
+Color_Border  = Color_Blue
+Color_Text    = Color_Gray
+
+KEY_EXIT = 27
+MAX_DOTS=226+4  ; food + superfood
 
 .globalzp p_maze
 .globalzp p_game
@@ -94,21 +97,21 @@ ACT_DIR           = 1<<1|1<<0
 ;CORNERING
 
 .macro setIRQ irq, irq_save
-      copyPtr $fffe, irq_save
-      setPtr irq, $fffe
+      copyPtr SYS_VECTOR_IRQ, irq_save
+      setPtr irq, SYS_VECTOR_IRQ
 .endmacro
 
 .macro restoreIRQ irq_save
       sei
-      copyPtr irq_save, $fffe
+      copyPtr irq_save, SYS_VECTOR_IRQ
       cli
 .endmacro
 
 .macro setPtr addr, ptr
-			lda #<addr
-			sta ptr
-			lda #>addr
-			sta ptr+1
+      lda #<addr
+      sta ptr
+      lda #>addr
+      sta ptr+1
 .endmacro
 
 .macro copyPtr src, dest
