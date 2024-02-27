@@ -20,151 +20,102 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "kernel.inc"
-.include "kernel_jumptable.inc"
+.include "steckos.inc"
 .include "fat32.inc"
-.include "appstart.inc"
+.include "fcntl.inc"
 
-.import print_filename, dpb2ad, print_fat_date, print_fat_time, bin2dual, hexout
+
+.autoimport
 
 .export char_out=krn_chrout
-.zeropage
-tmp1: .res 1
-tmp2: .res 1
-tmp3: .res 2
+.export dirent
 
 appstart $1000
 
 main:
-l1:
-    crlf
-    SetVector pattern, filenameptr
-
     lda (paramptr)
-    beq @l2
+    beq @usage
     copypointer paramptr, filenameptr
-@l2:
-    ldx #FD_INDEX_CURRENT_DIR
-    jsr krn_find_first
-    bcs @l4
-    jsr hexout
-    printstring " i/o error"
-    bra @exit
-@l3:
-    ldx #FD_INDEX_CURRENT_DIR
-    jsr krn_find_next
-    bcc @exit
-@l4:
-    lda (dirptr)
-    cmp #$e5
-    beq @l3
+
+    lda filenameptr
+    ldx filenameptr+1
+    ldy #O_RDONLY
+    jsr krn_open
+    bcs @open_fail
+
+    lda #<dirent
+    ldy #>dirent
+    jsr krn_read_direntry
+    jsr krn_close
 
     jsr dir_show_entry
 
-
-    dec pagecnt
-    bne @l
-    keyin
-    cmp #13 ; enter pages line by line
-    beq @lx
-    cmp #$03 ; CTRL-C
-    beq @exit
-
-    lda entries_per_page
-    sta pagecnt
-    bra @l
-@lx:
-    lda #1
-    sta pagecnt
-@l:
-    jsr krn_getkey
-    cmp #$03 ; CTRL-C?
-    beq @exit
-    bra @l3
-
+@open_fail:
 @exit:
     jmp (retvec)
+@usage:
+    jsr primm
+    .asciiz "usage: stat <filename>"
+    bra @exit
 
 dir_show_entry:
-	pha
-	jsr krn_primm
-	.byte "Name: ",$00
-	jsr print_filename
-	crlf
 
-	jsr krn_primm
-	.byte "Size: ",$00
-	ldy #F32DirEntry::FileSize +1
-	lda (dirptr),y
-	tax
-	ldy #F32DirEntry::FileSize
-	lda (dirptr),y
-	jsr dpb2ad
+    jsr primm
+    .byte "Name: ",$00
+    jsr print_filename
+    crlf
 
-	jsr krn_primm
-	.byte "  Cluster#1: ",$00
+    jsr primm
+    .byte "Size: ",$00
+    jsr print_filesize
 
-	ldy #F32DirEntry::FstClusHI+1
-	lda (dirptr),y
-	jsr hexout
-	dey
-	lda (dirptr),y
-	jsr hexout
-	ldy #F32DirEntry::FstClusLO+1
-	lda (dirptr),y
-	jsr hexout
-	dey
-	lda (dirptr),y
-	jsr hexout
+    jsr primm
+    .byte "  Cluster#1: ",$00
 
-	crlf
+    jsr print_cluster_no
 
-	jsr krn_primm
-	.byte "Attribute: "
-	.byte "--ADVSHR",$00
-	crlf
+    crlf
 
-	jsr krn_primm
-	.byte "           ",$00
+    jsr primm
+    .byte "Attribute: "
+    .byte "--ADVSHR",$00
+    crlf
 
-	ldy #F32DirEntry::Attr
-	lda (dirptr),y
+    jsr primm
+    .byte "           ",$00
 
-	jsr bin2dual
-	crlf
+    ldy #F32DirEntry::Attr
+    lda dirent,y
+
+    jsr bin2dual
+    crlf
 
 
-	jsr krn_primm
-	.byte "Created  : ",$00
-	ldy #F32DirEntry::CrtDate
-	jsr print_fat_date
+    jsr primm
+    .byte "Created  : ",$00
+    ldy #F32DirEntry::CrtDate
+    jsr print_fat_date
 
-	lda #' '
-	jsr krn_chrout
+    lda #' '
+    jsr krn_chrout
 
-	ldy #F32DirEntry::CrtTime +1
-	jsr print_fat_time
-	crlf
+    ldy #F32DirEntry::CrtTime +1
+    jsr print_fat_time
+    crlf
 
-	jsr krn_primm
-	.byte "Modified : ",$00
-	ldy #F32DirEntry::WrtDate
-	jsr print_fat_date
+    jsr primm
+    .byte "Modified : ",$00
+    ldy #F32DirEntry::WrtDate
+    jsr print_fat_date
 
-	lda #' '
-	jsr krn_chrout
+    lda #' '
+    jsr krn_chrout
 
-	ldy #F32DirEntry::WrtTime +1
-	jsr print_fat_time
-	crlf
+    ldy #F32DirEntry::WrtTime +1
+    jsr print_fat_time
+    crlf
 
-	pla
-	rts
+    rts
 
-pattern:  .byte "*.*",$00
-cnt:      .byte $04
-entries = 23
-dir_attrib_mask:  .byte $0a
-entries_per_page: .byte entries
-pagecnt:          .byte entries
+.bss
+dirent:           .res .sizeof(F32DirEntry)

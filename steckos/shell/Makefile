@@ -2,7 +2,7 @@ LIBS=../lib/steckschwein.a
 CAFLAGS=-I ../asminc -I ../kernel
 LDFLAGS=-C ../prg.ld65.cfg
 
-#DEBUG=-DDEBUG FIXME
+DEBUG=-DDEBUG #FIXME
 
 .PHONY: all clean
 all: version.inc shell.prg

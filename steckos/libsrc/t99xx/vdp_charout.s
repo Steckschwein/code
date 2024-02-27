@@ -27,8 +27,9 @@
 .include "keyboard.inc"
 .include "zeropage.inc"
 
-.importzp tmp1,tmp2
-.importzp ptr1,ptr2
+.segment "ZEROPAGE_LIB": zeropage
+  v_rd: .res 2
+  v_wr: .res 2
 
 .code
 
@@ -43,37 +44,38 @@ ROWS=23
 .endif
 
 _vdp_scroll_up:
-      SetVector  (ADDRESS_TEXT_SCREEN+COLS), ptr1            ; +COLS - offset second row
-      SetVector  (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), ptr2  ; offset first row as "write adress"
-@l1:
-@l2:
-      lda  ptr1+0  ; 3cl
+      SetVector  (ADDRESS_TEXT_SCREEN+COLS), v_rd            ; +COLS - offset second row
+      SetVector  (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), v_wr  ; offset first row as "write adress"
+      php
+      sei
+@loop:
+      lda  v_rd+0  ; 3cl
       sta  a_vreg
       nop
-      lda  ptr1+1  ; 3cl
+      lda  v_rd+1  ; 3cl
       sta  a_vreg
       vdp_wait_l    ; wait 2µs, 8Mhz = 16cl => 8 nop
       ldx  a_vram  ;
       vdp_wait_l
 
-      lda  ptr2+0  ; 3cl
+      lda  v_wr+0  ; 3cl
       sta  a_vreg
       vdp_wait_l
-      lda  ptr2+1  ; 3cl
+      lda  v_wr+1  ; 3cl
       sta a_vreg
       vdp_wait_l
       stx  a_vram
-      inc  ptr1+0  ; 5cl
-      bne  @l3    ; 3cl
-      inc  ptr1+1
-      lda  ptr1+1
+      inc  v_rd+0  ; 5cl
+      bne  @l3     ; 3cl
+      inc  v_rd+1
+      lda  v_rd+1
       cmp  #>(ADDRESS_TEXT_SCREEN+(COLS * 24 + (COLS * 24 .MOD 256)))  ;screen ram end reached?
       beq  @l4
 @l3:
-      inc  ptr2+0  ; 5cl
-      bne  @l2    ; 3cl
-      inc  ptr2+1
-      bra  @l1
+      inc  v_wr+0  ; 5cl
+      bne  @loop   ; 3cl
+      inc  v_wr+1
+      bra  @loop
 @l4:
       ldx  #COLS  ; write address is already setup from loop
       lda  #' '
@@ -82,27 +84,26 @@ _vdp_scroll_up:
       vdp_wait_l
       dex
       bne  @l5
-      rts
-
-_inc_cursor_y:
-      lda crs_y
-      cmp  #ROWS    ;last line ?
-      bne  @l1
-      bra  _vdp_scroll_up  ; scroll up, dont inc y, exit
-@l1:
-      inc crs_y
+      plp
       rts
 
 vdp_charout:
-      cmp  #KEY_CR      ;cariage return ?
-      bne  @l1
-      stz  crs_x
+      cmp #KEY_CR      ;cariage return ?
+      bne @l1
+      stz crs_x
       rts
 @l1:
-      cmp  #CODE_LF      ;line feed
-      bne  @l2
-      stz  crs_x
-      bra  _inc_cursor_y
+      cmp #CODE_LF      ;line feed
+      bne @l2
+@inc_cursor_y:
+      stz crs_x
+      lda crs_y
+      cmp #ROWS    ;last line ?
+      bne @l_y
+      bra _vdp_scroll_up  ; scroll up, dont inc y, exit
+@l_y:
+      inc crs_y
+      rts
 @l2:
       cmp  #KEY_BACKSPACE
       bne  @l3
@@ -118,27 +119,24 @@ vdp_charout:
       sta  crs_x
 @l5:
       lda #' '
-      bra  vdp_putchar
-
-@l3:
-      jsr  vdp_putchar
-      lda  crs_x
-      cmp  #(COLS-1)
-      beq @l7
-      inc  crs_x
-@l6:
-      rts
-@l7:
-      stz  crs_x
-      bra  _inc_cursor_y
-
-vdp_putchar:
+@vdp_putchar:
+      php
+      sei
       pha
       jsr vdp_set_addr
       pla
       vdp_wait_l 8
       sta a_vram
+      plp
       rts
+@l3:
+      jsr @vdp_putchar
+      lda crs_x
+      cmp #(COLS-1)
+      beq @inc_cursor_y
+      inc crs_x
+@l6:  rts
+
 
 .ifndef CHAR6x8
 vdp_set_addr:        ; set the vdp vram adress, write A to vram
@@ -164,32 +162,32 @@ vdp_set_addr:        ; set the vdp vram adress, write A to vram
 
 .ifdef CHAR6x8
 vdp_set_addr:      ; set the vdp vram adress, write A to vram
-      stz crs_ptr+1
+      stz vdp_ptr+1
       lda crs_y
       asl
       asl
       asl             ; y*8
-      sta crs_ptr
+      sta vdp_ptr
 
       asl             ; y*16
-      rol crs_ptr+1
+      rol vdp_ptr+1
       asl             ; y*32
-      rol crs_ptr+1
+      rol vdp_ptr+1
 
-      adc crs_ptr
+      adc vdp_ptr
       bcc :+
-      inc crs_ptr+1
+      inc vdp_ptr+1
       clc             ; y*40
 :
   .ifdef COLS80      ; y*80 = y*40 *2
       asl
-      rol crs_ptr+1
+      rol vdp_ptr+1
   .endif
       adc crs_x
       sta a_vreg
 
       lda #(WRITE_ADDRESS + >ADDRESS_TEXT_SCREEN)
-      adc crs_ptr+1  ; add carry and page to address high byte
+      adc vdp_ptr+1  ; add carry and page to address high byte
       vdp_wait_s 4
       sta a_vreg
       rts

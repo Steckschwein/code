@@ -37,6 +37,8 @@
 .export crc16_init = crc16_table_init
 .export xmodem_rcvbuffer = BUFFER_2
 
+.exportzp ptr1,ptr2
+
 .zeropage
 ptr1:   .res 2
 ptr2:   .res 2

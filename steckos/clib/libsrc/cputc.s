@@ -3,26 +3,26 @@
 ; void __fastcall__ cputc (char c);
 ;
 
-		  .export			_cputcxy, _cputc, cputdirect, putchar
-		  .export			newline, plot
-		  .import			popa, _gotoxy
+      .export      _cputcxy, _cputc, cputdirect, putchar
+      .export      newline, plot
+      .import      popa, _gotoxy
 
-		  .include "asminc/system.inc"
-		  .include "kernel/kernel_jumptable.inc"
+      .include "asminc/system.inc"
+      .include "kernel/kernel_jumptable.inc"
 
 _cputcxy:
-		  pha							; Save C
-		  jsr	  popa				; Get Y
-		  jsr	  _gotoxy			; Set cursor, drop x
-		  pla							; Restore C
+      pha               ; Save C
+      jsr    popa       ; Get Y
+      jsr    _gotoxy    ; Set cursor, drop x
+      pla               ; Restore C
 
 cputdirect:
-		  jmp	  krn_chrout		; Write the character to the screen
+      jmp    krn_chrout    ; Write the character to the screen
 
 ; Advance cursor position
 newline:
-	lda	  #CODE_LF
-	jmp	  _cputc
+  lda    #CODE_LF
+  jmp    _cputc
 
 
 ; Set cursor position, calculate RAM pointers.

@@ -1,14 +1,19 @@
 ;
 ; steckos _cwd
 ;
+      .include "kernel/kernel_jumptable.inc"
 
-		  .export			initcwd
-		  .import			__cwd
-		  .importzp		 sreg, ptr1, ptr2
+      .import	__cwd
+      .import __cwd_buf_size
 
-		  .macpack		  generic
+      .importzp sreg, ptr1, ptr2
+
+      .export	initcwd
+
+      .macpack generic
 
 initcwd:
-		  lda	  #<__cwd
-		  ldx	  #>__cwd
-		  rts
+		  lda	#<__cwd
+		  ldy	#>__cwd
+      ldx #<__cwd_buf_size
+      jmp krn_getcwd

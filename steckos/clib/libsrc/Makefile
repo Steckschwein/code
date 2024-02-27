@@ -54,13 +54,13 @@ SRCDIRS += vdp
 SRCDIRS += opl2
 SRCDIRS += util
 SRCDIRS += sdcard
-SRCDIRS +=  $(CC65_HOME)/libsrc/conio     	\
-			$(CC65_HOME)/libsrc/runtime	 	\
-			$(CC65_HOME)/libsrc/zlib		\
-			$(CC65_HOME)/libsrc/common \
-   	        $(CC65_HOME)/libsrc/zlib
-#		$(CC65_HOME)/libsrc/serial   \
-#		$(CC65_HOME)/libsrc/tgi      \
+SRCDIRS +=  $(CC65_HOME)/libsrc/conio       \
+      $(CC65_HOME)/libsrc/runtime     \
+      $(CC65_HOME)/libsrc/zlib    \
+      $(CC65_HOME)/libsrc/common \
+             $(CC65_HOME)/libsrc/zlib
+#    $(CC65_HOME)/libsrc/serial   \
+#    $(CC65_HOME)/libsrc/tgi      \
 #       $(CC65_HOME)/libsrc/dbg      \
 #       $(CC65_HOME)/libsrc/em       \
 #       $(CC65_HOME)/libsrc/joystick \

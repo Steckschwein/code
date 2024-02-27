@@ -9,7 +9,7 @@
 .import sd_read_block
 .import popax
 
-.importzp read_blkptr,sreg
+.importzp sd_blkptr,sreg
 
 .export _read_block
 
@@ -22,10 +22,12 @@
     sta lba_addr+3
 
     jsr popax
-    sta read_blkptr
-    stx read_blkptr+1
+    sta sd_blkptr
+    stx sd_blkptr+1
     jsr sd_read_block
-@exit:
     ldx #0
+    bcs @exit
+    txa
+@exit:
     rts
 .endproc

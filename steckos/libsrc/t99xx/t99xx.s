@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
 .export vdp_display_off
@@ -33,20 +35,23 @@
 m_vdp_nopslide
 
 vdp_display_off:
-	vdp_sreg v_reg1_16k, v_reg1 	;enable 16K? ram, disable screen
-	rts
+  vdp_sreg v_reg1_16k, v_reg1   ;enable 16K? ram, disable screen
+  rts
 
-;
-;	input:	a - color
-;
+
+;@name: vdp_bgcolor
+;@in: A - color
 vdp_bgcolor:
-	ldy #v_reg7
-;
-; .A/.Y - value / register
+  ldy #v_reg7
+
+;@name: vdp_set_reg
+;@desc: set value to vdp register
+;@in: A - value
+;@in: Y - register
 vdp_set_sreg:
 vdp_set_reg:
-	vdp_wait_s 6 ; 6cl already wasted by jsr
-	sta a_vreg
-	vdp_wait_s
-	sty a_vreg
-	rts
+  vdp_wait_s 6 ; 6cl already wasted by jsr
+  sta a_vreg
+  vdp_wait_s
+  sty a_vreg
+  rts

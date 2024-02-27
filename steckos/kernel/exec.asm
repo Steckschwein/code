@@ -34,48 +34,44 @@
 
 .code
 
-.import fat_fopen, fat_close, fat_fread_byte
+.autoimport
 
 .export execv
 
 ; in:
-;  A/X - pointer to string with the file path
+;   A/X - pointer to string with the file path
 ; out:
-;   Z=1 on success, Z=0 and A=<error code> otherwise
+;   executes program with given path (A/X), C=1 and A=<error code> on error
 execv:
       ldy #O_RDONLY
-      jsr fat_fopen         ; A/X - pointer to filename
-      bne @l_exit
-
-      jsr fat_fread_byte    ; start address low
-      bcs @l_err_exit
-      sta krn_ptr2
-      sta krn_ptr3
-
-      jsr fat_fread_byte    ; start address high
-      bcs @l_err_exit
-      sta krn_ptr2+1
-      sta krn_ptr3+1
-
-@l:   jsr fat_fread_byte
-      bcs @l_is_eof
-      sta (krn_ptr2)
-      inc krn_ptr2
-      bne @l
-      inc krn_ptr2+1
-      bne @l
-@l_err_exit:
-      jsr fat_close      ; close after read to free fd, regardless of error
-@l_exit:
-      debug "exec"
+      jsr fat_fopen       ; A/X - pointer to filename
+      bcc :+
       rts
-@l_is_eof:
-      cmp #0
-      bne @l
-@l_exec_run:
+
+:     jsr fat_fread_byte  ; start address low
+      bcs @l_exit_close
+      sta filenameptr
+      jsr fat_fread_byte  ; start address high
+      bcs @l_exit_close
+      sta filenameptr+1
+
+      tay
+      lda filenameptr
+      jsr fat_fread_vollgas
+
+      pha
       jsr fat_close
+      pla
+      cmp #EOK
+      beq @l_exec_run
+      sec
+      rts
+@l_exit_close:
+      jmp fat_close     ; close after read to free fd, regardless of error
+
+@l_exec_run:
       ; we came here using jsr, but will not rts.
       ; get return address from stack to prevent stack corruption
       pla
       pla
-      jmp (krn_ptr3)
+      jmp (filenameptr)
