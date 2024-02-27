@@ -2,8 +2,6 @@
 
 .autoimport
 
-SYS_VECTOR_IRQ = $fffe
-
 Color_Blinky  = Color_Red
 Color_Inky    = Color_Cyan
 Color_Clyde   = Color_Orange
@@ -34,8 +32,8 @@ MAX_DOTS=226+4  ; food + superfood
 .globalzp _j
 .globalzp _k
 
+IRQ_VEC = $fffe
 
-.code
 Char_Food           = $cc   ;1100 1100
                             ;1100 1101
 Char_Superfood      = $ce   ;1100 1110 $cd/$ce
@@ -97,13 +95,13 @@ ACT_DIR           = 1<<1|1<<0
 ;CORNERING
 
 .macro setIRQ irq, irq_save
-      copyPtr SYS_VECTOR_IRQ, irq_save
-      setPtr irq, SYS_VECTOR_IRQ
+      copyPtr IRQ_VEC, irq_save
+      setPtr irq, IRQ_VEC
 .endmacro
 
 .macro restoreIRQ irq_save
       sei
-      copyPtr irq_save, SYS_VECTOR_IRQ
+      copyPtr irq_save, IRQ_VEC
       cli
 .endmacro
 

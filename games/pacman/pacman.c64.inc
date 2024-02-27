@@ -31,6 +31,8 @@
       COLOR_GRAY3             = $0F
 
 HLine_Border=250  ; bottom border raster line
+HLine_Border_Before=HLine_Border-2
+
 HLine_Last=32 ; $ff
 
 .assert __BSS_RUN__ < VRAM_SPRITE_PATTERN, error, "bss overflow!"

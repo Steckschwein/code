@@ -44,13 +44,15 @@ io_isr:
     lda VIC_HLINE
     cmp #HLine_Border
     beq @io_isr_border
+    cmp #HLine_Border_Before
+    beq @io_isr_before_border
     cmp #HLine_Last
     beq @io_isr_lastline
 
     lda #COLOR_WHITE
     sta VIC_BORDERCOLOR
 ;    jsr gfx_mx ; sprite mx
-    lda #HLine_Border
+    lda #HLine_Border_Before
     sta VIC_HLINE
 
     inc VIC_IRR   ; ack
@@ -72,13 +74,30 @@ io_isr:
     lda #$80        ; bit 7 to signal vblank irq
     rts
 
-@io_isr_border:
-    lda VIC_CTRL1
-    and #$f7            ; vic trick to open border - clean 24/25 rows bit
-    sta VIC_CTRL1
+@io_isr_before_border:
+    lda #HLine_Border-3
+    sta VIC_SPR0_Y
+    sta VIC_SPR1_Y
+    sta VIC_SPR2_Y
+    sta VIC_SPR3_Y
+    sta VIC_SPR4_Y
+    sta VIC_SPR5_Y
 
-    lda Color_Border
-    sta VIC_BG_COLOR0
+    lda #HLine_Border
+    sta VIC_HLINE
+    inc VIC_IRR   ; ack
+
+    lda #0
+    rts
+
+@io_isr_border:
+            lda VIC_CTRL1
+            and #$f7            ; vic trick to open border - clean 24/25 rows bit
+            sta VIC_CTRL1
+
+            lda #COLOR_BLUE
+;    sta VIC_BORDERCOLOR
+            sta VIC_BG_COLOR0
 ;    lda #HLine_Border
  ;   sta VIC_SPR0_Y
   ;  sta VIC_SPR1_Y
@@ -111,7 +130,7 @@ io_isr:
 
             lda #0
 @rts:
-    rts
+            rts
 
 ;  out:
 ;    one of ACT_LEFT, ACT_RIGHT,... with C=1
