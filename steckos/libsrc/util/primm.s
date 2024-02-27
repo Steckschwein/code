@@ -23,7 +23,7 @@
 .export primm
 .import char_out
 
-.zeropage
+.segment "ZEROPAGE_LIB": zeropage
    DPL: .res 1
    DPH: .res 1
 

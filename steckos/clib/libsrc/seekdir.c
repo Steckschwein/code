@@ -1,7 +1,3 @@
-/*
-** 2012-06-03, Ullrich von Bassewitz. Based on code by Groepaz.
-** 2014-07-16, Greg King
-*/
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>

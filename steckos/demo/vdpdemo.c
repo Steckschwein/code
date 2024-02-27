@@ -32,7 +32,11 @@ int main(int argc, char* argv){
   int y;
 
   vdp_screen(7);
-  for(x=0;x<255;x++){
+  vdp_blank(0);
+
+  vdp_plot(255,100,0xff);
+
+  for(x=0;x<256;x++){
     for(y=0;y<212;y++){
       vdp_plot(x,y,x);
     }

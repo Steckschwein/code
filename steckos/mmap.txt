@@ -1,0 +1,23 @@
+$0000 - $00FF   Zeropage
+$0100 - $01FF   Stack
+$0200	- $020F   UART
+$0210	- $021F   VIA
+$0220	- $022F   VDP
+$0230	- $023F   Internal memory mapping registers
+$0240	- $024F   OPL2
+$0250	- $025F   Expansion slot 0
+$0260	- $026F   Expansion slot 1
+$0270	- $027F   reserved for future use
+$0280 - $0283   lba address
+$0284           blocks
+$0285 - $0286   unused
+$0287           1 byte keyboard char "buffer"
+$0288           video mode register
+$0289 - $028A   User ISR 
+$028B           TextUI cursor pos x
+$028c           TextUI cursor pos x/y
+$02A0 - $02A7   rtc_systime_t
+$02A8 - $02FF   ?
+$0300 - $032F   FAT32 VolumeID
+$0330 - $033C   filename_buf    
+$033D - $0400   fd_area

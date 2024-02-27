@@ -19,132 +19,148 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
+;@module: fat32
 
 .ifdef DEBUG_FAT32_DIR ; debug switch for this module
-	debug_enabled=1
+          debug_enabled=1
 .endif
 
 .include "zeropage.inc"
 .include "common.inc"
 .include "fat32.inc"
 .include "rtc.inc"
-.include "errno.inc"	; from ca65 api
-.include "fcntl.inc"	; from ca65 api
+.include "errno.inc"  ; from ca65 api
+.include "fcntl.inc"  ; from ca65 api
 
 .include "debug.inc"
 
 ;lib internal api
-.import __fat_isroot
-.import __fat_init_fd
-.import __fat_free_fd
-.import __fat_alloc_fd
-.import __fat_set_fd_direntry
-.import __fat_open_path
-.import __fat_find_first
-.import __fat_find_first_mask
-.import __fat_find_next
-.import __fat_clone_fd
-.import __fat_clone_cd_td
-.import __calc_lba_addr
-
-.import string_fat_name, fat_name_string, put_char
-.import string_fat_mask
-.import dirname_mask_matcher, cluster_nr_matcher
-.import path_inverse
-
-.importzp __volatile_ptr
+.autoimport
 
 .export fat_chdir
-.export fat_get_root_and_pwd
-.export __fat_opendir_cwd
+.export fat_opendir
+.export fat_readdir
+.export fat_read_direntry
+
+.export __fat_readdir
+.export __fat_readdir_next
 
 .code
 
-; open directory by given path starting from current directory
-;in:
-;	A/X - pointer to string with the file path
-;out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
-;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
-__fat_opendir_cwd:
-		ldy #FD_INDEX_CURRENT_DIR	; clone current dir fd to temp dir fd (in __fat_open_path)
+;@name: "fat_opendir"
+;@in: A/X - pointer to string with the file path
+;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"
+;@out: X, "index into fd_area of the opened directory"
+;@desc: "open directory by given path starting from directory given as file descriptor"
+fat_opendir:
+              ldy #O_RDONLY
+              jsr fat_open
+              bcs @l_exit
+              and #DIR_Attr_Mask_Dir	; check for directory
+              bne @l_exit
+              jsr __fat_free_fd       ; we opened a file. close it immediately and free the allocated fd
+              lda #ENOTDIR				    ; error "Not a directory"
+              sec
+@l_exit:      rts
 
-; open directory by given path starting from directory given as file descriptor
-; in:
-;	A/X - pointer to string with the file path
-;	Y 	- the file descriptor of the base directory which should be used, defaults to current directory (FD_INDEX_CURRENT_DIR)
-; out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
-;	X - index into fd_area of the opened directory - !!! ATTENTION !!! X is exactly the FD_INDEX_TEMP_DIR on success
-__fat_opendir:
-		jsr __fat_open_path
-		bne @l_exit					; exit on error
-		lda fd_area + F32_fd::Attr,x
-		and #DIR_Attr_Mask_Dir	; check that there is no error and we have a directory
-		beq @l_exit_close
-		lda #EOK						; ok
-@l_exit:
-		debug "fod"
-		rts
-@l_exit_close:
-		lda #ENOTDIR				; error "Not a directory"
-		jmp __fat_free_fd			; not a directory, so we opened a file. just close them immediately and free the allocated fd
-
-		;in:
-		;	A/X - pointer to the result buffer
-		;	Y	- size of result buffer
-		;out:
-		;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
-fat_get_root_and_pwd:
-		sta __volatile_ptr
-		stx __volatile_ptr+1
-;		tya
-;		eor	#$ff
-		;sta	krn_ptr3					;TODO FIXME - length check of output buffer, save -size-1 for easy loop
-		SetVector block_fat, krn_ptr3		;TODO FIXME - we use the 512 byte fat block buffer as temp space - FTW!
-		stz krn_tmp3
-
-		jsr __fat_clone_cd_td							; start from current directory, clone the cd fd
-
-@l_rd_dir:
-		lda #'/'														; put the / char to result string
-		jsr put_char
-		ldx #FD_INDEX_TEMP_DIR									; if root, exit to inverse the path string
-		jsr __fat_isroot
-		beq @l_inverse
-		m_memcpy fd_area+FD_INDEX_TEMP_DIR+F32_fd::CurrentCluster, fat_tmp_dw, 4	; save the cluster from the fd of the "current" dir which is stored in FD_INDEX_TEMP_DIR (see clone above)
-		lda #<l_dot_dot
-		ldx #>l_dot_dot
-		ldy #FD_INDEX_TEMP_DIR									; call opendir function with "..", on success the fd (FD_INDEX_TEMP_DIR) was updated and points to the parent directory
-		jsr __fat_opendir
-		bne @l_exit
-		SetVector cluster_nr_matcher, fat_vec_matcher	; set the matcher strategy to the cluster number matcher
-		jsr __fat_find_first										; and call find first to find the entry with that cluster number we saved in fat_tmp_dw before we did the cd ".."
-		bcc @l_exit
-		jsr fat_name_string										; found, dirptr points to the entry and we can simply extract the name - fat_name_string formats and appends the dir entry name:attr
-		bra @l_rd_dir												; go on with bottom up walk until root is reached
-@l_inverse:
-		copypointer __volatile_ptr, krn_ptr2				; __volatile_ptr is the pointer to the result string, given by the caller (eg. pwd.prg)
-		jsr path_inverse								; since we captured the dir entry names bottom up, the path segments are in inverse order, we have to inverse them per segment and write them to the target string
-		lda #EOK										; that's it...
-@l_exit:
-		rts
-l_dot_dot:
-		.asciiz ".."
 
 ;in:
-;	A/X - pointer to string with the file path
+;   A/X - pointer to string with the file path
 ;out:
-;	Z - Z=1 on success (A=0), Z=0 and A=error code otherwise
+;	C - C=0 on success (A=0), C=1 and A=error code otherwise
 ;	X - index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)
+;@name: "fat_chdir"
+;@in: A, "low byte of pointer to zero terminated string with the file path"
+;@in: X, "high byte of pointer to zero terminated string with the file path"
+;@out: C, "C=0 on success (A=0), C=1 and A=<error code> otherwise"
+;@out: X, "index into fd_area of the opened directory (which is FD_INDEX_CURRENT_DIR)"
+;@desc: "change current directory"
 fat_chdir:
-		jsr __fat_opendir_cwd
-		bne @l_exit
-		ldy #FD_INDEX_TEMP_DIR		  ; the temp dir fd is now set to the last dir of the path and we proofed that it's valid with the code above
-		ldx #FD_INDEX_CURRENT_DIR
-		jsr __fat_clone_fd				; therefore we can simply clone the temp dir to current dir fd - FTW!
-		lda #EOK						; ok
-@l_exit:
-		debug "fcd"
-		rts
+              jsr fat_opendir
+              bcs @l_exit
+              jsr __fat_free_fd         ; free fd immediately
+              ldy #FD_INDEX_TEMP_FILE   ; open success, FD_INDEX_TEMP_FILE still contains the data from last opened file
+              ldx #FD_INDEX_CURRENT_DIR
+              jsr __fat_clone_fd				; therefore we can simply clone the opened fd to current dir fd - FTW!
+@l_exit:      debug "f cd <"
+              rts
+
+
+;@name: fat_readdir
+;@desc: readdir expects a pointer in A/Y to store the next F32DirEntry structure representing the next FAT32 directory entry in the directory stream pointed of directory X.
+;@in: X - file descriptor to fd_area of the directory
+;@in: A/Y - pointer to target buffer which must be .sizeof(F32DirEntry)
+;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise. C=1/A=EOK if end of directory is reached
+fat_readdir:
+              sta __volatile_ptr
+              sty __volatile_ptr+1
+
+              lda fd_area+F32_fd::Attr, x
+              and #DIR_Attr_Mask_Dir		; is directory?
+              bne @l_read_dir
+              lda #ENOTDIR
+@l_exit_eod:  cmp #ENOENT
+              bne @l_exit
+              lda #EOK
+@l_exit:      sec
+              rts
+
+@l_read_dir:  jsr __fat_readdir
+              bcs @l_exit_eod
+
+              jsr __fat_dir_copy_dirent
+
+__fat_readdir_seek:
+              lda #DIR_Entry_Size
+              ldy #0
+              jmp __fat_add_seekpos
+
+__fat_readdir_next:
+              jsr __fat_readdir_seek
+__fat_readdir:
+              jsr __fat_prepare_data_block_access_read
+              bcs @l_exit
+              sta dirptr
+              sty dirptr+1
+
+              lda (dirptr)
+              beq @l_exit_eod             ; first byte of dir entry is $00 (end of directory)
+              cmp #DIR_Entry_Deleted
+              beq __fat_readdir_next
+
+              ldy #F32DirEntry::Attr      ; else check if long filename entry
+              lda (dirptr),y              ; we are only going to filter those here (or maybe not?)
+              cmp #DIR_Attr_Mask_LongFilename
+              beq __fat_readdir_next
+              clc
+@l_exit:      debug16 "f rd <", dirptr
+              rts
+@l_exit_eod:  lda #ENOENT
+              sec ; eod reachead, C=1/A=EOK
+              debug16 "f rd eod <", dirptr
+              rts
+
+__fat_dir_copy_dirent:
+              ldy #.sizeof(F32DirEntry)-1
+:             lda (dirptr),y
+              sta (__volatile_ptr),y
+              dey
+              bpl :-
+              rts
+
+;@name: fat_read_direntry
+;@desc: readdir expects a pointer in A/Y to store the F32DirEntry structure representing the requested FAT32 directory entry for the given fd (X).
+;@in: X - file descriptor to fd_area of the file
+;@in: A/Y - pointer to target buffer which must be .sizeof(F32DirEntry)
+;@out: C - C = 0 on success (A=0), C = 1 and A = <error code> otherwise. C=1/A=EOK if end of directory is reached
+fat_read_direntry:
+              _is_file_open
+
+              sta __volatile_ptr
+              sty __volatile_ptr+1
+
+              jsr __fat_read_direntry
+              bcs @l_exit
+
+              jmp __fat_dir_copy_dirent
+@l_exit:      rts

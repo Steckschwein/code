@@ -2,52 +2,56 @@
 ;
 ; zeropage usage
 
-.include		  "zeropage.inc"
+.include      "zeropage.inc"
 
 ; ------------------------------------------------------------------------
-.zeropage
-
-
-
 ; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
-.exportzp cmdptr    = $d6
-.exportzp paramptr  = $d8
-.export retvec    = $fff8
-
-; TEXTUI
-.exportzp crs_ptr   = $e0
-
-; kernel pointer (internally used)
-.exportzp krn_ptr1	= $e2	; 2 bytes
-.exportzp krn_ptr2	= $e4	; 2 bytes
-.exportzp krn_ptr3	= $e6	; 2 bytes
-
-.exportzp krn_tmp	= $e8
-.exportzp krn_tmp2	= krn_tmp+1	; single byte
-.exportzp krn_tmp3	= krn_tmp+2	; single byte
+.exportzp cmdptr    = location_cmdptr
+.exportzp paramptr  = location_paramptr
 
 ; have to use fixed zp locations to avoid ehbasic clashes
-.exportzp vdp_ptr   =$ec
-.exportzp vdp_tmp   =$ee
+.exportzp vdp_ptr   = location_vdp_ptr
+.exportzp vdp_tmp   = location_vdp_tmp
+
 
 ; FAT32
-.exportzp filenameptr   = $f0	; 2 byte
-.exportzp dirptr        = $f2	; 2 byte
+.exportzp filenameptr   = location_filenameptr  ; 2 byte
+.exportzp dirptr        = location_dirptr       ; 2 byte
 
 ; SDCARD/storage block pointer
-.exportzp read_blkptr  	= $f4
-.exportzp write_blkptr 	= $f6
+.exportzp sd_blkptr    = location_sdblock_ptr
 
 ; spi shift register location
-.exportzp spi_sr        = $f9
-.exportzp __volatile_ptr = $fa
-.exportzp __volatile_tmp = $fc
+.exportzp spi_sr            = location_spi_sr
+.exportzp __volatile_ptr    = location___volatile_ptr
+.exportzp __volatile_tmp    = location___volatile_tmp
 
 ; flags/signals (like ctrl-c, etc)
-.exportzp flags         = $fd
+.exportzp flags             = location_flags
+
+.export retvec    = $fff8
+
+.export lba_addr  = $0280   ; 4 bytes
+.export blocks    = $0284   ; 1 byte - blocks to read with max sec/cl (volumeID+VolumeID::BPB_SecPerClus)
+; $0285 free
+; $0286 free
+.export key       = $0287   ; 1 byte - keyboard char
+
+; video mode register
+.export video_mode   = $0288
+                ; TODO not implemented/used yet - bit 0-4 - video mode bits - m1-m5 refer to msx spec. - e.g.
+                ;   TEXT1 - 00001
+                ;   TEXT2 - 01001
+                ;   MC    - 00010
+                ;   G1    - 00000
+                ;   G2    - 00100
+                ;   G3    - 01000
+                ; bit 6 - text mode with 0 - 40 / 1 - 80 columns
+                ; bit 7 - 0 - NTSC / 1 - PAL
 
 
-;.exportzp ansi_state			 = $f9
-;.exportzp ansi_index			 = $fa
-;.exportzp ansi_param1			= $fb
-;.exportzp ansi_param2			= $fc
+; custom isr, aligned with v-blank, called by kernel on each frame
+.export user_isr  = $0289
+; TEXTUI
+.export crs_x      = $028b
+.export crs_y      = $028c

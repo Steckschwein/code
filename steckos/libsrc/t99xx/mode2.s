@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
 .import vdp_init_reg
@@ -31,31 +33,26 @@
 .importzp vdp_ptr, vdp_tmp
 
 .code
-;
-;  gfx 2 - each pixel can be addressed - e.g. for image
-;
-vdp_mode2_on:
-    lda #<vdp_init_bytes_gfx2
-    ldy #>vdp_init_bytes_gfx2
-    ldx #<(vdp_init_bytes_gfx2_end-vdp_init_bytes_gfx2)-1
-    jsr vdp_init_reg
-    jmp vdp_fill_name_table
 
-vdp_fill_name_table:
+;@name: vdp_mode2_on
+;@desc: gfx 2 - each pixel can be addressed - e.g. for image
+vdp_mode2_on:
+    lda #<@vdp_init_bytes_gfx2
+    ldy #>@vdp_init_bytes_gfx2
+    ldx #<(@vdp_init_bytes_gfx2_end-@vdp_init_bytes_gfx2)-1
+    jsr vdp_init_reg
     ;set 768 different patterns --> name table
     vdp_vram_w ADDRESS_GFX2_SCREEN
-;        vdp_sreg <ADDRESS_GFX2_SCREEN, WRITE_ADDRESS+ >ADDRESS_GFX2_SCREEN
     ldy #$03
     ldx #$00
-@0:  vdp_wait_l 6  ;
+@0: vdp_wait_l 6  ;
     stx  a_vram  ;1
     inx      ;2
     bne  @0    ;3
     dey
     bne  @0
     rts
-
-vdp_init_bytes_gfx2:
+@vdp_init_bytes_gfx2:
       .byte v_reg0_m3    ;
       .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size |v_reg1_int
       .byte (ADDRESS_GFX2_SCREEN / $400)  ; name table - value * $400
@@ -68,11 +65,12 @@ vdp_init_bytes_gfx2:
       .byte v_reg8_VR  ; VR - 64k VRAM TODO set per define
       .byte v_reg9_nt ; #R9, set bit to 1 for PAL
   .endif
-vdp_init_bytes_gfx2_end:
+@vdp_init_bytes_gfx2_end:
 
 ;
-; blank gfx mode 2 with
-;   .A - color to fill [0..f]
+;@name: vdp_mode2_blank
+;@desc: blank gfx mode 2 with
+;@in: A - color to fill [0..f]
 ;
 vdp_mode2_blank:    ; 2 x 6K
   tax

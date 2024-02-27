@@ -22,54 +22,57 @@
 .ifndef _ZEROPAGE_INC_
   _ZEROPAGE_INC_=1
 
-.globalzp ptr1, ptr2, ptr3, ptr4, ptr5, ptr6
-.globalzp tmp1, tmp2, tmp3, tmp4
-.globalzp tmp
+location_cmdptr    = $e0
+location_paramptr  = $e2
+
+; have to use fixed zp locations to avoid ehbasic clashes
+location_vdp_ptr   = $e4
+location_vdp_tmp   = $e6
+
+; FAT32
+location_filenameptr   = $e7  ; 2 byte
+location_dirptr        = $e9  ; 2 byte
+
+; SDCARD/storage block pointer
+location_sdblock_ptr    = $eb
+
+; spi shift register location
+location_spi_sr            = $ed
+location___volatile_ptr    = $ee
+location___volatile_tmp    = $f0
+
+; flags/signals (like ctrl-c, etc)
+location_flags             = $f1
+
+
 .globalzp spi_sr
 .globalzp vdp_ptr, vdp_tmp
-
-.globalzp crs_ptr
-
-.globalzp krn_ptr1,krn_ptr2, krn_ptr3
-.globalzp krn_ptr2, krn_ptr3
-.globalzp krn_tmp,krn_tmp2,krn_tmp3
+.globalzp __volatile_ptr
+.globalzp __volatile_tmp
 
 .globalzp filenameptr, dirptr
-.globalzp read_blkptr, write_blkptr
+.globalzp sd_blkptr
 
 .globalzp cmdptr
 .globalzp paramptr
 .globalzp flags
 
+; lower memory after i/o
+
 .global retvec
+.global user_isr
 
-; custom isr, aligned with v-blank, called by kernel on each frame
-user_isr	  = $028a
+.global lba_addr
+.global blocks
+.global key
 
-; TEXTUI
-crs_x	= $028c
-crs_y	= $028d
+.global crs_ptr
+.global crs_x
+.global crs_y
 
-key = $0287 ; 1 byte keyboard char
-
-lba_addr 		= $0280		; 4 bytes
-blocks			= $0284		; 3 bytes blocks to read, 3 bytes sufficient to address 4GB -> 4294967296 >> 9 = 8388608 ($800000) max blocks/file
+.global video_mode
 
 VIDEO_MODE_PAL      = 1<<7
 VIDEO_MODE_80_COLS  = 1<<6
-
-video_mode 		= $0288 ; video mode register
-                ; TODO not implemented/used yet - bit 0-4 - video mode bits - m1-m5 refer to msx spec. - e.g.
-                ;   TEXT1 - 00001
-                ;   TEXT2 - 01001
-                ;   MC    - 00010
-                ;   G1    - 00000
-                ;   G2    - 00100
-                ;   G3    - 01000
-                ; bit 6 - text mode with 0 - 40 / 1 - 80 columns
-                ; bit 7 - 0 - NTSC / 1 - PAL
-
-
-trampolin	    = $0010
 
 .endif

@@ -20,15 +20,19 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
 .export vdp_mode7_set_pixel
 
 .code
-;  .X - x coordinate [0..ff]
-;  .Y - y coordinate [0..bf]
-;  .A - color [0..ff] as GRB 332 (green bit 7-5, red bit 4-2, blue bit 1-0)
-;   VRAM ADDRESS = .X + 256*.Y
+
+;@name: vdp_mode7_set_pixel
+;@desc: VRAM ADDRESS = .X + 256*.Y
+;@in: X - x coordinate [0..ff]
+;@in: Y - y coordinate [0..bf]
+;@in. A - color [0..ff] as GRB 332 (green bit 7-5, red bit 4-2, blue bit 1-0)
 vdp_mode7_set_pixel:
       php
       sei
@@ -60,13 +64,15 @@ vdp_mode7_set_pixel:
       plp
       rts
 
+;@name: vdp_gfx7_set_pixel_direct
+;@desc:
 ; requires
 ;  - int handling is done outside
 ;  - page register set accordingly (v_reg14)
-;  .X - x coordinate [0..ff]
-;  .Y - y coordinate [0..bf]
-;  .A - color GRB [0..ff] as 332
 ;   VRAM ADDRESS = .X + 256*.Y
+;@in: X - x coordinate [0..ff]
+;@in: Y - y coordinate [0..bf]
+;@in: A - color GRB [0..ff] as 332
 vdp_gfx7_set_pixel_direct:
       stx a_vreg            ; A7-A0 vram address low byte
       pha

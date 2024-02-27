@@ -21,12 +21,34 @@
 
 
 struct DIR {
-    int         fd;             /* File descriptor for directory */
-    unsigned    off;            /* Current byte offset in directory */
-    char        name[8+1+3 +1];     /* Name passed to opendir */
-    union {
-        unsigned char bytes[512];
-    } block;
+
+    int fd;                   /* File descriptor for directory */
+    char      name[8+1+3 +1]; /* Name passed to opendir */
+    unsigned long off;        /* Current byte offset in directory */
+
+    struct dirent current_entry;
+
+    struct {
+      unsigned char       name[8];  // fat32 name
+      unsigned char       ext[3];   // fat32 ext
+      unsigned char       attr;
+      char                res;
+      unsigned char       crt_ms;
+      unsigned int        crt_time; // fat 32 create time
+      unsigned int        crt_date; // fat 32 create date
+      unsigned int        lmd; // fat 32 last modified
+
+      unsigned int        cl_h; // fat 32 cluster high word
+
+      unsigned int        wrt_time; // fat 32 create time
+      unsigned int        wrt_date; // fat 32 create date
+
+      unsigned int        cl_l; // fat 32 cluster low word
+
+      unsigned long       fsize;
+
+    } f32_dirent;
+
 };
 
 

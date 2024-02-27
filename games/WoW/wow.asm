@@ -3,8 +3,8 @@
 .import intro_main
 
 .export char_out=krn_chrout
-.export fopen=krn_open
-.export fread=krn_fread
+.export fopen=krn_fopen
+.export fread_byte=krn_fread_byte
 .export fclose=krn_close
 
 appstart

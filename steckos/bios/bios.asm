@@ -1,25 +1,12 @@
 .include "bios.inc"
 
-.import uart_init
-.import xmodem_upload,crc16_table_init
-.import init_via1
-.import hexout, hexout_s
-.import primm
-.import vdp_init, vdp_detect, vdp_charout
-.import vdp_bgcolor
-.import sdcard_init
-.import sdcard_detect
-.import fat_mount
-.import fat_fopen, fat_fread_byte, fat_close
-.import read_nvram
-.import sd_read_block, sd_write_block
-.import spi_select_device
-.import spi_deselect
-.import spi_rw_byte
-.import spi_r_byte
-.import fetchkey
+.autoimport
 
-.export read_block=sd_read_block
+; expose high level read_/write_block api
+.export read_block=             blklayer_read_block
+; configure low level or device read_/write_block api
+.export dev_read_block=         sd_read_block
+
 .export char_out=vdp_charout
 .export debug_chrout=vdp_charout
 ;.export char_out=uart_tx
@@ -34,13 +21,19 @@
       ptr1:       .res 2
       ptr2:       .res 2
       init_step:  .res 1
+      startaddr:  .res 2
+
+;.exportzp ptr1,  ptr2
+
 .code
 
-startaddr=$0380
-
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
-      .export __fat_write_dir_entry=fat_write_dir_entry
-fat_write_dir_entry:
+.export dev_write_block=_noop
+.export write_block=_noop
+.export write_block_buffered=_noop
+.export write_flush=_noop
+_noop:
+      clc
       rts
 
 memcheck:
@@ -188,9 +181,9 @@ do_reset:
       txs
 
       lda #$00
-      sta ctrl_port+0
-      lda #$01
-      sta ctrl_port+1
+      sta slot0
+      ina
+      sta slot1
 
       ; Check zeropage and Memory
 check_zp:
@@ -224,6 +217,9 @@ zp_broken:
 stack_broken:
 
 zp_stack_ok:
+
+      jsr blklayer_init
+
       jsr init_via1
 
       lda #<nvram
@@ -262,7 +258,7 @@ zp_stack_ok:
 boot_from_card:
       print "Boot from SD card... "
       jsr fat_mount
-      beq @findfile
+      bcc @findfile
       pha
       print "mount error ("
       pla
@@ -281,8 +277,7 @@ boot_from_card:
       ldx #>nvram
       ldy #O_RDONLY
       jsr fat_fopen          ; A/X - pointer to filename
-      beq @loadfile
-@loop_end:
+      bcc @loadfile
       println " not found."
       bra do_upload
 @loadfile:
@@ -290,25 +285,20 @@ boot_from_card:
       jsr fat_fread_byte  ; start address low
       bcs load_error
       sta startaddr+0
-      sta ptr1+0
       print_dot
 
       jsr fat_fread_byte ; start address high
       bcs load_error
       sta startaddr+1
-      sta ptr1+1
       print_dot
-@l:   jsr fat_fread_byte
-      bcs @l_is_eof
-      sta (ptr1)
-      inc ptr1+0
-      bne @l
-      inc ptr1+1
-      bne @l
+      lda startaddr
+      ldy startaddr+1
+      jsr fat_fread_vollgas
 @l_is_eof:
-      cmp #0
-      bne @l
+      pha
       jsr fat_close    ; close after read to free fd, regardless of error
+      pla
+      cmp #EOK
       beq load_ok
 load_error:
       jsr hexout_s

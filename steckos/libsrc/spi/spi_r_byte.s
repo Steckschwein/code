@@ -26,15 +26,19 @@
 .include "via.inc"
 .include "spi.inc"
 .include "errno.inc"
+;@module: spi
 
 .export spi_r_byte
-
 .code
 ;----------------------------------------------------------------------------------------------
 ; Receive byte VIA SPI
 ; Received byte in A at exit, Z, N flags set accordingly to A
 ; Destructive: A,X
 ;----------------------------------------------------------------------------------------------
+;@name: "spi_r_byte"
+;@out: A, "received byte"
+;@clobbers: A,X
+;@desc: "read byte via SPI"
 spi_r_byte:
 		lda via1portb	; Port laden
 		AND #$fe		  ; Takt ausschalten, MOSI set to '1' - we send $ff byte

@@ -24,8 +24,12 @@
 .export strout
 
 .import char_out
-.importzp ptr1
+;.importzp ptr1
 
+.segment "ZEROPAGE_LIB": zeropage
+_ptr: .res 2
+
+;@module: util
 .code
 ;----------------------------------------------------------------------------------------------
 ; Output string on active output device
@@ -36,14 +40,19 @@
 ;.ifdef TEXTUI_STROUT
 ;strout = textui_strout
 ;.else
+; A to 2 digit ASCII
+;@name: "strout"
+;@in: A, "lowbyte  of string address"
+;@in:	X, "highbyte of string address"
+;@desc: "Output string on active output device"
 strout:
-		sta ptr1		;init for output below
-		stx ptr1+1
+		sta _ptr		;init for output below
+		stx _ptr+1
 		pha					  ;save a, y to stack
 		phy
 
 		ldy #$00
-@l1:	lda (ptr1),y
+@l1:	lda (_ptr),y
 		beq @l2
 		jsr char_out
 		iny

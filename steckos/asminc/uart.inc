@@ -24,18 +24,18 @@
 .define	__UART_INC "__UART_INC"
 
 ; UART address and registers
-uart1			  = $0200
-uart_rxtx		 = 0
-uart_ier		 = 0
-uart_dll		 = 0
-uart_dlh		 = 1
-uart_iir		 = 2
-uart_fcr		 = 2
-uart_lcr		 = 3
-uart_mcr		 = 4
-uart_lsr		 = 5
-uart_msr		 = 6
-uart_scr		 = 7
+uart1			= $0200
+uart_rxtx		= 0
+uart_ier		= 0
+uart_dll		= 0
+uart_dlh		= 1
+uart_iir		= 2
+uart_fcr		= 2
+uart_lcr		= 3
+uart_mcr		= 4
+uart_lsr		= 5
+uart_msr		= 6
+uart_scr		= 7
 
 uart_mcr_out1 = 1<<2
 

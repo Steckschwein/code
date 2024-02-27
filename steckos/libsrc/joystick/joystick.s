@@ -7,13 +7,17 @@
 .export joystick_on
 .export joystick_detect
 
-
+;@module: joystick
 ;
 ;  in:
 ;     A - joystick to read either JOY_PORT1 or JOY_PORT2
 ;        @see joystick.inc
 ;  out:
 ;     A - joystick buttons - bit 0-4
+;@name: "joystick_read"
+;in: A, "joystick to read, JOY_PORT1 or JOY_PORT2, see joystick.inc"
+;@out: A, "joystick button state - bit 0-4"
+;@desc: "read state of specified joystick"
 joystick_read:
 read_joystick:
       and #$80        ;select joy port
@@ -37,6 +41,11 @@ joystick_on:
 ;  in: -
 ;  out:
 ;     .A - Z=1 no joystick detected, Z=0 and A=JOY_PORT1 joystick port 1 or A=JOY_PORT2 joystick port 2
+
+;@name: "joystick_detect"
+;@out: Z, "Z=1 no joystick detected, Z=0 joystick detected, port in A"
+;@out: A, "detected joystick port, JOY_PORT1 or JOY_PORT2"
+;@desc: "detect joystick"
 joystick_detect:
       lda #JOY_PORT1
       jsr _detect
