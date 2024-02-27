@@ -131,14 +131,10 @@ krn_write_byte:         jmp fat_write_byte
 ;@out: C=0 on success (A=0), C=1 and A=<error code> or C=1 and A=0 (EOK) if EOF reached
 .export krn_fseek
 krn_fseek:              jmp fat_fseek
-
-;@name: "krn_getcwd"
-;@in: A, "low byte of address to write the current work directory string into"
-;@in: Y, "high byte address to write the current work directory string into"
-;@in: X, "size of result buffer pointet to by A/X"
-;@out: C, "0 on success, 1 on error"
-;@out: A, "error code"
-;@desc: "get current directory"
+.export krn_find_first
+krn_find_first:         jmp fat_find_first
+.export krn_find_next
+krn_find_next:          jmp fat_find_next
 .export krn_getcwd
 krn_getcwd:             jmp fat_get_root_and_pwd
 
@@ -167,8 +163,6 @@ krn_read_direntry:      jmp fat_read_direntry
 krn_update_direntry:    jmp fat_update_direntry
 
 ; display stuff
-;@module: video
-
 .export krn_textui_init
 krn_textui_init:        jmp  textui_init
 .export krn_textui_enable
