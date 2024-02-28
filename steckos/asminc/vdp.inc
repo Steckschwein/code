@@ -53,19 +53,19 @@ v_reg1_m2         = 1<<3
 v_reg1_spr_size   = 1<<1 ; 1: sprite size 16x16, 0: 8x8 sprite
 v_reg1_spr_mag    = 1<<0 ; 1: scale (magnify) sprite double size
 
-v_reg8_BW      = 1<<0  ; 0/1 grayscale off/on
-v_reg8_SPD       = 1<<1  ; 0/1 sprites enabled/disabled
-v_reg8_VR      = 1<<3  ; 0/1 16k/64k video ram
+v_reg8_BW         = 1<<0  ; 0/1 grayscale off/on
+v_reg8_SPD        = 1<<1  ; 0/1 sprites enabled/disabled
+v_reg8_VR         = 1<<3  ; 0/1 16k/64k video ram
 
-v_reg9_ln     = 1<<7   ; lines - 0 - 192 lines, 1 - 212 lines
-v_reg9_il     = 1<<3    ; interlace
-v_reg9_nt     = 1<<1    ; ntsc - 0 / pal - 1
-v_reg17_aii      = 1<<7  ; auto increment
+v_reg9_ln         = 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
+v_reg9_il         = 1<<3  ; interlace
+v_reg9_nt         = 1<<1  ; ntsc - 0 / pal - 1
+v_reg17_aii       = 1<<7  ; auto increment
 
-v_reg25_sp2     = 1<<0
-v_reg25_msk     = 1<<1
-v_reg25_wait     = 1<<2
-v_reg25_cmd     = 1<<6
+v_reg25_sp2       = 1<<0  ; 0:Sets the horizontal screen size to 1 page, 1:Sets the horizontal screen size to two pages.
+v_reg25_msk       = 1<<1  ; 1:The left 8 dots are masked and the border color is output.
+v_reg25_wait      = 1<<2
+v_reg25_cmd       = 1<<6
 
 v_reg45_mxc = 1<<6
 v_reg45_mxd = 1<<5
@@ -347,6 +347,10 @@ vdp_nopslide_end:
 .macro vdp_vram_r _24bit
    vdp_sreg <.HIWORD(_24bit<<2), v_reg14
    vdp_sreg <.LOWORD(_24bit), (>.LOWORD(_24bit) & $3f)
+.endmacro
+
+.macro lda_vdp_rgb _r, _g, _b
+    lda #(_g & $e0 | (_r & $e0)>>3 | _b>>6)
 .endmacro
 
 .macro vdp_rgb _r, _g, _b

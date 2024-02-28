@@ -75,6 +75,7 @@ appstart $1000
 
     lda #<_ppmfile
     ldx #>_ppmfile
+    ldy #1
     jsr ppm_load_image
     bcs ppm_error
 
@@ -90,6 +91,7 @@ appstart $1000
     jsr gfxui_on
     lda paramptr
     ldx paramptr+1
+    ldy #1
     jsr ppm_load_image
     bcs ppm_error
     keyin
