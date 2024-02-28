@@ -2,6 +2,11 @@
 .include "vdp.inc"
 
 .autoimport
+
+.export fopen=krn_fopen
+.export fclose=krn_close
+.export fread_byte=krn_fread_byte
+
 appstart $1000
 PLAYER_SPRITE_NR = 6
 
@@ -72,7 +77,7 @@ PLAYER_SPRITE_NR = 6
   beq @exit
 
 
-  jsr krn_getkey 
+  jsr krn_getkey
   sta keyb
 
   cmp #KEY_CRSR_UP
@@ -90,13 +95,13 @@ PLAYER_SPRITE_NR = 6
   bra @loop
 
 @up:
-  dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_Y 
+  dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_Y
   bra @loop
 @down:
   inc sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_Y
   bra @loop
 @left:
-  dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X 
+  dec sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X
   bra @loop
 @right:
   inc sprite_attr + 4*PLAYER_SPRITE_NR + SPRITE_X
@@ -144,6 +149,10 @@ gfxui_on:
 
   ldy #0
   jsr vdp_mode7_blank
+
+  lda #<bgppm
+  ldx #>bgppm
+  jsr ppm_load_image
 
   rts
 
@@ -216,7 +225,7 @@ sprity_mc_spriteface:
   lda #<sprite_attr
   ldy #>sprite_attr
   ldx #(sprite_attr_end - sprite_attr)
-  jsr vdp_memcpys 
+  jsr vdp_memcpys
   rts
 
 .data
@@ -258,137 +267,137 @@ sprite_attr:
 sprite_attr_end:
 sprite_color:
 ; sprite 0
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
-  .byte GFX7_LightBlue | $20 
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
+  .byte GFX7_LightBlue | $20
 
 ; sprite 1
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
-  .byte GFX7_LightRed | $20 
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
+  .byte GFX7_LightRed | $20
 
 ; sprite 2
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
-  .byte GFX7_LightYellow | $20 
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
+  .byte GFX7_LightYellow | $20
 
 ; sprite 3
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
-  .byte GFX7_LightGreen | $20 
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
+  .byte GFX7_LightGreen | $20
 
 ; sprite 4
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
-  .byte GFX7_LightMagenta | $20 
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
+  .byte GFX7_LightMagenta | $20
 
 ; sprite 5
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
-  .byte GFX7_White | $20 
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
+  .byte GFX7_White | $20
 
 ; sprite 6
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
-  .byte GFX7_LightCyan | $20 
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
+  .byte GFX7_LightCyan | $20
 sprite_color_end:
 
 sintable:
@@ -418,11 +427,13 @@ sintable:
 .byte 44, 45, 46, 47, 49, 51, 54, 57
 .byte 60, 64, 68, 72, 76, 81, 85, 90
 .byte 95, 100, 105, 110, 114, 119, 124
-.byte 128, 132, 136, 140, 143, 146, 148, 151 
-.byte 153, 154, 155, 156, 156, 156, 155, 154 
-.byte 153, 151, 149, 146, 143, 140, 136, 132 
+.byte 128, 132, 136, 140, 143, 146, 148, 151
+.byte 153, 154, 155, 156, 156, 156, 155, 154
+.byte 153, 151, 149, 146, 143, 140, 136, 132
 .byte 128, 124, 119, 115, 110, 105, 100, 95
 .byte 90, 86, 81
+
+bgppm: .asciiz "shmup.ppm"
 
 font:
 .include "../demo/2x2_font.inc"
