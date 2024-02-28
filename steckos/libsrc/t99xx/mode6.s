@@ -44,7 +44,7 @@ vdp_mode6_on:
 @vdp_init_bytes_gfx6:
     .byte v_reg0_m5|v_reg0_m3                        ; reg0 mode bits
     .byte v_reg1_display_on|v_reg1_spr_size |v_reg1_int       ; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-    .byte $3f  ; => 0<A16>11 1111 - either bank 0 oder 1 (64k)
+    .byte >(ADDRESS_GFX7_SCREEN>>3) | $1f  ; => 00<A16>1 1111 - bank 0 (offset $0000) or bank 1 (offset $10000)
     .byte $0
     .byte $0
     .byte  >(ADDRESS_GFX6_SPRITE<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
@@ -69,7 +69,7 @@ vdp_mode6_blank:    ; 64K
   ldx #>@cmd_hmmv_data
   jmp vdp_cmd_hmmv
 
- @cmd_hmmv_data:
+@cmd_hmmv_data:
   .word 0 ;x #36/#37
   .word (ADDRESS_GFX6_SCREEN>>8) ;y - from page offset
   .word 512 ; len x #40/#41
