@@ -180,6 +180,23 @@ Magenta         =$0d ;200 90  198   "C85AC6" (Purple)
 Gray            =$0e ;204 204 204  "CCCCCC"
 White           =$0f ;255 255 255  "white"
 
+GFX7_Black        =$00
+GFX7_Blue         =$01
+GFX7_Red          =$02
+GFX7_Magenta      =$03
+GFX7_Green        =$04
+GFX7_Cyan         =$05
+GFX7_Yellow       =$06
+GFX7_Gray         =$07
+GFX7_Orange       =$08
+GFX7_LightBlue    =$09
+GFX7_LightRed     =$0a
+GFX7_LightMagenta =$0b
+GFX7_LightGreen   =$0c
+GFX7_LightCyan    =$0d
+GFX7_LightYellow  =$0e
+GFX7_White        =$0f
+
 WRITE_ADDRESS=$40
 
 ADDRESS_GFX_SPRITE            = $1e00
@@ -214,14 +231,14 @@ ADDRESS_GFX3_SPRITE           = ADDRESS_GFX_SPRITE
 ADDRESS_GFX3_SPRITE_COLOR     = ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
 
 ADDRESS_GFX6_SCREEN           = $10000 ; screen
-ADDRESS_GFX6_SPRITE_PATTERN   = $0f000    ;
-ADDRESS_GFX6_SPRITE           = $0fa00    ;
+ADDRESS_GFX6_SPRITE_PATTERN   = $f000    ;
+ADDRESS_GFX6_SPRITE           = $fa00    ;
 ADDRESS_GFX6_SPRITE_COLOR     = ADDRESS_GFX6_SPRITE-$0200
 
-ADDRESS_GFX7_SCREEN           = $10000              ; 64k RAM, 2nd page
-ADDRESS_GFX7_SPRITE_PATTERN   = $0fa00  ; sprite pattern table
-ADDRESS_GFX7_SPRITE           = $fa00   ; attribute table address
-ADDRESS_GFX7_SPRITE_COLOR     = $f800   ; color table address
+ADDRESS_GFX7_SCREEN           = $10000  ; 64k RAM, 2nd page
+ADDRESS_GFX7_SPRITE_PATTERN   = $f000   ; sprite pattern table
+ADDRESS_GFX7_SPRITE           = $fa00   ; sprite attribute table address
+ADDRESS_GFX7_SPRITE_COLOR     = ADDRESS_GFX7_SPRITE-$0200  ; sprite color table address (“strictly below the sprite attribute table -$200)
 
 ; long delay with 6+2 = 8µs wait
 MAX_NOPS_8M = 6 * clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
