@@ -35,7 +35,7 @@ KEY_TAB           = $09
 KEY_CTRL_C        = $03
 
 KEY_CRSR_UP       = $1e  ;1 11 10
-KEY_CRSR_DOWN     = $1d  ;1 11 11
+KEY_CRSR_DOWN     = $1f  ;1 11 11
 KEY_CRSR_RIGHT    = $10  ;1 00 00
 KEY_CRSR_LEFT     = $11  ;1 00 01
 

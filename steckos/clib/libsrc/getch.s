@@ -20,61 +20,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "zeropage.inc"
-.include "spi.inc"
 
-.import spi_r_byte
-.import spi_deselect
-.import spi_select_device
-.import spi_replace_device
-.import spi_set_device
+.include "kernel/kernel_jumptable.inc"
 
-.export getkey, fetchkey
-;@module: keyboard
+.export			_getch
 
-.code
-; Select Keyboard controller on SPI, read one byte
-;	in: -
-;	out:
-;		C=1 key was fetched and A=<key code>, C=0 otherwise and A=<error / status code> e.g. #EBUSY
-;@name: "fetchkey"
-;@out: A, "fetched key / error code"
-;@out:  C, "1 - key was fetched, 0 - nothing fetched"
-;@desc: "fetch byte from keyboard controller"
-fetchkey:
-		lda #spi_device_keyboard
-		jsr spi_select_device
-		bne exit
-
-		phx
-
-		jsr spi_r_byte
-		jsr spi_deselect
-
-		plx
-
-    cmp #0
-    beq exit
-
-		sta key
-    sec
-		rts
-
-
-; get byte from keyboard buffer
-;	in: -
-;	out:
-;		C=1 key was pressed and A=<key code>, C=0 otherwise
-;@name: "getkey"
-;@out: A, "fetched key"
-;@out:  C, "1 - key was fetched, 0 - nothing fetched"
-;@desc: "get byte from keyboard buffer"
-getkey:
-    lda key
-    beq exit
-    stz key
-    sec
-    rts
-exit:
-    clc
-    rts
+; unsigned int getch (void);
+;
+.proc	_getch
+:       jsr krn_getkey
+        bcc :-
+        ldx #0
+        rts
+.endproc

@@ -41,10 +41,7 @@ vdp_mode7_set_pixel:
       tya
       and #$3f             ; A13-A8 vram address highbyte
       ora #WRITE_ADDRESS
-      nop
-      nop
-      nop
-      nop
+      vdp_wait_s 9
       sta a_vreg
       tya
       rol                ; A16-A14 bank select via reg#14, rol over carry
@@ -52,14 +49,13 @@ vdp_mode7_set_pixel:
       rol
       and #$03
       ora #<.HIWORD(ADDRESS_GFX7_SCREEN<<2)
-      nop
-      nop
+      vdp_wait_s 12
       sta a_vreg
-      vdp_wait_s 2
       lda #v_reg14
+      vdp_wait_s 2
       sta a_vreg
-      vdp_wait_l 2
       pla
+      vdp_wait_l 3
       sta a_vram            ; set color
       plp
       rts
