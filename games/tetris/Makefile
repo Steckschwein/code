@@ -1,37 +1,26 @@
-all: test_blocks.bin
+CC65FLAGS=-I ../../steckos/clib/include -I ../../steckos/clib/include/vdp -I ../../steckos/clib --cpu 65c02 --debug-info -Osir -Cl
+CLIB=../../steckos/clib/lib/steckschwein-clib.a
+CA65FLAGS=-I ../../steckos/asminc -I ../../asmunit -I ../../steckos/kernel
+LIBS=../../steckos/lib/steckschwein.a
+LDFLAGS=-C ../../steckos/prg.ld65.cfg
+
+.PHONY: all clean
+all: snake.prg
+
 clean:
-	rm -f *.ca* *.bin *.labels
-blocks.bin:
+	rm -f *.bin *.prg *.o *.log
 
-fig6502.a: forth65/FIG6502.ASM
-	cp forth65/FIG6502.ASM fig6502.a
-	sed -ir "s/\/\//;/g" $(*F).ca
-	sed -ir "s/\.const //g" $(*F).ca
-	sed -ir "s/\.pc.*code.*/*=0xc000/g" $(*F).ca
-	sed -ir "s/\.pc.*character data.*/*=0x3800/g" $(*F).ca
-	#label
-	sed -ir "s/!skip+/+/g" $(*F).ca
-	sed -ir "s/!skip:/+/g" $(*F).ca
-	sed -ir "s/!exit+/+/g" $(*F).ca
-	sed -ir "s/!exit:/+/g" $(*F).ca
-	sed -ir "s/!loop-/-/g" $(*F).ca
-	sed -ir "s/!loop:/-/g" $(*F).ca
-	sed -ir "s/!startLoop-/-/g" $(*F).ca
-	sed -ir "s/!startLoop:/-/g" $(*F).ca
-	sed -ir "s/!nextkey+/+/g" $(*F).ca
-	sed -ir "s/!nextkey:/+/g" $(*F).ca
-	#macros
-	sed -ir "s/\.import source /!source /g" $(*F).ca
-	sed -ir "s/\.import binary /!binary /g" $(*F).ca
-	sed -ir "s/\.byte /!byte /g" $(*F).ca
-	sed -ir "s/\.text /!text /g" $(*F).ca
-	sed -ir "s/\.fill /!fill /g" $(*F).ca
-	sed -ir "s/.asm/.ca/g" $(*F).ca
+%.o: %.asm
+	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
-#.SECONDARY: blocks.ca test_blocks.ca input.ca screens.ca lines2.ca scores.ca
+%.prg: %.c $(LIBS) $(CLIB)
+	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $(LDFLAGS) $< $(CLIB) $(LIBS) -o $@
 
-fig6502.bin: fig6502.a
-	acme -v -f plain --cpu 65c02 -o $@ $<
+%.dis: %.prg
+	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
-transfer: all
-	../xmodem.sh tetris.bin	
+%: %.prg
+	../../xmodem.sh $<
+
+%.emu: %.prg
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $^

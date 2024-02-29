@@ -4,6 +4,7 @@
       .include "keyboard.inc"
       .include "vdp.inc"
       .include "appstart.inc"
+      .include "ym3812.inc"
 
       .include "pacman.inc"
       .setcpu "65c02"

@@ -22,12 +22,16 @@
 
 .include "kernel/kernel_jumptable.inc"
 .include "asminc/vdp.inc"
+.include "asminc/gfx.inc"
+.include "asminc/zeropage.inc"
+
 .include "asminc/debug.inc"
 
-.importzp ptr1, tmp1, tmp2
-
 .autoimport
-.export char_out=_cputc
+
+.importzp __volatile_ptr
+.importzp __volatile_tmp
+
 ;----------------------------------------------------------------------------
 .code
 
@@ -41,6 +45,7 @@
     jsr krn_textui_disable			;disable textui
     ldx _vdp_mode
     jsr _gfx_set_mode
+    vdp_sreg v_reg9_nt | v_reg9_ln, v_reg9   ; lines - 0 - 192 lines, 1 - 212 lines ; ntsc - 0 / pal - 1
     plp
     rts
 .endproc
@@ -59,6 +64,13 @@ _gfx_mode_table:
     .word vdp_mode7_on ; 7
 gfx_notimplemented:
     rts
+
+; void __fastcall__ vdp_putpixel (unsigned int x, unsigned char y);
+.export _vdp_putpixel
+.proc _vdp_putpixel
+    jsr pusha                     ; push y
+    lda _vdp_line_t+line_t::color ; load color
+.endproc
 
 ; void __fastcall__ vdp_plot (unsigned int x, unsigned char y, unsigned char color);
 .export _vdp_plot
@@ -107,6 +119,54 @@ GFX_7_Plot:
     pla
     jmp vdp_mode7_set_pixel
 
+; void __fastcall__ vdp_rectangle( int left, char top, int right, char bottom );
+.export _vdp_rectangle
+.proc _vdp_rectangle
+        jsr _vdp_fill_line_t
+        jmp gfx_rectangle
+.endproc
+
+; void __fastcall__ vdp_fill( int x, int y, int border );
+.export _vdp_fill
+.proc _vdp_fill
+        rts
+.endproc
+
+; int __fastcall__ vdp_getcolor();
+.export _vdp_getcolor
+.proc _vdp_getcolor
+        lda _vdp_line_t+line_t::color
+        ldx #0
+        rts
+.endproc
+
+; void __fastcall__ vdp_line(int x1, char y1, int x2, char y2);
+.export _vdp_line
+.proc _vdp_line
+        jsr _vdp_fill_line_t
+        jmp gfx_line
+.endproc
+
+_vdp_fill_line_t:
+        sta _vdp_line_t+line_t::y2
+        jsr popax
+        sta _vdp_line_t+line_t::x2
+        stx _vdp_line_t+line_t::x2+1
+        jsr popa
+        sta _vdp_line_t+line_t::y1
+        jsr popax
+        sta _vdp_line_t+line_t::x1
+        stx _vdp_line_t+line_t::x1+1
+        lda #<_vdp_line_t
+        ldy #>_vdp_line_t
+        rts
+
+; void __fastcall__ vdp_setcolor (unsigned char color);
+.export _vdp_setcolor
+.proc _vdp_setcolor
+    sta _vdp_line_t+line_t::color ; set to line_t struct, to have the color in place
+    rts
+.endproc
 
 ; void __fastcall__ vdp_blank (unsigned char color);
 .export _vdp_blank
@@ -166,6 +226,7 @@ gfx_blank_table:
 
 .bss
   _vdp_mode:      .res 1
-  _vdp_px_color:  .res 1
   _vdp_px_x:      .res 1
   _vdp_px_y:      .res 1
+  _vdp_rect_t:
+  _vdp_line_t:    .tag line_t

@@ -20,61 +20,18 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "zeropage.inc"
-.include "spi.inc"
+.include "asminc/ym3812.inc"
 
-.import spi_r_byte
-.import spi_deselect
-.import spi_select_device
-.import spi_replace_device
-.import spi_set_device
-
-.export getkey, fetchkey
-;@module: keyboard
-
-.code
-; Select Keyboard controller on SPI, read one byte
-;	in: -
-;	out:
-;		C=1 key was fetched and A=<key code>, C=0 otherwise and A=<error / status code> e.g. #EBUSY
-;@name: "fetchkey"
-;@out: A, "fetched key / error code"
-;@out:  C, "1 - key was fetched, 0 - nothing fetched"
-;@desc: "fetch byte from keyboard controller"
-fetchkey:
-		lda #spi_device_keyboard
-		jsr spi_select_device
-		bne exit
-
-		phx
-
-		jsr spi_r_byte
-		jsr spi_deselect
-
-		plx
-
-    cmp #0
-    beq exit
-
-		sta key
-    sec
-		rts
+; void __fastcall__ sound(unsigned int);
+.export _sound
+.proc _sound
+        stp
+        rts
+.endproc
 
 
-; get byte from keyboard buffer
-;	in: -
-;	out:
-;		C=1 key was pressed and A=<key code>, C=0 otherwise
-;@name: "getkey"
-;@out: A, "fetched key"
-;@out:  C, "1 - key was fetched, 0 - nothing fetched"
-;@desc: "get byte from keyboard buffer"
-getkey:
-    lda key
-    beq exit
-    stz key
-    sec
-    rts
-exit:
-    clc
-    rts
+; void __fastcall__ nosound();
+.export _nosound
+.proc _nosound
+        rts
+.endproc

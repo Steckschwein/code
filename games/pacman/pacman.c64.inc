@@ -9,6 +9,9 @@
       VRAM_COLOR          = $d800
       VRAM_SPRITE_POINTER = VRAM_SCREEN+$3f8
 
+      BANK                = $0000
+      BANK_GHOSTBYTE      = $3fff
+
       COLOR_BLACK             = $00
       COLOR_WHITE             = $01
       COLOR_RED               = $02
@@ -27,8 +30,10 @@
       COLOR_LIGHTBLUE         = $0E
       COLOR_GRAY3             = $0F
 
-HLine_Border=$f9
-HLine_Last=$ff
+HLine_Border=250  ; bottom border raster line
+HLine_Border_Before=HLine_Border-2
+
+HLine_Last=32 ; $ff
 
 .assert __BSS_RUN__ < VRAM_SPRITE_PATTERN, error, "bss overflow!"
 

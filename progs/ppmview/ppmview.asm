@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 ;
-; use imagemagick $convert <image> -geometry 256 -colors 256 <image.ppm>
+; use imagemagick $ convert <image> -geometry 256 -colors 256 <image.ppm>
 ;
 .include "fat32.inc"
 .include "steckos.inc"
@@ -92,6 +92,7 @@ appstart $1000
     ldx paramptr+1
     jsr ppm_load_image
     bcs ppm_error
+
     keyin
 
 exit:
