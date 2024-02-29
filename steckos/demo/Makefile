@@ -15,7 +15,8 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		mndlbrot.prg \
 		vdpdemo.prg \
 		plasma \
-		rps_sim.prg
+		rps_sim.prg	\
+		hanoi.prg
 
 plasma:
 	(cd plasma; make)

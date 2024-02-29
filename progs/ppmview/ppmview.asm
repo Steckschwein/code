@@ -92,6 +92,7 @@ appstart $1000
     ldx paramptr+1
     jsr ppm_load_image
     bcs ppm_error
+
     keyin
 
 exit:

@@ -78,6 +78,6 @@ init:
 .endproc
 
 .bss
-_save_irq:  .res 2, 0
-game_state:
-  .tag GameState
+  _save_irq:  .res 2, 0
+  game_state:
+    .tag GameState
