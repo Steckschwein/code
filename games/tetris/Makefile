@@ -5,7 +5,7 @@ LIBS=../../steckos/lib/steckschwein.a
 LDFLAGS=-C ../../steckos/prg.ld65.cfg
 
 .PHONY: all clean
-all: snake.prg
+all: tetris.prg
 
 clean:
 	rm -f *.bin *.prg *.o *.log

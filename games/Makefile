@@ -7,11 +7,13 @@ clean:
 	(cd dinosaur; make clean)
 	(cd pong; make clean)
 	(cd microchess; make clean)
+	(cd tetris; make clean)
 
 
 build:
 	(cd WoW; make )
 	(cd pacman; make )
+	(cd tetris; make )
 	(cd dinosaur; make )
 	(cd pong; make )
 	(cd microchess; make )

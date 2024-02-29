@@ -23,7 +23,7 @@ mcopy -i ${img}  steckos/demo/*.prg $TARGET/demo/
 
 
 
-GAMES="games/dinosaur/dinosaur.prg games/pong/pong.prg games/microchess/mchess.prg"
+GAMES="games/*/*.prg"
 mcopy -i ${img} $GAMES $TARGET/games/
 
 PROGS=$(find progs -name "*.prg")
