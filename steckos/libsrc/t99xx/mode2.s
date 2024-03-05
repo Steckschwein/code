@@ -56,7 +56,7 @@ vdp_mode2_on:
       .byte v_reg0_m3    ; R#0
       .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
       .byte >(ADDRESS_GFX2_SCREEN>>2)           ; R#2 - name table - value * $400
-      .byte >(ADDRESS_GFX2_COLOR<<2)            ; R#3 - color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
+      .byte >(ADDRESS_GFX2_COLOR<<2) | $3f      ; R#3 - color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
       .byte >(ADDRESS_GFX2_PATTERN>>3) | $03    ; R#4 - pattern table base address - Bit 0,1 are AND to select the pattern array
       .byte (ADDRESS_GFX2_SPRITE / $80)  ; sprite attribute table - value * $80 --> offset in VRAM
       .byte (ADDRESS_GFX2_SPRITE_PATTERN / $800)  ; sprite pattern table - value * $800  --> offset in VRAM
@@ -65,7 +65,7 @@ vdp_mode2_on:
       .byte v_reg8_VR  ; VR - 64k VRAM TODO set per define
       .byte v_reg9_nt ; #R9, set bit to 1 for PAL
   .endif
-      .byte <.HIWORD(ADDRESS_GFX2_COLOR<<2)
+      .byte <.HIWORD(ADDRESS_GFX2_COLOR<<2)     ; R#10
 @vdp_init_bytes_gfx2_end:
 
 ;

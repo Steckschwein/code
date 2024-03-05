@@ -142,21 +142,23 @@ PLAYER_SPRITE_NR = 6
 gfxui_on:
   jsr krn_textui_disable      ;disable textui
 
-  jsr vdp_mode2_on                        ; enable gfx3 mode
-  vdp_sreg v_reg0_m4 | v_reg0_IE1, v_reg0 ; enable h blank irq
+  jsr vdp_mode2_on                        ; enable gfx2 mode
+  vdp_sreg v_reg0_m4 | v_reg0_IE1, v_reg0 ; enable gfx3 mode with h blank irq
+  vdp_sreg >(ADDRESS_GFX3_COLOR<<2) | $3f, v_reg3      ; R#3 - color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
+  vdp_sreg >(ADDRESS_GFX3_PATTERN>>3) , v_reg4    ; R#4 - pattern table base address - Bit 0,1 are AND to select the pattern array
 
   vdp_sreg v_reg8_VR, v_reg8
-  vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
+  vdp_sreg v_reg9_nt, v_reg9  ; 212px
 
   vdp_sreg v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (2x64k mode 7 screens)
 
-  vdp_sreg 212-5*8, v_reg19
+  vdp_sreg 191-(4*8), v_reg19
 
   stz _scroll_x_l
   stz _scroll_x_h
   stz _scroll_y
 
-  lda #0
+  lda #Black<<4|Transparent
   jsr vdp_mode3_blank
 
   vdp_vram_w (ADDRESS_GFX3_PATTERN+8)
@@ -178,24 +180,24 @@ gfxui_on:
   jsr vdp_memcpys
 
   vdp_vram_w (ADDRESS_GFX3_COLOR+($10*8))
-  lda #White<<4
-  ldx #$18
+  lda #Dark_Yellow<<4
+  ldx #10*8
   jsr vdp_fills
 
   vdp_vram_w ADDRESS_GFX3_SCREEN
   ldx #32
 : vdp_wait_l
-  lda #1
+  lda #$1
   sta a_vram
   dex
   bne :-
 
   vdp_vram_w (ADDRESS_GFX3_SCREEN+(20*32))
-  ldx #0
-  lda #0
+  ldx #32*5
+  lda #$10
 : vdp_wait_l
   sta a_vram
-  ina
+  ;ina
   dex
   bne :-
 
