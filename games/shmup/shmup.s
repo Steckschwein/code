@@ -11,7 +11,7 @@ appstart $1000
 PLAYER_SPRITE_NR = 6
 
 .macro sp_pattern sp, chr
-    vdp_vram_w (ADDRESS_GFX7_SPRITE_PATTERN + (sp*32));
+    vdp_vram_w (ADDRESS_GFX3_SPRITE_PATTERN + (sp*32));
     lda #<(font+(chr*8)+0*$200)
     ldy #>(font+(chr*8)+0*$200)
     ldx #8
@@ -39,20 +39,20 @@ PLAYER_SPRITE_NR = 6
 
     jsr gfxui_on
 
-    vdp_vram_w ADDRESS_GFX7_SPRITE
+    vdp_vram_w ADDRESS_GFX3_SPRITE
     lda #<sprite_attr
     ldy #>sprite_attr
     ldx #(sprite_attr_end - sprite_attr)
     jsr vdp_memcpys
 
-    vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
+    vdp_vram_w ADDRESS_GFX3_SPRITE_COLOR
     lda #<sprite_color
     ldy #>sprite_color
     ldx #(sprite_color_end - sprite_color)
     jsr vdp_memcpys
 
-    ; vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
-    ; lda #GFX7_LightCyan
+    ; vdp_vram_w ADDRESS_GFX3_SPRITE_COLOR
+    ; lda #Cyan
     ; ldx #(16*8)
     ; jsr vdp_fills
 
@@ -142,28 +142,62 @@ PLAYER_SPRITE_NR = 6
 gfxui_on:
   jsr krn_textui_disable      ;disable textui
 
-  jsr vdp_mode7_on         ;enable gfx7 mode
+  jsr vdp_mode2_on                        ; enable gfx3 mode
+  vdp_sreg v_reg0_m4 | v_reg0_IE1, v_reg0 ; enable h blank irq
 
   vdp_sreg v_reg8_VR, v_reg8
   vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
 
   vdp_sreg v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (2x64k mode 7 screens)
+
+  vdp_sreg 212-5*8, v_reg19
+
   stz _scroll_x_l
   stz _scroll_x_h
   stz _scroll_y
 
-  ldy #0
-  jsr vdp_mode7_blank
+  lda #0
+  jsr vdp_mode3_blank
 
-  lda #<bgppm01
-  ldx #>bgppm01
-  ldy #0
-  jsr ppm_load_image
+  vdp_vram_w (ADDRESS_GFX3_PATTERN+8)
+  lda #1
+  sta a_vram
+  lda #2
+  sta a_vram
 
-  lda #<bgppm02
-  ldx #>bgppm02
-  ldy #1
-  jsr ppm_load_image
+  vdp_vram_w (ADDRESS_GFX3_COLOR+8)
+  lda #White<<4
+  sta a_vram
+  lda #Gray<<4
+  sta a_vram
+
+  vdp_vram_w (ADDRESS_GFX3_PATTERN+($10*8))
+  lda #<chars_text
+  ldy #>chars_text
+  ldx #10*8
+  jsr vdp_memcpys
+
+  vdp_vram_w (ADDRESS_GFX3_COLOR+($10*8))
+  lda #White<<4
+  ldx #$18
+  jsr vdp_fills
+
+  vdp_vram_w ADDRESS_GFX3_SCREEN
+  ldx #32
+: vdp_wait_l
+  lda #1
+  sta a_vram
+  dex
+  bne :-
+
+  vdp_vram_w (ADDRESS_GFX3_SCREEN+(20*32))
+  ldx #0
+  lda #0
+: vdp_wait_l
+  sta a_vram
+  ina
+  dex
+  bne :-
 
   rts
 
@@ -183,37 +217,61 @@ gfxui_off:
 
 SP_OFFS_Y = 10
 
+score_board:
+              lda #White<<4|White
+              jsr vdp_bgcolor
+;              vdp_sreg 0, v_reg0  ;
+ ;            vdp_sreg v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_spr_size|v_reg1_m1, v_reg1  ; #R01
+              vdp_sreg 0, v_reg26
+              vdp_sreg 0, v_reg27
+
+              ldy #120
+:             dey
+              bne :-
+              rts
+
 isr:
-  bit  a_vreg
-  bpl isr_end
+              lda a_vreg  ; check bit 0 of S#1
+              ror
+              bcc @is_vblank
+@hblank:
+              jsr score_board
+              bra @isr_end
 
-  lda  #%00011100
-  jsr vdp_bgcolor
+@is_vblank:
+              vdp_sreg 0, v_reg15      ; 0 - set status register selection to S#0
+              vdp_wait_s
+              bit a_vreg
+              bpl @isr_end       ; VDP IRQ flag set?
 
+              lda #Cyan<<4|Cyan
+              jsr vdp_bgcolor
+;              vdp_sreg v_reg0_m4 | v_reg0_IE1, v_reg0 ; enable h blank irq
+ ;             vdp_sreg v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_spr_size, v_reg1
 
 ; @write_colortable:
-;   vdp_vram_w ADDRESS_GFX7_SPRITE_COLOR
+;   vdp_vram_w ADDRESS_GFX3_SPRITE_COLOR
 ;   lda #<sprite_color
 ;   ldy #>sprite_color
 ;   ldx #(sprite_color_end - sprite_color)
 ;   jsr vdp_memcpys
-@sprites:
               jsr sprity_mc_spriteface
-
-@scroll:
               lda_vdp_rgb 100,100,100
               jsr vdp_bgcolor
               jsr scroll
 
-isr_end:
-              lda #0
+@isr_end:
+              vdp_sreg 1, v_reg15     ; setup status S#1 already
+              lda #Black<4|Black
               jsr vdp_bgcolor
+
               rts
+
 
 scroll:
               ldy #v_reg27
               lda _scroll_x_l
-              dea
+              ;dea
               dea
               bpl :+
               lda #$07
@@ -257,7 +315,7 @@ sprity_mc_spriteface:
   cpx #(4*6)
   bne :-
 
-  vdp_vram_w ADDRESS_GFX7_SPRITE
+  vdp_vram_w ADDRESS_GFX3_SPRITE
   lda #<sprite_attr
   ldy #>sprite_attr
   ldx #(sprite_attr_end - sprite_attr)
@@ -265,6 +323,7 @@ sprity_mc_spriteface:
   rts
 
 .data
+
 sprite_attr:
   sprite_0_y: .byte 0
   sprite_0_x: .byte 95
@@ -303,137 +362,137 @@ sprite_attr:
 sprite_attr_end:
 sprite_color:
 ; sprite 0
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
 
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
-  .byte GFX7_LightBlue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
+  .byte Light_Blue | $20
 
 ; sprite 1
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
 
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
-  .byte GFX7_LightRed | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
+  .byte Light_Red | $20
 
 ; sprite 2
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
 
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
-  .byte GFX7_LightYellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
+  .byte Light_Yellow | $20
 
 ; sprite 3
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
 
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
-  .byte GFX7_LightGreen | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
+  .byte Light_Green | $20
 
 ; sprite 4
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
 
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
-  .byte GFX7_LightMagenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
+  .byte Magenta | $20
 
 ; sprite 5
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
 
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
-  .byte GFX7_White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
+  .byte White | $20
 
 ; sprite 6
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
 
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
-  .byte GFX7_LightCyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
+  .byte Cyan | $20
 sprite_color_end:
 
 sintable:
