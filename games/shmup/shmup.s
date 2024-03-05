@@ -147,11 +147,22 @@ gfxui_on:
   vdp_sreg v_reg8_VR, v_reg8
   vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
 
+  vdp_sreg v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (2x64k mode 7 screens)
+  stz _scroll_x_l
+  stz _scroll_x_h
+  stz _scroll_y
+
   ldy #0
   jsr vdp_mode7_blank
 
-  lda #<bgppm
-  ldx #>bgppm
+  lda #<bgppm01
+  ldx #>bgppm01
+  ldy #0
+  jsr ppm_load_image
+
+  lda #<bgppm02
+  ldx #>bgppm02
+  ldy #1
   jsr ppm_load_image
 
   rts
@@ -186,16 +197,42 @@ isr:
 ;   ldy #>sprite_color
 ;   ldx #(sprite_color_end - sprite_color)
 ;   jsr vdp_memcpys
-
-@skip:
-
 @sprites:
-  jsr sprity_mc_spriteface
+              jsr sprity_mc_spriteface
 
-  lda  #0
-  jsr  vdp_bgcolor
+@scroll:
+              lda_vdp_rgb 100,100,100
+              jsr vdp_bgcolor
+              jsr scroll
+
 isr_end:
-  rts
+              lda #0
+              jsr vdp_bgcolor
+              rts
+
+scroll:
+              ldy #v_reg27
+              lda _scroll_x_l
+              dea
+              dea
+              bpl :+
+              lda #$07
+:             sta _scroll_x_l
+              vdp_sreg
+
+              cmp #$07
+              bne @exit
+
+              lda _scroll_x_h
+              ina
+              cmp #$40
+              bne :+
+              lda #0
+:             sta _scroll_x_h
+              ldy #v_reg26
+              vdp_sreg
+@exit:        rts
+
 
 sprity_mc_spriteface:
   ; start with sprite 0
@@ -209,7 +246,6 @@ sprity_mc_spriteface:
   sta sprite_attr + SPRITE_Y,x
 
   dec sprite_attr + SPRITE_X,x
-
 
   ; next sprite
   ; 4 bytes per sprite attr table entry
@@ -433,7 +469,8 @@ sintable:
 .byte 128, 124, 119, 115, 110, 105, 100, 95
 .byte 90, 86, 81
 
-bgppm: .asciiz "shmup.ppm"
+bgppm01: .asciiz "shmup.ppm"
+bgppm02: .asciiz "shmupbg2.ppm"
 
 font:
 .include "../demo/2x2_font.inc"
@@ -444,3 +481,7 @@ lookup:
 sp_color: .res 1
 save_isr: .res 2
 keyb: .res 1
+
+_scroll_x_l:  .res 1
+_scroll_x_h:  .res 1
+_scroll_y:    .res 1

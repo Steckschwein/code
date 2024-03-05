@@ -64,9 +64,11 @@ _i:     .res 1
 
 ;@name: ppm_load_image
 ;@in: A/X file name to load
+;@in: Y vdp vram page to load ppm into - either 0 for address $00000 or 1 for address $10000
 ;@out: C=0 success and image loaded to vram (mode 7), C=1 otherwise with A/X error code where X ppm specific error, A i/o specific error
 .proc ppm_load_image
         stz fd
+        sty _vram_page
 
         ldy #O_RDONLY
         jsr fopen
@@ -102,6 +104,12 @@ _i:     .res 1
 load_image:
         stz cols
         stz rows
+
+        lda _vram_page
+        and #$01
+        asl
+        asl
+        sta _vram_page
 
         php
         sei ;critical section, avoid vdp irq here
@@ -174,7 +182,7 @@ set_screen_addr:
     rol
     rol
     and #$03
-    ora #<.HIWORD(ADDRESS_GFX7_SCREEN<<2)
+    ora _vram_page
     vdp_wait_s
     sta a_vreg
     vdp_wait_s 2
@@ -274,5 +282,6 @@ parse_string:
 cols:   .res 1
 rows:   .res 1
 fd:     .res 1
+_vram_page: .res 1
 ppm_width:  .res 1
 ppm_height: .res 1
