@@ -1,5 +1,4 @@
-.include "steckos.inc"
-.include "vdp.inc"
+.include "shmup.inc"
 
 .autoimport
 
@@ -9,26 +8,6 @@
 
 appstart $1000
 PLAYER_SPRITE_NR = 6
-
-.macro sp_pattern sp, chr
-    vdp_vram_w (ADDRESS_GFX3_SPRITE_PATTERN + (sp*32));
-    lda #<(font+(chr*8)+0*$200)
-    ldy #>(font+(chr*8)+0*$200)
-    ldx #8
-    jsr vdp_memcpys
-    lda #<(font+(chr*8)+2*$200)
-    ldy #>(font+(chr*8)+2*$200)
-    ldx #8
-    jsr vdp_memcpys
-    lda #<(font+(chr*8)+1*$200)
-    ldy #>(font+(chr*8)+1*$200)
-    ldx #8
-    jsr vdp_memcpys
-    lda #<(font+(chr*8)+3*$200)
-    ldy #>(font+(chr*8)+3*$200)
-    ldx #8
-    jsr vdp_memcpys
-.endmacro
 
 .code
     stz keyb
@@ -56,14 +35,14 @@ PLAYER_SPRITE_NR = 6
     ; ldx #(16*8)
     ; jsr vdp_fills
 
-
-    sp_pattern 0, ('T' - 64)
-    sp_pattern 1, ('H' - 64)
-    sp_pattern 2, ('O' - 64)
-    sp_pattern 3, ('M' - 64)
-    sp_pattern 4, ('A' - 64)
-    sp_pattern 5, ('S' - 64)
-    sp_pattern 6, ('X' - 64)
+chroffs=0
+    sp_pattern 0, ('0' + chroffs)
+    sp_pattern 1, ('1' + chroffs)
+    sp_pattern 2, ('2' + chroffs)
+    sp_pattern 3, ('3' + chroffs)
+    sp_pattern 4, ('4' + chroffs)
+    sp_pattern 5, ('5' + chroffs)
+    sp_pattern 6, ('9' + chroffs)
     ;lda #SPRITE_OFF+8 ; vram pointer still setup correctly
     ;sta a_vram
 
@@ -173,16 +152,16 @@ gfxui_on:
   lda #Gray<<4
   sta a_vram
 
-  vdp_vram_w (ADDRESS_GFX3_PATTERN+($10*8))
-  lda #<chars_text
-  ldy #>chars_text
-  ldx #10*8
-  jsr vdp_memcpys
+  vdp_vram_w (ADDRESS_GFX3_PATTERN)
+  lda #<font
+  ldy #>font
+  ldx #8
+  jsr vdp_memcpy
 
-  vdp_vram_w (ADDRESS_GFX3_COLOR+($10*8))
+  vdp_vram_w (ADDRESS_GFX3_COLOR+8)
   lda #Dark_Yellow<<4
-  ldx #10*8
-  jsr vdp_fills
+  ldx #8
+  jsr vdp_fill
 
   vdp_vram_w ADDRESS_GFX3_SCREEN
   ldx #32
@@ -192,14 +171,12 @@ gfxui_on:
   dex
   bne :-
 
-  vdp_vram_w (ADDRESS_GFX3_SCREEN+(20*32))
-  ldx #32*5
+  lda #$98
+  sta score
+  lda #$73
+  sta score+1
   lda #$10
-: vdp_wait_l
-  sta a_vram
-  ;ina
-  dex
-  bne :-
+  sta score+2
 
   rts
 
@@ -222,15 +199,68 @@ SP_OFFS_Y = 10
 score_board:
               lda #White<<4|White
               jsr vdp_bgcolor
-;              vdp_sreg 0, v_reg0  ;
- ;            vdp_sreg v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_spr_size|v_reg1_m1, v_reg1  ; #R01
-              vdp_sreg 0, v_reg26
+              vdp_sreg 0, v_reg26 ; stop scrolling
               vdp_sreg 0, v_reg27
 
-              ldy #120
-:             dey
-              bne :-
-              rts
+              vdp_vram_w (ADDRESS_GFX3_SCREEN+(21*32))
+              ldy #2
+:             lda score,y
+              and #$f0
+              lsr
+
+              sta a_vram
+              ora #$40
+              vdp_wait_l 2
+              sta a_vram
+
+              lda score,y
+              and #$0f
+              asl
+              asl
+              asl
+              asl
+
+              ora #$80
+              sta a_vram
+              ora #$c0
+              vdp_wait_l 2
+              sta a_vram
+
+              dey
+              bpl :-
+
+              vdp_vram_w (ADDRESS_GFX3_SCREEN+(22*32))
+              ldy #2
+:             lda score,y
+              and #$f0
+              asl
+
+              sta a_vram
+              vdp_wait_l 2
+              ora #$40
+              sta a_vram
+
+              lda score,y
+              and #$0f
+              lsr
+              lsr
+              lsr
+
+              ora #$80
+              sta a_vram
+              ora #$c0
+              vdp_wait_l 2
+              sta a_vram
+
+              dey
+              bpl :-
+
+
+
+
+
+
+
 
 isr:
               lda a_vreg  ; check bit 0 of S#1
@@ -260,7 +290,7 @@ isr:
               jsr sprity_mc_spriteface
               lda_vdp_rgb 100,100,100
               jsr vdp_bgcolor
-              jsr scroll
+              ;jsr scroll
 
 @isr_end:
               vdp_sreg 1, v_reg15     ; setup status S#1 already
@@ -534,11 +564,12 @@ bgppm01: .asciiz "shmup.ppm"
 bgppm02: .asciiz "shmupbg2.ppm"
 
 font:
-.include "../demo/2x2_font.inc"
+.include "2x2_numbers.inc"
 
 lookup:
   .byte 0,16,32,48,64,80,96
 .bss
+score:    .res 3 ; 000000
 sp_color: .res 1
 save_isr: .res 2
 keyb: .res 1
