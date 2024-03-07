@@ -129,8 +129,6 @@ gfxui_on:
   vdp_sreg v_reg8_VR, v_reg8
   vdp_sreg v_reg9_nt, v_reg9  ; 212px
 
-  vdp_sreg v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (2x64k mode 7 screens)
-
   vdp_sreg 191-(4*8), v_reg19
 
   stz _scroll_x_l
@@ -171,12 +169,9 @@ gfxui_on:
   dex
   bne :-
 
-  lda #$98
-  sta score
-  lda #$73
-  sta score+1
-  lda #$10
-  sta score+2
+  stz score
+  stz score+1
+  stz score+2
 
   rts
 
@@ -199,15 +194,19 @@ SP_OFFS_Y = 10
 score_board:
               lda #White<<4|White
               jsr vdp_bgcolor
+              vdp_sreg 0, v_reg25
               vdp_sreg 0, v_reg26 ; stop scrolling
-              vdp_sreg 0, v_reg27
+              vdp_sreg 7, v_reg27
 
               vdp_vram_w (ADDRESS_GFX3_SCREEN+(21*32))
               ldy #2
 :             lda score,y
               and #$f0
               lsr
-
+              lsr
+              lsr
+              lsr
+              ora #$30
               sta a_vram
               ora #$40
               vdp_wait_l 2
@@ -215,17 +214,11 @@ score_board:
 
               lda score,y
               and #$0f
-              asl
-              asl
-              asl
-              asl
-
-              ora #$80
+              ora #$30
               sta a_vram
-              ora #$c0
+              ora #$40
               vdp_wait_l 2
               sta a_vram
-
               dey
               bpl :-
 
@@ -233,34 +226,40 @@ score_board:
               ldy #2
 :             lda score,y
               and #$f0
-              asl
-
-              sta a_vram
-              vdp_wait_l 2
-              ora #$40
-              sta a_vram
-
-              lda score,y
-              and #$0f
               lsr
               lsr
               lsr
-
-              ora #$80
+              lsr
+              ora #$30+$80
               sta a_vram
               ora #$c0
               vdp_wait_l 2
               sta a_vram
 
+              lda score,y
+              and #$0f
+              ora #$30+$80
+              sta a_vram
+              ora #$c0
+              vdp_wait_l 2
+              sta a_vram
               dey
               bpl :-
 
+              sed
+              clc
+              lda score
+              adc #1
+              sta score
+              lda score+1
+              adc #0
+              sta score+1
+              lda score+2
+              adc #0
+              sta score+2
+              cld
 
-
-
-
-
-
+              rts
 
 isr:
               lda a_vreg  ; check bit 0 of S#1
@@ -268,6 +267,7 @@ isr:
               bcc @is_vblank
 @hblank:
               jsr score_board
+
               bra @isr_end
 
 @is_vblank:
@@ -278,22 +278,18 @@ isr:
 
               lda #Cyan<<4|Cyan
               jsr vdp_bgcolor
-;              vdp_sreg v_reg0_m4 | v_reg0_IE1, v_reg0 ; enable h blank irq
- ;             vdp_sreg v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_spr_size, v_reg1
 
-; @write_colortable:
-;   vdp_vram_w ADDRESS_GFX3_SPRITE_COLOR
-;   lda #<sprite_color
-;   ldy #>sprite_color
-;   ldx #(sprite_color_end - sprite_color)
-;   jsr vdp_memcpys
               jsr sprity_mc_spriteface
+
               lda_vdp_rgb 100,100,100
               jsr vdp_bgcolor
-              ;jsr scroll
+
+              jsr scroll
+              vdp_sreg v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (2x64k mode 7 screens)
 
 @isr_end:
               vdp_sreg 1, v_reg15     ; setup status S#1 already
+
               lda #Black<4|Black
               jsr vdp_bgcolor
 
