@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: textui
+
 .include "common.inc"
 .include "kernel.inc"
 .include "keyboard.inc"
