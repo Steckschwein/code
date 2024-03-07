@@ -66,7 +66,6 @@ location_flags             = $f1
 .global blocks
 .global key
 
-.global crs_ptr
 .global crs_x
 .global crs_y
 

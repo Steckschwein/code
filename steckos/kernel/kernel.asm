@@ -57,7 +57,7 @@ kern_init:
     jsr blklayer_init
 
     SetVector user_isr_default, user_isr
-    jsr textui_init0
+    jsr textui_init
 
     jsr init_via1
 

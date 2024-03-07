@@ -170,7 +170,7 @@ krn_update_direntry:    jmp fat_update_direntry
 ;@module: video
 
 .export krn_textui_init
-krn_textui_init:        jmp  textui_init
+krn_textui_init:        jmp  textui_reset
 .export krn_textui_enable
 krn_textui_enable:      jmp  textui_enable
 .export krn_textui_disable
