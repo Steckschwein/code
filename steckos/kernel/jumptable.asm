@@ -1,6 +1,6 @@
 .autoimport
 .segment "JUMPTABLE"    ; "kernel" jumptable
-;@module: kernel
+;@module: jumptable
 
 ; basic kernel stuff
 ;@name: krn_getkey
@@ -30,7 +30,6 @@ krn_upload:             jmp do_upload
 .export krn_execv
 krn_execv:              jmp execv
 
-;@module: filesystem
 ; filesystem stuff
 
 ;@name: "krn_open"
@@ -167,25 +166,40 @@ krn_read_direntry:      jmp fat_read_direntry
 krn_update_direntry:    jmp fat_update_direntry
 
 ; display stuff
-;@module: video
 
+;@name: krn_textui_init
+;@desc: reset text ui by setting the internal state accordingly.
 .export krn_textui_init
 krn_textui_init:        jmp  textui_reset
+
+;@name: krn_textui_enable
+;@desc: enable text ui
 .export krn_textui_enable
 krn_textui_enable:      jmp  textui_enable
+
+;@name: krn_textui_disable
+;@desc: disable text ui - cursor will be disabled
 .export krn_textui_disable
 krn_textui_disable:     jmp textui_disable
+
+;@name: krn_textui_update_crs_ptr
+;@desc: update to new cursor position given in crs_x and crs_y zeropage locations
 .export krn_textui_update_crs_ptr
 krn_textui_update_crs_ptr:  jmp textui_update_crs_ptr
+
+;@name: krn_textui_setmode
+;@desc: set desired text mode which is either 40 (MSX TEXT 1) or 80 columns (MSX TEXT 2)
+;@in: A - the desired mode, either VIDEO_MODE_80_COLS or 0 to reset to 40 column mode
 .export krn_textui_setmode
 krn_textui_setmode:     jmp textui_setmode
+
+;@name: textui_cursor_onoff
+;@desc: toggle the blinking cursor on if off or off if on
 .export krn_textui_crs_onoff
 krn_textui_crs_onoff:   jmp textui_cursor_onoff
 
 
 ; sd card stuff
-
-;@module: sdcard
 
 ;@name: "krn_sd_write_block"
 ;@in: lba_addr, "LBA address of block"
@@ -207,8 +221,6 @@ krn_sd_write_block:     jmp sd_write_block
 krn_sd_read_block:      jmp sd_read_block
 
 ; spi stuff
-;@module: spi
-
 ;@name: krn_spi_select_device
 ;@in; A, "spi device, one of devices see spi.inc"
 ;@out: Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
