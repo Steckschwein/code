@@ -38,9 +38,9 @@ vdp_mode7_on:
       jmp vdp_init_reg
 
 vdp_init_bytes_gfx7:
-      .byte v_reg0_m5|v_reg0_m4|v_reg0_m3                          ; reg0 mode bits
-      .byte v_reg1_display_on|v_reg1_spr_size|v_reg1_int         ; TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
-      .byte >(ADDRESS_GFX7_SCREEN>>3) | $1f  ; => 00<A16>1 1111 - bank 0 (offset $0000) or bank 1 (offset $10000)
+      .byte v_reg0_m5|v_reg0_m4|v_reg0_m3                   ; R#0 reg0 mode bits
+      .byte v_reg1_display_on|v_reg1_spr_size|v_reg1_int    ; R#1 TODO FIXME verify v_reg1_16k t9929 specific, therefore 0
+      .byte >(ADDRESS_GFX7_SCREEN>>3) | $1f                 ; R#2 => 00<A16>1 1111 - bank 0 (offset $0000) or bank 1 (offset $10000)
       .byte 0
       .byte 0
       .byte >(ADDRESS_GFX7_SPRITE<<1 | $07)   ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
