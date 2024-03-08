@@ -111,7 +111,6 @@ chroffs=0
 @exit:
 
   jsr gfxui_off
-
   sei
   copypointer save_isr, user_isr
   cli
@@ -194,19 +193,16 @@ SP_OFFS_Y = 10
 score_board:
               lda #White<<4|White
               jsr vdp_bgcolor
-              vdp_sreg 0, v_reg25
-              vdp_sreg 0, v_reg26 ; stop scrolling
-              vdp_sreg 7, v_reg27
 
-              vdp_vram_w (ADDRESS_GFX3_SCREEN+(21*32))
+              vdp_vram_w (ADDRESS_GFX3_SCREEN+(19+21*32))
               ldy #2
 :             lda score,y
-              and #$f0
               lsr
               lsr
               lsr
               lsr
               ora #$30
+              vdp_wait_l 14
               sta a_vram
               ora #$40
               vdp_wait_l 2
@@ -215,6 +211,7 @@ score_board:
               lda score,y
               and #$0f
               ora #$30
+              vdp_wait_l 6
               sta a_vram
               ora #$40
               vdp_wait_l 2
@@ -222,15 +219,15 @@ score_board:
               dey
               bpl :-
 
-              vdp_vram_w (ADDRESS_GFX3_SCREEN+(22*32))
+              vdp_vram_w (ADDRESS_GFX3_SCREEN+(19+22*32))
               ldy #2
 :             lda score,y
-              and #$f0
               lsr
               lsr
               lsr
               lsr
               ora #$30+$80
+              vdp_wait_l 14
               sta a_vram
               ora #$c0
               vdp_wait_l 2
@@ -239,6 +236,7 @@ score_board:
               lda score,y
               and #$0f
               ora #$30+$80
+              vdp_wait_l 6
               sta a_vram
               ora #$c0
               vdp_wait_l 2
@@ -266,7 +264,11 @@ isr:
               ror
               bcc @is_vblank
 @hblank:
-              jsr score_board
+              vdp_sreg $ff, v_reg7
+              vdp_sreg 0, v_reg25
+              vdp_sreg 0, v_reg26 ; stop scrolling
+              vdp_sreg 7, v_reg27
+
 
               bra @isr_end
 
@@ -286,6 +288,7 @@ isr:
 
               jsr scroll
               vdp_sreg v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (2x64k mode 7 screens)
+              jsr score_board
 
 @isr_end:
               vdp_sreg 1, v_reg15     ; setup status S#1 already
