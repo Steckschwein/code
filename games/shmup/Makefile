@@ -9,9 +9,8 @@ LIBS_C64=$(CC65_HOME)/lib/c64.lib
 #LDFLAGS_C64=-C c64-asm.cfg -m pacman64.map
 LDFLAGS_C64=-t c64 -m $<.map
 
-OBJS=chars_text.o
-OBJS+=chars_starfield.o
-
+OBJS=chars_bg.o
+OBJS+=chars_2x2_numbers.o
 
 .PHONY: all clean
 

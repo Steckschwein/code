@@ -35,7 +35,7 @@ PLAYER_SPRITE_NR = 6
     ; ldx #(16*8)
     ; jsr vdp_fills
 
-chroffs=0
+chroffs=-48
     sp_pattern 0, ('0' + chroffs)
     sp_pattern 1, ('1' + chroffs)
     sp_pattern 2, ('2' + chroffs)
@@ -47,7 +47,6 @@ chroffs=0
     ;sta a_vram
 
     cli
-
 
 @loop:
   lda keyb
@@ -134,39 +133,26 @@ gfxui_on:
   stz _scroll_x_h
   stz _scroll_y
 
-  lda #Black<<4|Transparent
-  jsr vdp_mode3_blank
-
-  vdp_vram_w (ADDRESS_GFX3_PATTERN+8)
-  lda #1
-  sta a_vram
-  lda #2
-  sta a_vram
-
-  vdp_vram_w (ADDRESS_GFX3_COLOR+8)
-  lda #White<<4
-  sta a_vram
-  lda #Gray<<4
-  sta a_vram
-
   vdp_vram_w (ADDRESS_GFX3_PATTERN)
-  lda #<font
-  ldy #>font
-  ldx #8
+  lda #<chars_2x2_numbers
+  ldy #>chars_2x2_numbers
+  ldx #2
   jsr vdp_memcpy
 
-  vdp_vram_w (ADDRESS_GFX3_COLOR+8)
+  lda #<chars_bg
+  ldy #>chars_bg
+  ldx #1
+  jsr vdp_memcpy
+
+  vdp_vram_w (ADDRESS_GFX3_COLOR)
   lda #Dark_Yellow<<4
-  ldx #8
+  ldx #3
   jsr vdp_fill
 
   vdp_vram_w ADDRESS_GFX3_SCREEN
-  ldx #32
-: vdp_wait_l
-  lda #$1
-  sta a_vram
-  dex
-  bne :-
+  ldx #3
+  lda #17
+  jsr vdp_fill
 
   stz score
   stz score+1
@@ -201,19 +187,17 @@ score_board:
               lsr
               lsr
               lsr
-              ora #$30
-              vdp_wait_l 14
+              vdp_wait_l 12
               sta a_vram
-              ora #$40
+              ora #$10
               vdp_wait_l 2
               sta a_vram
 
               lda score,y
               and #$0f
-              ora #$30
               vdp_wait_l 6
               sta a_vram
-              ora #$40
+              ora #$10
               vdp_wait_l 2
               sta a_vram
               dey
@@ -226,19 +210,19 @@ score_board:
               lsr
               lsr
               lsr
-              ora #$30+$80
+              ora #$20
               vdp_wait_l 14
               sta a_vram
-              ora #$c0
+              ora #$30
               vdp_wait_l 2
               sta a_vram
 
               lda score,y
               and #$0f
-              ora #$30+$80
+              ora #$20
               vdp_wait_l 6
               sta a_vram
-              ora #$c0
+              ora #$30
               vdp_wait_l 2
               sta a_vram
               dey
@@ -268,7 +252,6 @@ isr:
               vdp_sreg 0, v_reg25
               vdp_sreg 0, v_reg26 ; stop scrolling
               vdp_sreg 7, v_reg27
-
 
               bra @isr_end
 
@@ -561,9 +544,6 @@ sintable:
 
 bgppm01: .asciiz "shmup.ppm"
 bgppm02: .asciiz "shmupbg2.ppm"
-
-font:
-.include "2x2_numbers.inc"
 
 lookup:
   .byte 0,16,32,48,64,80,96
