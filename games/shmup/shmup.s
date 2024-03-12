@@ -7,7 +7,16 @@
 .export fread_byte=krn_fread_byte
 
 appstart $1000
-PLAYER_SPRITE_NR = 6
+PLAYER_SPRITE_NR = 7
+
+.zeropage
+    r1:  .res 1
+    r2:  .res 1
+    r3:  .res 1
+
+    seed: .res 1
+    frames: .res 1
+
 
 .code
     stz keyb
@@ -25,15 +34,13 @@ PLAYER_SPRITE_NR = 6
     jsr vdp_memcpys
 
     vdp_vram_w ADDRESS_GFX3_SPRITE_COLOR
-    lda #<sprite_color
-    ldy #>sprite_color
-    ldx #(sprite_color_end - sprite_color)
-    jsr vdp_memcpys
-
-    ; vdp_vram_w ADDRESS_GFX3_SPRITE_COLOR
-    ; lda #Cyan
-    ; ldx #(16*8)
-    ; jsr vdp_fills
+    ldy #0
+:   lda sprite_colors,y
+    ldx #16
+    jsr vdp_fills
+    iny
+    cpy #8
+    bne :-
 
 chroffs=-48
     sp_pattern 0, ('0' + chroffs)
@@ -42,10 +49,10 @@ chroffs=-48
     sp_pattern 3, ('3' + chroffs)
     sp_pattern 4, ('4' + chroffs)
     sp_pattern 5, ('5' + chroffs)
-    sp_pattern 6, ('9' + chroffs)
+    sp_pattern 6, ('6' + chroffs)
+    sp_pattern 7, ('7' + chroffs)
     ;lda #SPRITE_OFF+8 ; vram pointer still setup correctly
     ;sta a_vram
-
     cli
 
 @loop:
@@ -53,7 +60,6 @@ chroffs=-48
 
   cmp #KEY_ESCAPE
   beq @exit
-
 
   jsr krn_getkey
   sta keyb
@@ -108,73 +114,212 @@ chroffs=-48
 
 
 @exit:
-
-  jsr gfxui_off
-  sei
-  copypointer save_isr, user_isr
-  cli
-
-  jmp (retvec)
+              php
+              sei
+              jsr gfxui_off
+              copypointer save_isr, user_isr
+              plp
+              jmp (retvec)
 
 gfxui_on:
-  jsr krn_textui_disable      ;disable textui
+              jsr krn_textui_disable      ;disable textui
 
-  jsr vdp_mode2_on                        ; enable gfx2 mode
-  vdp_sreg v_reg0_m4 | v_reg0_IE1, v_reg0 ; enable gfx3 mode with h blank irq
-  vdp_sreg >(ADDRESS_GFX3_COLOR<<2) | $3f, v_reg3      ; R#3 - color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
-  vdp_sreg >(ADDRESS_GFX3_PATTERN>>3) , v_reg4    ; R#4 - pattern table base address - Bit 0,1 are AND to select the pattern array
+              jsr vdp_mode2_on                        ; enable gfx2 mode
+              vdp_sreg v_reg0_m4 | v_reg0_IE1, v_reg0 ; R#0 enable gfx3 mode with h blank irq
+              vdp_sreg >(ADDRESS_GFX3_COLOR<<2) | $0f , v_reg3      ; R#3 - color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
+              vdp_sreg >(ADDRESS_GFX3_PATTERN>>3) , v_reg4    ; R#4 - pattern table base address - Bit 0,1 are AND to select the pattern array
 
-  vdp_sreg v_reg8_VR, v_reg8
-  vdp_sreg v_reg9_nt, v_reg9  ; 212px
+              vdp_sreg v_reg8_VR, v_reg8
+              vdp_sreg v_reg9_nt, v_reg9  ; 212px
 
-  vdp_sreg 191-(4*8), v_reg19
+              vdp_sreg 191-(4*8), v_reg19 ; h blank
 
-  stz _scroll_x_l
-  stz _scroll_x_h
-  stz _scroll_y
+              lda #33
+              sta seed
 
-  vdp_vram_w (ADDRESS_GFX3_PATTERN)
-  lda #<chars_2x2_numbers
-  ldy #>chars_2x2_numbers
-  ldx #2
-  jsr vdp_memcpy
+              stz frames
+              stz _scroll_x_l
+              stz _scroll_x_h
+              stz _scroll_y
 
-  lda #<chars_bg
-  ldy #>chars_bg
-  ldx #1
-  jsr vdp_memcpy
+              vdp_vram_w (ADDRESS_GFX3_PATTERN)
+              lda #<chars_2x2_numbers
+              ldy #>chars_2x2_numbers
+              ldx #2
+              jsr vdp_memcpy
+              lda #0
+              ldx #6
+              jsr vdp_fill
 
-  vdp_vram_w (ADDRESS_GFX3_COLOR)
-  lda #Dark_Yellow<<4
-  ldx #3
-  jsr vdp_fill
+              vdp_vram_w (ADDRESS_GFX3_COLOR)
+              lda #Dark_Yellow<<4
+              ldx #3
+              jsr vdp_fill
 
-  vdp_vram_w ADDRESS_GFX3_SCREEN
-  ldx #3
-  lda #17
-  jsr vdp_fill
+              jsr starfield_init
 
-  stz score
-  stz score+1
-  stz score+2
+CHAR_BLANK=$80
+              vdp_vram_w ADDRESS_GFX3_SCREEN
+              ldx #3
+              lda #CHAR_BLANK
+              jsr vdp_fill
 
-  rts
+              jsr starfield_screen
+
+              stz score
+              stz score+1
+              stz score+2
+
+              rts
 
 gfxui_off:
-  sei
-
-  pha
-  phx
-  vdp_sreg v_reg9_nt, v_reg9  ; 192px
-  jsr krn_textui_init
-  plx
-  pla
-
-  cli
-
-  rts
+              pha
+              phx
+              vdp_sreg v_reg9_nt, v_reg9  ; 192px
+              jsr krn_textui_init
+              plx
+              pla
+              rts
 
 SP_OFFS_Y = 10
+
+starfield_screen:
+              vdp_vram_w (ADDRESS_GFX3_SCREEN)
+              ldy #20-1 ; 20 lines
+:             lda @stars_dist,y
+              ora #$40  ; char offset +64
+              ldx #32   ; 32 chars per row
+:             vdp_wait_l
+              and #$5f  ; mask chars $40-$5f
+              sta a_vram
+              ina
+              dex
+              bne :-
+              dey
+              bpl :--
+              rts
+
+; (echo -n ".byte " && for i in $(seq 0 20);do echo -n $(expr $RANDOM % 32);[ "$(expr $i % 32)" -lt 20 ] && echo -n ",";done) > games/shmup/stars_dist.inc
+@stars_dist:
+  .include "stars_dist.inc"
+
+starfield_init:
+              ldx #0  ; blank
+:             stz starfield_chars,x
+              dex
+              bne :-
+
+              ldy #64-1 ; 64 stars per 256x8 line
+:             lda @stars_position,y
+              and #$f8
+              sta r1
+              tya
+              and #$07
+              ora r1
+              pha
+              lda @stars_position,y
+              and #$07
+              tax
+              lda @bitmask,x
+              plx
+              sta starfield_chars,x
+              dey
+              bpl :-
+
+              vdp_vram_w (ADDRESS_GFX3_COLOR+16*8*4)
+              ldy #0 ; 32x8
+:             tya
+              and #$07
+              tax
+              lda @stars_colors,x
+              vdp_wait_l
+              sta a_vram
+              iny
+              bne :-
+              rts
+@stars_colors:
+  .byte Light_Yellow<<4,Light_Blue<<4,Dark_Yellow<<4,Gray<<4
+  .byte Dark_Blue<<4,Dark_Yellow<<4,Light_Yellow<<4,Dark_Blue<<4
+
+; (for i in $(seq 0 63);do [ "$(expr $i % 8)" -eq 0 ] && echo && echo -n ".byte ";echo -n $(expr $RANDOM % 256); [ "$(expr $i % 8)" -lt 7 ] && echo -n ",";done;echo) > games/shmup/stars.inc
+@stars_position:
+  .include "stars.inc"
+@bitmask:
+  .byte $80,$40,$20,$10,$08,$04,$02,$01
+
+startfield_scroll:
+              lda #Dark_Green<<4|Dark_Green
+              jsr vdp_bgcolor
+
+              lda frames
+              and #$07
+              tay
+              lda @stars_delay,y
+              beq @exit
+              sta r1
+              ldx #$ff
+:             inx
+              cpx #8
+              beq @exit
+              asl r1
+              bcc :-
+              jsr @rotate
+              bra :-
+@exit:        rts
+
+@stars_delay:
+  .byte %00000000
+  .byte %11111111
+  .byte %01111101
+  .byte %10111110
+  .byte %01011001
+  .byte %11111111
+  .byte %00110100
+  .byte %11111111
+;  2,3,4,5,5,4,2,3
+
+@rotate:      lda starfield_chars+31*8,x
+              lsr
+              .repeat 32, i
+                ror starfield_chars+i*8,x
+              .endrepeat
+              rts
+
+startfield_update:
+              lda #Light_Green<<4|Light_Green
+              jsr vdp_bgcolor
+
+              vdp_vram_w (ADDRESS_GFX3_PATTERN+16*8*4)  ; cp to vram after numbers
+              ldx #0 ; 32x8
+              lda #<starfield_chars
+              ldy #>starfield_chars
+              jmp vdp_memcpys
+
+level_script:
+              lda #Light_Blue<<4|Light_Blue
+              jsr vdp_bgcolor
+
+              jsr rnd
+              ; and #$
+
+              rts
+
+rnd:
+    lda seed
+    beq @doEor
+    asl
+    beq @noEor ;if the input was $80, skip the EOR
+    bcc @noEor
+@doEor:
+    eor #$1d
+@noEor:
+    sta seed
+    rts
+
+update_vram:
+
+              jmp startfield_update
+
 
 score_board:
               lda #White<<4|White
@@ -249,32 +394,39 @@ isr:
               bcc @is_vblank
 @hblank:
               vdp_sreg $ff, v_reg7
-              vdp_sreg 0, v_reg25
-              vdp_sreg 0, v_reg26 ; stop scrolling
+              vdp_sreg v_reg25_wait, v_reg25   ; disable small border
+              vdp_sreg 0, v_reg26   ; stop scrolling
               vdp_sreg 7, v_reg27
 
               bra @isr_end
 
 @is_vblank:
-              vdp_sreg 0, v_reg15      ; 0 - set status register selection to S#0
+              vdp_sreg 0, v_reg15       ; 0 - set status register selection to S#0
               vdp_wait_s
               bit a_vreg
-              bpl @isr_end       ; VDP IRQ flag set?
+              bpl @isr_end              ; VDP IRQ flag set?
 
               lda #Cyan<<4|Cyan
               jsr vdp_bgcolor
 
               jsr sprity_mc_spriteface
 
-              lda_vdp_rgb 100,100,100
+              lda #Light_Red<<4|Light_Red
               jsr vdp_bgcolor
 
-              jsr scroll
-              vdp_sreg v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (2x64k mode 7 screens)
               jsr score_board
 
+              jsr startfield_scroll
+
+              jsr level_script
+              jsr update_vram
+
+
+              vdp_sreg v_reg25_wait | v_reg25_cmd | v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (4x16k mode 3 screens)
+              jsr scroll
+              inc frames
 @isr_end:
-              vdp_sreg 1, v_reg15     ; setup status S#1 already
+              vdp_sreg 1, v_reg15 ; setup status S#1 already
 
               lda #Black<4|Black
               jsr vdp_bgcolor
@@ -293,17 +445,18 @@ scroll:
               vdp_sreg
 
               cmp #$07
-              bne @exit
+              bne @scroll_h
 
               lda _scroll_x_h
               ina
-              cmp #$40
+              cmp #32 ; 32 8x8 tiles
               bne :+
               lda #0
 :             sta _scroll_x_h
+@scroll_h:    lda _scroll_x_h
               ldy #v_reg26
               vdp_sreg
-@exit:        rts
+              rts
 
 
 sprity_mc_spriteface:
@@ -326,7 +479,7 @@ sprity_mc_spriteface:
   inx
   inx
 
-  cpx #(4*6)
+  cpx #(4*7)
   bne :-
 
   vdp_vram_w ADDRESS_GFX3_SPRITE
@@ -367,146 +520,31 @@ sprite_attr:
   sprite_6_x: .byte 32
   pattern_6:  .byte 24
   .byte 0
-  sprite_7_y: .byte SPRITE_OFF+8
+  sprite_7_y: .byte 0
   sprite_7_x: .byte 165
   pattern_7:  .byte 28
   .byte 0
-
-  ; .byte SPRITE_OFF+8  ; all other sprites off
+  sprite_last_y: .byte SPRITE_OFF+8  ; all other sprites off
+  .byte 0,0,0
 sprite_attr_end:
-sprite_color:
+
+sprite_colors:
 ; sprite 0
   .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-  .byte Light_Blue | $20
-
 ; sprite 1
   .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-  .byte Light_Red | $20
-
 ; sprite 2
   .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-  .byte Light_Yellow | $20
-
 ; sprite 3
   .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-  .byte Light_Green | $20
-
 ; sprite 4
   .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-  .byte Magenta | $20
-
 ; sprite 5
   .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-  .byte White | $20
-
 ; sprite 6
   .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
-  .byte Cyan | $20
+; sprite 7
+  .byte Gray | $20
 sprite_color_end:
 
 sintable:
@@ -542,14 +580,10 @@ sintable:
 .byte 128, 124, 119, 115, 110, 105, 100, 95
 .byte 90, 86, 81
 
-bgppm01: .asciiz "shmup.ppm"
-bgppm02: .asciiz "shmupbg2.ppm"
-
-lookup:
-  .byte 0,16,32,48,64,80,96
 .bss
+starfield_chars:  .res 32*8
+
 score:    .res 3 ; 000000
-sp_color: .res 1
 save_isr: .res 2
 keyb: .res 1
 
