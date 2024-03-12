@@ -221,6 +221,7 @@ gfxui_on:
 
     jsr vdp_mode7_on         ;enable gfx7 mode
     vdp_sreg v_reg9_ln | v_reg9_nt, v_reg9  ; 212px
+    ; vdp_sreg v_reg25_wait | v_reg25_yjk , v_reg25 ; mask left border, activate 2 pages (4x16k mode 3 screens)
 
 gfxui_blank:
     ldy #0
