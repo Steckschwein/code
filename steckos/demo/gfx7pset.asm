@@ -20,13 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "vdp.inc"
-.include "fcntl.inc"
-.include "zeropage.inc"
-.include "kernel_jumptable.inc"
-.include "appstart.inc"
-
+.include "steckos.inc"
+.include "gfx.inc"
 
 ; draw some pixels using vdp_mode7_set_pixel_cmd, which uses the v9958 PSET command
 
@@ -44,77 +39,50 @@ pt_x = 25
 pt_y = 257
 ht_x = 150
 ht_y = 150
+
+.zeropage
+  x1: .res 1
+
 .code
 main:
 
-		jsr	krn_textui_disable			;disable textui
-		jsr	gfxui_on
+        jsr  krn_textui_disable      ;disable textui
+        jsr  gfxui_on
 
-		keyin
-		jsr	gfxui_off
+        keyin
 
-		jsr	vdp_display_off			;restore textui
-		jsr	krn_textui_init
-		jsr	krn_textui_enable
-		cli
-
-		jmp (retvec)
-
-blend_isr:
-	pha
-	vdp_reg 15,0
-	vnops
-    bit a_vreg
-    bpl @0
-
-	lda	#%11100000
-	jsr vdp_bgcolor
-
-	lda	#Black
-	jsr vdp_bgcolor
-@0:
-	pla
-	rti
+        jsr  krn_textui_enable
+        cli
+        jmp (retvec)
 
 gfxui_on:
-    sei
-	jsr vdp_display_off			;display off
-	jsr vdp_mode_sprites_off	;sprites off
+        sei
+        jsr vdp_mode7_on          ;enable mode7
 
-	jsr vdp_mode7_on			    ;enable mode7
+        ldy #%00000011
+        jsr vdp_mode7_blank
 
-	lda #%00000011
-	jsr vdp_mode7_blank
-
-	lda #$ff
-	ldx #0
-	ldy sintable,x
-@loop:
-	jsr gfx_plot
-	vnops
-	inx
-	ldy sintable,x
-	cpx #00
-	bne @loop
-
-
-	copypointer  $fffe, irqsafe
-	SetVector  blend_isr, $fffe
-
+        stz plot+plot_t::x1+0
+        lda #$ff
+        sta plot+plot_t::color
+        stz x1
+@loop:  ldx x1
+        lda sintable,x
+        sta plot+plot_t::y1
+        stx plot+plot_t::x1
+        lda #<plot
+        ldy #>plot
+        jsr gfx_plot
+        inc x1
+        bne @loop
 @end:
-	vdp_reg 14,0
-
-    cli
-    rts
-
-gfxui_off:
-   sei
-
-   copypointer  irqsafe, $fffe
-   cli
-   rts
+        cli
+        rts
 
 irqsafe: .res 2, 0
+
+.bss
+  plot: .tag plot_t
 
 .data
 
@@ -146,4 +114,3 @@ sintable:
 .byte 60, 64, 68, 72, 76, 81, 85, 90
 .byte 95, 100, 105, 110, 114, 119, 124
 .byte 128, 132, 136, 140, 143, 146, 148, 151, 153, 154, 155, 156, 156, 156, 155, 154, 153, 151, 149, 146, 143, 140, 136, 132, 128, 124, 119, 115, 110, 105, 100, 95, 90, 86, 81
-.segment "STARTUP"

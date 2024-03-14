@@ -114,7 +114,7 @@ init_clk:
       jsr sd_cmd
       ply
 ;      debug "CMD0"
-:      cmp #$01
+      cmp #$01
       bne @lcmd
 
       lda #$01
