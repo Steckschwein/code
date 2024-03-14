@@ -181,9 +181,9 @@ do_reset:
       txs
 
       lda #$00
-      sta slot0
+      sta slot0_ctrl
       ina
-      sta slot1
+      sta slot1_ctrl
 
       ; Check zeropage and Memory
 check_zp:
@@ -278,7 +278,6 @@ boot_from_card:
       ldy #O_RDONLY
       jsr fat_fopen          ; A/X - pointer to filename
       bcc @loadfile
-@loop_end:
       println " not found."
       bra do_upload
 @loadfile:

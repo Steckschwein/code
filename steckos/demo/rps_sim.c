@@ -28,8 +28,8 @@
 #include <conio.h>
 
 #include <vdp.h>
+#include <math.h>
 #include <steckschwein.h>
-
 
 #define PIECES_COUNT 60
 

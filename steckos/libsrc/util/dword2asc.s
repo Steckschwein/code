@@ -102,7 +102,7 @@
 ;	----------------------------------------------------------------
 ;
 ;
-.zeropage
+.segment "ZEROPAGE_LIB": zeropage
 ptr: .res 2
 
 .code

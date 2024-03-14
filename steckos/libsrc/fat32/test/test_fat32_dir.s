@@ -47,8 +47,6 @@ TEST_FILE_CL2=$19
 		ldy #>test_dirent
 		jsr fat_readdir
     assertCarry 0
-
-		assertCarry 0
 		assertX 2*FD_Entry_Size
     assertDirEntry test_dirent
       fat32_dir_entry_dir ".       ", "   ", 0
@@ -89,7 +87,7 @@ TEST_FILE_CL2=$19
     jsr fat_close
 
 ; -------------------
-		setup "fat_chdir_enotdir"
+		setup "fat_chdir enotdir"
 		lda #<test_file_name_1
 		ldx #>test_file_name_1
 		jsr fat_chdir
@@ -97,12 +95,12 @@ TEST_FILE_CL2=$19
 		assertCarry 1
 
 ; -------------------
-		setup "fat_chdir_enoent"
+		setup "fat_chdir enoent"
 		lda #<test_dir_name_enoent
 		ldx #>test_dir_name_enoent
 		jsr fat_chdir
-		assertA ENOENT
 		assertCarry 1
+		assertA ENOENT
 
 ; -------------------
 		setup "fat_chdir ."
@@ -121,9 +119,17 @@ TEST_FILE_CL2=$19
 		assertCarry 0
 
 ; -------------------
-		setup "fat_mkdir eexist"
+		setup "fat_mkdir dir exists"
 		lda #<test_dir_name_eexist
 		ldx #>test_dir_name_eexist
+		jsr fat_mkdir
+		assertA EEXIST
+		assertCarry 1
+
+; -------------------
+		setup "fat_mkdir file exists"
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
 		jsr fat_mkdir
 		assertA EEXIST
 		assertCarry 1
@@ -145,6 +151,104 @@ TEST_FILE_CL2=$19
 
     assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
     assert32 $10, block_fsinfo+F32FSInfo::LastClus
+
+; -------------------
+		setup "fat_read_direntry"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+    ldy #O_RDONLY
+    jsr fat_open
+    assertC 0
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+    jsr fat_close
+    assertC 0
+
+; -------------------
+		setup "fat_update_direntry ebadf"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+    ldy #O_RDONLY
+    jsr fat_open
+    assertC 0
+
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_update_direntry
+    assertC 1
+    assertA EBADF ; bad fd cause of opened as O_RDONLY
+
+    jsr fat_close
+    assertC 0
+
+; -------------------
+		setup "fat_update_direntry attribute einval"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+    ldy #O_WRONLY
+    jsr fat_open
+    assertC 0
+
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+    ; try to change file type
+    set8 test_dirent+F32DirEntry::Attr, DIR_Attr_Mask_Dir
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_update_direntry
+    assertC 1
+    assertA EINVAL
+
+    jsr fat_close
+    assertC 0
+
+; -------------------
+		setup "fat_update_direntry name,ext,attr"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
+		lda #<test_file_name_1
+		ldx #>test_file_name_1
+    ldy #O_WRONLY
+    jsr fat_open
+    assertC 0
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry_file "FILE01  ", "DAT", 0, 0
+
+    setMemory test_dirent, 8+3+1
+      .byte "NEWNAME TXT",DIR_Attr_Mask_Archive|DIR_Attr_Mask_Hidden|DIR_Attr_Mask_ReadOnly
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_update_direntry
+    assertC 0
+
+    lda #<test_dirent
+    ldy #>test_dirent
+    jsr fat_read_direntry
+    assertC 0
+    assertDirEntry test_dirent
+      fat32_dir_entry "NEWNAME ", "TXT", DIR_Attr_Mask_Archive|DIR_Attr_Mask_Hidden|DIR_Attr_Mask_ReadOnly, 0, 0
+
+    jsr fat_close
+    assertC 0
 
 ; -------------------
 		setup "fat_mkdir numeric"
@@ -192,13 +296,10 @@ TEST_FILE_CL2=$19
 
 ; -------------------
 		setup "fat_mkdir end of last block in cl (4s/cl)" ; expect new dirent at the end of last block in cluster
-
     ; fill directory blocks
-    .repeat 2, i
-      setDirEntry block_root_dir_00+(14+i)*DIR_Entry_Size
-        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
-    .endrepeat
     .repeat 16, i
+      setDirEntry block_root_dir_00+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
       setDirEntry block_root_dir_01+i*DIR_Entry_Size
         fat32_dir_entry_dir .sprintf("BLCK1_%02d", i), "   ", 0
       setDirEntry block_root_dir_02+i*DIR_Entry_Size
@@ -228,13 +329,11 @@ TEST_FILE_CL2=$19
 
 
 ; -------------------
-		setup "fat_mkdir in next cl (4s/cl)"  ; test whether dirent is created in the next cluster of the directory
+		setup "fat_mkdir in next cl (4s/cl)"  ; test whether dirent is created in the next cluster of the directory. the cluster is already available
     ; fill directory blocks until all blocks of the cluster are reserved
-    .repeat 2, i
-      setDirEntry block_root_dir_00+(14+i)*DIR_Entry_Size
-        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
-    .endrepeat
     .repeat 16, i
+      setDirEntry block_root_dir_00+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
       setDirEntry block_root_dir_01+i*DIR_Entry_Size
         fat32_dir_entry_dir .sprintf("BLCK1_%02d", i), "   ", 0
       setDirEntry block_root_dir_02+i*DIR_Entry_Size
@@ -267,11 +366,9 @@ TEST_FILE_CL2=$19
 ; -------------------
 		setup "fat_mkdir in next cl build cl chain (4s/cl)"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
     ; fill directory blocks until all blocks of the cluster are reserved
-    .repeat 2, i
-      setDirEntry block_root_dir_00+(14+i)*DIR_Entry_Size
-        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
-    .endrepeat
     .repeat 16, i
+      setDirEntry block_root_dir_00+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
       setDirEntry block_root_dir_01+i*DIR_Entry_Size
         fat32_dir_entry_dir .sprintf("BLCK1_%02d", i), "   ", 0
       setDirEntry block_root_dir_02+i*DIR_Entry_Size
@@ -302,6 +399,116 @@ TEST_FILE_CL2=$19
 
     assert32 $fe, block_fsinfo+F32FSInfo::FreeClus
     assert32 TEST_FILE_CL2, block_fsinfo+F32FSInfo::LastClus
+
+; -------------------
+		setup "fat_open O_WRONLY end of block (4s/cl)"
+
+    setDirEntry block_root_dir_00+14*DIR_Entry_Size
+      fat32_dir_entry_dir "DIR0D   ", "   ", 0
+
+    lda #<test_file_name_new
+		ldx #>test_file_name_new
+		ldy #O_WRONLY
+    jsr fat_fopen
+		assertCarry 0
+    assertDirEntry block_root_dir_00+15*DIR_Entry_Size  ; expect new dirent at end of 1st block
+      fat32_dir_entry_file "FILENEW ", "DAT", 0, 0
+    assert8 0, block_root_dir_01+0*DIR_Entry_Size  ; expect eod at begin of 2nd block
+
+    jsr fat_close
+
+    assert32 $100, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $02, block_fsinfo+F32FSInfo::LastClus
+
+; -------------------
+		setup "fat_open O_WRONLY end of last block in cl (4s/cl)" ; expect new dirent at the end of last block in cluster
+    ; fill directory blocks
+    .repeat 16, i
+      setDirEntry block_root_dir_00+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
+      setDirEntry block_root_dir_01+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK1_%02d", i), "   ", 0
+      setDirEntry block_root_dir_02+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK2_%02d", i), "   ", 0
+    .endrepeat
+    .repeat 15, i
+      setDirEntry block_root_dir_03+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK3_%02d", i), "   ", 0
+    .endrepeat
+
+    lda #<test_file_name_new
+		ldx #>test_file_name_new
+		ldy #O_WRONLY
+    jsr fat_fopen
+		assertCarry 0
+    assertDirEntry block_root_dir_03+15*DIR_Entry_Size
+      fat32_dir_entry_file "FILENEW ", "DAT", 0, 0
+    ; end of cluster, read to next dir entry end up in eoc
+
+    jsr fat_close
+
+    assert32 $100, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $02, block_fsinfo+F32FSInfo::LastClus
+
+; -------------------
+		setup "fat_open O_WRONLY in next cl (4s/cl)"  ; test whether dirent is created in the next cluster of the directory. the cluster is already available
+    ; fill directory blocks until all blocks of the cluster are reserved
+    .repeat 16, i
+      setDirEntry block_root_dir_00+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
+      setDirEntry block_root_dir_01+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK1_%02d", i), "   ", 0
+      setDirEntry block_root_dir_02+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK2_%02d", i), "   ", 0
+      setDirEntry block_root_dir_03+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK3_%02d", i), "   ", 0
+    .endrepeat
+
+    set32 block_fat_0+(ROOT_CL<<2 & (sd_blocksize-1)), (TEST_FILE_CL) ; the cl chain for root directory - root ($02) => $10
+    set32 block_fat_0+(TEST_FILE_CL<<2 & (sd_blocksize-1)), FAT_EOC
+
+    lda #<test_file_name_new
+		ldx #>test_file_name_new
+		ldy #O_WRONLY
+    jsr fat_fopen
+		assertCarry 0
+    assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
+      fat32_dir_entry_file "FILENEW ", "DAT", 0, 0
+    assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
+
+    jsr fat_close
+
+    assert32 $100, block_fsinfo+F32FSInfo::FreeClus
+    assert32 $02, block_fsinfo+F32FSInfo::LastClus
+
+; -------------------
+		setup "fat_open O_WRONLY in next cl build cl chain (4s/cl)"  ; test whether dirent is created in the next cluster of the directory and whether cluster chain is maintained correctly
+    ; fill directory blocks until all blocks of the cluster are reserved
+    .repeat 16, i
+      setDirEntry block_root_dir_00+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK0_%02d", i), "   ", 0
+      setDirEntry block_root_dir_01+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK1_%02d", i), "   ", 0
+      setDirEntry block_root_dir_02+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK2_%02d", i), "   ", 0
+      setDirEntry block_root_dir_03+i*DIR_Entry_Size
+        fat32_dir_entry_dir .sprintf("BLCK3_%02d", i), "   ", 0
+    .endrepeat
+
+    lda #<test_file_name_new
+		ldx #>test_file_name_new
+		ldy #O_WRONLY
+    jsr fat_fopen
+		assertCarry 0
+    assertDirEntry block_data_cl10_00+0*DIR_Entry_Size  ; expect dirent at begin of 2nd directory block
+      fat32_dir_entry_file "FILENEW ", "DAT", 0, 0
+    assert8 0, block_data_cl10_00+1*DIR_Entry_Size ; expect next dirent end of dir
+
+    jsr fat_close
+
+    assert32 $ff, block_fsinfo+F32FSInfo::FreeClus
+    assert32 TEST_FILE_CL, block_fsinfo+F32FSInfo::LastClus ; newly reserved block for root dir cluster chain is last
+
 
 test_end
 
@@ -410,6 +617,7 @@ setUp:
   test_dir_name_numeric:  .asciiz "12345678.9ab"
   test_dir_name_dot:      .asciiz "."
   test_dir_name_dotdot:   .asciiz ".."
+  test_file_name_new:     .asciiz "filenew.dat"
 
 block_root_dir_init_00:
 	fat32_dir_entry_dir 	".       ", "   ", 0

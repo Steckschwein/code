@@ -43,7 +43,6 @@
 .export fat_open
 .export fat_fopen
 .export fat_fread_byte
-.export fat_find_first, fat_find_next
 .export fat_close_all, fat_close
 
 .export __fat_fseek_cluster
@@ -57,7 +56,7 @@
 ; out:
 ;   C=0 on success, C=1 on error and A=error code or C=1/A=0 EOC
 __fat_fseek_cluster:
-    debug32 "seek cl >", fd_area+(2*FD_Entry_Size)+F32_fd::SeekPos
+    debug32 "seek cl >", fd_area+(1*FD_Entry_Size)+F32_fd::SeekPos
 
     bcc :+ ; C=0 read access
 
@@ -125,7 +124,7 @@ fat_fread_byte:
     bne :+                    ; skip file size check
 
     _cmp32_x fd_area+F32_fd::SeekPos, fd_area+F32_fd::FileSize, :+
-    debug16 "rd byte eof <", __volatile_ptr
+    debug16 "rd byt eof <", __volatile_ptr
     lda #EOK
     rts ; exit - EOK (0) and C=1
 
@@ -144,7 +143,7 @@ fat_fread_byte:
     clc
 @l_exit:
     ply
-    debug16 "rd byte <", __volatile_ptr
+    debug16 "rd byt <", __volatile_ptr
     rts
 
 ; open file/directory
@@ -161,9 +160,9 @@ fat_fread_byte:
 ; out:
 ;   X - index into fd_area of the opened file
 ;   A - file attr as stored in FAT32 directory entry
-;   C=0 on success, C=1 and A=<error code> otherwise
+;   C=0 on success, C=1 and A=<error code> otherwise, C=1/A=EOK if end of cluster
 fat_open:
-          debug "fopen >"
+          debug "f open >"
           phy                          ; save open flag
           ldy #FD_INDEX_CURRENT_DIR    ; use current dir fd as start directory
           jsr __fat_open_path
@@ -172,11 +171,10 @@ fat_open:
           tya
           sta fd_area+F32_fd::flags,x
           lda fd_area+F32_fd::Attr,x
-@l_exit:  debug "fopen <"
+@l_exit:  debug "f open <"
           rts
 
-; in:
-;   A/X - pointer to zero terminated string with the file path
+
 ;   Y - file mode constants - see fcntl.inc (cc65)
 ;     O_RDONLY  = $01
 ;     O_WRONLY  = $02
@@ -185,10 +183,7 @@ fat_open:
 ;     O_TRUNC   = $20
 ;     O_APPEND  = $40
 ;     O_EXCL    = $80
-; out:
-;   X - index into fd_area of the opened file
-;   C=0 on success, C=1 and A=<error code> otherwise
-
+;
 ;@name: "fat_fopen"
 ;@in: A, "low byte of pointer to zero terminated string with the file path"
 ;@in: X, "high byte of pointer to zero terminated string with the file path"
@@ -198,39 +193,38 @@ fat_open:
 ;@out: X, "index into fd_area of the opened file"
 ;@desc: "open file"
 fat_fopen:
-          jsr fat_open
-          bcs @l_not_open
-          and #DIR_Attr_Mask_Dir      ; file or directory opened?
-          beq @l_exit
-          jsr __fat_free_fd           ; was directory, free fd
-          lda #EISDIR                 ; exit
-@l_not_open:
-          debug "ffopen"
-          cmp #EOK                    ; C=1/A=EOK error from open was end of cluster (@see find_first/_next)
-          beq @l_add_dirent           ; go on with write check
-          cmp #ENOENT                 ; no such file or directory ?
-          bne @l_exit_err
+              jsr fat_open
+              bcs :+
+              and #DIR_Attr_Mask_Dir      ; file or directory opened?
+              beq @l_exit
+              jsr __fat_free_fd           ; was directory, free fd
+              lda #EISDIR                 ; EISDIR and exit
+
+:             debug "f fopen >"
+              cmp #EOK                    ; C=1/A=EOK error from fat_open was end of cluster
+              beq @l_add_dirent
+              cmp #ENOENT                 ; no such file or directory ?
+              bne @l_exit_err             ; go on with write check
+              clc                         ; C=0, otherwise we'll end up calling __fat_fopen_touch with C=1 which results in new reserved block
 @l_add_dirent:
-          tya                         ; get back open flags - from fat_open() above
-          and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)  ; check write access
-          beq @l_enoent
-          jmp __fat_fopen_touch       ; write access, we create a new file
-@l_enoent:
-          lda #ENOENT                 ; no "write" flags set, exit with ENOENT
-@l_exit_err:
-          sec
-@l_exit:  debug "ffopen <"
-          rts
+              tya                         ; get back open flags - from fat_open() above
+              and #(O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)  ; check write access
+              beq @l_enoent
+              jmp __fat_fopen_touch       ; write access, we create a new file
+@l_enoent:    lda #ENOENT                 ; no "write" flags set, exit with ENOENT
+@l_exit_err:  sec
+@l_exit:  debug "f fopen <"
+              rts
 
 
 fat_close_all:
-          ldx #(2*FD_Entry_Size)  ; skip first 2 entries, they're reserved for current dir and temp file
+              ldx #(2*FD_Entry_Size)  ; skip first 2 entries, they're reserved for current dir and temp file
 __fat_init_fdarea:
-          stz fd_area,x
-          inx
-          cpx #(FD_Entry_Size*FD_Entries_Max)
-          bne __fat_init_fdarea
-          rts
+              stz fd_area,x
+              inx
+              cpx #(FD_Entry_Size*FD_Entries_Max)
+              bne __fat_init_fdarea
+              rts
 
 ; close file, update dir entry and free file descriptor quietly
 ; in:
@@ -249,30 +243,3 @@ fat_close:
     jsr __fat_update_direntry
 :   jmp __fat_free_fd
 
-; find first dir entry
-; in:
-;   X - file descriptor (index into fd_area) of the directory
-;   A/Y - pointer to file name matcher strategy
-; out:
-;   Z=1 on success (A=0), Z=0 and A=error code otherwise
-;   C=0 if found and dirptr is set to the dir entry found (requires Z=1), C=1 otherwise
-;@name: "fat_find_first"
-;@in: A, "low byte of pointer to zero terminated string with the file path"
-;@in: Y, "high byte of pointer to zero terminated string with the file path"
-;@in: X, "file descriptor (index into fd_area) of the directory"
-;@out: Z, "1 on success, 0 on error"
-;@out: A, "error code"
-;@out: C, "0 if found and dirptr is set to the dir entry found (requires Z=1), else 1"
-;@desc: "find first dir entry"
-fat_find_first = __fat_find_first_mask
-
-; in:
-;  X - directory fd index into fd_area
-; out:
-;  C=0 on success (A=0), C=1 and A=<error code> otherwise
-;@name: "fat_find_next"
-;@in: X, "file descriptor (index into fd_area) of the directory"
-;@out: A, "error code"
-;@out: C, "0 on success (A=0), C=1 and A=<error code>, else 1"
-;@desc: "find next dir entry"
-fat_find_next = __fat_find_next

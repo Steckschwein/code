@@ -53,7 +53,9 @@ fetchkey:
 
 		plx
 
-		;  TODO FIXME - tradeoff here is that we override a possible previously stored key anyway
+    cmp #0
+    beq exit
+
 		sta key
     sec
 		rts

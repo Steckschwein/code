@@ -25,22 +25,28 @@
 
 
 ; @see system.s
-IRQ_VDP			= 1<<7		; irq from video chip
-IRQ_SND			= 1<<6		; irq from sound card (ym3812)
-IRQ_VIA			= 1<<5		; irq from VIA (6522)
-IRQ_IO0			= 1<<4		; i/o port 0
+IRQ_VDP      = 1<<7    ; irq from video chip
+IRQ_SND      = 1<<6    ; irq from sound card (ym3812)
+IRQ_VIA      = 1<<5    ; irq from VIA (6522)
+IRQ_IO0      = 1<<4    ; i/o port 0
 ;...
 
-clockspeed  =10	; in Mhz
+clockspeed  = 10  ; in Mhz
 
-ctrl_port	= $0230
+ctrl_port   = $0230
 
 stack = $0100
 
-slot0 = ctrl_port+0
-slot1 = ctrl_port+1
-slot2 = ctrl_port+2
-slot3 = ctrl_port+3
+slot0_ctrl = ctrl_port+0
+slot1_ctrl = ctrl_port+1
+slot2_ctrl = ctrl_port+2
+slot3_ctrl = ctrl_port+3
+
+slot0 = $0000
+slot1 = $4000
+slot2 = $8000
+slot3 = $c000
+
 
 CODE_LF  = $0a ; line feed
 

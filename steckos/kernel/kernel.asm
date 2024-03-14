@@ -57,7 +57,7 @@ kern_init:
     jsr blklayer_init
 
     SetVector user_isr_default, user_isr
-    jsr textui_init0
+    jsr textui_init
 
     jsr init_via1
 
@@ -72,7 +72,7 @@ kern_init:
     stz flags
 
     lda #2  ; enable RAM below kernel
-    sta slot2
+    sta slot2_ctrl
 
     stz ansi_state
 
@@ -238,7 +238,7 @@ do_nmi:
 
     ldx #3
 :
-    lda slot0,x
+    lda slot0_ctrl,x
     sta save_stat + save_status::SLOT0,x
     dex
     bpl :-

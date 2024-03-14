@@ -22,7 +22,7 @@
 
 ;@module: fat32
 
-.ifdef DEBUG_FAT32 ; debug switch for this module
+.ifdef DEBUG_FAT32_VOLLGAS ; debug switch for this module
   debug_enabled=1
 .endif
 
@@ -44,8 +44,8 @@
 
 .code
 
-;@desc: read the file denoted by given file descriptor (X) until EOF and store data at given address (A/Y)
 ;@name: fat_fread_vollgas
+;@desc: read the file denoted by given file descriptor (X) until EOF and store data at given address (A/Y)
 ;@in: X - offset into fd_area
 ;@in: A/Y - pointer to target address
 ;@out: C=0 on success, C=1 on error and A="error code" or C=1 and A=0 (EOK) if EOF is reached
@@ -72,7 +72,7 @@ fat_fread_vollgas:
           sbc fd_area + F32_fd::SeekPos + 1,x
           lsr
           tay
-          debug16 "frv blocks", p_data
+          debug16 "frv bs", p_data
 
 @l_read_blocks:
           beq @read_bytes  ; zero blocks - read remaining bytes and exit
@@ -114,7 +114,7 @@ fat_fread_vollgas:
 @l_err_range:
           lda #ERANGE
           sec
-@l_exit:  debug16 "fread vollgas <", p_data
+@l_exit:  debug16 "f rd vs <", p_data
           rts
 @l_exit_ok:
           clc

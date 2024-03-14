@@ -5,8 +5,6 @@
 .include      "zeropage.inc"
 
 ; ------------------------------------------------------------------------
-.zeropage
-
 ; shell related - TODO FIXME away from kernel stuff, conflicts with basic. but after basic start, we dont care about shell zp. maybe if we want to return to shell one day !!!
 .exportzp cmdptr    = location_cmdptr
 .exportzp paramptr  = location_paramptr

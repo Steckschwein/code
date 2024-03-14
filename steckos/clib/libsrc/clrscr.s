@@ -3,11 +3,10 @@
 ;
 
 		  .export _clrscr
-		  
+
 		  .include "kernel/kernel_jumptable.inc"
 
 _clrscr:
-	pha
 	lda #27
 	jsr krn_chrout
 
@@ -18,7 +17,4 @@ _clrscr:
 	jsr krn_chrout
 
 	lda #'J'
-	jsr krn_chrout
-
-	pla
-	rts	
+	jmp krn_chrout

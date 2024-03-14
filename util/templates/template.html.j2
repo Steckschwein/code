@@ -1,5 +1,6 @@
 <html>
 <head>
+<title>{{ title }}</title>
 <style>
 body {background-color: #FFFFFF; font-family: sans-serif;}
 ul {list-style: none;}
@@ -11,7 +12,7 @@ dl dt { font-weight: bold;}
 </style>
 </head>
 <body>
-<h1 id="modules">Modules</h1>
+<h1 id="modules">{{ title }}</h1>
 <ul>
 {% for module in doc_struct.keys()|sort() %}
 <li><a href="#{{ module }}">{{ module }}</a></li>

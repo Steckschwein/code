@@ -1,25 +1,15 @@
 .setcpu "65C02"
-.include "zeropage.inc"
-.include "common.inc"
+
+.autoimport
+
+;.include "zeropage.inc"
+.include "joystick.inc"
+.include "fat32.inc"
 .include "system.inc"
+.include "steckos.inc"
 .include "vdp.inc"
 .include "via.inc"
-.include "joystick.inc"
 
-.include "kernel_jumptable.inc"
-
-.import vdp_display_off
-.import vdp_init_reg
-.import vdp_bgcolor
-.import vdp_memcpy
-.import vdp_memcpys
-.import vdp_fill, vdp_fills
-.import vdp_mode_sprites_off
-.import vdp_gfx2_on
-.import vdp_gfx2_blank
-
-;.globalzp tmp1, tmp2, tmp3, tmp4
-;.globalzp ptr1, ptr2, ptr3
 
 seed=123
 stars_layer_size=40

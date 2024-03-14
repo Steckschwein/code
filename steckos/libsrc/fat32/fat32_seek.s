@@ -42,8 +42,8 @@
 
 .code
 
-;@desc: seek n bytes within file denoted by the given FD
 ;@name: fat_fseek
+;@desc: seek n bytes within file denoted by the given FD
 ;@in: X - offset into fd_area
 ;@in: A/Y - pointer to seek_struct - @see fat32.inc
 ;@out: C=0 on success (A=0), C=1 and A=<error code> or C=1 and A=0 (EOK) if EOF reached
@@ -57,7 +57,7 @@ fat_fseek:
 
     ldy #Seek::Whence
     lda (__volatile_ptr),y
-    debug "fat fseek >"
+    debug "f seek >"
     cmp #SEEK_SET
     ; TODO support SEEK_CUR, SEEK_END
     bne @l_exit_err
@@ -81,7 +81,7 @@ fat_fseek:
 
     lda #EOK
     clc
-    debug "fat fseek <"
+    debug "f seek <"
     rts
 @l_exit_err:
     lda #EINVAL

@@ -6,8 +6,8 @@ clean:
 	(cd games; make clean)
 	(cd steckos; make clean)
 	(cd asmunit; make clean)
+	(cd doc; make clean)
 	rm -f steckos.img
-	rm -f libsrc.html
 
 
 build:
@@ -23,4 +23,4 @@ img: build
 	./mkimg.sh
 
 doc:
-	./util/asmdoc.py -d steckos/libsrc/ --format md -f libsrc.md
+	(cd doc; make)

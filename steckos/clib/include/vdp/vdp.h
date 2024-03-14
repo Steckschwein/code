@@ -46,8 +46,22 @@ void __fastcall__ vdp_screen (unsigned char mode);
 
 void __fastcall__ vdp_plot (unsigned int x, unsigned char y, unsigned char color);
 
+void __fastcall__ vdp_putpixel (unsigned int x, unsigned char y);
+
+void __fastcall__ vdp_line(int x1, char y1, int x2, char y2);
+
+void __fastcall__ vdp_rectangle( int left, char top, int right, char bottom );
+
+void __fastcall__ vdp_fill( int x, int y, int border );
+
+int  __fastcall__ vdp_getcolor();
+void __fastcall__ vdp_setcolor(unsigned char color);
+
 void __fastcall__ vdp_blank (unsigned char color);
 
 void __fastcall__ vdp_restore(void);
+
+void __fastcall__ vdp_blank (unsigned char color);
+
 
 #endif

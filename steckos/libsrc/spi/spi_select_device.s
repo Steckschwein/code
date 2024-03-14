@@ -22,6 +22,7 @@
 .ifdef DEBUG_SPI; enable debug for this module
   debug_enabled=1
 .endif
+;@module: spi
 
 ;.include "kernel.inc"
 .include "via.inc"
@@ -36,6 +37,10 @@
 ;  A = spi device, one of devuces see spi.inc
 ; out:
 ;  Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
+;@name: spi_select_device
+;@in; A, "spi device, one of devices see spi.inc"
+;@out: Z = 1 spi for given device could be selected (not busy), Z=0 otherwise
+;@desc: select spi device given in A. the method is aware of the current processor state, especially the interrupt flag
 spi_select_device:
     php
     sei ;critical section start

@@ -36,7 +36,7 @@ GFX_OP_TOR  = 10  ; SC = 0 => DC = DC; DC = SC | DC otherwise
 GFX_OP_TXOR = 11  ; SC = 0 => DC = DC; DC = SC ^ DC otherwise
 GFX_OP_TNOT = 12  ; SC = 0 => DC = DC; DC = !SC otherwise
 
-; !!! NOTE !!! do not use x or y as identifier, will not assemble 
+; !!! NOTE !!! do not use x or y as identifier, will not assemble
 .struct point_t
    x1 .word ; 0..511 - depends on active screen mode
    y1 .byte ; 0..211
@@ -64,6 +64,15 @@ GFX_OP_TNOT = 12  ; SC = 0 => DC = DC; DC = !SC otherwise
    color .byte ; color - depends on mode
    operator .byte ; one of IMP, AND, OR, XOR, NOT - use GFX_OP_xxx
    radius .byte ; 0..211
+.endstruct
+
+.struct rectangle_t
+   x1 .word ; 0..511 - depends on active screen mode
+   y1 .byte ; 0..211
+   color .byte ; color - depends on mode
+   operator .byte ; one of IMP, AND, OR, XOR, NOT - use GFX_OP_xxx
+   x2 .word ;
+   y2 .byte ;
 .endstruct
 
 .endif ;_GFX_INC_
