@@ -70,7 +70,7 @@ vdp_mode6_set_pixel:
     nop            ;2
     nop            ;2
     sta  a_vreg
-    vnops
+    vdp_wait_l
     stx a_vram  ;set vdp vram address high byte
 vdp_gfx6_set_pixel_e:
     rts

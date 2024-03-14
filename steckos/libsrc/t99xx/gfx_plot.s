@@ -66,6 +66,7 @@ _gfx_prepare_x_y:
 ;@name: gfx_plot
 ;@desc: plot pixel
 ;@in: A/Y - pointer to plot_t struct
+;@clobbers: A,X,Y
 gfx_plot:
       php
       sei

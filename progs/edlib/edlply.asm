@@ -36,6 +36,9 @@ EDLIB_MAX_FILE_SIZE=16*1024
 
 appstart $1000
 
+.zeropage
+  file_ptr: .res 2
+
 .code
 main:
     jsr opl2_detect
@@ -258,9 +261,6 @@ player_isr:
     jsr vdp_bgcolor
 
     rts
-
-.zeropage
-  file_ptr: .res 2
 
 .data
   player_state: .res 1, 0
