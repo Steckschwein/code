@@ -5,6 +5,8 @@
 ;------------------------------------------------------------------------------
 ; Data structures
 
+FILENAME_MAX    = 80+1
+
 .struct DIR
     fd          .word
     off         .word

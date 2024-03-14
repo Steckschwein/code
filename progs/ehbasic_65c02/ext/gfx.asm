@@ -81,7 +81,7 @@ gfx_mode:
 		pha
 		sta GFX_MODE
 		jsr krn_textui_disable			;disable textui
-		jsr krn_display_off
+		jsr vdp_display_off
 		plx
 		jsr _gfx_set_mode
 		plp

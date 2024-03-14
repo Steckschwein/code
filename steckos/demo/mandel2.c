@@ -12,8 +12,6 @@
 
 static unsigned short SCREEN_X;
 static unsigned char  SCREEN_Y;
-
-static unsigned short SCREEN_X2;
 static unsigned char  SCREEN_Y2;
 
 #define maxiterations 50
@@ -66,7 +64,7 @@ register unsigned char color;
                     {
                         color= count<<2;
                         vdp_plot(x,y,color);
-                        vdp_plot(x,SCREEN_Y-y,color);
+                        vdp_plot(x,SCREEN_Y-1-y,color);
                     }
                 }
         }

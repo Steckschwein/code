@@ -20,8 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-;| VDP VRAM              |
-;|---------------------- |
+;@module: textui
 
 .include "common.inc"
 .include "kernel.inc"
@@ -33,12 +32,13 @@ ROWS=24
 CURSOR_BLANK=' '
 CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
 
-STATE_CURSOR_OFF    =1<<1
+STATE_TEXTUI_LOCK     =1<<0
 STATE_CURSOR_BLINK    =1<<2
+STATE_CURSOR_OFF      =1<<6
 STATE_TEXTUI_ENABLED  =1<<7
 
 .code
-.export textui_init0, textui_init, textui_update_screen, textui_chrout, textui_put
+.export textui_init, textui_reset, textui_update_screen, textui_chrout, textui_put
 
 .ifdef TEXTUI_STROUT
 .export textui_strout
@@ -62,9 +62,9 @@ textui_scroll_up:
   lda #<ADDRESS_TEXT_SCREEN
   clc
   bit video_mode
-   bvc :+
-   adc #40
-:  adc #40
+  bvc :+
+  adc #40
+: adc #40
   sta a_r
   lda #>ADDRESS_TEXT_SCREEN
   sta a_r+1
@@ -73,7 +73,7 @@ textui_scroll_up:
   ; 40/80 col mode, 10/20 * 100 calc pages to copy
   ldy #10
   bit video_mode
-   bvc @l1
+  bvc @l1
   ldy #20
 @l1:
   lda a_r+0  ; 4cl
@@ -90,7 +90,7 @@ textui_scroll_up:
   inc a_r+0  ; 6cl
   bne :+    ; 3cl
   inc a_r+1
-:  dex          ; 2cl
+: dex          ; 2cl
   bpl @vram_read ;3cl
 @write:
   ldx #scroll_buffer_size-1
@@ -124,96 +124,115 @@ textui_scroll_up:
   plx
   plp
 
-textui_update_crs_ptr:        ; updates the 16 bit pointer crs_ptr upon crs_x, crs_y values
-  jsr _vram_crs_ptr_write_saved ; restore saved char
-  lda #STATE_CURSOR_BLINK
-  trb screen_status     ;reset cursor state
 
-  ;use the crs_ptr as tmp variable
+;@name: textui_update_crs_ptr
+;@desc: update to new cursor position given in crs_x and crs_y zeropage locations
+;@in: -
+textui_update_crs_ptr:
+  jsr _vram_crs_ptr_write_saved ; restore saved char at old position
+  lda #STATE_CURSOR_BLINK
+  trb screen_status             ; reset cursor state
+
+  ;use the vdp_ptr as tmp variable
   php
   sei
-  stz crs_ptr+1
+  stz vdp_ptr+1
   lda crs_y
   asl              ; y*2
   asl              ; y*4
   asl              ; y*8
-  sta crs_ptr          ; save for add below
+  sta vdp_ptr          ; save for add below
 
-  asl              ; y*16
-  rol crs_ptr+1        ; shift carry to address high byte
-  asl              ; y*32
-  rol crs_ptr+1          ; shift carry to address high byte
+  asl                 ; y*16
+  rol vdp_ptr+1       ; shift carry to address high byte
+  asl                 ; y*32
+  rol vdp_ptr+1       ; shift carry to address high byte
 
-  adc crs_ptr          ; y*40 = y*8+y*32
+  adc vdp_ptr         ; y*40 = y*8+y*32
   bcc :+
-  inc crs_ptr+1        ; overflow inc page count
+  inc vdp_ptr+1       ; overflow inc page count
   clc
 
-:  bit video_mode
+: bit video_mode
   bvc :+
-  asl             ; y*80 => y*40*2
-  rol crs_ptr+1               ; shift carry to address high byte
+  asl                 ; y*80 => y*40*2
+  rol vdp_ptr+1       ; shift carry to address high byte
 
-:  adc crs_x          ; add cursor x
+: adc crs_x           ; add cursor x
   sta a_vreg
-  sta crs_ptr
+  sta vdp_ptr
 
   lda #>ADDRESS_TEXT_SCREEN
-  adc crs_ptr+1          ; add carry (above) and page to address high byte
+  adc vdp_ptr+1          ; add carry (above) and page to address high byte
   sta a_vreg
-  sta crs_ptr+1
+  sta vdp_ptr+1
   vdp_wait_l 3
   lda a_vram
   sta saved_char          ; save char at new position
   plp
   rts
 
+
+;@name: textui_update_screen
+;@desc: update internal state - is called on v-blank
+;@in: -
+textui_update_screen:
+    inc screen_frames
+    lda screen_status
+    bmi textui_cursor
+    rts
+
 textui_cursor:
-  lda screen_write_lock
-  bne _l_exit
-  lda screen_frames
-  and #$0f
-  bne _l_exit
+    lda screen_write_lock
+    bne _l_exit
+    lda screen_frames
+    and #$0f
+    bne _l_exit
 
-  lda screen_status
-  and #STATE_CURSOR_OFF
-  bne _l_exit
+    bit screen_status
+    bvs _l_exit
 
-  lda #STATE_CURSOR_BLINK
-  tsb screen_status
-  beq _vram_crs_ptr_write_saved
-  trb screen_status
-  lda #CURSOR_CHAR
-;  sta saved_char
-  bra _vram_crs_ptr_write
+    lda #STATE_CURSOR_BLINK
+    tsb screen_status
+    beq _vram_crs_ptr_write_saved
+    trb screen_status
+    lda #CURSOR_CHAR
+    bra _vram_crs_ptr_write
 _vram_crs_ptr_write_saved:
-  lda saved_char
+    lda saved_char
 _vram_crs_ptr_write:
-  php
-  sei
-  pha
-  lda crs_ptr
-  sta a_vreg
-  vdp_wait_s 5
-  lda crs_ptr+1
-  ora #WRITE_ADDRESS
-  sta a_vreg
-  pla
-  vdp_wait_l 3
-  sta a_vram
-  plp
+    php
+    sei
+    pha
+    lda vdp_ptr
+    sta a_vreg
+    vdp_wait_s 5
+    lda vdp_ptr+1
+    ora #WRITE_ADDRESS
+    sta a_vreg
+    pla
+    vdp_wait_l 3
+    sta a_vram
+    plp
 _l_exit:
-  rts
+    rts
 
-textui_init0:
+;@name: textui_init
+;@desc: init the text ui if used for the first time. like kernel start or kind of
+;@in: -
+textui_init:
     lda #VIDEO_MODE_80_COLS
 .ifdef COLS80
     tsb video_mode
 .else
     trb video_mode
 .endif
-    bra textui_init
+    bra textui_reset
 
+
+;@name: textui_setmode
+;@desc: set desired text mode which is either 40 (MSX TEXT 1) or 80 columns (MSX TEXT 2)
+;@in: A - the desired mode, either VIDEO_MODE_80_COLS or 0 to reset to 40 column mode
 textui_setmode:
     and #VIDEO_MODE_80_COLS
     bne :+
@@ -224,95 +243,47 @@ textui_setmode:
 @blank:
     jsr textui_blank
 
-textui_init:
-  stz screen_write_lock          ;reset write lock
-  jsr textui_enable
+;@name: textui_reset
+;@desc: reset text ui by setting the internal state accordingly.
+;@in: -
+textui_reset:
+    stz screen_write_lock          ;reset write lock
+    jsr textui_enable
 
 .ifndef DISABLE_VDPINIT
-  lda #TEXTUI_COLOR
-  jsr vdp_text_on
+    lda #TEXTUI_COLOR
+    jsr vdp_text_on
 .endif
-  rts
+    rts
 
-textui_update_screen:
-  inc screen_frames
-  lda screen_status
-  bpl :+
-  jmp textui_cursor
-:  rts
-
+;@name: textui_enable
+;@desc: enable text ui
+;@in: -
 textui_enable:
-  lda #STATE_TEXTUI_ENABLED
-  sta screen_status     ;set enable
-  rts
+    lda #STATE_TEXTUI_ENABLED
+    sta screen_status     ;set enable
+    rts
+
+;@name: textui_disable
+;@desc: disable text ui - cursor will be disabled
+;@in: -
 textui_disable:
-  stz screen_status
-  jmp _vram_crs_ptr_write_saved ;restore char
+    stz screen_status
+    jmp _vram_crs_ptr_write_saved ;restore char
 
+
+;@name: textui_cursor_onoff
+;@desc: toggle the blinking cursor on if off or off if on
+;@in: -
 textui_cursor_onoff:
-  lda screen_status
-  eor #STATE_CURSOR_OFF
-  sta screen_status
-  rts
-
-.ifdef TEXTUI_STROUT
-;----------------------------------------------------------------------------------------------
-; Output string on screen
-; in:
-;  A - lowbyte  of string address
-;  X - highbyte of string address
-;----------------------------------------------------------------------------------------------
-textui_strout:
-  sta krn_ptr3      ;init for output below
-  stx krn_ptr3+1
-
-  inc screen_write_lock   ;write lock on
-  ldy   #$00
-@l1:
-  lda   (krn_ptr3),y
-  beq   @l2
-  jsr __textui_dispatch_char
-  iny
-  bne   @l1
-@l2:
-  stz screen_write_lock   ;write lock off
-  rts
-.endif
-
-;----------------------------------------------------------------------------------------------
-; Put the string following in-line until a NULL out to the console
-; jsr primm
-; .byte "Example Text!",$00
-;----------------------------------------------------------------------------------------------
-.ifdef TEXTUI_PRIMM
-textui_primm:
-    pla                ; Get the low part of "return" address
-    sta krn_ptr3
-    pla                ; Get the high part of "return" address
-    sta krn_ptr3+1
-
-    inc screen_write_lock
-    ; Note: actually we're pointing one short
-PSINB:  inc krn_ptr3         ; update the pointer
-    bne  PSICHO       ; if not, we're pointing to next character
-    inc  krn_ptr3+1         ; account for page crossing
-PSICHO: lda  (krn_ptr3)        ; Get the next string character
-    beq  PSIX1        ; don't print the final NULL
-    jsr  __textui_dispatch_char      ; write it out
-    bra  PSINB        ; back around
-PSIX1:  inc  krn_ptr3         ;
-    bne  PSIX2        ;
-    inc  krn_ptr3+1         ; account for page crossing
-PSIX2:
-    stz screen_write_lock
-    jmp  (krn_ptr3)        ; return to byte following final NULL
-.endif
+    lda screen_status
+    eor #STATE_CURSOR_OFF
+    sta screen_status
+    rts
 
 textui_put:
-;  inc screen_write_lock     ; write on
-  sta saved_char
-;  stz screen_write_lock     ; write off
-  rts
+    sta saved_char
+    rts
 
 textui_chrout:
   cmp #0
@@ -328,12 +299,15 @@ textui_chrout:
 @l1:
   rts
 
+;@name: textui_blank
+;@desc: blank screen, set cursor to top left corner
+;@in: -
 textui_blank:
   ldx #4  ;pages to blank
   bit video_mode
   bvc :+
   ldx #8
-:  php
+: php
   sei
   vdp_vram_w ADDRESS_TEXT_SCREEN
   lda #CURSOR_BLANK
@@ -377,17 +351,17 @@ __textui_dispatch_char:
 @exit:
   rts
 @l4:
-  sta saved_char          ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
-  lda crs_x
-  inc
+    sta saved_char          ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
+    lda crs_x
+    inc
     bit video_mode
     bvs :+
     cmp #40
     beq @l5
 :   cmp #80
-  beq @l5
-  sta crs_x
-  jmp textui_update_crs_ptr
+    beq @l5
+    sta crs_x
+    jmp textui_update_crs_ptr
 @l5:
   stz crs_x
 

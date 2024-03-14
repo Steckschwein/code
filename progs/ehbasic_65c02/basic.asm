@@ -16,15 +16,12 @@
 
 .export char_out=krn_chrout
 
-.import gfx_mode
-.import LAB_GFX_PLOT
-.import LAB_GFX_POINT
-.import LAB_GFX_LINE
-.import LAB_GFX_CIRCLE
-.import LAB_GFX_SCNCLR
-.import LAB_GFX_SCNWAIT
+.autoimport
 
-__APPSTART__ = $b280
+cwdbuf_size = 25
+.export dirent
+
+__APPSTART__ = $8000
 appstart __APPSTART__
 
 ;
@@ -338,6 +335,9 @@ Rbyte3          = Rbyte4+3   ; least significant PRNG byte
 Decss           = Rbyte3+1   ; number to decimal string start
 Decssp1         = Decss+1    ; number to decimal string start
 ZPLastByte      = Decss+17   ; last declared byte in Page Zero
+
+; .out .sprintf("Last ZP Address: %x", ZPLastByte)
+.assert ZPLastByte < $d0, error, "ZP usage clash with kernel"
 
 ; Note: C02BIOS uses Page Zero locations from $E0 - $FF
 ; C02Monitor uses Page Zero locations from $B0 - $DF
@@ -1371,17 +1371,20 @@ LAB_LIST
       BCC   LAB_14BD          ; branch if next character numeric (LIST n..)
       BEQ   LAB_14BD          ; branch if next character [NULL] (LIST)
 
+
       CMP   #TK_MINUS         ; compare with token for -
       BNE   LAB_14A6          ; exit if not - (LIST -m)
 
                               ; LIST [[n][-m]]
                               ; this bit sets the n , if present, as the start and end
 LAB_14BD
+
       JSR   LAB_GFPN          ; get fixed-point number into temp integer
       JSR   LAB_SSLN          ; search BASIC for temp integer line number
                               ; (pointer in Baslnl/Baslnh)
       JSR   LAB_GBYT          ; scan memory
       BEQ   LAB_14D4          ; branch if no more characters
+
 
                               ; this bit checks the - is present
       CMP   #TK_MINUS         ; compare with token for -
@@ -1397,7 +1400,7 @@ LAB_14D4
       LDA   Itempl            ; get temporary integer low byte
       ORA   Itemph            ; OR temporary integer high byte
       BNE   LAB_14E2          ; branch if start set
-
+foo_list
       LDA   #$FF              ; set for -1
       STA   Itempl            ; set temporary integer low byte
       STA   Itemph            ; set temporary integer high byte
@@ -7611,23 +7614,54 @@ LAB_2D05
      ; JMP     LAB_1319         ; cleanup and Return to BASIC
 
 openfile:
-   jsr termstrparam
-   jsr krn_open
-   bne io_error
-   stx _fd
-   rts
-
-io_error_close:
-    jsr krn_close
-io_error:
-    ldx #$24 ; "Generate "File not found error"
-    jmp LAB_XERR
-
-LAB_SAVE:
+      jsr termstrparam
+      jsr krn_fopen
+      bcs io_error
+      stx _fd
       rts
 
+io_error_close:
+      jsr krn_close
+io_error:
+      ldx #$24 ; "Generate "File not found error"
+      jmp LAB_XERR
+
+; we need to wrap krn_write_byte in order to get the file descriptor
+; into X first
+fwrite_wrapper:
+      save
+
+      ldx _fd
+      jsr krn_write_byte
+
+      restore
+      rts
+
+LAB_SAVE:
+      ldy #O_CREAT
+      jsr openfile
+
+      ; set output vector to filesystem wrapper
+      lda #<fwrite_wrapper
+      sta VEC_OUT
+      lda #>fwrite_wrapper
+      sta VEC_OUT+1
+
+      ; list program
+      sec ; set carry to make LIST do anything
+      jsr LAB_14BD ; jump into LIST routine
+
+      ldx _fd
+      jsr krn_close
+
+vec_restore:
+      jsr init_iovectors
+
+      SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
+      jmp     LAB_1319         ; cleanup and Return to BASIC
+
 LAB_LOAD:
-      lda #O_RDONLY
+      ldy #O_RDONLY
       jsr openfile
 
       lda #<fread_wrapper
@@ -7639,28 +7673,26 @@ LAB_LOAD:
       sta VEC_OUT
       lda #>outvec_dummy
       sta VEC_OUT+1
-      JMP   LAB_1319 ; reset and return
+      JMP LAB_1319 ; reset and return
 
 fread_wrapper:
-    phx
-    phy
-    ldx _fd
-    jsr krn_fread_byte
-    bcs @eof
-    cmp #KEY_LF ; replace with "basic end of line"
-    bne :+
-    lda #KEY_CR
-:   ply
-    plx
-    cmp #0
-    rts
+      phx
+      phy
+      ldx _fd
+      beq vec_restore
+      jsr krn_fread_byte
+      ply
+      plx
+      bcs @eof
+      cmp #KEY_LF ; replace with "basic end of line"
+      bne :+
+@cr:  lda #KEY_CR
+:     cmp #0
+      rts
 @eof:
-    jsr krn_close
-
-    jsr init_iovectors
-
-    SMB7    OPXMDM           ; set upper bit in flag (print Ready msg)
-    jmp     LAB_1319         ; cleanup and Return to BASIC
+      jsr krn_close
+      stz _fd
+      bra @cr
 
 init_iovectors:
       lda #<krn_chrout
@@ -7683,6 +7715,7 @@ LAB_SCREEN:       ; SCREEN  - set gfx mode
       ASL
       JMP gfx_mode
 
+
 LAB_DIR:
     pha
     phx
@@ -7701,51 +7734,54 @@ LAB_DIR:
     SetVector pattern, filenameptr
 @skip:
 
-
     jsr LAB_CRLF
 
-    ldx #FD_INDEX_CURRENT_DIR
-    jsr krn_find_first
+    lda #<_fat_dirname_mask
+    ldy #>_fat_dirname_mask
+    jsr string_fat_mask ; build fat dir entry mask from user input
 
-    bcs @l2_1
-    bra @end
-@l2_1:
-    bcs @l4
-    bra @l5
+    lda #<cwdbuf
+    ldy #>cwdbuf
+    ldx #cwdbuf_size
+    jsr krn_getcwd
+
+    lda #<cwdbuf
+    ldx #>cwdbuf
+    ldy #O_RDONLY
+    jsr krn_opendir
+    bcs @end
+
 @l3:
-    ldx #FD_INDEX_CURRENT_DIR
-    jsr krn_find_next
-    bcc @l5
-@l4:
-    lda (dirptr)
-    cmp #$e5
-    beq @l3
+
+    lda #<dirent
+    ldy #>dirent
+    jsr krn_readdir
+    rol
+    cmp #1
+    beq @end
 
     ldy #F32DirEntry::Attr
-    lda (dirptr),y
+    lda dirent,y
 
-    bit #$0a ; Hidden attribute set, skip
+    bit #DIR_Attr_Mask_Hidden | DIR_Attr_Mask_Volume  ; Hidden attribute set, skip
     bne @l3
 
-    ldy #$00
-@outloop:
-    lda (dirptr),y
-    jsr LAB_PRNA
-    iny
-    cpy #11
-    bne @outloop
+    jsr string_fat_mask_matcher
+    bcc @l3
+
+    phx
+    jsr print_filename
+    plx
 
     jsr LAB_CRLF
 
     bra @l3
-@l5:
+
 @end:
     ply
     plx
     pla
     rts
-pattern:
-    .asciiz "*.*"
 
 
 LAB_CD:
@@ -7831,6 +7867,8 @@ LAB_CD:
 ;      RTS                      ; return to caller
 
 termstrparam:
+    phy
+
     ; evaluate sting parameter
     jsr LAB_EVEX
     jsr LAB_EVST
@@ -7839,7 +7877,7 @@ termstrparam:
     stx str_pl
     sty str_ph
 
-    ; overwrite last " with 0 to make it compatible with krn_open
+    ; overwrite last " with 0 to make it compatible with krn_fopen
     tay
     lda #0
     sta (str_pl),y
@@ -7847,6 +7885,7 @@ termstrparam:
     lda str_pl
     ldx str_ph
 
+    ply
     rts
 
 ; system dependant I/O vectors
@@ -8795,6 +8834,11 @@ LAB_RMSG    .byte $0D,$0A,"Ready",$0D,$0A,$00
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
 exit:		jmp (retvec)
+pattern:    .asciiz "*.*"
+
 .bss
-_fd:        .res 1
+_fd:                .res 1
+_fat_dirname_mask:  .res 8+3
+cwdbuf: .res cwdbuf_size
+dirent: .res .sizeof(F32DirEntry)
  .END

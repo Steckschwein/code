@@ -38,12 +38,11 @@ hline=tmp1
 index=tmp2
 ypos=tmp3
 
-.proc	_main: near
         jsr	krn_textui_disable
 
         sei
         set_irq isr, save_irq
-        vdp_sreg v_reg0_IE1, v_reg0   ; enable hblank irq
+        ;vdp_sreg v_reg0_IE1, v_reg0   ; enable hblank irq
         cli
 @loop:
         keyin
@@ -51,20 +50,23 @@ ypos=tmp3
 
         sei
         vdp_sreg 0, v_reg15
-        vdp_sreg 0, v_reg0
         restore_irq save_irq
-        cli
-
-        jsr	krn_textui_init
+        jsr krn_textui_init
+        jsr krn_textui_enable
         bit a_vreg ; acknowledge any vdp interrupts before re-enabling interrupts
+        cli
         jmp (retvec)
-.endproc
 
 isr:
       save
+
+      lda index
+      jsr vdp_bgcolor
+
       lda a_vreg
-      and #1      ; h-blank irq?
-      beq @vblank
+      ror           ; h-blank irq?
+      bcc @is_vblank
+
       ldx index
       bmi @exit
       lda raster_bar_colors,x
@@ -82,11 +84,12 @@ isr:
       inc hline
       lda hline
       bra @sethline
-@vblank:
+
+@is_vblank:
       vdp_sreg 0, v_reg15 ; status register 0
       vdp_wait_s
       bit a_vreg  ; v-blank irq?
-      bpl @exit
+ 	    bpl @is_vblank_end      ; VDP IRQ flag set?
       lda #Black
       jsr vdp_bgcolor
       lda #(raster_bar_colors_end-raster_bar_colors-1)
@@ -105,7 +108,8 @@ isr:
 @sethline:
       ldy #v_reg19
       vdp_sreg
-      vdp_sreg 1, v_reg15 ; prepare for read status register 1 on next irq
+@is_vblank_end:
+    	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 already
 @exit:
       restore
       rti

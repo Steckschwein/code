@@ -25,16 +25,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <conio.h>
-
 
 void usage (int status)
 {
 	if (status != EXIT_SUCCESS){
-		//   emit_try_help ();
-	}else{
-		printf ("Usage: %s [OPTION]... [FILE]...\n");
-
+		printf ("Usage: cat [OPTION]... [FILE]...\n");
 	}
 	exit (status);
 }

@@ -26,3 +26,6 @@ basic.dis: basic.prg
 
 basic: all
 	../../xmodem.sh $(OBJ)
+
+emu: basic.prg
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $<

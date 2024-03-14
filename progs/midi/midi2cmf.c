@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-
 #include <errno.h>
+#include "cmf.h"
 
 typedef struct __attribute__((packed, scalar_storage_order("big-endian"))) {
     unsigned char signature[4];
@@ -19,43 +19,22 @@ typedef struct __attribute__((packed, scalar_storage_order("big-endian"))) {
     uint32_t iLength;
 } MIDI_Track;
 
-typedef struct {//__attribute__((packed, scalar_storage_order("big-endian"))) {
-	uint16_t iInstrumentBlockOffset;
-	uint16_t iMusicOffset;
-	uint16_t iTicksPerQuarterNote;
-	uint16_t iTicksPerSecond;
-	uint16_t iTagOffsetTitle;
-	uint16_t iTagOffsetComposer;
-	uint16_t iTagOffsetRemarks;
-	uint8_t iChannelsInUse[16];
-	uint16_t iNumInstruments;
-	uint16_t iTempo;
-} CMFHEADER;
-
-typedef struct {
-	uint8_t iCharMult;
-	uint8_t iScalingOutput;
-	uint8_t iAttackDecay;
-	uint8_t iSustainRelease;
-	uint8_t iWaveSel;
-} OPERATOR;
-
-typedef struct {
-	OPERATOR op[2]; // 0 == modulator, 1 == carrier
-	uint8_t iConnection;
-    char padding[5];
-} SBI;
-
-typedef struct {
-    char signature[4];//	"SBI" followed by 0x1A
-    char name[32];
-    SBI sbi;
-} SBI_FILE;
-
 unsigned char CMF[]="CTMF\x1\x1";
 
+uint8_t buffer[256];
+
 void skipMetaEvent(FILE *fd){
-    
+    fread(&buffer, 1, 215, fd);
+}
+void writeByte(FILE *fd, uint8_t v){
+    fwrite(&v, 1, 1, fd);
+}
+
+void midi_Controller(FILE *fd, uint8_t ch, uint8_t ctrl, uint8_t val){
+    writeByte(fd, 0);//delay
+    writeByte(fd, 0xb0 | (ch & 0x0f));
+    writeByte(fd, ctrl);
+    writeByte(fd, val);
 }
 
 int main (int argc, const char* argv[]){
@@ -71,7 +50,6 @@ int main (int argc, const char* argv[]){
     MIDI_Track miditrack;
     CMFHEADER cmfheader;
     SBI_FILE sbi_file[16];
-    uint8_t buffer[256];
 
     unsigned char cmf_file[64];
 
@@ -91,7 +69,7 @@ int main (int argc, const char* argv[]){
     cmfheader.iTagOffsetRemarks = 0;
     cmfheader.iNumInstruments = (argc-2);
     cmfheader.iTicksPerQuarterNote = 0; 
-    cmfheader.iTicksPerSecond = 2000; // TODO
+    cmfheader.iTicksPerSecond = 2000;//2000; // TODO
     cmfheader.iTempo = 0;//0xa2;//TODO
 
     for(i=2;i<argc && i-2<16;i++){
@@ -142,7 +120,7 @@ int main (int argc, const char* argv[]){
     }
     printf("midi track: %x\n", miditrack.iLength);
 
-    snprintf(cmf_file, sizeof(cmf_file), "%s.cmf", argv[1]);
+    snprintf(cmf_file, sizeof(cmf_file), "%s.cmf.mid", argv[1]);
     printf("%s\n", cmf_file);
     fd_out = fopen(cmf_file, "w+b");
     if(!fd_out){
@@ -157,8 +135,9 @@ int main (int argc, const char* argv[]){
         fwrite(&sbi_file[j].sbi, sizeof(SBI), 1, fd_out);
     }
 
-    skipMetaEvent(fd_midi);
-    fread(&buffer, 1, 215, fd_midi);
+    //skipMetaEvent(fd_midi);    
+
+    midi_Controller(fd_out, 0, 0x67, 1);//CMF - enable percussion mode
 
     while((r = fread(&buffer, sizeof(uint8_t), sizeof(buffer), fd_midi)) > 0){
         //printf("read: %x\n", (unsigned)r);

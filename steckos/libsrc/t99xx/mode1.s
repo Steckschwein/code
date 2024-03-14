@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
 .import vdp_init_reg
@@ -31,13 +33,26 @@
 
 .code
 
+;@name: vdp_gfx1_blank
 vdp_gfx1_blank:    ; 3 x 256 bytes
     vdp_vram_w ADDRESS_GFX1_SCREEN
     lda  #' '   ;fill vram screen with blank
     ldx  #$03   ;3 pages
     jmp  vdp_fill
 
-vdp_init_bytes_gfx1:
+;@name: vdp_gfx1_on
+;@desc: gfx mode 1 - 32x24 character mode, 16 colors with same color for 8 characters in a block
+vdp_gfx1_on:
+    tax
+    vdp_vram_w ADDRESS_GFX1_COLOR ;color vram
+    txa
+    ldx #$20    ;32 colors
+    jsr vdp_fills
+    lda #<@vdp_init_bytes_gfx1
+    ldy #>@vdp_init_bytes_gfx1
+    ldx #<(@vdp_init_bytes_gfx1_end-@vdp_init_bytes_gfx1)-1
+    jmp vdp_init_reg
+@vdp_init_bytes_gfx1:
     .byte 0
     .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
     .byte >(ADDRESS_GFX1_SCREEN>>2) ; name table - value * $1000 (v9958)    R#02
@@ -52,18 +67,4 @@ vdp_init_bytes_gfx1:
     .byte 0;  #R11
     .byte 0;  #R12
     .byte 0;  #R13
-vdp_init_bytes_gfx1_end:
-
-;
-;  gfx mode 1 - 32x24 character mode, 16 colors with same color for 8 characters in a block
-;
-vdp_gfx1_on:
-    tax
-    vdp_vram_w ADDRESS_GFX1_COLOR ;color vram
-    txa
-    ldx #$20    ;32 colors
-    jsr vdp_fills
-    lda #<vdp_init_bytes_gfx1
-    ldy #>vdp_init_bytes_gfx1
-    ldx #<(vdp_init_bytes_gfx1_end-vdp_init_bytes_gfx1)-1
-    jmp vdp_init_reg
+@vdp_init_bytes_gfx1_end:

@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
     .import vdp_mode2_on
@@ -30,6 +32,9 @@
 
 
 .code
+
+;@name: vdp_mode3_on
+;@desc: mode 3 on
 vdp_mode3_on:
     jsr vdp_mode2_on
     vdp_sreg v_reg0_m4, v_reg0  ; reg0 m4, enable G3

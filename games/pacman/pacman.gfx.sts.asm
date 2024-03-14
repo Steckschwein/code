@@ -83,8 +83,8 @@ gfx_write_pal:
 		rts
 
 gfx_isr:
-        bit a_vreg ; vdp irq ?
-        rts
+    bit a_vreg ; vdp irq ?
+    rts
 
 gfx_init:
 gfx_init_pal:

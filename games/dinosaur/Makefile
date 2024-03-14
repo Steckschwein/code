@@ -35,7 +35,7 @@ all: dinosaur.prg
 	$(UTIL_XPM_8BIT) dinosaur.chars.4.4px.xmas.xpm > dinosaur.chars.4.4px.xmas.res
 
 clean:
-	rm -f *.prg *.labels *.res
+	rm -f *.prg *.labels *.res *.dbg
 
 gfx.res: *.res
 

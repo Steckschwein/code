@@ -19,7 +19,7 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-
+;@module: util
 .export hexout_s
 .export hexout
 
@@ -36,6 +36,11 @@ hexout_s:
         lda #'$'
         jsr char_out
         pla
+;@module: util
+;@name: "hexout"
+;@in: A, "value to convert"
+;@desc: "output 8bit value as hex"
+
 hexout:
         pha
         pha

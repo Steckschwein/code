@@ -20,19 +20,19 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
 .export vdp_mode6_set_pixel
 
 .importzp vdp_tmp
 
-;  set pixel to gfx6 mode screen
-;
-;  X - x coordinate [0..ff]
-;  Y - y coordinate [0..bf]
-;  A - color [0..f] and bit 7 MSB x coordinate
-;
-;   VRAM ADDRESS = 8(INT(X DIV 2)) + 256(INT(Y DIV 8)) + (Y MOD 8)
+;@name: vdp_mode6_set_pixel
+;@desc: set pixel to gfx6 mode screen - VRAM ADDRESS = 8(INT(X DIV 2)) + 256(INT(Y DIV 8)) + (Y MOD 8)
+;@in: X - x coordinate [0..ff]
+;@in: Y - y coordinate [0..bf]
+;@in: A - color [0..f] and bit 7 MSB x coordinate
 vdp_mode6_set_pixel:
     beq vdp_gfx6_set_pixel_e  ; 0 - not set, leave blank
 ;    sta tmp1          ; otherwise go on and set pixel

@@ -32,13 +32,22 @@ int main(int argc, char* argv){
   int y;
 
   vdp_screen(7);
-  for(x=0;x<255;x++){
-    for(y=0;y<212;y++){
-      vdp_plot(x,y,x);
-    }
-  }
+  vdp_blank(0);
 
-  while (!kbhit());
+  do{
+    for(x=0;x<256;x++){
+      for(y=0;y<212;y++){
+        vdp_plot(x,y,x);
+
+        vdp_setcolor(x);
+        vdp_putpixel(255-x,y);
+
+      }
+      vdp_line(x,0,128,96);
+      vdp_setcolor(x^0xff);
+      vdp_rectangle(x,x+16,x+32,x+32);
+    }
+  } while (!kbhit());
 
   return EXIT_SUCCESS;
 }

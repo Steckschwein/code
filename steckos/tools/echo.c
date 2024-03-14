@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>
+#include <string.h>
 
-int main (int argc, const char* argv[])
+int main (int argc, const char** argv)
 {
-  int i;
-  for(i=1;i<argc;i++)
-    cprintf("%s ", argv[i]);
-  cprintf("\n");
+  while( *++argv != NULL)
+    printf("%s ", argv[0]);
 
   return EXIT_SUCCESS;
 }

@@ -33,8 +33,8 @@ p_tgt:    .res 2
 
 appstart $1000
 
-   lda #$31 ; enable RAM at slot3
-   sta slot3
+   lda #31 ; enable RAM at slot3
+   sta slot3_ctrl
 
    sei ; no irq if we upload from kernel to avoid clash
    ; copy kernel code to kernel_start
@@ -52,16 +52,11 @@ loop:
    sta (p_tgt),y
    iny
    bne loop
-   lda p_src+1
-   cmp #>payload_end
-   bne @skip
-   cpy #<payload_end
-   beq end
-@skip:
    inc p_src+1
    inc p_tgt+1
+   lda p_src+1
+   cmp #>payload_end
    bne loop
-end:
    ; jump to reset vector
    jmp ($fffc)
 

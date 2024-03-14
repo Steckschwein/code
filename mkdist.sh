@@ -1,44 +1,21 @@
-#!/bin/bash
+#!/bin/bash 
 
 TARGET=dist
 
+for i in steckos demo games progs basic ; do
+    mkdir -p $TARGET/$i
+done 
 
-cp steckos/kernel/loader.prg $TARGET/LOADER.PRG
+cp steckos/kernel/loader.prg $TARGET/
+cp steckos/shell/shell.prg $TARGET/steckos/
+cp steckos/tools/*.prg $TARGET/steckos/
+cp steckos/demo/*.prg $TARGET/demo/
 
-mkdir -p $TARGET/STECKOS
-cp steckos/shell/shell.prg $TARGET/STECKOS/SHELL.PRG
 
-for n in steckos/tools/*.prg ; do
-	un=`basename $n | awk '{print toupper($0)}'`
-    cp $n $TARGET/STECKOS/$un
-done
-
-mkdir -p $TARGET/DEMO
-for n in steckos/demo/*.prg ; do
-    un=$(basename $n | awk '{print toupper($0)}')
-    cp $n $TARGET/DEMO/$un
-done
-
-for n in steckos/demo/*/*.prg ; do
-    un=$(basename $n | awk '{print toupper($0)}')
-    cp $n $TARGET/DEMO/$un
-done
 GAMES="games/dinosaur/dinosaur.prg games/pong/pong.prg games/microchess/mchess.prg"
-mkdir -p $TARGET/GAMES
-for n in $GAMES ; do
-    un=$(basename $n | awk '{print toupper($0)}')
-    cp $n $TARGET/GAMES/$un
-done
+cp $GAMES $TARGET/games/
 
-PROGS=$(find progs -name "*.prg") #/unrclock/unrclock.prg progs/ppmview/ppmview.prg progs/imfplayer/imf.prg progs/ehbasic_65c02/basic.prg progs/edlib/edlply.prg progs/clavier/clavier.prg"
-mkdir -p $TARGET/PROGS
-for n in $PROGS ; do
-    un=$(basename $n | awk '{print toupper($0)}')
-    cp $n $TARGET/PROGS/$un
-done
+PROGS=$(find progs -name "*.prg") 
+cp $PROGS $TARGET/progs/
 
-mkdir -p $TARGET/BASIC
-for n in progs/ehbasic_65c02/demo/* ; do
-    un=$(basename $n | awk '{print toupper($0)}')
-    cp $n $TARGET/BASIC/$un
-done
+cp progs/ehbasic_65c02/demo/* $TARGET/basic

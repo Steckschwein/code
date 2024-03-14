@@ -20,15 +20,19 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+;@module: vdp
+
 .include "vdp.inc"
 
 .export vdp_mode7_set_pixel
 
 .code
-;  .X - x coordinate [0..ff]
-;  .Y - y coordinate [0..bf]
-;  .A - color [0..ff] as GRB 332 (green bit 7-5, red bit 4-2, blue bit 1-0)
-;   VRAM ADDRESS = .X + 256*.Y
+
+;@name: vdp_mode7_set_pixel
+;@desc: VRAM ADDRESS = .X + 256*.Y
+;@in: X - x coordinate [0..ff]
+;@in: Y - y coordinate [0..bf]
+;@in. A - color [0..ff] as GRB 332 (green bit 7-5, red bit 4-2, blue bit 1-0)
 vdp_mode7_set_pixel:
       php
       sei
@@ -37,10 +41,7 @@ vdp_mode7_set_pixel:
       tya
       and #$3f             ; A13-A8 vram address highbyte
       ora #WRITE_ADDRESS
-      nop
-      nop
-      nop
-      nop
+      vdp_wait_s 9
       sta a_vreg
       tya
       rol                ; A16-A14 bank select via reg#14, rol over carry
@@ -48,25 +49,26 @@ vdp_mode7_set_pixel:
       rol
       and #$03
       ora #<.HIWORD(ADDRESS_GFX7_SCREEN<<2)
-      nop
-      nop
+      vdp_wait_s 12
       sta a_vreg
-      vdp_wait_s 2
       lda #v_reg14
+      vdp_wait_s 2
       sta a_vreg
-      vdp_wait_l 2
       pla
+      vdp_wait_l 3
       sta a_vram            ; set color
       plp
       rts
 
+;@name: vdp_gfx7_set_pixel_direct
+;@desc:
 ; requires
 ;  - int handling is done outside
 ;  - page register set accordingly (v_reg14)
-;  .X - x coordinate [0..ff]
-;  .Y - y coordinate [0..bf]
-;  .A - color GRB [0..ff] as 332
 ;   VRAM ADDRESS = .X + 256*.Y
+;@in: X - x coordinate [0..ff]
+;@in: Y - y coordinate [0..bf]
+;@in: A - color GRB [0..ff] as 332
 vdp_gfx7_set_pixel_direct:
       stx a_vreg            ; A7-A0 vram address low byte
       pha

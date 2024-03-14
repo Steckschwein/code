@@ -2,7 +2,10 @@
 .import char_out
 .segment "CODE"
 
-
+;@module: util
+;@name: "bin2dual"
+;@in: A, "value to output"
+;@desc: "output 8bit value as binary string"
 bin2dual:
         pha
         phx

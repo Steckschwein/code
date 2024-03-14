@@ -37,6 +37,8 @@
 .export crc16_init = crc16_table_init
 .export xmodem_rcvbuffer = BUFFER_2
 
+.exportzp ptr1,ptr2
+
 .zeropage
 ptr1:   .res 2
 ptr2:   .res 2
@@ -46,9 +48,9 @@ appstart $1000
 
       ; enable RAM to load bios into
       lda #$02
-      sta slot2
+      sta slot2_ctrl
       lda #$03
-      sta slot3
+      sta slot3_ctrl
 
       lda #<bios_start
       sta p_tgt

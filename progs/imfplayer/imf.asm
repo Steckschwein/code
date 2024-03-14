@@ -86,7 +86,7 @@ main:
 		lda paramptr
 		ldx paramptr +1
 		ldy #O_RDONLY
- 		jsr krn_open
+ 		jsr krn_fopen
  		beq @l5
 		jmp error
 @l5:
