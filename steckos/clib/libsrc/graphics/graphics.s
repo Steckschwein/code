@@ -40,6 +40,16 @@
 ;----------------------------------------------------------------------------
 .code
 
+; void __fastcall__ vdp_syncvblank();
+.export _vdp_syncvblank
+.proc _vdp_syncvblank
+:       lda sys_irr
+        bpl :-
+        and #%01111111
+        sta sys_irr
+        rts
+.endproc
+
 ; void __fastcall__ graphics_initgraph( char graphmode );
 .export _graphics_initgraph
 .proc _graphics_initgraph

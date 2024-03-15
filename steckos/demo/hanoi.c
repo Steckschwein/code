@@ -26,6 +26,7 @@ int pop(int from)
 void drawStill() {
   int j, i, disk;
   //cleardevice();
+  syncvblank();
   for (j = 1; j <= 3; j++) {
     // draw tower
     setfillstyle(CLOSE_DOT_FILL, WHITE);
@@ -52,6 +53,7 @@ void animator()
     setfillstyle(SOLID_FILL, 1 + diskInAir);
     bar(x - 15 - diskInAir * 2, y - 10, x + 5 + 15 + diskInAir * 2, y);
     delay(DELAY);
+    syncvblank();
     setfillstyle(SOLID_FILL, BLACK);
     bar(x - 15 - diskInAir * 2, y - 10, x + 5 + 15 + diskInAir * 2, y);
   }
@@ -64,6 +66,7 @@ void animator()
     setfillstyle(SOLID_FILL, 1 + diskInAir);
     bar(x - 15 - diskInAir * 2, y - 10, x + 5 + 15 + diskInAir * 2, y);
     delay(DELAY);
+    syncvblank();
     setfillstyle(SOLID_FILL, BLACK);
     bar(x - 15 - diskInAir * 2, y - 10, x + 5 + 15 + diskInAir * 2, y);
   }
@@ -74,6 +77,7 @@ void animator()
     setfillstyle(SOLID_FILL, 1 + diskInAir);
     bar(x - 15 - diskInAir * 2, y - 10, x + 5 + 15 + diskInAir * 2, y);
     delay(DELAY);
+    syncvblank();
     setfillstyle(SOLID_FILL, BLACK);
     bar(x - 15 - diskInAir * 2, y - 10, x + 5 + 15 + diskInAir * 2, y);
   }
@@ -98,6 +102,7 @@ void moveTopN(int n, int a, int b, int c)
 }
 
 int main(int argc, char* argv[]) {
+
 
   int i, n;
   if(argc <= 0){

@@ -143,26 +143,28 @@ do_irq:
     save
 
     cld ;clear decimal flag, maybe an app has modified it during execution
-    jsr call_user_isr      ; user isr first, maybe there are timing critical things
+    jsr call_user_isr     ; user isr first, maybe there are timing critical things
 
-@check_vdp:
-    bit a_vreg ; vdp irq ?
+    jsr system_irr        ; collect irq sources and store bits in system_irr accordingly
+
+    bit sys_irr ; vdp irq ?
     bpl @check_via
     jsr textui_update_screen  ; update text ui
 ;    lda #Dark_Yellow
  ;   jsr vdp_bgcolor
 
 @check_via:
-    bit via1ifr    ; Interrupt from VIA?
-    bpl @check_opl
+    bit sys_irr    ; Interrupt from VIA?
+    bvc @check_opl
 ;    lda #Light_Green
  ;   jsr vdp_bgcolor
     ; via irq handling code
     ;
 
 @check_opl:
-    bit opl_stat  ; IRQ from OPL?
-    bpl @check_spi_rtc
+    lda sys_irr  ; IRQ from OPL?
+    and #IRQ_SND
+    beq @check_spi_rtc
 ;    lda #Light_Yellow<<4|Light_Yellow
 ;    jsr vdp_bgcolor
 
