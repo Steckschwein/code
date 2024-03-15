@@ -23,8 +23,6 @@
       init_step:  .res 1
       startaddr:  .res 2
 
-;.exportzp ptr1,  ptr2
-
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
@@ -33,7 +31,6 @@
 .export write_block_buffered=_noop
 .export write_flush=_noop
 _noop:
-      clc
       rts
 
 memcheck:
