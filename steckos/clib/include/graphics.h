@@ -68,7 +68,11 @@ void __fastcall__ graphics_textxy (unsigned int x, unsigned char y, char *s);
 void __fastcall__ graphics_setcolor (unsigned char color);
 #define setcolor(color) graphics_setcolor(color)
 
+int __fastcall__ graphics_getcolor();
 #define getcolor() graphics_getcolor()
+
+void __fastcall__ vdp_syncvblank();
+#define syncvblank() vdp_syncvblank()
 
 // TODO not implemented yet
 #define settextstyle(font, direction, charsize)
@@ -92,5 +96,6 @@ void __fastcall__ graphics_bar( int left, char top, int right, char bottom );
 #define delay(ms) _delay_ms(ms)
 
 #define closegraph() vdp_restore()
+
 
 #endif

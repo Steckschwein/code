@@ -64,6 +64,7 @@ location_flags             = $f1
 
 .global lba_addr
 .global blocks
+.global sys_irr
 .global key
 
 .global crs_x
