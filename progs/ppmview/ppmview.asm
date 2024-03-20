@@ -35,19 +35,28 @@
 
 appstart $1000
 .code
-
               stz _settings
               stz _param_ix
 
-              ldx #<(opt_rgb-options)
+              ldx #<(opt_hlp-options)
               jsr hasOption
-              bcc @opt_slide
+              bcc @opt_rgb
+              ldy #0
+:             lda usage,y
+              beq :+
+              jsr char_out
+              iny
+              bne :-
+:             jmp exit
+
+@opt_rgb:     ldx #<(opt_rgb-options)
+              jsr hasOption
+              bcc @opt_sld
               lda #$80            ; set rgb
               sta _settings
               sty _param_ix       ; safe paramptr offset
-
-@opt_slide:
-              ldx #<(opt_slide-options)
+@opt_sld:
+              ldx #<(opt_sld-options)
               jsr hasOption
               bcc @opt_none
               lda #$48            ; set slide delay enable, 8 x 1000ms
@@ -90,7 +99,6 @@ appstart $1000
 
               jsr slide_show
               bcc @l_next_ppm
-
 @l_close_dir:
               ldx _fd_dir
               jsr krn_close
@@ -108,7 +116,6 @@ appstart $1000
               bcs ppm_error
 
               keyin
-
 exit:
               jsr gfxui_off
               jmp (retvec)
@@ -245,12 +252,18 @@ gfxui_off:
               rts
 
 .data
-              _ppmext:  .byte "PPM"
+              _ppmext:    .byte "PPM"
               _ppmext_end:
-              options:
-              opt_slide:  .asciiz "slide"
-              opt_rgb:    .asciiz "rgb"
 
+              options:
+              opt_sld:  .asciiz "slide"
+              opt_rgb:  .asciiz "rgb"
+              opt_hlp:  .asciiz "h"
+              usage:
+                .byte "ppmview [-rgb] [-slide] file",CODE_LF
+                .byte "  -rgb   - encode ppm data to GRB (SCREEN 7), defaults to YJK",CODE_LF
+                .byte "  -slide - slide show of ppm files in current directory",CODE_LF
+                .byte 0
 .bss
               _param_ix:  .res 1
               _settings:  .res 1 ; bit 7 rgb on/off, bit 6 slide, bit 5-0 slide delay
