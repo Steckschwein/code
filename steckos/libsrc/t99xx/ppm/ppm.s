@@ -302,13 +302,17 @@ rgb_bytes_to_grb:  ; GRB 332 format
 
 set_screen_addr:
               lda cols
+              clc
+              adc offs_l
               sta a_vreg                 ; A7-A0 vram address low byte
               lda rows
+              clc
+              adc offs_t
+              pha
               and #$3f                   ; A13-A8 vram address highbyte
               ora #WRITE_ADDRESS
-              vdp_wait_s 8
               sta a_vreg
-              lda rows                   ; A16-A14 bank select via reg#14
+              pla                        ; A16-A14 bank select via reg#14
               rol
               rol
               rol
@@ -338,11 +342,22 @@ ppm_parse_header:
               cmp #<MAX_WIDTH
               bcc @l_invalid_ppm
               sta ppm_width
+              sec
+              lda #<MAX_WIDTH
+              sbc ppm_width
+              lsr
+              and #$fc
+              sta offs_l
 
               jsr parse_int0  ;height
               cmp #MAX_HEIGHT+1
               bcs @l_invalid_ppm
               sta ppm_height
+              sec
+              lda #MAX_HEIGHT
+              sbc ppm_height
+              lsr
+              sta offs_t
 
               jsr parse_int0  ;color depth
               cpy #3
@@ -411,6 +426,8 @@ parse_string:
 .bss
 vram_page:  .res 1
 fd:         .res 1
+offs_t:     .res 1  ; offset top
+offs_l:     .res 1  ; offset left
 cols:       .res 1
 rows:       .res 1
 ppm_width:  .res 1

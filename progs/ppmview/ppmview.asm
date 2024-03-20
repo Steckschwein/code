@@ -261,6 +261,7 @@ gfxui_off:
               opt_hlp:  .asciiz "h"
               usage:
                 .byte "ppmview [-rgb] [-slide] file",CODE_LF
+                .byte "  -h     - this help",CODE_LF
                 .byte "  -rgb   - encode ppm data to GRB (SCREEN 7), defaults to YJK",CODE_LF
                 .byte "  -slide - slide show of ppm files in current directory",CODE_LF
                 .byte 0
