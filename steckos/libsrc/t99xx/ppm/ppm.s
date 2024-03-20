@@ -31,19 +31,8 @@
 .include "errno.inc"
 .include "zeropage.inc"
 
-.import hexout
-.import primm
+.autoimport
 
-.import vdp_gfx7_on
-.import vdp_gfx7_blank
-.import vdp_display_off
-.import vdp_bgcolor
-
-.import fopen
-.import fread_byte
-.import fclose
-
-;.export ppm_data
 .export ppm_width
 .export ppm_height
 
@@ -58,17 +47,46 @@
 .define BLOCK_BUFFER 8
 
 .segment "ZEROPAGE_LIB": zeropage
-_i:     .res 1
+    _i:         .res 1
+    codec:      .res 1
+
+
+.struct yjk ; !!! do not change order here, due to indirect access in rgb_bytes_to_yjk
+    r0 .byte
+    g0 .byte
+    b0 .byte
+    r1 .byte
+    g1 .byte
+    b1 .byte
+    r2 .byte
+    g2 .byte
+    b2 .byte
+    r3 .byte
+    g3 .byte
+    b3 .byte
+
+    rm .byte
+    gm .byte
+    bm .byte
+
+    ym .byte
+    j .byte
+    k .byte
+.endstruct
 
 .code
 
 ;@name: ppm_load_image
 ;@in: A/X file name to load
-;@in: Y vdp vram page to load ppm into - either 0 for address $00000 or 1 for address $10000
+;@in: Y Bit 0 - vdp vram page to load ppm into - either 0 for address $00000 or 1 for address $10000
+;@in: Y Bit 7 - encode ppm RGB bytes to VDP9958 GRB encoding, YJK otherwise (default)
 ;@out: C=0 success and image loaded to vram (mode 7), C=1 otherwise with A/X error code where X ppm specific error, A i/o specific error
+;@out: ppm_width / ppm_height denoting the size of the image on success (C=0)
 .proc ppm_load_image
+
         stz fd
-        sty _vram_page
+        sty codec
+        sty vram_page
 
         ldy #O_RDONLY
         jsr fopen
@@ -105,16 +123,14 @@ load_image:
         stz cols
         stz rows
 
-        lda _vram_page
+        lda vram_page
         and #$01
         asl
         asl
-        sta _vram_page
+        sta vram_page
 
         php
         sei ;critical section, avoid vdp irq here
-
-        jsr set_screen_addr  ; initial vram address
         jsr copy_to_vram
         bcs @l_err
         plp
@@ -126,23 +142,137 @@ load_image:
         rts
 
 copy_to_vram:
-    jsr rgb_bytes_to_grb
-    bcs @exit
-    sta a_vram
-;    jsr hexout
-    inc cols
-    lda cols
-    cmp ppm_width
-    bne copy_to_vram
-    stz cols
-    jsr set_screen_addr  ; adjust vram address to cols/rows
-    inc rows
-    lda rows
-    cmp ppm_height
-    bne copy_to_vram
-    clc
+        jsr set_screen_addr  ; adjust vram address to cols/rows
+        bbr7 codec, @yjk
+        jsr rgb_bytes_to_grb
+        bra @io
+@yjk:   jsr rgb_bytes_to_yjk
+@io:    bcs @exit
+    ;    jsr hexout
+        lda cols
+        cmp ppm_width
+        bne copy_to_vram
+        stz cols
+        inc rows
+        lda rows
+        cmp ppm_height
+        bne copy_to_vram
+        clc
 @exit:
-    rts
+        rts
+
+
+rgb_bytes_to_yjk:
+        ldy #0
+  :     jsr fread_byte          ; r0,g0,b0..r3,g3,b3 = readByte(fd) >> 3;
+        ;bcs @exit
+        lsr
+        lsr
+        lsr
+        sta yjk_chunk+yjk::r0,y ;
+        iny
+        cpy #4*3  ; read 4 consecutive pixel with 3 byte (rgb) each
+        bne :-
+
+        ldy #2
+  :     clc
+        lda #2                    ; rm = ((r0 + r1 + r2 + r3 + 2)>>2);
+        adc yjk_chunk+yjk::r0,y
+        adc yjk_chunk+yjk::r1,y
+        adc yjk_chunk+yjk::r2,y
+        adc yjk_chunk+yjk::r3,y
+        lsr
+        lsr
+        sta yjk_chunk+yjk::rm,y
+        dey
+        bpl :-
+
+        asl yjk_chunk+yjk::bm   ; ym = round(bm/2 + rm/4 + gm/8) => (bm*4 + rm*2 + gm + 8/2) / 8 => round(A/B) = (A+B/2)/B ;) FTW
+        asl yjk_chunk+yjk::bm   ;    = (bm<<2 + rm<<1 + gm + 4) >> 3 => +4 for round()
+        lda yjk_chunk+yjk::rm
+        asl
+        clc
+        adc yjk_chunk+yjk::bm
+        adc yjk_chunk+yjk::gm
+        adc #4
+        lsr
+        lsr
+        lsr
+        sta yjk_chunk+yjk::ym
+
+        sec                       ; j = rm - ym;
+        lda yjk_chunk+yjk::rm
+        sbc yjk_chunk+yjk::ym
+        sta yjk_chunk+yjk::j
+        sec                       ; k = gm - ym;
+        lda yjk_chunk+yjk::gm
+        sbc yjk_chunk+yjk::ym
+        sta yjk_chunk+yjk::k
+
+        ldy #0 ; r,g,b see yjk struct
+  :     lda yjk_chunk+yjk::b0,y   ; y0..y3 = round(b0/2 + r0/4 + g0/8) = (b0<<2 + r0<<1 + g + 4)>>3
+        asl
+        asl
+        sta yjk_chunk+yjk::b0,y
+        lda yjk_chunk+yjk::r0,y
+        asl
+        clc
+        adc yjk_chunk+yjk::b0,y
+        adc yjk_chunk+yjk::g0,y
+        adc #4
+        and #$f8                  ; !!! we do not >>3 (div 8) since the value in vram has to placec from bit 7..3 and bit 2..0 with k/j
+        sta yjk_chunk+yjk::r0,y   ; store y0..y3 in r0..r3, not used anymore
+        iny
+        iny
+        iny
+        cpy #4*3
+        bne :-
+
+        lda yjk_chunk+yjk::k      ; r0 with k low
+        and #$07
+        ora yjk_chunk+yjk::r0
+        sta a_vram
+        lda yjk_chunk+yjk::k      ; r1 with k high
+        lsr
+        lsr
+        lsr
+        and #$07
+        ora yjk_chunk+yjk::r1
+        sta a_vram
+
+        lda yjk_chunk+yjk::j      ; r2 with j low
+        and #$07
+        ora yjk_chunk+yjk::r2
+        sta a_vram
+        lda yjk_chunk+yjk::j      ; r3 with j high
+        lsr
+        lsr
+        lsr
+        and #$07
+        ora yjk_chunk+yjk::r3
+        sta a_vram
+
+        lda cols
+        clc
+        adc #4
+        sta cols
+
+        lda ppm_width
+        and #$fc
+        cmp cols        ; width multiple of 4px reached?
+        bne @exit
+        lda ppm_width
+        sbc cols
+        beq @exit       ; skip n rgb values, we need 4px chunks
+        tay
+  :     jsr fread_byte
+        jsr fread_byte
+        jsr fread_byte
+        inc cols
+        dey
+        bne :-
+@exit:  clc
+        rts
 
 rgb_bytes_to_grb:  ; GRB 332 format
     jsr fread_byte  ;R
@@ -165,6 +295,8 @@ rgb_bytes_to_grb:  ; GRB 332 format
     and #$03    ;blue - bit 1,0
     ora _i
     clc ; no error
+    sta a_vram
+    inc cols
 @exit:
     rts
 
@@ -182,7 +314,7 @@ set_screen_addr:
     rol
     rol
     and #$03
-    ora _vram_page
+    ora vram_page
     vdp_wait_s
     sta a_vreg
     vdp_wait_s 2
@@ -262,26 +394,29 @@ parse_int:
     rts
 
 parse_until_size:
-    jsr fread_byte
-    bcs @l
-    cmp #'#'        ; skip comments
-    bne @l
-    jsr parse_string
-    bra parse_until_size
-@l:    rts
+      jsr fread_byte
+      bcs @l
+      cmp #'#'        ; skip comments
+      bne @l
+      jsr parse_string
+      bra parse_until_size
+@l:   rts
 
 parse_string:
 @l0:  jsr fread_byte
-    bcs @le ; C=1 on error
-    cmp #$20    ; < $20 - control characters are treat as string delimiter
-    bcc @le
-    bcs @l0
+      bcs @le ; C=1 on error
+      cmp #$20    ; < $20 - control characters are treat as string delimiter
+      bcc @le
+      bcs @l0
 @le:  rts
 
 .bss
-cols:   .res 1
-rows:   .res 1
-fd:     .res 1
-_vram_page: .res 1
+vram_page:  .res 1
+fd:         .res 1
+cols:       .res 1
+rows:       .res 1
 ppm_width:  .res 1
 ppm_height: .res 1
+
+yjk_chunk:
+  .tag yjk
