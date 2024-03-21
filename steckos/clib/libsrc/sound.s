@@ -25,7 +25,7 @@
 ; void __fastcall__ sound(unsigned int);
 .export _sound
 .proc _sound
-        stp
+        ;stp
         rts
 .endproc
 

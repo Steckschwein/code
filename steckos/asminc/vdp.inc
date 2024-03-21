@@ -65,6 +65,8 @@ v_reg17_aii       = 1<<7  ; auto increment
 v_reg25_sp2       = 1<<0  ; 0:Sets the horizontal screen size to 1 page, 1:Sets the horizontal screen size to two pages.
 v_reg25_msk       = 1<<1  ; 1:The left 8 dots are masked and the border color is output.
 v_reg25_wait      = 1<<2
+v_reg25_yjk       = 1<<3  ; YJK (YUV) mode
+v_reg25_yae       = 1<<4  ; yae yjk with attributes
 v_reg25_cmd       = 1<<6
 
 v_reg45_mxc = 1<<6
