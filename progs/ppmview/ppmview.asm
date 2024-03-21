@@ -65,10 +65,10 @@ appstart $1000
               bcc @opt_none
               sty _param_ix
 
-@opt_none:    ldy _param_ix
+@opt_none:    ldy _param_ix       ; options parsed?
               lda (paramptr),y    ; param given after options?
               bne @l_open_file    ; yes, try open as file
-                      ; open dir otherwise
+                                  ; open dir otherwise
 @l_open_dir:
               lda #<_cwd
               ldy #>_cwd
@@ -88,13 +88,7 @@ appstart $1000
               jsr next_ppm_file
               bcs @l_close_dir
 
-              lda _settings
-              and #$80
-              ora #$01 ; page 1
-              tay
-              lda #<_ppmfile
-              ldx #>_ppmfile
-              jsr ppm_load_image
+              jsr @load_ppm
               bcs ppm_error
 
               jsr slide_show
@@ -104,15 +98,25 @@ appstart $1000
               jsr krn_close
               bra exit
 
-@l_open_file:
-              jsr gfxui_on
-              lda _settings
+@load_ppm:    lda _settings
               and #$80
               ora #$01 ; page 1
               tay
-              lda paramptr
-              ldx paramptr+1
-              jsr ppm_load_image
+              lda #<_filename
+              ldx #>_filename
+              jmp ppm_load_image
+
+@l_open_file: ldx #0
+:             lda (paramptr),y
+              sta _filename,x
+              beq :+
+              iny
+              inx
+              cpx #(_filename_end-_filename)
+              bne :-
+
+:             jsr gfxui_on
+              jsr @load_ppm
               bcs ppm_error
 
               keyin
@@ -209,17 +213,17 @@ next_ppm_file:
 :             lda _direntry,y
               cmp #' '
               beq @skip
-              sta _ppmfile,x
+              sta _filename,x
               inx
 @skip:        iny
               cpy #.sizeof(F32DirEntry::Name)
               bne @l_ext
               lda #'.'
-              sta _ppmfile,x
+              sta _filename,x
               inx
 @l_ext:       cpy #.sizeof(F32DirEntry::Name)+.sizeof(F32DirEntry::Ext)
               bne :-
-              stz _ppmfile,x
+              stz _filename,x
               clc
 @l_exit:      rts
 
@@ -270,6 +274,7 @@ gfxui_off:
               _settings:  .res 1 ; bit 7 rgb on/off, bit 6 slide, bit 5-0 slide delay
               _fd_dir:    .res 1
               _direntry:  .res DIR_Entry_Size
+              _filename:  .res 64
+              _filename_end:
               _cwd:       .res 64
               _cwd_end:
-              _ppmfile:   .res 8+1+3+1

@@ -164,12 +164,12 @@ copy_to_vram:
 
 rgb_bytes_to_yjk:
               ldy #4*3-1
-  :           jsr fread_byte          ; read 4 consecutive pixel with 3 byte (rgb) each
+  :           jsr fread_byte            ; read 4 consecutive pixel with 3 byte (rgb) each
               ;bcs @exit
-              lsr                     ; r3,g3,b3..r0,g0,b0 = readByte(fd) >> 3
+              lsr                       ; r3,g3,b3..r0,g0,b0 = readByte(fd) >> 3
               lsr
               lsr
-              sta yjk_chunk+yjk::b3,y ; b3 we count down
+              sta yjk_chunk+yjk::b3,y   ; b3 we count down
               dey
               bpl :-
 
@@ -186,8 +186,8 @@ rgb_bytes_to_yjk:
               dey
               bpl :-
 
-              asl yjk_chunk+yjk::bm   ; ym = round(bm/2 + rm/4 + gm/8) => (bm*4 + rm*2 + gm + 8/2) / 8 => round(A/B) = (A+B/2)/B ;) FTW
-              asl yjk_chunk+yjk::bm   ;    = (bm<<2 + rm<<1 + gm + 4) >> 3 => +4 for round()
+              asl yjk_chunk+yjk::bm     ; ym = round(bm/2 + rm/4 + gm/8) => (bm*4 + rm*2 + gm + 8/2) / 8 => round(A/B) = (A+B/2)/B ;) FTW
+              asl yjk_chunk+yjk::bm     ;    = (bm<<2 + rm<<1 + gm + 4) >> 3 => +4 for round()
               lda yjk_chunk+yjk::rm
               asl
               clc
@@ -218,18 +218,18 @@ rgb_bytes_to_yjk:
               adc yjk_chunk+yjk::b3,y
               adc yjk_chunk+yjk::g3,y
               adc #4
-              and #$f8                  ; !!! we do not >>3 (div 8) since the value in vram has to placec from bit 7..3 and bit 2..0 with k/j
+              and #$f8                  ; !!! we do not >>3 (div 8) but mask out bit 2..0 - the y value in vram has to be placed as bit 7..3 and bit 2..0 are the k/j component
               sta yjk_chunk+yjk::r3,y   ; store y0..y3 in r0..r3, not used anymore
               dey
               dey
               dey
               bpl :-
 
-              lda yjk_chunk+yjk::k      ; r0 with k low
+              lda yjk_chunk+yjk::k      ; r0 (y0) with k low
               and #$07
               ora yjk_chunk+yjk::r0
               sta a_vram
-              lda yjk_chunk+yjk::k      ; r1 with k high
+              lda yjk_chunk+yjk::k      ; r1 (y1) with k high
               lsr
               lsr
               lsr
