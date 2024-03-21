@@ -35,6 +35,17 @@
 ;----------------------------------------------------------------------------
 .code
 
+; void __fastcall__ vdp_reg (unsigned char reg, unsigned char val);
+.export _vdp_reg
+.proc _vdp_reg
+    vdp_wait_s
+    sta a_vreg
+    jsr popa
+    ora #$80
+    sta a_vreg
+    rts
+.endproc
+
 ; void __fastcall__ vdp_screen (unsigned char mode);
 .export _vdp_screen
 .proc _vdp_screen

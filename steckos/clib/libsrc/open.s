@@ -80,12 +80,12 @@ dowrite:
       jsr popax         ; Get name, ptr low/high in a/x
       ldy tmp3
       jsr krn_open      ; with a/x ptr to path
-      bcs oserror       ; Bail out if problem with open
+      bcs seterrno      ; Bail out if problem with open
 
 ; Done. Return the handle in a/x
       txa               ; offset into fd_area from krn_open
       ldx #0
-      stx __oserror     ; Clear _oserror
+      stz __oserror     ; Clear _oserror
       rts
 .endproc
 
