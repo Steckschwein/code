@@ -292,8 +292,8 @@ gfxui_off:
                 .byte "ppmview [-rgb] [-slide] file",CODE_LF
                 .byte "  -h     - this help",CODE_LF
                 .byte "  -rgb   - encode ppm data to GRB (SCREEN 7), defaults to YJK",CODE_LF
-                .byte "  -slide - slide show of ppm files in current directory",CODE_LF
-                .byte "  -loop  - loop the slide show",CODE_LF
+                .byte "  -slide - slide show of ppm files in current directory (default)",CODE_LF
+                .byte "  -loop  - loop the slide show (default)",CODE_LF
                 .byte 0
 .bss
               _ppm_cnt:   .res 1 ; ppm images loaded
