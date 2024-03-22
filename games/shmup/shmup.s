@@ -11,8 +11,10 @@ PLAYER_SPRITE_NR = 7
 
 .zeropage
     r1:  .res 1
-    r2:  .res 1
-    r3:  .res 1
+
+    rx1:  .res 2
+
+    scr_offs: .res 1
 
     seed: .res 1
     frames: .res 1
@@ -123,7 +125,7 @@ chroffs=-48
 
 
 gfxui_on:
-              jsr krn_textui_disable      ;disable textui
+              jsr krn_textui_disable      ; disable textui
 
               jsr vdp_mode2_on                        ; enable gfx2 mode
               vdp_sreg v_reg0_m4 | v_reg0_IE1, v_reg0 ; R#0 enable gfx3 mode with h blank irq
@@ -143,19 +145,43 @@ gfxui_on:
               stz _scroll_x_h
               stz _scroll_y
 
+              lda #<ADDRESS_GFX3_SCREEN
+              sta scr_offs
+
               vdp_vram_w (ADDRESS_GFX3_PATTERN)
               lda #<chars_2x2_numbers
               ldy #>chars_2x2_numbers
               ldx #2
               jsr vdp_memcpy
-              lda #0
+
               ldx #6
-              jsr vdp_fill
+              ldy #0
+:             jsr rnd
+              sta a_vram
+              dey
+              bne :-
+              dex
+              bne :-
+
+              vdp_vram_w (ADDRESS_GFX3_PATTERN+CHAR_BLANK*8)
+              ldx #8
+              lda #0
+              jsr vdp_fills
 
               vdp_vram_w (ADDRESS_GFX3_COLOR)
-              lda #Dark_Yellow<<4
-              ldx #3
+              lda #Dark_Yellow<<4|Black
+              ldx #2
               jsr vdp_fill
+              lda #Dark_Blue<<4|Gray
+              ldx #6
+;              jsr vdp_fill
+              ldy #0
+:             jsr rnd
+              sta a_vram
+              dey
+              bne :-
+              dex
+              bne :-
 
               jsr starfield_init
 
@@ -187,7 +213,7 @@ SP_OFFS_Y = 10
 starfield_screen:
               vdp_vram_w (ADDRESS_GFX3_SCREEN)
               ldy #20-1 ; 20 lines
-:             lda @stars_dist,y
+:             lda stars_distance,y
               ora #$40  ; char offset +64
               ldx #32   ; 32 chars per row
 :             vdp_wait_l
@@ -200,17 +226,13 @@ starfield_screen:
               bpl :--
               rts
 
-; (echo -n ".byte " && for i in $(seq 0 20);do echo -n $(expr $RANDOM % 32);[ "$(expr $i % 32)" -lt 20 ] && echo -n ",";done) > games/shmup/stars_dist.inc
-@stars_dist:
-  .include "stars_dist.inc"
-
 starfield_init:
               ldx #0  ; blank
 :             stz starfield_chars,x
               dex
               bne :-
 
-              ldy #64-1 ; 64 stars per 256x8 line
+              ldy @stars_position ; n stars per 256x8 line
 :             lda @stars_position,y
               and #$f8
               sta r1
@@ -225,7 +247,7 @@ starfield_init:
               plx
               sta starfield_chars,x
               dey
-              bpl :-
+              bne :-
 
               vdp_vram_w (ADDRESS_GFX3_COLOR+16*8*4)
               ldy #0 ; 32x8
@@ -238,17 +260,18 @@ starfield_init:
               iny
               bne :-
               rts
+
 @stars_colors:
   .byte Dark_Yellow<<4,Light_Blue<<4,Dark_Yellow<<4,Gray<<4
   .byte Dark_Blue<<4,Dark_Yellow<<4,Dark_Yellow<<4,Dark_Blue<<4
 
-; (for i in $(seq 0 63);do [ "$(expr $i % 8)" -eq 0 ] && echo && echo -n ".byte ";echo -n $(expr $RANDOM % 256); [ "$(expr $i % 8)" -lt 7 ] && echo -n ",";done;echo) > games/shmup/stars.inc
+; n=15 && (echo -n ".byte $n" && for i in $(seq 0 $n);do [ "$(expr $i % 8)" -eq 0 ] && echo && echo -n ".byte ";echo -n $(expr $RANDOM % 256); [ "$(expr $i % 8)" -lt 7 ] && echo -n ",";done;echo) > games/shmup/stars.inc
 @stars_position:
   .include "stars.inc"
 @bitmask:
   .byte $80,$40,$20,$10,$08,$04,$02,$01
 
-startfield_scroll:
+starfield_scroll:
               lda #Dark_Green<<4|Dark_Green
               jsr vdp_bgcolor
 
@@ -271,7 +294,7 @@ startfield_scroll:
 @stars_delay:
   .byte %00000000 ;
   .byte %11111111
-  .byte %01111101
+  .byte %01111001
   .byte %10111110
   .byte %01011001
   .byte %11111111
@@ -288,10 +311,7 @@ startfield_scroll:
               rts
 
 startfield_update:
-              lda #Light_Green<<4|Light_Green
-              jsr vdp_bgcolor
-
-              vdp_vram_w (ADDRESS_GFX3_PATTERN+16*8*4)  ; cp to vram after numbers
+              vdp_vram_w (ADDRESS_GFX3_PATTERN+16*8*4)  ; cp star pattern to vram after numbers
               ldx #0 ; 32x8
               lda #<starfield_chars
               ldy #>starfield_chars
@@ -301,8 +321,43 @@ level_script:
               lda #Light_Blue<<4|Light_Blue
               jsr vdp_bgcolor
 
+              ; layer 0 - starfield
+              ldy #20-1 ; 20 rows
+              clc
+:             lda stars_distance,y
+              adc _scroll_x_h ; add scroll offset
+              ora #$40  ; char offset +64
+              and #$5f  ; mask starfield chars $40-$5f
+              sta level_data,y
+              dey
+              bpl :-
+
+; some random foreground
               jsr rnd
-              ; and #$
+              and #$7
+              sta r1
+              tay
+:
+              jsr rnd
+              ora #$80
+              sta level_data,y
+              dey
+              bpl :-
+
+              lda #13
+              sec
+              sbc r1
+;              jsr rnd
+              and #$7
+              tax
+              ldy #7
+:
+              jsr rnd
+              ora #$80
+              sta level_data+12,y
+              dey
+              dex
+              bpl :-
 
               rts
 
@@ -319,9 +374,38 @@ rnd:
     rts
 
 update_vram:
+              lda #Magenta<<4|Magenta
+              jsr vdp_bgcolor
 
-              jmp startfield_update
+              jsr startfield_update
 
+              lda _scroll_x_l     ; only if soft scroll turns over
+              bne @exit
+
+              lda #<ADDRESS_GFX3_SCREEN
+              clc
+              adc _scroll_x_h
+              and #$1f
+              sta rx1
+              lda #>ADDRESS_GFX3_SCREEN | WRITE_ADDRESS
+              sta rx1+1
+
+              ldy #20-1
+:             lda rx1
+              sta a_vreg
+              clc
+              adc #$20
+              sta rx1
+              lda rx1+1
+              sta a_vreg         ; screen address
+              adc #0
+              sta rx1+1          ; rx1 next row
+              lda level_data,y
+              sta a_vram
+              dey
+              bpl :-
+@exit:
+              rts
 
 score_board:
               lda #White<<4|White
@@ -413,28 +497,23 @@ isr:
 
               jsr sprity_mc_spriteface
 
-              lda #Light_Red<<4|Light_Red
-              jsr vdp_bgcolor
-
-              jsr score_board
-
-              jsr startfield_scroll
-
+              jsr starfield_scroll
               jsr level_script
-              jsr update_vram
 
 
               vdp_sreg v_reg25_wait | v_reg25_cmd | v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (4x16k mode 3 screens)
+              jsr update_vram
               jsr scroll
+
+              jsr score_board
               inc frames
+
 @isr_end:
               vdp_sreg 1, v_reg15 ; setup status S#1 already
 
               lda #Black<4|Black
               jsr vdp_bgcolor
-
               rts
-
 
 scroll:
               ldy #v_reg27
@@ -449,10 +528,13 @@ scroll:
               cmp #$07
               bne @scroll_h
 
+              inc scr_offs
               lda _scroll_x_h
               ina
               cmp #32 ; 32 8x8 tiles
               bne :+
+              lda #<ADDRESS_GFX3_SCREEN
+              sta scr_offs
               lda #0
 :             sta _scroll_x_h
 @scroll_h:    lda _scroll_x_h
@@ -582,12 +664,17 @@ sintable:
 .byte 128, 124, 119, 115, 110, 105, 100, 95
 .byte 90, 86, 81
 
-.bss
-starfield_chars:  .res 32*8
+; (echo -n ".byte " && for i in $(seq 0 20);do echo -n $(expr $RANDOM % 32);[ "$(expr $i % 32)" -lt 20 ] && echo -n ",";done) > games/shmup/stars_dist.inc
+stars_distance:
+  .include "stars_dist.inc"
 
-score:    .res 3 ; 000000
-save_isr: .res 2
-keyb: .res 1
+.bss
+  level_data: .res 20 ; most right screen column where we put our level data into
+  starfield_chars:  .res 32*8
+
+  score:    .res 3 ; 000000
+  save_isr: .res 2
+  keyb: .res 1
 
 _scroll_x_l:  .res 1
 _scroll_x_h:  .res 1
