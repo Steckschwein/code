@@ -48,7 +48,7 @@ STATE_TEXTUI_ENABLED  =1<<7
 .export textui_primm
 .endif
 
-.export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_cursor_onoff, textui_setmode
+.export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_cursor_onoff, textui_setmode, textui_status
 
 .import vdp_fill
 .import vdp_text_on
@@ -124,6 +124,14 @@ textui_scroll_up:
   plx
   plp
 
+;@name: textui_status
+;@desc: get internal textui status flags
+;@in: -
+;@out: - N (negative) flag set if textui is enabled, not set otherwise (textui enabled)
+;@out: - V (overflow) flag set if cursor is disabled, not set otherwise (cursor on)
+textui_status:
+  bit screen_status
+  rts
 
 ;@name: textui_update_crs_ptr
 ;@desc: update to new cursor position given in crs_x and crs_y zeropage locations

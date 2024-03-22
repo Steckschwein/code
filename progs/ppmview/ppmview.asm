@@ -260,9 +260,8 @@ gfxui_on:
               bit _settings
               bmi gfxui_blank
               vdp_sreg v_reg25_wait | v_reg25_yjk, v_reg25  ; enable yjk
-
 gfxui_blank:
-              ldy #0
+              ldy #$0
               jmp vdp_mode7_blank
 
 gfxui_off:

@@ -197,12 +197,14 @@ do_irq:
     and #spi_device_deselect
     cmp #spi_device_deselect
     beq @exit
+    jsr textui_status
+    bpl @exit
     lda #Medium_Red<<4|Medium_Red ; indicates busy spi
     jsr vdp_bgcolor
 
-@exit:
     lda #Medium_Green<<4|Black
     jsr vdp_bgcolor
+@exit:
 
     restore
     rti

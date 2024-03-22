@@ -45,7 +45,7 @@ vdp_init_bytes_gfx7:
       .byte 0
       .byte >(ADDRESS_GFX7_SPRITE<<1 | $07)   ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
       .byte >(ADDRESS_GFX7_SPRITE_PATTERN>>3) ;
-      .byte %00000000 ; border color
+      .byte 0 ; border color
       .byte v_reg8_SPD | v_reg8_VR  ; SPD - sprite disabled, VR - 64k VRAM  - R#8
       .byte v_reg9_nt | v_reg9_ln ; R#9 NTSC/262, PAL/313 => v_reg9_nt | v_reg9_ln (212 lines)
       .byte 0
