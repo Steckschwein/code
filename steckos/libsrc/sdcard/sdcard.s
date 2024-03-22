@@ -267,7 +267,7 @@ sd_cmd:
 ;---------------------------------------------------------------------
 sd_cmd_response_wait:
       ldy #sd_cmd_response_retries
-@l:    dey
+@l:   dey
       beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
       jsr spi_r_byte
 ;      debug "sd_cm_wt"
@@ -332,9 +332,8 @@ sd_deselect_card:
 
       jsr spi_deselect
 
-      ldy #$04
-@l1:
-      jsr spi_r_byte
+      ldy #clockspeed<<1 ; faster system, longer de-select
+@l1:  jsr spi_r_byte
       dey
       bne @l1
 
@@ -346,6 +345,7 @@ sd_deselect_card:
       clc
       rts
 @error:
+      debug "sd_des err"
       sec
       rts
 
