@@ -239,8 +239,8 @@ starfield_init:
               bne :-
               rts
 @stars_colors:
-  .byte Light_Yellow<<4,Light_Blue<<4,Dark_Yellow<<4,Gray<<4
-  .byte Dark_Blue<<4,Dark_Yellow<<4,Light_Yellow<<4,Dark_Blue<<4
+  .byte Dark_Yellow<<4,Light_Blue<<4,Dark_Yellow<<4,Gray<<4
+  .byte Dark_Blue<<4,Dark_Yellow<<4,Dark_Yellow<<4,Dark_Blue<<4
 
 ; (for i in $(seq 0 63);do [ "$(expr $i % 8)" -eq 0 ] && echo && echo -n ".byte ";echo -n $(expr $RANDOM % 256); [ "$(expr $i % 8)" -lt 7 ] && echo -n ",";done;echo) > games/shmup/stars.inc
 @stars_position:
@@ -269,7 +269,7 @@ startfield_scroll:
 @exit:        rts
 
 @stars_delay:
-  .byte %00000000
+  .byte %00000000 ;
   .byte %11111111
   .byte %01111101
   .byte %10111110
@@ -278,6 +278,7 @@ startfield_scroll:
   .byte %00110100
   .byte %11111111
 ;  2,3,4,5,5,4,2,3
+
 
 @rotate:      lda starfield_chars+31*8,x
               lsr
