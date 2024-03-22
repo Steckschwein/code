@@ -35,7 +35,8 @@
 
 appstart $1000
 .code
-              stz _settings
+              lda #1<<6|1<<5  ; default slide with loop
+              sta _settings
               stz _param_ix
 
               ldx #<(opt_hlp-options)
@@ -52,18 +53,20 @@ appstart $1000
 @opt_rgb:     ldx #<(opt_rgb-options)
               jsr hasOption
               bcc @opt_sld
-              lda #$80            ; set rgb
-              sta _settings
-              sty _param_ix       ; safe paramptr offset
+              lda #1<<7           ; set rgb
+              jsr @update_settings
 @opt_sld:
               ldx #<(opt_sld-options)
               jsr hasOption
+              bcc @opt_loop
+              lda #1<<6 | 08            ; set slide delay enable, 8 x 1000ms
+              jsr @update_settings
+@opt_loop:
+              ldx #<(opt_loop-options)
+              jsr hasOption
               bcc @opt_none
-              lda #$48            ; set slide delay enable, 8 x 1000ms
-              tsb _settings
-              cpy _param_ix       ; safe paramptr offset
-              bcc @opt_none
-              sty _param_ix
+              lda #1<<5            ; set loop enabled
+              jsr @update_settings
 
 @opt_none:    ldy _param_ix       ; options parsed?
               lda (paramptr),y    ; param given after options?
@@ -75,13 +78,14 @@ appstart $1000
               ldx #(_cwd_end-_cwd)
               jsr krn_getcwd
               bcs exit
-
+@loop_slide:
               lda #<_cwd
               ldx #>_cwd
               jsr krn_opendir
               bcs io_error
               stx _fd_dir
 
+              stz _ppm_cnt
               jsr gfxui_on
 @l_next_ppm:
               jsr gfxui_blank
@@ -90,13 +94,26 @@ appstart $1000
 
               jsr @load_ppm
               bcs ppm_error
+              inc _ppm_cnt
 
               jsr slide_show
               bcc @l_next_ppm
 @l_close_dir:
+              php
+              pha
               ldx _fd_dir
               jsr krn_close
-              bra exit
+              pla
+              plp
+              rol             ; eod?
+              cmp #1
+              bne exit
+              lda _ppm_cnt
+              beq exit        ; no images at all
+              lda _settings
+              and #1<<5
+              beq exit
+              bra @loop_slide
 
 @load_ppm:    lda _settings
               and #$80
@@ -105,6 +122,13 @@ appstart $1000
               lda #<_filename
               ldx #>_filename
               jmp ppm_load_image
+
+@update_settings:
+              tsb _settings
+              cpy _param_ix       ; safe paramptr offset
+              bcc :+
+              sty _param_ix
+              rts
 
 @l_open_file: ldx #0
 :             lda (paramptr),y
@@ -262,14 +286,17 @@ gfxui_off:
               options:
               opt_sld:  .asciiz "slide"
               opt_rgb:  .asciiz "rgb"
+              opt_loop: .asciiz "loop"
               opt_hlp:  .asciiz "h"
               usage:
                 .byte "ppmview [-rgb] [-slide] file",CODE_LF
                 .byte "  -h     - this help",CODE_LF
                 .byte "  -rgb   - encode ppm data to GRB (SCREEN 7), defaults to YJK",CODE_LF
                 .byte "  -slide - slide show of ppm files in current directory",CODE_LF
+                .byte "  -loop  - loop the slide show",CODE_LF
                 .byte 0
 .bss
+              _ppm_cnt:   .res 1 ; ppm images loaded
               _param_ix:  .res 1
               _settings:  .res 1 ; bit 7 rgb on/off, bit 6 slide, bit 5-0 slide delay
               _fd_dir:    .res 1
