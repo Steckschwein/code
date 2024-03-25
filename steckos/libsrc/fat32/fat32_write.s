@@ -125,7 +125,6 @@ __fat_set_fd_filesize:
     rts
 
 
-
 ; write new dir entry to dirptr and set new end of directory marker
 ; in:
 ;   X - file descriptor of the new dir entry within fd_area

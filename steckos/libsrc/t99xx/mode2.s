@@ -53,38 +53,38 @@ vdp_mode2_on:
     bne  @0
     rts
 @vdp_init_bytes_gfx2:
-      .byte v_reg0_m3    ;
-      .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size |v_reg1_int
-      .byte (ADDRESS_GFX2_SCREEN / $400)  ; name table - value * $400
-      .byte  $ff    ; color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
-      .byte  $03    ; pattern table - either at vram $0000 (Bit 2 = 0) or at vram $2000 (Bit 2=1), Bit 0,1 are AND to select the pattern array
-      .byte  (ADDRESS_GFX2_SPRITE / $80)  ; sprite attribute table - value * $80 --> offset in VRAM
-      .byte  (ADDRESS_GFX2_SPRITE_PATTERN / $800)  ; sprite pattern table - value * $800  --> offset in VRAM
-      .byte  Black
+      .byte v_reg0_m3    ; R#0
+      .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
+      .byte >(ADDRESS_GFX2_SCREEN>>2)           ; R#2 - name table - value * $400
+      .byte >(ADDRESS_GFX2_COLOR<<2) | $3f      ; R#3 - color table setting for gfx mode 2 --> only Bit 7 is taken into account 0 => at vram $0000, 1 => at vram $2000, Bit 6-0 AND to character number
+      .byte >(ADDRESS_GFX2_PATTERN>>3) | $03    ; R#4 - pattern table base address - Bit 0,1 are AND to select the pattern array
+      .byte (ADDRESS_GFX2_SPRITE / $80)  ; sprite attribute table - value * $80 --> offset in VRAM
+      .byte (ADDRESS_GFX2_SPRITE_PATTERN / $800)  ; sprite pattern table - value * $800  --> offset in VRAM
+      .byte Black
   .ifdef V9958
       .byte v_reg8_VR  ; VR - 64k VRAM TODO set per define
       .byte v_reg9_nt ; #R9, set bit to 1 for PAL
   .endif
+      .byte <.HIWORD(ADDRESS_GFX2_COLOR<<2)     ; R#10
 @vdp_init_bytes_gfx2_end:
 
 ;
 ;@name: vdp_mode2_blank
 ;@desc: blank gfx mode 2 with
 ;@in: A - color to fill [0..f]
-;
 vdp_mode2_blank:    ; 2 x 6K
   tax
-  vdp_sreg <ADDRESS_GFX2_COLOR, WRITE_ADDRESS + >ADDRESS_GFX2_COLOR
+  vdp_vram_w ADDRESS_GFX2_COLOR
   txa
   ldx #$18    ;$1800 byte color map
   jsr vdp_fill
 
-  vdp_sreg <ADDRESS_GFX2_PATTERN, WRITE_ADDRESS + >ADDRESS_GFX2_PATTERN
+  vdp_vram_w ADDRESS_GFX2_PATTERN
   ldx #$18    ;$1800 byte pattern map
   lda #0
   jsr vdp_fill
 
-  vdp_sreg <ADDRESS_GFX2_SCREEN, WRITE_ADDRESS + >ADDRESS_GFX2_SCREEN
+  vdp_vram_w ADDRESS_GFX2_SCREEN
   ldx #3    ;768 byte screen map
   lda #0
   jmp vdp_fill
