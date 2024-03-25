@@ -163,13 +163,8 @@ gfxui_on:
               dex
               bne :-
 
-              vdp_vram_w (ADDRESS_GFX3_PATTERN+CHAR_BLANK*8)
-              ldx #8
-              lda #0
-              jsr vdp_fills
-
               vdp_vram_w (ADDRESS_GFX3_COLOR)
-              lda #Dark_Yellow<<4|Black
+              lda #Dark_Yellow<<4|Transparent
               ldx #2
               jsr vdp_fill
               lda #Dark_Blue<<4|Gray
@@ -184,6 +179,15 @@ gfxui_on:
               bne :-
 
               jsr starfield_init
+
+              vdp_vram_w (ADDRESS_GFX3_PATTERN+CHAR_BLANK*8)
+              ldx #8
+              lda #$0
+              jsr vdp_fills
+              vdp_vram_w (ADDRESS_GFX3_COLOR+CHAR_BLANK*8)
+              ldx #8
+              lda #Transparent<<4|Transparent
+              jsr vdp_fills
 
 CHAR_BLANK=$80
               vdp_vram_w ADDRESS_GFX3_SCREEN
@@ -478,11 +482,17 @@ isr:
               lda a_vreg  ; check bit 0 of S#1
               ror
               bcc @is_vblank
-@hblank:
-              vdp_sreg $ff, v_reg7
-              vdp_sreg v_reg25_wait, v_reg25   ; disable small border
-              vdp_sreg 0, v_reg26   ; stop scrolling
+
+@hblank:      vdp_sreg White<<4|White, v_reg7
+              vdp_sreg v_reg25_wait, v_reg25  ; disable small border
+              vdp_sreg 0, v_reg26             ; stop scrolling
               vdp_sreg 7, v_reg27
+
+              ldy #0+clockspeed<<4
+:             dey
+              bne :-
+              vdp_sreg Cyan<<4|Cyan, v_reg7
+              vdp_sreg White<<4|White, v_reg7
 
               bra @isr_end
 
