@@ -18,14 +18,15 @@ PLAYER_SPRITE_NR = 7
 
     seed: .res 1
     frames: .res 1
+    hblank: .res 1
 
 
 .code
     stz keyb
 
     sei
-    copypointer user_isr, save_isr
-    SetVector isr, user_isr
+    copypointer SYS_VECTOR_IRQ, save_isr
+    SetVector isr, SYS_VECTOR_IRQ
 
     jsr gfxui_on
 
@@ -119,7 +120,7 @@ chroffs=-48
               php
               sei
               jsr gfxui_off
-              copypointer save_isr, user_isr
+              copypointer save_isr, SYS_VECTOR_IRQ
               plp
               jmp (retvec)
 
@@ -135,12 +136,13 @@ gfxui_on:
               vdp_sreg v_reg8_VR, v_reg8
               vdp_sreg v_reg9_nt, v_reg9  ; 212px
 
-              vdp_sreg 191-(4*8), v_reg19 ; h blank
+              vdp_sreg 191-(4*8), v_reg19 ; h blank - scoreboard
 
               lda #33
               sta seed
 
               stz frames
+              stz hblank
               stz _scroll_x_l
               stz _scroll_x_h
               stz _scroll_y
@@ -277,7 +279,7 @@ starfield_init:
 
 starfield_scroll:
               lda #Dark_Green<<4|Dark_Green
-              jsr vdp_bgcolor
+              ;jsr vdp_bgcolor
 
               lda frames
               and #$07
@@ -323,7 +325,7 @@ startfield_update:
 
 level_script:
               lda #Light_Blue<<4|Light_Blue
-              jsr vdp_bgcolor
+              ;jsr vdp_bgcolor
 
               ; layer 0 - starfield
               ldy #20-1 ; 20 rows
@@ -379,7 +381,7 @@ rnd:
 
 update_vram:
               lda #Magenta<<4|Magenta
-              jsr vdp_bgcolor
+              ;jsr vdp_bgcolor
 
               jsr startfield_update
 
@@ -479,51 +481,76 @@ score_board:
               rts
 
 isr:
+              save
+
               lda a_vreg  ; check bit 0 of S#1
               ror
               bcc @is_vblank
-
-@hblank:      vdp_sreg White<<4|White, v_reg7
+@hblank_score:
+              lda hblank
+              bne @hblank_score_1
+              vdp_sreg Gray<<4|Gray, v_reg7
               vdp_sreg v_reg25_wait, v_reg25  ; disable small border
               vdp_sreg 0, v_reg26             ; stop scrolling
               vdp_sreg 7, v_reg27
-
-              ldy #0+clockspeed<<4
-:             dey
-              bne :-
-              vdp_sreg Cyan<<4|Cyan, v_reg7
-              vdp_sreg White<<4|White, v_reg7
-
-              bra @isr_end
-
+              lda #Gray<<4|Gray
+              ldx #191-(4*8)+1              ; h blank - scoreboard + 1
+              bra @score_board_line
+@hblank_score_1:
+              cmp #$01
+              bne @hblank_score_2
+              lda #Black<<4|Black
+              ldx #190                      ; h blank - scoreboard
+              bra @score_board_line
+@hblank_score_2:
+              cmp #$02
+              bne @hblank_score_3
+              lda #Gray<<4|Gray
+              ldx #191                      ; h blank - scoreboard
+              bra @score_board_line
+@hblank_score_3:
+              lda #Black<<4|Black
+              ldx #191-(4*8)                ; h blank - scoreboard
+              bra @score_board_line
 @is_vblank:
               vdp_sreg 0, v_reg15       ; 0 - set status register selection to S#0
               vdp_wait_s
               bit a_vreg
               bpl @isr_end              ; VDP IRQ flag set?
 
-              lda #Cyan<<4|Cyan
+              lda #Black<4|Black
               jsr vdp_bgcolor
+
 
               jsr sprity_mc_spriteface
 
               jsr starfield_scroll
               jsr level_script
 
-
-              vdp_sreg v_reg25_wait | v_reg25_cmd | v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (4x16k mode 3 screens)
               jsr update_vram
               jsr scroll
 
               jsr score_board
               inc frames
+              stz hblank
+
+              lda #Black<4|Black
+              jsr vdp_bgcolor
+              vdp_sreg v_reg25_wait | v_reg25_cmd | v_reg25_msk | v_reg25_sp2, v_reg25 ; mask left border, activate 2 pages (4x16k mode 3 screens)
 
 @isr_end:
               vdp_sreg 1, v_reg15 ; setup status S#1 already
 
-              lda #Black<4|Black
+              restore
+              rti
+
+@score_board_line:
+              inc hblank
               jsr vdp_bgcolor
-              rts
+              txa
+              ldy #v_reg19
+              jsr vdp_set_reg
+              bra @isr_end
 
 scroll:
               ldy #v_reg27
@@ -554,6 +581,10 @@ scroll:
 
 
 sprity_mc_spriteface:
+
+  lda #Cyan<<4|Cyan
+;  jsr vdp_bgcolor
+
   ; start with sprite 0
   ldx #0
 :
