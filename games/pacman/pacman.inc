@@ -121,7 +121,6 @@ ACT_DIR           = 1<<1|1<<0
 
 .macro border_color color
    .ifdef __DEBUG
-     .import gfx_bordercolor
      lda color
      jsr gfx_bordercolor
    .endif
@@ -129,7 +128,6 @@ ACT_DIR           = 1<<1|1<<0
 
 .macro bgcolor color
   .ifdef __DEBUG
-    .import gfx_bgcolor
     lda color
     jsr gfx_bgcolor
   .endif
@@ -141,7 +139,6 @@ ACT_DIR           = 1<<1|1<<0
          sta text_color
       .endif
       setPtr _p, p_text
-      .import out_text
       jsr out_text
 .endmacro
 

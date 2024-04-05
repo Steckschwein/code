@@ -71,9 +71,18 @@ main:
 init:
     ldx #.sizeof(GameState)-1
     lda #0
-:    sta game_state,x
+:   sta game_state,x
     dex
     bpl :-
+    ldx #1
+    stx game_state+GameState::highscore
+    inx
+    stx game_state+GameState::highscore+1
+    inx
+    stx game_state+GameState::highscore+2
+    inx
+    stx game_state+GameState::highscore+3
+
     rts
 .endproc
 

@@ -51,8 +51,8 @@ gfx_vblank:
 		rts
 
 gfx_mode_off:
-		vdp_sreg 0, v_reg9	;
-		vdp_sreg 0, v_reg23  ;
+		vdp_sreg 0, v_reg9	  ;
+		vdp_sreg 0, v_reg23   ;
 		rts
 
 gfx_mode_on:
@@ -83,7 +83,7 @@ gfx_write_pal:
 		rts
 
 gfx_isr:
-    bit a_vreg ; vdp irq ?
+    lda a_vreg ; vdp irq ?
     rts
 
 gfx_init:
@@ -339,16 +339,15 @@ gfx_hires_off:
 .data
 vdp_init_bytes:	; vdp init table - MODE G3
 			.byte v_reg0_m4
-			.byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size |v_reg1_int
+			.byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
 			.byte >(VRAM_SCREEN>>2)		 	; name table (screen)
 			.byte >(VRAM_COLOR<<2)  | $1f	; $1f - color table with $800 values, each pattern with 8 colors (per line)
 			.byte >(VRAM_PATTERN>>3)		; pattern table
 			.byte >(VRAM_SPRITE_ATTR<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
-;			.byte	(ADDRESS_GFX2_SPRITE / $80)	; sprite attribute table - value * $80 --> offset in VRAM
 			.byte >(VRAM_SPRITE_PATTERN>>3)
 			.byte VDP_Color_Bg
-			.byte v_reg8_VR ; VR - 64k VRAM TODO set per define
-			.byte v_reg9_ln ; 212 lines
+			.byte v_reg8_VR ; VR - 64k VRAM
+			.byte v_reg9_ln ; 212 lines, NTSC
 			.byte <.hiword(VRAM_SPRITE_COLOR<<2) ; color table high, a16-14
 			.byte <.hiword(VRAM_SPRITE_ATTR<<1); sprite attribute high
 			.byte 0

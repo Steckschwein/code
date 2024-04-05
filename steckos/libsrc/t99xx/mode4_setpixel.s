@@ -23,33 +23,50 @@
 ;@module: vdp
 
 .include "vdp.inc"
-.include "gfx.inc"
 
-.autoimport
+.export vdp_mode4_set_pixel
 
-.export gfx_point
+.code
 
-;@name: gfx_point
-;@desc: read pixel value at requested position
-;@in: A/Y - pointer to plot_t struct
-;@out: Y - color of pixel at given plot_t
-gfx_point:
+;@name: vdp_mode4_set_pixel
+;@desc: VRAM ADDRESS = X/2 + 128*Y
+;@in: X - x coordinate [0..ff]
+;@in: Y - y coordinate [0..d3]
+;@in. A - color [0..f] from current palette
+vdp_mode4_set_pixel:
       php
       sei
 
-      ldx #32
-      jsr _gfx_prepare_x_y
+      pha
 
-      vdp_sreg 0, v_reg45     ; VRAM read
-      vdp_sreg v_cmd_point, v_reg46      ; R#46 ; POINT
+      tya
+      lsr                   ; Y Bit 0 to carry
+      txa
+      ror                   ; X/2 OR with Y Bit 0
+      sta a_vreg            ; A7-A0 vram address low byte
 
-      jsr vdp_wait_cmd
-
-      vdp_sreg 7, v_reg15	; select status register S#7
-      vdp_wait_s
-      ldy a_vreg              ; read color value - result to Y
-
-      vdp_sreg 0, v_reg15     ; reset status register selection to S#0
-
+      tya
+      lsr
+      and #$3f              ; A13-A8 vram address highbyte
+      ora #WRITE_ADDRESS
+      vdp_wait_s 8
+      sta a_vreg
+      tya
+      rol                   ; A16-A14 bank select via reg#14, rol over carry
+      rol
+      and #$03
+      ora #<.HIWORD(ADDRESS_GFX4_SCREEN<<2)
+      vdp_wait_s 12
+      sta a_vreg
+      lda #v_reg14
+      vdp_wait_s 2
+      sta a_vreg
+      pla
+      vdp_wait_s 4
+      ;ora a_vram
+      vdp_wait_l 3
+      sta a_vram            ; set color
       plp
       rts
+@mask:
+  .byte $f0, $0f

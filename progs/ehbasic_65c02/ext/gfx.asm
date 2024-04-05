@@ -25,26 +25,7 @@
 .include "kernel_jumptable.inc"
 .include "debug.inc"
 
-.import	vdp_display_off
-.import	vdp_mc_on
-.import	vdp_mc_blank
-.import	vdp_mc_init_screen
-
-.import vdp_mode2_blank
-.import vdp_mode2_on
-
-.import vdp_mode6_on
-.import vdp_mode6_blank
-
-.import vdp_mode7_on
-.import vdp_mode7_blank
-.import vdp_bgcolor
-
-.import gfx_line
-.import gfx_circle
-.import gfx_plot
-.import gfx_point
-
+.autoimport
 
 .import LAB_SCGB
 .import LAB_GTBY
@@ -101,7 +82,7 @@ _gfx_mode_table:
 		.word GFX_Off  ; 1
 		.word vdp_mode2_on ; 2
 		.word vdp_mc_on ; 3
-		.word GFX_Off; 4
+		.word vdp_mode4_on; 4
 		.word GFX_Off; 5
 		.word vdp_mode6_on; 6
 		.word vdp_mode7_on ; 7

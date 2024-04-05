@@ -1,8 +1,9 @@
-    .export game
+.export game
+.export draw_highscore
 
-    .include "pacman.inc"
+.include "pacman.inc"
 
-    .autoimport
+.autoimport
 
 game:
     sei
@@ -60,7 +61,7 @@ game_isr:
     jsr gfx_update
 .ifdef __DEBUG
     border_color Color_Cyan
-    ;jsr debug
+    jsr debug
 .endif
     border_color Color_Bg
 game_isr_exit:
@@ -404,8 +405,8 @@ actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
 get_input:
     ldy #0
     lda keyboard_input
-    sty keyboard_input      ; "consume" key pressed
-    jmp io_player_direction    ; return C=1 if any valid key or joystick input, A=ACT_xxx
+    sty keyboard_input        ; "consume" key pressed
+    jmp io_player_direction   ; return C=1 if any valid key or joystick input, A=ACT_xxx
 
 debug:
     pha
@@ -564,15 +565,16 @@ add_score:
 
 
 draw_scores:
-    setPtr (game_state+GameState::score), p_game
-    lda #0
+    ldx #0
     ldy #21
+    setPtr (game_state+GameState::score), p_game
     jsr draw_score
-    setPtr (game_state+GameState::highscore), p_game
-    lda #0
+    ldx #0
     ldy #8
+draw_highscore:
+    setPtr (game_state+GameState::highscore), p_game
 draw_score:
-    sta sys_crs_x
+    stx sys_crs_x
     sty sys_crs_y
     lda Color_Text
     sta text_color
