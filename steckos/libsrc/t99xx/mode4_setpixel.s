@@ -24,6 +24,8 @@
 
 .include "vdp.inc"
 
+.importzp vdp_tmp
+
 .export vdp_mode4_set_pixel
 
 .code
@@ -37,13 +39,15 @@ vdp_mode4_set_pixel:
       php
       sei
 
-      pha
+      and #$0f
+      sta vdp_tmp
 
       tya
       lsr                   ; Y Bit 0 to carry
       txa
       ror                   ; X/2 OR with Y Bit 0
       sta a_vreg            ; A7-A0 vram address low byte
+      pha
 
       tya
       lsr
@@ -51,7 +55,10 @@ vdp_mode4_set_pixel:
       ora #WRITE_ADDRESS
       vdp_wait_s 8
       sta a_vreg
+      pha
+
       tya
+      clc
       rol                   ; A16-A14 bank select via reg#14, rol over carry
       rol
       and #$03
@@ -61,12 +68,30 @@ vdp_mode4_set_pixel:
       lda #v_reg14
       vdp_wait_s 2
       sta a_vreg
-      pla
-      vdp_wait_s 4
-      ;ora a_vram
-      vdp_wait_l 3
+
+      txa
+      and #$01
+      tax
+      bne :+
+      asl vdp_tmp
+      asl vdp_tmp
+      asl vdp_tmp
+      asl vdp_tmp
+
+:     vdp_wait_l 10
+      lda a_vram            ; read pixels
+      and @mask,x           ; mask pixel
+      ora vdp_tmp
+
+      plx
+      ply
+      sty a_vreg
+      vdp_wait_s
+      stx a_vreg
+      vdp_wait_l
       sta a_vram            ; set color
+
       plp
       rts
 @mask:
-  .byte $f0, $0f
+  .byte $0f, $f0

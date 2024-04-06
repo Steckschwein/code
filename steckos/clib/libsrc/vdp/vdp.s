@@ -198,7 +198,7 @@ gfx_blank_table:
     .word vdp_mode2_blank ; 2
     .word vdp_mode3_blank ; 2
     .word vdp_mc_blank; 3
-    .word gfx_notimplemented; 4
+    .word vdp_mode4_blank; 4
     .word gfx_notimplemented; 5
     .word vdp_mode6_blank; 6
     .word vdp_mode7_blank ; 7

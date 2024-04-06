@@ -55,7 +55,7 @@ vdp_mode7_set_pixel:
       vdp_wait_s 2
       sta a_vreg
       pla
-      vdp_wait_l 3
+      vdp_wait_l 4
       sta a_vram            ; set color
       plp
       rts

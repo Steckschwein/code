@@ -68,7 +68,7 @@ v_reg25_msk       = 1<<1  ; 1:The left 8 dots are masked and the border color is
 v_reg25_wait      = 1<<2
 v_reg25_yjk       = 1<<3  ; YJK (YUV) mode
 v_reg25_yae       = 1<<4  ; yae yjk with attributes
-v_reg25_cmd       = 1<<6
+v_reg25_cmd       = 1<<6  ; enable VDP command engine also in lower graphic modes
 
 v_reg45_mxc = 1<<6
 v_reg45_mxd = 1<<5

@@ -24,8 +24,7 @@
 
 .include "vdp.inc"
 
-.import vdp_init_reg
-.import vdp_fill
+.autoimport
 
 .export vdp_mode4_on
 .export vdp_mode4_blank

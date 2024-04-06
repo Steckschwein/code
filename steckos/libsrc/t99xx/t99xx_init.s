@@ -40,7 +40,7 @@ vdp_init_reg:
 
       sta vdp_ptr
       sty vdp_ptr+1
-      txa      ; x length of init table
+      txa       ; x length of init table
       tay
       ora #$80  ; bit 7 = 1 => register write
       tax
@@ -55,7 +55,7 @@ vdp_init_reg:
 
 .ifdef V9958
       vdp_sreg 0, v_reg23  ; reset vertical scroll
-      vdp_sreg v_reg25_wait, v_reg25  ; enable V9958 /WAIT pin
+      vdp_sreg v_reg25_cmd|v_reg25_wait, v_reg25  ; enable V9958 /WAIT pin, CMD for lower modes
 .endif
 
       plp
