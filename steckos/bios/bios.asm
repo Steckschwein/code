@@ -182,6 +182,8 @@ do_reset:
       ina
       sta slot1_ctrl
 
+
+
       ; Check zeropage and Memory
 check_zp:
       ; Start at $ff
@@ -233,6 +235,42 @@ zp_stack_ok:
       .byte CODE_LF,0
 
       jsr vdp_detect
+
+      spi65             = $250
+      spi65_data        = spi65 + 0
+      spi65_status      = spi65 + 1
+      spi65_ctrl        = spi65 + 1
+      spi65_div         = spi65 + 2
+      spi65_ss          = spi65 + 3
+
+      lda #3
+      sta spi65_ctrl
+
+      lda spi65_ctrl
+      jsr hexout
+
+      lda #%00001111
+      sta spi65_div
+
+      lda spi65_div 
+      jsr hexout
+
+      lda #%00000001
+      sta spi65_ss
+
+loop:
+      lda spi65_data
+      lda #0
+      sta spi65_data
+wait:
+      bit spi65_status
+      bpl wait
+     
+
+      bra loop
+
+      lda #%00000000
+      sta spi65_ss   
 
       ;jsr memcheck
 
