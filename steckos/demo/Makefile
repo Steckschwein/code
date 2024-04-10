@@ -17,7 +17,9 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		plasma \
 		rps_sim.prg	\
 		hanoi.prg \
-		win95.prg
+		win95.prg \
+		bubble.prg \
+		quick.prg
 
 plasma:
 	(cd plasma; make)
