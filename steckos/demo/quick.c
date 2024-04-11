@@ -12,15 +12,6 @@ void swap(unsigned char* p1, unsigned char* p2)
     *p2 = temp;
 }
 
-// Function to print an array
-void printArray(unsigned char arr[], unsigned char size)
-{
-	unsigned char i;
-	printf("\n");
-	for (i = 0; i < size; i++)
-		printf("%d ", arr[i]);
-}
-
 void drawArray(unsigned char arr[], unsigned char size)
 {
 	unsigned char i;
@@ -58,21 +49,14 @@ int partition(unsigned char arr[], unsigned char low, unsigned char high)
             line(i, 0, i, 255);
 
             setcolor(WHITE);
-            // line(i, 0, i, arr[i]);
-
-            // line(i, 212 - arr[i], i, 212);
             line(i, 212 , i, 212- arr[i]);
             
-
-
 
             setcolor(BLUE);
 
             line(j, 0, j, 212);
 
             setcolor(WHITE);
-            // line(j, 0, j, arr[j]);
-            // line(j, 212 - arr[j], j, 212);
             line(j, 212, j, 212 - arr[j]);
 
         }
@@ -85,7 +69,6 @@ int partition(unsigned char arr[], unsigned char low, unsigned char high)
     line(i+1, 0, i+1, 212);
 
     setcolor(WHITE);
-    // line(i+1, 0, i+1, arr[i+1]);
     line(i+1, 212 - arr[i+1], i+1, 212);
 
 
@@ -95,7 +78,6 @@ int partition(unsigned char arr[], unsigned char low, unsigned char high)
     line(high, 0, high, 212);
 
     setcolor(WHITE);
-    // line(high, 0, high, arr[high]);
     line(high, 212, high, 212 - arr[high]);
 
 
@@ -140,21 +122,10 @@ int main()
     cleardevice();
 
 
-	// printf("Unsorted array: \n");
-	// printArray(arr, n);
 	drawArray(arr, n);
 
-
-    // printf("Unsorted Array\n");
-    // printArray(arr, n);
-    
-
-    // Function call
     quickSort(arr, 0, n - 1, n);
     
-  // Print the sorted array
-    // printf("\nSorted Array\n");
-    // printArray(arr, n);
     getch();
     return 0;
 }
