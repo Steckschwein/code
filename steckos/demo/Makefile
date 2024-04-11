@@ -18,6 +18,7 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		rps_sim.prg	\
 		hanoi.prg \
 		win95.prg \
+		lines.prg \
 		bubble.prg \
 		quick.prg
 
