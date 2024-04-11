@@ -184,6 +184,13 @@
 ;@plot:  jmp (gfx_plot_table,x)
 .endproc
 
+; void __fastcall__ graphics_setbkcolor (unsigned char color);
+.export _graphics_setbkcolor
+.proc _graphics_setbkcolor
+        jsr graphics_colors
+        jmp _vdp_blank
+.endproc
+
 ; void __fastcall__ graphics_setfillstyle ( int pattern, unsigned char color);
 .export _graphics_setfillstyle
 .proc _graphics_setfillstyle
