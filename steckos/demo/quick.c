@@ -1,5 +1,6 @@
 // C program for QuickSort
 #include <stdio.h>
+#include <stdlib.h>
 #include <graphics.h>
 
 
@@ -12,21 +13,21 @@ void swap(unsigned char* p1, unsigned char* p2)
     *p2 = temp;
 }
 
-void drawArray(unsigned char arr[], unsigned char size)
+void drawArray(unsigned char arr[], int size)
 {
-	unsigned char i;
+	int i;
 	for (i=0;i<=size;i++)
 	{
 		setcolor(BLACK);
 
-		line(i, 0, i, 212);
+		line(i, 20, i, 212);
 
   	    setcolor(WHITE);
-		line(i, 212 - arr[i], i, 212);
+		line(i, 212 - arr[i] +20, i, 212);
 	}
 }
 
-int partition(unsigned char arr[], unsigned char low, unsigned char high)
+int partition(unsigned char arr[], int low, int high)
 {
     // choose the pivot
     int pivot = arr[high];
@@ -46,39 +47,39 @@ int partition(unsigned char arr[], unsigned char low, unsigned char high)
             syncvblank();
             setcolor(BLACK);
 
-            line(i, 0, i, 255);
+            line(i, 20, i, 255);
 
             setcolor(WHITE);
-            line(i, 212 , i, 212- arr[i]);
+            line(i, 212 , i, 212- arr[i] + 20);
             
 
             setcolor(BLACK);
 
-            line(j, 0, j, 212);
+            line(j, 20, j, 212);
 
             setcolor(WHITE);
-            line(j, 212, j, 212 - arr[j]);
+            line(j, 212, j, 212 - arr[j] + 20);
 
         }
     }
     swap(&arr[i + 1], &arr[high]);
 
-    syncvblank();
+    // syncvblank();
     setcolor(BLACK);
 
-    line(i+1, 0, i+1, 212);
+    line(i+1, 20, i+1, 212);
 
     setcolor(WHITE);
-    line(i+1, 212 - arr[i+1], i+1, 212);
+    line(i+1, 212 - arr[i+1] + 20, i+1, 212);
 
 
 
     setcolor(BLACK);
 
-    line(high, 0, high, 212);
+    line(high, 20, high, 212);
 
     setcolor(WHITE);
-    line(high, 212, high, 212 - arr[high]);
+    line(high, 212, high, 212 - arr[high] + 20);
 
 
     return (i + 1);
@@ -86,7 +87,7 @@ int partition(unsigned char arr[], unsigned char low, unsigned char high)
 
 // The Quicksort function Implement
 
-void quickSort(unsigned char arr[], unsigned char low, unsigned char high, unsigned char n)
+void quickSort(unsigned char arr[], int low, int high, int n)
 {
     // when low is less than high
     if (low < high) {
@@ -103,27 +104,23 @@ void quickSort(unsigned char arr[], unsigned char low, unsigned char high, unsig
 }
 
 int main()
-{
-	unsigned char arr[] = {
-51, 213, 73, 124, 186, 42, 127, 107, 138, 151, 6, 128, 55, 208, 156, 30, 57, 108, 14, 225, 104, 93, 
-170, 65, 53, 160, 56, 49, 243, 81, 179, 131, 110, 103, 26, 237, 188, 54, 1, 154, 29, 139, 92, 21, 254, 
-155, 148, 79, 76, 100, 60, 212, 129, 190, 145, 91, 231, 245, 165, 125, 201, 205, 2, 246, 109, 69, 134, 
-207, 31, 177, 215, 149, 196, 105, 234, 123, 200, 233, 27, 3, 152, 130, 118, 32, 192, 236, 99, 211, 250,
-140, 10, 71, 48, 206, 84, 78, 248, 244, 74, 20, 70, 239, 45, 114, 52, 36, 157, 50, 67, 16, 146, 5, 72,
-171, 68, 116, 87, 120, 66, 172, 228, 176, 115, 214, 251, 229, 147, 216, 137, 191, 11, 85, 17, 161, 185, 
-19, 82, 95, 136, 126, 252, 41, 15, 44, 121, 38, 241, 164, 9, 35, 47, 97, 113, 83, 197, 135, 111, 187, 249, 
-106, 219, 117, 40, 163, 193, 158, 102, 181, 253, 8, 204, 184, 182, 203, 142, 23, 77, 183, 37, 167, 224, 
-202, 222, 218, 220, 178, 4, 198, 230, 122, 240, 132, 194, 232, 43, 98, 242, 221, 39, 62, 63, 195, 210,
-227, 75, 153, 133, 112, 96, 94, 235, 189, 141 }; 
-    unsigned char n = sizeof(arr) / sizeof(arr[0]);
-    unsigned char i;
+{ 
+	unsigned char arr[512];
+    int n = sizeof(arr) / sizeof(arr[0]);
 
-	initgraph(NULL, 7, NULL);
+    int i;
+   
+    for (i=0;i<512;i++)
+    {
+        arr[i]=random(200);
+    }
+    
+    initgraph(NULL, 6, NULL);
     cleardevice();
 
     setcolor(WHITE);
-    outtextxy(215, 10, "Quick");
-	outtextxy(215, 22, "Sort");
+    outtextxy(0, 10, "Quick Sort");
+	
 
 
 	drawArray(arr, n);
@@ -131,6 +128,7 @@ int main()
     quickSort(arr, 0, n - 1, n);
     
     getch();
+    closegraph();
     return 0;
 }
 // This Code is Contributed By Diwakar Jha
