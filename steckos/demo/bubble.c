@@ -11,14 +11,6 @@ void swap(unsigned char* xp, unsigned char* yp)
 	*yp = temp;
 }
 
-// Function to print an array
-void printArray(unsigned char arr[], unsigned char size)
-{
-	unsigned char i;
-	printf("\n");
-	for (i = 0; i < size; i++)
-		printf("%d ", arr[i]);
-}
 
 void drawArray(unsigned char arr[], unsigned char size)
 {
@@ -54,7 +46,6 @@ void bubbleSort(unsigned char arr[], unsigned char n)
 				line(j, 0, j, 212);
 
 				setcolor(WHITE);
-				// line(j, 0, j, arr[j]);
 				line(j, 212 - arr[j], j, 212);
 
 
@@ -63,12 +54,8 @@ void bubbleSort(unsigned char arr[], unsigned char n)
 				line(j+1, 0, j+1, 212);
 
 				setcolor(WHITE);
-				// line(j+1, 0, j+1, arr[j+1]);
 				line(j+1, 212 - arr[j+1], j+1, 212);
 
-
-				// drawArray(arr, n);
-				// printArray(arr, n);
 			}
 		}
 
@@ -101,15 +88,10 @@ unsigned char main()
   cleardevice();
 
 
-	// printf("Unsorted array: \n");
-	// printArray(arr, n);
 	drawArray(arr, n);
 
 	bubbleSort(arr, n);
-	// drawArray(arr, n);
 	getch();
 
-	// printf("\nSorted array: \n");
-	// printArray(arr, n);
 	return 0;
 }
