@@ -17,7 +17,7 @@ void drawArray(unsigned char arr[], unsigned char size)
 	unsigned char i;
 	for (i=0;i<=size;i++)
 	{
-		setcolor(BLUE);
+		setcolor(BLACK);
 
 		line(i, 0, i, 212);
 
@@ -44,7 +44,7 @@ int partition(unsigned char arr[], unsigned char low, unsigned char high)
             swap(&arr[i], &arr[j]);
 
             syncvblank();
-            setcolor(BLUE);
+            setcolor(BLACK);
 
             line(i, 0, i, 255);
 
@@ -52,7 +52,7 @@ int partition(unsigned char arr[], unsigned char low, unsigned char high)
             line(i, 212 , i, 212- arr[i]);
             
 
-            setcolor(BLUE);
+            setcolor(BLACK);
 
             line(j, 0, j, 212);
 
@@ -64,7 +64,7 @@ int partition(unsigned char arr[], unsigned char low, unsigned char high)
     swap(&arr[i + 1], &arr[high]);
 
     syncvblank();
-    setcolor(BLUE);
+    setcolor(BLACK);
 
     line(i+1, 0, i+1, 212);
 
@@ -73,7 +73,7 @@ int partition(unsigned char arr[], unsigned char low, unsigned char high)
 
 
 
-    setcolor(BLUE);
+    setcolor(BLACK);
 
     line(high, 0, high, 212);
 
@@ -120,6 +120,10 @@ int main()
 
 	initgraph(NULL, 7, NULL);
     cleardevice();
+
+    setcolor(WHITE);
+    outtextxy(215, 10, "Quick");
+	outtextxy(215, 22, "Sort");
 
 
 	drawArray(arr, n);

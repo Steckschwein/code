@@ -25,13 +25,13 @@ void gnomeSort(unsigned char arr[], unsigned char n)
 			swap(&arr[index], &arr[index - 1]);
 
 
-      setcolor(BLUE);
+      setcolor(BLACK);
       line(index, 0, index, 212);
 
       setcolor(WHITE);
       line(index, 212 , index, 212- arr[index]);
 
-      setcolor(BLUE);
+      setcolor(BLACK);
       line(index-1, 0, index-1, 212);
 
       setcolor(WHITE);
@@ -50,7 +50,7 @@ void drawArray(unsigned char arr[], unsigned char size)
 	unsigned char i;
 	for (i=0;i<=size;i++)
 	{
-		setcolor(BLUE);
+		setcolor(BLACK);
 
 		line(i, 0, i, 212);
 
@@ -93,6 +93,10 @@ int main()
 
   initgraph(NULL, 7, NULL);
   cleardevice();
+
+	setcolor(WHITE);
+	outtextxy(215, 10, "Gnome");
+	outtextxy(215, 22, "Sort");
 
 
 	drawArray(arr, n);

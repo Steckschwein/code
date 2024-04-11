@@ -17,7 +17,7 @@ void drawArray(unsigned char arr[], unsigned char size)
 	unsigned char i;
 	for (i=0;i<=size;i++)
 	{
-		setcolor(BLUE);
+		setcolor(BLACK);
 
 		line(i, 0, i, 212);
 
@@ -41,7 +41,7 @@ void bubbleSort(unsigned char arr[], unsigned char n)
 				swapped = true;
 				syncvblank();
 
-				setcolor(BLUE);
+				setcolor(BLACK);
 
 				line(j, 0, j, 212);
 
@@ -49,7 +49,7 @@ void bubbleSort(unsigned char arr[], unsigned char n)
 				line(j, 212 - arr[j], j, 212);
 
 
-				setcolor(BLUE);
+				setcolor(BLACK);
 
 				line(j+1, 0, j+1, 212);
 
@@ -86,6 +86,11 @@ unsigned char main()
 	initgraph(NULL, 7, NULL);
 
   cleardevice();
+
+	setcolor(WHITE);
+  outtextxy(215, 10, "Bubble");
+	outtextxy(215, 22, "Sort");
+	
 
 
 	drawArray(arr, n);
