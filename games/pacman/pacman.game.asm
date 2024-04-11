@@ -5,6 +5,8 @@
 
 .autoimport
 
+.importzp sys_crs_x, sys_crs_y
+
 game:
     sei
     setIRQ game_isr, _save_irq

@@ -42,12 +42,12 @@ vdp_mode4_on:
 @vdp_init_bytes_gfx4:
     .byte v_reg0_m4 | v_reg0_m3
     .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
-    .byte >(ADDRESS_GFX4_SCREEN>>2) | $1f  ; name table - value * $400
+    .byte >(ADDRESS_GFX4_SCREEN>>2) | $1f  ; name table
     .byte 0 ; n.a.
     .byte 0 ; n.a.
-    .byte  >(ADDRESS_GFX4_SPRITE<<1) | $07    ; R#5 - sprite attribute table - value * $80 --> offset in VRAM
-    .byte  >(ADDRESS_GFX4_SPRITE_PATTERN>>3)  ; R#6 - sprite pattern table - value * $800  --> offset in VRAM
-    .byte  Black
+    .byte >(ADDRESS_GFX4_SPRITE<<1) | $07    ; R#5 - sprite attribute table - value * $80 --> offset in VRAM
+    .byte >(ADDRESS_GFX4_SPRITE_PATTERN>>3)  ; R#6 - sprite pattern table - value * $800  --> offset in VRAM
+    .byte Black
   .ifdef V9958
     .byte v_reg8_VR   ; R#8 - VR - 64k VRAM TODO set per define
     .byte v_reg9_nt   ; R#9 - set bit to 1 for PAL
@@ -55,7 +55,7 @@ vdp_mode4_on:
     .byte <.hiword(ADDRESS_GFX4_SPRITE<<1); R#11 sprite attribute high
     .byte 0;  #R12
     .byte 0;  #R13
-    .byte <.HIWORD(ADDRESS_GFX4_SCREEN<<2) ; #R14
+    .byte <.hiword(ADDRESS_GFX4_SCREEN<<2) ; #R14
   .endif
 @vdp_init_bytes_gfx4_end:
 

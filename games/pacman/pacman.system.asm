@@ -1,15 +1,17 @@
     .include "pacman.inc"
 
-    .export out_digits,out_digit
-    .export out_hex_digit,out_hex_digits
-    .export out_text
-    .export frame_isr
-    .export sys_crs_x
-    .export sys_crs_y
+.export out_digits,out_digit
+.export out_hex_digit,out_hex_digits
+.export out_text
+.export frame_isr
+.export sys_crs_x
+.export sys_crs_y
 
-    .import gfx_charout
-    .import game_state
-    .import io_isr
+.autoimport
+
+.zeropage
+    sys_crs_x: .res 1
+    sys_crs_y: .res 1
 
 .code
 frame_isr:
@@ -101,5 +103,3 @@ wait:
 .data
 
 .bss
-sys_crs_x: .res 1
-sys_crs_y: .res 1

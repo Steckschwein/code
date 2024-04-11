@@ -58,8 +58,8 @@ STATE_PLAYING       = 3
 STATE_DIED          = 4
 STATE_LEVEL_CLEARED = 5
 STATE_GAME_OVER     = 6
-STATE_PAUSE         = $08
-STATE_EXIT          = $80
+STATE_PAUSE         = 1<<3
+STATE_EXIT          = 1<<7
 
 SPRITE_NR_PACMAN  = 8*4
 SPRITE_NR_GHOST   = 0*4

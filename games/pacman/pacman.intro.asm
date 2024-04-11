@@ -1,8 +1,10 @@
-    .export intro
+.export intro
 
-    .include "pacman.inc"
+.include "pacman.inc"
 
-    .autoimport
+.autoimport
+
+.importzp sys_crs_x, sys_crs_y
 
 .macro draw_actor addr, color
     draw_text addr, color
@@ -55,7 +57,8 @@ intro:
 
 intro_frame:
     jsr gfx_blank_screen
-    draw_text _header_1, 0  ; Color_Gray
+
+    draw_text _header_1, Color_Gray
     draw_text _header_2
     ldx #1
     ldy #18

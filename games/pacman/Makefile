@@ -15,7 +15,7 @@ OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.ai.o pacman.game.o pacman.syst
 CA65FLAGS_STS=-D__STECKSCHWEIN__ -I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel $(DEBUG)
 OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.sts.o pacman.sound.sts.o
 LIBS_STS=../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a
-LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map
+LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map -Ln pacman.lbl --dbgfile pacman.dbg
 
 CA65FLAGS_C64=-t c64 -I $(CC65_HOME)/asminc $(DEBUG)
 OBJS_C64=$(OBJS) pacman.io.c64.o pacman.gfx.c64.o pacman.sound.c64.o
@@ -38,7 +38,7 @@ RESOURCES=\
 all: pacman.prg
 
 clean:
-	rm -f *.bin *.prg *.dis *.s *.o *.res *.map
+	rm -f *.bin *.prg *.dis *.s *.o *.res *.map *.lbl
 
 #%.res: %.spm
 %.res: %.raw
@@ -101,4 +101,4 @@ pacman64.dis: pacman64.prg
 	../../xmodem.sh $<
 
 %.emu: %.prg
-	steckschwein-emu -rom ../../steckos/bios/bios.bin -rotate -sdcard ../../steckos.img -upload $<
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -upload $<
