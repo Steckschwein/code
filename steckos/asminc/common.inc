@@ -400,10 +400,20 @@
 : plp
 .endmacro
 
-.macro assertX
+.macro assertX_le
+  php
+  cpx #value+1
+  bcc :+
+  stp
+: plp
 .endmacro
 
-.macro assertY
+.macro assertY_le
+  php
+  cpy #value+1
+  bcc :+
+  stp
+: plp
 .endmacro
 
 .macro crlf
