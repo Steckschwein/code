@@ -68,6 +68,12 @@ void __fastcall__ graphics_textxy (unsigned int x, unsigned char y, char *s);
 void __fastcall__ graphics_setcolor (unsigned char color);
 #define setcolor(color) graphics_setcolor(color)
 
+/**
+ * setbkcolor sets the background to the color specified by color. The argument color can be a name or a number as listed below. (These symbolic names are defined in graphics.h.)
+ */
+void __fastcall__ graphics_setbkcolor (unsigned char color);
+#define setbkcolor(color) graphics_setbkcolor(color)
+
 int __fastcall__ graphics_getcolor();
 #define getcolor() graphics_getcolor()
 

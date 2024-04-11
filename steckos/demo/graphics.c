@@ -65,7 +65,11 @@ int main(int argc, char* argv){
     setcolor(x);
     rectangle(x,x+16,x+32,x+32);
   }
-  getch();
+
+  for(x=0;x<16;x++){
+    getch();
+    setbkcolor(x);
+  }
 
   return EXIT_SUCCESS;
 }
