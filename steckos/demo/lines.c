@@ -8,7 +8,7 @@ int main (int argc, char *argv[])
   initgraph(NULL, 7, NULL);
   cleardevice();
 
-  // setbkcolor(BLACK);
+  setbkcolor(BLACK);
   cleardevice();
   outtextxy(0, 0, "Drawing 1000 lines...");
   for (i = 0; i < 1000; i++) {
