@@ -27,10 +27,10 @@ void drawArray(unsigned char arr[], unsigned char size)
 	{
 		setcolor(BLUE);
 
-		line(i, 0, i, 255);
+		line(i, 0, i, 212);
 
   	setcolor(WHITE);
-		line(i, 0, i, arr[i]);
+		line(i, 212 - arr[i], i, 212);
 	}
 }
 
@@ -47,22 +47,24 @@ void bubbleSort(unsigned char arr[], unsigned char n)
 			if (arr[j] > arr[j + 1]) {
 				swap(&arr[j], &arr[j + 1]);
 				swapped = true;
+				syncvblank();
+
+				setcolor(BLUE);
+
+				line(j, 0, j, 212);
+
+				setcolor(WHITE);
+				// line(j, 0, j, arr[j]);
+				line(j, 212 - arr[j], j, 212);
 
 
 				setcolor(BLUE);
 
-				line(j, 0, j, 255);
+				line(j+1, 0, j+1, 212);
 
 				setcolor(WHITE);
-				line(j, 0, j, arr[j]);
-
-
-				setcolor(BLUE);
-
-				line(j+1, 0, j+1, 255);
-
-				setcolor(WHITE);
-				line(j+1, 0, j+1, arr[j+1]);
+				// line(j+1, 0, j+1, arr[j+1]);
+				line(j+1, 212 - arr[j+1], j+1, 212);
 
 
 				// drawArray(arr, n);
@@ -91,9 +93,7 @@ unsigned char main()
 19, 82, 95, 136, 126, 252, 41, 15, 44, 121, 38, 241, 164, 9, 35, 47, 97, 113, 83, 197, 135, 111, 187, 249, 
 106, 219, 117, 40, 163, 193, 158, 102, 181, 253, 8, 204, 184, 182, 203, 142, 23, 77, 183, 37, 167, 224, 
 202, 222, 218, 220, 178, 4, 198, 230, 122, 240, 132, 194, 232, 43, 98, 242, 221, 39, 62, 63, 195, 210,
-227, 75, 153, 133, 112, 96, 94, 235, 189, 141, 217, 24, 88, 168, 33, 58, 64, 247, 80, 180, 28, 13, 61,
- 174, 119, 86, 162, 173, 101, 159, 169, 209, 25, 166, 255, 150, 238, 175, 226, 59, 90, 34, 199, 18, 7, 
- 223, 143, 46, 144, 89, 12	};
+227, 75, 153, 133, 112, 96, 94, 235, 189, 141 };
 	unsigned char n = sizeof(arr) / sizeof(arr[0]);
 	
 	initgraph(NULL, 7, NULL);
