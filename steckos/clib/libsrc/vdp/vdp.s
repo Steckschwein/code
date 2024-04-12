@@ -46,7 +46,7 @@
     rts
 .endproc
 
-; unsigned char __fastcall__ vdp_maxx ();
+; int __fastcall__ vdp_maxx ();
 .export _vdp_maxx
 .proc _vdp_maxx
     ldx _vdp_mode ; mode shift 2
@@ -115,10 +115,10 @@ gfx_notimplemented:
     pha;sta _vdp_px_x
     ; TODO 16bit x
     ldx _vdp_mode
-    jmp (gfx_plot_table,x)
+    jmp (plot_table,x)
 .endproc
 
-gfx_plot_table:
+plot_table:
     .word gfx_notimplemented  ; 0
     .word GFX_2_Plot ; 2
     .word GFX_2_Plot ; 2
@@ -165,14 +165,6 @@ GFX_7_Plot:
         rts
 .endproc
 
-; int __fastcall__ vdp_getcolor();
-.export _vdp_getcolor
-.proc _vdp_getcolor
-        lda _vdp_line_t+line_t::color
-        ldx #0
-        rts
-.endproc
-
 ; void __fastcall__ vdp_line(int x1, char y1, int x2, char y2);
 .export _vdp_line
 .proc _vdp_line
@@ -194,11 +186,20 @@ _vdp_fill_line_t:
         ldy #>_vdp_line_t
         rts
 
+
+; int __fastcall__ vdp_getcolor();
+.export _vdp_getcolor
+.proc _vdp_getcolor
+        lda _vdp_line_t+line_t::color
+        ldx #0
+        rts
+.endproc
+
 ; void __fastcall__ vdp_setcolor (unsigned char color);
 .export _vdp_setcolor
 .proc _vdp_setcolor
-    sta _vdp_line_t+line_t::color ; set to line_t struct, to have the color in place
-    rts
+        sta _vdp_line_t+line_t::color ; set to line_t struct, to have the color in place
+        rts
 .endproc
 
 ; void __fastcall__ vdp_blank (unsigned char color);

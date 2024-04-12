@@ -29,21 +29,24 @@
 int main(int argc, char* argv){
 
   int x;
-  int y;
+  int maxx;
+  unsigned char y;
 
-  vdp_screen(7);
+  vdp_screen(6);
   vdp_blank(0);
 
+  maxx = vdp_maxx();
+
   do{
-    for(x=0;x<256;x++){
+    for(x=0;x<=maxx;x++){
       for(y=0;y<212;y++){
         vdp_plot(x,y,x);
 
         vdp_setcolor(x);
-        vdp_putpixel(255-x,y);
+        vdp_putpixel(maxx-x,y);
 
       }
-      vdp_line(x,0,128,96);
+      vdp_line(x,0,maxx>>1,96);
       vdp_setcolor(x^0xff);
       vdp_rectangle(x,x+16,x+32,x+32);
     }

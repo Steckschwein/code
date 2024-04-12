@@ -56,6 +56,7 @@ v_reg1_spr_mag    = 1<<0 ; 1: scale (magnify) sprite double size
 v_reg8_BW         = 1<<0  ; 0/1 grayscale off/on
 v_reg8_SPD        = 1<<1  ; 0/1 sprites enabled/disabled
 v_reg8_VR         = 1<<3  ; 0/1 16k/64k video ram
+v_reg8_TP         = 1<<5  ; 0/1 transparent (TP) or color code 0 of palette (1)
 
 v_reg9_ln         = 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
 v_reg9_il         = 1<<3  ; interlace
@@ -365,6 +366,7 @@ vdp_nopslide_end:
     lda #(_g & $e0 | (_r & $e0)>>3 | _b>>6)
 .endmacro
 
+; creates VDP GRB byte (mode 7) from 24Bit RGB
 .macro vdp_rgb _r, _g, _b
    .byte _g & $e0 | (_r & $e0)>>3 | _b>>6
 .endmacro
