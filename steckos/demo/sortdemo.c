@@ -26,7 +26,7 @@ void waitframes(int n)
     for (i=0;i<=n;i++)
         syncvblank();
 }
-void setLine(int x, int val)
+void setLine(int x, int val, char color)
 {
     // syncvblank();
 
@@ -35,16 +35,16 @@ void setLine(int x, int val)
 
     line(x, max_y, x, 0);
 
-    setcolor(WHITE);
+    setcolor(color);
     line(x, max_y - val , x, max_y);
 
 }
-void drawArray(unsigned char arr[], int size)
+void drawArray(unsigned char arr[], int size, char color)
 {
 	int i;
 	for (i=0;i<=size;i++)
 	{
-        setLine(i, arr[i]);
+        setLine(i, arr[i], color);
 	}
 }
 
@@ -66,8 +66,8 @@ int partition(unsigned char arr[], int low, int high)
             swap(&arr[i], &arr[j]);
 
             
-            setLine(i, arr[i]);
-            setLine(j, arr[j]);
+            setLine(i, arr[i], WHITE);
+            setLine(j, arr[j], WHITE);
             
         }
     }
@@ -75,8 +75,8 @@ int partition(unsigned char arr[], int low, int high)
 
     // syncvblank();
 
-    setLine(i+1, arr[i+1]);
-    setLine(high, arr[high]);
+    setLine(i+1, arr[i+1], WHITE);
+    setLine(high, arr[high], WHITE);
     
     return (i + 1);
 }
@@ -105,7 +105,7 @@ void shuffleArray(unsigned char arr[])
     for (i=0;i<max_x;i++)
     {
         arr[i]=random(max_y);
-        setLine(i, arr[i]);
+        setLine(i, arr[i], WHITE);
     }
     
 }
@@ -122,8 +122,8 @@ void bubbleSort(unsigned char arr[], int n)
 				swap(&arr[j], &arr[j + 1]);
 				swapped = true;
 
-                setLine(j, arr[j]);
-                setLine(j+1, arr[j+1]);
+                setLine(j, arr[j], WHITE);
+                setLine(j+1, arr[j+1], WHITE);
 
 			}
 		}
@@ -147,8 +147,8 @@ void gnomeSort(unsigned char arr[], int n)
 			index++; 
 		else { 
 			swap(&arr[index], &arr[index - 1]);
-            setLine(index, arr[index]);
-            setLine(index-1, arr[index-1]);
+            setLine(index, arr[index], WHITE);
+            setLine(index-1, arr[index-1], WHITE);
    
 			index--; 
 		} 
@@ -171,8 +171,8 @@ void cocktailSort(unsigned char arr[], int n)
                 
 
                 swapped = true;
-                setLine(i, arr[i]);
-                setLine(i+1, arr[i+1]);
+                setLine(i, arr[i], WHITE);
+                setLine(i+1, arr[i+1], WHITE);
 
             }
         }
@@ -186,8 +186,8 @@ void cocktailSort(unsigned char arr[], int n)
             if (arr[i] > arr[i + 1]) {
                 swap(&arr[i], &arr[i + 1]);
                 swapped = true;
-                setLine(i, arr[i]);
-                setLine(i+1, arr[i+1]);
+                setLine(i, arr[i], WHITE);
+                setLine(i+1, arr[i+1], WHITE);
 
             }
         }
@@ -229,21 +229,25 @@ int main()
         titleCard("Bubble Sort - 255 values", 50, 100, 20);
         shuffleArray(arr);   
         bubbleSort(arr, n);
+        drawArray(arr, n, GREEN);
         waitframes(50);
 
         titleCard("Cocktail Sort - 255 values", 50, 100, 20);
         shuffleArray(arr);   
         cocktailSort(arr, n);
+        drawArray(arr, n, GREEN);
         waitframes(50);
 
         titleCard("Gnome Sort - 255 values", 50, 100, 20);
         shuffleArray(arr);   
         gnomeSort(arr, n);
+        drawArray(arr, n, GREEN);
         waitframes(50);
 
         titleCard("Quick Sort - 255 values", 50, 100, 20);
         shuffleArray(arr);   
         quickSort(arr, 0, n - 1, n);
+        drawArray(arr, n, GREEN);
         waitframes(50);
 
         titleCard("Quick Sort - 512 values", 50, 100, 20);
@@ -256,6 +260,7 @@ int main()
 
         shuffleArray(arr);   
         quickSort(arr, 0, n - 1, n);
+        drawArray(arr, n, GREEN);
         waitframes(50);
  
     }
