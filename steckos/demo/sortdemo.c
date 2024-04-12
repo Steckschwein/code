@@ -324,6 +324,79 @@ void heapSort(unsigned char arr[], int N)
     }
 }
 
+// To find gap between elements
+int getNextGap(int gap)
+{
+    // Shrink gap by Shrink factor
+    gap = (gap*10)/13;
+ 
+    if (gap < 1)
+        return 1;
+    return gap;
+}
+ 
+// Function to sort a[0..n-1] using Comb Sort
+void combSort(unsigned char a[], int n)
+{
+    // Initialize gap
+    int gap = n;
+    int i;
+
+    // Initialize swapped as true to make sure that
+    // loop runs
+    bool swapped = true;
+ 
+    // Keep running while gap is more than 1 and last
+    // iteration caused a swap
+    while (gap != 1 || swapped == true)
+    {
+        // Find next gap
+        gap = getNextGap(gap);
+ 
+        // Initialize swapped as false so that we can
+        // check if swap happened or not
+        swapped = false;
+ 
+        // Compare all elements with current gap
+        for (i=0; i<n-gap; i++)
+        {
+            if (a[i] > a[i+gap])
+            {
+                swap(&a[i], &a[i+gap]);
+                setLine(i, a[i], WHITE);
+                setLine(i+gap, a[i+gap], WHITE);
+                
+                swapped = true;
+            }
+        }
+    }
+}
+
+void selectionSort(unsigned char arr[], int n) 
+{ 
+    int i, j, min_idx; 
+  
+    // One by one move boundary of unsorted subarray 
+    for (i = 0; i < n-1; i++) 
+    { 
+        // Find the minimum element in unsorted array 
+        min_idx = i; 
+        for (j = i+1; j < n; j++) 
+          if (arr[j] < arr[min_idx]) 
+            min_idx = j; 
+  
+        // Swap the found minimum element with the first element 
+           if(min_idx != i) 
+           {
+
+                swap(&arr[min_idx], &arr[i]); 
+                setLine(min_idx, arr[min_idx], WHITE);
+                setLine(i, arr[i], WHITE);
+           }
+    } 
+} 
+  
+
 void titleCard(char *title, int x, int y, int delay)
 {
     int i;
@@ -341,10 +414,10 @@ int main()
 { 
 	unsigned char arr[512];
     // int n = sizeof(arr) / sizeof(arr[0]);
-    int frame_delay = 50;
     int n;
+    int frame_delay = 50;
     char key;
-    for (;;)
+    while (! kbhit())
     {
 
         initgraph(NULL, 7, NULL);
@@ -353,7 +426,7 @@ int main()
         cleardevice();
         n = 64;
 
-        titleCard("Sort Demo", 75, 100, 20);
+        titleCard("Sort Demo", 90, 100, 20);
 
         titleCard("Bubble Sort - 64 values", 40, 100, 20);
         shuffleArray(arr, n);   
@@ -361,22 +434,11 @@ int main()
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        if (kbhit()){
-            closegraph();
-            return 0;
-        }
-
         titleCard("Cocktail Sort - 64 values", 30, 100, 20);
         shuffleArray(arr, n);   
         cocktailSort(arr, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
-
-        if (kbhit()){
-            closegraph();
-            return 0;
-        }
-
 
         titleCard("Gnome Sort - 64 values", 50, 100, 20);
         shuffleArray(arr, n);   
@@ -384,27 +446,21 @@ int main()
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        if (kbhit()){
-            closegraph();
-            return 0;
-        }
-
-
-
-        titleCard("Insertion Sort - 64 values", 30, 100, 20);
-        
+        titleCard("Insertion Sort - 64 values", 30, 100, 20);        
         shuffleArray(arr, n);   
         insertionSort(arr, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        if (kbhit()){
-            closegraph();
-            return 0;
-        }
-
-
         n = max_x;
+
+        titleCard("Comb Sort - 255 values", 50, 100, 20);
+
+        shuffleArray(arr, n);   
+        combSort(arr, n);
+        drawArray(arr, n, GREEN);
+        waitframes(50);
+
 
         titleCard("Heap Sort - 255 values", 50, 100, 20);
         shuffleArray(arr, n);   
@@ -412,21 +468,17 @@ int main()
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        if (kbhit()){
-            closegraph();
-            return 0;
-        }
-
         titleCard("Shell Sort - 255 values", 50, 100, 20);
         shuffleArray(arr, n);   
         shellSort(arr, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        if (kbhit()){
-            closegraph();
-            return 0;
-        }
+        titleCard("Selection Sort - 255 values", 30, 100, 20);        
+        shuffleArray(arr, n);   
+        selectionSort(arr, n);
+        drawArray(arr, n, GREEN);
+        waitframes(50);
 
 
         titleCard("Quick Sort - 255 values", 50, 100, 20);
@@ -434,12 +486,6 @@ int main()
         quickSort(arr, 0, n - 1, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
-
-        if (kbhit()){
-            closegraph();
-            return 0;
-        }
-
 
         titleCard("Quick Sort - 512 values", 50, 100, 20);
 
@@ -449,19 +495,28 @@ int main()
         cleardevice();
         n = max_x;
 
+       
         shuffleArray(arr, n);   
         quickSort(arr, 0, n - 1, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        if (kbhit()){
-            closegraph();
-            return 0;
-        }
+        titleCard("Shell Sort - 512 values", 50, 100, 20);
+        shuffleArray(arr, n);   
+        shellSort(arr, n);
+        drawArray(arr, n, GREEN);
+        waitframes(50);
+
+        titleCard("Selection Sort - 512 values", 30, 100, 20);        
+        shuffleArray(arr, n);   
+        selectionSort(arr, n);
+        drawArray(arr, n, GREEN);
+        waitframes(50);
 
 
     }
 
+    closegraph();
+            
     return 0;
 }
-// This Code is Contributed By Diwakar Jha
