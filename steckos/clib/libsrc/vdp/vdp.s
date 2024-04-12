@@ -91,8 +91,8 @@ _gfx_mode_table:
     .word vdp_mode2_on  ; 1
     .word vdp_mode3_on ; 2
     .word vdp_mc_on ; 3
-    .word vdp_mode4_on; 4
-    .word gfx_notimplemented; 5
+    .word gfx_notimplemented ; vdp_mode4_on; 4
+    .word gfx_notimplemented ; 5
     .word vdp_mode6_on ; 6
     .word vdp_mode7_on ; 7
 gfx_notimplemented:
