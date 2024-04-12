@@ -255,7 +255,74 @@ void insertionSort(unsigned char arr[], int n)
     }
 }
 
+// To heapify a subtree rooted with node i
+// which is an index in arr[].
+// n is size of heap
+void heapify(unsigned char arr[], int N, int i)
+{
+    // Find largest among root,
+    // left child and right child
 
+    // Initialize largest as root
+    int largest = i;
+
+    // left = 2*i + 1
+    int left = 2 * i + 1;
+
+    // right = 2*i + 2
+    int right = 2 * i + 2;
+
+    // If left child is larger than root
+    if (left < N && arr[left] > arr[largest])
+
+        largest = left;
+
+    // If right child is larger than largest
+    // so far
+    if (right < N && arr[right] > arr[largest])
+
+        largest = right;
+
+    // Swap and continue heapifying
+    // if root is not largest
+    // If largest is not root
+    if (largest != i) {
+
+        swap(&arr[i], &arr[largest]);
+        setLine(i, arr[i], CYAN);
+        setLine(largest, arr[largest], CYAN);
+        
+
+        // Recursively heapify the affected
+        // sub-tree
+        heapify(arr, N, largest);
+    }
+}
+
+// Main function to do heap sort
+void heapSort(unsigned char arr[], int N)
+{
+    int i,j;
+    // Build max heap
+    for (i = N / 2 - 1; i >= 0; i--)
+
+        heapify(arr, N, i);
+
+    // Heap sort
+    for (i = N - 1; i >= 0; i--) {
+
+        swap(&arr[0], &arr[i]);
+
+        setLine(0, arr[0], WHITE);
+        setLine(i, arr[i], WHITE);
+
+        
+        // Heapify root element
+        // to get highest element at
+        // root again
+        heapify(arr, i, 0);
+    }
+}
 
 void titleCard(char *title, int x, int y, int delay)
 {
@@ -285,6 +352,7 @@ int main()
         max_x = getmaxx();
         cleardevice();
         n = 64;
+
         titleCard("Sort Demo", 75, 100, 20);
 
         titleCard("Bubble Sort - 64 values", 40, 100, 20);
@@ -323,7 +391,7 @@ int main()
 
 
 
-        titleCard("Insertion Sort - 255 values", 30, 100, 20);
+        titleCard("Insertion Sort - 64 values", 30, 100, 20);
         
         shuffleArray(arr, n);   
         insertionSort(arr, n);
@@ -337,6 +405,18 @@ int main()
 
 
         n = max_x;
+
+        titleCard("Heap Sort - 255 values", 50, 100, 20);
+        shuffleArray(arr, n);   
+        heapSort(arr, n);
+        drawArray(arr, n, GREEN);
+        waitframes(50);
+
+        if (kbhit()){
+            closegraph();
+            return 0;
+        }
+
         titleCard("Shell Sort - 255 values", 50, 100, 20);
         shuffleArray(arr, n);   
         shellSort(arr, n);
