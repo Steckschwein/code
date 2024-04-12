@@ -607,7 +607,7 @@ int main()
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        titleCard("Shell Sort - 255 values", 50, 100, 20);
+        titleCard("Shell Sort - 255 values", 40, 100, 20);
         shuffleArray(arr, n);   
         shellSort(arr, n);
         drawArray(arr, n, GREEN);
