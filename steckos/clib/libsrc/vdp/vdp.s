@@ -46,6 +46,28 @@
     rts
 .endproc
 
+; unsigned char __fastcall__ vdp_maxx ();
+.export _vdp_maxx
+.proc _vdp_maxx
+    ldx _vdp_mode ; mode shift 2
+    lda @maxx,x
+    pha
+    lda @maxx+1,x
+    tax
+    pla
+    rts
+@maxx:
+    .byte $4f,0 ; text
+    .byte $1f,0 ; G2
+    .byte $1f,0 ; G3
+    .byte $3f,0 ; MC
+    .byte $ff,0 ; G4
+    .byte $ff,1 ; G5
+    .byte $ff,1 ; G6
+    .byte $ff,0 ; G7
+.endproc
+
+
 ; void __fastcall__ vdp_screen (unsigned char mode);
 .export _vdp_screen
 .proc _vdp_screen
@@ -69,7 +91,7 @@ _gfx_mode_table:
     .word vdp_mode2_on  ; 1
     .word vdp_mode3_on ; 2
     .word vdp_mc_on ; 3
-    .word gfx_notimplemented; 4
+    .word vdp_mode4_on; 4
     .word gfx_notimplemented; 5
     .word vdp_mode6_on ; 6
     .word vdp_mode7_on ; 7

@@ -30,9 +30,13 @@ int main(int argc, char* argv){
 
   int x;
   int y;
+  int maxx,maxy;
 
-  initgraph(NULL, 7, NULL);
+  initgraph(NULL, 6, NULL);
   cleardevice();
+
+  maxx = getmaxx();
+  maxy = getmaxy();
 /*
   for(x=0;x<256;x++){
     for(y=0;y<212;y++){
@@ -47,28 +51,41 @@ int main(int argc, char* argv){
   rectangle(1,2,1,100);
   setcolor(YELLOW);
   rectangle(1,2,100,2);
-  getch();
+//  getch();
 
   for(x=0;x<=15;x++){
     setcolor(x);
     outtextxy(0x10, (x<<3), "Hallo Steckschwein!");
   }
-  getch();
+//  getch();
 
   for(x=0;x<=15;x++){
     setfillstyle(0,x);
     bar(10, 10+x*10, 100, 20+x*10);
   }
-  getch();
+//  getch();
 
-  for(x=0;x<255;x++){
+  for(x=0;x<maxx;x++){
     setcolor(x);
     rectangle(x,x+16,x+32,x+32);
   }
 
   for(x=0;x<16;x++){
-    getch();
+//    getch();
     setbkcolor(x);
+  }
+
+   for(x=0;x<maxx;x++){
+      for(y=0;y<maxy;y++){
+        vdp_plot(x,y,x);
+
+        vdp_setcolor(x);
+        vdp_putpixel(maxx-x,y);
+
+      }
+      vdp_line(x,0,maxx>>1,96);
+      vdp_setcolor(x^0xff);
+      vdp_rectangle(x,x+16,x+32,x+32);
   }
 
   return EXIT_SUCCESS;

@@ -60,16 +60,14 @@
 ; int __fastcall__  vdp_maxx();
 .export _graphics_getmaxx
 .proc _graphics_getmaxx
-        ldx #0
-        lda #$ff  ; TODO
-        rts
+        jmp _vdp_maxx
 .endproc
 
 ; int __fastcall__ graphics_getmaxy();
 .export _graphics_getmaxy
 .proc _graphics_getmaxy
         ldx #0
-        lda #211  ; TODO
+        lda #211  ; TODO "check" whether v_reg9_ln bit is set
         rts
 .endproc
 
