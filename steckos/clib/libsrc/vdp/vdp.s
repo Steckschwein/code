@@ -46,7 +46,7 @@
     rts
 .endproc
 
-; unsigned char __fastcall__ vdp_maxx ();
+; int __fastcall__ vdp_maxx ();
 .export _vdp_maxx
 .proc _vdp_maxx
     ldx _vdp_mode ; mode shift 2

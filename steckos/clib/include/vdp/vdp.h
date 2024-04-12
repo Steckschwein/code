@@ -44,7 +44,7 @@ void __fastcall__ vdp_memcpy (unsigned char *data, unsigned int vramaddress, uns
 
 void __fastcall__ vdp_screen (unsigned char mode);
 
-unsigned char __fastcall__ vdp_maxx ();
+int __fastcall__ vdp_maxx();
 
 void __fastcall__ vdp_reg (unsigned char reg, unsigned char val);
 
