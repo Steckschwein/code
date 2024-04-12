@@ -1,6 +1,8 @@
 // C program for QuickSort
 #include <stdio.h>
 #include <stdlib.h>
+#include <conio.h>
+
 #include <stdbool.h>
 
 #include <graphics.h>
@@ -99,10 +101,10 @@ void quickSort(unsigned char arr[], int low, int high, int n)
     }
 }
 
-void shuffleArray(unsigned char arr[])
+void shuffleArray(unsigned char arr[], int size)
 {
     int i;
-    for (i=0;i<max_x;i++)
+    for (i=0;i<size;i++)
     {
         arr[i]=random(max_y);
         setLine(i, arr[i], WHITE);
@@ -214,6 +216,7 @@ int main()
     // int n = sizeof(arr) / sizeof(arr[0]);
     int frame_delay = 50;
     int n;
+    char key;
     for (;;)
     {
 
@@ -221,34 +224,57 @@ int main()
         max_y = getmaxy();
         max_x = getmaxx();
         cleardevice();
-        n = max_x;
+        n = 64;
 
 
         titleCard("Sort Demo", 75, 100, 20);
 
-        titleCard("Bubble Sort - 255 values", 50, 100, 20);
-        shuffleArray(arr);   
+        titleCard("Bubble Sort - 64 values", 50, 100, 20);
+        shuffleArray(arr, n);   
         bubbleSort(arr, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        titleCard("Cocktail Sort - 255 values", 50, 100, 20);
-        shuffleArray(arr);   
+        if (kbhit()){
+            closegraph();
+            return 0;
+        }
+
+        titleCard("Cocktail Sort - 64 values", 50, 100, 20);
+        shuffleArray(arr, n);   
         cocktailSort(arr, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        titleCard("Gnome Sort - 255 values", 50, 100, 20);
-        shuffleArray(arr);   
+        if (kbhit()){
+            closegraph();
+            return 0;
+        }
+
+
+        titleCard("Gnome Sort - 64 values", 50, 100, 20);
+        shuffleArray(arr, n);   
         gnomeSort(arr, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
 
+        if (kbhit()){
+            closegraph();
+            return 0;
+        }
+
+        n = max_x;
         titleCard("Quick Sort - 255 values", 50, 100, 20);
-        shuffleArray(arr);   
+        shuffleArray(arr, n);   
         quickSort(arr, 0, n - 1, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
+
+        if (kbhit()){
+            closegraph();
+            return 0;
+        }
+
 
         titleCard("Quick Sort - 512 values", 50, 100, 20);
 
@@ -258,15 +284,19 @@ int main()
         cleardevice();
         n = max_x;
 
-        shuffleArray(arr);   
+        shuffleArray(arr, n);   
         quickSort(arr, 0, n - 1, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
- 
+
+        if (kbhit()){
+            closegraph();
+            return 0;
+        }
+
+
     }
 
-    // getch();
-    // closegraph();
     return 0;
 }
 // This Code is Contributed By Diwakar Jha
