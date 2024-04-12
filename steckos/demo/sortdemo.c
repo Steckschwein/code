@@ -197,6 +197,42 @@ void cocktailSort(unsigned char arr[], int n)
     }
 }
 
+/* function to sort arr using shellSort */
+int shellSort(unsigned char arr[], int n)
+{
+    int gap;
+    int i,j;
+    int temp;
+    // Start with a big gap, then reduce the gap
+    for (gap = n/2; gap > 0; gap /= 2)
+    {
+        // Do a gapped insertion sort for this gap size.
+        // The first gap elements a[0..gap-1] are already in gapped order
+        // keep adding one more element until the entire array is
+        // gap sorted 
+        for (i = gap; i < n; i++)
+        {
+            // add a[i] to the elements that have been gap sorted
+            // save a[i] in temp and make a hole at position i
+            temp = arr[i];
+ 
+            // shift earlier gap-sorted elements up until the correct 
+            // location for a[i] is found            
+            for (j = i; j >= gap && arr[j - gap] > temp; j -= gap)
+            {
+                arr[j] = arr[j - gap];
+                setLine(j - gap, arr[j - gap], WHITE);
+                setLine(j, arr[j], WHITE);
+            }
+                
+             
+            //  put temp (the original a[i]) in its correct location
+            arr[j] = temp;
+        }
+    }
+    return 0;
+}
+
 void titleCard(char *title, int x, int y, int delay)
 {
     int i;
@@ -225,7 +261,6 @@ int main()
         max_x = getmaxx();
         cleardevice();
         n = 64;
-
 
         titleCard("Sort Demo", 75, 100, 20);
 
@@ -264,6 +299,18 @@ int main()
         }
 
         n = max_x;
+        titleCard("Shell Sort - 255 values", 50, 100, 20);
+        shuffleArray(arr, n);   
+        shellSort(arr, n);
+        drawArray(arr, n, GREEN);
+        waitframes(50);
+
+        if (kbhit()){
+            closegraph();
+            return 0;
+        }
+
+
         titleCard("Quick Sort - 255 values", 50, 100, 20);
         shuffleArray(arr, n);   
         quickSort(arr, 0, n - 1, n);
