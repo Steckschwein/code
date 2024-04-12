@@ -31,7 +31,7 @@ int main(int argc, char* argv){
   int x;
   int y;
 
-  vdp_screen(7);
+  vdp_screen(6);
   vdp_blank(0);
 
   do{

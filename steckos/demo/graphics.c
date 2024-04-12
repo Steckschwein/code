@@ -34,6 +34,7 @@ int main(int argc, char* argv){
 
   initgraph(NULL, 6, NULL);
   cleardevice();
+  setbkcolor(BLACK);
 
   maxx = getmaxx();
   maxy = getmaxy();

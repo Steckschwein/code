@@ -8,8 +8,9 @@
 
 // The standard Borland 16 colors
 #define MAXCOLORS       15
-static const enum colors { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTGRAY, DARKGRAY,\
-              LIGHTBLUE, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE
+static const enum colors { \
+      BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTGRAY, \
+      DARKGRAY, LIGHTBLUE, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE
 };
 
 // The standard fill styles
@@ -74,6 +75,9 @@ void __fastcall__ graphics_setcolor (unsigned char color);
 void __fastcall__ graphics_setbkcolor (unsigned char color);
 #define setbkcolor(color) graphics_setbkcolor(color)
 
+int __fastcall__ graphics_getbkcolor ();
+#define getbkcolor() graphics_getbkcolor()
+
 int __fastcall__ graphics_getcolor();
 #define getcolor() graphics_getcolor()
 
@@ -95,7 +99,8 @@ void __fastcall__ graphics_bar( int left, char top, int right, char bottom );
 
 #define floodfill( x, y, border ) vdp_fill(x, y, border)
 
-#define cleardevice() vdp_blank(0x0)
+void __fastcall__ graphics_cleardevice();
+#define cleardevice() graphics_cleardevice()
 
 #define line(x1,y1, x2,y2) vdp_line(x1,y1, x2,y2)
 
