@@ -12,6 +12,9 @@ int max_y;
 int max_x;
 int titlecolors[] = { DARKGRAY, LIGHTGRAY, WHITE, LIGHTGRAY, DARKGRAY, BLACK };
 
+int output[512];
+// Create temp arrays
+int L[512], R[512];
 
 // Utility function to swap tp integers
 void swap(unsigned char* p1, unsigned char* p2)
@@ -417,7 +420,6 @@ void countSort(unsigned char arr[], int n, int exp)
 {
  
     // Output array
-    int output[512];
     int i, count[10] = { 0 };
  
     // Store count of occurrences
@@ -464,6 +466,74 @@ void radixsort(unsigned char arr[], int n)
     for (exp = 1; m / exp > 0; exp *= 10)
         countSort(arr, n, exp);
 }
+
+// Merges two subarrays of arr[].
+// First subarray is arr[l..m]
+// Second subarray is arr[m+1..r]
+void merge(unsigned char arr[], int l, int m, int r)
+{
+    int i, j, k;
+    int n1 = m - l + 1;
+    int n2 = r - m;
+
+    // // Create temp arrays
+    // int L[512], R[512];
+
+    // Copy data to temp arrays L[] and R[]
+    for (i = 0; i < n1; i++)
+        L[i] = arr[l + i];
+    for (j = 0; j < n2; j++)
+        R[j] = arr[m + 1 + j];
+
+    // Merge the temp arrays back into arr[l..r
+    i = 0;
+    j = 0;
+    k = l;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        }
+        else {
+            arr[k] = R[j];
+            j++;
+        }
+        setLine(k, arr[k], WHITE);
+        k++;
+    }
+
+    // Copy the remaining elements of L[],
+    // if there are any
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+
+    // Copy the remaining elements of R[],
+    // if there are any
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
+}
+
+// l is for left index and r is right index of the
+// sub-array of arr to be sorted
+void mergeSort(unsigned char arr[], int l, int r)
+{
+    if (l < r) {
+        int m = l + (r - l) / 2;
+
+        // Sort first and second halves
+        mergeSort(arr, l, m);
+        mergeSort(arr, m + 1, r);
+
+        merge(arr, l, m, r);
+    }
+}
+
   
 
 void titleCard(char *title, int x, int y, int delay)
@@ -494,6 +564,7 @@ int main()
         max_x = getmaxx();
         cleardevice();
         n = 64;
+
 
         titleCard("Sort Demo", 90, 100, 20);
 
@@ -548,14 +619,20 @@ int main()
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-
         titleCard("Quick Sort - 255 values", 50, 100, 20);
         shuffleArray(arr, n);   
         quickSort(arr, 0, n - 1, n);
         drawArray(arr, n, GREEN);
         waitframes(50);
 
-        titleCard("Quick Sort - 512 values", 50, 100, 20);
+        titleCard("Merge Sort - 255 values", 40, 100, 20);
+        shuffleArray(arr, n);   
+        mergeSort(arr, 0, n-1);
+        drawArray(arr, n, GREEN);
+        waitframes(50);
+
+
+
 
         initgraph(NULL, 6, NULL);
         max_y = getmaxy();
@@ -563,6 +640,7 @@ int main()
         cleardevice();
         n = max_x;
 
+        titleCard("Quick Sort - 512 values", 50, 100, 20);
        
         shuffleArray(arr, n);   
         quickSort(arr, 0, n - 1, n);
@@ -578,6 +656,12 @@ int main()
         titleCard("Selection Sort - 512 values", 30, 100, 20);        
         shuffleArray(arr, n);   
         selectionSort(arr, n);
+        drawArray(arr, n, GREEN);
+        waitframes(50);
+
+        titleCard("Merge Sort - 512 values", 40, 100, 20);
+        shuffleArray(arr, n);   
+        mergeSort(arr, 0, n-1);
         drawArray(arr, n, GREEN);
         waitframes(50);
 
