@@ -486,7 +486,7 @@ int main()
     int n;
     int frame_delay = 50;
     char key;
-    while (! kbhit())
+    while (kbhit() != KEY_ESCAPE)
     {
 
         initgraph(NULL, 7, NULL);
