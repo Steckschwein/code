@@ -492,7 +492,6 @@ int main()
         max_x = getmaxx();
         cleardevice();
         n = 64;
-        n = max_x;
 
         titleCard("Sort Demo", 90, 100, 20);
 
