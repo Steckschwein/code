@@ -44,7 +44,7 @@ void setLine(int x, int val, char color)
 void drawArray(unsigned char arr[], int size, char color)
 {
 	int i;
-	for (i=0;i<=size;i++)
+	for (i=0;i<size;i++)
 	{
         setLine(i, arr[i], color);
 	}
@@ -107,7 +107,7 @@ void shuffleArray(unsigned char arr[], int size)
     for (i=0;i<size;i++)
     {
         arr[i]=random(max_y);
-        setLine(i, arr[i], WHITE);
+        setLine(i, arr[i], LIGHTGRAY);
     }
     
 }
