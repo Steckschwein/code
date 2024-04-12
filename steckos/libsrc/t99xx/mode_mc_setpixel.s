@@ -50,10 +50,10 @@ vdp_mc_set_pixel:
     sta vdp_tmp
 
     tya
-    and  #$07        ; y mod 8
-    ora  vdp_tmp        ; with x
-    sta  a_vreg        ;4 set vdp vram address low byte
-    sta  vdp_tmp        ;3 safe vram address low byte for write
+    and  #$07       ; y mod 8
+    ora  vdp_tmp    ; with x
+    sta  a_vreg     ;4 set vdp vram address low byte
+    sta  vdp_tmp    ;3 safe vram address low byte for write
 
     ; high byte vram address - div 8, result is vram address "page" $0000, $0100, ... until $05ff
     tya            ;2
@@ -65,19 +65,19 @@ vdp_mc_set_pixel:
     sta  a_vreg        ;set vdp vram address high byte
     ora #WRITE_ADDRESS | (>.LOWORD(ADDRESS_GFX_MC_PATTERN) & $3f) ;2 adjust for write
 
-    tay            ;2 safe vram high byte for write in y
+    tay             ;2 safe vram high byte for write in y
 
-    txa            ;2
+    txa             ;2
     bit #1          ;3 test color shift required, upper nibble?
     beq l1          ;2/3
 
     lda #$f0        ;2
     bra l2          ;3
-l1:    lda vdp_tmp+1        ;3
-    asl            ;2
-    asl            ;2
-    asl            ;2
-    asl            ;2
+l1: lda vdp_tmp+1   ;3
+    asl             ;2
+    asl             ;2
+    asl             ;2
+    asl             ;2
     sta vdp_tmp+1
     lda #$0f
 l2:

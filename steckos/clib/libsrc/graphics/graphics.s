@@ -69,7 +69,6 @@
 .export _graphics_cleardevice
 .proc _graphics_cleardevice
         lda _graphics_color_bk
-        jsr _vdp_setcolor
         jmp _vdp_blank
 .endproc
 

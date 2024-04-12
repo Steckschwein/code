@@ -55,7 +55,7 @@ vdp_init_reg:
 
 .ifdef V9958
       vdp_sreg 0, v_reg23  ; reset vertical scroll
-      vdp_sreg v_reg25_wait, v_reg25  ; enable V9958 /WAIT pin
+      vdp_sreg v_reg25_wait | v_reg25_cmd, v_reg25  ; enable V9958 /WAIT pin, enable CMD on lower screen modes
 .endif
 
       plp

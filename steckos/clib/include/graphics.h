@@ -102,7 +102,7 @@ void __fastcall__ graphics_bar( int left, char top, int right, char bottom );
 void __fastcall__ graphics_cleardevice();
 #define cleardevice() graphics_cleardevice()
 
-#define line(x1,y1, x2,y2) vdp_line(x1,y1, x2,y2)
+#define line(x1, y1, x2, y2) vdp_line(x1,y1, x2,y2)
 
 #define delay(ms) _delay_ms(ms)
 

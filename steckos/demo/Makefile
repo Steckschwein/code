@@ -19,9 +19,8 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		hanoi.prg \
 		win95.prg \
 		lines.prg \
-		sortdemo.prg 
-plasma:
-	(cd plasma; make)
+		sortdemo.prg
+
 clean:
 	rm -f *.prg *.s *.o *.map
 	(cd plasma ; make clean)

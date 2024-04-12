@@ -32,7 +32,7 @@ int main(int argc, char* argv){
   int maxx;
   unsigned char y;
 
-  vdp_screen(6);
+  vdp_screen(3);
   vdp_blank(0);
 
   maxx = vdp_maxx();
