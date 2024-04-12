@@ -8,21 +8,30 @@
 #include <graphics.h>
 #include <steckschwein.h>
 
+#define SORT_BUFFER_SIZE 512
+
 int max_y;
 int max_x;
 int titlecolors[] = { DARKGRAY, LIGHTGRAY, WHITE, LIGHTGRAY, DARKGRAY, BLACK };
 
-// unsigned char output[512];
+// main sort array
+unsigned char arr[SORT_BUFFER_SIZE];
+
 // Create temp arrays
-unsigned char arr_tmp1[512], arr_tmp2[512];
+unsigned char arr_tmp1[SORT_BUFFER_SIZE], arr_tmp2[SORT_BUFFER_SIZE];
 
 // Utility function to swap tp integers
+int temp;
 void swap(unsigned char* p1, unsigned char* p2)
 {
-    int temp;
     temp = *p1;
     *p1 = *p2;
     *p2 = temp;
+
+    // *p1 = *p1 ^ *p2;
+    // *p2 = *p1 ^ *p2;
+    // *p1 = *p1 ^ *p2;
+
 }
 
 void waitframes(int n)
@@ -44,7 +53,7 @@ void setLine(int x, int val, char color)
     line(x, max_y - val , x, max_y);
 
 }
-void drawArray(unsigned char arr[], int size, char color)
+void drawArray(int size, char color)
 {
 	int i;
 	for (i=0;i<size;i++)
@@ -52,8 +61,17 @@ void drawArray(unsigned char arr[], int size, char color)
         setLine(i, arr[i], color);
 	}
 }
+void shuffleArray(int size)
+{
+    int i;
+    for (i=0;i<size;i++)
+    {
+        arr[i]=random(max_y);
+        setLine(i, arr[i], LIGHTGRAY);
+    }   
+}
 
-int partition(unsigned char arr[], int low, int high)
+int partition(int low, int high)
 {
     // choose the pivot
     int pivot = arr[high];
@@ -88,35 +106,25 @@ int partition(unsigned char arr[], int low, int high)
 
 // The Quicksort function Implement
 
-void quickSort(unsigned char arr[], int low, int high, int n)
+void quickSort(int low, int high, int n)
 {
     // when low is less than high
     if (low < high) {
         // pi is the partition return index of pivot
 
-        int pi = partition(arr, low, high);
+        int pi = partition(low, high);
 
         // Recursion Call
         // smaller element than pivot goes left and
         // higher element goes right
-        quickSort(arr, low, pi - 1, n);
-        quickSort(arr, pi + 1, high, n);
+        quickSort(low, pi - 1, n);
+        quickSort(pi + 1, high, n);
     }
 }
 
-void shuffleArray(unsigned char arr[], int size)
-{
-    int i;
-    for (i=0;i<size;i++)
-    {
-        arr[i]=random(max_y);
-        setLine(i, arr[i], LIGHTGRAY);
-    }
-    
-}
 
 // An optimized version of Bubble Sort
-void bubbleSort(unsigned char arr[], int n)
+void bubbleSort(int n)
 {
 	unsigned char i, j;
 	bool swapped;
@@ -141,7 +149,7 @@ void bubbleSort(unsigned char arr[], int n)
 }
 
 // A function to sort the algorithm using gnome sort 
-void gnomeSort(unsigned char arr[], int n) 
+void gnomeSort(int n) 
 { 
 	int index = 0; 
 
@@ -161,7 +169,7 @@ void gnomeSort(unsigned char arr[], int n)
 	return; 
 } 
 
-void cocktailSort(unsigned char arr[], int n) 
+void cocktailSort(int n) 
 {
     bool swapped = true;
     int start = 0;
@@ -201,7 +209,7 @@ void cocktailSort(unsigned char arr[], int n)
 }
 
 /* function to sort arr using shellSort */
-int shellSort(unsigned char arr[], int n)
+int shellSort(int n)
 {
     int gap;
     int i,j;
@@ -239,7 +247,7 @@ int shellSort(unsigned char arr[], int n)
 }
 
 /* Function to sort an array using insertion sort*/
-void insertionSort(unsigned char arr[], int n)
+void insertionSort(int n)
 {
     int i, key, j;
     for (i = 1; i < n; i++) {
@@ -263,7 +271,7 @@ void insertionSort(unsigned char arr[], int n)
 // To heapify a subtree rooted with node i
 // which is an index in arr[].
 // n is size of heap
-void heapify(unsigned char arr[], int N, int i)
+void heapify(int N, int i)
 {
     // Find largest among root,
     // left child and right child
@@ -300,18 +308,18 @@ void heapify(unsigned char arr[], int N, int i)
 
         // Recursively heapify the affected
         // sub-tree
-        heapify(arr, N, largest);
+        heapify(N, largest);
     }
 }
 
 // Main function to do heap sort
-void heapSort(unsigned char arr[], int N)
+void heapSort(int N)
 {
     int i;
     // Build max heap
     for (i = N / 2 - 1; i >= 0; i--)
 
-        heapify(arr, N, i);
+        heapify(N, i);
 
     // Heap sort
     for (i = N - 1; i >= 0; i--) {
@@ -325,7 +333,7 @@ void heapSort(unsigned char arr[], int N)
         // Heapify root element
         // to get highest element at
         // root again
-        heapify(arr, i, 0);
+        heapify(i, 0);
     }
 }
 
@@ -341,7 +349,7 @@ int getNextGap(int gap)
 }
  
 // Function to sort a[0..n-1] using Comb Sort
-void combSort(unsigned char a[], int n)
+void combSort(int n)
 {
     // Initialize gap
     int gap = n;
@@ -365,11 +373,11 @@ void combSort(unsigned char a[], int n)
         // Compare all elements with current gap
         for (i=0; i<n-gap; i++)
         {
-            if (a[i] > a[i+gap])
+            if (arr[i] > arr[i+gap])
             {
-                swap(&a[i], &a[i+gap]);
-                setLine(i, a[i], WHITE);
-                setLine(i+gap, a[i+gap], WHITE);
+                swap(&arr[i], &arr[i+gap]);
+                setLine(i, arr[i], WHITE);
+                setLine(i+gap, arr[i+gap], WHITE);
                 
                 swapped = true;
             }
@@ -377,7 +385,7 @@ void combSort(unsigned char a[], int n)
     }
 }
 
-void selectionSort(unsigned char arr[], int n) 
+void selectionSort(int n) 
 { 
     int i, j, min_idx; 
   
@@ -403,7 +411,7 @@ void selectionSort(unsigned char arr[], int n)
 
 // A utility function to get maximum
 // value in arr[]
-int getMax(unsigned char arr[], int n)
+int getMax(int n)
 {
     int i;
     int mx = arr[0];
@@ -416,7 +424,7 @@ int getMax(unsigned char arr[], int n)
 // A function to do counting sort of arr[]
 // according to the digit
 // represented by exp.
-void countSort(unsigned char arr[], int n, int exp)
+void countSort(int n, int exp)
 {
  
     // Output array
@@ -452,25 +460,25 @@ void countSort(unsigned char arr[], int n, int exp)
  
 // The main function to that sorts arr[]
 // of size n using Radix Sort
-void radixsort(unsigned char arr[], int n)
+void radixsort(int n)
 {
     int exp;
     // Find the maximum number to
     // know number of digits
-    int m = getMax(arr, n);
+    int m = getMax(n);
     
     // Do counting sort for every digit.
     // Note that instead of passing digit
     // number, exp is passed. exp is 10^i
     // where i is current digit number
     for (exp = 1; m / exp > 0; exp *= 10)
-        countSort(arr, n, exp);
+        countSort(n, exp);
 }
 
 // Merges two subarrays of arr[].
 // First subarray is arr[l..m]
 // Second subarray is arr[m+1..r]
-void merge(unsigned char arr[], int l, int m, int r)
+void merge(int l, int m, int r)
 {
     int i, j, k;
     int n1 = m - l + 1;
@@ -521,16 +529,16 @@ void merge(unsigned char arr[], int l, int m, int r)
 
 // l is for left index and r is right index of the
 // sub-array of arr to be sorted
-void mergeSort(unsigned char arr[], int l, int r)
+void mergeSort(int l, int r)
 {
     if (l < r) {
         int m = l + (r - l) / 2;
 
         // Sort first and second halves
-        mergeSort(arr, l, m);
-        mergeSort(arr, m + 1, r);
+        mergeSort(l, m);
+        mergeSort(m + 1, r);
 
-        merge(arr, l, m, r);
+        merge(l, m, r);
     }
 }
 
@@ -551,7 +559,6 @@ void titleCard(char *title, int x, int y, int delay)
 
 int main()
 { 
-	unsigned char arr[512];
     // int n = sizeof(arr) / sizeof(arr[0]);
     int n;
     int frame_delay = 50;
@@ -569,66 +576,65 @@ int main()
         titleCard("Sort Demo", 90, 100, 20);
 
         titleCard("Bubble Sort - 64 values", 40, 100, 20);
-        shuffleArray(arr, n);   
-        bubbleSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        bubbleSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Cocktail Sort - 64 values", 30, 100, 20);
-        shuffleArray(arr, n);   
-        cocktailSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        cocktailSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Gnome Sort - 64 values", 50, 100, 20);
-        shuffleArray(arr, n);   
-        gnomeSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        gnomeSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Insertion Sort - 64 values", 30, 100, 20);        
-        shuffleArray(arr, n);   
-        insertionSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        insertionSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         n = max_x;
 
         titleCard("Comb Sort - 255 values", 50, 100, 20);
-        shuffleArray(arr, n);   
-        combSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        combSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
-
         titleCard("Heap Sort - 255 values", 50, 100, 20);
-        shuffleArray(arr, n);   
-        heapSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        heapSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Shell Sort - 255 values", 40, 100, 20);
-        shuffleArray(arr, n);   
-        shellSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        shellSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Selection Sort - 255 values", 30, 100, 20);        
-        shuffleArray(arr, n);   
-        selectionSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        selectionSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Quick Sort - 255 values", 50, 100, 20);
-        shuffleArray(arr, n);   
-        quickSort(arr, 0, n - 1, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        quickSort(0, n - 1, n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Merge Sort - 255 values", 40, 100, 20);
-        shuffleArray(arr, n);   
-        mergeSort(arr, 0, n-1);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        mergeSort(0, n-1);
+        drawArray(n, GREEN);
         waitframes(50);
 
 
@@ -642,33 +648,33 @@ int main()
 
         titleCard("Quick Sort - 512 values", 50, 100, 20);
        
-        shuffleArray(arr, n);   
-        quickSort(arr, 0, n - 1, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        quickSort(0, n - 1, n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Shell Sort - 512 values", 50, 100, 20);
-        shuffleArray(arr, n);   
-        shellSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        shellSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Selection Sort - 512 values", 30, 100, 20);        
-        shuffleArray(arr, n);   
-        selectionSort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        selectionSort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Merge Sort - 512 values", 40, 100, 20);
-        shuffleArray(arr, n);   
-        mergeSort(arr, 0, n-1);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        mergeSort(0, n-1);
+        drawArray(n, GREEN);
         waitframes(50);
 
         titleCard("Radix Sort - 512 values", 50, 100, 20);        
-        shuffleArray(arr, n);   
-        radixsort(arr, n);
-        drawArray(arr, n, GREEN);
+        shuffleArray(n);   
+        radixsort(n);
+        drawArray(n, GREEN);
         waitframes(50);
 
     }
