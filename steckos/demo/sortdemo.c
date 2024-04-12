@@ -12,9 +12,9 @@ int max_y;
 int max_x;
 int titlecolors[] = { DARKGRAY, LIGHTGRAY, WHITE, LIGHTGRAY, DARKGRAY, BLACK };
 
-int output[512];
+// unsigned char output[512];
 // Create temp arrays
-int L[512], R[512];
+unsigned char arr_tmp1[512], arr_tmp2[512];
 
 // Utility function to swap tp integers
 void swap(unsigned char* p1, unsigned char* p2)
@@ -435,7 +435,7 @@ void countSort(unsigned char arr[], int n, int exp)
  
     // Build the output array
     for (i = n - 1; i >= 0; i--) {
-        output[count[(arr[i] / exp) % 10] - 1] = arr[i];
+        arr_tmp1[count[(arr[i] / exp) % 10] - 1] = arr[i];
        
         count[(arr[i] / exp) % 10]--;
     }
@@ -445,7 +445,7 @@ void countSort(unsigned char arr[], int n, int exp)
     // numbers according to current digit
     for (i = 0; i < n; i++)
     {
-        arr[i] = output[i];
+        arr[i] = arr_tmp1[i];
         setLine(i, arr[i], WHITE);
     }
 }
@@ -481,21 +481,21 @@ void merge(unsigned char arr[], int l, int m, int r)
 
     // Copy data to temp arrays L[] and R[]
     for (i = 0; i < n1; i++)
-        L[i] = arr[l + i];
+        arr_tmp1[i] = arr[l + i];
     for (j = 0; j < n2; j++)
-        R[j] = arr[m + 1 + j];
+        arr_tmp2[j] = arr[m + 1 + j];
 
     // Merge the temp arrays back into arr[l..r
     i = 0;
     j = 0;
     k = l;
     while (i < n1 && j < n2) {
-        if (L[i] <= R[j]) {
-            arr[k] = L[i];
+        if (arr_tmp1[i] <= arr_tmp2[j]) {
+            arr[k] = arr_tmp1[i];
             i++;
         }
         else {
-            arr[k] = R[j];
+            arr[k] = arr_tmp2[j];
             j++;
         }
         setLine(k, arr[k], WHITE);
@@ -505,7 +505,7 @@ void merge(unsigned char arr[], int l, int m, int r)
     // Copy the remaining elements of L[],
     // if there are any
     while (i < n1) {
-        arr[k] = L[i];
+        arr[k] = arr_tmp1[i];
         i++;
         k++;
     }
@@ -513,7 +513,7 @@ void merge(unsigned char arr[], int l, int m, int r)
     // Copy the remaining elements of R[],
     // if there are any
     while (j < n2) {
-        arr[k] = R[j];
+        arr[k] = arr_tmp2[j];
         j++;
         k++;
     }
