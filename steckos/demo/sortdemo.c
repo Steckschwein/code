@@ -233,6 +233,30 @@ int shellSort(unsigned char arr[], int n)
     return 0;
 }
 
+/* Function to sort an array using insertion sort*/
+void insertionSort(unsigned char arr[], int n)
+{
+    int i, key, j;
+    for (i = 1; i < n; i++) {
+        key = arr[i];
+        j = i - 1;
+
+        /* Move elements of arr[0..i-1], that are
+          greater than key, to one position ahead
+          of their current position */
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            setLine(j+1, arr[j+1], WHITE);
+            setLine(j, arr[j], WHITE);
+            
+            j = j - 1;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+
+
 void titleCard(char *title, int x, int y, int delay)
 {
     int i;
@@ -261,10 +285,9 @@ int main()
         max_x = getmaxx();
         cleardevice();
         n = 64;
-
         titleCard("Sort Demo", 75, 100, 20);
 
-        titleCard("Bubble Sort - 64 values", 50, 100, 20);
+        titleCard("Bubble Sort - 64 values", 40, 100, 20);
         shuffleArray(arr, n);   
         bubbleSort(arr, n);
         drawArray(arr, n, GREEN);
@@ -275,7 +298,7 @@ int main()
             return 0;
         }
 
-        titleCard("Cocktail Sort - 64 values", 50, 100, 20);
+        titleCard("Cocktail Sort - 64 values", 30, 100, 20);
         shuffleArray(arr, n);   
         cocktailSort(arr, n);
         drawArray(arr, n, GREEN);
@@ -297,6 +320,21 @@ int main()
             closegraph();
             return 0;
         }
+
+
+
+        titleCard("Insertion Sort - 255 values", 30, 100, 20);
+        
+        shuffleArray(arr, n);   
+        insertionSort(arr, n);
+        drawArray(arr, n, GREEN);
+        waitframes(50);
+
+        if (kbhit()){
+            closegraph();
+            return 0;
+        }
+
 
         n = max_x;
         titleCard("Shell Sort - 255 values", 50, 100, 20);
