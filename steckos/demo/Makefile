@@ -19,10 +19,7 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		hanoi.prg \
 		win95.prg \
 		lines.prg \
-		bubble.prg \
-		quick.prg \
-		gnome.prg
-
+		sortdemo.prg 
 plasma:
 	(cd plasma; make)
 clean:
