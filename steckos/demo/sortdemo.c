@@ -228,6 +228,8 @@ int shellSort(unsigned char arr[], int n)
              
             //  put temp (the original a[i]) in its correct location
             arr[j] = temp;
+            setLine(j, arr[j], WHITE);
+
         }
     }
     return 0;
