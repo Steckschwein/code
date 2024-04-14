@@ -135,7 +135,7 @@ void quickSort(int low, int high, int n)
 // An optimized version of Bubble Sort
 void bubbleSort(int n)
 {
-	unsigned char i, j;
+	int i, j;
 	bool swapped;
 	for (i = 0; i < n - 1; i++) {
 		swapped = false;
@@ -581,18 +581,18 @@ void quickSortWrapper(int n)
 }
 
 static t_sortstruct lookuptable[] = {
-    { "bubble",    "Bubble Sort",       64, bubbleSort}, 
-    { "cocktail",  "Cocktail Sort",     64, cocktailSort }, 
-    { "insertion", "Insertion Sort",    64, insertionSort }, 
-    { "gnome",     "Gnome Sort",        64, gnomeSort },
-    { "comb",      "Comb Sort",         255, combSort },
-    { "selection", "Selection Sort",    255, selectionSort },
-    { "quick",     "Quick Sort",        255, quickSortWrapper },
-    { "merge",     "Merge Sort",        255, mergeSortWrapper },
-    { "radix",     "Radix Sort",        255, radixsort },
-    { "quick512",  "Quick Sort",        512, quickSortWrapper },
-    { "merge512",  "Merge Sort",        512, mergeSortWrapper },
-    { "radix512",  "Radix Sort",        512, radixsort }
+    { "bubble",    "Bubble",       64, bubbleSort}, 
+    { "cocktail",  "Cocktail",     64, cocktailSort }, 
+    { "insertion", "Insertion",    64, insertionSort }, 
+    { "gnome",     "Gnome",        64, gnomeSort },
+    { "comb",      "Comb",         255, combSort },
+    { "selection", "Selection",    255, selectionSort },
+    { "quick",     "Quick",        255, quickSortWrapper },
+    { "merge",     "Merge",        255, mergeSortWrapper },
+    { "radix",     "Radix",        255, radixsort },
+    { "quick512",  "Quick",        512, quickSortWrapper },
+    { "merge512",  "Merge",        512, mergeSortWrapper },
+    { "radix512",  "Radix",        512, radixsort }
 };
 
 #define NKEYS (sizeof(lookuptable)/sizeof(t_sortstruct))
@@ -601,7 +601,7 @@ static t_sortstruct lookuptable[] = {
 char title[50];
 void runSort(char * name, void (*ptr)(int), int n, bool wait)
 {
-        int graphmode = 7;
+        unsigned char graphmode = 7;
 
         if (n>255)
         {
@@ -613,7 +613,7 @@ void runSort(char * name, void (*ptr)(int), int n, bool wait)
         cleardevice();
 
 
-        snprintf(title, 50, "%s - %d values", name, n);
+        snprintf(title, 50, "%s Sort - %d values", name, n);
 
 
 
@@ -635,13 +635,12 @@ void loop()
     int n;
     while (kbhit() != KEY_ESCAPE)
     {
-        int i;
+        unsigned char i;
 
         initgraph(NULL, 7, NULL);
         max_y = getmaxy();
         max_x = getmaxx();
         cleardevice();
-        n = 64;
 
         titleCard("Sort Demo", 20);
 
@@ -659,7 +658,7 @@ void loop()
 
 t_sortstruct * funcfromstring(char *key)
 {
-    int i;
+    unsigned char i;
     for (i=0; i < NKEYS; i++) {
         t_sortstruct *sym = &lookuptable[i];
         if (strcmp(sym->key, key) == 0)
@@ -681,7 +680,7 @@ int main(int argc, char *argv[])
         sort = funcfromstring(argv[1]);
         if (sort == NULL)
         {
-            printf("Unknown sort '%s'. Possible values: bubble, cocktail, gnome, insert, comb, heap, shell, selection, quick, merge, radix");
+            printf("Unknown sort '%s'. Possible values: bubble, cocktail, gnome, insert, comb, heap, shell, selection, quick, merge, radix", argv[1]);
             return 1;
         }
 
@@ -699,11 +698,8 @@ int main(int argc, char *argv[])
         closegraph();
         return 0;
     }
-    if (argc <= 1)
-    {
-        loop();
-        closegraph();
-    }
+    loop();
+    closegraph();
 
     return 0;
 }
