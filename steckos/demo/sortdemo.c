@@ -1,6 +1,8 @@
 // C program for QuickSort
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <conio.h>
 
 #include <stdbool.h>
@@ -13,6 +15,12 @@
 int max_y;
 int max_x;
 int titlecolors[] = { DARKGRAY, LIGHTGRAY, WHITE, LIGHTGRAY, DARKGRAY, BLACK };
+int frame_delay = 50;
+
+typedef struct { char *key; char *name; int num; void (*func)(int); } t_sortstruct;
+
+
+    
 
 // main sort array
 unsigned char arr[SORT_BUFFER_SIZE];
@@ -40,6 +48,7 @@ void waitframes(int n)
     for (i=0;i<=n;i++)
         syncvblank();
 }
+
 void setLine(int x, int val, char color)
 {
     // syncvblank();
@@ -209,7 +218,7 @@ void cocktailSort(int n)
 }
 
 /* function to sort arr using shellSort */
-int shellSort(int n)
+void shellSort(int n)
 {
     int gap;
     int i,j;
@@ -243,7 +252,7 @@ int shellSort(int n)
 
         }
     }
-    return 0;
+    return;
 }
 
 /* Function to sort an array using insertion sort*/
@@ -543,28 +552,90 @@ void mergeSort(int l, int r)
 }
 
   
-
-void titleCard(char *title, int x, int y, int delay)
+void titleCard(char *title, int delay)
 {
     int i;
+    int x = 50;
+
+    if (strlen(title) > 23)
+    {
+        x=30;
+    }
     cleardevice();
     for (i=0; i<6; i++)
     {
         setcolor(titlecolors[i]);
-        outtextxy(x, y, title);
+        outtextxy(x, 100, title);
         waitframes(delay);
     }
 }
 
+void mergeSortWrapper(int n)
+{
+    mergeSort(0, n-1);
+}
 
-int main()
-{ 
-    // int n = sizeof(arr) / sizeof(arr[0]);
+void quickSortWrapper(int n)
+{
+    quickSort(0, n - 1, n);
+}
+
+static t_sortstruct lookuptable[] = {
+    { "bubble",    "Bubble Sort",       64, bubbleSort}, 
+    { "cocktail",  "Cocktail Sort",     64, cocktailSort }, 
+    { "insertion", "Insertion Sort",    64, insertionSort }, 
+    { "gnome",     "Gnome Sort",        64, gnomeSort },
+    { "comb",      "Comb Sort",         255, combSort },
+    { "selection", "Selection Sort",    255, selectionSort },
+    { "quick",     "Quick Sort",        255, quickSortWrapper },
+    { "merge",     "Merge Sort",        255, mergeSortWrapper },
+    { "radix",     "Radix Sort",        255, radixsort },
+    { "quick512",  "Quick Sort",        512, quickSortWrapper },
+    { "merge512",  "Merge Sort",        512, mergeSortWrapper },
+    { "radix512",  "Radix Sort",        512, radixsort }
+};
+
+#define NKEYS (sizeof(lookuptable)/sizeof(t_sortstruct))
+
+
+char title[50];
+void runSort(char * name, void (*ptr)(int), int n, bool wait)
+{
+        int graphmode = 7;
+
+        if (n>255)
+        {
+            graphmode = 6;
+        }
+        initgraph(NULL, graphmode, NULL);
+        max_y = getmaxy();
+        max_x = getmaxx();
+        cleardevice();
+
+
+        snprintf(title, 50, "%s - %d values", name, n);
+
+
+
+        titleCard(title, 20);
+        shuffleArray(n);   
+        (*ptr)(n);
+
+        drawArray(n, GREEN);
+        if (wait)
+        {
+            getch();
+        }
+        // closegraph();
+}
+
+void loop()
+{
+    // char key;
     int n;
-    int frame_delay = 50;
-    char key;
     while (kbhit() != KEY_ESCAPE)
     {
+        int i;
 
         initgraph(NULL, 7, NULL);
         max_y = getmaxy();
@@ -572,114 +643,67 @@ int main()
         cleardevice();
         n = 64;
 
+        titleCard("Sort Demo", 20);
 
-        titleCard("Sort Demo", 90, 100, 20);
-
-        titleCard("Bubble Sort - 64 values", 40, 100, 20);
-        shuffleArray(n);   
-        bubbleSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
-        titleCard("Cocktail Sort - 64 values", 30, 100, 20);
-        shuffleArray(n);   
-        cocktailSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
-        titleCard("Gnome Sort - 64 values", 50, 100, 20);
-        shuffleArray(n);   
-        gnomeSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
-        titleCard("Insertion Sort - 64 values", 30, 100, 20);        
-        shuffleArray(n);   
-        insertionSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
-        n = max_x;
-
-        titleCard("Comb Sort - 255 values", 50, 100, 20);
-        shuffleArray(n);   
-        combSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
-        titleCard("Heap Sort - 255 values", 50, 100, 20);
-        shuffleArray(n);   
-        heapSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
-        titleCard("Shell Sort - 255 values", 40, 100, 20);
-        shuffleArray(n);   
-        shellSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
-        titleCard("Selection Sort - 255 values", 30, 100, 20);        
-        shuffleArray(n);   
-        selectionSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
-        titleCard("Quick Sort - 255 values", 50, 100, 20);
-        shuffleArray(n);   
-        quickSort(0, n - 1, n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
-        titleCard("Merge Sort - 255 values", 40, 100, 20);
-        shuffleArray(n);   
-        mergeSort(0, n-1);
-        drawArray(n, GREEN);
-        waitframes(50);
+        for (i=0;i<NKEYS;i++)
+        {
+            printf("%s\n", lookuptable[i].name);
+            runSort(lookuptable[i].name, lookuptable[i].func, lookuptable[i].num, false);
+            waitframes(50);
+        }
+    }
+ 
+}
 
 
 
+t_sortstruct * funcfromstring(char *key)
+{
+    int i;
+    for (i=0; i < NKEYS; i++) {
+        t_sortstruct *sym = &lookuptable[i];
+        if (strcmp(sym->key, key) == 0)
+        {
+            return sym;
+        }
+    }
+    return NULL;
+}
+int main(int argc, char *argv[])
+{ 
+    int n;
+    t_sortstruct * sort;
 
-        initgraph(NULL, 6, NULL);
-        max_y = getmaxy();
-        max_x = getmaxx();
-        cleardevice();
-        n = max_x;
 
-        titleCard("Quick Sort - 512 values", 50, 100, 20);
-       
-        shuffleArray(n);   
-        quickSort(0, n - 1, n);
-        drawArray(n, GREEN);
-        waitframes(50);
 
-        titleCard("Shell Sort - 512 values", 50, 100, 20);
-        shuffleArray(n);   
-        shellSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
+    if (argc >= 2)
+    {
+        sort = funcfromstring(argv[1]);
+        if (sort == NULL)
+        {
+            printf("Unknown sort '%s'. Possible values: bubble, cocktail, gnome, insert, comb, heap, shell, selection, quick, merge, radix");
+            return 1;
+        }
 
-        titleCard("Selection Sort - 512 values", 30, 100, 20);        
-        shuffleArray(n);   
-        selectionSort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
+        if (argc >= 3)
+        {
+            n = atoi(argv[2]);
+        }
+        else
+        {
+            n = sort->num;
 
-        titleCard("Merge Sort - 512 values", 40, 100, 20);
-        shuffleArray(n);   
-        mergeSort(0, n-1);
-        drawArray(n, GREEN);
-        waitframes(50);
+        }
 
-        titleCard("Radix Sort - 512 values", 50, 100, 20);        
-        shuffleArray(n);   
-        radixsort(n);
-        drawArray(n, GREEN);
-        waitframes(50);
-
+        runSort(sort->name, sort->func, n, true);
+        closegraph();
+        return 0;
+    }
+    if (argc <= 1)
+    {
+        loop();
+        closegraph();
     }
 
-    closegraph();
-            
     return 0;
 }
