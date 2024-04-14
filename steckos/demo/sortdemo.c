@@ -687,6 +687,11 @@ int main(int argc, char *argv[])
         if (argc >= 3)
         {
             n = atoi(argv[2]);
+            if (n > 512)
+            {
+                printf("Too many values.\n");
+                return 1;
+            }
         }
         else
         {
