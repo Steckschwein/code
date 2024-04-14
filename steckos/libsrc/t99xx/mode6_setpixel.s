@@ -34,16 +34,16 @@
 ;@in: Y - y coordinate [0..bf]
 ;@in: A - color [0..f] and bit 7 MSB x coordinate
 vdp_mode6_set_pixel:
-    beq vdp_gfx6_set_pixel_e  ; 0 - not set, leave blank
-;    sta tmp1          ; otherwise go on and set pixel
-    ; calculate low byte vram adress
+    php
+    sei
+
     txa            ;2
     and  #$f8
     sta  vdp_tmp
     tya
     and  #$07
     ora  vdp_tmp
-    sta  a_vreg  ;4 set vdp vram address low byte
+    sta  a_vreg   ;4 set vdp vram address low byte
     sta  vdp_tmp  ;3 safe vram low byte
 
     ; high byte vram address - div 8, result is vram address "page" $0000, $0100, ...
@@ -72,7 +72,8 @@ vdp_mode6_set_pixel:
     sta  a_vreg
     vdp_wait_l
     stx a_vram  ;set vdp vram address high byte
-vdp_gfx6_set_pixel_e:
+
+    plp
     rts
 bitmask:
   .byte $80,$40,$20,$10,$08,$04,$02,$01
