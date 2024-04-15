@@ -555,12 +555,10 @@ void mergeSort(int l, int r)
 void titleCard(char *title, int delay)
 {
     int i;
-    int x = 50;
+   
+    int x = (int)(255 - strlen(title) * 8) / 2;
 
-    if (strlen(title) > 23)
-    {
-        x=30;
-    }
+
     cleardevice();
     for (i=0; i<6; i++)
     {
