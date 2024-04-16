@@ -11,6 +11,7 @@
     .export io_exit
 
 .code
+
 io_init:
         lda #$ff  ; output port a
         sta CIA1_DDRA
@@ -42,9 +43,6 @@ io_exit:
     rts
 
 io_isr:
-;    lda VIC_IRR   ; vic irq ? ($d019)
- ;   bpl @rts
-
     lda VIC_HLINE
     cmp #HLine_Border
     beq @io_isr_border
@@ -69,7 +67,7 @@ io_isr:
     ora #$08
     sta VIC_CTRL1
 
-    lda Color_Bg
+    lda #COLOR_BLACK
     sta VIC_BORDERCOLOR
     sta VIC_BG_COLOR0
 
@@ -120,7 +118,7 @@ io_isr:
             iny
             cpy #<(HLine_Border+1+8)
             bne @char
-            lda Color_Bg
+            lda #Color_Bg
             ldx #$ff                 ; #$ff (black) ghost byte
 :           cpy VIC_HLINE
             bne :-
@@ -166,6 +164,7 @@ io_player_direction:
 
 io_getkey:
             ;map c64 keys to ascii
+            lda #0
             rts
 
 io_detect_joystick:

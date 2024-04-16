@@ -1,21 +1,20 @@
 ;i/o
-    .include "pacman.sts.inc"
+.include "pacman.sts.inc"
 
-    .autoimport
-    .export io_init
-    .export io_detect_joystick
-    .export io_joystick_read
-    .export io_exit
-    .export io_getkey
-    .export io_player_direction
-    .export io_isr
-    .export io_irq_on
+.export io_init
+.export io_detect_joystick
+.export io_joystick_read
+.export io_exit
+.export io_getkey
+.export io_player_direction
+.export io_isr
+.export io_irq_on
 
-    .import joystick_on
-    .import joystick_detect
-    .import joystick_read
+.autoimport
 
-appstart $1000  ;
+appstart $1000
+
+.code
 
 io_init:
     jsr joystick_on
@@ -31,7 +30,7 @@ io_isr:
       rts
 
 io_irq_on:  ; nothing todo here on sts hw
-    rts
+      rts
 
 io_detect_joystick:
       jsr joystick_detect

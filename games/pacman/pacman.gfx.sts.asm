@@ -7,24 +7,11 @@
 .export gfx_bgcolor
 .export gfx_bordercolor
 .export gfx_sprites_off
-.export gfx_vblank
 .export gfx_isr
 .export gfx_charout
 .export gfx_update
 .export gfx_display_maze
 .export gfx_pause
-
-.export Color_Bg
-.export Color_Red
-.export Color_Pink
-.export Color_Cyan
-.export Color_Light_Blue
-.export Color_Orange
-.export Color_Yellow
-.export Color_Dark_Cyan
-.export Color_Blue
-.export Color_Gray
-.export Color_Dark_Pink
 
 .autoimport
 
@@ -39,14 +26,11 @@
 
 .zeropage
   p_vram: .res 3  ; 24Bit
+  p_gfx:  .res 2
   r1: .res 1
   r2: .res 1
 
 .code
-gfx_vblank:
-    lda a_vreg
-    sta vdp_sreg_0
-    rts
 
 gfx_mode_off:
     vdp_sreg 0, v_reg9    ;
@@ -102,9 +86,9 @@ gfx_init:
           ;    jsr vdp_memcpy
 
           ;    vdp_vram_w VRAM_COLOR
-              lda #<tiles_colors
-              ldy #>tiles_colors
-              ldx #$08
+;              lda #<tiles_colors
+ ;             ldy #>tiles_colors
+  ;            ldx #$08
           ;    jsr vdp_memcpy
 
               lda #SPRITE_OFF+$08
@@ -144,7 +128,7 @@ gfx_init:
 
 gfx_blank_screen:
               sei
-              ldy Color_Bg
+              ldy #Color_Bg
               jsr vdp_mode4_blank
               vdp_wait_l
 gfx_sprites_off:
@@ -194,36 +178,33 @@ _gfx_test_sp_y:  ;
     rts
 
 gfx_update:
-    ldy #0
-    ldx #ACTOR_BLINKY
-    jsr _gfx_update_sprite_tab_2x
-    ldx #ACTOR_INKY
-    jsr _gfx_update_sprite_tab_2x
-    ldx #ACTOR_PINKY
-    jsr _gfx_update_sprite_tab_2x
-    ldx #ACTOR_CLYDE
-    jsr _gfx_update_sprite_tab_2x
-    ldx #ACTOR_PACMAN
-    jsr _gfx_update_sprite_tab
+              ldy #0
+              ldx #ACTOR_BLINKY
+              jsr _gfx_update_sprite_tab_2x
+              ldx #ACTOR_INKY
+              jsr _gfx_update_sprite_tab_2x
+              ldx #ACTOR_PINKY
+              jsr _gfx_update_sprite_tab_2x
+              ldx #ACTOR_CLYDE
+              jsr _gfx_update_sprite_tab_2x
+              ldx #ACTOR_PACMAN
+              jsr _gfx_update_sprite_tab
 
-    jsr _gfx_is_multiplex
-    bcs @update_sprites
-    ldx #7*4  ;y sprite_tab offset clyde eyes
-    lda game_state+GameState::frames
-    and #$01
-    beq :+
-    ldx #5*4  ;y sprite_tab offset pinky eyes
-:    lda #gfx_Sprite_Off-1      ; c=0 - must multiplex, sprites scanline conflict +/-16px
-    sta sprite_tab_attr,x
+              jsr _gfx_is_multiplex
+              bcs @update_sprites
+              ldx #7*4  ;y sprite_tab offset clyde eyes
+              lda game_state+GameState::frames
+              and #$01
+              beq :+
+              ldx #5*4  ;y sprite_tab offset pinky eyes
+:             lda #gfx_Sprite_Off-1      ; c=0 - must multiplex, sprites scanline conflict +/-16px
+              sta sprite_tab_attr,x
 @update_sprites:
-    vdp_vram_w VRAM_SPRITE_ATTR
-    lda #<sprite_tab_attr
-    ldy #>sprite_tab_attr
-    ldx #9*4+1
-    jsr vdp_memcpys
-
-    lda vdp_sreg_0
-    rts
+              vdp_vram_w VRAM_SPRITE_ATTR
+              lda #<sprite_tab_attr
+              ldy #>sprite_tab_attr
+              ldx #9*4+1
+              jmp vdp_memcpys
 
 _gfx_update_sprite_tab_2x:
     lda #$02
@@ -355,12 +336,84 @@ m3_gfx_vram_xy:
               sta a_vreg
               rts
 
+.export gfx_ghost_icon
+gfx_ghost_icon:
+              rts
+              lda text_color
+              sta @palette+1
+              jsr gfx_vram_xy
+              setPtr ghost_2bpp, p_gfx
+
+              ldy #0
+              lda (p_gfx),y
+              iny
+              lda (p_gfx),y
+              iny
+
+@rows:        lda (p_gfx),y
+              ldy #2
+              stz r1
+@cols:        asl
+              rol
+              pha
+              rol
+              and #$03
+              tax
+              lda r1
+              ora @palette,x
+              asl r1
+              asl r1
+              pla
+              dey
+              bpl @cols
+
+              dec r2
+              beq @exit
+
+              inc p_gfx
+              bcc :+
+              inc p_gfx+1
+              clc
+
+:             lda p_vram ; vram addr Y +1 scanline
+              adc #$80
+              sta p_vram
+              bcc :+
+              inc p_vram+1
+:             jsr gfx_vram_addr
+              bra @rows
+
+@exit:        rts
+
+@palette: ; 4 color palette
+  .byte 0,0,$e,$f
+
+
 gfx_charout:
+              ;stp
               sei
               phx
               phy
               pha
+
               bgcolor Color_Cyan
+
+              jsr gfx_vram_xy
+
+              pla               ; pointer to charset
+              stz p_gfx+1
+              asl ; char * 8
+              rol p_gfx+1
+              asl
+              rol p_gfx+1
+              asl
+              rol p_gfx+1
+              clc
+              adc #<tiles
+              sta p_gfx
+              lda #>tiles
+              adc p_gfx+1
+              sta p_gfx+1
 
               lda text_color
               asl
@@ -370,27 +423,9 @@ gfx_charout:
               ora text_color
               sta r1            ; prepare "pen"
 
-              jsr gfx_vram_xy
-
-              pla               ; pointer to charset
-              stz p_tmp+1
-              asl ; char * 8
-              rol p_tmp+1
-              asl
-              rol p_tmp+1
-              asl
-              rol p_tmp+1
-              clc
-              adc #<tiles
-              sta p_tmp
-              lda #>tiles
-              adc p_tmp+1
-              sta p_tmp+1
-
               lda #8
               sta r2
-
-@rows:        lda (p_tmp)
+@rows:        lda (p_gfx)
               ldy #3
 @cols:        vdp_wait_l 20
               asl
@@ -409,12 +444,12 @@ gfx_charout:
               dec r2
               beq @exit
 
-              inc p_tmp
-              bcc :+
-              inc p_tmp+1
+              inc p_gfx
+              bne :+
+              inc p_gfx+1
               clc
 
-:             lda p_vram ; vram addr Y +1 scanline
+:             lda p_vram ; vram addr Y +1 row (scanline)
               adc #$80
               sta p_vram
               bcc :+
@@ -471,18 +506,6 @@ gfx_Sprite_Adjust_Y=8
     .byte 8
 gfx_Sprite_Off=SPRITE_OFF+$08 ; +8, 212 line mode
 
-Color_Bg:         .byte VDP_Color_Bg
-Color_Red:        .byte VDP_Color_Red
-Color_Pink:       .byte VDP_Color_Pink
-Color_Cyan:       .byte VDP_Color_Cyan
-Color_Light_Blue: .byte VDP_Color_Light_Blue
-Color_Orange:     .byte VDP_Color_Orange
-Color_Yellow:     .byte VDP_Color_Yellow
-Color_Dark_Pink:  .byte VDP_Color_Dark_Pink
-Color_Dark_Cyan:  .byte VDP_Color_Dark_Cyan
-Color_Blue:       .byte VDP_Color_Blue
-Color_Gray:       .byte VDP_Color_Gray
-
 pacman_palette:
   vdp_pal 0,0,0         ;0
   vdp_pal $ff,0,0       ;1 "shadow", "blinky" red
@@ -499,12 +522,12 @@ pacman_palette:
   vdp_pal 0,$ff,0       ;c green
   vdp_pal $47,$b8,$ae   ;d dark cyan
   vdp_pal $21,$21,$ff   ;e blue => ghosts "scared", ghost pupil
-  vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes
+  vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes, text
 
 tiles:
     .include "pacman.tiles.rot.inc"
-tiles_colors:
-    .include "pacman.tiles.colors.inc"
+;tiles_colors:
+;    .include "pacman.tiles.colors.inc"
 sprite_patterns:
     .include "pacman.ghosts.res"
     .include "pacman.pacman.res"
@@ -521,8 +544,10 @@ shapes:
     .byte $0a*4,$0a*4,$04*4,$04*4+4 ;u  10
     .byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  11
 
+ghost_2bpp:
+  .include "pacman.ghost.2bpp.res"
 
 .bss
-    vdp_sreg_0:         .res 1  ; S#0 of the VDP at v-blank time
     sprite_tab_attr:    .res 9*4 ;9 sprites, 4 byte per entry +1 y of sprite 10
     sprite_tab_attr_end:
+    bitmap_pal: .res 4

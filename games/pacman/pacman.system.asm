@@ -1,7 +1,8 @@
-    .include "pacman.inc"
+.include "pacman.inc"
 
 .export out_digits,out_digit
 .export out_hex_digit,out_hex_digits
+.export out_text_color
 .export out_text
 .export frame_isr
 .export sys_crs_x
@@ -14,6 +15,7 @@
     sys_crs_y: .res 1
 
 .code
+
 frame_isr:
     push_axy
 
@@ -21,6 +23,7 @@ frame_isr:
     bpl @exit
 
     bgcolor Color_Yellow
+
     dec game_state+GameState::frames
 
 @exit:
@@ -50,56 +53,60 @@ out_hex_digit:
     rts
 
 out_digits:
-    pha
-    lsr
-    lsr
-    lsr
-    lsr
-    jsr _od
-    pla
-out_digit:
-    and #$0f
-_od:
-    ora #'0'
-charout:
-    jsr gfx_charout
-    dec sys_crs_y
-    rts
+              pha
+              lsr
+              lsr
+              lsr
+              lsr
+              jsr out_digit0
+              pla
+out_digit:    and #$0f
+out_digit0:   ora #'0'
+charout:      jsr gfx_charout
+              dec sys_crs_y
+              rts
 
-out_text:
-    ldy #0
-    lda (p_text),y
-    sta sys_crs_x
-    iny
-    lda (p_text),y
-    sta sys_crs_y
-    iny
-@l1:
-    lda (p_text),y
-    beq @rts
-    cmp #WAIT
-    beq @wait
-    cmp #WAIT2
-    bne @out
-    jsr wait
-@wait:
-    jsr wait
-    jmp @next  ; TODO improve code
-@out:
-    jsr charout
-@next:
-    iny
-    bne @l1
-@rts:
-    rts
+out_text_color:
+              sta text_color
+out_text:     jsr @next_char
+              sta sys_crs_x
+              jsr @next_char
+              sta sys_crs_y
+@next:        jsr @next_char
+              beq @rts
+              cmp #0
+              beq @rts
+              cmp #TXT_CRS_XY
+              beq out_text
+              cmp #TXT_COLOR
+              bne @ghost
+              jsr @next_char
+              sta text_color
+              jmp @next
+@ghost:       cmp #TXT_GHOST
+              bne @is_wait
+              jsr gfx_ghost_icon
+              jmp @next
+@is_wait:     cmp #TXT_WAIT
+              beq @wait
+              cmp #TXT_WAIT2
+              bne @out
+              jsr wait
+@wait:        jsr wait
+              jmp @next
+@out:         jsr charout
+              jmp @next
+@next_char:   ldy #0
+              lda (p_text),y
+              inc p_text
+              bne @rts
+              inc p_text+1
+@rts:         rts
 
 wait:
-    lda game_state+GameState::frames
-    and #FRAMES_DELAY
-    bne wait
-    dec game_state+GameState::frames
-    rts
+              lda game_state+GameState::frames
+              and #FRAMES_DELAY
+              bne wait
+              dec game_state+GameState::frames
+              rts
 
-.data
-
-.bss

@@ -21,6 +21,12 @@
 -- tunnel zone
 - pacman sprint - speed to original differs, so add some px if contiguous move to a direction
 
+
+notes:
+  solve: https://www.youtube.com/watch?v=Bin0vu8Hp0g
+  intermission: https://www.youtube.com/watch?v=v8BT43ZWSTY
+
+
 ---------------------------------------------------
 | pacman (6510)                                    |
 ----------------------------------------------------

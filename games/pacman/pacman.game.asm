@@ -9,8 +9,7 @@
 
 game:
     sei
-    setIRQ game_isr, _save_irq
-;    jsr gfx_hires_off
+    setIRQ game_isr, save_irq
     cli
 
 game_reset:
@@ -40,7 +39,7 @@ game_reset:
 
     jsr sound_init
 
-    restoreIRQ _save_irq
+    restoreIRQ save_irq
     rts
 
 game_isr:
@@ -281,20 +280,20 @@ actor_update_shape:
     rts
 
 pacman_collect:
-    lda actors+actor::xpos,x
-    ldy actors+actor::ypos,x
-    jsr lda_maze_ptr_ay
-    cmp #Char_Food
-    bne :+
-    lda #Points_Food
-    jmp erase_and_score
-:      cmp #Char_Superfood
-    beq @collect_superfood
-    cmp #Char_Superfood-1
-    bne @rts
+        lda actors+actor::xpos,x
+        ldy actors+actor::ypos,x
+        jsr lda_maze_ptr_ay
+        cmp #Char_Food
+        bne :+
+        lda #Points_Food
+        jmp erase_and_score
+:       cmp #Char_Superfood
+        beq @collect_superfood
+        cmp #Char_Superfood-1
+        bne @rts
 @collect_superfood:
-    lda #Points_Superfood
-    jmp erase_and_score
+        lda #Points_Superfood
+        jmp erase_and_score
 @rts: rts
 
 ;  A - points
@@ -418,7 +417,7 @@ debug:
     sta sys_crs_x
     lda #0
     sta sys_crs_y
-    lda Color_Text
+    lda #Color_Text
     sta text_color
     ldx #ACTOR_PACMAN
     lda actors+actor::xpos,x
@@ -578,7 +577,7 @@ draw_highscore:
 draw_score:
     stx sys_crs_x
     sty sys_crs_y
-    lda Color_Text
+    lda #Color_Text
     sta text_color
     ldy #0
 @skip_zeros:
@@ -619,20 +618,20 @@ animate_screen:
     and #$07
     bne @rts
 ; food
-    lda Color_Food
-    sta text_color
-    ldx #3
+      lda #Color_Food
+      sta text_color
+      ldx #3
 @l1:  lda superfood_x,x
-    ldy superfood_y,x
-    sta sys_crs_x
-    sty sys_crs_y
-    jsr lda_maze_ptr_ay
-    cmp #Char_Blank ; eaten?
-    beq @next
-    eor #$08       ; toggle Char_Superfood / Char_Superfood_Blank
-    ldy #0
-    sta (p_maze),y
-    jsr gfx_charout
+      ldy superfood_y,x
+      sta sys_crs_x
+      sty sys_crs_y
+      jsr lda_maze_ptr_ay
+      cmp #Char_Blank ; eaten?
+      beq @next
+      eor #$08       ; toggle Char_Superfood / Char_Superfood_Blank
+      ldy #0
+      sta (p_maze),y
+      jsr gfx_charout
 @next:
     dex
     bpl @l1
@@ -782,8 +781,6 @@ actor_strategy:
     rts ; TODO FIXME
 ;    jmp ai_ghost
 
-_save_irq:  .res 2
-
 .data
 maze:
   .include "pacman.maze.inc"
@@ -827,8 +824,9 @@ _delete_message_2:
     .export actors
     .import __BSS_RUN__,__BSS_SIZE__
 .bss
-points:          .res 4
-input_direction:  .res 1
-keyboard_input:  .res 1
-actors:         .res 5*.sizeof(actor)
-game_maze=((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end which is __BSS_SIZE__ and align $100
+  save_irq:  .res 2
+  points:          .res 4
+  input_direction:  .res 1
+  keyboard_input:  .res 1
+  actors:         .res 5*.sizeof(actor)
+  game_maze=((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end which is __BSS_SIZE__ and align $100

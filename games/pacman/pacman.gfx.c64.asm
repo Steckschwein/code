@@ -6,7 +6,6 @@
     .export gfx_sprites_off
     .export gfx_bgcolor
     .export gfx_bordercolor
-    .export gfx_vblank
 
     .export gfx_charout
     .export gfx_rotate_pal
@@ -15,22 +14,11 @@
     .export gfx_hires_off
     .export gfx_pause
     .export gfx_Sprite_Off
+    .export gfx_colors
 
-    .export Color_Bg
-    .export Color_Red
-    .export Color_Pink
-    .export Color_Cyan
-    .export Color_Light_Blue
-    .export Color_Orange
-    .export Color_Yellow
-    .export Color_Dark_Cyan
-    .export Color_Blue
-    .export Color_Gray
-    .export Color_Dark_Pink
+    .autoimport
 
-    .import game_state
-
-    .import sys_crs_x,sys_crs_y
+    .importzp sys_crs_x,sys_crs_y
 
     .include "pacman.c64.inc"
 
@@ -66,37 +54,41 @@ gfx_mode_on:
     sta VIC_SPR_ENA
     lda #VIC_SPR_MCOLOR_DEFAULT
     sta VIC_SPR_MCOLOR
-    lda Color_Gray
+    ldx #Color_Gray
+    lda gfx_colors,x
     sta VIC_SPR_MCOLOR0
-    lda Color_Blue
+    ldx #Color_Blue
+    lda gfx_colors,x
     sta VIC_SPR_MCOLOR1
 
 gfx_rotate_pal:
     rts
 
-gfx_vblank:
-    rts
-
 gfx_init:
     lda #$61    ; pattern open border
     sta $3fff  ; last byte bank 0 - we open the border
-    lda Color_Bg
+    lda #Color_Bg
     sta VIC_BORDERCOLOR
     sta VIC_BG_COLOR0
     ldx #$0f
     lda #0
-:    sta VIC_SPR0_X,x
+:   sta VIC_SPR0_X,x
     dex
     bpl :-
-    lda Color_Blinky
+    ldx #Color_Blinky
+    lda gfx_colors,x
     sta VIC_SPR0_COLOR
-    lda Color_Pinky
+    ldx #Color_Pinky
+    lda gfx_colors,x
     sta VIC_SPR2_COLOR
-    lda Color_Inky
+    ldx #Color_Inky
+    lda gfx_colors,x
     sta VIC_SPR4_COLOR
-    lda Color_Clyde
+    ldx #Color_Clyde
+    lda gfx_colors,x
     sta VIC_SPR6_COLOR
-    lda Color_Pacman
+    ldx #Color_Pacman
+    lda gfx_colors,x
     sta VIC_SPR7_COLOR
 
 ;gfx_init_pal:
@@ -279,24 +271,24 @@ _gfx_setcolor:
     sta gfx_tmp
     cmp #Char_Food
     bne @s_food
-    lda Color_Food
+    lda #Color_Food
     bne @color
 @s_food:
     cmp #Char_Superfood
     bne @text
-    lda Color_Food
+    lda #Color_Food
     bne @color
 @text:
     cmp #Char_Bg
     bne @color_border
-    lda Color_Pink
+    lda #Color_Pink
     bne @color
 @color_border:
     bcs @color_bg
-    lda Color_Text
+    lda #Color_Text
     bne @color
 @color_bg:
-    lda Color_Border
+    lda #Color_Border
 @color:
     sta text_color
     lda gfx_tmp
@@ -329,6 +321,11 @@ _gfx_memcpy:
     inc p_video+1
     dex
     bne :-
+    rts
+
+.export gfx_ghost_icon
+gfx_ghost_icon:
+
     rts
 
 gfx_charout:
@@ -364,7 +361,8 @@ l_add:
     pla
     ldy #0
     sta (p_video),y
-    lda text_color
+    ldx text_color
+    lda gfx_colors,x
     sta (p_tmp),y
     ldy gfx_tmp
     rts
@@ -372,9 +370,13 @@ l_add:
 gfx_hires_off:  ;?!?
     rts
 gfx_bordercolor:
+    tax
+    lda gfx_colors,x
     sta VIC_BORDERCOLOR
     rts
 gfx_bgcolor:
+    tax
+    lda gfx_colors,x
     sta VIC_BG_COLOR0
     rts
 
@@ -407,17 +409,24 @@ sprite_patterns:
 tiles:
     .include "pacman.tiles.rot.inc"
 
-Color_Bg:           .byte COLOR_BLACK
-Color_Red:          .byte COLOR_RED
-Color_Pink:         .byte COLOR_VIOLET
-Color_Cyan:         .byte COLOR_CYAN
-Color_Light_Blue:   .byte COLOR_LIGHTBLUE
-Color_Orange:       .byte COLOR_ORANGE
-Color_Yellow:       .byte COLOR_YELLOW
-Color_Dark_Cyan:    .byte COLOR_CYAN
-Color_Blue:         .byte COLOR_BLUE
-Color_Gray:         .byte COLOR_GRAY3
-Color_Dark_Pink:    .byte COLOR_LIGHTRED
+gfx_colors:  ; mapping between pacman original color number 0..f and c64 color
+.byte COLOR_BLACK
+.byte COLOR_RED       ;1 "shadow", "blinky" red
+.byte COLOR_BROWN     ;2 Orange top, cherry stem
+.byte COLOR_VIOLET    ;3 "speedy", "pinky" pink
+.byte COLOR_BLACK
+.byte COLOR_CYAN      ;5 "bashful", "inky" cyan
+.byte COLOR_LIGHTBLUE
+.byte COLOR_ORANGE    ;7 "pokey", "Clyde" "orange"
+.byte COLOR_BLACK
+.byte COLOR_YELLOW    ;9 "yellow", "pacman"
+.byte COLOR_BLACK
+.byte COLOR_LIGHTRED  ;b dark pink "food"
+.byte COLOR_GREEN
+.byte COLOR_CYAN      ;
+.byte COLOR_BLUE      ; e blue => ghosts "scared", ghost pupil
+.byte COLOR_GRAY3     ; f gray => ghosts "scared", ghost eyes
+
 
 .bss
 mx_tab_ct: .res 1 ; multiplex counter

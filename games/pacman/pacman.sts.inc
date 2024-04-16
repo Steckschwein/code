@@ -1,13 +1,8 @@
-      .include "common.inc"
-      .include "kernel_jumptable.inc"
-      .include "joystick.inc"
-      .include "keyboard.inc"
-      .include "vdp.inc"
-      .include "appstart.inc"
-      .include "ym3812.inc"
-
-      .include "pacman.inc"
-      .setcpu "65c02"
+.include "joystick.inc"
+.include "vdp.inc"
+.include "ym3812.inc"
+.include "pacman.inc"
+.include "steckos.inc"
 
 VDP_Color_Bg          = $00
 VDP_Color_Red         = $01

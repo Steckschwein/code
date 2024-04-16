@@ -1,10 +1,10 @@
 .include "pacman.inc"
 
 .export game_state
+.exportzp p_maze, p_video, p_sound, p_text, p_game
 
 .autoimport
 
-.exportzp p_maze, p_video, p_sound, p_text, p_game
 
 .zeropage
   p_video:  .res 2
@@ -36,7 +36,7 @@ main:
     jsr gfx_mode_on
 
     jsr io_irq_on
-    setIRQ frame_isr, _save_irq
+    setIRQ frame_isr, save_irq
 
     cli
 
@@ -53,7 +53,7 @@ main:
 @exit:
     jsr gfx_mode_off
 
-    restoreIRQ _save_irq
+    restoreIRQ save_irq
 
     jmp io_exit
 
@@ -76,6 +76,6 @@ init:
 .endproc
 
 .bss
-  _save_irq:  .res 2, 0
+  save_irq:  .res 2
   game_state:
     .tag GameState

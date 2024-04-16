@@ -14,7 +14,7 @@ OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.ai.o pacman.game.o pacman.syst
 
 CA65FLAGS_STS=-D__STECKSCHWEIN__ -I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel $(DEBUG)
 OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.sts.o pacman.sound.sts.o
-LIBS_STS=../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a
+LIBS_STS=$(LIBS) ../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a
 LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map -Ln pacman.lbl --dbgfile pacman.dbg
 
 CA65FLAGS_C64=-t c64 -I $(CC65_HOME)/asminc $(DEBUG)
@@ -30,6 +30,7 @@ RESOURCES_C64=\
 RESOURCES=\
   pacman.ghosts.res \
   pacman.pacman.res \
+	pacman.ghost.2bpp.res \
   pacman.tiles.rot.inc \
   pacman.tiles.colors.inc
 
@@ -50,12 +51,16 @@ clean:
 %.res: %.xpm
 	python3 ../utils/xpm_ca65_16bit.py $< > $@
 
+%.2bpp.res: %.2bpp.xpm
+	python3 ../utils/xpm_ca65_2bpp.py $< > $@
+
+
 pacman.gfx.sts.o: $(RESOURCES)
 pacman.gfx.c64.o: $(RESOURCES_C64)
 
 pacman.game.o: pacman.maze.inc
 
-%.o: %.asm ../../steckos/asminc/*.inc pacman.inc
+%.o: %.asm pacman.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
 %.sts.o: %.sts.asm ../../steckos/asminc/*.inc pacman.inc pacman.sts.inc
@@ -78,7 +83,7 @@ test.%: test.%.bin
 #	cc65 -t none $(CC65FLAGS) -O $<
 #	ca65 $(CA65FLAGS) $(@:.o=.s)
 
-pacman.prg: $(OBJS_STS) $(LIBS)
+pacman.prg: $(OBJS_STS) $(LIBS_STS)
 	ld65 -o $@ $(LDFLAGS_STS) $(OBJS_STS) $(LIBS_STS)
 
 #pacman: pacman.prg

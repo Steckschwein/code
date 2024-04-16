@@ -2,15 +2,6 @@
 
 .autoimport
 
-Color_Blinky  = Color_Red
-Color_Inky    = Color_Cyan
-Color_Clyde   = Color_Orange
-Color_Pinky   = Color_Pink
-Color_Pacman  = Color_Yellow
-Color_Food    = Color_Dark_Pink
-Color_Border  = Color_Blue
-Color_Text    = Color_Gray
-
 KEY_EXIT = 27
 MAX_DOTS=226+4  ; food + superfood
 
@@ -40,6 +31,7 @@ Char_Superfood      = $ce   ;1100 1110 $cd/$ce
 ;                   = $c6   ;1100 0110
 Char_Blank          = $c7   ;1100 0111
 Char_Bg             = $cf   ;1100 1111
+Char_Quote          = $22
 
 ; scoring
 Points_Food         = $10 ;BCD values
@@ -48,8 +40,11 @@ Points_Superfood    = $50 ;
 .define Char_Pts $2a,$2b,$2c
 
 FRAMES_DELAY = $0f
-WAIT=$01
-WAIT2=$02
+TXT_WAIT  =$01
+TXT_WAIT2 =$02
+TXT_GHOST =$03
+TXT_CRS_XY=$04
+TXT_COLOR =$05
 
 STATE_INIT          = 0
 STATE_READY         = 1
@@ -64,6 +59,31 @@ STATE_EXIT          = 1<<7
 SPRITE_NR_PACMAN  = 8*4
 SPRITE_NR_GHOST   = 0*4
 SPRITE_ADJUST     = $08
+
+Color_Bg        = $0  ; black
+Color_Red       = $1  ; "shadow", "blinky" red
+Color_Brown     = $2  ; orange top, cherry stem
+Color_Pink      = $3  ; "speedy", "pinky" pink
+Color_Cyan        = $5  ; "bashful", "inky" cyan
+Color_Light_Blue  = $6  ; "ligth blue"
+Color_Orange      = $7  ; "pokey", "Clyde" "orange"
+Color_Yellow      = $9  ; "yellow", "pacman"
+;Color_Indigo      = $b  ; Maze walls, flashing ghosts, ghost pupils
+Color_Dark_Pink   = $b  ; "food", "super food"
+Color_Green       = $c  ; Melon, strawberry top, orange leaf
+Color_Dark_Cyan = $d  ; dark cyan - Melon wrinkles and stem
+Color_Blue      = $e  ; blue => ghosts "scared", ghost pupil
+Color_Gray      = $f  ; gray => ghosts "scared", ghost eyes, text
+
+Color_Blinky  = Color_Red
+Color_Inky    = Color_Cyan
+Color_Clyde   = Color_Orange
+Color_Pinky   = Color_Pink
+Color_Pacman  = Color_Yellow
+Color_Food    = Color_Dark_Pink
+Color_Border  = Color_Blue
+Color_Text    = Color_Gray
+
 
 ; A ghost's objective in chase mode is to find and capture Pac-Man by hunting him down through the maze.
 ; Each ghost exhibits unique behavior when chasing Pac-Man, giving them their different personalities:
@@ -128,18 +148,19 @@ ACT_DIR           = 1<<1|1<<0
 
 .macro bgcolor color
   .ifdef __DEBUG
-    lda color
+    lda #color
     jsr gfx_bgcolor
   .endif
 .endmacro
 
 .macro draw_text _p, color
-      .if .paramcount > 1
-         lda color
-         sta text_color
-      .endif
       setPtr _p, p_text
+      .if .paramcount > 1
+      lda #color
+      jsr out_text_color
+      .else
       jsr out_text
+      .endif
 .endmacro
 
 .macro push_axy
@@ -160,8 +181,8 @@ ACT_DIR           = 1<<1|1<<0
 
 .struct GameState
   state       .byte
-  credit      .byte
   frames      .byte
+  credit      .byte
   score       .res 4
   highscore   .res 4
 .endstruct
