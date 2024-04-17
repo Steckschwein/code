@@ -43,6 +43,11 @@ gfx_Sprite_Off=250
   mc  .byte ; multi color  bitmask
 .endstruct
 
+.zeropage
+  r1: .res 1
+  r2: .res 1
+  r3: .res 1
+
 .code
 gfx_mode_off:
 
@@ -96,11 +101,11 @@ gfx_init_chars:
     ldx #8
     setPtr tiles,  p_tmp
     setPtr VRAM_PATTERN, p_video
-    jsr _gfx_memcpy
+    jsr gfx_memcpy
     setPtr sprite_patterns, p_tmp
     setPtr VRAM_SPRITE_PATTERN, p_video
     ldx #9
-    jsr _gfx_memcpy
+    jsr gfx_memcpy
 
 gfx_blank_screen:
     setPtr VRAM_SCREEN, p_video
@@ -260,15 +265,14 @@ gfx_sprites_off:
     rts
 
 gfx_display_maze:
-_gfx_setcolor:
     ldx #4
     ldy #0
     sty sys_crs_x
     sty sys_crs_y
     setPtr game_maze, p_maze
 @loop:
-    lda (p_maze), y
-    sta gfx_tmp
+    lda (p_maze),y
+    sta r1
     cmp #Char_Food
     bne @s_food
     lda #Color_Food
@@ -291,15 +295,14 @@ _gfx_setcolor:
     lda #Color_Border
 @color:
     sta text_color
-    lda gfx_tmp
+    lda r1
     jsr gfx_charout
     inc sys_crs_x
     lda sys_crs_x
-    cmp #32
+    and #$1f
     bne @next
-    inc sys_crs_y
-    lda #0
     sta sys_crs_x
+    inc sys_crs_y
 @next:
     iny
     bne @loop
@@ -308,12 +311,14 @@ _gfx_setcolor:
     bne @loop
     rts
 
-    setPtr game_maze, p_tmp
-    setPtr VRAM_SCREEN, p_video
-    ldx #4
-_gfx_memcpy:
+
+.export gfx_ghost_icon
+gfx_ghost_icon:
+    rts
+
+gfx_memcpy:
     ldy #0
-:      lda (p_tmp),y
+:   lda (p_tmp),y
     sta (p_video),y
     iny
     bne :-
@@ -323,14 +328,10 @@ _gfx_memcpy:
     bne :-
     rts
 
-.export gfx_ghost_icon
-gfx_ghost_icon:
-
-    rts
-
 gfx_charout:
     pha
-    sty gfx_tmp
+    stx r1
+    sty r2
 
     lda #0
     sta p_video+1
@@ -364,7 +365,8 @@ l_add:
     ldx text_color
     lda gfx_colors,x
     sta (p_tmp),y
-    ldy gfx_tmp
+    ldy r2
+    ldx r1
     rts
 
 gfx_hires_off:  ;?!?

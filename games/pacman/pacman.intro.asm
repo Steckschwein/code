@@ -23,8 +23,6 @@ intro:
               draw_text _food, Color_Food
 
               draw_text _copyright, Color_Pink
-              draw_text _copyright_sw
-
 
               lda #Color_Bg
               sta text_color
@@ -40,25 +38,27 @@ intro:
               and #$0f
               beq :-
 
-:             jsr io_getkey
+              jsr io_getkey
               cmp #'c'       ; increment credit
               bne @wait_credit
 
-              jsr credit_inc
               jsr intro_frame
-              draw_text _start
-              draw_text _players
-              draw_text _bonus
+              draw_text _start, Color_Orange
+              draw_text _copyright, Color_Pink
+              lda Color_Text
+              sta text_color
+
+@insert_coin: jsr credit_inc
 @wait_start1up:
               jsr io_getkey
               cmp #'1'
               beq @start_1up
               cmp #'c'       ; increment credit
               bne @wait_start1up
-              jsr credit_inc
               lda game_state+GameState::credit
               cmp #$99
-              bne @wait_start1up
+              beq @wait_start1up
+              jmp @insert_coin
 @start_1up:   rts
 
 intro_frame:
@@ -85,26 +85,24 @@ display_credit:
 :             jmp out_digits
 
 credit_dec:
-    lda game_state+GameState::credit
-    beq @exit
-    sed
-    sbc #0
-    sta game_state+GameState::credit
-    cld
-@exit:
-    rts
+              lda game_state+GameState::credit
+              beq @exit
+              sed
+              sbc #0
+              sta game_state+GameState::credit
+              cld
+@exit:        rts
 
 credit_inc:
-    lda game_state+GameState::credit
-    cmp #$99
-    bcs @exit
-    sed
-    adc #01
-    sta game_state+GameState::credit
-    cld
-    jmp display_credit
-@exit:
-    rts
+              lda game_state+GameState::credit
+              cmp #$99
+              bcs @exit
+              sed
+              adc #01
+              sta game_state+GameState::credit
+              cld
+              jmp display_credit
+@exit:        rts
 
 
 .data
@@ -118,26 +116,20 @@ _footer:
 _table_head:; delay between text
   .byte 4,20,"CHARACTER / NICKNAME",0
 _row1:
-  .byte 5,24, TXT_WAIT2,TXT_GHOST
-  .byte TXT_CRS_XY, 6,22, TXT_WAIT2, TXT_WAIT, "  -SHADOW    ",TXT_WAIT,Char_Quote,"BLINKY",Char_Quote
+  .byte 5,22, TXT_WAIT2,TXT_GHOST
+  .byte TXT_CRS_XY, 6,20, TXT_WAIT2, TXT_WAIT, "-SHADOW    ",TXT_WAIT,Char_Quote,"BLINKY",Char_Quote
   .byte 0
 _row2:
-  .byte 8,24, TXT_WAIT,TXT_GHOST
-;  .byte 9,24, $b2,$b3,0
- ; .byte 10,24, $b4,$b5,0
-  .byte TXT_CRS_XY, 9,22, TXT_WAIT2, TXT_WAIT, "  -SPEEDY    ",TXT_WAIT,Char_Quote,"PINKY",Char_Quote
+  .byte 8,22, TXT_WAIT,TXT_GHOST
+  .byte TXT_CRS_XY, 9,20, TXT_WAIT2, TXT_WAIT, "-SPEEDY    ",TXT_WAIT,Char_Quote,"PINKY",Char_Quote
   .byte 0
 _row3:
-  .byte 11,24, TXT_WAIT,TXT_GHOST
-;  .byte 12,24, $b2,$b3,0
- ; .byte 13,24, $b4,$b5,0
-  .byte TXT_CRS_XY, 12,22,TXT_WAIT2, TXT_WAIT, "  -BASHFUL   ",TXT_WAIT,Char_Quote,"INKY",Char_Quote
+  .byte 11,22, TXT_WAIT,TXT_GHOST
+  .byte TXT_CRS_XY, 12,20,TXT_WAIT2, TXT_WAIT, "-BASHFUL   ",TXT_WAIT,Char_Quote,"INKY",Char_Quote
   .byte 0
 _row4:
-  .byte 14,24, TXT_WAIT,TXT_GHOST
-;  .byte 15,24, $b2,$b3,0
-;  .byte 16,24, $b4,$b5,0
-  .byte TXT_CRS_XY, 15,22,TXT_WAIT2, TXT_WAIT, "  -POKEY     ",TXT_WAIT,Char_Quote,"CLYDE",Char_Quote
+  .byte 14,22, TXT_WAIT,TXT_GHOST
+  .byte TXT_CRS_XY, 15,20,TXT_WAIT2, TXT_WAIT, "-POKEY     ",TXT_WAIT,Char_Quote,"CLYDE",Char_Quote
   .byte 0
 _points:
   .byte 22,15, TXT_WAIT2, TXT_WAIT2, "10 ", Char_Pts
@@ -147,20 +139,22 @@ _food:
   .byte 22,17, Char_Food
   .byte TXT_CRS_XY, 24,17, Char_Superfood
   .byte TXT_WAIT2, TXT_WAIT2, 0
-; get ready
 _superfood:
   .byte 19,22, Char_Superfood
+  .byte TXT_CRS_XY, 24,17, Char_Superfood
   .byte 0
+
+; get ready
 _start:
-  .byte 16,21,"PUSH START BUTTON",0
-_players:
-  .byte 19,19,"1 PLAYER ONLY",0
-_bonus:
-  .byte 22,25,"BONUS PACMAN FOR 10000 ",Char_Pts,0
+  .byte 16,21,"PUSH START BUTTON"
+  .byte TXT_CRS_XY, 19,19, TXT_COLOR, Color_Cyan, "1 PLAYER ONLY"
+  .byte TXT_CRS_XY, 22,25, TXT_COLOR, Color_Dark_Pink, "BONUS PACMAN FOR 10000 ",Char_Pts
+  .byte 0
+
 _copyright:
-  .byte 27,19, "@ ",$23,$24,$25,$26,$27,$28,$29," 1980",0
-_copyright_sw:
-  .byte 29,19, "@ STECKSOFT 2019", TXT_WAIT2, 0
+  .byte 27,19, "@ ",$23,$24,$25,$26,$27,$28,$29," 1980"
+  .byte TXT_CRS_XY, 29,19, "@ STECKSOFT 2019", TXT_WAIT2
+  .byte 0
 
 .bss
   vblank: .res 1

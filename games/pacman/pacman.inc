@@ -16,7 +16,6 @@ MAX_DOTS=226+4  ; food + superfood
 .globalzp sound_tmp
 .globalzp game_tmp
 .globalzp game_tmp2
-.globalzp gfx_tmp
 .globalzp text_color
 
 .globalzp _i

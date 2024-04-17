@@ -140,7 +140,6 @@ sound_play:
 sound_play_voice:
     dec sound_voices+voice::cnt,x
     bne @exit
-
     lda sound_voices+voice::ix,x    ; voice data index
     cmp sound_voices+voice::length,x
     bne @next_note
@@ -164,15 +163,18 @@ sound_play_voice:
     tax
     lda (p_sound), y   ; note F-Number lsb
     iny
+.ifndef __NO_SOUND
     jsr opl2_reg_write
+.endif
 
     ldx sound_tmp
     lda sound_voices+voice::reg_b0,x
     tax
     lda (p_sound), y   ; note Key-On / Octave / F-Number msb
     iny
+.ifndef __NO_SOUND
     jsr opl2_reg_write
-
+.endif
     lda (p_sound), y   ; delay
     iny
     ldx sound_tmp

@@ -62,7 +62,7 @@ game_isr:
     jsr gfx_update
 .ifdef __DEBUG
     border_color Color_Cyan
-    jsr debug
+    ;jsr debug
 .endif
     border_color Color_Bg
 game_isr_exit:
@@ -73,14 +73,11 @@ game_ready:
     lda game_state+GameState::state
     cmp #STATE_READY
     bne @rts
-    draw_text _text_player_one
-    draw_text _text_ready
-.ifndef __NO_SOUND
+    draw_text _ready_player_one, Color_Cyan
     jsr sound_play
     lda game_state+GameState::frames
     and #$7f
     bne @detect_joystick
-.endif
     draw_text _delete_message_1
     jsr game_init_actors
     lda #STATE_READY_WAIT
@@ -93,10 +90,8 @@ game_ready_wait:
     lda game_state+GameState::state
     cmp #STATE_READY_WAIT
     bne @rts
-.ifndef __NO_SOUND
     jsr sound_play
     bne @rts
-.endif
     draw_text _delete_message_2
     lda #STATE_PLAYING
     sta game_state+GameState::state
@@ -486,7 +481,7 @@ game_playing:
     lda game_state+GameState::state
     cmp #STATE_PLAYING
     bne @rts
-;    jsr game_demo
+    ;jsr game_demo
     jsr actors_move
     jsr animate_ghosts
     jsr animate_screen
@@ -614,16 +609,16 @@ animate_screen:
     jmp :++
 :    draw_text _text_1up
 :
-    lda game_state+GameState::frames
-    and #$07
-    bne @rts
+      lda game_state+GameState::frames
+      and #$07
+      bne @rts
 ; food
       lda #Color_Food
       sta text_color
       ldx #3
 @l1:  lda superfood_x,x
-      ldy superfood_y,x
       sta sys_crs_x
+      ldy superfood_y,x
       sty sys_crs_y
       jsr lda_maze_ptr_ay
       cmp #Char_Blank ; eaten?
@@ -633,10 +628,10 @@ animate_screen:
       sta (p_maze),y
       jsr gfx_charout
 @next:
-    dex
-    bpl @l1
+      dex
+      bpl @l1
 @rts:
-    rts
+      rts
 
 
 animate_ghosts:
@@ -657,7 +652,6 @@ game_init:
     rts
 @init:
     lda #0
-    sta game_state+GameState::frames
     sta points+0
     sta points+1
     sta points+2
@@ -680,7 +674,7 @@ game_init:
     sta game_maze+$200,y
     iny
     bne :-
-:      lda maze+$300,y
+:   lda maze+$300,y
     sta game_maze+$300,y
     lda #Char_Blank
     sta game_maze+$300+1*32,y
@@ -692,10 +686,13 @@ game_init:
     ldx #ACTOR_PACMAN
     sta actors+actor::dots,x
 
+    jsr gfx_display_maze
+
     lda #STATE_READY
     sta game_state+GameState::state
-
-    jmp gfx_display_maze
+    lda #0
+    sta game_state+GameState::frames
+    rts
 
 actor_init: ;x,y,init direction,color
     ; x, y, dir
@@ -809,10 +806,10 @@ _text_pacman:
 _text_demo:
     .byte 18,15, "DEMO!",0
 
-_text_player_one:
-    .byte 12,17, "PLAYER ONE",0
-_text_ready:
-    .byte 18,15, "READY!",0
+_ready_player_one:
+    .byte 12,17, "PLAYER ONE"
+    .byte TXT_CRS_XY, 18,15, TXT_COLOR, Color_Yellow, "READY!"
+    .byte 0
 _text_game_over:
     .byte 18,17, "GAME  OVER",0
 _delete_message_1:
@@ -820,13 +817,13 @@ _delete_message_1:
 _delete_message_2:
     .byte 18,17, "          ",0
 
-    .export game_maze
-    .export actors
-    .import __BSS_RUN__,__BSS_SIZE__
+.export game_maze
+.export actors
+
 .bss
-  save_irq:  .res 2
-  points:          .res 4
+  save_irq:         .res 2
+  points:           .res 4
   input_direction:  .res 1
-  keyboard_input:  .res 1
-  actors:         .res 5*.sizeof(actor)
+  keyboard_input:   .res 1
+  actors:           .res 5*.sizeof(actor)
   game_maze=((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end which is __BSS_SIZE__ and align $100

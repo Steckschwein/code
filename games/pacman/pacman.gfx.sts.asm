@@ -25,10 +25,13 @@
 .endstruct
 
 .zeropage
-  p_vram: .res 3  ; 24Bit
-  p_gfx:  .res 2
+  p_vram:   .res 3  ; 24Bit
+  p_gfx:    .res 2
+  p_tiles:  .res 2
   r1: .res 1
   r2: .res 1
+  r3: .res 1
+  r4: .res 1
 
 .code
 
@@ -256,15 +259,55 @@ _gfx_update_sprite_vram:
     rts
 
 gfx_display_maze:
-    vdp_vram_w (VRAM_SCREEN)
-    lda #<game_maze
-    ldy #>game_maze
-    ldx #4
-    jsr vdp_memcpy
-    vdp_vram_w (VRAM_SCREEN+$400-32)
-    ldx #32
-    lda #Char_Blank
-    jmp vdp_fills
+        ldx #3
+        ldy #0
+        sty sys_crs_x
+        sty sys_crs_y
+        setPtr game_maze, p_gfx
+@loop:  jsr @put_char
+@next:  iny
+        bne @loop
+        inc p_gfx+1
+        dex
+        bne @loop
+:       jsr @put_char
+        iny
+        cpy #$40
+        bne :-
+        rts
+
+@put_char:
+        lda (p_gfx),y
+        pha
+        cmp #Char_Food
+        beq @food
+        cmp #Char_Superfood
+        bne @text
+@food:  lda #Color_Food
+        bne @color
+@text:  cmp #Char_Bg
+        bne @color_border
+        lda #Color_Pink
+        bne @color
+@color_border:
+        bcs @color_bg
+        lda #Color_Text
+        bne @color
+@color_bg:
+        lda #Color_Border
+@color:
+        sta text_color
+        pla
+        phx
+        jsr gfx_charout
+        plx
+        inc sys_crs_x
+        lda sys_crs_x
+        and #$1f
+        bne @exit
+        sta sys_crs_x
+        inc sys_crs_y
+@exit:  rts
 
 gfx_pause:
     beq :+
@@ -318,81 +361,94 @@ gfx_vram_addr:
               sta a_vreg
               rts
 
-m3_gfx_vram_xy:
-              lda sys_crs_y ;.Y * 32
-              asl
-              asl
-              asl
-              asl
-              asl
-              ora sys_crs_x
-              sta a_vreg
-              lda sys_crs_y ; .Y * 32
-              lsr ; div 8 -> page offset 0-2
-              lsr
-              lsr
-              ora #(WRITE_ADDRESS | (>.LOWORD(VRAM_SCREEN) & $3f))
-              vdp_wait_s 10
-              sta a_vreg
-              rts
-
 .export gfx_ghost_icon
 gfx_ghost_icon:
-              rts
-              lda text_color
-              sta @palette+1
-              jsr gfx_vram_xy
-              setPtr ghost_2bpp, p_gfx
+              php
+              sei
 
+              lda text_color
+              sta @palette_r+1
+              asl
+              asl
+              asl
+              asl
+              sta @palette_l+1
+
+              jsr gfx_vram_xy
+
+              setPtr ghost_2bpp, p_gfx
               ldy #0
               lda (p_gfx),y
               iny
+              asl
+              sta r1
               lda (p_gfx),y
-              iny
+              asl
+              asl
+              asl
+              sta r2
+              setPtr (ghost_2bpp+2), p_gfx
 
-@rows:        lda (p_gfx),y
-              ldy #2
-              stz r1
-@cols:        asl
+@rows:        lda r1
+              sta r4
+
+@cols:        lda (p_gfx)
+
+              ldy #2      ; 2bpp - 4px per byte
+@nybble:      asl
               rol
               pha
               rol
               and #$03
               tax
-              lda r1
-              ora @palette,x
-              asl r1
-              asl r1
+              lda @palette_l,x
+              sta r3
+
+              pla
+              asl
+              rol
+              pha
+              rol
+              and #$03
+              tax
+              lda @palette_r,x
+              ora r3
+
+              sta a_vram
               pla
               dey
-              bpl @cols
+              bne @nybble
+
+              inc p_gfx
+              bne :+
+              inc p_gfx+1
+:             dec r4
+              bne @cols
 
               dec r2
               beq @exit
 
-              inc p_gfx
-              bcc :+
-              inc p_gfx+1
-              clc
-
-:             lda p_vram ; vram addr Y +1 scanline
-              adc #$80
+              lda p_vram ; vram addr Y +1 scanline
+              eor #$80
               sta p_vram
-              bcc :+
+              bmi :+
               inc p_vram+1
 :             jsr gfx_vram_addr
               bra @rows
 
-@exit:        rts
+@exit:        plp
+              rts
 
-@palette: ; 4 color palette
-  .byte 0,0,$e,$f
+@palette_l: ; 4 color palette
+  .byte 0,0,$f0,$e0
+@palette_r:
+  .byte 0,0,$0f,$0e
 
 
 gfx_charout:
-              ;stp
+              php
               sei
-              phx
+;              phx
               phy
               pha
 
@@ -401,19 +457,19 @@ gfx_charout:
               jsr gfx_vram_xy
 
               pla               ; pointer to charset
-              stz p_gfx+1
+              stz p_tiles+1
               asl ; char * 8
-              rol p_gfx+1
+              rol p_tiles+1
               asl
-              rol p_gfx+1
+              rol p_tiles+1
               asl
-              rol p_gfx+1
+              rol p_tiles+1
               clc
               adc #<tiles
-              sta p_gfx
+              sta p_tiles
               lda #>tiles
-              adc p_gfx+1
-              sta p_gfx+1
+              adc p_tiles+1
+              sta p_tiles+1
 
               lda text_color
               asl
@@ -425,7 +481,7 @@ gfx_charout:
 
               lda #8
               sta r2
-@rows:        lda (p_gfx)
+@rows:        lda (p_tiles)
               ldy #3
 @cols:        vdp_wait_l 20
               asl
@@ -444,15 +500,13 @@ gfx_charout:
               dec r2
               beq @exit
 
-              inc p_gfx
+              inc p_tiles
               bne :+
-              inc p_gfx+1
-              clc
-
+              inc p_tiles+1
 :             lda p_vram ; vram addr Y +1 row (scanline)
-              adc #$80
+              eor #$80
               sta p_vram
-              bcc :+
+              bmi :+
               inc p_vram+1
 :             jsr gfx_vram_addr
               bra @rows
@@ -460,8 +514,8 @@ gfx_charout:
               bgcolor Color_Bg
 
               ply
-              plx
-              cli
+;              plx
+              plp
               rts
 @px_mask:
     .byte $00, $0f, $f0, $ff
@@ -490,7 +544,7 @@ vdp_init_bytes:  ; vdp init table - MODE G4
     .byte 0 ; n.a.
     .byte >(VRAM_SPRITE_ATTR<<1) | $07    ; R#5 - sprite attribute table - value * $80 --> offset in VRAM
     .byte >(VRAM_SPRITE_PATTERN>>3)  ; R#6 - sprite pattern table - value * $800  --> offset in VRAM
-    .byte Black
+    .byte Color_Bg
     .byte v_reg8_VR ; R#8 - VR - 64k VRAM TODO set per define
     .byte v_reg9_ln ; R#9 - set bit to 1 for PAL
     .byte 0 ; n.a.
@@ -521,7 +575,7 @@ pacman_palette:
   vdp_pal $ff,$b8,$ae   ;b dark pink "food"
   vdp_pal 0,$ff,0       ;c green
   vdp_pal $47,$b8,$ae   ;d dark cyan
-  vdp_pal $21,$21,$ff   ;e blue => ghosts "scared", ghost pupil
+  vdp_pal $21,$21,$ff   ;e blue => maze walls, ghosts "scared", ghost pupil
   vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes, text
 
 tiles:

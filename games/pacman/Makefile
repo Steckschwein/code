@@ -1,4 +1,4 @@
-DEBUG=-D__DEBUG
+#DEBUG=-D__DEBUG
 DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 #DEBUG+=-D__NO_INTRO
@@ -31,8 +31,8 @@ RESOURCES=\
   pacman.ghosts.res \
   pacman.pacman.res \
 	pacman.ghost.2bpp.res \
-  pacman.tiles.rot.inc \
-  pacman.tiles.colors.inc
+  pacman.tiles.rot.inc
+#   pacman.tiles.colors.inc
 
 .PHONY: all clean
 
