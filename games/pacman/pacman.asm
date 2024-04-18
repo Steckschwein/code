@@ -27,7 +27,6 @@
 .code
 .proc  _main: near
 main:
-    sei
     jsr init
     jsr io_init
     jsr sound_init
@@ -36,8 +35,6 @@ main:
 
     jsr io_irq_on
     setIRQ frame_isr, save_irq
-
-    cli
 
     jsr boot
 
@@ -62,14 +59,8 @@ init:
 :   sta game_state,x
     dex
     bpl :-
-    ldx #1
-    stx game_state+GameState::highscore
-    inx
-    stx game_state+GameState::highscore+1
-    inx
-    stx game_state+GameState::highscore+2
-    inx
-    stx game_state+GameState::highscore+3
+
+    jsr io_highscore_load
 
     rts
 .endproc

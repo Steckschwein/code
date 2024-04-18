@@ -140,7 +140,7 @@ ACT_DIR           = 1<<1|1<<0
 
 .macro border_color color
    .ifdef __DEBUG
-     lda color
+     lda #color
      jsr gfx_bordercolor
    .endif
 .endmacro

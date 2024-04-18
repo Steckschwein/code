@@ -80,8 +80,17 @@ io_player_direction:
       clc
       rts
 
+.export io_highscore_load
+io_highscore_load:
+      lda #0
+      sta game_state+GameState::highscore
+      sta game_state+GameState::highscore+1
+      sta game_state+GameState::highscore+2
+      sta game_state+GameState::highscore+3
+      rts
+
 io_exit:
-    jmp (retvec)
+      jmp (retvec)
 
 .data
     joystick_port:  .res 1, JOY_PORT1 ; TODO auto detect

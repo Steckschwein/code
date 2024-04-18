@@ -36,17 +36,28 @@
 .code
 
 gfx_mode_off:
-    vdp_sreg 0, v_reg9    ;
-    vdp_sreg 0, v_reg23   ;
+    sei
+    vdp_sreg 0, v_reg15
+    cli
+    vdp_wait_s
+    lda a_vreg
     rts
 
 gfx_mode_on:
+    sei
     lda #<vdp_init_bytes
     ldy #>vdp_init_bytes
     ldx #(vdp_init_bytes_end-vdp_init_bytes-1)
     jsr vdp_init_reg
     ;vdp_sreg $0, v_reg18  ;x/y screen adjust
     ;vdp_sreg <-2, v_reg23  ;y offset
+    vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
+line=192
+    lda #line
+    sta scanline
+    ldy #v_reg19
+    jsr vdp_set_reg
+    cli
     rts
 
 gfx_pacman_colors_offset:
@@ -68,7 +79,57 @@ gfx_write_pal:
               rts
 
 gfx_isr:
-              lda a_vreg ; vdp irq ?
+              lda a_vreg ; vdp h blank irq ?
+              ror
+              bcc @is_vblank
+
+              lda scanline
+              and #(212-line)
+              beq :+
+              lda #v_reg9_ln
+:             ora vdp_reg9_init
+              sta a_vreg
+              lda scanline
+              eor #(212-line)  ; 212/192
+              sta scanline
+              lda #v_reg9
+              sta a_vreg
+
+              ldy #v_reg19
+              lda scanline
+              jsr vdp_set_reg
+
+              lda #Color_Orange
+              jsr vdp_bgcolor
+              lda #Color_Bg
+              jsr vdp_bgcolor
+
+              ldx #$40
+              lda scanline
+              and #(212-line)
+              bne :+
+              ldx #$80
+:
+              txa
+              rts
+
+@is_vblank:
+              ldx #0
+              vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
+              vdp_wait_s
+              bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
+             	bpl @is_vblank_end  ; VDP IRQ flag set?
+              lda #Light_Red
+              jsr vdp_bgcolor
+              lda #v_reg9_ln
+              ora vdp_reg9_init
+              ldy #v_reg9
+              jsr vdp_set_reg
+
+              ldx #$80
+@is_vblank_end:
+            	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
+              txa
               rts
 
 gfx_init:
@@ -142,12 +203,6 @@ gfx_sprites_off:
               jsr vdp_fill
               cli
               rts
-
-m3_gfx_blank_screen:
-;    vdp_vram_w VRAM_SCREEN
- ;   lda #Char_Blank
-  ;  ldx #4
-   ; jsr vdp_fill
 
 _fills:
               ldx #16    ;16 color lines per sprite
@@ -272,7 +327,7 @@ gfx_display_maze:
         bne @loop
 :       jsr @put_char
         iny
-        cpy #$40
+;        cpy #$c0
         bne :-
         rts
 
@@ -334,7 +389,7 @@ gfx_vram_xy:
               sta p_vram        ; A7-A0 vram address low byte
 
               lda sys_crs_y     ; Y*8*128 => $0000, $0400, $0800
-              assertA_le 26     ; effectively high byte Y*4
+              assertA_le 31     ; effectively high byte Y*4
               asl
               asl
               sta p_vram+1
@@ -452,7 +507,7 @@ gfx_charout:
               phy
               pha
 
-              bgcolor Color_Cyan
+              bgcolor Color_Green
 
               jsr gfx_vram_xy
 
@@ -521,23 +576,9 @@ gfx_charout:
     .byte $00, $0f, $f0, $ff
 
 .data
-m3_vdp_init_bytes:  ; vdp init table - MODE G3
-      .byte v_reg0_m4
-      .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
-      .byte >(VRAM_SCREEN>>2)       ; name table (screen)
-;      .byte >(VRAM_COLOR<<2)  | $1f  ; $1f - color table with $800 values, each pattern with 8 colors (per line)
-;      .byte >(VRAM_PATTERN>>3)    ; pattern table
-      .byte >(VRAM_SPRITE_ATTR<<1) | $07 ; sprite attribute table => $07 -> see V9938_MSX-Video_Technical_Data_Book_Aug85.pdf S.93
-      .byte >(VRAM_SPRITE_PATTERN>>3)
-      .byte VDP_Color_Bg
-      .byte v_reg8_VR ; VR - 64k VRAM
-      .byte v_reg9_ln ; 212 lines, NTSC
-;      .byte <.hiword(VRAM_COLOR<<2) ; color table high, a16-14
-      .byte <.hiword(VRAM_SPRITE_ATTR<<1); sprite attribute high
-      .byte 0
-      .byte 0 ;R#13
 vdp_init_bytes:  ; vdp init table - MODE G4
-    .byte v_reg0_m4 | v_reg0_m3
+    .byte v_reg0_m4|v_reg0_m3|v_reg0_IE1
+vdp_reg1_init:
     .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
     .byte >(VRAM_SCREEN>>2) | $1f
     .byte 0 ; n.a.
@@ -546,7 +587,8 @@ vdp_init_bytes:  ; vdp init table - MODE G4
     .byte >(VRAM_SPRITE_PATTERN>>3)  ; R#6 - sprite pattern table - value * $800  --> offset in VRAM
     .byte Color_Bg
     .byte v_reg8_VR ; R#8 - VR - 64k VRAM TODO set per define
-    .byte v_reg9_ln ; R#9 - set bit to 1 for PAL
+vdp_reg9_init:
+    .byte 0; v_reg9_nt ; v_reg9_ln ; R#9 - 212lines
     .byte 0 ; n.a.
     .byte <.hiword(VRAM_SPRITE_ATTR<<1); R#11 sprite attribute high
     .byte 0;  #R12
@@ -585,6 +627,9 @@ tiles:
 sprite_patterns:
     .include "pacman.ghosts.res"
     .include "pacman.pacman.res"
+    .include "pacman.dead.res"
+    .include "bonus.res"
+
 
 shapes:
 ; pacman
@@ -599,9 +644,9 @@ shapes:
     .byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  11
 
 ghost_2bpp:
-  .include "pacman.ghost.2bpp.res"
+  .include "ghost.2bpp.res"
 
 .bss
     sprite_tab_attr:    .res 9*4 ;9 sprites, 4 byte per entry +1 y of sprite 10
     sprite_tab_attr_end:
-    bitmap_pal: .res 4
+    scanline: .res 1

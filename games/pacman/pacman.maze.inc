@@ -25,6 +25,13 @@
 .byte 'U',$da,$cc,$e3,$e7,$e5,$cc,$e3,$e5,$cc,$db,$00,$00,$00,$da,$20,$db,$00,$00,$00,$da,$cc,$e3,$e5,$cc,$cc,$cc,$cc,$e3,$e5,$cc,$db
 .byte '1',$da,$cc,$cc,$ce,$cc,$cc,$cc,$cc,$cc,$db,$00,$00,$00,$da,$20,$db,$00,$00,$00,$da,$cc,$cc,$cc,$ce,$e2,$e4,$cc,$cc,$cc,$cc,$db
 .byte $00,$d1,$d3,$d3,$d3,$d3,$d3,$d3,$d3,$d3,$d5,$00,$00,$00,$da,$20,$db,$00,$00,$00,$d1,$d3,$d3,$d3,$d3,$d7,$d9,$d3,$d3,$d3,$d3,$d5
+.byte 'X',$d0,$d2,$d2,$d2,$d2,$d2,$d2,$d2,$cc,$db,$00,$00,$00,$da,$20,$db,$00,$00,$00,$da,$cc,$cc,$cc,$ce,$e2,$e4,$cc,'Y',$cc,$cc,'9'
+.byte 'Y','7',$cc,$e3,$e7,$e5,$cc,$e3,$e5,$cc,$db,$00,$00,$00,$da,$20,$db,$00,$00,$00,$da,$cc,$e3,$e5,$cc,$cc,$cc,$cc,$e3,$e5,$cc,'0'
+.byte 'Z','7',$cc,$e3,$e7,$e5,$cc,$e3,$e5,$cc,$db,$00,$00,$00,$da,$20,$db,$00,$00,$00,$da,$cc,$e3,$e5,$cc,$cc,$cc,$cc,$e3,$e5,$cc,'0'
+.byte 'A','7',$cc,$e3,$e7,$e5,$cc,$e3,$e5,$cc,$db,$00,$00,$00,$da,$20,$db,$00,$00,$00,$da,$cc,$e3,$e5,$cc,$cc,$cc,$cc,$e3,$e5,$cc,'0'
+.byte 'B','7',$cc,$e3,$e7,$e5,$cc,$e3,$e5,$cc,$db,$00,$00,$00,$da,$20,$db,$00,$00,$00,$da,$cc,$e3,$e5,$cc,$cc,$cc,$cc,$e3,$e5,$cc,'0'
+.byte 'C','7',$cc,$e3,$e7,$e5,$cc,$e3,$e5,$cc,$db,$00,$00,$00,$da,$20,$db,$00,$00,$00,$da,$cc,$e3,$e5,$cc,$cc,$cc,$cc,$e3,$e5,$cc,'0'
+
 
 ; CREDIT  0   HIGH      00
 

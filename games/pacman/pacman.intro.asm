@@ -111,7 +111,7 @@ _header_1:
 _header_2:
   .byte 1,22,"00",0
 _footer:
-  .byte 31,24,"CREDIT ",0
+  .byte 31,25,"CREDIT ",0
 
 _table_head:; delay between text
   .byte 4,20,"CHARACTER / NICKNAME",0

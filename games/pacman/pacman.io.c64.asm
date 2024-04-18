@@ -89,7 +89,7 @@ io_isr:
     sta VIC_HLINE
     inc VIC_IRR   ; ack
 
-    lda #0
+    lda #$40
     rts
 
 @io_isr_border:
@@ -130,8 +130,12 @@ io_isr:
 
             inc VIC_IRR   ; ack
 
-            lda #0
+            lda #$40
 @rts:
+            rts
+
+.export io_highscore_load
+io_highscore_load:
             rts
 
 ;  out:

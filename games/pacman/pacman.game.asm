@@ -47,6 +47,9 @@ game_isr:
     jsr io_isr
     bpl game_isr_exit
 
+    border_color Color_Yellow
+    jsr gfx_update
+
     border_color Color_Gray
 
     jsr game_init
@@ -58,14 +61,12 @@ game_isr:
     jsr game_game_over
 
     inc game_state+GameState::frames
-    border_color Color_Yellow
-    jsr gfx_update
 .ifdef __DEBUG
-    border_color Color_Cyan
+;    border_color Color_Cyan
     ;jsr debug
 .endif
-    border_color Color_Bg
 game_isr_exit:
+    border_color Color_Bg
     pop_axy
     rti
 
@@ -80,7 +81,7 @@ game_ready:
     bne @detect_joystick
     draw_text _delete_message_1
     jsr game_init_actors
-    lda #STATE_READY_WAIT
+    lda #STATE_PLAYING ; STATE_READY_WAIT
     sta game_state+GameState::state
 @detect_joystick:
     jsr io_detect_joystick
@@ -306,7 +307,9 @@ erase_and_score:
 
     pla
     sta points+3  ; high to low
-    jmp add_scores
+    jsr add_scores
+    jmp draw_scores
+
 
     ; in:  .A - direction
     ; out:  .C=0 can move, C=1 can not move to direction
@@ -324,7 +327,7 @@ pacman_input:
     bcs @set_input_dir_to_next_dir    ; no - only set next dir
 
     lda actors+actor::turn,x
-       bmi @rts  ;exit if turn is active
+    bmi @rts  ;exit if turn is active
 
     ;current dir == input dir ?
     lda actors+actor::move,x
@@ -437,21 +440,20 @@ debug:
     jsr out_hex_digits
     rts
 
+; A/Y - x/y char postition
 lda_maze_ptr_ay:
     sta game_tmp
-    tya
+    tya           ; y * 32
     asl
     asl
     asl
     asl
     asl
     ora game_tmp
-    ;clc
-    ;adc #<game_maze
     sta p_maze+0
 
     tya
-    lsr ; div 8 -> page offset 0-2
+    lsr ; div 8 -> page offset 0..n
     lsr
     lsr
     clc
@@ -485,7 +487,6 @@ game_playing:
     jsr actors_move
     jsr animate_ghosts
     jsr animate_screen
-    jsr draw_scores
 
     ldx #ACTOR_PACMAN
     lda actors+actor::dots,x   ; all dots collected ?
@@ -602,13 +603,14 @@ draw_score:
 
 
 animate_screen:
-    lda game_state+GameState::frames
-    and #$10
-    bne :+
-    draw_text _text_1up_del
-    jmp :++
-:    draw_text _text_1up
-:
+      ldy #Color_Text
+      lda game_state+GameState::frames
+      and #$10
+      bne :+
+      tay
+:     sty text_color
+      draw_text _text_1up
+
       lda game_state+GameState::frames
       and #$07
       bne @rts
@@ -665,28 +667,27 @@ game_init:
 
     ldx #3
     ldy #0
-:
-    lda maze+$000,y
+:   lda maze+$000,y
     sta game_maze+$000,y
     lda maze+$100,y
     sta game_maze+$100,y
     lda maze+$200,y
     sta game_maze+$200,y
-    iny
-    bne :-
-:   lda maze+$300,y
+    lda maze+$300,y
     sta game_maze+$300,y
-    lda #Char_Blank
-    sta game_maze+$300+1*32,y
     iny
-    cpy #2*32
     bne :-
+    ldy #63
+    lda #Char_Blank
+:   sta game_maze+$400,y
+    dey
+    bne :-
+
+    jsr gfx_display_maze
 
     lda #MAX_DOTS
     ldx #ACTOR_PACMAN
     sta actors+actor::dots,x
-
-    jsr gfx_display_maze
 
     lda #STATE_READY
     sta game_state+GameState::state
@@ -779,6 +780,7 @@ actor_strategy:
 ;    jmp ai_ghost
 
 .data
+
 maze:
   .include "pacman.maze.inc"
 
@@ -799,8 +801,6 @@ _vec_down:      ;11
 
 _text_1up:
     .byte 0, 24, "1UP",0
-_text_1up_del:
-    .byte 0, 24, "   ",0
 _text_pacman:
     .byte 12,15, "PACMAN",0
 _text_demo:

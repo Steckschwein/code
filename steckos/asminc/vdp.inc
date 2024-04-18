@@ -35,13 +35,13 @@ s_reg0_5S   = 1<<6   ; 5/9th sprite on scan line bit
 s_reg0_C     = 1<<5   ; sprite collision bit
 
 
-v_reg0_extV    = 1<<0
-v_reg0_DG      = 1<<6  ; Digitize mode: sets the color bus to the input or output mode
-v_reg0_IE2    = 1<<5  ; light pen interrupt
-v_reg0_IE1    = 1<<4  ; h-blank interrupt
-v_reg0_m5    = 1<<3
-v_reg0_m4    = 1<<2
-v_reg0_m3    = 1<<1
+v_reg0_extV     = 1<<0
+v_reg0_DG       = 1<<6  ; Digitize mode: sets the color bus to the input or output mode
+v_reg0_IE2      = 1<<5  ; light pen interrupt
+v_reg0_IE1      = 1<<4  ; h-blank interrupt
+v_reg0_m5       = 1<<3
+v_reg0_m4       = 1<<2
+v_reg0_m3       = 1<<1
 
 
 v_reg1_16k      = 1<<7
@@ -299,14 +299,14 @@ vdp_nopslide_end:
       .import vdp_nopslide_end
     .endif
     .if(.paramcount > 0)
-      .if(MAX_NOPS_2M < 0 || (_wasted_cycles >> 1) > MAX_NOPS_2M)
+      .if(MAX_NOPS_2M < 0 || ((_wasted_cycles+1) >> 1) > MAX_NOPS_2M)
         jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
       .else
         .if((_wasted_cycles >> 1) > 0)
           jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
         .else
           .assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>>1), "<=", .sprintf ("%d", MAX_NOPS_2M))
-          jsr vdp_nopslide_2m + (_wasted_cycles >> 1) ; add number of wasted cycles, we calculate the jsr offset to remaining nops
+          jsr vdp_nopslide_2m + ((_wasted_cycles+1) >> 1) ; add number of wasted cycles, we calculate the jsr offset to remaining nops
         .endif
            .endif
     .else
