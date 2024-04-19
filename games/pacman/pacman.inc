@@ -3,7 +3,7 @@
 .autoimport
 
 KEY_EXIT = 27
-MAX_DOTS=226+4  ; food + superfood
+MAX_DOTS=240+4  ; food + superfood
 
 .globalzp p_maze
 .globalzp p_game
@@ -97,18 +97,16 @@ GHOST_SCATTER     = 1
 ; are vulnerable) and aimlessly wander the maze for a few seconds. They will flash moments before returning to their previous mode of behavior.
 GHOST_FRIGHTENED  = 3;
 
-Sprite_Pattern_Pacman = $18*4     ; pacman shape filled circle (game init)
-
 ACT_MOVE          = 1<<7
-ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_RIGHT         = 0 ;00
 ACT_LEFT          = 1 ;01
 ACT_UP            = 2 ;10
 ACT_DOWN          = 3 ;11
-ACT_MOVE_UP_OR_DOWN    = $02 ; 1X
-ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
+ACT_MOVE_UP_OR_DOWN     = $02 ; 1X
+ACT_MOVE_INVERSE        = $01 ;eor bit 1-0
 
 ACT_TURN          = 1<<7
+ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_DIR           = 1<<1|1<<0
 
 ;CORNERING
@@ -189,15 +187,15 @@ ACT_DIR           = 1<<1|1<<0
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
   ; dot timer 4s, 3s (level5)
 .struct actor ;
-    xpos       .byte    ; character x pos - 0..31
-    ypos       .byte    ; character y pos - 0..25
-    sp_x       .byte    ; sprite x
-    sp_y       .byte    ; sprite y
-    shape      .byte    ; shape
-    move       .byte    ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
-    turn       .byte    ; bit 7 turn, bit 1-0 turn direction
+    xpos        .byte    ; character x pos - 0..31
+    ypos        .byte    ; character y pos - 0..28
+    sp_x        .byte    ; sprite x
+    sp_y        .byte    ; sprite y
+    shape       .byte    ; shape
+    move        .byte    ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
+    turn        .byte    ; bit 7 turn, bit 1-0 turn direction
 
-    dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
+    dots        .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
 ;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
 

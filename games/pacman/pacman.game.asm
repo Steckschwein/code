@@ -62,8 +62,8 @@ game_isr:
 
     inc game_state+GameState::frames
 .ifdef __DEBUG
-;    border_color Color_Cyan
-    ;jsr debug
+    border_color Color_Cyan
+    jsr debug
 .endif
 game_isr_exit:
     border_color Color_Bg
@@ -74,15 +74,17 @@ game_ready:
     lda game_state+GameState::state
     cmp #STATE_READY
     bne @rts
+
     draw_text _ready_player_one, Color_Cyan
     jsr sound_play
     lda game_state+GameState::frames
     and #$7f
     bne @detect_joystick
-    draw_text _delete_message_1
+    lda #12
+    jsr delete_message
     jsr game_init_actors
-    lda #STATE_PLAYING ; STATE_READY_WAIT
-    sta game_state+GameState::state
+    lda #STATE_READY_WAIT
+    jsr game_set_state
 @detect_joystick:
     jsr io_detect_joystick
 @rts: rts
@@ -93,9 +95,10 @@ game_ready_wait:
     bne @rts
     jsr sound_play
     bne @rts
-    draw_text _delete_message_2
+    lda #18
+    jsr delete_message
     lda #STATE_PLAYING
-    sta game_state+GameState::state
+    jmp game_set_state
 @rts: rts
 
 game_game_over:
@@ -137,7 +140,7 @@ actors_move:
     jsr actor_move
 
     ldx #ACTOR_BLINKY
-;    jsr ghost_move
+    jsr ghost_move
     ldx #ACTOR_INKY
 ;    jsr ghost_move
     ldx #ACTOR_PINKY
@@ -248,7 +251,6 @@ actor_move_sprite:
     jmp @y_add
 @y_sta:
     sta actors+actor::sp_y,x
-;    sta sprite_tab_attr+4+SpriteTab::ypos,y
 @rts: rts
 
 pacman_shape_move:
@@ -270,45 +272,38 @@ actor_update_shape:
     and #ACT_DIR
     asl
     asl
-;    clc
     adc game_tmp
     sta actors+actor::shape,x
     rts
 
 pacman_collect:
-        lda actors+actor::xpos,x
-        ldy actors+actor::ypos,x
-        jsr lda_maze_ptr_ay
-        cmp #Char_Food
-        bne :+
-        lda #Points_Food
-        jmp erase_and_score
-:       cmp #Char_Superfood
-        beq @collect_superfood
-        cmp #Char_Superfood-1
-        bne @rts
-@collect_superfood:
-        lda #Points_Superfood
-        jmp erase_and_score
-@rts: rts
+              lda actors+actor::xpos,x
+              ldy actors+actor::ypos,x
+              jsr lda_maze_ptr_ay
+              cmp #Char_Superfood
+              bne :+
+              lda #Points_Superfood
+              bne @erase_and_score
+:             cmp #Char_Food
+              bne @exit
+              lda #Points_Food
+@erase_and_score:
+              pha
+              dec actors+actor::dots,x
+              lda actors+actor::xpos,x
+              sta sys_crs_x
+              lda actors+actor::ypos,x
+              sta sys_crs_y
+              lda #Char_Blank
+              ldy #0
+              sta (p_maze),y
+              jsr gfx_charout
+              pla
+              sta points+3  ; high to low
+              jsr add_scores
+              jmp draw_scores
+@exit:        rts
 
-;  A - points
-erase_and_score:
-    pha
-    dec actors+actor::dots,x
-    lda actors+actor::xpos,x
-    sta sys_crs_x
-    lda actors+actor::ypos,x
-    sta sys_crs_y
-    lda #Char_Blank
-    ldy #0
-    sta (p_maze),y
-    jsr gfx_charout
-
-    pla
-    sta points+3  ; high to low
-    jsr add_scores
-    jmp draw_scores
 
 
     ; in:  .A - direction
@@ -341,7 +336,7 @@ pacman_input:
 
     lda actors+actor::ypos,x      ;is tunnel ?
     beq @rts                    ;ypos=0
-    cmp #26                  ;... or >=26
+    cmp #28                  ;... or >=28
     bcs @rts                    ;ignore input
 
     lda input_direction
@@ -413,7 +408,7 @@ debug:
     pha
     lda #11
     sta sys_crs_x
-    lda #0
+    lda #31
     sta sys_crs_y
     lda #Color_Text
     sta text_color
@@ -421,11 +416,11 @@ debug:
     lda actors+actor::xpos,x
     jsr out_hex_digits
     lda actors+actor::sp_x,x
-    jsr out_hex_digits
+;    jsr out_hex_digits
     lda actors+actor::ypos,x
     jsr out_hex_digits
     lda actors+actor::sp_y,x
-    jsr out_hex_digits
+;    jsr out_hex_digits
     lda input_direction
     jsr out_hex_digits
     lda actors+actor::move,x
@@ -440,7 +435,8 @@ debug:
     jsr out_hex_digits
     rts
 
-; A/Y - x/y char postition
+; in: A/Y - as x/y char postition
+; out: A - char at position
 lda_maze_ptr_ay:
     sta game_tmp
     tya           ; y * 32
@@ -465,19 +461,31 @@ lda_maze_ptr_ay:
 
 game_demo:
 @demo_text:
-    lda game_state+GameState::frames
-    and #$07
-    bne @l1
-    draw_text _text_pacman
-    draw_text _text_demo
-    rts
-@l1:  lda game_state+GameState::frames
-    and #$08
-    beq @rts
-    draw_text _delete_message_1
-    draw_text _delete_message_2
-@rts:
-    rts
+              lda game_state+GameState::frames
+              and #$07
+              bne :+
+              draw_text _text_pacman
+              draw_text _text_demo
+@rts:         rts
+:             lda game_state+GameState::frames
+              and #$08
+              beq @rts
+              lda #12
+              jsr delete_message
+              lda #18
+delete_message:
+              sta sys_crs_x
+              lda #18
+              sta sys_crs_y
+              ldx #10
+              lda #Color_Bg
+              sta text_color
+:             lda #Char_Bg
+              jsr gfx_charout
+              dec sys_crs_y
+              dex
+              bne :-
+              rts
 
 game_playing:
     lda game_state+GameState::state
@@ -492,19 +500,22 @@ game_playing:
     lda actors+actor::dots,x   ; all dots collected ?
     bne @rts
 
-    lda #Sprite_Pattern_Pacman
+;    lda #
     ;sta sprite_tab_attr+SPRITE_NR_PACMAN+SpriteTab::shape
     ; sta actors+actor::shape,x
     ; TODO sprite off screen gfx_xxx
     ; lda #Maze_Tunnel
     ; sta sprite_tab_attr+SPRITE_NR_GHOST+SpriteTab::ypos
     ; jsr gfx_sprites_off
+      lda #STATE_LEVEL_CLEARED
+      jmp game_set_state
+@rts: rts
 
-    lda #STATE_LEVEL_CLEARED
+game_set_state:
     sta game_state+GameState::state
     lda #0
     sta game_state+GameState::frames
-@rts: rts
+    rts
 
 game_level_cleared:
     lda game_state+GameState::state
@@ -515,8 +526,7 @@ game_level_cleared:
     cmp #$88
     bne @rotate
     lda #STATE_INIT
-    sta game_state+GameState::state
-    lda #0
+    jsr game_set_state
 @rotate:
     lsr
     lsr
@@ -562,9 +572,9 @@ add_score:
 
 
 draw_scores:
+    setPtr (game_state+GameState::score), p_game
     ldx #0
     ldy #21
-    setPtr (game_state+GameState::score), p_game
     jsr draw_score
     ldx #0
     ldy #8
@@ -607,16 +617,17 @@ animate_screen:
       lda game_state+GameState::frames
       and #$10
       bne :+
-      tay
+      tay ; A = 0 => Color_Bg
 :     sty text_color
       draw_text _text_1up
 
+      ldy #Color_Food
       lda game_state+GameState::frames
-      and #$07
-      bne @rts
+      and #$08
+      bne :+
+      tay
+:     sty text_color
 ; food
-      lda #Color_Food
-      sta text_color
       ldx #3
 @l1:  lda superfood_x,x
       sta sys_crs_x
@@ -625,9 +636,6 @@ animate_screen:
       jsr lda_maze_ptr_ay
       cmp #Char_Blank ; eaten?
       beq @next
-      eor #$08       ; toggle Char_Superfood / Char_Superfood_Blank
-      ldy #0
-      sta (p_maze),y
       jsr gfx_charout
 @next:
       dex
@@ -644,8 +652,7 @@ animate_ghosts:
     ldx #ACTOR_PINKY
     jsr actor_shape_move
     ldx #ACTOR_CLYDE
-    jsr actor_shape_move
-    rts
+    jmp actor_shape_move
 
 game_init:
     lda game_state+GameState::state
@@ -653,6 +660,8 @@ game_init:
     beq @init
     rts
 @init:
+    jsr gfx_sprites_off
+
     lda #0
     sta points+0
     sta points+1
@@ -673,13 +682,13 @@ game_init:
     sta game_maze+$100,y
     lda maze+$200,y
     sta game_maze+$200,y
-    lda maze+$300,y
-    sta game_maze+$300,y
+    lda maze+$280,y
+    sta game_maze+$280,y
     iny
     bne :-
-    ldy #63
+    ldy #4*32-1
     lda #Char_Blank
-:   sta game_maze+$400,y
+:   sta game_maze+$380,y
     dey
     bne :-
 
@@ -690,12 +699,48 @@ game_init:
     sta actors+actor::dots,x
 
     lda #STATE_READY
-    sta game_state+GameState::state
-    lda #0
-    sta game_state+GameState::frames
+    jsr game_set_state
+    inc game_state+GameState::frames ; otherwise ready frames are skipped immediuately
     rts
 
-actor_init: ;x,y,init direction,color
+game_init_actors:
+    ldy #0
+    ldx #ACTOR_BLINKY
+    jsr game_init_actor
+    ldx #ACTOR_INKY
+    jsr game_init_actor
+    ldx #ACTOR_PINKY
+    jsr game_init_actor
+    ldx #ACTOR_CLYDE
+    jsr game_init_actor
+    jsr animate_ghosts
+
+    ldx #ACTOR_PACMAN
+    jsr game_init_actor
+    lda #2
+    sta actors+actor::shape,x
+
+    jmp gfx_sprites_on
+
+game_init_actor:
+    lda actor_init_x,y
+    sta actors+actor::sp_x,x
+    lda actor_init_y,y
+    sta actors+actor::sp_y,x
+    lda actor_init_d,y
+    sta actors+actor::move,x
+    iny
+    rts
+
+
+actor_init_x: ; sprite pos x of b,p,i,c,p
+    .byte 100,124,124,124,196
+actor_init_y:
+    .byte 112,128,112,96,112
+actor_init_d:
+    .byte ACT_MOVE|ACT_LEFT, ACT_MOVE|ACT_UP, ACT_MOVE|ACT_DOWN, ACT_MOVE|ACT_UP, ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
+
+actor_init: ;x,y,init direction
     ; x, y, dir
     .byte 64,$a4,  ACT_MOVE|ACT_LEFT
     .byte 88,$a4,   ACT_MOVE|ACT_UP
@@ -713,36 +758,6 @@ actor_init: ;x,y,init direction,color
 ;    .byte 196,104,  ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT ; pacman
 actor_init_end:
 
-game_init_actors:
-    ldy #0
-    ldx #ACTOR_BLINKY
-    jsr game_init_actor
-
-    ldy #3
-    ldx #ACTOR_INKY
-    jsr game_init_actor
-
-    ldy #6
-    ldx #ACTOR_PINKY
-    jsr game_init_actor
-
-    ldy #9
-    ldx #ACTOR_CLYDE
-    jsr game_init_actor
-
-    ldy #12
-    ldx #ACTOR_PACMAN
-    jsr game_init_actor
-    rts
-
-game_init_actor:
-    lda actor_init+0,y
-    sta actors+actor::sp_x,x
-    lda actor_init+1,y
-    sta actors+actor::sp_y,x
-    lda actor_init+2,y
-    sta actors+actor::move,x
-    rts
 
 ai_ghost:
     tya
@@ -787,7 +802,7 @@ maze:
 superfood_x:
    .byte 4,24,4,24;
 superfood_y:
-   .byte 1,1,24,24;
+   .byte 1,1,26,26;
 
 _vectors:  ; X, Y adjust
 _vec_right:      ;00
@@ -807,15 +822,11 @@ _text_demo:
     .byte 18,15, "DEMO!",0
 
 _ready_player_one:
-    .byte 12,17, "PLAYER ONE"
-    .byte TXT_CRS_XY, 18,15, TXT_COLOR, Color_Yellow, "READY!"
+    .byte 12,18, "PLAYER ONE"
+    .byte TXT_CRS_XY, 18,16, TXT_COLOR, Color_Yellow, "READY!"
     .byte 0
 _text_game_over:
     .byte 18,17, "GAME  OVER",0
-_delete_message_1:
-    .byte 12,17, "          ",0
-_delete_message_2:
-    .byte 18,17, "          ",0
 
 .export game_maze
 .export actors

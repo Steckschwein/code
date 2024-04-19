@@ -22,35 +22,35 @@ frame_isr:
     jsr io_isr    ; v-blank?
     bpl @exit
 
-    bgcolor Color_Yellow
+    border_color Color_Yellow
 
     dec game_state+GameState::frames
 
 @exit:
-    bgcolor Color_Bg
+    border_color Color_Bg
     pop_axy
     rti
 
 out_hex_digits:
-    pha
-    lsr
-    lsr
-    lsr
-    lsr
-    jsr out_hex_digit
-    pla
-    jsr out_hex_digit
-    rts
+              pha
+              lsr
+              lsr
+              lsr
+              lsr
+              jsr out_hex_digit
+              pla
+              jsr out_hex_digit
+              rts
 out_hex_digit:
-    and #$0f    ;mask lsb for hex print
-    ora #'0'      ;add "0"
-    cmp #'9'+1    ;is it a decimal digit?
-    bcc @out
-    adc #6        ;add offset for letter a-f
-@out: jsr charout
-    inc sys_crs_x
-    inc sys_crs_y
-    rts
+              and #$0f    ;mask lsb for hex print
+              ora #'0'      ;add "0"
+              cmp #'9'+1    ;is it a decimal digit?
+              bcc @out
+              adc #6        ;add offset for letter a-f
+@out:         jsr charout
+              inc sys_crs_x
+              inc sys_crs_y
+              rts
 
 out_digits:
               pha

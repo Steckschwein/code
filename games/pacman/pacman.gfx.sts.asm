@@ -6,6 +6,7 @@
 .export gfx_blank_screen
 .export gfx_bgcolor
 .export gfx_bordercolor
+.export gfx_sprites_on
 .export gfx_sprites_off
 .export gfx_isr
 .export gfx_charout
@@ -50,7 +51,8 @@ gfx_mode_on:
     ldx #(vdp_init_bytes_end-vdp_init_bytes-1)
     jsr vdp_init_reg
     ;vdp_sreg $0, v_reg18  ;x/y screen adjust
-    ;vdp_sreg <-2, v_reg23  ;y offset
+    vdp_sreg 253, v_reg23  ;y offset
+
     vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
 line=192
     lda #line
@@ -98,12 +100,12 @@ gfx_isr:
               ldy #v_reg19
               lda scanline
               jsr vdp_set_reg
-
+.ifdef __DEBUG
               lda #Color_Orange
               jsr vdp_bgcolor
               lda #Color_Bg
               jsr vdp_bgcolor
-
+.endif
               ldx #$40
               lda scanline
               and #(212-line)
@@ -119,13 +121,8 @@ gfx_isr:
               vdp_wait_s
               bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
              	bpl @is_vblank_end  ; VDP IRQ flag set?
-              lda #Light_Red
+              lda #Color_Bg
               jsr vdp_bgcolor
-              lda #v_reg9_ln
-              ora vdp_reg9_init
-              ldy #v_reg9
-              jsr vdp_set_reg
-
               ldx #$80
 @is_vblank_end:
             	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
@@ -191,17 +188,25 @@ gfx_init:
               jsr _fills
 
 gfx_blank_screen:
+              php
               sei
               ldy #Color_Bg
               jsr vdp_mode4_blank
               vdp_wait_l
+              plp
+
+gfx_sprites_on:
+              lda #0
+gfx_pause:
+              beq :+
 gfx_sprites_off:
+              lda #v_reg8_SPD
+:             ora #v_reg8_VR
+              php
               sei
-              vdp_vram_w VRAM_SPRITE_ATTR ; sprites off
-              ldx #1
-              lda #gfx_Sprite_Off
-              jsr vdp_fill
-              cli
+              ldy #v_reg8
+              jsr vdp_set_reg
+              plp
               rts
 
 _fills:
@@ -269,7 +274,7 @@ _gfx_update_sprite_tab_2x:
     jsr :+
 _gfx_update_sprite_tab:
     lda #$00
-:    sta game_tmp
+:   sta game_tmp
     lda actors+actor::sp_y,x
     sec
     sbc #gfx_Sprite_Adjust_Y
@@ -353,9 +358,7 @@ gfx_display_maze:
 @color:
         sta text_color
         pla
-        phx
         jsr gfx_charout
-        plx
         inc sys_crs_x
         lda sys_crs_x
         and #$1f
@@ -363,14 +366,6 @@ gfx_display_maze:
         sta sys_crs_x
         inc sys_crs_y
 @exit:  rts
-
-gfx_pause:
-    beq :+
-    lda #v_reg8_BW | v_reg8_SPD
-:   ora #v_reg8_VR
-    ldy #v_reg8
-    jsr vdp_set_reg
-    rts
 
 gfx_bordercolor=vdp_bgcolor
 gfx_bgcolor=vdp_bgcolor
@@ -503,11 +498,11 @@ gfx_ghost_icon:
 gfx_charout:
               php
               sei
-;              phx
+              phx
               phy
               pha
 
-              bgcolor Color_Green
+              bgcolor Color_Gray
 
               jsr gfx_vram_xy
 
@@ -569,7 +564,7 @@ gfx_charout:
               bgcolor Color_Bg
 
               ply
-;              plx
+              plx
               plp
               rts
 @px_mask:
@@ -588,7 +583,7 @@ vdp_reg1_init:
     .byte Color_Bg
     .byte v_reg8_VR ; R#8 - VR - 64k VRAM TODO set per define
 vdp_reg9_init:
-    .byte 0; v_reg9_nt ; v_reg9_ln ; R#9 - 212lines
+    .byte 0 ; v_reg9_ln ; R#9 - 212lines
     .byte 0 ; n.a.
     .byte <.hiword(VRAM_SPRITE_ATTR<<1); R#11 sprite attribute high
     .byte 0;  #R12
@@ -630,6 +625,8 @@ sprite_patterns:
     .include "pacman.dead.res"
     .include "bonus.res"
 
+
+Sprite_Pattern_Pacman = $18*4     ; pacman shape filled circle (game init)
 
 shapes:
 ; pacman
