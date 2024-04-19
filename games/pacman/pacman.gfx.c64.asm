@@ -3,6 +3,7 @@
     .export gfx_mode_on
     .export gfx_mode_off
     .export gfx_blank_screen
+    .export gfx_sprites_on
     .export gfx_sprites_off
     .export gfx_bgcolor
     .export gfx_bordercolor
@@ -258,10 +259,13 @@ gfx_mx:
     sta mx_tab_ix
     rts
 
+gfx_sprites_on:
+    lda #$ff
+    sta VIC_SPR_ENA
+    rts
 gfx_sprites_off:
     lda #0
     sta VIC_SPR_ENA
-
     rts
 
 gfx_display_maze:

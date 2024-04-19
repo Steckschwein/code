@@ -194,7 +194,7 @@ gfx_blank_screen:
               jsr vdp_mode4_blank
               vdp_wait_l
               plp
-
+              bra gfx_sprites_off
 gfx_sprites_on:
               lda #0
 gfx_pause:
@@ -581,7 +581,7 @@ vdp_reg1_init:
     .byte >(VRAM_SPRITE_ATTR<<1) | $07    ; R#5 - sprite attribute table - value * $80 --> offset in VRAM
     .byte >(VRAM_SPRITE_PATTERN>>3)  ; R#6 - sprite pattern table - value * $800  --> offset in VRAM
     .byte Color_Bg
-    .byte v_reg8_VR ; R#8 - VR - 64k VRAM TODO set per define
+    .byte v_reg8_VR | v_reg8_SPD ; R#8 - VR - 64k VRAM TODO set per define
 vdp_reg9_init:
     .byte 0 ; v_reg9_ln ; R#9 - 212lines
     .byte 0 ; n.a.
