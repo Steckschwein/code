@@ -1,5 +1,5 @@
 STECKOS_DIR=..
-CC65FLAGS=-I $(STECKOS_DIR)/clib/include -I $(STECKOS_DIR)/clib/include/vdp --cpu 65c02 -Osir
+CC65FLAGS=-I $(STECKOS_DIR)/clib/include -I $(STECKOS_DIR)/clib/include/vdp --cpu 65c02 -O
 
 CA65FLAGS=--include-dir $(STECKOS_DIR)/asminc --include-dir $(STECKOS_DIR)/kernel -D_DEBUG
 LIBS=$(STECKOS_DIR)/clib/lib/steckschwein-clib.a $(STECKOS_DIR)/lib/steckschwein.a
