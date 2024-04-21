@@ -18,7 +18,7 @@ int titlecolors[] = { DARKGRAY, LIGHTGRAY, WHITE, LIGHTGRAY, DARKGRAY, BLACK };
 int frame_delay = 50;
 
 typedef struct { char *key; char *name; int num; void (*func)(int); } t_sortstruct;
-
+typedef unsigned char uint8;
 
     
 
@@ -44,12 +44,12 @@ void swap(unsigned char* p1, unsigned char* p2)
 
 void waitframes(int n)
 {
-    int i;
+    uint8 i;
     for (i=0;i<=n;i++)
         syncvblank();
 }
 
-void setLine(int x, int val, char color)
+void setLine(int x, uint8 val, char color)
 {
     // syncvblank();
 
@@ -420,10 +420,10 @@ void selectionSort(int n)
 
 // A utility function to get maximum
 // value in arr[]
-int getMax(int n)
+uint8 getMax(int n)
 {
     int i;
-    int mx = arr[0];
+    uint8 mx = arr[0];
     for (i = 1; i < n; i++)
         if (arr[i] > mx)
             mx = arr[i];
@@ -599,7 +599,7 @@ static t_sortstruct lookuptable[] = {
 char title[50];
 void runSort(char * name, void (*ptr)(int), int n, bool wait)
 {
-        unsigned char graphmode = 7;
+        uint8 graphmode = 7;
 
         if (n>255)
         {
@@ -614,7 +614,6 @@ void runSort(char * name, void (*ptr)(int), int n, bool wait)
         snprintf(title, 50, "%s Sort - %d values", name, n);
 
 
-
         titleCard(title, 20);
         shuffleArray(n);   
         (*ptr)(n);
@@ -624,13 +623,12 @@ void runSort(char * name, void (*ptr)(int), int n, bool wait)
         {
             getch();
         }
-        // closegraph();
 }
 
 void loop()
 {
     // char key;
-    int n;
+    // int n;
     while (kbhit() != KEY_ESCAPE)
     {
         unsigned char i;
@@ -656,7 +654,7 @@ void loop()
 
 t_sortstruct * funcfromstring(char *key)
 {
-    unsigned char i;
+    uint8 i;
     for (i=0; i < NKEYS; i++) {
         t_sortstruct *sym = &lookuptable[i];
         if (strcmp(sym->key, key) == 0)
@@ -694,7 +692,6 @@ int main(int argc, char *argv[])
         else
         {
             n = sort->num;
-
         }
 
         runSort(sort->name, sort->func, n, true);
