@@ -16,8 +16,6 @@
 
   video_tmp:    .res 1
   sound_tmp:    .res 1
-  game_tmp:     .res 1
-  game_tmp2:    .res 1
   text_color:   .res 1
 
   _i: .res 1

@@ -140,20 +140,6 @@ gfx_init:
               bne :-
 
 @gfx_init_chars:
-          ;    vdp_vram_w VRAM_PATTERN
-              lda #<tiles
-              ldy #>tiles
-              ldx #08
-          ;    jsr vdp_memcpy
-
-          ;    vdp_vram_w VRAM_COLOR
-;              lda #<tiles_colors
- ;             ldy #>tiles_colors
-  ;            ldx #$08
-          ;    jsr vdp_memcpy
-
-              lda #SPRITE_OFF+$08
-              sta sprite_tab_attr_end
 
 @gfx_init_sprites:
               vdp_vram_w VRAM_SPRITE_PATTERN
@@ -186,6 +172,9 @@ gfx_init:
 
               lda #VDP_Color_Yellow
               jsr _fills
+
+              lda #gfx_Sprite_Off
+              sta sprite_tab_attr_end
 
 gfx_blank_screen:
               php
@@ -274,7 +263,7 @@ _gfx_update_sprite_tab_2x:
     jsr :+
 _gfx_update_sprite_tab:
     lda #$00
-:   sta game_tmp
+:   sta r1
     lda actors+actor::sp_y,x
     sec
     sbc #gfx_Sprite_Adjust_Y
@@ -287,7 +276,7 @@ _gfx_update_sprite_tab:
     iny
     phy
     lda actors+actor::shape,x
-    ora game_tmp
+    ora r1
     tay
     lda shapes,y
     ply
@@ -296,26 +285,6 @@ _gfx_update_sprite_tab:
     lda #0
     sta sprite_tab_attr,y  ; byte 4 - reserved/unused
     iny
-    rts
-
-
-_gfx_update_sprite_vram_2x:
-    lda #$02
-    jsr :+
-_gfx_update_sprite_vram:
-    lda #$00
-:    ldy actors+actor::sp_y,x
-    sty a_vram
-    vdp_wait_l 4
-    ldy actors+actor::sp_x,x
-    sty a_vram
-    ora actors+actor::shape,x
-    tay
-    lda shapes,y
-    vdp_wait_l 10
-    sta a_vram
-    vdp_wait_l 2
-    stz a_vram  ; byte 4 - reserved/unused
     rts
 
 gfx_display_maze:
@@ -502,6 +471,8 @@ gfx_charout:
               phy
               pha
 
+;              assertA_eq Char_Superfood
+
               bgcolor Color_Gray
 
               jsr gfx_vram_xy
@@ -514,7 +485,7 @@ gfx_charout:
               rol p_tiles+1
               asl
               rol p_tiles+1
-              clc
+              ;clc
               adc #<tiles
               sta p_tiles
               lda #>tiles
@@ -533,7 +504,7 @@ gfx_charout:
               sta r2
 @rows:        lda (p_tiles)
               ldy #3
-@cols:        vdp_wait_l 26
+@cols:        vdp_wait_l 32
               asl
               rol
               pha
@@ -648,6 +619,6 @@ ghost_2bpp:
   .include "ghost.2bpp.res"
 
 .bss
-    sprite_tab_attr:    .res 9*4 ;9 sprites, 4 byte per entry +1 y of sprite 10
-    sprite_tab_attr_end:
+    sprite_tab_attr:      .res 9*4 ; 9 sprites, 4 byte per entry +1 y of sprite 10
+    sprite_tab_attr_end:  .res 1   ; Y sprite 10, set to "off"
     scanline: .res 1

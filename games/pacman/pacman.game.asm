@@ -7,6 +7,11 @@
 
 .importzp sys_crs_x, sys_crs_y
 
+.zeropage
+  game_tmp:   .res 1
+  game_tmp2:  .res 1
+
+.code
 game:
     setIRQ game_isr, save_irq
 
@@ -30,6 +35,10 @@ game:
     lda #STATE_GAME_OVER
     bne @set_state
 :   cmp #'r'
+    bne :+
+    lda #STATE_READY_PLAYER
+    bne @set_state
+:   cmp #'i'
     beq @loop
     cmp #'p'
     bne @exit_key
@@ -99,6 +108,8 @@ game_ready_player:
               jsr sound_play
               jsr game_init_actors
               draw_text _ready, Color_Yellow
+              ldy #Color_Food
+              jsr draw_superfood
               lda #12
               jsr delete_message
               lda #STATE_READY_WAIT
@@ -109,10 +120,8 @@ game_ready_wait:
               lda game_state+GameState::state
               cmp #STATE_READY_WAIT
               bne @exit
-              jsr animate_screen
-              ldy #Color_Food      ; override - TODO maybe improve
-              jsr draw_superfood
               jsr sound_play
+              jsr animate_up
               lda game_state+GameState::frames
               and #$7f
               bne @detect_joystick
@@ -129,7 +138,7 @@ game_pacman_dying:
               cmp #STATE_DYING
               bne @exit
               jsr animate_screen
-              lda game_state+GameState::frames
+              lda game_state+GameState::frames  ; TODO delay before dead
               lsr
               lsr
               lsr
@@ -139,6 +148,9 @@ game_pacman_dying:
               lda #STATE_READY_PLAYER
               dec game_state+GameState::lives_1up
               bne @set_state
+              ldy #Color_Food
+              jsr draw_superfood
+              draw_text _text_game_over, Color_Red
               lda #STATE_GAME_OVER
 @set_state:   jmp game_set_state
 
@@ -166,8 +178,7 @@ game_game_over:
               lda game_state+GameState::state
               cmp #STATE_GAME_OVER
               bne @exit
-              jsr animate_screen
-              draw_text _text_game_over, Color_Red
+              jsr animate_up
               lda game_state+GameState::frames
               and #$7f
               bne @exit
@@ -720,14 +731,7 @@ _draw_score:
 
 
 animate_screen:
-              ldy #Color_Text
-              lda game_state+GameState::frames
-              and #$10
-              bne :+
-              tay ; A = 0 => Color_Bg
-:             sty text_color
-              draw_text _text_1up
-
+              jsr animate_up
 animate_superfood:
               ldy #Color_Food
               lda game_state+GameState::frames
@@ -747,7 +751,20 @@ draw_superfood:
               jsr gfx_charout
 @next:        dex
               bpl @l0
-@exit:         rts
+              rts
+animate_up:
+              ldy #Color_Text
+              lda game_state+GameState::frames
+              and #$10
+              bne @l0
+              tay ; A = 0 => Color_Bg
+@l0:          sty text_color
+              lda game_state+GameState::active_up
+              bne @2_up
+              draw_text _text_1up
+              rts
+@2_up:        draw_text _text_2up
+              rts
 
 
 animate_ghosts:
@@ -805,7 +822,6 @@ game_init:
               sta actors+actor::dots,x
 
               draw_text _ready, Color_Yellow
-
 
               draw_text _ready_player_one, Color_Cyan
               lda game_state+GameState::players
@@ -912,9 +928,9 @@ maze:
   .include "pacman.maze.inc"
 
 superfood_x:
-   .byte 4,24,4,24;
+   .byte 4,24,4,24
 superfood_y:
-   .byte 1,1,26,26;
+   .byte 1,1,26,26
 
 _vectors:  ; X, Y adjust
 _vec_right:      ;00
