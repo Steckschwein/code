@@ -246,7 +246,7 @@ ADDRESS_GFX3_SPRITE_COLOR     = ADDRESS_GFX3_SPRITE-$0200  ; sprite color table 
 
 ADDRESS_GFX4_SCREEN           = $10000
 ADDRESS_GFX4_SPRITE_PATTERN   = $7800
-ADDRESS_GFX4_SPRITE           = $fa00
+ADDRESS_GFX4_SPRITE           = $7600
 ADDRESS_GFX4_SPRITE_COLOR     = ADDRESS_GFX4_SPRITE-$0200  ; sprite color table address (“strictly below the sprite attribute table -$200)
 
 ADDRESS_GFX6_SCREEN           = $10000 ; screen

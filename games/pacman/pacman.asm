@@ -54,10 +54,10 @@ main:
     jmp io_exit
 
 init:
-    ldx #.sizeof(GameState)-1
+    ldy #.sizeof(GameState)-1
     lda #0
-:   sta game_state,x
-    dex
+:   sta game_state,y
+    dey
     bpl :-
 
     jsr io_highscore_load

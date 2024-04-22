@@ -11,9 +11,12 @@ intro:
                 rts
               .endif
 
-              jsr intro_frame
-              draw_text _table_head
+              lda game_state+GameState::credit
+              bne @wait_start_init
 
+              jsr intro_frame
+              jsr display_credit
+              draw_text _table_head
               draw_text _row1, Color_Blinky
               draw_text _row2, Color_Pinky
               draw_text _row3, Color_Inky
@@ -24,9 +27,33 @@ intro:
 
               draw_text _copyright, Color_Pink
 
+              jsr wait_credit
+@wait_start_init:
+              jsr intro_frame
+              draw_text _start, Color_Orange
+              jsr display_credit
+              draw_text _copyright, Color_Pink
+              lda Color_Text
+              sta text_color
+@wait_start:
+              jsr io_getkey
+              cmp #'1'
+              beq @start_1up
+              cmp #'2'
+              beq @start_2up
+              cmp #'c'       ; increment credit
+              bne @wait_start
+              jsr credit_inc
+              jmp @wait_start
+
+@start_2up:   lda #2
+              sta game_state+GameState::players
+@start_1up:   rts
+
+wait_credit:
               lda #Color_Bg
               sta text_color
-@wait_credit:
+@wait_loop:
  :            lda game_state+GameState::frames
               and #$0f
               bne :-
@@ -40,26 +67,35 @@ intro:
 
               jsr io_getkey
               cmp #'c'       ; increment credit
-              bne @wait_credit
+              bne @wait_loop
 
-              jsr intro_frame
-              draw_text _start, Color_Orange
-              draw_text _copyright, Color_Pink
-              lda Color_Text
-              sta text_color
-
-@insert_coin: jsr credit_inc
-@wait_start1up:
-              jsr io_getkey
-              cmp #'1'
-              beq @start_1up
-              cmp #'c'       ; increment credit
-              bne @wait_start1up
+credit_inc:
               lda game_state+GameState::credit
               cmp #$99
-              beq @wait_start1up
-              jmp @insert_coin
-@start_1up:   rts
+              bcs exit
+              sed
+              adc #01
+              sta game_state+GameState::credit
+              cld
+display_credit:
+              lda game_state+GameState::credit
+              cmp #2
+              bcc :+
+              draw_text _2up, Color_Cyan
+
+:             lda #31
+              sta sys_crs_x
+              lda #16
+              sta sys_crs_y
+              lda #Color_Text
+              sta text_color
+              lda game_state+GameState::credit
+              cmp #10
+              bcs :+
+              dec sys_crs_y
+              jmp out_digit
+:             jmp out_digits
+exit:         rts
 
 intro_frame:
               jsr gfx_blank_screen
@@ -71,39 +107,7 @@ intro_frame:
               jsr draw_highscore
 
               draw_text _footer, Color_Text
-display_credit:
-              lda #31
-              sta sys_crs_x
-              lda #16
-              sta sys_crs_y
-
-              lda game_state+GameState::credit
-              cmp #10
-              bcs :+
-              dec sys_crs_y
-              jmp out_digit
-:             jmp out_digits
-
-credit_dec:
-              lda game_state+GameState::credit
-              beq @exit
-              sed
-              sbc #0
-              sta game_state+GameState::credit
-              cld
-@exit:        rts
-
-credit_inc:
-              lda game_state+GameState::credit
-              cmp #$99
-              bcs @exit
-              sed
-              adc #01
-              sta game_state+GameState::credit
-              cld
-              jmp display_credit
-@exit:        rts
-
+              rts
 
 .data
 _header_1:
@@ -111,7 +115,7 @@ _header_1:
 _header_2:
   .byte 1,22,"00",0
 _footer:
-  .byte 31,25,"CREDIT ",0
+  .byte 31,25,"CREDIT",0
 
 _table_head:; delay between text
   .byte 4,20,"CHARACTER / NICKNAME",0
@@ -150,7 +154,8 @@ _start:
   .byte TXT_CRS_XY, 19,19, TXT_COLOR, Color_Cyan, "1 PLAYER ONLY"
   .byte TXT_CRS_XY, 22,25, TXT_COLOR, Color_Dark_Pink, "BONUS PACMAN FOR 10000 ",Char_Pts
   .byte 0
-
+ _2up:
+  .byte 19,19, "1 OR 2 PLAYERS",0
 _copyright:
   .byte 27,19, "@ ",$23,$24,$25,$26,$27,$28,$29," 1980"
   .byte TXT_CRS_XY, 29,19, "@ STECKSOFT 2019", TXT_WAIT2

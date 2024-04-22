@@ -1,5 +1,5 @@
 #DEBUG=-D__DEBUG
-#DEBUG+=-D__NO_SOUND
+DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 #DEBUG+=-D__NO_INTRO
 
@@ -30,7 +30,7 @@ RESOURCES_C64=\
 RESOURCES=\
   pacman.ghosts.res \
   pacman.pacman.res \
-	pacman.dead.res \
+	pacman.dying.res \
 	bonus.res \
 	ghost.2bpp.res \
   pacman.tiles.rot.inc

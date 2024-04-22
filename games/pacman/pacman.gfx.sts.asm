@@ -159,7 +159,7 @@ gfx_init:
               vdp_vram_w VRAM_SPRITE_PATTERN
               lda #<sprite_patterns
               ldy #>sprite_patterns
-              ldx #4
+              ldx #8
               jsr vdp_memcpy
 
               vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
@@ -533,7 +533,7 @@ gfx_charout:
               sta r2
 @rows:        lda (p_tiles)
               ldy #3
-@cols:        vdp_wait_l 20
+@cols:        vdp_wait_l 26
               asl
               rol
               pha
@@ -578,8 +578,8 @@ vdp_reg1_init:
     .byte >(VRAM_SCREEN>>2) | $1f
     .byte 0 ; n.a.
     .byte 0 ; n.a.
-    .byte >(VRAM_SPRITE_ATTR<<1) | $07    ; R#5 - sprite attribute table - value * $80 --> offset in VRAM
-    .byte >(VRAM_SPRITE_PATTERN>>3)  ; R#6 - sprite pattern table - value * $800  --> offset in VRAM
+    .byte >(VRAM_SPRITE_ATTR<<1) | $07    ; R#5 - sprite attribute table
+    .byte >(VRAM_SPRITE_PATTERN>>3)       ; R#6 - sprite pattern table
     .byte Color_Bg
     .byte v_reg8_VR | v_reg8_SPD ; R#8 - VR - 64k VRAM TODO set per define
 vdp_reg9_init:
@@ -617,12 +617,12 @@ pacman_palette:
 
 tiles:
     .include "pacman.tiles.rot.inc"
-;tiles_colors:
-;    .include "pacman.tiles.colors.inc"
+
 sprite_patterns:
-    .include "pacman.ghosts.res"
-    .include "pacman.pacman.res"
-    .include "pacman.dead.res"
+    .include "pacman.ghosts.res"  ; 16 sprites
+    .include "pacman.pacman.res"  ;  8 sprites
+    .res 4*8, 0                   ; empty sprite
+    .include "pacman.dying.res"   ; 11 sprites
     .include "bonus.res"
 
 
@@ -639,6 +639,10 @@ shapes:
     .byte $09*4,$09*4,$02*4,$02*4+4 ;l  01
     .byte $0a*4,$0a*4,$04*4,$04*4+4 ;u  10
     .byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  11
+; pacman dying
+    .byte $24*4,$23*4,$22*4,$21*4,$20*4
+    .byte $1f*4,$1e*4,$1d*4,$1c*4,$1b*4
+    .byte $1a*4,$19*4
 
 ghost_2bpp:
   .include "ghost.2bpp.res"

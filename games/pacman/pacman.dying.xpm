@@ -1,9 +1,8 @@
 /* XPM */
-static char * pacman_dead_xpm[] = {
+static char * pacman_dying_xpm[] = {
 "16 176 2 1",
 " 	c #42454A",
 "!	c #FCFC00",
-"                ",
 "                ",
 "                ",
 "           !    ",
@@ -178,4 +177,5 @@ static char * pacman_dead_xpm[] = {
 "    !!!!!!!     ",
 "   !!!!!!!      ",
 "   !!!!!        ",
+"                ",
 "                "};

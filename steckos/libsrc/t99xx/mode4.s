@@ -64,6 +64,6 @@ vdp_mode4_on:
 ;@in: Y - color to fill [0..f]
 vdp_mode4_blank:
   vdp_vram_w ADDRESS_GFX4_SCREEN
-  ldx #$78    ; $6a00 byte bitmap screen - 256x240px with 4bpp color (overscan)
+  ldx #$80    ; $8000 byte bitmap screen - 256x256px with 4bpp color (overscan mode)
   tya
   jmp vdp_fill

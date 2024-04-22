@@ -45,15 +45,18 @@ TXT_GHOST =$03
 TXT_CRS_XY=$04
 TXT_COLOR =$05
 
-STATE_INIT          = 0
-STATE_READY         = 1
-STATE_READY_WAIT    = 2
-STATE_PLAYING       = 3
-STATE_DIED          = 4
-STATE_LEVEL_CLEARED = 5
-STATE_GAME_OVER     = 6
-STATE_PAUSE         = 1<<3
+STATE_INIT          = $10
+STATE_READY         = $11
+STATE_READY_PLAYER  = $12
+STATE_READY_WAIT    = $13
+STATE_PLAYING       = $14
+STATE_DYING         = $15
+STATE_LEVEL_CLEARED = $16
+STATE_GAME_OVER     = $17
+STATE_INTRO         = $18
+STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
+
 
 SPRITE_NR_PACMAN  = 8*4
 SPRITE_NR_GHOST   = 0*4
@@ -112,14 +115,18 @@ ACT_DIR           = 1<<1|1<<0
 ;CORNERING
 
 .macro setIRQ irq, irq_save
+      php
+      sei
       copyPtr IRQ_VEC, irq_save
       setPtr irq, IRQ_VEC
+      plp
 .endmacro
 
 .macro restoreIRQ irq_save
+      php
       sei
       copyPtr irq_save, IRQ_VEC
-      cli
+      plp
 .endmacro
 
 .macro setPtr addr, ptr
@@ -179,9 +186,15 @@ ACT_DIR           = 1<<1|1<<0
 .struct GameState
   state       .byte
   frames      .byte
+
   credit      .byte
-  score       .res 4
-  highscore   .res 4
+  players     .byte   ; active players
+  active_up   .byte   ; current player
+  lives_1up   .byte
+  lives_2up   .byte
+  score_1up   .dword
+  score_2up   .dword
+  highscore   .dword
 .endstruct
 
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
