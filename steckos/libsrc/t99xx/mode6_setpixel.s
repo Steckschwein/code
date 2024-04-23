@@ -38,38 +38,38 @@ vdp_mode6_set_pixel:
     sei
 
     txa            ;2
-    and  #$f8
-    sta  vdp_tmp
+    and #$f8
+    sta vdp_tmp
     tya
-    and  #$07
-    ora  vdp_tmp
-    sta  a_vreg   ;4 set vdp vram address low byte
-    sta  vdp_tmp  ;3 safe vram low byte
+    and #$07
+    ora vdp_tmp
+    sta a_vreg   ;4 set vdp vram address low byte
+    sta vdp_tmp  ;3 safe vram low byte
 
     ; high byte vram address - div 8, result is vram address "page" $0000, $0100, ...
     tya            ;2
     lsr            ;2
     lsr            ;2
     lsr            ;2
-    sta  a_vreg        ;set vdp vram address high byte
+    sta a_vreg        ;set vdp vram address high byte
     ora #WRITE_ADDRESS    ;2 adjust for write
     tay            ;2 safe vram high byte for write in y
 
     txa            ;2 set the appropriate bit
-    and  #$07        ;2
+    and #$07        ;2
     tax            ;2
-    lda  bitmask,x      ;4
-    ora  a_vram        ;4 read current byte in vram and OR with new pixel
+    lda bitmask,x      ;4
+    ora a_vram        ;4 read current byte in vram and OR with new pixel
     tax            ;2 or value to x
     nop            ;2
     nop            ;2
     nop            ;2
-    lda  vdp_tmp      ;2
+    lda vdp_tmp      ;2
     sta a_vreg
     tya            ;2
     nop            ;2
     nop            ;2
-    sta  a_vreg
+    sta a_vreg
     vdp_wait_l
     stx a_vram  ;set vdp vram address high byte
 

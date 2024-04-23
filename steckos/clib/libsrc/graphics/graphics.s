@@ -81,9 +81,7 @@
 ; int __fastcall__ graphics_getmaxy();
 .export _graphics_getmaxy
 .proc _graphics_getmaxy
-        ldx #0
-        lda #211  ; TODO "check" whether v_reg9_ln bit is set
-        rts
+        jmp _vdp_maxy
 .endproc
 
 ; void __fastcall__ graphics_putpixel(int x, char y, char color);
