@@ -49,12 +49,9 @@
 ; int __fastcall__ vdp_maxx ();
 .export _vdp_maxx
 .proc _vdp_maxx
-    ldx _vdp_mode ; mode shift 2
-    lda @maxx,x
-    pha
-    lda @maxx+1,x
-    tax
-    pla
+    ldy _vdp_mode ; mode shift 2
+    lda @maxx,y
+    ldx @maxx+1,y
     rts
 @maxx:
     .byte $4f,0 ; text
@@ -67,6 +64,24 @@
     .byte $ff,0 ; G7
 .endproc
 
+
+; int __fastcall__ vdp_maxy();
+.export _vdp_maxy
+.proc _vdp_maxy
+    ldy _vdp_mode ; mode shift 2
+    lda @maxy,y
+    ldx @maxy+1,y
+    rts
+@maxy:
+    .byte $1a,0 ; text
+    .byte $1a,0 ; G2
+    .byte $1a,0 ; G3
+    .byte $35,0 ; MC  ; 64x48 / 64x53 (ln)
+    .byte $d4,0 ; G4
+    .byte $d4,0 ; G5
+    .byte $d4,0 ; G6
+    .byte $d4,0 ; G7
+.endproc
 
 ; void __fastcall__ vdp_screen (unsigned char mode);
 .export _vdp_screen
@@ -107,11 +122,11 @@ gfx_notimplemented:
 ; void __fastcall__ vdp_plot (unsigned int x, unsigned char y, unsigned char color);
 .export _vdp_plot
 .proc _vdp_plot
-    pha ;_vdp_px_color       ; save color
+    pha       ; save color
     jsr popa
-    pha; _vdp_px_y
+    pha
     jsr popax
-    pha;sta _vdp_px_x
+    pha
     ; TODO 16bit x
     ldx _vdp_mode
     jmp (plot_table,x)
