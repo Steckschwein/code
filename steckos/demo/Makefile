@@ -1,5 +1,6 @@
 STECKOS_DIR=..
-CC65FLAGS=-I $(STECKOS_DIR)/clib/include -I $(STECKOS_DIR)/clib/include/vdp --cpu 65c02 -Osir -Cl
+CC65FLAGS=-I $(STECKOS_DIR)/clib/include -I $(STECKOS_DIR)/clib/include/vdp --cpu 65c02 -O
+
 CA65FLAGS=--include-dir $(STECKOS_DIR)/asminc --include-dir $(STECKOS_DIR)/kernel -D_DEBUG
 LIBS=$(STECKOS_DIR)/clib/lib/steckschwein-clib.a $(STECKOS_DIR)/lib/steckschwein.a
 LDFLAGS=--config $(STECKOS_DIR)/prg.ld65.cfg -m $(basename $@).map $(LIBS)
@@ -17,10 +18,10 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		plasma \
 		rps_sim.prg	\
 		hanoi.prg \
-		win95.prg
+		win95.prg \
+		lines.prg \
+		sortdemo.prg
 
-plasma:
-	(cd plasma; make)
 clean:
 	rm -f *.prg *.s *.o *.map
 	(cd plasma ; make clean)
