@@ -14,12 +14,13 @@
 
 const char* URLstring = "www.steckschwein.de";
 
+#define QR_CODE_SIZE 21
 
 void main() {
   
   // Use a (26 byte) buffer for holding the encoded payload and ECC calculations
-  // uint8_t buffer[QRTINY_BUFFER_SIZE];
   uint8_t buffer[1024];
+  // uint8_t buffer[QRTINY_BUFFER_SIZE];
   
   // Choose a format for the QR Code: a mask pattern (binary `000` to `111`) and an error correction level (`LOW`, `MEDIUM`, `QUARTILE`, `HIGH`).
   uint16_t formatInfo = QRTINY_FORMATINFO_MASK_000_ECC_MEDIUM;
@@ -39,21 +40,25 @@ void main() {
 
   // draw to screen using TGI driver
   if (result) {
-    int x,y;
-    int x0 = 9;
-    int y0 = 9;
-
+    uint8_t x,y;
+    uint8_t x0;
+    uint8_t y0;
+    uint8_t module;
+    
     initgraph(NULL, 7, NULL);
     cleardevice();
+
+    x0 = getmaxx() / 2 - QR_CODE_SIZE + 9;
+    y0 = getmaxy() / 2 - QR_CODE_SIZE + 9;
 
     setbkcolor(BLACK);
     setcolor(WHITE);
 
-    graphics_bar(x0-2, y0-2, x0+21+2, y0+21+2);
+    graphics_bar(x0-2, y0-2, x0+QR_CODE_SIZE+2, y0+QR_CODE_SIZE+2);
 
-    for (y=0; y<21; y++) {
-      for (x=0; x<21; x++) {
-        int module = QrTinyModuleGet(buffer, formatInfo, x, y);       
+    for (y=0; y<QR_CODE_SIZE; y++) {
+      for (x=0; x<QR_CODE_SIZE; x++) {
+        module = QrTinyModuleGet(buffer, formatInfo, x, y);       
 
         putpixel(x+x0, y+y0, module ? BLACK : WHITE);
       }
