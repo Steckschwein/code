@@ -62,6 +62,7 @@ void main()
   }
 
   initgraph(NULL, 3, NULL);
+  setbgcolor(LIGHTGREEN);
   setbkcolor(MAGENTA);
   cleardevice();
 
