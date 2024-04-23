@@ -69,7 +69,7 @@ void main()
 
   setbkcolor(BLACK);
 
-  graphics_bar(x0-2, y0-2, x0+QRTINY_DIMENSION+2, y0+QRTINY_DIMENSION+2);
+  // graphics_bar(x0-2, y0-2, x0+QRTINY_DIMENSION+2, y0+QRTINY_DIMENSION+2);
 
   for (y=0; y<QRTINY_DIMENSION; y++) {
     for (x=0; x<QRTINY_DIMENSION; x++) {
