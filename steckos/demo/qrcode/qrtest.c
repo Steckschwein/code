@@ -14,7 +14,8 @@ const char* URLstring = "www.steckschwein.de";
 
 uint8_t buffer[1024];
 
-void main(int argc, char *argv[])
+// void main(int argc, char *argv[])
+void main()
 {
   
   // Use a (26 byte) buffer for holding the encoded payload and ECC calculations
@@ -60,7 +61,7 @@ void main(int argc, char *argv[])
     return;
   }
     
-  initgraph(NULL, 7, NULL);
+  initgraph(NULL, 3, NULL);
   cleardevice();
 
   x0 = getmaxx() / 2 - QRTINY_DIMENSION + 9;
