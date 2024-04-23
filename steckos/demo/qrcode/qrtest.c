@@ -14,10 +14,9 @@ const char* URLstring = "www.steckschwein.de";
 
 uint8_t buffer[1024];
 
-// void main(int argc, char *argv[])
-void main()
+void main(int argc, char *argv[])
 {
-
+  const char * s;
   // Use a (26 byte) buffer for holding the encoded payload and ECC calculations
   // uint8_t buffer[QRTINY_BUFFER_SIZE];
 
@@ -33,21 +32,29 @@ void main()
   size_t payloadLength = 0;
   bool result;
 
-  /*
+  
   if (argc != 2)
   {
-    return;
+    s = URLstring;
+  }
+  else
+  {
+    s = argv[1];
   }
 
-  if (strlen(argv[1]) > 19)
+  if (strlen(s) <= 19)
+  {
+  }
+  else
   {
     printf("Max. 19 bytes.\n");
     return;
   }
-  */
 
+  
+  
   puts("Computing...\n");
-  payloadLength += QrTinyWriteAlphanumeric(buffer, payloadLength, URLstring);
+  payloadLength += QrTinyWriteAlphanumeric(buffer, payloadLength, s);
 //  payloadLength += QrTinyWriteNumeric(buffer, payloadLength, "1234567890");
 //  payloadLength += QrTinyWrite8Bit(buffer, payloadLength, "!");
 
@@ -62,12 +69,12 @@ void main()
   }
 
   initgraph(NULL, 3, NULL);
-  setbgcolor(LIGHTGREEN);
-  setbkcolor(MAGENTA);
+  setbgcolor(LIGHTGRAY);
+  setbkcolor(BLACK);
   cleardevice();
 
-  x0 = getmaxx() / 2 - QRTINY_DIMENSION + 9;
-  y0 = getmaxy() / 2 - QRTINY_DIMENSION + 9;
+  x0 = getmaxx() / 2 - QRTINY_DIMENSION + 11;
+  y0 = getmaxy() / 2 - QRTINY_DIMENSION + 11;
 
 
   // graphics_bar(x0-2, y0-2, x0+QRTINY_DIMENSION+2, y0+QRTINY_DIMENSION+2);
