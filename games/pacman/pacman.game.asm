@@ -32,7 +32,10 @@ game:
     bne @set_state
 :   cmp #'g'
     bne :+
-    lda #STATE_GAME_OVER
+    lda #1  ; 1 left
+    sta game_state+GameState::lives_1up
+    sta game_state+GameState::lives_2up
+    lda #STATE_DYING
     bne @set_state
 :   cmp #'r'
     bne :+
@@ -159,19 +162,16 @@ game_pacman_dying:
               ora #$20        ; shape offset
               ldx #ACTOR_PACMAN
               sta actors+actor::shape,x
-              lda #0
+
+              lda #SHAPE_IX_INVISIBLE
               ldx #ACTOR_BLINKY
-              sta actors+actor::sp_x,x
-              sta actors+actor::sp_y,x
+              sta actors+actor::shape,x
               ldx #ACTOR_INKY
-              sta actors+actor::sp_x,x
-              sta actors+actor::sp_y,x
+              sta actors+actor::shape,x
               ldx #ACTOR_PINKY
-              sta actors+actor::sp_x,x
-              sta actors+actor::sp_y,x
+              sta actors+actor::shape,x
               ldx #ACTOR_CLYDE
-              sta actors+actor::sp_x,x
-              sta actors+actor::sp_y,x
+              sta actors+actor::shape,x
 @exit:        rts
 
 game_game_over:

@@ -84,7 +84,8 @@ gfx_isr:
               lda a_vreg ; vdp h blank irq ?
               ror
               bcc @is_vblank
-
+              ; remove border https://www.msx.org/forum/msx-talk/development/removing-border-bitmap-modes?page=0
+              ; https://www.msx.org/forum/development/msx-development/here-you-can-see-all-msx2-vram-your-screen
               lda scanline
               and #(212-line)
               beq :+
@@ -611,9 +612,9 @@ shapes:
     .byte $0a*4,$0a*4,$04*4,$04*4+4 ;u  10
     .byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  11
 ; pacman dying
-    .byte $24*4,$23*4,$22*4,$21*4,$20*4
-    .byte $1f*4,$1e*4,$1d*4,$1c*4,$1b*4
-    .byte $1a*4,$19*4
+    .byte $24*4,$23*4,$22*4,$21*4
+    .byte $20*4,$1f*4,$1e*4,$1d*4
+    .byte $1c*4,$1b*4,$1a*4,$19*4
 
 ghost_2bpp:
   .include "ghost.2bpp.res"

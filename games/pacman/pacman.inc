@@ -210,6 +210,8 @@ ACT_DIR           = 1<<1|1<<0
 ;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
 
+SHAPE_IX_INVISIBLE = 43
+
 Maze_Tunnel=$e0
 
 ; table offsets
