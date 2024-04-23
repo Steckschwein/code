@@ -32,7 +32,7 @@ void main(int argc, char *argv[])
   size_t payloadLength = 0;
   bool result;
 
-  
+
   if (argc != 2)
   {
     s = URLstring;
@@ -51,8 +51,8 @@ void main(int argc, char *argv[])
     return;
   }
 
-  
-  
+
+
   puts("Computing...\n");
   payloadLength += QrTinyWriteAlphanumeric(buffer, payloadLength, s);
 //  payloadLength += QrTinyWriteNumeric(buffer, payloadLength, "1234567890");
@@ -69,7 +69,7 @@ void main(int argc, char *argv[])
   }
 
   initgraph(NULL, 3, NULL);
-  setbgcolor(LIGHTGRAY);
+  setbdcolor(LIGHTGRAY);
   setbkcolor(BLACK);
   cleardevice();
 
