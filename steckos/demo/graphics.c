@@ -39,13 +39,15 @@ int main(int argc, char* argv){
   maxx = getmaxx();
   maxy = getmaxy();
 
-  for(x=0;x<=maxx;x++){
-    for(y=0;y<maxy;y++){
-      putpixel(x,y,x);
-      putpixel(maxx-x,y,x);
+  do{
+    for(x=0;x<=maxx;x++){
+      for(y=0;y<maxy;y++){
+        putpixel(x,y,x);
+        putpixel(maxx-x,y,x);
+      }
     }
-  }
-  getch();
+  } while (!kbhit());
+
   return EXIT_SUCCESS;
 
 
