@@ -6,12 +6,12 @@ LIBS=$(STECKOS_DIR)/clib/lib/steckschwein-clib.a $(STECKOS_DIR)/lib/steckschwein
 LDFLAGS=--config $(STECKOS_DIR)/prg.ld65.cfg -m $(basename $@).map $(LIBS)
 ASM_INCLUDE=--include-dir $(STECKOS_DIR)/kernel --include-dir $(STECKOS_DIR)/asminc
 
-OBJS=qrtiny.o qrtest.o
+OBJS=qrtiny.o qrcode.o
 .PHONY: all clean
 
-all: qrtest.prg
+all: qrcode.prg
 
-qrtest.prg: $(OBJS)
+qrcode.prg: $(OBJS)
 
 clean:
 	rm -f *.prg *.s *.o *.map
