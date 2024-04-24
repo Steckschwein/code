@@ -9,14 +9,17 @@
 #include <graphics.h>
 #include "qrtiny.h"
 
+#define STRING_MAXLENGTH 19
 
 const char* URLstring = "www.steckschwein.de";
 
-uint8_t buffer[1024];
+uint8_t * buffer;
 
 void main(int argc, char *argv[])
 {
   const char * s;
+
+
   // Use a (26 byte) buffer for holding the encoded payload and ECC calculations
   // uint8_t buffer[QRTINY_BUFFER_SIZE];
 
@@ -42,18 +45,14 @@ void main(int argc, char *argv[])
     s = argv[1];
   }
 
-  if (strlen(s) <= 19)
-  {
-  }
-  else
+  if (strlen(s) > STRING_MAXLENGTH)
   {
     printf("Max. 19 bytes.\n");
     return;
   }
-
-  
   
   puts("Computing...\n");
+  buffer = malloc(QRTINY_BUFFER_SIZE * sizeof(uint8_t));
   payloadLength += QrTinyWriteAlphanumeric(buffer, payloadLength, s);
 //  payloadLength += QrTinyWriteNumeric(buffer, payloadLength, "1234567890");
 //  payloadLength += QrTinyWrite8Bit(buffer, payloadLength, "!");
@@ -65,6 +64,7 @@ void main(int argc, char *argv[])
   // draw to screen using TGI driver
   if (!result)
   {
+    free(buffer);
     return;
   }
 
@@ -87,6 +87,7 @@ void main(int argc, char *argv[])
     }
   }
   getch();
+  free(buffer);
   closegraph();
 
   return;
