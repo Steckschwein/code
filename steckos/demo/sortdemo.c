@@ -1,6 +1,8 @@
 // C program for QuickSort
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+
 #include <string.h>
 
 #include <conio.h>
@@ -18,7 +20,6 @@ int titlecolors[] = { DARKGRAY, LIGHTGRAY, WHITE, LIGHTGRAY, DARKGRAY, BLACK };
 int frame_delay = 50;
 
 typedef struct { char *key; char *name; int num; void (*func)(int); } t_sortstruct;
-typedef unsigned char uint8;
 
     
 
@@ -29,8 +30,8 @@ unsigned char arr[SORT_BUFFER_SIZE];
 unsigned char arr_tmp1[SORT_BUFFER_SIZE], arr_tmp2[SORT_BUFFER_SIZE];
 
 // Utility function to swap tp integers
-int temp;
-void swap(unsigned char* p1, unsigned char* p2)
+uint8_t temp;
+void swap(uint8_t* p1, uint8_t* p2)
 {
     temp = *p1;
     *p1 = *p2;
@@ -44,12 +45,12 @@ void swap(unsigned char* p1, unsigned char* p2)
 
 void waitframes(int n)
 {
-    uint8 i;
+    uint8_t i;
     for (i=0;i<=n;i++)
         syncvblank();
 }
 
-void setLine(int x, uint8 val, char color)
+void setLine(int x, uint8_t val, char color)
 {
     // syncvblank();
 
@@ -420,10 +421,10 @@ void selectionSort(int n)
 
 // A utility function to get maximum
 // value in arr[]
-uint8 getMax(int n)
+uint8_t getMax(int n)
 {
     int i;
-    uint8 mx = arr[0];
+    uint8_t mx = arr[0];
     for (i = 1; i < n; i++)
         if (arr[i] > mx)
             mx = arr[i];
@@ -585,6 +586,7 @@ static t_sortstruct lookuptable[] = {
     { "gnome",     "Gnome",        64, gnomeSort },
     { "comb",      "Comb",         255, combSort },
     { "selection", "Selection",    255, selectionSort },
+    { "heap",      "Heap",         255, heapSort },
     { "quick",     "Quick",        255, quickSortWrapper },
     { "merge",     "Merge",        255, mergeSortWrapper },
     { "radix",     "Radix",        255, radixsort },
@@ -599,7 +601,7 @@ static t_sortstruct lookuptable[] = {
 char title[50];
 void runSort(char * name, void (*ptr)(int), int n, bool wait)
 {
-        uint8 graphmode = 7;
+        uint8_t graphmode = 7;
 
         if (n>255)
         {
@@ -645,6 +647,11 @@ void loop()
             printf("%s\n", lookuptable[i].name);
             runSort(lookuptable[i].name, lookuptable[i].func, lookuptable[i].num, false);
             waitframes(50);
+
+            if (kbhit() == KEY_ESCAPE)
+            {
+                return;
+            }
         }
     }
  
@@ -654,7 +661,7 @@ void loop()
 
 t_sortstruct * funcfromstring(char *key)
 {
-    uint8 i;
+    uint8_t i;
     for (i=0; i < NKEYS; i++) {
         t_sortstruct *sym = &lookuptable[i];
         if (strcmp(sym->key, key) == 0)
