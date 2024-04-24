@@ -141,6 +141,12 @@ game_pacman_dying:
               cmp #STATE_DYING
               bne @exit
               jsr animate_screen
+              lda #$11
+              sta sys_crs_x
+              lda #$0e
+              sta sys_crs_y
+              jsr gfx_4bpp
+
               lda game_state+GameState::frames  ; TODO delay before dead
               lsr
               lsr

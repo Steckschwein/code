@@ -1,4 +1,4 @@
-#DEBUG=-D__DEBUG
+DEBUG=-D__DEBUG
 DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 DEBUG+=-D__NO_INTRO
@@ -35,6 +35,9 @@ RESOURCES=\
 	ghost.2bpp.res \
   pacman.tiles.rot.inc
 
+RESOURCES_4BPP := $(patsubst %.4bpp.xpm,%.4bpp.res,$(foreach dir,.,$(wildcard ./*.4bpp.xpm)))
+
+
 .PHONY: all clean
 
 all: pacman.prg
@@ -55,8 +58,11 @@ clean:
 %.2bpp.res: %.2bpp.xpm
 	python3 ../utils/xpm_ca65_2bpp.py $< > $@
 
+%.4bpp.res: %.4bpp.xpm
+	python3 ../utils/xpm_ca65_4bpp.py $< > $@
 
-pacman.gfx.sts.o: $(RESOURCES)
+
+pacman.gfx.sts.o: $(RESOURCES) $(RESOURCES_4BPP)
 pacman.gfx.c64.o: $(RESOURCES_C64)
 
 pacman.game.o: pacman.maze.inc
@@ -107,4 +113,4 @@ pacman64.dis: pacman64.prg
 	../../xmodem.sh $<
 
 %.emu: %.prg
-	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -upload $<
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -quality linear -upload $<

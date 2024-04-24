@@ -60,20 +60,22 @@ SPRITE_NR_PACMAN  = 8*4
 SPRITE_NR_GHOST   = 0*4
 SPRITE_ADJUST     = $08
 
-Color_Bg        = $0  ; black
-Color_Red       = $1  ; "shadow", "blinky" red
-Color_Brown     = $2  ; orange top, cherry stem
-Color_Pink      = $3  ; "speedy", "pinky" pink
+Color_Bg          = $0  ; black
+Color_Red         = $1  ; "shadow", "blinky" red
+Color_Brown       = $2  ; orange top, cherry stem
+Color_Pink        = $3  ; "speedy", "pinky" pink
+
 Color_Cyan        = $5  ; "bashful", "inky" cyan
 Color_Light_Blue  = $6  ; "ligth blue"
 Color_Orange      = $7  ; "pokey", "Clyde" "orange"
+
 Color_Yellow      = $9  ; "yellow", "pacman"
 ;Color_Indigo      = $b  ; Maze walls, flashing ghosts, ghost pupils
 Color_Dark_Pink   = $b  ; "food", "super food"
 Color_Green       = $c  ; Melon, strawberry top, orange leaf
-Color_Dark_Cyan = $d  ; dark cyan - Melon wrinkles and stem
-Color_Blue      = $e  ; blue => ghosts "scared", ghost pupil
-Color_Gray      = $f  ; gray => ghosts "scared", ghost eyes, text
+Color_Dark_Cyan   = $d  ; dark cyan - Melon wrinkles and stem
+Color_Blue        = $e  ; blue => ghosts "scared", ghost pupil
+Color_Gray        = $f  ; gray => ghosts "scared", ghost eyes, text
 
 Color_Blinky  = Color_Red
 Color_Inky    = Color_Cyan

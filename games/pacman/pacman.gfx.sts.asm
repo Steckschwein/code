@@ -381,6 +381,48 @@ gfx_vram_addr:
               sta a_vreg
               rts
 
+.export gfx_4bpp
+gfx_4bpp:
+              php
+              sei
+
+              bgcolor Color_Blue
+
+              jsr gfx_vram_xy
+
+              setPtr bonus_4bpp_cherry, p_gfx
+              ldy #0
+              lda (p_gfx),y
+              iny
+              lsr
+              sta r1
+              lda (p_gfx),y
+              iny
+              sta r2
+
+@rows:        ldx r1
+@cols:        lda (p_gfx),y
+              sta a_vram
+              iny
+              dex
+              vdp_wait_l 12
+              bne @cols
+
+              dec r2
+              beq @exit
+
+              lda p_vram ; vram addr Y +1 scanline
+              eor #$80
+              sta p_vram
+              bmi :+
+              inc p_vram+1
+:             jsr gfx_vram_addr
+              bra @rows
+
+@exit:        bgcolor Color_Bg
+              plp
+              rts
+
 .export gfx_ghost_icon
 gfx_ghost_icon:
               php
@@ -572,7 +614,7 @@ gfx_Sprite_Off=SPRITE_OFF+$08 ; +8, 212 line mode
 pacman_palette:
   vdp_pal 0,0,0         ;0
   vdp_pal $ff,0,0       ;1 "shadow", "blinky" red
-  vdp_pal $de,$97,$51   ;2 "food"
+  vdp_pal $de,$97,$51   ;2 orange top, cherry stem "food"
   vdp_pal $ff,$b8,$ff   ;3 "speedy", "pinky" pink
   vdp_pal 0,0,0         ;4
   vdp_pal 0,$ff,$ff     ;5 "bashful", "inky" cyan
@@ -618,6 +660,21 @@ shapes:
 
 ghost_2bpp:
   .include "ghost.2bpp.res"
+
+bonus_4bpp_apple:
+  .include "bonus.apple.4bpp.res"
+bonus_4bpp_bell:
+  .include "bonus.bell.4bpp.res"
+bonus_4bpp_cherry:
+  .include "bonus.cherry.4bpp.res"
+bonus_4bpp_galaxian:
+  .include "bonus.galaxian.4bpp.res"
+bonus_4bpp_key:
+  .include "bonus.key.4bpp.res"
+bonus_4bpp_melon:
+  .include "bonus.melon.4bpp.res"
+bonus_4bpp_orange:
+  .include "bonus.orange.4bpp.res"
 
 .bss
     sprite_tab_attr:      .res 9*4 ; 9 sprites, 4 byte per entry +1 y of sprite 10
