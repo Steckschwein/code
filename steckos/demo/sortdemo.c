@@ -33,13 +33,13 @@ unsigned char arr_tmp1[SORT_BUFFER_SIZE], arr_tmp2[SORT_BUFFER_SIZE];
 uint8_t temp;
 void swap(uint8_t* p1, uint8_t* p2)
 {
-    // temp = *p1;
-    // *p1 = *p2;
-    // *p2 = temp;
+    temp = *p1;
+    *p1 = *p2;
+    *p2 = temp;
 
-    *p1 = *p1 ^ *p2;
-    *p2 = *p1 ^ *p2;
-    *p1 = *p1 ^ *p2;
+    // *p1 = *p1 ^ *p2;
+    // *p2 = *p1 ^ *p2;
+    // *p1 = *p1 ^ *p2;
 
 }
 
@@ -586,6 +586,7 @@ static t_sortstruct lookuptable[] = {
     { "gnome",     "Gnome",        64, gnomeSort },
     { "comb",      "Comb",         255, combSort },
     { "selection", "Selection",    255, selectionSort },
+    { "heap",      "Heap",         255, heapSort },
     { "quick",     "Quick",        255, quickSortWrapper },
     { "merge",     "Merge",        255, mergeSortWrapper },
     { "radix",     "Radix",        255, radixsort },
