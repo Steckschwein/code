@@ -35,7 +35,7 @@ void main(int argc, char *argv[])
   size_t payloadLength = 0;
   bool result;
 
-  
+
   if (argc != 2)
   {
     s = URLstring;
@@ -69,7 +69,7 @@ void main(int argc, char *argv[])
   }
 
   initgraph(NULL, 3, NULL);
-  setbgcolor(LIGHTGRAY);
+  setbdcolor(LIGHTGRAY);
   setbkcolor(BLACK);
   cleardevice();
 

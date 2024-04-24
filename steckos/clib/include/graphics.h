@@ -78,8 +78,8 @@ void __fastcall__ graphics_setbkcolor (unsigned char color);
 /**
  * setbgcolor - sets the BORDER color
  */
-void __fastcall__ graphics_setbgcolor (unsigned char color);
-#define setbgcolor(color) graphics_setbgcolor(color)
+void __fastcall__ graphics_setbdcolor (unsigned char color);
+#define setbdcolor(color) graphics_setbdcolor(color)
 
 int __fastcall__ graphics_getbkcolor ();
 #define getbkcolor() graphics_getbkcolor()
