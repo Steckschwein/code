@@ -195,6 +195,13 @@
         rts
 .endproc
 
+; void __fastcall__ graphics_setbdcolor (unsigned char color);
+.export _graphics_setbdcolor
+.proc _graphics_setbdcolor
+        jsr graphics_getcolor
+        jmp vdp_bgcolor
+.endproc
+
 ; void __fastcall__ graphics_setbkcolor (unsigned char color);
 .export _graphics_setbkcolor
 .proc _graphics_setbkcolor
