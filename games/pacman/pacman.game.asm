@@ -109,6 +109,8 @@ game_ready_player:
               cmp #STATE_READY_PLAYER
               bne @exit
               jsr sound_play
+              ldx #Bonus_Clear
+              jsr gfx_bonus
               jsr game_init_actors
               draw_text _ready, Color_Yellow
               ldy #Color_Food
@@ -116,7 +118,8 @@ game_ready_player:
               lda #12
               jsr delete_message
               lda #STATE_READY_WAIT
-              jmp game_set_state
+              jsr game_set_state
+              ;dec game_state+GameState::frames ; fast start
 @exit:        rts
 
 game_ready_wait:
@@ -141,12 +144,6 @@ game_pacman_dying:
               cmp #STATE_DYING
               bne @exit
               jsr animate_screen
-              lda #$11
-              sta sys_crs_x
-              lda #$0e
-              sta sys_crs_y
-              jsr gfx_4bpp
-
               lda game_state+GameState::frames  ; TODO delay before dead
               lsr
               lsr
@@ -611,6 +608,15 @@ game_playing:
               jsr actors_move
               jsr animate_ghosts
               jsr animate_screen
+
+              lda game_state+GameState::frames
+              lsr
+              lsr
+              lsr
+              lsr
+              and #$07
+              tax
+              jsr gfx_bonus
 
               ldx #ACTOR_PACMAN
               lda actors+actor::dots,x   ; all dots collected ?

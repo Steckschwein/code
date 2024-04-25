@@ -345,8 +345,6 @@ gfx_bgcolor=vdp_bgcolor
 ;    sys_crs_x - x 0..31
 ;    sys_crs_y - y 0..26
 gfx_vram_xy:
-              lda #<.HIWORD(VRAM_SCREEN<<2)
-              sta p_vram+2      ; A16-A14 bank select via reg#14
               lda sys_crs_x
               assertA_le 31
               asl               ; X*4
@@ -363,15 +361,25 @@ gfx_vram_xy:
               rol               ; Bit 15 - rol over carry
               rol               ; Bit 14
               and #$03
-              ora p_vram+2
+              ora #<.HIWORD(VRAM_SCREEN<<2)
               sta a_vreg
-              sta p_vram+2
+              sta p_vram+2      ; A16-A14 bank select via reg#14
               lda #v_reg14
               vdp_wait_s 6
               sta a_vreg
-              vdp_wait_s 4
-gfx_vram_addr:
+
               lda p_vram
+              vdp_wait_s 4
+              bra gfx_vram_addr
+
+gfx_vram_inc_y:
+              lda p_vram ; vram addr Y +1 row (scanline)
+              eor #$80
+              sta p_vram
+              bmi gfx_vram_addr
+              inc p_vram+1
+
+gfx_vram_addr:
               sta a_vreg
               lda p_vram+1
               and #$3f
@@ -381,42 +389,64 @@ gfx_vram_addr:
               sta a_vreg
               rts
 
-.export gfx_4bpp
-gfx_4bpp:
+
+.macro gfx_vram_w _24bit, _addr
+   vdp_sreg <.HIWORD(_24bit<<2), v_reg14
+   lda #<.LOWORD(_24bit)
+   sta p_vram
+   vdp_wait_s 6
+   sta a_vreg
+   lda #(WRITE_ADDRESS | (>.LOWORD(_24bit) & $3f))
+   sta p_vram+1
+   vdp_wait_s 6
+   sta a_vreg
+.endmacro
+
+.export gfx_bonus
+gfx_bonus:
               php
               sei
 
               bgcolor Color_Blue
 
-              jsr gfx_vram_xy
+              gfx_vram_w (VRAM_SCREEN+$11*4+2+(($0d*8+2)*$80)), p_vram
 
-              setPtr bonus_4bpp_cherry, p_gfx
-              ldy #0
-              lda (p_gfx),y
-              iny
-              lsr
+              cpx #0
+              bne @bonus
+
+              ldy #$0c
+@erase:       ldx #$08
+@erase_cols:  vdp_wait_l 7
+              stz a_vram
+              dex
+              bne @erase_cols
+              jsr gfx_vram_inc_y
+              dey
+              bne @erase
+              plp
+              rts
+
+@bonus:       dex
+              lda bonus_4bpp_l,x
+              sta p_gfx
+              lda bonus_4bpp_h,x
+              sta p_gfx+1
+
+              lda #$0c
               sta r1
-              lda (p_gfx),y
-              iny
-              sta r2
-
-@rows:        ldx r1
+              ldy #0
+@rows:        ldx #8
 @cols:        lda (p_gfx),y
+              vdp_wait_l 12
               sta a_vram
               iny
               dex
-              vdp_wait_l 12
               bne @cols
 
-              dec r2
+              dec r1
               beq @exit
 
-              lda p_vram ; vram addr Y +1 scanline
-              eor #$80
-              sta p_vram
-              bmi :+
-              inc p_vram+1
-:             jsr gfx_vram_addr
+              jsr gfx_vram_inc_y
               bra @rows
 
 @exit:        bgcolor Color_Bg
@@ -439,23 +469,12 @@ gfx_ghost_icon:
               jsr gfx_vram_xy
 
               setPtr ghost_2bpp, p_gfx
-              ldy #0
-              lda (p_gfx),y
-              iny
-              asl
-              sta r1
-              lda (p_gfx),y
-              asl
-              asl
-              asl
+
+              lda #$10
               sta r2
-              setPtr (ghost_2bpp+2), p_gfx
-
-@rows:        lda r1
-              sta r4
-
+@rows:        lda #$06
+              sta r1
 @cols:        lda (p_gfx)
-
               ldy #2      ; 2bpp - 4px per byte
 @nybble:      asl
               rol
@@ -484,18 +503,13 @@ gfx_ghost_icon:
               inc p_gfx
               bne :+
               inc p_gfx+1
-:             dec r4
+:             dec r1
               bne @cols
 
               dec r2
               beq @exit
 
-              lda p_vram ; vram addr Y +1 scanline
-              eor #$80
-              sta p_vram
-              bmi :+
-              inc p_vram+1
-:             jsr gfx_vram_addr
+              jsr gfx_vram_inc_y
               bra @rows
 
 @exit:        plp
@@ -660,6 +674,23 @@ shapes:
 
 ghost_2bpp:
   .include "ghost.2bpp.res"
+
+bonus_4bpp_l:
+  .byte <bonus_4bpp_apple
+  .byte <bonus_4bpp_bell
+  .byte <bonus_4bpp_cherry
+  .byte <bonus_4bpp_galaxian
+  .byte <bonus_4bpp_key
+  .byte <bonus_4bpp_melon
+  .byte <bonus_4bpp_orange
+bonus_4bpp_h:
+  .byte >bonus_4bpp_apple
+  .byte >bonus_4bpp_bell
+  .byte >bonus_4bpp_cherry
+  .byte >bonus_4bpp_galaxian
+  .byte >bonus_4bpp_key
+  .byte >bonus_4bpp_melon
+  .byte >bonus_4bpp_orange
 
 bonus_4bpp_apple:
   .include "bonus.apple.4bpp.res"

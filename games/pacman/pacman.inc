@@ -37,6 +37,7 @@ Points_Superfood    = $50 ;
 .define Char_Pts $2a,$2b,$2c
 
 FRAMES_DELAY = $0f
+
 TXT_WAIT  =$01
 TXT_WAIT2 =$02
 TXT_GHOST =$03
@@ -55,10 +56,14 @@ STATE_INTRO         = $18
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
 
-
-SPRITE_NR_PACMAN  = 8*4
-SPRITE_NR_GHOST   = 0*4
-SPRITE_ADJUST     = $08
+Bonus_Clear       = 0
+Bonus_Apple       = 1
+Bonus_Bell        = 2
+Bonus_Cherry      = 3
+Bonus_Galaxian    = 4
+Bonus_Key         = 5
+Bonus_Melon       = 6
+Bonus_Orange      = 7
 
 Color_Bg          = $0  ; black
 Color_Red         = $1  ; "shadow", "blinky" red

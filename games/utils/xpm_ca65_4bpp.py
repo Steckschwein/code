@@ -50,7 +50,7 @@ def main():
 
 #  print ("colors: %s" % color_arr)
   print ("; 4bpp resource file generated from %s" % (args.filename))
-  print (".byte $%02x, $%02x ; width, height" % (w, h))
+  print ("; .byte $%02x, $%02x ; width, height" % (w, h))
   for ix, ln in enumerate(xpmLines[offset:]):
     bitmap(color_arr, ln.split("\"")[1])
     if ix == h-1:
