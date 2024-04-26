@@ -402,19 +402,72 @@ gfx_vram_addr:
    sta a_vreg
 .endmacro
 
+
+.export gfx_lives
+gfx_lives:
+          lda #31
+          sta sys_crs_y
+
+          ldx #MAX_LIVES
+@l0:      ldy #Color_Pacman
+          cpx game_state+GameState::lives_1up
+          bcc :+
+          beq :+
+          ldy #Color_Bg
+:         sty text_color
+          txa
+          asl   ; crs x pos live *2 FTW
+          sta sys_crs_x
+          lda #$b0
+          jsr gfx_charout
+          dec sys_crs_y
+          lda #$b1
+          jsr gfx_charout
+
+          inc sys_crs_x
+          lda #$b3
+          jsr gfx_charout
+          inc sys_crs_y
+          lda #$b2
+          jsr gfx_charout
+
+          dex
+          bne @l0
+          rts
+
+lives_vram_l:
+          .byte <.LOWORD(VRAM_SCREEN+1*4+2+((30*8+3)*$80))
+          .byte <.LOWORD(VRAM_SCREEN+3*4+2+((30*8+3)*$80))
+          .byte <.LOWORD(VRAM_SCREEN+5*4+2+((30*8+3)*$80))
+lives_vram_h:
+          .byte >.LOWORD(VRAM_SCREEN+1*4+2+((30*8+2)*$80)) & $3f
+          .byte >.LOWORD(VRAM_SCREEN+3*4+2+((30*8+2)*$80)) & $3f
+          .byte >.LOWORD(VRAM_SCREEN+5*4+2+((30*8+2)*$80)) & $3f
+lives_vram_e:
+          .byte <.HIWORD((VRAM_SCREEN+1*4+2+((30*8+2)*$80))<<2)
+          .byte <.HIWORD((VRAM_SCREEN+3*4+2+((30*8+2)*$80))<<2)
+          .byte <.HIWORD((VRAM_SCREEN+5*4+2+((30*8+2)*$80))<<2)
+
+
 .export gfx_bonus
 gfx_bonus:
               php
               sei
-
               bgcolor Color_Blue
 
               gfx_vram_w (VRAM_SCREEN+$11*4+2+(($0d*8+2)*$80)), p_vram
 
               cpx #0
-              bne @bonus
+              beq @erase0
 
-              ldy #$0c
+              dex ; adjust for table lookup
+              jsr gfx_4bpp
+
+              bgcolor Color_Bg
+              plp
+              rts
+
+@erase0:      ldy #$0c
 @erase:       ldx #$08
 @erase_cols:  vdp_wait_l 7
               stz a_vram
@@ -423,13 +476,14 @@ gfx_bonus:
               jsr gfx_vram_inc_y
               dey
               bne @erase
+
+              bgcolor Color_Bg
               plp
               rts
 
-@bonus:       dex
-              lda bonus_4bpp_l,x
+gfx_4bpp:     lda table_4bpp_l,x
               sta p_gfx
-              lda bonus_4bpp_h,x
+              lda table_4bpp_h,x
               sta p_gfx+1
 
               lda #$0c
@@ -444,14 +498,10 @@ gfx_bonus:
               bne @cols
 
               dec r1
-              beq @exit
-
+              beq :+
               jsr gfx_vram_inc_y
               bra @rows
-
-@exit:        bgcolor Color_Bg
-              plp
-              rts
+:             rts
 
 .export gfx_ghost_icon
 gfx_ghost_icon:
@@ -675,7 +725,7 @@ shapes:
 ghost_2bpp:
   .include "ghost.2bpp.res"
 
-bonus_4bpp_l:
+table_4bpp_l:
   .byte <bonus_4bpp_apple
   .byte <bonus_4bpp_bell
   .byte <bonus_4bpp_cherry
@@ -683,7 +733,8 @@ bonus_4bpp_l:
   .byte <bonus_4bpp_key
   .byte <bonus_4bpp_melon
   .byte <bonus_4bpp_orange
-bonus_4bpp_h:
+  .byte <pacman_4bpp_live
+table_4bpp_h:
   .byte >bonus_4bpp_apple
   .byte >bonus_4bpp_bell
   .byte >bonus_4bpp_cherry
@@ -691,6 +742,7 @@ bonus_4bpp_h:
   .byte >bonus_4bpp_key
   .byte >bonus_4bpp_melon
   .byte >bonus_4bpp_orange
+  .byte >pacman_4bpp_live
 
 bonus_4bpp_apple:
   .include "bonus.apple.4bpp.res"
@@ -706,6 +758,9 @@ bonus_4bpp_melon:
   .include "bonus.melon.4bpp.res"
 bonus_4bpp_orange:
   .include "bonus.orange.4bpp.res"
+pacman_4bpp_live:
+  .include "pacman.live.4bpp.res"
+
 
 .bss
     sprite_tab_attr:      .res 9*4 ; 9 sprites, 4 byte per entry +1 y of sprite 10

@@ -117,6 +117,8 @@ game_ready_player:
               jsr draw_superfood
               lda #12
               jsr delete_message
+              dec game_state+GameState::lives_1up ; dec 1 live, in game
+              jsr gfx_lives
               lda #STATE_READY_WAIT
               jsr game_set_state
               ;dec game_state+GameState::frames ; fast start
@@ -152,7 +154,7 @@ game_pacman_dying:
               bcc @pacman_dying
 
               lda #STATE_READY_PLAYER
-              dec game_state+GameState::lives_1up
+              ldy game_state+GameState::lives_1up
               bne @set_state
               ldy #Color_Food
               jsr draw_superfood
@@ -828,6 +830,8 @@ game_init:
               bne :-
 
               jsr gfx_display_maze
+
+              jsr gfx_lives
 
               lda #MAX_DOTS
               ldx #ACTOR_PACMAN

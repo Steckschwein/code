@@ -5,6 +5,8 @@
 KEY_EXIT = 27
 MAX_DOTS=240+4  ; food + superfood
 
+MAX_LIVES=3
+
 .globalzp p_maze
 .globalzp p_game
 .globalzp p_tmp
