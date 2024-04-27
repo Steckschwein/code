@@ -726,40 +726,40 @@ ghost_2bpp:
   .include "ghost.2bpp.res"
 
 table_4bpp_l:
-  .byte <bonus_4bpp_apple
-  .byte <bonus_4bpp_bell
   .byte <bonus_4bpp_cherry
-  .byte <bonus_4bpp_galaxian
-  .byte <bonus_4bpp_key
-  .byte <bonus_4bpp_melon
+  .byte <bonus_4bpp_strawberry
   .byte <bonus_4bpp_orange
-  .byte <pacman_4bpp_live
+  .byte <bonus_4bpp_apple
+  .byte <bonus_4bpp_grapes
+  .byte <bonus_4bpp_galaxian
+  .byte <bonus_4bpp_bell
+  .byte <bonus_4bpp_key
 table_4bpp_h:
-  .byte >bonus_4bpp_apple
-  .byte >bonus_4bpp_bell
   .byte >bonus_4bpp_cherry
-  .byte >bonus_4bpp_galaxian
-  .byte >bonus_4bpp_key
-  .byte >bonus_4bpp_melon
+  .byte >bonus_4bpp_strawberry
   .byte >bonus_4bpp_orange
-  .byte >pacman_4bpp_live
+  .byte >bonus_4bpp_apple
+  .byte >bonus_4bpp_grapes
+  .byte >bonus_4bpp_galaxian
+  .byte >bonus_4bpp_bell
+  .byte >bonus_4bpp_key
 
+bonus_4bpp_cherry:
+  .include "bonus.cherry.4bpp.res"
+bonus_4bpp_strawberry:
+  .include "bonus.strawberry.4bpp.res"
 bonus_4bpp_apple:
   .include "bonus.apple.4bpp.res"
 bonus_4bpp_bell:
   .include "bonus.bell.4bpp.res"
-bonus_4bpp_cherry:
-  .include "bonus.cherry.4bpp.res"
 bonus_4bpp_galaxian:
   .include "bonus.galaxian.4bpp.res"
 bonus_4bpp_key:
   .include "bonus.key.4bpp.res"
-bonus_4bpp_melon:
-  .include "bonus.melon.4bpp.res"
+bonus_4bpp_grapes:
+  .include "bonus.grapes.4bpp.res"
 bonus_4bpp_orange:
   .include "bonus.orange.4bpp.res"
-pacman_4bpp_live:
-  .include "pacman.live.4bpp.res"
 
 
 .bss

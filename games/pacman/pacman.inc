@@ -32,10 +32,6 @@ Char_Blank          = $c7   ;1100 0111
 Char_Bg             = $cf   ;1100 1111
 Char_Quote          = $22
 
-; scoring
-Points_Food         = $10 ;BCD values
-Points_Superfood    = $50 ;
-
 .define Char_Pts $2a,$2b,$2c
 
 FRAMES_DELAY = $0f
@@ -58,14 +54,15 @@ STATE_INTRO         = $18
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
 
-Bonus_Clear       = 0
-Bonus_Apple       = 1
-Bonus_Bell        = 2
-Bonus_Cherry      = 3
-Bonus_Galaxian    = 4
-Bonus_Key         = 5
-Bonus_Melon       = 6
-Bonus_Orange      = 7
+Bonus_Clear       = 0 ;
+Bonus_Cherry      = 1 ; level 1       100pts
+Bonus_Strawberry  = 2 ; level 2       300pts
+Bonus_Orange      = 3 ; level 3,4     500pts
+Bonus_Apple       = 4 ; level 5,6     700pts
+Bonus_Grapes      = 5 ; level 7,8   1.000pts
+Bonus_Galaxian    = 6 ; level 9,10  2.000pts
+Bonus_Bell        = 7 ; level 11,12 3.000pts
+Bonus_Key         = 8 ; level 13-   5.000pts
 
 Color_Bg          = $0  ; black
 Color_Red         = $1  ; "shadow", "blinky" red
@@ -195,8 +192,11 @@ ACT_DIR           = 1<<1|1<<0
   frames      .byte
 
   credit      .byte
+
   players     .byte   ; active players
   active_up   .byte   ; current player
+  score       .dword  ; score current player
+
   lives_1up   .byte
   lives_2up   .byte
   score_1up   .dword

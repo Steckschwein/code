@@ -114,7 +114,7 @@ game_ready_player:
               jsr game_init_actors
               draw_text _ready, Color_Yellow
               ldy #Color_Food
-              jsr draw_superfood
+              jsr draw_energizer
               lda #12
               jsr delete_message
               dec game_state+GameState::lives_1up ; dec 1 live, in game
@@ -157,7 +157,7 @@ game_pacman_dying:
               ldy game_state+GameState::lives_1up
               bne @set_state
               ldy #Color_Food
-              jsr draw_superfood
+              jsr draw_energizer
               draw_text _text_game_over, Color_Red
               lda #STATE_GAME_OVER
 @set_state:   jmp game_set_state
@@ -397,11 +397,11 @@ pacman_collect:
               jsr lda_maze_ptr_ay
               cmp #Char_Superfood
               bne :+
-              lda #Points_Superfood
+              lda #Points_Index_Energizer
               bne @erase_and_score
 :             cmp #Char_Food
               bne @exit
-              lda #Points_Food
+              lda #Points_Index_Dot
 @erase_and_score:
               pha
               dec actors+actor::dots,x
@@ -414,7 +414,7 @@ pacman_collect:
               sta (p_maze),y
               jsr gfx_charout
               pla
-              sta points+3  ; high to low
+              tya
               jsr add_scores
               jmp draw_scores
 @exit:        rts
@@ -623,17 +623,9 @@ game_playing:
               ldx #ACTOR_PACMAN
               lda actors+actor::dots,x   ; all dots collected ?
               bne @exit
-
-          ;    lda #
-              ;sta sprite_tab_attr+SPRITE_NR_PACMAN+SpriteTab::shape
-              ; sta actors+actor::shape,x
-              ; TODO sprite off screen gfx_xxx
-              ; lda #Maze_Tunnel
-              ; sta sprite_tab_attr+SPRITE_NR_GHOST+SpriteTab::ypos
-              ; jsr gfx_sprites_off
               lda #STATE_LEVEL_CLEARED
               jmp game_set_state
-@exit: rts
+@exit:        rts
 
 game_set_state:
     sta game_state+GameState::state
@@ -662,51 +654,49 @@ game_level_cleared:
 @exit: rts
 
 add_scores:
-              jsr @select_player_score
               sed
               clc
-              ldy #3
-:             lda game_state+GameState::score_1up,x
-              adc points,y
-              sta game_state+GameState::score_1up,y
-              dex
-              dey
-              bpl :-
+              lda game_state+GameState::score+0
+              adc points+1,y ; readable bcd, top down
+              sta game_state+GameState::score+0
+              lda game_state+GameState::score+1
+              adc points+0,y
+              sta game_state+GameState::score+1
+              lda game_state+GameState::score+2
+              adc #0
+              sta game_state+GameState::score+2
+              lda game_state+GameState::score+3
+              adc #0
+              sta game_state+GameState::score+3
               cld
 
-              ldy #0
-              inx ; x+1 from dex above
+              ldy #3
 @cmp:         lda game_state+GameState::highscore,y
-              cmp game_state+GameState::score_1up,x
+              cmp game_state+GameState::score,y
               bcc @copy ; highscore < score ?
               bne @exit
-              inx
-              iny
-              cpy #4
-              bne @cmp
-@exit:         rts
+              dey
+              bpl @cmp
+@exit:        rts
 
-@copy:        jsr @select_player_score
-              ldy #3
-:             lda game_state+GameState::score_1up,x
+@copy:        ldy #3
+:             lda game_state+GameState::score,y
               sta game_state+GameState::highscore,y
-              dex
               dey
               bpl :-
               rts
-@select_player_score:
-              lda game_state+GameState::active_up
-              tax
+
+select_player_score:
+              ldx game_state+GameState::active_up
               inx
               inx
               inx
               rts
 
 
-draw_scores:  ldx game_state+GameState::active_up ; TODO
-
-              ldx #0
+draw_scores:  ldx #0
               ldy #21
+              setPtr (game_state+GameState::score), p_game
               jsr _draw_score
               ldx #0
               ldy #8
@@ -717,47 +707,41 @@ _draw_score:
               sty sys_crs_y
               lda #Color_Text
               sta text_color
-              ldy #0
-@skip_zeros:
-              lda (p_game),y
-              beq @skip ;00 ?
-              and #$f0  ;0? ?
+              ldy #3
+@next:        lda (p_game),y
+              bne :+
+              dec sys_crs_y ;skip digits
+              dec sys_crs_y
+              dey
+              bpl @next
+              rts
+:             and #$f0  ;0? ?
               bne @digits
               dec sys_crs_y ;output the 0-9 only
               lda (p_game),y
               jsr out_digit
               jmp @digits_inc
-@skip:
-              dec sys_crs_y ;skip digits
-              dec sys_crs_y
-              iny
-              cpy #04
-              bne @skip_zeros
-              rts
-@digits:
-              lda (p_game),y
+@digits:      lda (p_game),y
               jsr out_digits
-@digits_inc:
-              iny
-              cpy #04
-              bne @digits
+@digits_inc:  dey
+              bpl @digits
               rts
 
 
 animate_screen:
               jsr animate_up
-animate_superfood:
+animate_energizer:
               ldy #Color_Food
               lda game_state+GameState::frames
               and #$08
-              bne draw_superfood
+              bne draw_energizer
               tay
-draw_superfood:
+draw_energizer:
               sty text_color
               ldx #3
-@l0:          lda superfood_x,x
+@l0:          lda energizer_x,x
               sta sys_crs_x
-              ldy superfood_y,x
+              ldy energizer_y,x
               sty sys_crs_y
               jsr lda_maze_ptr_ay
               cmp #Char_Blank ; eaten?
@@ -798,14 +782,14 @@ game_init:
               rts
 @init:        jsr gfx_sprites_off
 
-              lda #0
               ldy #3
               sty game_state+GameState::lives_1up
               sty game_state+GameState::lives_2up
 
-:             sta points+0,y
-              sta game_state+GameState::score_1up+0,y
-              sta game_state+GameState::score_2up+0,y
+              lda #0
+:             sta game_state+GameState::score_1up,y
+              sta game_state+GameState::score_2up,y
+              sta game_state+GameState::score,y
               dey
               bpl :-
 
@@ -943,9 +927,9 @@ actor_strategy:
 maze:
   .include "pacman.maze.inc"
 
-superfood_x:
+energizer_x:
    .byte 4,24,4,24
-superfood_y:
+energizer_y:
    .byte 1,1,26,26
 
 _vectors:  ; X, Y adjust
@@ -977,12 +961,36 @@ _ready:
 _text_game_over:
     .byte 18,18, "GAME  OVER",0
 
+
+Points_Index_Dot=0
+Points_Index_Energizer=2
+
+
+; 70 dots, 170 dots
+; bonus visible between nine and ten seconds. The exact duration (i.e., 9.3333 seconds, 10.0 seconds, 9.75
+points: ; score low values in BCD
+  .byte $00,$10 ; dot / pill
+  .byte $00,$50 ; energizer
+  .byte $01,$00 ; cherry
+  .byte $03,$00 ; strawberry
+  .byte $05,$00 ; orange
+  .byte $07,$00 ; apple
+  .byte $10,$00 ; grapes
+  .byte $20,$00 ; galaxian
+  .byte $30,$00 ; bell
+  .byte $50,$00 ; key
+
+  .byte $26,$00 ; level cleared
+  .byte $02,$00 ; ghost catched 200,400,800,1600pts (shift left for any further ghost) - blue time reduced from 7 to 2s
+  ;TODO
+  .byte $01,$20,$00 ; 4 times all ghosts catched, 12.000 pts extra
+
+
 .export game_maze
 .export actors
 
 .bss
   save_irq:         .res 2
-  points:           .res 4
   input_direction:  .res 1
   keyboard_input:   .res 1
   actors:           .res 5*.sizeof(actor)
