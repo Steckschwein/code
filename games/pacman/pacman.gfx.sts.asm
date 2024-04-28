@@ -309,9 +309,9 @@ gfx_display_maze:
 @put_char:
         lda (p_gfx),y
         pha
-        cmp #Char_Food
+        cmp #Char_Dot
         beq @food
-        cmp #Char_Superfood
+        cmp #Char_Energizer
         bne @text
 @food:  lda #Color_Food
         bne @color

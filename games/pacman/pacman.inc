@@ -24,13 +24,15 @@ MAX_LIVES=3
 
 IRQ_VEC = $fffe
 
-Char_Food           = $cc   ;1100 1100
+Char_Dot            = $cc   ;1100 1100
                             ;1100 1101
-Char_Superfood      = $ce   ;1100 1110 $cd/$ce
+Char_Bonus          = $cd
+Char_Energizer      = $ce   ;1100 1110 $ce
 ;                   = $c6   ;1100 0110
 Char_Blank          = $c7   ;1100 0111
 Char_Bg             = $cf   ;1100 1111
 Char_Quote          = $22
+
 
 .define Char_Pts $2a,$2b,$2c
 
@@ -54,6 +56,10 @@ STATE_INTRO         = $18
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
 
+Bonus_Dots_Trig1    = 70
+Bonus_Dots_Trig2    = 170
+Bonus_Frames_Cnt    = 150 ; count down every 4 frames
+
 Bonus_Clear       = 0 ;
 Bonus_Cherry      = 1 ; level 1       100pts
 Bonus_Strawberry  = 2 ; level 2       300pts
@@ -63,6 +69,8 @@ Bonus_Grapes      = 5 ; level 7,8   1.000pts
 Bonus_Galaxian    = 6 ; level 9,10  2.000pts
 Bonus_Bell        = 7 ; level 11,12 3.000pts
 Bonus_Key         = 8 ; level 13-   5.000pts
+Bonus1_Triggered  = 1<<6  ; mark whether bonus was triggered
+Bonus2_Triggered  = 1<<7
 
 Color_Bg          = $0  ; black
 Color_Red         = $1  ; "shadow", "blinky" red
@@ -197,6 +205,11 @@ ACT_DIR           = 1<<1|1<<0
   active_up   .byte   ; current player
   score       .dword  ; score current player
 
+  level       .byte   ; the current level
+  dots        .byte   ; remaining dots - MAX_DOTS at start
+  bonus       .byte   ; bonus of current level
+  bonus_cnt   .byte   ; frame counter
+
   lives_1up   .byte
   lives_2up   .byte
   score_1up   .dword
@@ -215,7 +228,7 @@ ACT_DIR           = 1<<1|1<<0
     move        .byte    ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
     turn        .byte    ; bit 7 turn, bit 1-0 turn direction
 
-    dots        .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
+    ;dots        .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
 ;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
 

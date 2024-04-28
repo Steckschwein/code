@@ -140,12 +140,12 @@ _points:
   .byte TXT_CRS_XY, 24,15, "50 ", Char_Pts
   .byte 0
 _food:
-  .byte 22,17, Char_Food
-  .byte TXT_CRS_XY, 24,17, Char_Superfood
+  .byte 22,17, Char_Dot
+  .byte TXT_CRS_XY, 24,17, Char_Energizer
   .byte TXT_WAIT2, TXT_WAIT2, 0
 _superfood:
-  .byte 19,22, Char_Superfood
-  .byte TXT_CRS_XY, 24,17, Char_Superfood
+  .byte 19,22, Char_Energizer
+  .byte TXT_CRS_XY, 24,17, Char_Energizer
   .byte 0
 
 ; get ready
