@@ -58,7 +58,7 @@ STATE_EXIT          = 1<<7
 
 Bonus_Dots_Trig1    = 70
 Bonus_Dots_Trig2    = 170
-Bonus_Frames_Cnt    = 150 ; count down every 4 frames
+Bonus_Time          = 150 ; count down every 4 frames gives ~9-10s
 
 Bonus_Clear       = 0 ;
 Bonus_Cherry      = 1 ; level 1       100pts

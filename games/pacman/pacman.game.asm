@@ -306,22 +306,22 @@ actor_center:
     jmp l_test
 
 actor_move:
-    lda actors+actor::turn,x
-    bpl actor_move_dir      ; turning?
-    jsr actor_center
-    bne @actor_turn_soft      ;
-    lda actors+actor::turn,x  ;
-    and #<~ACT_TURN
-    sta actors+actor::turn,x
+              lda actors+actor::turn,x
+              bpl actor_move_dir      ; turning?
+              jsr actor_center
+              bne @actor_turn_soft      ;
+              lda actors+actor::turn,x  ;
+              and #<~ACT_TURN
+              sta actors+actor::turn,x
 @actor_turn_soft:
-    lda actors+actor::turn,x
-    jsr actor_move_sprite
+              lda actors+actor::turn,x
+              jsr actor_move_sprite
 
 actor_move_dir:
-    lda actors+actor::move,x
-    bpl :+
-    jsr actor_strategy
-:    jmp pacman_collect
+              lda actors+actor::move,x
+              bpl :+
+              jsr actor_strategy
+:             jmp pacman_collect
 
 pacman_move:
     jsr actor_center      ; center reached?
@@ -407,6 +407,8 @@ pacman_collect:
               beq @score_and_erase  ; dots index is 0
 :             cmp #Char_Bonus
               bne @exit
+              lda #1
+              sta game_state+GameState::bonus_cnt
               lda game_state+GameState::bonus
               and #$3f
               asl
@@ -649,7 +651,7 @@ animate_bonus:
               and #$3f
               tax
               jsr gfx_bonus
-              lda #Bonus_Frames_Cnt
+              lda #Bonus_Time
               sta game_state+GameState::bonus_cnt
               lda #Char_Bonus
               sta game_maze+($12+$20*$0d)
