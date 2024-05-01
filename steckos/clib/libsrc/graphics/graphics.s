@@ -53,32 +53,35 @@
 ; void __fastcall__ graphics_initgraph( char graphmode );
 .export _graphics_initgraph
 .proc _graphics_initgraph
+        pha
+        stz _graphics_status
+        cmp #7
+        beq :+
+        jsr graphics_load_palette
+        bra @mode
+:       lda #1<<7
+        sta _graphics_status
+@mode:  pla
         jmp _vdp_screen
 .endproc
 
+; void __fastcall__ graphics_cleardevice();
+.export _graphics_cleardevice
+.proc _graphics_cleardevice
+        lda _graphics_color_bk
+        jmp _vdp_blank
+.endproc
 
 ; int __fastcall__  vdp_maxx();
 .export _graphics_getmaxx
 .proc _graphics_getmaxx
-        ldx #0
-        lda #$ff  ; TODO
-        rts
+        jmp _vdp_maxx
 .endproc
 
 ; int __fastcall__ graphics_getmaxy();
 .export _graphics_getmaxy
 .proc _graphics_getmaxy
-        ldx #0
-        lda #211  ; TODO
-        rts
-.endproc
-
-; int __fastcall__ graphics_getcolor();
-.export _graphics_getcolor
-.proc _graphics_getcolor
-        lda _graphics_color
-        ldx #0
-        rts
+        jmp _vdp_maxy
 .endproc
 
 ; void __fastcall__ graphics_putpixel(int x, char y, char color);
@@ -184,46 +187,114 @@
 ;@plot:  jmp (gfx_plot_table,x)
 .endproc
 
+; int __fastcall__ graphics_getbkcolor();
+.export _graphics_getbkcolor
+.proc _graphics_getbkcolor
+        lda _graphics_color_bk
+        ldx #0
+        rts
+.endproc
+
+; void __fastcall__ graphics_setbdcolor (unsigned char color);
+.export _graphics_setbdcolor
+.proc _graphics_setbdcolor
+        jsr graphics_getcolor
+        jmp vdp_bgcolor
+.endproc
+
+; void __fastcall__ graphics_setbkcolor (unsigned char color);
+.export _graphics_setbkcolor
+.proc _graphics_setbkcolor
+        jsr graphics_getcolor
+        sta _graphics_color_bk ; mirror
+        rts
+.endproc
+
 ; void __fastcall__ graphics_setfillstyle ( int pattern, unsigned char color);
 .export _graphics_setfillstyle
 .proc _graphics_setfillstyle
-        jsr graphics_colors
+        jsr graphics_getcolor
         sta _graphics_color_fill
         jmp popax
+.endproc
+
+
+; int __fastcall__ graphics_getcolor();
+.export _graphics_getcolor
+.proc _graphics_getcolor
+        jmp _vdp_getcolor
 .endproc
 
 ; void __fastcall__ graphics_setcolor (unsigned char color);
 .export _graphics_setcolor
 .proc _graphics_setcolor
-        jsr graphics_colors
-        sta _graphics_color
+        jsr graphics_getcolor
+        sta _graphics_color ; mirror
         jmp _vdp_setcolor
 .endproc
 
-graphics_colors:
+graphics_getcolor:
+        bit _graphics_status  ; palette or grb ?
+        bpl :+
         and #$0f
         tay
-        lda @colors,y
+        lda bgi_grb_color,y
+:       rts
+
+graphics_load_palette:
+    		vdp_sreg 0, v_reg16
+        ldx #0
+:       lda bgi_palette+0, x
+        vdp_wait_s 12
+        sta a_vregpal
+        lda bgi_palette+1, x
+        vdp_wait_s 4
+        sta a_vregpal
+        inx
+        inx
+        cpx #2*16
+    		bne :-
         rts
-@colors:
-    ; { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, LIGHTGRAY, DARKGRAY, LIGHTBLUE, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE }
-        vdp_rgb 0,0,0
-        vdp_rgb 0,0,255
-        vdp_rgb 0,255,0
-        vdp_rgb 0,255,255 ; CYAN
-        vdp_rgb 255,0,0
-        vdp_rgb 255,0,255 ; MAGENTA
-        vdp_rgb 128,64,0
-        vdp_rgb 200,200,200
+
+.data
+bgi_grb_color:
+        vdp_rgb 0,0,0       ; BLACK
+        vdp_rgb 0,0,255     ; BLUE
+        vdp_rgb 0,255,0     ; GREEN
+        vdp_rgb 0,255,255   ; CYAN
+        vdp_rgb 255,0,0     ; RED
+        vdp_rgb 255,0,255   ; MAGENTA
+        vdp_rgb 128,64,0    ; BROWN
+        vdp_rgb 200,200,200 ; LIGHTGRAY
         vdp_rgb 128,128,128 ; DARKGRAY
         vdp_rgb 128,128,255 ; LIGHTBLUE
         vdp_rgb 128,255,128 ; LIGHTGREEN
-        vdp_rgb 128,255,255
+        vdp_rgb 128,255,255 ; LIGHTCYAN
         vdp_rgb 255,128,128 ; LIGHTRED
         vdp_rgb 255,128,255 ; LIGHTMAGENTA
-        vdp_rgb 255,255,0
+        vdp_rgb 255,255,0   ; YELLOW
         vdp_rgb 255,255,255 ; WHITE
 
+bgi_palette:
+        vdp_pal 0,0,0       ; BLACK
+        vdp_pal 0,0,255     ; BLUE
+        vdp_pal 0,255,0     ; GREEN
+        vdp_pal 0,255,255   ; CYAN
+        vdp_pal 255,0,0     ; RED
+        vdp_pal 255,0,255   ; MAGENTA
+        vdp_pal 128,64,0    ; BROWN
+        vdp_pal 200,200,200 ; LIGHTGRAY
+        vdp_pal 128,128,128 ; DARKGRAY
+        vdp_pal 128,128,255 ; LIGHTBLUE
+        vdp_pal 128,255,128 ; LIGHTGREEN
+        vdp_pal 128,255,255 ; LIGHTCYAN
+        vdp_pal 255,128,128 ; LIGHTRED
+        vdp_pal 255,128,255 ; LIGHTMAGENTA
+        vdp_pal 255,255,0   ; YELLOW
+        vdp_pal 255,255,255 ; WHITE
+
 .bss
-  _graphics_color:      .res 1
+  _graphics_status:     .res 1  ; Bit 7 - colors are rgb (1) or palette (0)
+  _graphics_color:      .res 1  ; mirror
+  _graphics_color_bk:   .res 1  ;
   _graphics_color_fill: .res 1

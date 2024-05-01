@@ -44,6 +44,10 @@ void __fastcall__ vdp_memcpy (unsigned char *data, unsigned int vramaddress, uns
 
 void __fastcall__ vdp_screen (unsigned char mode);
 
+int __fastcall__ vdp_maxx();
+
+int __fastcall__ vdp_maxy();
+
 void __fastcall__ vdp_reg (unsigned char reg, unsigned char val);
 
 void __fastcall__ vdp_plot (unsigned int x, unsigned char y, unsigned char color);
