@@ -165,8 +165,10 @@ ACT_DIR           = 1<<1|1<<0
 
 .macro bgcolor color
   .ifdef __DEBUG
+    pha
     lda #color
     jsr gfx_bgcolor
+    pla
   .endif
 .endmacro
 
@@ -197,6 +199,7 @@ ACT_DIR           = 1<<1|1<<0
 .endmacro
 
 .struct GameState
+  fn          .addr
   state       .byte
   frames      .byte
 

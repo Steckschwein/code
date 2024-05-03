@@ -1,5 +1,6 @@
 .export game
 .export draw_highscore
+.export bonus_for_level
 
 .include "pacman.inc"
 
@@ -41,9 +42,13 @@ game:
     bne :+
     lda #STATE_INIT
     beq @set_state
-:   cmp #'l'
+:   cmp #'i'
     bne :+
     lda #STATE_LEVEL_INIT
+    bne @set_state
+:   cmp #'c'
+    bne :+
+    lda #STATE_LEVEL_CLEARED
     bne @set_state
 :   cmp #'p'
     bne @exit_key
@@ -67,13 +72,14 @@ game:
 game_isr:
     push_axy
     jsr io_isr
-    bpl game_isr_exit
+    bpl @exit
 
     border_color Color_Yellow
     jsr gfx_update
 
     border_color Color_Gray
 
+    ;jsr @call_state_fn
     jsr game_init
     jsr game_level_init
     jsr game_ready
@@ -82,7 +88,6 @@ game_isr:
     jsr game_playing
     jsr game_pacman_dying
     jsr game_level_cleared
-    ;TODO jsr game_next_level
     jsr game_game_over
 
     inc game_state+GameState::frames
@@ -90,10 +95,12 @@ game_isr:
     border_color Color_Cyan
     ;jsr debug
 .endif
-game_isr_exit:
+@exit:
     border_color Color_Bg
     pop_axy
     rti
+@call_state_fn:
+    jmp (game_state+GameState::fn)
 
 game_ready:
               lda game_state+GameState::state
@@ -112,9 +119,8 @@ game_ready_player:
               cmp #STATE_READY_PLAYER
               bne @exit
               jsr sound_play
-              ldx #Bonus_Clear
-              jsr gfx_bonus
               jsr game_init_actors
+              jsr animate_bonus
               draw_text _ready, Color_Yellow
               ldy #Color_Food
               jsr draw_energizer
@@ -122,9 +128,11 @@ game_ready_player:
               jsr delete_message
               dec game_state+GameState::lives_1up ; dec 1 live, in game
               jsr gfx_lives
-              lda #STATE_READY_WAIT
-              jsr game_set_state
+
+
               ;dec game_state+GameState::frames ; fast start
+              lda #STATE_READY_WAIT
+              jmp game_set_state
 @exit:        rts
 
 game_ready_wait:
@@ -626,6 +634,29 @@ game_playing:
               jmp game_set_state
 @exit:        rts
 
+; in: A - level
+; out: Y - bonus
+bonus_for_level:
+              tay
+              cmp #2+1 ; level 1 or 2 bonus 1 or 2
+              bcc :+
+              ldy #3
+              cmp #4+1 ; level 3,4 bonus 3
+              bcc :+
+              iny
+              cmp #6+1 ; level 5,6 bonus 4
+              bcc :+
+              iny
+              cmp #8+1 ; level 7,8 bonus 5
+              bcc :+
+              iny
+              cmp #10+1 ; level 9,10 bonus 6
+              bcc :+
+              iny
+              cmp #12+1 ; level 11,12 bonus 7
+              bcc :+
+              iny ; level 13- bonus 8
+:             rts
 
 animate_bonus:
               lda game_state+GameState::bonus_cnt
@@ -635,7 +666,7 @@ animate_bonus:
               bne @exit
               dec game_state+GameState::bonus_cnt
               bne @exit
-              ldx #Bonus_Clear
+              lda #Bonus_Clear
               jmp gfx_bonus
 @bonus_trig:
               lda game_state+GameState::dots
@@ -652,29 +683,32 @@ animate_bonus:
 @bonus:       ora game_state+GameState::bonus
               sta game_state+GameState::bonus
               and #$3f
-              tax
               jsr gfx_bonus
               lda #Bonus_Time
               sta game_state+GameState::bonus_cnt
-              lda #Char_Bonus
+              lda #Char_Bonus ; set char in maze which will be handled in collect
               sta game_maze+($12+$20*$0d)
 @exit:        rts
 
 game_set_state:
               sta game_state+GameState::state
-              lda #1
+              lda #1   ; otherwise ready frames are skipped immediately
               sta game_state+GameState::frames
-              ;inc game_state+GameState::frames ; otherwise ready frames are skipped immediuately
               rts
 
 game_level_init:
               lda game_state+GameState::state
               cmp #STATE_LEVEL_INIT
-              bne @exit
+              beq @init
+              rts
 
-              jsr gfx_sprites_off
-              lda #Bonus_Strawberry
-              sta game_state+GameState::bonus
+@init:        jsr gfx_sprites_off
+
+              inc game_state+GameState::level ; next level
+
+              lda game_state+GameState::level
+              jsr bonus_for_level
+              sty game_state+GameState::bonus
 
               lda #MAX_DOTS
               sta game_state+GameState::dots
@@ -700,8 +734,10 @@ game_level_init:
               bne :-
 
               jsr gfx_display_maze
-
               jsr gfx_lives
+
+              lda game_state+GameState::level
+              jsr gfx_bonus_stack
 
               draw_text _ready, Color_Yellow
 
@@ -712,7 +748,6 @@ game_level_init:
 :
               lda #STATE_READY
               jmp game_set_state
-@exit:        rts
 
 
 game_level_cleared:
@@ -723,7 +758,7 @@ game_level_cleared:
               lda game_state+GameState::frames
               cmp #$88
               bne @rotate
-              lda #STATE_INIT ;
+              lda #STATE_LEVEL_INIT
               jsr game_set_state
 @rotate:
               lsr
@@ -880,33 +915,33 @@ game_init:
               jmp game_set_state
 
 game_init_actors:
-    ldy #0
-    ldx #ACTOR_BLINKY
-    jsr game_init_actor
-    ldx #ACTOR_INKY
-    jsr game_init_actor
-    ldx #ACTOR_PINKY
-    jsr game_init_actor
-    ldx #ACTOR_CLYDE
-    jsr game_init_actor
-    jsr animate_ghosts
+              ldy #0
+              ldx #ACTOR_BLINKY
+              jsr game_init_actor
+              ldx #ACTOR_INKY
+              jsr game_init_actor
+              ldx #ACTOR_PINKY
+              jsr game_init_actor
+              ldx #ACTOR_CLYDE
+              jsr game_init_actor
+              jsr animate_ghosts
 
-    ldx #ACTOR_PACMAN
-    jsr game_init_actor
-    lda #2
-    sta actors+actor::shape,x
+              ldx #ACTOR_PACMAN
+              jsr game_init_actor
+              lda #2
+              sta actors+actor::shape,x
 
-    jmp gfx_sprites_on
+              jmp gfx_sprites_on
 
 game_init_actor:
-    lda actor_init_x,y
-    sta actors+actor::sp_x,x
-    lda actor_init_y,y
-    sta actors+actor::sp_y,x
-    lda actor_init_d,y
-    sta actors+actor::move,x
-    iny
-    rts
+              lda actor_init_x,y
+              sta actors+actor::sp_x,x
+              lda actor_init_y,y
+              sta actors+actor::sp_y,x
+              lda actor_init_d,y
+              sta actors+actor::move,x
+              iny
+              rts
 
 
 actor_init_x: ; sprite pos x of b,p,i,c,p
@@ -948,7 +983,7 @@ ai_ghost:
 
     lda actors+actor::move,x
     eor #ACT_DIR ;? inverse
-:      sta game_tmp
+:   sta game_tmp
     jsr actor_can_move_to_direction
     lda game_tmp
     eor #$01    ; ?left right?

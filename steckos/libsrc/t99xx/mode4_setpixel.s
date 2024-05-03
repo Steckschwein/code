@@ -58,10 +58,9 @@ vdp_mode4_set_pixel:
       pha
 
       tya
-      clc
-      rol                   ; A16-A14 bank select via reg#14, rol over carry
+      asl                   ; A16-A14 bank select via reg#14, rol over carry
       rol
-      and #$03
+      and #$01
       ora #<.HIWORD(ADDRESS_GFX4_SCREEN<<2)
       vdp_wait_s 12
       sta a_vreg

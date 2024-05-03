@@ -22,12 +22,12 @@ frame_isr:
     jsr io_isr    ; v-blank?
     bpl @exit
 
-    border_color Color_Yellow
+    bgcolor Color_Yellow
 
     dec game_state+GameState::frames
 
 @exit:
-    border_color Color_Bg
+    bgcolor Color_Bg
     pop_axy
     rti
 

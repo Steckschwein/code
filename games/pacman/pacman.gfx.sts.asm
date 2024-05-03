@@ -338,16 +338,35 @@ gfx_display_maze:
 @exit:  rts
 
 gfx_bordercolor=vdp_bgcolor
-gfx_bgcolor=vdp_bgcolor
+gfx_bgcolor:
+              phy
+              jsr vdp_bgcolor
+              ply
+              rts
 
-; set the vdp vram address
+; set the vdp vram address upon X/Y pixel position
+;  in:
+;    sys_crs_x - x 0..128 - multiple of 2
+;    sys_crs_y - y 0..240 (overscan)
+gfx_vram_xy:
+              tya
+              lsr                   ; Y Bit 0 to carry
+              txa
+              ror                   ; X/2 OR with Y Bit 0 (carry)
+              sta p_vram            ; A7-A0 vram address low byte
+
+              tya
+              lsr
+              bra gfx_vram_h        ; A13-A8 vram address high byte
+
+; set the vdp vram address upon crs x/y
 ;  in:
 ;    sys_crs_x - x 0..31
-;    sys_crs_y - y 0..26
-gfx_vram_xy:
+;    sys_crs_y - y 0..31 (overscan)
+gfx_vram_crs:
               lda sys_crs_x
               assertA_le 31
-              asl               ; X*4
+              asl               ; X*4 (2px per byte)
               asl
               sta p_vram        ; A7-A0 vram address low byte
 
@@ -355,8 +374,8 @@ gfx_vram_xy:
               assertA_le 31     ; effectively high byte Y*4
               asl
               asl
-              sta p_vram+1
 
+gfx_vram_h:   sta p_vram+1
               asl
               rol               ; Bit 15 - rol over carry
               rol               ; Bit 14
@@ -390,106 +409,89 @@ gfx_vram_addr:
               rts
 
 
-.macro gfx_vram_w _24bit, _addr
-   vdp_sreg <.HIWORD(_24bit<<2), v_reg14
-   lda #<.LOWORD(_24bit)
-   sta p_vram
-   vdp_wait_s 6
-   sta a_vreg
-   lda #(WRITE_ADDRESS | (>.LOWORD(_24bit) & $3f))
-   sta p_vram+1
-   vdp_wait_s 6
-   sta a_vreg
-.endmacro
-
-
 .export gfx_lives
 gfx_lives:
-          lda #31
-          sta sys_crs_y
+              lda #31
+              sta sys_crs_y
+              ldx #MAX_LIVES
+@l0:          ldy #Color_Pacman
+              cpx game_state+GameState::lives_1up
+              bcc :+
+              beq :+
+              ldy #Color_Bg
+:             sty text_color
+              txa
+              asl   ; crs x pos live *2 FTW
+              sta sys_crs_x
+              lda #$b0
+              jsr gfx_charout
+              dec sys_crs_y
+              lda #$b1
+              jsr gfx_charout
 
-          ldx #MAX_LIVES
-@l0:      ldy #Color_Pacman
-          cpx game_state+GameState::lives_1up
-          bcc :+
-          beq :+
-          ldy #Color_Bg
-:         sty text_color
-          txa
-          asl   ; crs x pos live *2 FTW
-          sta sys_crs_x
-          lda #$b0
-          jsr gfx_charout
-          dec sys_crs_y
-          lda #$b1
-          jsr gfx_charout
+              inc sys_crs_x
+              lda #$b3
+              jsr gfx_charout
+              inc sys_crs_y
+              lda #$b2
+              jsr gfx_charout
 
-          inc sys_crs_x
-          lda #$b3
-          jsr gfx_charout
-          inc sys_crs_y
-          lda #$b2
-          jsr gfx_charout
+              dex
+              bne @l0
+              rts
 
-          dex
-          bne @l0
-          rts
-
-lives_vram_l:
-          .byte <.LOWORD(VRAM_SCREEN+1*4+2+((30*8+3)*$80))
-          .byte <.LOWORD(VRAM_SCREEN+3*4+2+((30*8+3)*$80))
-          .byte <.LOWORD(VRAM_SCREEN+5*4+2+((30*8+3)*$80))
-lives_vram_h:
-          .byte >.LOWORD(VRAM_SCREEN+1*4+2+((30*8+2)*$80)) & $3f
-          .byte >.LOWORD(VRAM_SCREEN+3*4+2+((30*8+2)*$80)) & $3f
-          .byte >.LOWORD(VRAM_SCREEN+5*4+2+((30*8+2)*$80)) & $3f
-lives_vram_e:
-          .byte <.HIWORD((VRAM_SCREEN+1*4+2+((30*8+2)*$80))<<2)
-          .byte <.HIWORD((VRAM_SCREEN+3*4+2+((30*8+2)*$80))<<2)
-          .byte <.HIWORD((VRAM_SCREEN+5*4+2+((30*8+2)*$80))<<2)
-
+.export gfx_bonus_stack
+; in
+;   A - level
+gfx_bonus_stack:
+              sta r2    ; save current level
+              lda #17*8
+              sta r3
+              lda #7    ; max 7 bonus items visible on stack, we build top down
+              sta r4
+@next:        ldy #Bonus_Clear
+              lda r2
+              cmp r4
+              bcc @bonus
+              dec r2    ; level - 1
+              jsr bonus_for_level
+@bonus:       tya
+              ldx r3
+              ldy #31*8-5
+              jsr bonus_xy
+              lda r3    ; inc x position
+              clc
+              adc #16
+              sta r3
+              dec r4
+              bne @next
+              rts
 
 .export gfx_bonus
-gfx_bonus:
-              php
-              sei
+gfx_bonus:    ; bonus below ghost house
+              ldx #$11*8+6
+              ldy #$0d*8+2
+bonus_xy:
+              pha
+              jsr gfx_vram_xy
+              pla
+
               bgcolor Color_Blue
 
-              gfx_vram_w (VRAM_SCREEN+$11*4+2+(($0d*8+2)*$80)), p_vram
-
-              cpx #0
+              cmp #0
               beq @erase0
 
-              dex ; adjust for table lookup
-              jsr gfx_4bpp
-
-              bgcolor Color_Bg
-              plp
-              rts
-
-@erase0:      ldy #$0c
-@erase:       ldx #$08
-@erase_cols:  vdp_wait_l 7
-              stz a_vram
-              dex
-              bne @erase_cols
-              jsr gfx_vram_inc_y
-              dey
-              bne @erase
-
-              bgcolor Color_Bg
-              plp
-              rts
-
-gfx_4bpp:     lda table_4bpp_l,x
+              dea ; adjust for table lookup
+              tay
+              lda table_4bpp_l,y
               sta p_gfx
-              lda table_4bpp_h,x
+              lda table_4bpp_h,y
               sta p_gfx+1
 
               lda #$0c
               sta r1
               ldy #0
-@rows:        ldx #8
+@rows:        ldx #7
 @cols:        lda (p_gfx),y
               vdp_wait_l 12
               sta a_vram
@@ -498,10 +500,22 @@ gfx_4bpp:     lda table_4bpp_l,x
               bne @cols
 
               dec r1
-              beq :+
+              beq @exit
               jsr gfx_vram_inc_y
               bra @rows
-:             rts
+
+@erase0:      ldy #$0c
+@erase:       ldx #$07
+@erase_cols:  vdp_wait_l 7
+              stz a_vram
+              dex
+              bne @erase_cols
+              jsr gfx_vram_inc_y
+              dey
+              bne @erase
+
+@exit:        bgcolor Color_Bg
+              rts
 
 .export gfx_ghost_icon
 gfx_ghost_icon:
@@ -516,7 +530,7 @@ gfx_ghost_icon:
               asl
               sta @palette_l+1
 
-              jsr gfx_vram_xy
+              jsr gfx_vram_crs
 
               setPtr ghost_2bpp, p_gfx
 
@@ -582,7 +596,7 @@ gfx_charout:
 
               bgcolor Color_Gray
 
-              jsr gfx_vram_xy
+              jsr gfx_vram_crs
 
               pla               ; pointer to charset
               stz p_tiles+1
