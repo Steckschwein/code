@@ -273,6 +273,7 @@ sd_cmd_response_wait:
       ldy #sd_cmd_response_retries
 @l:   dey
       beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
+      lda #$ff
       jsr spi65_rw_byte
 ;      debug "sd_cm_wt"
       bmi @l
@@ -361,39 +362,17 @@ _sd_fullblock:
       jsr sd_wait
       bcs @exit
       
-      lda #FRX
+      ; lda #FRX
       ; ora spi65_status
-      sta spi65_ctrl
+      ; sta spi65_ctrl
  
 
-; @wait:
-;       bit spi65_status
-;       bpl @wait
-
-
-      ldy #$00
-
-@l:   
-      lda spi65_data
-      sta (sd_blkptr),y
-      ; jsr hexout
-      iny
-      bne @l
-      
-      ; jsr halfblock
+      ldy #$00     
+      jsr halfblock
       inc sd_blkptr+1
 
-
-:   
-      lda spi65_data
-      sta (sd_blkptr),y
-      jsr hexout
-      iny
-      bne :-
-      ; jsr halfblock
+      jsr halfblock
       dec sd_blkptr+1
-
-      rts
 
       ; lda #<~FRX
       ; and spi65_status
@@ -408,7 +387,7 @@ _sd_fullblock:
       lda #0
 @exit:
       rts
-.autoimport
+
 halfblock:
 @l:   
       lda #$ff

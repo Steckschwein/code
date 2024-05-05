@@ -252,6 +252,7 @@ zp_stack_ok:
       jsr sdcard_init
 
 
+
       beq boot_from_card
       pha
       print "SD card init failed! "
@@ -261,6 +262,7 @@ zp_stack_ok:
       jmp do_upload
 
 boot_from_card:
+      print "ok"
 
       stz lba_addr+0
       stz lba_addr+1
@@ -274,7 +276,7 @@ boot_from_card:
       print "block read test"
       jsr sd_read_block
       print "block read test end"
-
+      jmp do_upload
 :     bra :-
       ldx #0
 :
