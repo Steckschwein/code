@@ -236,14 +236,22 @@ zp_stack_ok:
 
       ;jsr memcheck
 
-      jsr keyboard_init
+      ; jsr keyboard_init
 @sdcard:
-      jsr sdcard_detect
-      beq @sdcard_init
-      println "SD card not found!"
-      jmp do_upload
+      ; jsr sdcard_detect
+      ; beq @sdcard_init
+      ; println "SD card not found!"
+      ; jmp do_upload
 @sdcard_init:
+
+      ; lda #ECE 
+      ; sta spi65_ctrl
+
+      ; lda spi65_status
+
       jsr sdcard_init
+
+
       beq boot_from_card
       pha
       print "SD card init failed! "
@@ -253,6 +261,33 @@ zp_stack_ok:
       jmp do_upload
 
 boot_from_card:
+
+      stz lba_addr+0
+      stz lba_addr+1
+      stz lba_addr+2
+      stz lba_addr+3
+
+      
+      lda #$80
+      sta sd_blkptr
+      stz sd_blkptr+1
+      print "block read test"
+      jsr sd_read_block
+      print "block read test end"
+
+:     bra :-
+      ldx #0
+:
+      lda $8000,x 
+      jsr hexout 
+      inx 
+      bne :-
+
+
+
+
+
+
       print "Boot from SD card... "
       jsr fat_mount
       bcc @findfile
@@ -282,15 +317,22 @@ boot_from_card:
       jsr fat_fread_byte  ; start address low
       bcs load_error
       sta startaddr+0
+      jsr hexout
+
       print_dot
 
       jsr fat_fread_byte ; start address high
       bcs load_error
       sta startaddr+1
+      jsr hexout
+
       print_dot
       lda startaddr
       ldy startaddr+1
+
       jsr fat_fread_vollgas
+      jsr hexout
+
 @l_is_eof:
       pha
       jsr fat_close    ; close after read to free fd, regardless of error
@@ -306,6 +348,13 @@ do_upload:
 load_ok:
       jsr print_ok
 startup:
+      ldy #134
+:
+      lda (startaddr),y
+      jsr hexout
+      iny 
+      bne :-
+:     jmp :-
       ; re-init stack pointer
       ldx #$ff
       txs

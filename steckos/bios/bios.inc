@@ -13,6 +13,7 @@
 .include "fcntl.inc"
 .include "nvram.inc"
 .include "spi.inc"
+.include "spi65.inc"
 .include "ym3812.inc"
 
 BIOS_COLOR=Gray<<4|Black  ; gray text, black backdrop/border
