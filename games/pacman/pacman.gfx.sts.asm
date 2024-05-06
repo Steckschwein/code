@@ -151,24 +151,24 @@ gfx_init:
 
               vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
 
-              lda #VDP_Color_Blinky
+              lda #Color_Blinky
               jsr _fills
-              lda #(VDP_Color_Blue | $20 | $40)  ; CC | IC | 2nd color
-              jsr _fills
-
-              lda #VDP_Color_Inky
-              jsr _fills
-              lda #(VDP_Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+              lda #(VDP_Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
               jsr _fills
 
-              lda #VDP_Color_Pinky
+              lda #Color_Inky
               jsr _fills
-              lda #(VDP_Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+              lda #(VDP_Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
               jsr _fills
 
-              lda #VDP_Color_Clyde
+              lda #Color_Pinky
               jsr _fills
-              lda #(VDP_Color_Blue | $20 | $40)  ; CC | IC | 2nd color
+              lda #(VDP_Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
+              jsr _fills
+
+              lda #Color_Clyde
+              jsr _fills
+              lda #(VDP_Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
               jsr _fills
 
               lda #VDP_Color_Yellow
@@ -713,28 +713,32 @@ tiles:
 sprite_patterns:
     .include "pacman.ghosts.res"  ; 16 sprites
     .include "pacman.pacman.res"  ;  8 sprites
-    .res 4*8, 0                   ; empty sprite
     .include "pacman.dying.res"   ; 11 sprites
     .include "bonus.res"
 
 
-Sprite_Pattern_Pacman = $18*4     ; pacman shape filled circle (game init)
-
 shapes:
 ; pacman
-    .byte $10*4+4,$10*4,$18*4,$10*4 ;r  00
-    .byte $12*4+4,$12*4,$18*4,$12*4 ;l  01
-    .byte $14*4+4,$14*4,$18*4,$14*4 ;u  10
-    .byte $16*4+4,$16*4,$18*4,$16*4 ;d  11
+    .byte $14*4+4,$14*4,$1c*4,$14*4 ;r  00
+    .byte $16*4+4,$16*4,$1c*4,$16*4 ;l  01
+    .byte $18*4+4,$18*4,$1c*4,$18*4 ;u  10
+    .byte $1a*4+4,$1a*4,$1c*4,$1a*4 ;d  11
 ; ghosts
     .byte $08*4,$08*4,$00*4,$00*4+4 ;r  00
     .byte $09*4,$09*4,$02*4,$02*4+4 ;l  01
     .byte $0a*4,$0a*4,$04*4,$04*4+4 ;u  10
     .byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  11
+; ghost eyes only (hit)
+    .byte $08*4,$08*4,$10*4,$10*4 ;r  00
+    .byte $09*4,$09*4,$11*4,$11*4 ;l  01
+    .byte $0a*4,$0a*4,$12*4,$12*4 ;u  10
+    .byte $0b*4,$0b*4,$13*4,$13*4 ;d  11
+; ghosts scared
+    .byte $0e*4,$0e*4,$0c*4,$0c*4+4 ;r,l,u,d
 ; pacman dying
+    .byte $28*4,$27*4,$26*4,$25*4
     .byte $24*4,$23*4,$22*4,$21*4
     .byte $20*4,$1f*4,$1e*4,$1d*4
-    .byte $1c*4,$1b*4,$1a*4,$19*4
 
 ghost_2bpp:
   .include "ghost.2bpp.res"

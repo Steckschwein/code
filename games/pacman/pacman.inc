@@ -50,10 +50,12 @@ STATE_READY         = $2
 STATE_READY_PLAYER  = $3
 STATE_READY_WAIT    = $4
 STATE_PLAYING       = $5
-STATE_DYING         = $6
-STATE_LEVEL_CLEARED = $7
-STATE_GAME_OVER     = $8
-STATE_INTRO         = $9
+STATE_PACMAN_HIT    = $6
+STATE_PACMAN_DYING  = $7
+STATE_LEVEL_CLEARED = $8
+STATE_GAME_OVER     = $9
+STATE_INTRO         = 1<<5
+
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
 
@@ -108,10 +110,10 @@ Color_Text    = Color_Gray
 ; Clyde (orange) seems to do his own thing and stay out of the way.
 GHOST_CHASE       = 0
 ; In scatter mode, the ghosts give up the chase for a few seconds and head for their respective home corners. It is a welcome but brief rest-soon enough, they will revert to chase mode and be after Pac-Man again.
-GHOST_SCATTER     = 1
+GHOST_SCATTER     = 1<<6
 ; Ghosts enter frightened mode whenever Pac-Man eats one of the four energizers located in the far corners of the maze. During the early levels, the ghosts will all turn dark blue (meaning they
 ; are vulnerable) and aimlessly wander the maze for a few seconds. They will flash moments before returning to their previous mode of behavior.
-GHOST_FRIGHTENED  = 3;
+GHOST_FRIGHTENED  = 1<<7;
 
 ACT_MOVE          = 1<<7
 ACT_RIGHT         = 0 ;00
@@ -219,6 +221,9 @@ ACT_DIR           = 1<<1|1<<0
   score_1up   .dword
   score_2up   .dword
   highscore   .dword
+  ; game related
+  ;ghost_mode  .byte   ; chase, scatter, frightened
+
 .endstruct
 
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
@@ -232,11 +237,14 @@ ACT_DIR           = 1<<1|1<<0
     move        .byte    ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
     turn        .byte    ; bit 7 turn, bit 1-0 turn direction
 
+    mask        .byte    ; shape mask - for normal, frightened or catched ghost
+
     ;dots        .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
 ;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
 
-SHAPE_IX_INVISIBLE = 43
+SHAPE_IX_DYING      = $34
+SHAPE_IX_INVISIBLE  = $3f
 
 Maze_Tunnel=$e0
 

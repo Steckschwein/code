@@ -1,4 +1,4 @@
-/* XPM */ 
+/* XPM */
 static const unsigned char * pacman_pacman_xpm[] = {
 "16 144 2 1",
 " 	c None",
@@ -145,5 +145,21 @@ static const unsigned char * pacman_pacman_xpm[] = {
 "  !!!!!!!!!!!   ",
 "   !!!!!!!!!    ",
 "     !!!!!      ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
 "                ",
 "                "};

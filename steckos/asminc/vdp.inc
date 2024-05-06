@@ -165,7 +165,9 @@ SPRITE_C=3
 SPRITE_INVISIBLE=$bf
 SPRITE_OFF=$d0   ; in 192 line mode +8 ($d8) in 212 line mode
 
-SPRITE_EC=1<<7  ;early clock bit
+SPRITE_EC=1<<7  ; early clock bit
+SPRITE_CC=1<<6  ; priority control, 1 - disable
+SPRITE_IC=1<<5  ; line collision detect, 1 - disable
 
 Transparent     =$00
 Black           =$01  ;0  0  0    "black"

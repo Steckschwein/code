@@ -19,7 +19,7 @@ game:
 @loop:
     lda #STATE_INIT
 @set_state:
-    jsr game_set_state
+    jsr game_set_state_frames
 @waitkey:
     lda game_state+GameState::state
     cmp #STATE_INTRO
@@ -29,14 +29,14 @@ game:
     sta keyboard_input
     cmp #'d'
     bne :+
-    lda #STATE_DYING
+    lda #STATE_PACMAN_HIT
     bne @set_state
 :   cmp #'g'
     bne :+
     lda #1  ; 1 left
     sta game_state+GameState::lives_1up
     sta game_state+GameState::lives_2up
-    lda #STATE_DYING
+    lda #STATE_PACMAN_HIT
     bne @set_state
 :   cmp #'r'
     bne :+
@@ -86,6 +86,7 @@ game_isr:
     jsr game_ready_player
     jsr game_ready_wait
     jsr game_playing
+    jsr game_pacman_hit
     jsr game_pacman_dying
     jsr game_level_cleared
     jsr game_game_over
@@ -111,7 +112,7 @@ game_ready:
               and #$7f
               bne @exit
               lda #STATE_READY_PLAYER
-              jmp game_set_state
+              jmp game_set_state_frames
 @exit:        rts
 
 game_ready_player:
@@ -120,7 +121,8 @@ game_ready_player:
               bne @exit
               jsr sound_play
               jsr game_init_actors
-              jsr animate_bonus
+              lda #Bonus_Clear
+              jsr gfx_bonus
               draw_text _ready, Color_Yellow
               ldy #Color_Food
               jsr draw_energizer
@@ -128,11 +130,9 @@ game_ready_player:
               jsr delete_message
               dec game_state+GameState::lives_1up ; dec 1 live, in game
               jsr gfx_lives
-
-
               ;dec game_state+GameState::frames ; fast start
               lda #STATE_READY_WAIT
-              jmp game_set_state
+              jmp game_set_state_frames
 @exit:        rts
 
 game_ready_wait:
@@ -152,12 +152,37 @@ game_ready_wait:
               jmp io_detect_joystick
 @exit:        rts
 
-game_pacman_dying:
+game_pacman_hit:
               lda game_state+GameState::state
-              cmp #STATE_DYING
+              cmp #STATE_PACMAN_HIT
               bne @exit
               jsr animate_screen
-              lda game_state+GameState::frames  ; TODO delay before dead
+              lda game_state+GameState::frames
+              and #$3f
+              bne @exit
+
+              lda #SHAPE_IX_INVISIBLE
+              ldx #ACTOR_BLINKY
+              sta actors+actor::shape,x
+              ldx #ACTOR_INKY
+              sta actors+actor::shape,x
+              ldx #ACTOR_PINKY
+              sta actors+actor::shape,x
+              ldx #ACTOR_CLYDE
+              sta actors+actor::shape,x
+
+              lda #STATE_PACMAN_DYING
+              jmp game_set_state_frames
+@exit:        rts
+
+
+game_pacman_dying:
+              lda game_state+GameState::state
+              cmp #STATE_PACMAN_DYING
+              bne @exit
+              jsr animate_screen
+
+              lda game_state+GameState::frames
               lsr
               lsr
               lsr
@@ -171,24 +196,14 @@ game_pacman_dying:
               jsr draw_energizer
               draw_text _text_game_over, Color_Red
               lda #STATE_GAME_OVER
-@set_state:   jmp game_set_state
-
+@set_state:   jmp game_set_state_frames
 @pacman_dying:cmp #$0c
               bcs @exit
-              ora #$20        ; shape offset
+              adc #SHAPE_IX_DYING        ; shape offset
               ldx #ACTOR_PACMAN
               sta actors+actor::shape,x
-
-              lda #SHAPE_IX_INVISIBLE
-              ldx #ACTOR_BLINKY
-              sta actors+actor::shape,x
-              ldx #ACTOR_INKY
-              sta actors+actor::shape,x
-              ldx #ACTOR_PINKY
-              sta actors+actor::shape,x
-              ldx #ACTOR_CLYDE
-              sta actors+actor::shape,x
 @exit:        rts
+
 
 game_game_over:
               lda game_state+GameState::state
@@ -205,7 +220,7 @@ game_game_over:
               sta game_state+GameState::credit
               cld
               lda #STATE_INTRO
-              jmp game_set_state
+              jmp game_set_state_frames
 @exit:        rts
 
 
@@ -265,8 +280,8 @@ actors_move:
               ldy #ACTOR_CLYDE
               jsr @pacman_hit
               bne @exit
-@pacman_dead: lda #STATE_DYING
-              jmp game_set_state
+@pacman_dead: lda #STATE_PACMAN_HIT
+              jmp game_set_state_frames
 @pacman_hit:
               lda actors+actor::xpos,x
               cmp actors+actor::xpos,y
@@ -276,8 +291,8 @@ actors_move:
 @exit:        rts
 
 ghost_move:
-    jsr actor_update_charpos
-    jmp actor_move_dir
+              jsr actor_update_charpos
+              jmp actor_move_dir
 
     ; .A new direction
 pacman_cornering:
@@ -383,7 +398,16 @@ pacman_shape_move:
               lda game_state+GameState::frames
               lsr
               and #$03
-              jmp actor_update_shape
+
+              sta actors+actor::shape,x
+              lda actors+actor::move,x
+              and #ACT_DIR
+              asl
+              asl
+              ora actors+actor::shape,x
+
+              sta actors+actor::shape,x
+              rts
 
 actor_shape_move:
               lda game_state+GameState::frames
@@ -391,15 +415,21 @@ actor_shape_move:
               lsr
               lsr
               and #$01
-              ora #$10    ;sprite shape table offset ghosts
-actor_update_shape:
-              sta game_tmp
+              ora #$10    ; sprite shape offset ghosts
+
+;             ora #$20    ; frightened
+              ;bit ghost_mode
+             ; bmi :+
+
+              sta actors+actor::shape,x
               lda actors+actor::move,x
               and #ACT_DIR
               asl
               asl
-              adc game_tmp
-              sta actors+actor::shape,x
+              ora actors+actor::shape,x
+
+:             sta actors+actor::shape,x
+
               rts
 
 pacman_collect:
@@ -624,14 +654,19 @@ game_playing:
               ;jsr game_demo
               jsr actors_move
               jsr animate_ghosts
-              jsr animate_screen
 
+              jsr animate_screen
               jsr animate_bonus
 
               lda game_state+GameState::dots   ; all dots collected ?
               bne @exit
+
+              ldx #ACTOR_PACMAN
+              lda #2  ; pacman shape complete ball
+              sta actors+actor::shape,x
+
               lda #STATE_LEVEL_CLEARED
-              jmp game_set_state
+              jmp game_set_state_frames
 @exit:        rts
 
 ; in: A - level
@@ -690,10 +725,11 @@ animate_bonus:
               sta game_maze+($12+$20*$0d)
 @exit:        rts
 
+game_set_state_frames:
+              ldy #1   ; otherwise ready frames are skipped immediately
+              sty game_state+GameState::frames
 game_set_state:
               sta game_state+GameState::state
-              lda #1   ; otherwise ready frames are skipped immediately
-              sta game_state+GameState::frames
               rts
 
 game_level_init:
@@ -747,7 +783,7 @@ game_level_init:
               draw_text _ready_player_two
 :
               lda #STATE_READY
-              jmp game_set_state
+              jmp game_set_state_frames
 
 
 game_level_cleared:
@@ -759,7 +795,7 @@ game_level_cleared:
               cmp #$88
               bne @rotate
               lda #STATE_LEVEL_INIT
-              jsr game_set_state
+              jsr game_set_state_frames
 @rotate:
               lsr
               lsr
@@ -912,7 +948,7 @@ game_init:
               bpl :-
 
               lda #STATE_LEVEL_INIT
-              jmp game_set_state
+              jmp game_set_state_frames
 
 game_init_actors:
               ldy #0
@@ -928,7 +964,7 @@ game_init_actors:
 
               ldx #ACTOR_PACMAN
               jsr game_init_actor
-              lda #2
+              lda #2  ; pacman shape complete ball
               sta actors+actor::shape,x
 
               jmp gfx_sprites_on
