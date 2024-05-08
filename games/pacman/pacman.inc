@@ -5,7 +5,7 @@
 KEY_EXIT = 27
 MAX_DOTS=240+4  ; food + superfood
 
-MAX_LIVES=3
+MAX_LIVES=5
 
 .globalzp p_maze
 .globalzp p_game
@@ -44,13 +44,22 @@ TXT_GHOST =$03
 TXT_CRS_XY=$04
 TXT_COLOR =$05
 
+DIP_COINAGE_0       =1<<0
+DIP_COINAGE_1       =1<<1
+DIP_LIFE_0          =1<<2   ; 00 - 1, 01 - 2, 10 - 3, 11 - 5
+DIP_LIFE_1          =1<<3
+DIP_BONUS_0         =1<<4
+DIP_BONUS_1         =1<<5
+DIP_DIFFICULTY      =1<<6
+DIP_GHOSTNAMES      =1<<7
+
 STATE_INIT          = $0
 STATE_LEVEL_INIT    = $1
 STATE_READY         = $2
-STATE_READY_PLAYER  = $3
+STATE_DELAY         = $3
 STATE_READY_WAIT    = $4
 STATE_PLAYING       = $5
-STATE_PACMAN_HIT    = $6
+;STATE_PACMAN_HIT    = $6
 STATE_PACMAN_DYING  = $7
 STATE_LEVEL_CLEARED = $8
 STATE_GAME_OVER     = $9
@@ -201,29 +210,34 @@ ACT_DIR           = 1<<1|1<<0
 .endmacro
 
 .struct GameState
-  fn          .addr
-  state       .byte
-  frames      .byte
+  dip_switches  .byte
 
-  credit      .byte
+  fn            .addr
+  state         .byte
+  nextstate     .byte   ; next state from delay
+  frames        .byte
 
-  players     .byte   ; active players
-  active_up   .byte   ; current player
-  score       .dword  ; score current player
+  credit        .byte
 
-  level       .byte   ; the current level
-  dots        .byte   ; remaining dots - MAX_DOTS at start
-  bonus       .byte   ; bonus of current level
-  bonus_cnt   .byte   ; frame counter
+  players       .byte   ; active players
+  active_up     .byte   ; current player
 
-  lives_1up   .byte
-  lives_2up   .byte
-  score_1up   .dword
-  score_2up   .dword
-  highscore   .dword
+  lives         .byte   ; lives current player
+  score         .res 3  ; score current player
+
+  level         .byte   ; the current level
+  dots          .byte   ; remaining dots - MAX_DOTS at start
+  bonus         .byte   ; bonus of current level
+  bonus_cnt     .byte   ; frame counter
+
+  lives_1up     .byte
+  lives_2up     .byte
+  score_1up     .res 3
+  score_2up     .res 3
+  highscore     .res 3
+
   ; game related
   ;ghost_mode  .byte   ; chase, scatter, frightened
-
 .endstruct
 
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32

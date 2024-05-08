@@ -410,12 +410,14 @@ gfx_vram_addr:
 
 
 .export gfx_lives
+; in: Y - lives
 gfx_lives:
+              sty r3
               lda #31
               sta sys_crs_y
               ldx #MAX_LIVES
 @l0:          ldy #Color_Pacman
-              cpx game_state+GameState::lives_1up
+              cpx r3
               bcc :+
               beq :+
               ldy #Color_Bg
