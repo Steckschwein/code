@@ -36,7 +36,7 @@ Char_Quote          = $22
 
 .define Char_Pts $2a,$2b,$2c
 
-FRAMES_DELAY = $0f
+FRAMES_DELAY = 0 ;$0f
 
 TXT_WAIT  =$01
 TXT_WAIT2 =$02
@@ -46,9 +46,9 @@ TXT_COLOR =$05
 
 DIP_COINAGE_0       =1<<0
 DIP_COINAGE_1       =1<<1
-DIP_LIFE_0          =1<<2   ; 00 - 1, 01 - 2, 10 - 3, 11 - 5
+DIP_LIFE_0          =1<<2   ; lives 00 - 1, 01 - 2, 10 - 3, 11 - 5
 DIP_LIFE_1          =1<<3
-DIP_BONUS_0         =1<<4
+DIP_BONUS_0         =1<<4   ; bonus life at 00 - 10.000, 01 - 15.000, 10 - 20.000, 11 - None
 DIP_BONUS_1         =1<<5
 DIP_DIFFICULTY      =1<<6
 DIP_GHOSTNAMES      =1<<7
@@ -229,6 +229,7 @@ ACT_DIR           = 1<<1|1<<0
   dots          .byte   ; remaining dots - MAX_DOTS at start
   bonus         .byte   ; bonus of current level
   bonus_cnt     .byte   ; frame counter
+  bonus_life    .word   ; trigger for next bonus life (BCD) - TT T digit
 
   lives_1up     .byte
   lives_2up     .byte

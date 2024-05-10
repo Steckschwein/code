@@ -60,7 +60,7 @@ init:
 
     jsr io_highscore_load
 
-    lda #DIP_COINAGE_1 | DIP_LIFE_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES
+    lda #DIP_COINAGE_1 | DIP_LIFE_1 | DIP_BONUS_0 | DIP_DIFFICULTY | DIP_GHOSTNAMES
     sta game_state+GameState::dip_switches
 
     rts

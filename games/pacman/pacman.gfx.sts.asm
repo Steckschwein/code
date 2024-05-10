@@ -460,7 +460,7 @@ gfx_bonus_stack:
 @bonus:       tya
               ldx r3
               ldy #31*8-5
-              jsr bonus_xy
+              jsr gfx_4bpp_xy
               lda r3    ; inc x position
               clc
               adc #16
@@ -473,7 +473,8 @@ gfx_bonus_stack:
 gfx_bonus:    ; bonus below ghost house
               ldx #$11*8+6
               ldy #$0d*8+2
-bonus_xy:
+
+gfx_4bpp_xy:
               pha
               jsr gfx_vram_xy
               pla
@@ -490,10 +491,10 @@ bonus_xy:
               lda table_4bpp_h,y
               sta p_gfx+1
 
-              lda #$0c
+              lda #$0c  ; 12px height
               sta r1
               ldy #0
-@rows:        ldx #7
+@rows:        ldx #7    ; 7x2 14px width
 @cols:        lda (p_gfx),y
               vdp_wait_l 12
               sta a_vram
@@ -742,9 +743,6 @@ shapes:
     .byte $24*4,$23*4,$22*4,$21*4
     .byte $20*4,$1f*4,$1e*4,$1d*4
 
-ghost_2bpp:
-  .include "ghost.2bpp.res"
-
 table_4bpp_l:
   .byte <bonus_4bpp_cherry
   .byte <bonus_4bpp_strawberry
@@ -754,6 +752,7 @@ table_4bpp_l:
   .byte <bonus_4bpp_galaxian
   .byte <bonus_4bpp_bell
   .byte <bonus_4bpp_key
+  .byte <ghost_4bpp
 table_4bpp_h:
   .byte >bonus_4bpp_cherry
   .byte >bonus_4bpp_strawberry
@@ -763,6 +762,7 @@ table_4bpp_h:
   .byte >bonus_4bpp_galaxian
   .byte >bonus_4bpp_bell
   .byte >bonus_4bpp_key
+  .byte >ghost_4bpp
 
 bonus_4bpp_cherry:
   .include "bonus.cherry.4bpp.res"
@@ -780,7 +780,11 @@ bonus_4bpp_grapes:
   .include "bonus.grapes.4bpp.res"
 bonus_4bpp_orange:
   .include "bonus.orange.4bpp.res"
+ghost_4bpp:
+  .include "ghost.4bpp.res"
 
+ghost_2bpp:
+  .include "ghost.2bpp.res"
 
 .bss
     sprite_tab_attr:      .res 9*4 ; 9 sprites, 4 byte per entry +1 y of sprite 10

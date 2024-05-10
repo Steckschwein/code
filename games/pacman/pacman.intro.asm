@@ -31,7 +31,17 @@ intro:
 @wait_start_init:
               jsr intro_frame
               draw_text _start, Color_Orange
-              jsr display_credit
+
+              jsr system_dip_switches_bonus_life
+              beq :+  ; 0 - none - no bonus life at all
+              pha
+              draw_text _bonus, Color_Orange
+              pla
+              ldx #22
+              ldy #8
+              jsr out_digits_xy
+
+:             jsr display_credit
               draw_text _copyright, Color_Pink
               lda Color_Text
               sta text_color
@@ -152,10 +162,13 @@ _superfood:
 _start:
   .byte 16,21,"PUSH START BUTTON"
   .byte TXT_CRS_XY, 19,19, TXT_COLOR, Color_Cyan, "1 PLAYER ONLY"
-  .byte TXT_CRS_XY, 22,25, TXT_COLOR, Color_Dark_Pink, "BONUS PACMAN FOR 10000 ",Char_Pts
+  .byte 0
+_bonus:
+  .byte 22,25, TXT_COLOR, Color_Dark_Pink, "BONUS PACMAN FOR   000 ",Char_Pts
   .byte 0
  _2up:
-  .byte 19,19, "1 OR 2 PLAYERS",0
+  .byte 19,17, "OR 2 PLAYERS"
+  .byte 0
 _copyright:
   .byte 27,19, "@ ",$23,$24,$25,$26,$27,$28,$29," 1980"
   .byte TXT_CRS_XY, 29,19, "@ STECKSOFT 2019", TXT_WAIT2

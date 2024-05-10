@@ -106,16 +106,20 @@ game_state_delay:
               lda game_state+GameState::state
               cmp #STATE_DELAY
               bne @exit
-              lda game_state+GameState::nextstate
+
+              lda game_state+GameState::nextstate ; code smell
               cmp #STATE_PACMAN_DYING
               bne :+
-              jsr sound_play
               jsr animate_screen
+              lda game_state+GameState::frames
+              and #$3f
+              beq @state
 
-:             lda game_state+GameState::frames
+:             jsr sound_play
+              lda game_state+GameState::frames
               and #$7f
               bne @exit
-              tay ; A=0 to Y
+@state:       tay ; A=0 to Y
               lda game_state+GameState::nextstate
               sty game_state+GameState::nextstate
               jmp game_set_state_frames
@@ -427,7 +431,6 @@ actor_shape_move:
               asl
               ora actors+actor::shape,x
               sta actors+actor::shape,x
-
               rts
 
 pacman_collect:
@@ -439,39 +442,55 @@ pacman_collect:
               cmp #Char_Energizer
               bne :+
               dec game_state+GameState::dots
-              ldy #Pts_Index_Energizer
+              lda #Pts_Index_Energizer
               bne @score_and_erase
 :             cmp #Char_Dot
               bne :+
               dec game_state+GameState::dots
-              ldy #Pts_Index_Dot
+              lda #Pts_Index_Dot
               beq @score_and_erase  ; dots index is 0
 :             cmp #Char_Bonus
-              bne @exit
-              lda #1
+              beq @bonus
+              rts
+
+@bonus:       lda #1
               sta game_state+GameState::bonus_cnt ; will erase bonus next frame(s)
               lda game_state+GameState::bonus
               and #$3f
               asl
-              tay
 @score_and_erase:
-              lda game_state+GameState::score+2
               pha
-              jsr add_score
               lda #Char_Blank
               ldy #0
               sta (p_maze),y
               jsr gfx_charout
-              jsr draw_scores
               pla
-              cmp game_state+GameState::score+2
-              beq @exit
-              ldy game_state+GameState::lives
-              inc game_state+GameState::lives ; TT0000 changed, +1 live
-              jmp gfx_lives
-@exit:        rts
-
+              tay
 add_score:
+              jsr @add_score
+              jsr draw_scores
+
+              lda game_state+GameState::score+2
+              cmp game_state+GameState::bonus_life+1
+              bcc @exit
+              lda game_state+GameState::score+1
+              cmp game_state+GameState::bonus_life+0
+              bcc @exit
+              jsr system_dip_switches_bonus_life
+              stx game_tmp
+              sed
+              clc
+              adc game_state+GameState::bonus_life+0
+              sta game_state+GameState::bonus_life+0
+              lda game_state+GameState::bonus_life+1
+              adc game_tmp
+              sta game_state+GameState::bonus_life+1
+              cld
+              ldy game_state+GameState::lives
+              inc game_state+GameState::lives
+              jmp gfx_lives
+
+@add_score:
               sed
               clc
               lda game_state+GameState::score+0
@@ -697,8 +716,11 @@ game_playing:
               jsr animate_bonus
 
               lda game_state+GameState::dots   ; all dots collected ?
-              cmp #230
+              ;cmp #230
               bne @exit
+
+              ldy #Pts_Index_Level_Cleared
+              jsr add_score
 
               ldx #ACTOR_PACMAN
               lda #2  ; pacman shape complete "ball"
@@ -945,10 +967,14 @@ game_init:
 
 :             jsr sound_init_game_start
 
-              jsr get_init_lives
+              jsr system_dip_switches_lives
               sty game_state+GameState::lives_1up
               sty game_state+GameState::lives_2up
               sty game_state+GameState::lives
+
+              jsr system_dip_switches_bonus_life
+              stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
+              sta game_state+GameState::bonus_life+0
 
               lda #1 ; start with level 1
               sta game_state+GameState::level
@@ -973,19 +999,6 @@ game_init:
 :
               lda #STATE_LEVEL_INIT
               jmp game_set_state_frames_delay
-
-get_init_lives:
-              lda game_state+GameState::dip_switches
-              and #DIP_LIFE_0 | DIP_LIFE_1
-              lsr
-              lsr
-              clc
-              adc #1
-              tay
-              and #1<<2
-              beq :+
-              iny
-:             rts
 
 game_init_actors:
               ldy #0

@@ -23,6 +23,10 @@ LIBS_C64=$(CC65_HOME)/lib/c64.lib
 #LDFLAGS_C64=-C c64-asm.cfg -m pacman64.map
 LDFLAGS_C64=-t c64 -m pacman64.map
 
+TEST_LIBS := ../../asmunit/asmunit.a
+TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(TEST_LIBS)
+
+
 RESOURCES_C64=\
 	pacman.c64.res \
 	pacman.tiles.rot.inc
@@ -80,11 +84,11 @@ pacman.tiles.bin: pacman.tiles.inc
 	ca65 pacman.tiles.inc
 	ld65 pacman.tiles.o -t none -o $@
 
-test.%.bin: test.%.o $(LIBS) $(<:test.%=%)
-	ld65 $(LDFLAGS) $< $(<:test.%=%) $(LIBS) -o $@
+test.%.bin: test.%.o $(TEST_LIBS)
+	ld65 $(TEST_LDFLAGS) $< $(TEST_LIBS) -o $@
 
 test.%: test.%.bin
-	../../asmunit/asmunit_wrapper.sh $@.bin
+	ASMUNIT_VERBOSE=true TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $< 0x1000
 
 #%.o: %.c
 #	cc65 -t none $(CC65FLAGS) -O $<

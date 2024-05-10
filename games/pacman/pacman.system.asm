@@ -1,12 +1,14 @@
 .include "pacman.inc"
 
-.export out_digits,out_digit
+.export out_digits_xy,out_digits,out_digit
 .export out_hex_digit,out_hex_digits
 .export out_text_color
 .export out_text
 .export frame_isr
 .export sys_crs_x
 .export sys_crs_y
+.export system_dip_switches_lives
+.export system_dip_switches_bonus_life
 
 .autoimport
 
@@ -52,6 +54,9 @@ out_hex_digit:
               inc sys_crs_y
               rts
 
+out_digits_xy:
+              stx sys_crs_x
+              sty sys_crs_y
 out_digits:
               pha
               lsr
@@ -110,3 +115,31 @@ wait:
               dec game_state+GameState::frames
               rts
 
+system_dip_switches_lives:
+              lda game_state+GameState::dip_switches
+              and #DIP_LIFE_1 | DIP_LIFE_0 ; see pacman.inc
+              lsr
+              lsr
+              clc
+              adc #1
+              tay
+              and #1<<2
+              beq :+
+              iny
+:             rts
+
+system_dip_switches_bonus_life:
+              lda game_state+GameState::dip_switches
+              and #DIP_BONUS_1 | DIP_BONUS_0 ; see pacman.inc
+              lsr
+              lsr
+              lsr
+              tay
+              ldx bonus_life+0,y
+              lda bonus_life+1,y
+              rts
+.data
+  bonus_life: .byte $01,$00
+              .byte $01,$50
+              .byte $02,$00
+              .byte $00,$00  ; BCD - just the TT T digit
