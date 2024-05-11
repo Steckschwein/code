@@ -78,7 +78,7 @@ kern_init:
 
 ;    jsr rtc_irq0
 
-    cli
+    ; cli
 
 .ifndef DISABLE_INTRO
     jsr primm
@@ -96,9 +96,38 @@ kern_init:
 .endif
 
     SetVector do_upload, retvec ; retvec per default to do_upload. end up in do_upload again, if a program exits safely
-    jsr __automount_init
-    bcs do_upload
 
+    jsr sdcard_init
+    bne do_upload
+
+    stz lba_addr + 0
+    stz lba_addr + 1
+    stz lba_addr + 2
+    stz lba_addr + 3
+
+    stz sd_blkptr + 0
+    lda #$40
+    sta sd_blkptr + 1
+
+    jsr sd_read_block
+    
+
+    jsr hexout
+
+
+    lda $41fe
+    jsr hexout
+    lda $41ff
+    jsr hexout
+    
+    cli
+    jmp do_upload
+
+    jsr fat_mount
+    bcs load_error
+ 
+    ; jsr __automount_init
+    ; bcs do_upload
     lda #<filename
     ldx #>filename
     jsr execv
@@ -190,7 +219,7 @@ do_irq:
     and #$0f            ; every 16 frames we try to update rtc, gives 320ms clock resolution
     bne @spi_busy
     jsr rtc_systime_update     ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
-    jsr __automount
+    ; jsr __automount
 
 @spi_busy:
     lda via1portb

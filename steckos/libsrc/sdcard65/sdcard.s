@@ -67,10 +67,10 @@ sdcard_detect:
 ;@clobbers: A,X,Y
 ;@desc: "initialize sd card in SPI mode"
 sdcard_init:
-      lda #spi65_device_sdcard
-      jsr spi65_select_device
-      beq @init
-      rts
+      ; lda #spi65_device_sdcard
+      ; jsr spi65_select_device
+      ; beq @init
+      ; rts
 @init:
 
       php
