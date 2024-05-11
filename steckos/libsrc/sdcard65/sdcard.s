@@ -66,24 +66,20 @@ sdcard_detect:
 ;@out: A, "error code"
 ;@clobbers: A,X,Y
 ;@desc: "initialize sd card in SPI mode"
-.import hexout
 sdcard_init:
       lda #spi65_device_sdcard
       jsr spi65_select_device
       beq @init
       rts
 @init:
+
       php
       sei
 
-      lda #$ff 
-      sta spi65_ss
-      ; jsr spi65_device_deselect
-      ; lda #'C'
-      ; jsr hexout
+      jsr spi65_deselect
 
-      lda #%00000000
-      sta spi65_div
+      ; lda #%00000111
+      ; sta spi65_div
 
       ldx #10
 :
@@ -436,10 +432,6 @@ sd_wait:
 ;@clobbers: A,X,Y
 ;@desc: "select sd card, pull CS line to low with busy wait"
 sd_select_card:
-      bit spi65_status
-      bpl :+
-      lda spi65_data
-:
       lda #spi65_device_sdcard
       jsr spi65_select_device
       ;TODO FIXME race condition here!
