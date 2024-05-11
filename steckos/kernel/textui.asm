@@ -27,7 +27,8 @@
 .include "keyboard.inc"
 .include "vdp.inc"
 
-TEXTUI_COLOR=Medium_Green<<4|Black
+; TEXTUI_COLOR=Medium_Green<<4|Black
+TEXTUI_COLOR=White<<4|Black
 ROWS=24
 CURSOR_BLANK=' '
 CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
@@ -52,6 +53,8 @@ STATE_TEXTUI_ENABLED  =1<<7
 
 .import vdp_fill
 .import vdp_text_on
+
+.import textui_color
 
 textui_scroll_up:
   php
@@ -260,7 +263,7 @@ textui_reset:
     jsr textui_enable
 
 .ifndef DISABLE_VDPINIT
-    lda #TEXTUI_COLOR
+    lda textui_color
     jsr vdp_text_on
 .endif
     rts

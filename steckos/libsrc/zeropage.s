@@ -55,3 +55,5 @@
 ; TEXTUI
 .export crs_x      = $028b
 .export crs_y      = $028c
+
+.export textui_color = $028d
