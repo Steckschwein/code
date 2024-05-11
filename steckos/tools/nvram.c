@@ -178,7 +178,7 @@ int main (int argc, const char* argv[])
             }
             n.textui_color &= ~0xf0;
             n.textui_color |= (x << 4);
-            
+
             write_nvram();
         }
 
@@ -401,7 +401,7 @@ void read_nvram()
 void usage()
 {
 	printf(
-        "set/get nvram values\nusage:\nnvram filename|baudrate|line|keyboard [<value>]\nnvram list|init\n"
+        "set/get nvram values\nusage:\nnvram filename|baudrate|line|keyboard|fgcolor|bgcolor [<value>]\nnvram list|init\n"
 	);
 }
 
