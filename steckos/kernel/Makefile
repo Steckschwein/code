@@ -28,7 +28,7 @@ DEFINES+=-DDISABLE_INTRO
 all: kernel.bin loader.prg
 
 clean:
-	rm -f *.o *.bin *.map *.txt kernel_jumptable.inc version.inc
+	rm -f *.o *.bin *.map *.prg *.txt kernel_jumptable.inc version.inc
 
 %.o: %.asm $(ASM_INCLUDE)/*.inc version.inc
 	ca65 --cpu $(CPU) --target none $(DEFINES) $(DEBUG) $(OPT) -I $(ASM_INCLUDE) $<
