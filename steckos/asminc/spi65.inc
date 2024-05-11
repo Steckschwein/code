@@ -28,5 +28,5 @@ CPOL      = 1<<1 ; Clock Polarity - 0 = Rising edge; 1 = Falling edge
 CPHA      = 1<<0 ; Clock Phase - 0 = Leading edge; 1 = Trailing edge
 
 
-spi65_device_sdcard	  = %11111110 
-spi65_device_deselect = %11111111 ; deselect any device
+spi65_device_sdcard	  = %00001110 
+spi65_device_deselect = %00001111 ; deselect any device
