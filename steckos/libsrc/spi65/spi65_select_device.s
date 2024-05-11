@@ -36,23 +36,27 @@
 spi65_select_device:
     php
     sei ;critical section start
-    ; pha
+
+    bit spi65_status
+    bpl :+
+    bit spi65_data
+:
+ 
 
     ; lda spi65_ss
     ; cmp #spi65_device_deselect
     ; ; check busy and select within sei => !ATTENTION! is busy check and spi device select must be "atomic", otherwise the spi state may change in between
     ; bne @l_exit    ;busy, leave section, device could not be selected
 
-    ; pla
     sta spi65_ss
     plp
     lda #EOK  ;exit ok
     clc
     rts
 
-@l_exit:
-    pla
-    plp          ;restore P (interrupt flag)
-    lda #EBUSY
-    rts
+; @l_exit:
+;     pla
+;     plp          ;restore P (interrupt flag)
+;     lda #EBUSY
+;     rts
 .code
