@@ -234,9 +234,9 @@ zp_stack_ok:
 
       jsr vdp_detect
 
-      ;jsr memcheck
+      ; jsr memcheck
 
-      ; jsr keyboard_init
+      jsr keyboard_init
 @sdcard:
       ; jsr sdcard_detect
       ; beq @sdcard_init
@@ -244,14 +244,10 @@ zp_stack_ok:
       ; jmp do_upload
 @sdcard_init:
 
-      ; lda #ECE 
-      ; sta spi65_ctrl
-
-      ; lda spi65_status
+      lda #%00000111
+      sta spi65_div
 
       jsr sdcard_init
-
-
 
       beq boot_from_card
       pha
@@ -262,34 +258,6 @@ zp_stack_ok:
       jmp do_upload
 
 boot_from_card:
-      print "ok"
-
-      stz lba_addr+0
-      stz lba_addr+1
-      stz lba_addr+2
-      stz lba_addr+3
-
-      
-      lda #$80
-      sta sd_blkptr
-      stz sd_blkptr+1
-      print "block read test"
-      jsr sd_read_block
-      print "block read test end"
-      jmp do_upload
-:     bra :-
-      ldx #0
-:
-      lda $8000,x 
-      jsr hexout 
-      inx 
-      bne :-
-
-
-
-
-
-
       print "Boot from SD card... "
       jsr fat_mount
       bcc @findfile
@@ -333,7 +301,6 @@ boot_from_card:
       ldy startaddr+1
 
       jsr fat_fread_vollgas
-      jsr hexout
 
 @l_is_eof:
       pha
@@ -350,13 +317,6 @@ do_upload:
 load_ok:
       jsr print_ok
 startup:
-      ldy #134
-:
-      lda (startaddr),y
-      jsr hexout
-      iny 
-      bne :-
-:     jmp :-
       ; re-init stack pointer
       ldx #$ff
       txs
