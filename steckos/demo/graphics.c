@@ -32,12 +32,24 @@ int main(int argc, char* argv){
   char y;
   int maxx,maxy;
 
-  initgraph(NULL, 6, NULL);
+  initgraph(NULL, 3, NULL);
   setbkcolor(BLACK);
   cleardevice();
 
   maxx = getmaxx();
   maxy = getmaxy();
+
+  do{
+    for(x=0;x<=maxx;x++){
+      for(y=0;y<maxy;y++){
+        putpixel(x,y,x);
+        putpixel(maxx-x,y,x);
+      }
+    }
+  } while (!kbhit());
+
+  return EXIT_SUCCESS;
+
 
   setcolor(WHITE);
   line(0,0,3,0);

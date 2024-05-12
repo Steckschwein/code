@@ -29,26 +29,29 @@
 int main(int argc, char* argv){
 
   int x;
-  int maxx;
+  int maxx,maxy;
   unsigned char y;
 
   vdp_screen(3);
   vdp_blank(0);
 
   maxx = vdp_maxx();
+  maxy = vdp_maxy();
 
   do{
     for(x=0;x<=maxx;x++){
-      for(y=0;y<212;y++){
+      for(y=0;y<maxy;y++){
         vdp_plot(x,y,x);
 
         vdp_setcolor(x);
         vdp_putpixel(maxx-x,y);
 
       }
+/*
       vdp_line(x,0,maxx>>1,96);
       vdp_setcolor(x^0xff);
       vdp_rectangle(x,x+16,x+32,x+32);
+*/
     }
   } while (!kbhit());
 

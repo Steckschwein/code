@@ -105,6 +105,12 @@ vdp_mc_blank:
           sei
           vdp_vram_w ADDRESS_GFX_MC_PATTERN
           tya
+          sta vdp_tmp
+          asl
+          asl
+          asl
+          asl
+          ora vdp_tmp
           ldx #8 ; 8 x $100
           jsr vdp_fill
           plp

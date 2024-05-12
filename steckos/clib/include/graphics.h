@@ -60,7 +60,7 @@ int __fastcall__  graphics_getmaxx();
 int __fastcall__ graphics_getmaxy();
 #define getmaxy() graphics_getmaxy()
 
-void __fastcall__ graphics_putpixel(int x, char y, char c);
+void __fastcall__ graphics_putpixel(int x, char y, char color);
 #define putpixel(x, y, c) graphics_putpixel(x, y, c)
 
 void __fastcall__ graphics_textxy (unsigned int x, unsigned char y, char *s);
@@ -74,6 +74,12 @@ void __fastcall__ graphics_setcolor (unsigned char color);
  */
 void __fastcall__ graphics_setbkcolor (unsigned char color);
 #define setbkcolor(color) graphics_setbkcolor(color)
+
+/**
+ * setbgcolor - sets the BORDER color
+ */
+void __fastcall__ graphics_setbdcolor (unsigned char color);
+#define setbdcolor(color) graphics_setbdcolor(color)
 
 int __fastcall__ graphics_getbkcolor ();
 #define getbkcolor() graphics_getbkcolor()
