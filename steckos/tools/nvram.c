@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <ctype.h>
 #include "include/spi.h"
 #include "include/rtc.h"
@@ -34,6 +35,8 @@ unsigned char get_stopbits(unsigned char);
 unsigned char make_line_byte(unsigned char *);
 int get_kbrd_repeat(unsigned char);
 int get_kbrd_delay(unsigned char);
+char * get_color(uint8_t);
+uint8_t get_color_num(const char *);
 
 struct nvram
 {
@@ -42,6 +45,7 @@ struct nvram
     unsigned char uart_baudrate;
     unsigned char uart_lsr;
     unsigned char keyboard_tm;
+    unsigned char textui_color;
     unsigned char crc7;
 };
 
@@ -63,6 +67,33 @@ const struct baudrate baudrates[] = {
     {1,		115200}
 };
 
+struct color
+{
+    uint8_t value;
+    unsigned char * name; 
+};
+
+
+const struct color textui_colors[] = {
+    { 0x00, "transparent" },    
+    { 0x01, "black" },           
+    { 0x02, "mediumgreen" },    
+    { 0x03, "lightgreen" },     
+    { 0x04, "darkblue" },      
+    { 0x05, "lightblue" },      
+    { 0x06, "darkred" },        
+    { 0x07, "cyan" },            
+    { 0x08, "mediumred" },      
+    { 0x09, "lightred" },       
+    { 0x0a, "darkyellow" },    
+    { 0x0b, "lightyellow" },    
+    { 0x0c, "darkgreen" },      
+    { 0x0d, "magenta" },         
+    { 0x0e, "gray" },            
+    { 0x0f, "white" }           
+};
+#define NCOLORS (sizeof(textui_colors)/sizeof(struct color))
+
 
 unsigned char i,j,x;
 struct nvram n;
@@ -78,8 +109,8 @@ int main (int argc, const char* argv[])
 
     if (n.crc7 != crc)
     {
-        cprintf("NVRAM CRC7 mismatch - CRC: %0x, NVRAM: %0x\n", crc, n.crc7);
-        cprintf("Please init with\n  nvram init\n");
+        printf("NVRAM CRC7 mismatch - CRC: %0x, NVRAM: %0x\n", crc, n.crc7);
+        printf("Please init with\n  nvram init\n");
     }
 
 	if (strcmp(argv[1], "filename") == 0)
@@ -88,7 +119,7 @@ int main (int argc, const char* argv[])
         {
             if (strlen(argv[2]) > 13)
 			{
-				cprintf("\r\nInvalid filename\r\n");
+				printf("\r\nInvalid filename\r\n");
 				return 1;
 			}
 
@@ -96,7 +127,7 @@ int main (int argc, const char* argv[])
 		    write_nvram();
 
         }
-		cprintf("%.*s\r\n", 11, n.filename);
+		printf("%.*s\r\n", 11, n.filename);
 	}
 	else if (strcmp(argv[1], "baudrate") == 0)
 	{
@@ -105,14 +136,14 @@ int main (int argc, const char* argv[])
 			unsigned char divisor = lookup_baudrate(atol(argv[2]));
 			if (divisor == 0)
 			{
-				cprintf("Invalid baudrate\r\n");
+				printf("Invalid baudrate\r\n");
 				return 1;
 			}
 
 			n.uart_baudrate = divisor;
 		    write_nvram();
         }
-		cprintf("%ld\r\n", lookup_divisor(n.uart_baudrate));
+		printf("%ld\r\n", lookup_divisor(n.uart_baudrate));
 	}
 	else if (strcmp(argv[1], "line") == 0)
 	{
@@ -122,45 +153,91 @@ int main (int argc, const char* argv[])
             lsr = make_line_byte((unsigned char *)argv[3]);
             if (lsr == 0xff)
             {
-                cprintf("Parameter error\n");
+                printf("Parameter error\n");
                 return EXIT_FAILURE;
             }
             n.uart_lsr = lsr;
             write_nvram();
         }
 
-		cprintf("%c%c%c\n",
+		printf("%c%c%c\n",
             get_databits(n.uart_lsr),
             get_parity(n.uart_lsr),
             get_stopbits(n.uart_lsr)
         );
 	}
-   else if (!strcmp(argv[1], "keyboard"))
+    else if (strcmp(argv[1], "fgcolor") == 0)
+    {
+        if (argc == 3)
+        {
+            x = get_color_num(argv[2]);
+            if (x == NULL)
+            {
+                printf("unknown color\n");
+                return 1;
+            }
+            n.textui_color &= ~0xf0;
+            n.textui_color |= (x << 4);
+
+            write_nvram();
+        }
+
+        printf("Color           : %s/%s\n",
+            get_color((n.textui_color >> 4)),
+            get_color((n.textui_color & ~0xf0))
+        );
+    }
+    else if (strcmp(argv[1], "bgcolor") == 0)
+    {
+        if (argc == 3)
+        {
+            x = get_color_num(argv[2]);
+            if (x == NULL)
+            {
+                printf("unknown color\n");
+                return 1;
+            }
+            n.textui_color &= ~0x0f;
+            n.textui_color |= x;
+            
+            write_nvram();
+        }
+
+        printf("Color           : %s/%s\n",
+            get_color((n.textui_color >> 4)),
+            get_color((n.textui_color & ~0xf0))
+        );
+    }
+
+    else if (!strcmp(argv[1], "keyboard"))
 	{
-      if (argc == 3)
-      {
-         n.keyboard_tm = atoi(argv[2]) & 0x7f;
-         write_nvram();
-         read_nvram();
-      }
-      cprintf("Keyboard ($%02x)  : %dHz/%dms\n",
-         n.keyboard_tm,
-         get_kbrd_repeat(n.keyboard_tm),
-         get_kbrd_delay(n.keyboard_tm)
-		);
-   }
+        if (argc == 3)
+        {
+            n.keyboard_tm = atoi(argv[2]) & 0x7f;
+            write_nvram();
+            read_nvram();
+        }
+        printf("Keyboard ($%02x)  : %dHz/%dms\n",
+            n.keyboard_tm,
+            get_kbrd_repeat(n.keyboard_tm),
+            get_kbrd_delay(n.keyboard_tm)
+        );
+    }
 	else if (strcmp(argv[1], "list") == 0)
 	{
-		cprintf("OS filename     : %.11s\nUART baud rate  : %ld\nUART line conf  : %c%c%c\nKeyboard ($%02x)  : %dHz/%dms\nCRC             : $%02x\n",
+    	printf("OS filename     : %.11s\nUART baud rate  : %ld\nUART line conf  : %c%c%c\nKeyboard ($%02x)  : %dHz/%dms\nColor           : %s/%s\nCRC             : $%02x\n",
 			n.filename,
 			lookup_divisor(n.uart_baudrate),
 			get_databits(n.uart_lsr),
 			get_parity(n.uart_lsr),
 			get_stopbits(n.uart_lsr),
-         n.keyboard_tm,
-         get_kbrd_repeat(n.keyboard_tm),
-         get_kbrd_delay(n.keyboard_tm),
-         n.crc7
+            n.keyboard_tm,
+            get_kbrd_repeat(n.keyboard_tm),
+            get_kbrd_delay(n.keyboard_tm),
+            get_color((n.textui_color >> 4)),
+            get_color((n.textui_color & ~0xf0)),
+
+            n.crc7
 		);
 	}
 	else if (strcmp(argv[1], "init") == 0)
@@ -175,6 +252,25 @@ int main (int argc, const char* argv[])
 	return EXIT_SUCCESS;
 }
 
+char * get_color(uint8_t color)
+{
+    return textui_colors[color].name;
+}
+
+uint8_t get_color_num(const char * name)
+{
+    uint8_t i;
+
+    for (i = 0; i < NCOLORS; i++)
+    {
+        if (strcmp(name, textui_colors[i].name) == 0)
+        {
+            return textui_colors[i].value;
+        }
+    }
+
+    return NULL;
+}
 
 unsigned char get_parity(unsigned char lsr)
 {
@@ -304,10 +400,11 @@ void read_nvram()
 
 void usage()
 {
-	cprintf(
-        "set/get nvram values\nusage:\nnvram filename|baudrate|line|keyboard [<value>]\nnvram list|init\n"
+	printf(
+        "set/get nvram values\nusage:\nnvram filename|baudrate|line|keyboard|fgcolor|bgcolor [<value>]\nnvram list|init\n"
 	);
 }
+
 
 unsigned long int lookup_divisor(unsigned char div)
 {
@@ -325,17 +422,17 @@ unsigned long int lookup_divisor(unsigned char div)
 }
 void init_nvram()
 {
-      cprintf("Setting to default values ... ");
+        printf("Setting to default values ... ");
 	 	n.version 		= 0;
 	 	memcpy(n.filename, "loader.prg\0", 11);
 
 	 	n.uart_baudrate = 0x01; // 115200 baud
 	 	n.uart_lsr		= UART_DATA_BITS8|UART_PARITY_NONE|UART_STOP_BITS1; // 8N1
 
-      n.keyboard_tm = 0x20 ; // 30 Zeichen / 500ms
-
+        n.keyboard_tm = 0x20 ; // 30 Zeichen / 500ms
+        n.textui_color = 0x31;
 	 	write_nvram();
-	 	cprintf("done.\r\n");
+	 	printf("done.\r\n");
 }
 
 unsigned char lookup_baudrate(unsigned long int baud)

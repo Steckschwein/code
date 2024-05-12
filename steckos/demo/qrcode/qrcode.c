@@ -69,7 +69,7 @@ void main(int argc, char *argv[])
   }
 
   initgraph(NULL, 3, NULL);
-  setbdcolor(LIGHTGRAY);
+  setbdcolor(BLACK);
   setbkcolor(BLACK);
   cleardevice();
 

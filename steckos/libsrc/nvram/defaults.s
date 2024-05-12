@@ -1,4 +1,5 @@
 .include "nvram.inc"
+.include "vdp.inc"
 
 .export nvram_defaults
 nvram_defaults:
@@ -7,4 +8,5 @@ nvram_defaults:
 	.byte $01	;115200
 	.byte $03	;8N1
 	.byte $20	;30Hz / 500ms
-	.byte $37	;crc7
+	.byte White<<4|Black
+	.byte $7a	;crc7
