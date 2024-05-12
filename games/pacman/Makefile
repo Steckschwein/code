@@ -36,7 +36,6 @@ RESOURCES=\
   pacman.pacman.res \
 	pacman.dying.res \
 	bonus.res \
-	ghost.2bpp.res \
   pacman.tiles.rot.inc
 
 RESOURCES_4BPP := $(patsubst %.4bpp.xpm,%.4bpp.res,$(foreach dir,.,$(wildcard ./*.4bpp.xpm)))
