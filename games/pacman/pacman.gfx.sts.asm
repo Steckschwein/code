@@ -33,6 +33,10 @@
   r2: .res 1
   r3: .res 1
   r4: .res 1
+  r5: .res 1
+  r6: .res 1
+
+  scanline: .res 1
 
 .code
 
@@ -346,8 +350,8 @@ gfx_bgcolor:
 
 ; set the vdp vram address upon X/Y pixel position
 ;  in:
-;    sys_crs_x - x 0..128 - multiple of 2
-;    sys_crs_y - y 0..240 (overscan)
+;    X - 0..128 - multiple of 2
+;    Y - 0..240 (overscan)
 gfx_vram_xy:
               tya
               lsr                   ; Y Bit 0 to carry
@@ -473,8 +477,10 @@ gfx_bonus_stack:
 gfx_bonus:    ; bonus below ghost house
               ldx #$11*8+6
               ldy #$0d*8+2
-
 gfx_4bpp_xy:
+              stz r5  ; color mask
+              stz r6
+
               pha
               jsr gfx_vram_xy
               pla
@@ -482,21 +488,43 @@ gfx_4bpp_xy:
               bgcolor Color_Blue
 
               cmp #0
-              beq @erase0
+              bne @bonus_4bpp
 
-              dea ; adjust for table lookup
+              ldy #$0c  ; height
+@erase:       ldx #$07  ; width 7x2px
+@erase_cols:  vdp_wait_l 7
+              stz a_vram
+              dex
+              bne @erase_cols
+              jsr gfx_vram_inc_y
+              dey
+              bne @erase
+              bgcolor Color_Bg
+              rts
+
+@bonus_4bpp:  dea ; adjust for table lookup
               tay
+              lda #$0c  ; 12px height
+; in:
+;   A - height
+;   Y - index 4bpp table
+gfx_4bpp_y:
+              sta r1
               lda table_4bpp_l,y
               sta p_gfx
               lda table_4bpp_h,y
               sta p_gfx+1
 
-              lda #$0c  ; 12px height
-              sta r1
               ldy #0
 @rows:        ldx #7    ; 7x2 14px width
 @cols:        lda (p_gfx),y
-              vdp_wait_l 12
+              bit #$f0
+              beq :+    ; background?
+              ora r5    ; otherwise mask nybble
+:             bit #$0f
+              beq :+    ; same...
+              ora r6
+:             vdp_wait_l 22
               sta a_vram
               iny
               dex
@@ -507,86 +535,36 @@ gfx_4bpp_xy:
               jsr gfx_vram_inc_y
               bra @rows
 
-@erase0:      ldy #$0c
-@erase:       ldx #$07
-@erase_cols:  vdp_wait_l 7
-              stz a_vram
-              dex
-              bne @erase_cols
-              jsr gfx_vram_inc_y
-              dey
-              bne @erase
-
 @exit:        bgcolor Color_Bg
               rts
 
 .export gfx_ghost_icon
 gfx_ghost_icon:
-              php
-              sei
+              lda sys_crs_x
+              assertA_le 31
+              asl               ; X*4 (2px per byte)
+              asl
+              clc
+              adc #2            ; adjust 2x2px
+              sta p_vram        ; A7-A0 vram address low byte
 
-              lda text_color
-              sta @palette_r+1
+              lda sys_crs_y     ; Y*8*128 => $0000, $0400, $0800
+              assertA_le 31     ; effectively high byte Y*4
+              asl
+              asl
+              jsr gfx_vram_h
+
+              lda text_color    ; color mask
+              and #$0e
+              sta r6
               asl
               asl
               asl
               asl
-              sta @palette_l+1
-
-              jsr gfx_vram_crs
-
-              setPtr ghost_2bpp, p_gfx
-
-              lda #$10
-              sta r2
-@rows:        lda #$06
-              sta r1
-@cols:        lda (p_gfx)
-              ldy #2      ; 2bpp - 4px per byte
-@nybble:      asl
-              rol
-              pha
-              rol
-              and #$03
-              tax
-              lda @palette_l,x
-              sta r3
-
-              pla
-              asl
-              rol
-              pha
-              rol
-              and #$03
-              tax
-              lda @palette_r,x
-              ora r3
-
-              sta a_vram
-              pla
-              dey
-              bne @nybble
-
-              inc p_gfx
-              bne :+
-              inc p_gfx+1
-:             dec r1
-              bne @cols
-
-              dec r2
-              beq @exit
-
-              jsr gfx_vram_inc_y
-              bra @rows
-
-@exit:        plp
-              rts
-
-@palette_l: ; 4 color palette
-  .byte 0,0,$f0,$e0
-@palette_r:
-  .byte 0,0,$0f,$0e
-
+              sta r5
+              lda #$0e
+              ldy #Bonus_Key
+              jmp gfx_4bpp_y
 
 gfx_charout:
               php
@@ -783,10 +761,6 @@ bonus_4bpp_orange:
 ghost_4bpp:
   .include "ghost.4bpp.res"
 
-ghost_2bpp:
-  .include "ghost.2bpp.res"
-
 .bss
     sprite_tab_attr:      .res 9*4 ; 9 sprites, 4 byte per entry +1 y of sprite 10
     sprite_tab_attr_end:  .res 1   ; Y sprite 10, set to "off"
-    scanline: .res 1
