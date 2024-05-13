@@ -37,6 +37,7 @@ int get_kbrd_repeat(unsigned char);
 int get_kbrd_delay(unsigned char);
 char * get_color(uint8_t);
 uint8_t get_color_num(const char *);
+void list_colors();
 
 struct nvram
 {
@@ -173,7 +174,9 @@ int main (int argc, const char* argv[])
             x = get_color_num(argv[2]);
             if (x == NULL)
             {
-                printf("unknown color\n");
+                printf("unknown color. valid colors:");
+                list_colors();
+
                 return 1;
             }
             n.textui_color &= ~0xf0;
@@ -194,7 +197,8 @@ int main (int argc, const char* argv[])
             x = get_color_num(argv[2]);
             if (x == NULL)
             {
-                printf("unknown color\n");
+                printf("unknown color. valid colors:");
+                list_colors();
                 return 1;
             }
             n.textui_color &= ~0x0f;
@@ -255,6 +259,15 @@ int main (int argc, const char* argv[])
 char * get_color(uint8_t color)
 {
     return textui_colors[color].name;
+}
+
+void list_colors()
+{
+    for (i = 0; i < NCOLORS; i++)
+    {
+        printf("%s, ", textui_colors[i].name);
+    }
+    printf("\n");
 }
 
 uint8_t get_color_num(const char * name)
