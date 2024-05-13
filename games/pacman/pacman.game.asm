@@ -142,7 +142,6 @@ game_ready:   lda game_state+GameState::state
               ldy game_state+GameState::lives
               dey ; pick 1 live, redraw
               jsr gfx_lives
-              ;dec game_state+GameState::frames ; fast start
               lda #STATE_READY_WAIT
               jmp game_set_state_frames
 @exit:        rts
@@ -265,11 +264,11 @@ actors_move:
               ldx #ACTOR_BLINKY
               jsr ghost_move
               ldx #ACTOR_INKY
-          ;    jsr ghost_move
+              jsr ghost_move
               ldx #ACTOR_PINKY
-          ;    jsr ghost_move
+              jsr ghost_move
               ldx #ACTOR_CLYDE
-          ;    jsr ghost_move
+              jsr ghost_move
 
               ldx #ACTOR_PACMAN
               ldy #ACTOR_BLINKY
@@ -289,18 +288,76 @@ actors_move:
 @pacman_hit:
               lda actors+actor::xpos,x
               cmp actors+actor::xpos,y
-              bne :+
+              bne @exit
               lda actors+actor::ypos,x
               cmp actors+actor::ypos,y
 @exit:        rts
 
-ghost_move:
-              jsr actor_update_charpos
-              jmp actor_move_dir
+
+ghost_move:   lda game_state+GameState::frames
+              and #$01
+              beq :+
+              rts
+:             jsr actor_update_charpos
+;  short distance, same distance => order: up, left, down, right.
+ghost_base:   lda actors+actor::strategy,x
+              cmp #GHOST_STATE_BASE
+              bne ghost_leave_base
+              lda actors+actor::sp_x,x
+              bmi :+
+              cmp #$78
+              bne @leave
+:             lda actors+actor::move,x
+              eor #ACT_MOVE_INVERSE
+              sta actors+actor::move,x
+@move:        jmp actor_move_soft
+@leave:       cmp #$7c
+              bne @move
+              lda actors+actor::dot_limit,x
+              clc
+              adc game_state+GameState::dots
+              cmp #MAX_DOTS
+              bne @move
+              rts
+
+
+
+
+ghost_leave_base:
+              cmp #GHOST_STATE_LEAVE
+              bne ghost_catch
+              rts
+ghost_catch:
+              rts
+
+              jsr actor_center
+              bne @soft    ; center reached?
+
+              lda actors+actor::move,x
+              and #ACT_DIR
+              jsr actor_can_move_to_direction
+              bcc @soft  ; C=0, can move to
+
+              lda actors+actor::move,x
+              eor #ACT_DIR ;? inverse
+:             sta game_tmp
+              jsr actor_can_move_to_direction
+              lda game_tmp
+              eor #$01    ; ?left right?
+              bcs :-
+              lda actors+actor::move,x  ;otherwise stop move
+              and #<~ACT_DIR
+              ora game_tmp
+              sta actors+actor::move,x
+              rts
+@soft:
+              jmp actor_move_soft
+              rts
+
 
     ; .A new direction
 pacman_cornering:
-    pha
+    tay
     lda actors+actor::move,x
     and #$01  ;bit 0 set, either +x or +y, down or left
     beq @l1
@@ -308,18 +365,16 @@ pacman_cornering:
 @l1:
     eor #$07
     sta game_tmp2 ;
-    pla
+    tya
 l_test:
     and #ACT_MOVE_UP_OR_DOWN    ; new direction is a turn
     bne l_up_or_down          ; so we have to test with the current direction (orthogonal)
 
 l_left_or_right:
     lda actors+actor::sp_x,x
-    jmp l_compare
-
+    bne l_compare ; always branch
 l_up_or_down:
     lda actors+actor::sp_y,x
-
 l_compare:
     eor game_tmp2
     and #$07
@@ -328,16 +383,14 @@ l_compare:
 
 ;     A - bit 0-1 the direction
 actor_center:
-    pha
-    lda #0
-    sta game_tmp2
-    pla
-    eor #ACT_MOVE_UP_OR_DOWN
-    jmp l_test
+              ldy #0
+              sty game_tmp2
+              eor #ACT_MOVE_UP_OR_DOWN
+              jmp l_test
 
 actor_move:
               lda actors+actor::turn,x
-              bpl actor_move_dir      ; turning?
+              bpl @actor_move_dir      ; turning?
               jsr actor_center
               bne @actor_turn_soft      ;
               lda actors+actor::turn,x  ;
@@ -347,73 +400,54 @@ actor_move:
               lda actors+actor::turn,x
               jsr actor_move_sprite
 
-actor_move_dir:
+@actor_move_dir:
               lda actors+actor::move,x
               bpl :+
-              jsr actor_strategy
+              jsr pacman_move
 :             jmp pacman_collect
 
 pacman_move:
-    jsr actor_center      ; center reached?
-    bne actor_move_soft    ; no, move soft
-
-    lda actors+actor::move,x
-    and #ACT_DIR
-    jsr actor_can_move_to_direction
-    bcc actor_move_soft  ; C=0 - can move to
-
-    lda actors+actor::move,x  ;otherwise stop move
-    and #<~ACT_MOVE
-    sta actors+actor::move,x
-    and #ACT_NEXT_DIR      ;set shape of next direction
-    sta actors+actor::shape,x
-    rts
-
-actor_move_soft:
-    jsr pacman_shape_move
-    lda actors+actor::move,x
-actor_move_sprite:
-    bpl @exit
-    and #ACT_DIR
-    asl
-    tay
-    pha
-    lda _vectors+0,y
-;    clc
-    adc actors+actor::sp_x,x
-    sta actors+actor::sp_x,x
-    pla
-    tay
-    lda _vectors+1,y
-    sta game_tmp
-@y_add:  ; skip the sprite off position
-    clc
-    adc actors+actor::sp_y,x
-    cmp #Maze_Tunnel
-    bne @y_sta
-    lda game_tmp
-    eor #$10
-    jmp @y_add
-@y_sta:
-    sta actors+actor::sp_y,x
-@exit: rts
-
-pacman_shape_move:
-              lda game_state+GameState::frames
-              lsr
-              and #$03
-
-              ora actors+actor::mask,x
-              sta actors+actor::shape,x
+              jsr actor_center        ; center reached?
+              bne @move_soft     ; no, move soft
 
               lda actors+actor::move,x
               and #ACT_DIR
-              asl
-              asl
-              ora actors+actor::shape,x
-              sta actors+actor::shape,x
+              jsr actor_can_move_to_direction
+              bcc @move_soft     ; C=0 - can move to
 
+              lda actors+actor::move,x  ;otherwise stop move
+              and #<~ACT_MOVE
+              sta actors+actor::move,x
+              and #ACT_NEXT_DIR       ; set shape of next direction
+              sta actors+actor::shape,x
               rts
+
+@move_soft:
+              lda game_state+GameState::frames
+              lsr
+              and #$03
+              jsr actor_shape_update
+
+actor_move_soft:
+              lda actors+actor::move,x
+actor_move_sprite:
+              bpl @exit
+              and #ACT_DIR
+              asl
+              tay
+
+              lda actors+actor::sp_x,x
+              adc _vectors+0,y
+              sta actors+actor::sp_x,x
+
+              clc
+              lda actors+actor::sp_y,x
+              ;cmp #$df
+              ;beq @exit
+ ;             .byte $db
+              adc _vectors+1,y
+              sta actors+actor::sp_y,x
+@exit:        rts
 
 actor_shape_move:
               lda game_state+GameState::frames
@@ -422,6 +456,7 @@ actor_shape_move:
               lsr
               and #$01
 
+actor_shape_update:
               ora actors+actor::mask,x
               sta actors+actor::shape,x
 
@@ -821,13 +856,14 @@ draw_frame:   ldx #3                ; init maze
 
 game_set_state_frames_delay:
               sta game_state+GameState::nextstate
-              lda #STATE_DELAY
+              ;lda #STATE_DELAY ; fast
 game_set_state_frames:
-              ldy #1   ; otherwise ready frames are skipped immediately
+              ldy #0   ; otherwise ready frames are skipped immediately
               sty game_state+GameState::frames
 game_set_state:
               sta game_state+GameState::state
               rts
+
 
 game_level_init:
               lda game_state+GameState::state
@@ -842,10 +878,20 @@ game_level_init:
               lda #MAX_DOTS
               sta game_state+GameState::dots
 
+              lda #0
+              sta game_state+GameState::dot_cnt
+              ldx #ACTOR_INKY
+              sta actors+actor::dot_cnt,x
+              ldx #ACTOR_PINKY
+              sta actors+actor::dot_cnt,x
+              ldx #ACTOR_CLYDE
+              sta actors+actor::dot_cnt,x
+
               jsr draw_frame
 
               lda #STATE_READY
               jmp game_set_state_frames
+
 
 game_level_cleared:
               lda game_state+GameState::state
@@ -1010,7 +1056,20 @@ game_init_actors:
               jsr game_init_actor
               ldx #ACTOR_CLYDE
               jsr game_init_actor
-              jsr animate_ghosts
+              lda game_state+GameState::level
+              cmp #1
+              bne :+
+              lda #60 ; level 1 - dot limit clyde 60
+              sta actors+actor::dot_limit,x
+              lda #30 ;           dot limit inky 30
+              ldx #ACTOR_INKY
+              sta actors+actor::dot_limit,x
+:             cmp #2
+              bne :+
+              lda #50 ;           dot limit clyde 50
+              sta actors+actor::dot_limit,x
+:
+              jsr animate_ghosts  ; update shape
 
               ldx #ACTOR_PACMAN
               jsr game_init_actor
@@ -1028,18 +1087,27 @@ game_init_actor:
               sta actors+actor::sp_y,x
               lda actor_init_d,y
               sta actors+actor::move,x
-              lda #$10
+              lda #$10  ; ghost shape offset
               sta actors+actor::mask,x
+              lda actor_init_strategy,y
+              sta actors+actor::strategy,x
+              lda #0
+              sta actors+actor::dot_limit,x
               iny
               rts
 
 
-actor_init_x: ; sprite pos x of b,p,i,c,p
-    .byte 100,124,124,124,196
+actor_init_x: ; sprite pos x of blinky,pinky,inky,clyde,pacman
+    .byte 100,$7c,$7c,$7c,196
 actor_init_y:
     .byte 112,128,112,96,112
 actor_init_d:
     .byte ACT_MOVE|ACT_LEFT, ACT_MOVE|ACT_UP, ACT_MOVE|ACT_DOWN, ACT_MOVE|ACT_UP, ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
+actor_init_strategy:
+    .byte GHOST_STATE_CATCH  ; blinky
+    .byte GHOST_STATE_BASE
+    .byte GHOST_STATE_BASE
+    .byte GHOST_STATE_BASE
 
 actor_init: ;x,y,init direction
     ; x, y, dir
@@ -1059,41 +1127,6 @@ actor_init: ;x,y,init direction
 ;    .byte 196,104,  ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT ; pacman
 actor_init_end:
 
-
-ai_ghost:
-    tya
-    tax
-    jsr actor_center
-    bne @soft    ; center reached?
-
-    lda actors+actor::move,x
-    and #ACT_DIR
-    jsr actor_can_move_to_direction
-    bcc @soft  ; C=0, can move to
-
-    lda actors+actor::move,x
-    eor #ACT_DIR ;? inverse
-:   sta game_tmp
-    jsr actor_can_move_to_direction
-    lda game_tmp
-    eor #$01    ; ?left right?
-    bcs :-
-    lda actors+actor::move,x  ;otherwise stop move
-    and #<~ACT_DIR
-    ora game_tmp
-    sta actors+actor::move,x
-    rts
-@soft:
-    jmp actor_move_soft
-
-actor_strategy:
-    cpx #ACTOR_PACMAN
-    bne @ghost
-    jsr pacman_move
-    rts
-@ghost:
-    rts ; TODO FIXME
-;    jmp ai_ghost
 
 .data
 
@@ -1153,7 +1186,7 @@ Pts_Index_Energizer=(*-points)
 Pts_Index_Level_Cleared=(*-points)
   .byte $26,$00 ; level cleared
   .byte $02,$00 ; ghost catched 200,400,800,1600pts (shift left for any further ghost) - blue time reduced from 7 to 2s
-  ;TODO
+Pts_Index_All_Ghosts=(*-points) ;TODO
   .byte $01,$20,$00 ; 4 times all ghosts catched, 12.000 pts extra
 
 .export game_maze
@@ -1164,4 +1197,5 @@ Pts_Index_Level_Cleared=(*-points)
   input_direction:  .res 1
   keyboard_input:   .res 1
   actors:           .res 5*.sizeof(actor)
-  game_maze=((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end which is __BSS_SIZE__ and align $100
+  game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100
+  path_maze         = game_maze + $400

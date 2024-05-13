@@ -46,10 +46,10 @@ TXT_COLOR =$05
 
 DIP_COINAGE_0       =1<<0
 DIP_COINAGE_1       =1<<1
-DIP_LIFE_0          =1<<2   ; lives 00 - 1, 01 - 2, 10 - 3, 11 - 5
-DIP_LIFE_1          =1<<3
-DIP_BONUS_0         =1<<4   ; bonus life at 00 - 10.000, 01 - 15.000, 10 - 20.000, 11 - None
-DIP_BONUS_1         =1<<5
+DIP_LIVES_0         =1<<2   ; lives 00 - 1, 01 - 2, 10 - 3, 11 - 5
+DIP_LIVES_1         =1<<3
+DIP_BONUS_LIFE_0    =1<<4   ; bonus life at 00 - 10.000, 01 - 15.000, 10 - 20.000, 11 - None
+DIP_BONUS_LIFE_1    =1<<5
 DIP_DIFFICULTY      =1<<6
 DIP_GHOSTNAMES      =1<<7
 
@@ -67,6 +67,11 @@ STATE_INTRO         = 1<<5
 
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
+
+GHOST_STATE_BASE    = 0
+GHOST_STATE_RETURN  = 1
+GHOST_STATE_LEAVE   = 2
+GHOST_STATE_CATCH   = 3
 
 Bonus_Dots_Trig1    = 70
 Bonus_Dots_Trig2    = 170
@@ -226,7 +231,8 @@ ACT_DIR           = 1<<1|1<<0
   score         .res 3  ; score current player
 
   level         .byte   ; the current level
-  dots          .byte   ; remaining dots - MAX_DOTS at start
+  dots          .byte   ; remaining dots count down - MAX_DOTS at start
+  dot_cnt       .byte   ; in level dot counter - set/reset if a life is lost
   bonus         .byte   ; bonus of current level
   bonus_cnt     .byte   ; frame counter
   bonus_life    .word   ; trigger for next bonus life (BCD) - TT T digit
@@ -244,24 +250,29 @@ ACT_DIR           = 1<<1|1<<0
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
   ; dot timer 4s, 3s (level5)
 .struct actor ;
-    xpos        .byte    ; character x pos - 0..31
-    ypos        .byte    ; character y pos - 0..28
-    sp_x        .byte    ; sprite x
-    sp_y        .byte    ; sprite y
-    shape       .byte    ; shape
-    move        .byte    ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
-    turn        .byte    ; bit 7 turn, bit 1-0 turn direction
+    xpos        .byte   ; character x pos - 0..31
+    ypos        .byte   ; character y pos - 0..28
+    sp_x        .byte   ; sprite x
+    sp_y        .byte   ; sprite y
+    shape       .byte   ; shape
+    move        .byte   ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
+    turn        .byte   ; bit 7 turn, bit 1-0 turn direction
 
-    mask        .byte    ; shape mask - for normal, frightened or catched ghost
+    ; ghost related, maybe remove from actor struct
+    mask        .byte   ; shape mask - for normal, frightened or catched ghost
+    strategy    .byte   ; ghost movement strategy - in base, leaving base, return to base, scatter, chase, frightend
 
-    ;dots        .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
-;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
+    dot_cnt     .byte  ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
+    dot_limit   .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
+
+.struct ghost
+  actor .tag actor
+.endstruct
+
 
 SHAPE_IX_DYING      = $34
 SHAPE_IX_INVISIBLE  = $3f
-
-Maze_Tunnel=$e0
 
 ; table offsets
 ACTOR_BLINKY  = 0*.sizeof(actor)

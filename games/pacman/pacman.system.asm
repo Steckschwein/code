@@ -117,7 +117,7 @@ wait:
 
 system_dip_switches_lives:
               lda game_state+GameState::dip_switches
-              and #DIP_LIFE_1 | DIP_LIFE_0 ; see pacman.inc
+              and #DIP_LIVES_1 | DIP_LIVES_0 ; see pacman.inc
               lsr
               lsr
               clc
@@ -130,7 +130,7 @@ system_dip_switches_lives:
 
 system_dip_switches_bonus_life:
               lda game_state+GameState::dip_switches
-              and #DIP_BONUS_1 | DIP_BONUS_0 ; see pacman.inc
+              and #DIP_BONUS_LIFE_1 | DIP_BONUS_LIFE_0 ; see pacman.inc
               lsr
               lsr
               lsr

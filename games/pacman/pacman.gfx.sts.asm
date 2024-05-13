@@ -541,7 +541,6 @@ gfx_4bpp_y:
 .export gfx_ghost_icon
 gfx_ghost_icon:
               lda sys_crs_x
-              assertA_le 31
               asl               ; X*4 (2px per byte)
               asl
               clc
@@ -549,12 +548,11 @@ gfx_ghost_icon:
               sta p_vram        ; A7-A0 vram address low byte
 
               lda sys_crs_y     ; Y*8*128 => $0000, $0400, $0800
-              assertA_le 31     ; effectively high byte Y*4
               asl
               asl
               jsr gfx_vram_h
 
-              lda text_color    ; color mask
+              lda text_color    ; setup color mask
               and #$0e
               sta r6
               asl
@@ -562,8 +560,8 @@ gfx_ghost_icon:
               asl
               asl
               sta r5
-              lda #$0e
-              ldy #Bonus_Key
+              lda #$0e  ; height - see ghost.4bpp.xpm
+              ldy #Index_4bpp_ghost
               jmp gfx_4bpp_y
 
 gfx_charout:
@@ -730,6 +728,7 @@ table_4bpp_l:
   .byte <bonus_4bpp_galaxian
   .byte <bonus_4bpp_bell
   .byte <bonus_4bpp_key
+Index_4bpp_ghost=(*-table_4bpp_l)
   .byte <ghost_4bpp
 table_4bpp_h:
   .byte >bonus_4bpp_cherry

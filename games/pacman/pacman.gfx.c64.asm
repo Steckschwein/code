@@ -277,12 +277,12 @@ gfx_display_maze:
 @loop:
     lda (p_maze),y
     sta r1
-    cmp #Char_Food
+    cmp #Char_Dot
     bne @s_food
     lda #Color_Food
     bne @color
 @s_food:
-    cmp #Char_Superfood
+    cmp #Char_Energizer
     bne @text
     lda #Color_Food
     bne @color
@@ -315,6 +315,14 @@ gfx_display_maze:
     bne @loop
     rts
 
+
+.export gfx_lives
+.export gfx_bonus_stack
+.export gfx_bonus
+gfx_lives:
+gfx_bonus_stack:
+gfx_bonus:
+    rts
 
 .export gfx_ghost_icon
 gfx_ghost_icon:
