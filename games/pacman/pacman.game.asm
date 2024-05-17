@@ -1,4 +1,5 @@
 .export game
+.export maze
 .export draw_highscore
 .export bonus_for_level
 
@@ -9,6 +10,7 @@
 .importzp sys_crs_x, sys_crs_y
 
 .zeropage
+  r1:         .res 1
   game_tmp:   .res 1
   game_tmp2:  .res 1
 
@@ -294,13 +296,12 @@ actors_move:
 @exit:        rts
 
 
-ghost_move:   lda game_state+GameState::frames
+ghost_move:   jsr actor_update_charpos
+
+ghost_base:   lda game_state+GameState::frames
               and #$01
-              beq :+
-              rts
-:             jsr actor_update_charpos
-;  short distance, same distance => order: up, left, down, right.
-ghost_base:   lda actors+actor::strategy,x
+              bne @exit
+              lda actors+actor::strategy,x
               cmp #GHOST_STATE_BASE
               bne ghost_leave_base
               lda actors+actor::sp_x,x
@@ -318,25 +319,43 @@ ghost_base:   lda actors+actor::strategy,x
               adc game_state+GameState::dots
               cmp #MAX_DOTS
               bne @move
-              rts
-
-
+@exit:        rts
 
 
 ghost_leave_base:
               cmp #GHOST_STATE_LEAVE
               bne ghost_catch
               rts
+
+; shortest distance to target
+; same distance => order: up, left, down, right
+; look ahead one tile in move direction
+;
+; |x1-x2| + |y1-y2|
+;
+; shortest path
+;   from target to source - e.g. pacman to ghost or home base to ghost
+;
+;   until source reached do
+;     can move to dir
+;     x, y
 ghost_catch:
+              lda actors+actor::move,x
+              jsr actor_center
+;              .byte $db
+              bne @soft   ; center reached?
+              ;TODO turn to next dir
               rts
 
-              jsr actor_center
-              bne @soft    ; center reached?
-
-              lda actors+actor::move,x
+@soft:        lda actors+actor::move,x
               and #ACT_DIR
               jsr actor_can_move_to_direction
-              bcc @soft  ; C=0, can move to
+              ;jsr actor_can_move_to_direction
+              ;bcc @soft  ; C=0, can move to
+
+              jmp actor_move_soft
+
+
 
               lda actors+actor::move,x
               eor #ACT_DIR ;? inverse
@@ -350,36 +369,31 @@ ghost_catch:
               ora game_tmp
               sta actors+actor::move,x
               rts
-@soft:
-              jmp actor_move_soft
-              rts
 
 
     ; .A new direction
 pacman_cornering:
-    tay
-    lda actors+actor::move,x
-    and #$01  ;bit 0 set, either +x or +y, down or left
-    beq @l1
-    lda #$07   ;
-@l1:
-    eor #$07
-    sta game_tmp2 ;
-    tya
+              tay
+              lda actors+actor::move,x
+              and #$01  ;bit 0 set, either +x or +y, down or left
+              beq :+
+              lda #$07  ; with 0
+:             eor #$07
+              sta game_tmp2
+              tya
 l_test:
-    and #ACT_MOVE_UP_OR_DOWN    ; new direction is a turn
-    bne l_up_or_down          ; so we have to test with the current direction (orthogonal)
-
+              and #ACT_MOVE_UP_OR_DOWN    ; new direction is a turn
+              bne l_up_or_down            ; so we have to test with the current direction (orthogonal)
 l_left_or_right:
-    lda actors+actor::sp_x,x
-    bne l_compare ; always branch
+              lda actors+actor::sp_x,x
+              jmp l_compare ; always branch
 l_up_or_down:
-    lda actors+actor::sp_y,x
+              lda actors+actor::sp_y,x
 l_compare:
-    eor game_tmp2
-    and #$07
-    cmp #$04   ; 0100 - center pos, <0100 pre-turn, >0100 post-turn
-    rts
+              eor game_tmp2
+              and #$07
+              cmp #$04   ; 0100 - center pos, <0100 pre-turn, >0100 post-turn
+              rts
 
 ;     A - bit 0-1 the direction
 actor_center:
@@ -457,7 +471,7 @@ actor_shape_move:
               and #$01
 
 actor_shape_update:
-              ora actors+actor::mask,x
+              ora actors+actor::mask_shape,x
               sta actors+actor::shape,x
 
               lda actors+actor::move,x
@@ -557,82 +571,66 @@ add_score:
 
 
 
-    ; in:  .A - direction
-    ; out:  .C=0 can move, C=1 can not move to direction
+; in:   A - direction
+; out:  C=0 can move, C=1 can not move to direction
 actor_can_move_to_direction:
-    jsr lday_actor_charpos_direction    ; update dir char pos
-    jsr lda_maze_ptr_ay            ; calc ptr to next char at input direction
-    cmp #Char_Bg                ; C=1 if char >= Char_Bg
-    rts
+              jsr lda_actor_charpos_direction     ; update dir char pos
+              cmp #Char_Base                      ; C=1 if char >= Char_Bg
+              rts
 
 pacman_input:
-    jsr get_input
-    bcc @exit                    ; key/joy input ?
-    sta input_direction
-    jsr actor_can_move_to_direction      ; C=0 can move
-    bcs @set_input_dir_to_next_dir    ; no - only set next dir
+              jsr get_input
+              bcc @exit                    ; key/joy input ?
+              sta input_direction
+              jsr actor_can_move_to_direction      ; C=0 can move
+              bcs @set_input_dir_to_next_dir    ; no - only set next dir
 
-    lda actors+actor::turn,x
-    bmi @exit  ;exit if turn is active
+              lda actors+actor::turn,x
+              bmi @exit  ;exit if turn is active
 
-    ;current dir == input dir ?
-    lda actors+actor::move,x
-    and #ACT_DIR
-    cmp input_direction          ;same direction ?
-    beq @set_input_dir_to_next_dir  ;yes, do nothing...
-    ;current dir == inverse input dir ?
-    eor #ACT_MOVE_INVERSE
-    cmp input_direction
-    beq @set_input_dir_to_current_dir
+              ;current dir == input dir ?
+              lda actors+actor::move,x
+              and #ACT_DIR
+              cmp input_direction          ;same direction ?
+              beq @set_input_dir_to_next_dir  ;yes, do nothing...
+              ;current dir == inverse input dir ?
+              eor #ACT_MOVE_INVERSE
+              cmp input_direction
+              beq @set_input_dir_to_current_dir
 
-    lda actors+actor::ypos,x      ;is tunnel ?
-    beq @exit                    ;ypos=0
-    cmp #28                  ;... or >=28
-    bcs @exit                    ;ignore input
+;              lda actors+actor::ypos,x      ;is tunnel ?
+ ;             beq @exit                    ;ypos=0
+  ;            cmp #28                  ;... or >=28
+   ;           bcs @exit                    ;ignore input
 
-    lda input_direction
-    jsr pacman_cornering
-    beq @set_input_dir_to_current_dir  ; Z=1 center position, no pre-/post-turn
-    lda #0
-    bcc @l_preturn                 ; C=0 pre-turn, C=1 post-turn
+              lda input_direction
+              jsr pacman_cornering
+              beq @set_input_dir_to_current_dir  ; Z=1 center position, no pre-/post-turn
+              lda #0
+              bcc @l_preturn                 ; C=0 pre-turn, C=1 post-turn
 
-    lda #ACT_MOVE_INVERSE          ;
+              lda #ACT_MOVE_INVERSE          ;
 @l_preturn:
-    eor actors+actor::move,x  ; current direction
-    and #ACT_DIR
-    ora #ACT_TURN
-    sta actors+actor::turn,x
+              eor actors+actor::move,x  ; current direction
+              and #ACT_DIR
+              ora #ACT_TURN
+              sta actors+actor::turn,x
 
 @set_input_dir_to_current_dir:
-    lda input_direction
-    ora #ACT_MOVE
-    sta actors+actor::move,x
+              lda input_direction
+              ora #ACT_MOVE
+              sta actors+actor::move,x
 
 @set_input_dir_to_next_dir: ; bit 3-2
-    lda input_direction
-    asl
-    asl
-    sta game_tmp
-    lda actors+actor::move,x
-    and #<~ACT_NEXT_DIR
-    ora game_tmp
-    sta actors+actor::move,x
-@exit: rts
-
-; in:  .A - direction
-lday_actor_charpos_direction:
-    asl
-    tay
-    lda actors+actor::xpos,x
-    clc
-    adc _vectors+0,y
-    pha ; save x pos
-    lda actors+actor::ypos,x
-    clc
-    adc _vectors+1,y
-    tay
-    pla
-    rts
+              lda input_direction
+              asl
+              asl
+              sta game_tmp
+              lda actors+actor::move,x
+              and #<~ACT_NEXT_DIR
+              ora game_tmp
+              sta actors+actor::move,x
+@exit:        rts
 
 actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
     lda actors+actor::sp_x,x
@@ -686,29 +684,43 @@ debug:
     jsr out_hex_digits
     rts
 
+; in:  .A - direction
+lda_actor_charpos_direction:
+              asl
+              tay
+              lda actors+actor::xpos,x
+              clc
+              adc _vectors+0,y
+              sta game_tmp ; save x pos
+              lda actors+actor::ypos,x
+              clc
+              adc _vectors+1,y
+              tay
+              jmp lda_maze_ptr
 ; in: A/Y - as x/y char postition
 ; out: A - char at position
 lda_maze_ptr_ay:
-    sta game_tmp
-    tya           ; y * 32
-    asl
-    asl
-    asl
-    asl
-    asl
-    ora game_tmp
-    sta p_maze+0
+              sta game_tmp
+              tya           ; y * 32
+lda_maze_ptr:
+              asl
+              asl
+              asl
+              asl
+              asl
+              ora game_tmp
+              sta p_maze+0
 
-    tya
-    lsr ; div 8 -> page offset 0..n
-    lsr
-    lsr
-    clc
-    adc #>game_maze
-    sta p_maze+1
-    ldy #0
-    lda (p_maze),y
-    rts
+              tya
+              lsr ; div 8 -> page offset 0..n
+              lsr
+              lsr
+              clc
+              adc #>game_maze
+              sta p_maze+1
+              ldy #0
+              lda (p_maze),y
+              rts
 
 game_demo:
 @demo_text:
@@ -731,7 +743,7 @@ delete_message:
               ldx #10
               lda #Color_Bg
               sta text_color
-:             lda #Char_Bg
+:             lda #Char_Blank
               jsr gfx_charout
               dec sys_crs_y
               dex
@@ -1076,7 +1088,7 @@ game_init_actors:
               lda #2  ; pacman shape complete ball
               sta actors+actor::shape,x
               lda #0
-              sta actors+actor::mask,x
+              sta actors+actor::mask_shape,x
 
               jmp gfx_sprites_on
 
@@ -1088,7 +1100,7 @@ game_init_actor:
               lda actor_init_d,y
               sta actors+actor::move,x
               lda #$10  ; ghost shape offset
-              sta actors+actor::mask,x
+              sta actors+actor::mask_shape,x
               lda actor_init_strategy,y
               sta actors+actor::strategy,x
               lda #0

@@ -99,12 +99,8 @@ gfx_isr:
               lda scanline
               eor #(212-line)  ; 212/192
               sta scanline
-              lda #v_reg9
-              sta a_vreg
-
-              ldy #v_reg19
-              lda scanline
-              jsr vdp_set_reg
+              ldy #v_reg9
+              sty a_vreg
 .ifdef __DEBUG
               lda #Color_Orange
               jsr vdp_bgcolor
@@ -113,6 +109,8 @@ gfx_isr:
 .endif
               ldx #$40
               lda scanline
+              ldy #v_reg19
+              jsr vdp_set_reg
               and #(212-line)
               bne :+
               ldx #$80
@@ -298,10 +296,12 @@ gfx_display_maze:
         sty sys_crs_x
         sty sys_crs_y
         setPtr game_maze, p_gfx
+;        setPtr maze, p_maze
 @loop:  jsr @put_char
 @next:  iny
         bne @loop
         inc p_gfx+1
+ ;       inc p_maze+1
         dex
         bne @loop
 :       jsr @put_char
@@ -312,14 +312,17 @@ gfx_display_maze:
 
 @put_char:
         lda (p_gfx),y
-        pha
+;        cmp (p_maze),y
+ ;       bne :+
+  ;      rts
+:       pha
         cmp #Char_Dot
         beq @food
         cmp #Char_Energizer
         bne @text
 @food:  lda #Color_Food
         bne @color
-@text:  cmp #Char_Bg
+@text:  cmp #Char_Base
         bne @color_border
         lda #Color_Pink
         bne @color
@@ -663,9 +666,7 @@ vdp_reg9_init:
 vdp_init_bytes_end:
 
 gfx_Sprite_Adjust_X=8
-    .byte 8
 gfx_Sprite_Adjust_Y=8
-    .byte 8
 gfx_Sprite_Off=SPRITE_OFF+$08 ; +8, 212 line mode
 
 pacman_palette:

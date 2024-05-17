@@ -30,7 +30,7 @@ Char_Bonus          = $cd
 Char_Energizer      = $ce   ;1100 1110 $ce
 ;                   = $c6   ;1100 0110
 Char_Blank          = $c7   ;1100 0111
-Char_Bg             = $cf   ;1100 1111
+Char_Base           = $cf   ;1100 1111
 Char_Quote          = $22
 
 
@@ -141,8 +141,6 @@ ACT_TURN          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_DIR           = 1<<1|1<<0
 
-;CORNERING
-
 .macro setIRQ irq, irq_save
       php
       sei
@@ -250,26 +248,23 @@ ACT_DIR           = 1<<1|1<<0
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
   ; dot timer 4s, 3s (level5)
 .struct actor ;
-    xpos        .byte   ; character x pos - 0..31
-    ypos        .byte   ; character y pos - 0..28
-    sp_x        .byte   ; sprite x
-    sp_y        .byte   ; sprite y
-    shape       .byte   ; shape
-    move        .byte   ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
-    turn        .byte   ; bit 7 turn, bit 1-0 turn direction
+    xpos          .byte   ; character x pos - 0..31
+    ypos          .byte   ; character y pos - 0..28
+    sp_x          .byte   ; sprite x
+    sp_y          .byte   ; sprite y
+    shape         .byte   ; shape
+    move          .byte   ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
+    turn          .byte   ; bit 7 turn, bit 1-0 turn direction
 
     ; ghost related, maybe remove from actor struct
-    mask        .byte   ; shape mask - for normal, frightened or catched ghost
-    strategy    .byte   ; ghost movement strategy - in base, leaving base, return to base, scatter, chase, frightend
+    mask_shape    .byte   ; shape mask - for normal, frightened or catched ghost
 
-    dot_cnt     .byte  ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
-    dot_limit   .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
+    strategy      .byte   ; ghost movement strategy - in base, leaving base, return to base, scatter, chase, frightend
+
+    ;mask_visited  .byte   ; 10001111 blinky, 01001111 pinky, 00101111 inky, 00011111 clyde
+    dot_cnt       .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
+    dot_limit     .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 .endstruct
-
-.struct ghost
-  actor .tag actor
-.endstruct
-
 
 SHAPE_IX_DYING      = $34
 SHAPE_IX_INVISIBLE  = $3f

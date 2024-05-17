@@ -1,8 +1,8 @@
 /* XPM */
-static const unsigned char * pacman_ghosts_xpm[] = {
-"16 256 2 1",
+static char * pacman_ghosts_xpm[] = {
+"16 320 2 1",
 " 	c None",
-"!	c black",
+"!	c #000000",
 "       !!!!!!!! ",
 "    !!  !!!!!!  ",
 "   !!!  !!!!!   ",
@@ -322,4 +322,4 @@ static const unsigned char * pacman_ghosts_xpm[] = {
 "                ",
 "                ",
 "                ",
-"                "}
+"                "};
