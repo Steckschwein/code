@@ -72,7 +72,7 @@ GHOST_STATE_RETURN  = 1
 GHOST_STATE_LEAVE   = 2
 GHOST_STATE_CATCH   = 3
 
-Bonus_Dots_Trig1    = 1 ; 70
+Bonus_Dots_Trig1    = 70
 Bonus_Dots_Trig2    = 170
 Bonus_Time          = 150 ; count down every 4 frames gives ~9-10s
 Bonus_Pts_Time      = 24  ; ~2s
@@ -136,7 +136,8 @@ ACT_LEFT          = 1 ;01
 ACT_UP            = 2 ;10
 ACT_DOWN          = 3 ;11
 ACT_MOVE_UP_OR_DOWN     = $02 ; 1X
-ACT_MOVE_INVERSE        = $01 ;eor bit 1-0
+ACT_MOVE_INVERSE        = %00000001 ;eor bit 1-0
+ACT_MOVE_INVERSE_NEXT   = %00000100
 
 ACT_TURN          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2

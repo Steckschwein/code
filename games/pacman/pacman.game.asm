@@ -10,7 +10,6 @@
 .importzp sys_crs_x, sys_crs_y
 
 .zeropage
-  r1:         .res 1
   game_tmp:   .res 1
   game_tmp2:  .res 1
 
@@ -298,18 +297,21 @@ actors_move:
 
 ghost_move:   jsr actor_update_charpos
 
-ghost_base:   lda game_state+GameState::frames
-              and #$01
-              bne @exit
-              lda actors+actor::strategy,x
+ghost_base:   lda actors+actor::strategy,x
               cmp #GHOST_STATE_BASE
               bne ghost_leave_base
+
+              lda game_state+GameState::frames
+              and #$01
+              bne @exit
+
               lda actors+actor::sp_x,x
               bmi :+
               cmp #$78
               bne @leave
 :             lda actors+actor::move,x
-              eor #ACT_MOVE_INVERSE
+;              .byte $db
+              eor #ACT_MOVE_INVERSE_NEXT|ACT_MOVE_INVERSE
               sta actors+actor::move,x
 @move:        jmp actor_move_soft
 @leave:       cmp #$7c
@@ -339,36 +341,40 @@ ghost_leave_base:
 ;   until source reached do
 ;     can move to dir
 ;     x, y
-ghost_catch:
+ghost_catch:  cmp #GHOST_STATE_CATCH
+              bne @exit
+
               lda actors+actor::move,x
               jsr actor_center
-;              .byte $db
               bne @soft   ; center reached?
-              ;TODO turn to next dir
-              rts
-
-@soft:        lda actors+actor::move,x
-              and #ACT_DIR
-              jsr actor_can_move_to_direction
-              ;jsr actor_can_move_to_direction
-              ;bcc @soft  ; C=0, can move to
-
-              jmp actor_move_soft
-
-
-
               lda actors+actor::move,x
-              eor #ACT_DIR ;? inverse
-:             sta game_tmp
-              jsr actor_can_move_to_direction
-              lda game_tmp
-              eor #$01    ; ?left right?
-              bcs :-
-              lda actors+actor::move,x  ;otherwise stop move
-              and #<~ACT_DIR
-              ora game_tmp
-              sta actors+actor::move,x
+              and #ACT_DIR
+              jsr lda_actor_charpos_direction
+              cmp #Char_Base ; sanity check wont be C=1
+              bcs @halt
+
+              dey ;up
+              lda (p_maze),y
+              iny
+              cmp #Char_Base
+              bcs @can_left
+              lda #ACT_UP<<2    ; next direction
+              ora actors+actor::move
+              sta actors+actor::move
+
+@can_left:
+              iny ; down
+              lda (p_maze),y
+              cmp #Char_Base
+
               rts
+@soft:
+              jmp actor_move_soft
+@halt:
+              .byte $db
+              nop
+              nop
+@exit:        rts
 
 
     ; .A new direction
@@ -440,7 +446,15 @@ pacman_move:
               lda game_state+GameState::frames
               lsr
               and #$03
-              jsr actor_shape_update
+              ora actors+actor::mask_shape,x
+              sta actors+actor::shape,x
+
+              lda actors+actor::move,x
+              and #ACT_DIR
+              asl
+              asl
+              ora actors+actor::shape,x
+              sta actors+actor::shape,x
 
 actor_move_soft:
               lda actors+actor::move,x
@@ -475,9 +489,9 @@ actor_shape_update:
               sta actors+actor::shape,x
 
               lda actors+actor::move,x
-              and #ACT_DIR
-              asl
-              asl
+              and #ACT_NEXT_DIR
+;              asl
+ ;             asl
               ora actors+actor::shape,x
               sta actors+actor::shape,x
               rts
@@ -575,7 +589,7 @@ add_score:
 ; out:  C=0 can move, C=1 can not move to direction
 actor_can_move_to_direction:
               jsr lda_actor_charpos_direction     ; update dir char pos
-              cmp #Char_Base                      ; C=1 if char >= Char_Bg
+              cmp #Char_Base                      ; C=1 if char >= Char_Base which is a maze wall (>=$d0)
               rts
 
 pacman_input:
@@ -697,6 +711,7 @@ lda_actor_charpos_direction:
               adc _vectors+1,y
               tay
               jmp lda_maze_ptr
+
 ; in: A/Y - as x/y char postition
 ; out: A - char at position
 lda_maze_ptr_ay:
@@ -813,31 +828,6 @@ animate_bonus:
               lda #Bonus_Clear
               jsr gfx_bonus
 
-              jmp bonus_pts
-
-@bonus_trig:
-              lda game_state+GameState::dots
-              bit game_state+GameState::bonus
-              bmi @exit
-              bvs @bonus2
-              cmp #MAX_DOTS-Bonus_Dots_Trig1
-              bne @bonus2
-              lda #Bonus1_Triggered
-              bne @bonus
-@bonus2:      cmp #MAX_DOTS-Bonus_Dots_Trig2
-              bne @exit
-              lda #Bonus2_Triggered
-@bonus:       ora game_state+GameState::bonus
-              sta game_state+GameState::bonus
-              and #$1f  ; mask bonus number 1-8
-              jsr gfx_bonus
-              lda #Bonus_Time
-              sta game_state+GameState::bonus_cnt
-              lda #Char_Bonus ; set char in maze which will be handled in collect
-              sta game_maze+($12+$20*$0d) ; below ghost base
-@exit:        rts
-
-bonus_pts:
               lda game_state+GameState::bonus
               and #Bonus_Pts_Active
               beq @bonus_pts
@@ -873,7 +863,29 @@ bonus_pts:
               iny
               dex
               bne :-
+@exit:        rts
+@bonus_trig:
+              lda game_state+GameState::dots
+              bit game_state+GameState::bonus
+              bmi @exit
+              bvs @bonus2
+              cmp #MAX_DOTS-Bonus_Dots_Trig1
+              bne @bonus2
+              lda #Bonus1_Triggered
+              bne @bonus
+@bonus2:      cmp #MAX_DOTS-Bonus_Dots_Trig2
+              bne @exit
+              lda #Bonus2_Triggered
+@bonus:       ora game_state+GameState::bonus
+              sta game_state+GameState::bonus
+              and #$1f  ; mask bonus number 1-8
+              jsr gfx_bonus
+              lda #Bonus_Time
+              sta game_state+GameState::bonus_cnt
+              lda #Char_Bonus ; set char in maze which will be handled in collect
+              sta game_maze+($12+$20*$0d) ; below ghost base
               rts
+
 
 draw_frame:   ldx #3                ; init maze
               ldy #0
@@ -1151,42 +1163,23 @@ game_init_actor:
               iny
               rts
 
+.data
+
+maze:
+  .include "pacman.maze.inc"
+
 
 actor_init_x: ; sprite pos x of blinky,pinky,inky,clyde,pacman
     .byte 100,$7c,$7c,$7c,196
 actor_init_y:
     .byte 112,128,112,96,112
 actor_init_d:
-    .byte ACT_MOVE|ACT_LEFT, ACT_MOVE|ACT_UP, ACT_MOVE|ACT_DOWN, ACT_MOVE|ACT_UP, ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
+    .byte ACT_MOVE|ACT_LEFT, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_DOWN<<2|ACT_DOWN, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
 actor_init_strategy:
     .byte GHOST_STATE_CATCH  ; blinky
     .byte GHOST_STATE_BASE
     .byte GHOST_STATE_BASE
     .byte GHOST_STATE_BASE
-
-actor_init: ;x,y,init direction
-    ; x, y, dir
-    .byte 64,$a4,  ACT_MOVE|ACT_LEFT
-    .byte 88,$a4,   ACT_MOVE|ACT_UP
-    .byte 112,$a4,  ACT_MOVE|ACT_DOWN
-
-;    .byte 136,$a4,  ACT_MOVE|ACT_UP
-      .byte 124,88,  ACT_MOVE|ACT_UP
-
-    .byte 196,104,  ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT ; pacman
-
-;    .byte 100,104,  ACT_MOVE|ACT_LEFT
-;    .byte 124,120, ACT_MOVE|ACT_UP
-;    .byte 124,104,  ACT_MOVE|ACT_DOWN
-;    .byte 124,88,  ACT_MOVE|ACT_UP
-;    .byte 196,104,  ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT ; pacman
-actor_init_end:
-
-
-.data
-
-maze:
-  .include "pacman.maze.inc"
 
 energizer_x:
    .byte 4,24,4,24

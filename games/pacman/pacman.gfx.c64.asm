@@ -287,7 +287,7 @@ gfx_display_maze:
     lda #Color_Food
     bne @color
 @text:
-    cmp #Char_Bg
+    cmp #Char_Blank
     bne @color_border
     lda #Color_Pink
     bne @color
