@@ -505,7 +505,7 @@ pacman_collect:
 @bonus:       lda #1
               sta game_state+GameState::bonus_cnt ; will erase bonus next frame(s)
               lda game_state+GameState::bonus
-              and #$3f
+              and #$1f  ; mask 3 msb
               asl
 @score_and_erase:
               pha
@@ -809,8 +809,12 @@ animate_bonus:
               bne @exit
               dec game_state+GameState::bonus_cnt
               bne @exit
+
               lda #Bonus_Clear
-              jmp gfx_bonus
+              jsr gfx_bonus
+
+              jmp bonus_pts
+
 @bonus_trig:
               lda game_state+GameState::dots
               bit game_state+GameState::bonus
@@ -830,9 +834,46 @@ animate_bonus:
               lda #Bonus_Time
               sta game_state+GameState::bonus_cnt
               lda #Char_Bonus ; set char in maze which will be handled in collect
-              sta game_maze+($12+$20*$0d)
+              sta game_maze+($12+$20*$0d) ; below ghost base
 @exit:        rts
 
+bonus_pts:
+              lda game_state+GameState::bonus
+              and #Bonus_Pts_Active
+              beq @bonus_pts
+
+              lda game_state+GameState::bonus
+              and #<~Bonus_Pts_Active
+              sta game_state+GameState::bonus
+              ldx #$12
+              ldy #$0f
+              lda #4
+              jmp sys_blank_xy
+@bonus_pts:
+              lda #Bonus_Pts_Time
+              sta game_state+GameState::bonus_cnt
+
+              lda #Color_Pink
+              ldx #$12
+              ldy #$0f
+              jsr sys_set_pen
+
+              lda game_state+GameState::bonus
+              ora #Bonus_Pts_Active
+              sta game_state+GameState::bonus
+              and #$1f
+              sec
+              sbc #1
+              asl
+              asl
+              tay
+              ldx #4
+:             lda points_digits,y
+              jsr sys_charout
+              iny
+              dex
+              bne :-
+              rts
 
 draw_frame:   ldx #3                ; init maze
               ldy #0
@@ -892,6 +933,8 @@ game_level_init:
 
               lda #0
               sta game_state+GameState::dot_cnt
+              sta game_state+GameState::bonus_cnt
+
               ldx #ACTOR_INKY
               sta actors+actor::dot_cnt,x
               ldx #ACTOR_PINKY
@@ -1185,14 +1228,14 @@ points: ; score values in BCD format
 Pts_Index_Dot=(*-points)
   .byte $00,$10 ; dot / pill
 ; bonus at 70 dots, 170 dots - visible between nine and ten seconds. The exact duration (i.e., 9.3333 seconds, 10.0 seconds, 9.75
-  .byte $01,$00 ; cherry
-  .byte $03,$00 ; strawberry
-  .byte $05,$00 ; orange
-  .byte $07,$00 ; apple
-  .byte $10,$00 ; grapes
-  .byte $20,$00 ; galaxian
-  .byte $30,$00 ; bell
-  .byte $50,$00 ; key
+  .byte $01,$00 ; cherry        ; 1,5
+  .byte $03,$00 ; strawberry    ; 2,5
+  .byte $05,$00 ; orange        ; 3,5
+  .byte $07,$00 ; apple         ; 4,5
+  .byte $10,$00 ; grapes        ; 6,  d,e
+  .byte $20,$00 ; galaxian      ; 7,8,d,e
+  .byte $30,$00 ; bell          ; 9,a,d,e
+  .byte $50,$00 ; key           ; b,c,d,e
 Pts_Index_Energizer=(*-points)
   .byte $00,$50 ; energizer
 Pts_Index_Level_Cleared=(*-points)
@@ -1200,6 +1243,16 @@ Pts_Index_Level_Cleared=(*-points)
   .byte $02,$00 ; ghost catched 200,400,800,1600pts (shift left for any further ghost) - blue time reduced from 7 to 2s
 Pts_Index_All_Ghosts=(*-points) ;TODO
   .byte $01,$20,$00 ; 4 times all ghosts catched, 12.000 pts extra
+
+points_digits:
+  .byte Char_Blank,$01,$05,Char_Blank
+  .byte Char_Blank,$02,$05,Char_Blank
+  .byte Char_Blank,$03,$05,Char_Blank
+  .byte Char_Blank,$04,$05,Char_Blank
+  .byte Char_Blank,$06,$0d,$0e
+  .byte $07,$08,$0d,$0e
+  .byte $09,$0a,$0d,$0e
+  .byte $0b,$0c,$0d,$0e
 
 .export game_maze
 .export actors

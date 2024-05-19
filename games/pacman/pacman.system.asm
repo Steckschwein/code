@@ -2,6 +2,7 @@
 
 .export out_digits_xy,out_digits,out_digit
 .export out_hex_digit,out_hex_digits
+.export sys_charout,sys_blank_xy,sys_set_pen
 .export out_text_color
 .export out_text
 .export frame_isr
@@ -49,10 +50,29 @@ out_hex_digit:
               cmp #'9'+1    ;is it a decimal digit?
               bcc @out
               adc #6        ;add offset for letter a-f
-@out:         jsr charout
+@out:         jsr sys_charout
               inc sys_crs_x
               inc sys_crs_y
               rts
+
+sys_set_pen:
+              stx sys_crs_x
+              sty sys_crs_y
+              sta text_color
+              rts
+
+sys_blank_xy:
+              stx sys_crs_x
+              sty sys_crs_y
+              tax
+              lda #Color_Bg
+              sta text_color
+:             lda #Char_Blank
+              jsr sys_charout
+              dex
+              bne :-
+              rts
+
 
 out_digits_xy:
               stx sys_crs_x
@@ -67,7 +87,7 @@ out_digits:
               pla
 out_digit:    and #$0f
 out_digit0:   ora #'0'
-charout:      jsr gfx_charout
+sys_charout:  jsr gfx_charout
               dec sys_crs_y
               rts
 
@@ -99,7 +119,7 @@ out_text:     jsr @next_char
               jsr wait
 @wait:        jsr wait
               jmp @next
-@out:         jsr charout
+@out:         jsr sys_charout
               jmp @next
 @next_char:   ldy #0
               lda (p_text),y

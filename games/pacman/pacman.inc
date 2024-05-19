@@ -59,7 +59,6 @@ STATE_READY         = $2
 STATE_DELAY         = $3
 STATE_READY_WAIT    = $4
 STATE_PLAYING       = $5
-;STATE_PACMAN_HIT    = $6
 STATE_PACMAN_DYING  = $7
 STATE_LEVEL_CLEARED = $8
 STATE_GAME_OVER     = $9
@@ -73,9 +72,10 @@ GHOST_STATE_RETURN  = 1
 GHOST_STATE_LEAVE   = 2
 GHOST_STATE_CATCH   = 3
 
-Bonus_Dots_Trig1    = 70
+Bonus_Dots_Trig1    = 1 ; 70
 Bonus_Dots_Trig2    = 170
 Bonus_Time          = 150 ; count down every 4 frames gives ~9-10s
+Bonus_Pts_Time      = 24  ; ~2s
 
 Bonus_Clear       = 0 ;
 Bonus_Cherry      = 1 ; level 1       100pts
@@ -86,6 +86,7 @@ Bonus_Grapes      = 5 ; level 7,8   1.000pts
 Bonus_Galaxian    = 6 ; level 9,10  2.000pts
 Bonus_Bell        = 7 ; level 11,12 3.000pts
 Bonus_Key         = 8 ; level 13-   5.000pts
+Bonus_Pts_Active  = 1<<5  ; bonus pts active and displayed
 Bonus1_Triggered  = 1<<6  ; mark whether bonus was triggered
 Bonus2_Triggered  = 1<<7
 
