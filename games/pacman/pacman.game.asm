@@ -12,6 +12,9 @@
 .zeropage
   game_tmp:   .res 1
   game_tmp2:  .res 1
+  px:         .res 1  ; maze point x
+  py:         .res 1  ; maze point y
+  p_xy:       .res 2  ; ram pointer to maze
 
 .code
 game:
@@ -333,13 +336,7 @@ ghost_leave_base:
 ; look ahead one tile in move direction
 ;
 ; |x1-x2| + |y1-y2|
-;
-; shortest path
-;   from target to source - e.g. pacman to ghost or home base to ghost
-;
-;   until source reached do
-;     can move to dir
-;     x, y
+
 ghost_catch:  cmp #GHOST_STATE_CATCH
               bne @exit
 
@@ -356,18 +353,39 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               cmp #Char_Base ; sanity check wont be C=1
               bcs @halt
 
-              dey ; Y=0 from jsr above, up (#$ff)
+              sec
+              lda p_maze+0
+              sbc #32 ; adjust ram ptr one char line above (tile right)
+              sta p_maze+0
+              lda p_maze+1
+              sbc #0
+              sta p_maze+1
+;              .byte $db
               lda (p_maze),y
-              iny
               cmp #Char_Base
-              bcs @can_left
+              jsr calc_distance
+              sta dist_target+distances::right
 
-@can_left:
-              iny ; down
+              lda #31 ; up, Y+31 from right
               lda (p_maze),y
               cmp #Char_Base
+              jsr calc_distance
+              sta dist_target+distances::up
+
+              ldy #33 ; down, Y+33 from down
+              lda (p_maze),y
+              cmp #Char_Base
+              jsr calc_distance
+              sta dist_target+distances::down
+
+              ldy #64 ; Y+64 left
+              lda (p_maze),y
+              cmp #Char_Base
+              jsr calc_distance
+              sta dist_target+distances::left
 
               rts
+
               lda actors+actor::move  ; next direction to current
               lsr
               lsr
@@ -382,6 +400,21 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               nop
 @exit:        rts
 
+calc_distance:bcs @exit
+              sec
+              lda actors+ghost::tgt_x,x
+              sbc px
+              bpl :+
+              eor #$ff
+:             sta game_tmp
+              sec
+              lda actors+ghost::tgt_y,x
+              sbc py
+              bpl :+
+              eor #$ff
+:             clc
+              adc game_tmp
+@exit:        rts
 
     ; .A new direction
 pacman_cornering:
@@ -521,10 +554,29 @@ pacman_collect:
               beq @bonus
               rts
 
-@bonus:       lda #1
-              sta game_state+GameState::bonus_cnt ; will erase bonus next frame(s)
+@bonus:       lda #Bonus_Clear
+              jsr gfx_bonus
+              lda #Color_Pink
+              ldx #$12
+              ldy #$0f
+              jsr sys_set_pen
               lda game_state+GameState::bonus
-              and #$1f  ; mask 3 msb
+              and #$1f
+              sec
+              sbc #1
+              asl
+              asl
+              tay
+              ldx #4
+:             lda points_digits,y
+              jsr sys_charout
+              iny
+              dex
+              bne :-
+              lda #Bonus_Pts_Time
+              sta game_state+GameState::bonus_cnt
+              lda game_state+GameState::bonus
+              and #$1f  ; mask bonus for index to points table
               asl
 @score_and_erase:
               pha
@@ -599,10 +651,10 @@ actor_can_move_to_direction:
 
 pacman_input:
               jsr get_input
-              bcc @exit                    ; key/joy input ?
+              bcc @exit                       ; key/joy input ?
               sta input_direction
-              jsr actor_can_move_to_direction      ; C=0 can move
-              bcs @set_input_dir_to_next_dir    ; no - only set next dir
+              jsr actor_can_move_to_direction ; C=0 can move
+              bcs @set_input_dir_to_next_dir  ; no - only set next dir
 
               lda actors+actor::turn,x
               bmi @exit  ;exit if turn is active
@@ -710,17 +762,18 @@ lda_actor_charpos_direction:
               lda actors+actor::xpos,x
               clc
               adc _vectors+0,y
-              sta game_tmp ; save x pos
+              sta px
               lda actors+actor::ypos,x
               clc
               adc _vectors+1,y
+              sta py
               tay
               jmp lda_maze_ptr
 
 ; in: A/Y - as x/y char postition
 ; out: A - char at position
 lda_maze_ptr_ay:
-              sta game_tmp
+              sta px
               tya           ; y * 32
 lda_maze_ptr:
               asl
@@ -728,7 +781,7 @@ lda_maze_ptr:
               asl
               asl
               asl
-              ora game_tmp
+              ora px
               sta p_maze+0
 
               tya
@@ -830,45 +883,14 @@ animate_bonus:
               dec game_state+GameState::bonus_cnt
               bne @exit
 
+              lda #Char_Blank ; reset to blank char in maze
+              sta game_maze+($12+$20*$0d) ; below ghost base
               lda #Bonus_Clear
               jsr gfx_bonus
-
-              lda game_state+GameState::bonus
-              and #Bonus_Pts_Active
-              beq @bonus_pts
-
-              lda game_state+GameState::bonus
-              and #<~Bonus_Pts_Active
-              sta game_state+GameState::bonus
               ldx #$12
               ldy #$0f
               lda #4
               jmp sys_blank_xy
-@bonus_pts:
-              lda #Bonus_Pts_Time
-              sta game_state+GameState::bonus_cnt
-
-              lda #Color_Pink
-              ldx #$12
-              ldy #$0f
-              jsr sys_set_pen
-
-              lda game_state+GameState::bonus
-              ora #Bonus_Pts_Active
-              sta game_state+GameState::bonus
-              and #$1f
-              sec
-              sbc #1
-              asl
-              asl
-              tay
-              ldx #4
-:             lda points_digits,y
-              jsr sys_charout
-              iny
-              dex
-              bne :-
-@exit:        rts
 @bonus_trig:
               lda game_state+GameState::dots
               bit game_state+GameState::bonus
@@ -889,7 +911,7 @@ animate_bonus:
               sta game_state+GameState::bonus_cnt
               lda #Char_Bonus ; set char in maze which will be handled in collect
               sta game_maze+($12+$20*$0d) ; below ghost base
-              rts
+@exit:        rts
 
 
 draw_frame:   ldx #3                ; init maze
@@ -1152,10 +1174,16 @@ game_init_actors:
 @init_ghost:
               lda #$10  ; ghost shape offset
               sta actors+ghost::mask_shape,x
-              lda actor_init_strategy,y
+              lda ghost_init_strategy,y
               sta actors+ghost::strategy,x
               lda #0
               sta actors+ghost::dot_limit,x
+              lda ghost_init_sct_x,y
+              sta actors+ghost::sct_x,x
+              sta actors+ghost::tgt_x,x
+              lda ghost_init_sct_y,y
+              sta actors+ghost::sct_y,x
+              sta actors+ghost::tgt_y,x
 @init_actor:
               lda actor_init_x,y
               sta actors+actor::sp_x,x
@@ -1178,12 +1206,12 @@ actor_init_y:
     .byte 112,128,112,96,112
 actor_init_d:
     .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_DOWN<<2|ACT_DOWN, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
-actor_init_scatter_x:
-    .byte 0
-actor_init_scatter_y:
-    .byte 0
 
-actor_init_strategy:
+ghost_init_sct_x:
+    .byte $00,$00,$1f,$1f
+ghost_init_sct_y:
+    .byte $02,$19,$00,$1b
+ghost_init_strategy:
     .byte GHOST_STATE_CATCH  ; blinky
     .byte GHOST_STATE_BASE
     .byte GHOST_STATE_BASE
@@ -1265,6 +1293,7 @@ points_digits:
   actors:
   ghosts:           .res 4*.sizeof(ghost)
   pacman:           .res .sizeof(actor)
+  dist_target:      .tag distances
 
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100
   path_maze         = game_maze + $400

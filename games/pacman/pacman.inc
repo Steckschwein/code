@@ -86,7 +86,6 @@ Bonus_Grapes      = 5 ; level 7,8   1.000pts
 Bonus_Galaxian    = 6 ; level 9,10  2.000pts
 Bonus_Bell        = 7 ; level 11,12 3.000pts
 Bonus_Key         = 8 ; level 13-   5.000pts
-Bonus_Pts_Active  = 1<<5  ; bonus pts active and displayed
 Bonus1_Triggered  = 1<<6  ; mark whether bonus was triggered
 Bonus2_Triggered  = 1<<7
 
@@ -269,8 +268,18 @@ ACT_DIR           = 1<<1|1<<0
     dot_cnt       .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
     dot_limit     .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 
+    tgt_x         .byte   ; target x
+    tgt_y         .byte   ; target y
+
     sct_x         .byte   ; scatter target x
     sct_y         .byte   ; scatter target y
+.endstruct
+
+.struct distances
+    up            .byte
+    left          .byte
+    down          .byte
+    right         .byte
 .endstruct
 
 SHAPE_IX_DYING      = $34

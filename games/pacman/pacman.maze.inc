@@ -28,7 +28,8 @@
 .byte $c7,$da,$cc,$cc,$ce,$cc,$cc,$cc,$cc,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$cc,$cc,$ce,$dc,$e1,$cc,$cc,$cc,$cc,$db ; 1a
 .byte $c7,$d1,$d3,$d3,$d3,$d3,$d3,$d3,$d3,$d3,$d5,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$d1,$d3,$d3,$d3,$d3,$d7,$d9,$d3,$d3,$d3,$d3,$d5 ; 1b
 
-; P($2,$1) P($1f,$1b) => dist=a²=b²+c² => a=sqrt(b²+c²) => it's sufficient to calculate the sum of |x1-x2| + |y1-y2| to sort the distances
+; P(x1,y1) P(x2,y2) => dist=a²=b²+c² => a=sqrt(b²+c²) => it's sufficient to calculate the sum of |x1-x2| + |y1-y2| to sort the distances
+; e.g. P($2,$1) P($1f,$1b) => |$02-$1f| + |$01-$1b| = $1d + $1a = $37
 
 ; CREDIT  0   HIGH      c7
 
