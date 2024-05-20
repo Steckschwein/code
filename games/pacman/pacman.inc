@@ -257,23 +257,28 @@ ACT_DIR           = 1<<1|1<<0
     shape         .byte   ; shape
     move          .byte   ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
     turn          .byte   ; bit 7 turn, bit 1-0 turn direction
+.endstruct
 
+.struct ghost
+    actor .tag actor
     ; ghost related, maybe remove from actor struct
     mask_shape    .byte   ; shape mask - for normal, frightened or catched ghost
 
     strategy      .byte   ; ghost movement strategy - in base, leaving base, return to base, scatter, chase, frightend
-
     ;mask_visited  .byte   ; 10001111 blinky, 01001111 pinky, 00101111 inky, 00011111 clyde
     dot_cnt       .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
     dot_limit     .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
+
+    sct_x         .byte   ; scatter target x
+    sct_y         .byte   ; scatter target y
 .endstruct
 
 SHAPE_IX_DYING      = $34
 SHAPE_IX_INVISIBLE  = $3f
 
 ; table offsets
-ACTOR_BLINKY  = 0*.sizeof(actor)
-ACTOR_INKY    = 1*.sizeof(actor)
-ACTOR_PINKY   = 2*.sizeof(actor)
-ACTOR_CLYDE   = 3*.sizeof(actor)
-ACTOR_PACMAN  = 4*.sizeof(actor)
+ACTOR_BLINKY  = 0*.sizeof(ghost)
+ACTOR_INKY    = 1*.sizeof(ghost)
+ACTOR_PINKY   = 2*.sizeof(ghost)
+ACTOR_CLYDE   = 3*.sizeof(ghost)
+ACTOR_PACMAN  = 4*.sizeof(ghost)

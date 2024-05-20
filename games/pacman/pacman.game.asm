@@ -297,7 +297,7 @@ actors_move:
 
 ghost_move:   jsr actor_update_charpos
 
-ghost_base:   lda actors+actor::strategy,x
+ghost_base:   lda actors+ghost::strategy,x
               cmp #GHOST_STATE_BASE
               bne ghost_leave_base
 
@@ -310,13 +310,12 @@ ghost_base:   lda actors+actor::strategy,x
               cmp #$78
               bne @leave
 :             lda actors+actor::move,x
-;              .byte $db
               eor #ACT_MOVE_INVERSE_NEXT|ACT_MOVE_INVERSE
               sta actors+actor::move,x
 @move:        jmp actor_move_soft
 @leave:       cmp #$7c
               bne @move
-              lda actors+actor::dot_limit,x
+              lda actors+ghost::dot_limit,x
               clc
               adc game_state+GameState::dots
               cmp #MAX_DOTS
@@ -344,6 +343,10 @@ ghost_leave_base:
 ghost_catch:  cmp #GHOST_STATE_CATCH
               bne @exit
 
+              lda game_state+GameState::frames
+              and #$07
+              bne @exit
+
               lda actors+actor::move,x
               jsr actor_center
               bne @soft   ; center reached?
@@ -353,14 +356,11 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               cmp #Char_Base ; sanity check wont be C=1
               bcs @halt
 
-              dey ;up
+              dey ; Y=0 from jsr above, up (#$ff)
               lda (p_maze),y
               iny
               cmp #Char_Base
               bcs @can_left
-              lda #ACT_UP<<2    ; next direction
-              ora actors+actor::move
-              sta actors+actor::move
 
 @can_left:
               iny ; down
@@ -368,6 +368,12 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               cmp #Char_Base
 
               rts
+              lda actors+actor::move  ; next direction to current
+              lsr
+              lsr
+              and #$03
+              ora #ACT_MOVE|ACT_UP<<2    ; next direction to uup
+              sta actors+actor::move
 @soft:
               jmp actor_move_soft
 @halt:
@@ -446,7 +452,6 @@ pacman_move:
               lda game_state+GameState::frames
               lsr
               and #$03
-              ora actors+actor::mask_shape,x
               sta actors+actor::shape,x
 
               lda actors+actor::move,x
@@ -485,7 +490,7 @@ actor_shape_move:
               and #$01
 
 actor_shape_update:
-              ora actors+actor::mask_shape,x
+              ora actors+ghost::mask_shape,x
               sta actors+actor::shape,x
 
               lda actors+actor::move,x
@@ -948,11 +953,11 @@ game_level_init:
               sta game_state+GameState::bonus_cnt
 
               ldx #ACTOR_INKY
-              sta actors+actor::dot_cnt,x
+              sta actors+ghost::dot_cnt,x
               ldx #ACTOR_PINKY
-              sta actors+actor::dot_cnt,x
+              sta actors+ghost::dot_cnt,x
               ldx #ACTOR_CLYDE
-              sta actors+actor::dot_cnt,x
+              sta actors+ghost::dot_cnt,x
 
               jsr draw_frame
 
@@ -1116,50 +1121,48 @@ game_init:
 game_init_actors:
               ldy #0
               ldx #ACTOR_BLINKY
-              jsr game_init_actor
+              jsr @init_ghost
               ldx #ACTOR_INKY
-              jsr game_init_actor
+              jsr @init_ghost
               ldx #ACTOR_PINKY
-              jsr game_init_actor
+              jsr @init_ghost
               ldx #ACTOR_CLYDE
-              jsr game_init_actor
+              jsr @init_ghost
               lda game_state+GameState::level
               cmp #1
               bne :+
               lda #60 ; level 1 - dot limit clyde 60
-              sta actors+actor::dot_limit,x
+              sta actors+ghost::dot_limit,x
               lda #30 ;           dot limit inky 30
               ldx #ACTOR_INKY
-              sta actors+actor::dot_limit,x
+              sta actors+ghost::dot_limit,x
 :             cmp #2
               bne :+
               lda #50 ;           dot limit clyde 50
-              sta actors+actor::dot_limit,x
+              sta actors+ghost::dot_limit,x
 :
               jsr animate_ghosts  ; update shape
 
               ldx #ACTOR_PACMAN
-              jsr game_init_actor
+              jsr @init_actor
               lda #2  ; pacman shape complete ball
               sta actors+actor::shape,x
-              lda #0
-              sta actors+actor::mask_shape,x
 
               jmp gfx_sprites_on
-
-game_init_actor:
+@init_ghost:
+              lda #$10  ; ghost shape offset
+              sta actors+ghost::mask_shape,x
+              lda actor_init_strategy,y
+              sta actors+ghost::strategy,x
+              lda #0
+              sta actors+ghost::dot_limit,x
+@init_actor:
               lda actor_init_x,y
               sta actors+actor::sp_x,x
               lda actor_init_y,y
               sta actors+actor::sp_y,x
               lda actor_init_d,y
               sta actors+actor::move,x
-              lda #$10  ; ghost shape offset
-              sta actors+actor::mask_shape,x
-              lda actor_init_strategy,y
-              sta actors+actor::strategy,x
-              lda #0
-              sta actors+actor::dot_limit,x
               iny
               rts
 
@@ -1174,7 +1177,12 @@ actor_init_x: ; sprite pos x of blinky,pinky,inky,clyde,pacman
 actor_init_y:
     .byte 112,128,112,96,112
 actor_init_d:
-    .byte ACT_MOVE|ACT_LEFT, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_DOWN<<2|ACT_DOWN, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
+    .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_DOWN<<2|ACT_DOWN, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
+actor_init_scatter_x:
+    .byte 0
+actor_init_scatter_y:
+    .byte 0
+
 actor_init_strategy:
     .byte GHOST_STATE_CATCH  ; blinky
     .byte GHOST_STATE_BASE
@@ -1254,6 +1262,9 @@ points_digits:
   save_irq:         .res 2
   input_direction:  .res 1
   keyboard_input:   .res 1
-  actors:           .res 5*.sizeof(actor)
+  actors:
+  ghosts:           .res 4*.sizeof(ghost)
+  pacman:           .res .sizeof(actor)
+
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100
   path_maze         = game_maze + $400
