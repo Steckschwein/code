@@ -212,7 +212,9 @@ check_stack:
 
 zp_broken:
 stack_broken:
-
+      lda #Dark_Red<<4|Dark_Red
+      jsr vdp_bgcolor
+:     bra :-
 zp_stack_ok:
 
       jsr blklayer_init
