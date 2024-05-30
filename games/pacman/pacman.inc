@@ -276,10 +276,10 @@ ACT_DIR           = 1<<1|1<<0
 .endstruct
 
 .struct distances
-    up            .byte
-    left          .byte
-    down          .byte
     right         .byte
+    left          .byte
+    up            .byte
+    down          .byte
 .endstruct
 
 SHAPE_IX_DYING      = $34
@@ -287,7 +287,7 @@ SHAPE_IX_INVISIBLE  = $3f
 
 ; table offsets
 ACTOR_BLINKY  = 0*.sizeof(ghost)
-ACTOR_INKY    = 1*.sizeof(ghost)
-ACTOR_PINKY   = 2*.sizeof(ghost)
+ACTOR_PINKY   = 1*.sizeof(ghost)
+ACTOR_INKY    = 2*.sizeof(ghost)
 ACTOR_CLYDE   = 3*.sizeof(ghost)
 ACTOR_PACMAN  = 4*.sizeof(ghost)

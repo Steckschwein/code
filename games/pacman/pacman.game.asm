@@ -14,7 +14,6 @@
   game_tmp2:  .res 1
   px:         .res 1  ; maze point x
   py:         .res 1  ; maze point y
-  p_xy:       .res 2  ; ram pointer to maze
 
 .code
 game:
@@ -309,27 +308,41 @@ ghost_base:   lda actors+ghost::strategy,x
               bne @exit
 
               lda actors+actor::sp_x,x
-              bmi :+
+              bmi @move_inverse  ; $80 ?
               cmp #$78
-              bne @leave
-:             lda actors+actor::move,x
+              bne @move
+              lda actors+ghost::dot_cnt,x
+              cmp actors+ghost::dot_limit,x
+              beq @leave
+@move_inverse:lda actors+actor::move,x
               eor #ACT_MOVE_INVERSE_NEXT|ACT_MOVE_INVERSE
               sta actors+actor::move,x
 @move:        jmp actor_move_soft
-@leave:       cmp #$7c
-              bne @move
-              lda actors+ghost::dot_limit,x
-              clc
-              adc game_state+GameState::dots
-              cmp #MAX_DOTS
-              bne @move
+
+@leave:       lda #GHOST_STATE_LEAVE
+              sta actors+ghost::strategy,x
 @exit:        rts
 
 
 ghost_leave_base:
               cmp #GHOST_STATE_LEAVE
               bne ghost_catch
-              rts
+
+              lda game_state+GameState::frames
+              and #$01
+              bne @exit
+
+              lda actors+actor::sp_x,x
+              cmp #100
+              beq @catch
+              jmp actor_move_soft
+@catch:       lda #GHOST_STATE_CATCH
+              sta actors+ghost::strategy,x
+              lda actors+actor::move,x
+              and #<~ACT_NEXT_DIR
+              ora #ACT_LEFT|ACT_LEFT<<2
+              sta actors+actor::move,x
+@exit:        rts
 
 ; shortest distance to target
 ; same distance => order: up, left, down, right
@@ -338,16 +351,24 @@ ghost_leave_base:
 ; |x1-x2| + |y1-y2|
 
 ghost_catch:  cmp #GHOST_STATE_CATCH
-              bne @exit
+              beq :+
+@exit:        rts
 
-              lda game_state+GameState::frames
-              and #$07
-              bne @exit
+:             lda game_state+GameState::frames
+              and #$01
+;              bne @exit
 
               lda actors+actor::move,x
               jsr actor_center
-              bne @soft   ; center reached?
-              lda actors+actor::move,x
+              beq :+
+              jmp actor_move_soft   ; center reached?
+
+:             lda actors+actor::move,x
+              lsr ; next dir to current direction
+              lsr
+              and #ACT_DIR
+              ora #ACT_MOVE
+              sta actors+actor::move,x
               and #ACT_DIR
               jsr lda_actor_charpos_direction
               cmp #Char_Base ; sanity check wont be C=1
@@ -360,63 +381,89 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               lda p_maze+1
               sbc #0
               sta p_maze+1
+
+              lda actors+actor::move,x
+              and #ACT_DIR
+              eor #ACT_MOVE_INVERSE
+              sta game_tmp2 ; exclude inverse of next direction
+
 ;              .byte $db
               lda (p_maze),y
               cmp #Char_Base
+              ldy #ACT_RIGHT
               jsr calc_distance
               sta dist_target+distances::right
-
-              lda #31 ; up, Y+31 from right
-              lda (p_maze),y
-              cmp #Char_Base
-              jsr calc_distance
-              sta dist_target+distances::up
-
-              ldy #33 ; down, Y+33 from down
-              lda (p_maze),y
-              cmp #Char_Base
-              jsr calc_distance
-              sta dist_target+distances::down
 
               ldy #64 ; Y+64 left
               lda (p_maze),y
               cmp #Char_Base
+              lda #ACT_LEFT
               jsr calc_distance
               sta dist_target+distances::left
 
-              rts
+              ldy #33 ; down, Y+33 from down
+              lda (p_maze),y
+              cmp #Char_Base
+              ldy #ACT_DOWN
+              jsr calc_distance
+              sta dist_target+distances::down
 
-              lda actors+actor::move  ; next direction to current
-              lsr
-              lsr
-              and #$03
-              ora #ACT_MOVE|ACT_UP<<2    ; next direction to uup
-              sta actors+actor::move
-@soft:
-              jmp actor_move_soft
+              ldy #31 ; up, Y+31 from right
+              lda (p_maze),y
+              cmp #Char_Base
+              ldy #ACT_UP
+              jsr calc_distance
+              sta dist_target+distances::up
+;u,l,d,r
+              lda #$ff
+              sta game_tmp
+              ldy #0
+@l:           lda dist_target+distances::right,y
+              bmi @next
+              cmp game_tmp
+              bcs @next
+              sta game_tmp
+              sty game_tmp2
+@next:        iny
+              cpy #4
+              bne @l
+              asl game_tmp2
+              asl game_tmp2
+              lda actors+actor::move,x  ; next direction to current
+              and #<~ACT_NEXT_DIR
+              ora game_tmp2    ; next direction
+              sta actors+actor::move,x
+@soft:        jmp actor_move_soft
 @halt:
               .byte $db
               nop
               nop
-@exit:        rts
+              rts
 
-calc_distance:bcs @exit
+calc_distance:lda #$80  ; bit 7 set to indicate not considered
+              bcs @exit
+              cpy game_tmp2
+              beq @exit ; discard inverse
+              clc
+              lda px
+              adc _vectors_x,y
               sec
-              lda actors+ghost::tgt_x,x
-              sbc px
+              sbc actors+ghost::tgt_x,x
               bpl :+
               eor #$ff
 :             sta game_tmp
+              clc
+              lda py
+              adc _vectors_y,y
               sec
-              lda actors+ghost::tgt_y,x
-              sbc py
+              sbc actors+ghost::tgt_y,x
               bpl :+
               eor #$ff
 :             clc
               adc game_tmp
 @exit:        rts
 
-    ; .A new direction
+; .A new direction
 pacman_cornering:
               tay
               lda actors+actor::move,x
@@ -480,7 +527,6 @@ pacman_move:
               and #ACT_NEXT_DIR       ; set shape of next direction
               sta actors+actor::shape,x
               rts
-
 @move_soft:
               lda game_state+GameState::frames
               lsr
@@ -499,11 +545,10 @@ actor_move_soft:
 actor_move_sprite:
               bpl @exit
               and #ACT_DIR
-              asl
               tay
-
+              clc
               lda actors+actor::sp_x,x
-              adc _vectors+0,y
+              adc _vectors_x,y
               sta actors+actor::sp_x,x
 
               clc
@@ -511,7 +556,7 @@ actor_move_sprite:
               ;cmp #$df
               ;beq @exit
  ;             .byte $db
-              adc _vectors+1,y
+              adc _vectors_y,y
               sta actors+actor::sp_y,x
 @exit:        rts
 
@@ -757,15 +802,14 @@ debug:
 
 ; in:  .A - direction
 lda_actor_charpos_direction:
-              asl
               tay
               lda actors+actor::xpos,x
               clc
-              adc _vectors+0,y
+              adc _vectors_x,y
               sta px
               lda actors+actor::ypos,x
               clc
-              adc _vectors+1,y
+              adc _vectors_y,y
               sta py
               tay
               jmp lda_maze_ptr
@@ -835,6 +879,8 @@ game_playing:
               jsr animate_screen
               jsr animate_bonus
 
+              jsr update_target
+
               lda game_state+GameState::dots   ; all dots collected ?
               ;cmp #230
               bne @exit
@@ -849,6 +895,11 @@ game_playing:
               lda #STATE_LEVEL_CLEARED
               jmp game_set_state_frames_delay
 @exit:        rts
+
+update_target:
+              ; Ghosts are forced to reverse direction by the system anytime the mode changes from: chase-to-scatter, chase-to-frightened, scatter-to-chase, and scatter-to-frightened.
+              ; Ghosts do not reverse direction when changing back from frightened to chase or scatter modes.
+              rts
 
 ; in: A - level
 ; out: Y - bonus
@@ -1207,7 +1258,7 @@ actor_init_y:
 actor_init_d:
     .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_DOWN<<2|ACT_DOWN, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
 
-ghost_init_sct_x:
+ghost_init_sct_x: ; ghost scatter targets
     .byte $00,$00,$1f,$1f
 ghost_init_sct_y:
     .byte $02,$19,$00,$1b
@@ -1222,15 +1273,10 @@ energizer_x:
 energizer_y:
    .byte 1,1,26,26
 
-_vectors:  ; X, Y adjust
-_vec_right:      ;00
-    .byte 0,$ff  ; +0 X, -1 Y, screen is rotated 90 degree clockwise ;)
-_vec_left:      ;01
-    .byte 0, 1
-_vec_up:        ;10
-    .byte $ff,0
-_vec_down:      ;11
-    .byte 1, 0
+_vectors_x:  ; X, Y adjust +0 X, -1 Y, screen is rotated 90 degree clockwise ;)
+    .byte $00,$00,$ff,$01
+_vectors_y:
+    .byte $ff,$01,$00,$00
 
 _text_1up:
     .byte 0, 24, "1UP",0
