@@ -134,8 +134,8 @@ ACT_RIGHT         = 0 ;00
 ACT_LEFT          = 1 ;01
 ACT_UP            = 2 ;10
 ACT_DOWN          = 3 ;11
-ACT_MOVE_UP_OR_DOWN     = $02 ; 1X
-ACT_MOVE_INVERSE        = %00000001 ;eor bit 1-0
+ACT_MOVE_UP_OR_DOWN     = %00000010
+ACT_MOVE_INVERSE        = %00000001   ;eor bit 1-0
 ACT_MOVE_INVERSE_NEXT   = %00000100
 
 ACT_TURN          = 1<<7

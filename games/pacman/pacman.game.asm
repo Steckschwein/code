@@ -308,20 +308,21 @@ ghost_base:   lda actors+ghost::strategy,x
               bne @exit
 
               lda actors+actor::sp_x,x
-              bmi @move_inverse  ; $80 ?
+              bmi @inverse  ; $80 ?
               cmp #$78
+              beq @inverse
+              cmp #$7c
               bne @move
-              lda actors+ghost::dot_cnt,x
+@leave:       lda actors+ghost::dot_cnt,x
               cmp actors+ghost::dot_limit,x
-              beq @leave
-@move_inverse:lda actors+actor::move,x
+              bne @move
+              lda #GHOST_STATE_LEAVE
+              sta actors+ghost::strategy,x
+@exit:        rts
+@inverse:     lda actors+actor::move,x
               eor #ACT_MOVE_INVERSE_NEXT|ACT_MOVE_INVERSE
               sta actors+actor::move,x
 @move:        jmp actor_move_soft
-
-@leave:       lda #GHOST_STATE_LEAVE
-              sta actors+ghost::strategy,x
-@exit:        rts
 
 
 ghost_leave_base:
@@ -332,16 +333,25 @@ ghost_leave_base:
               and #$01
               bne @exit
 
+              lda actors+actor::sp_y,x
+              cmp #112  ; middle of house
+              beq @mov_middle
+              bcc :+
+              lda #ACT_MOVE|ACT_RIGHT<<2|ACT_RIGHT
+              bne @move
+:             lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
+@move:        sta actors+actor::move,x
+              jmp actor_move_soft
+@mov_middle:
               lda actors+actor::sp_x,x
               cmp #100
-              beq @catch
-              jmp actor_move_soft
-@catch:       lda #GHOST_STATE_CATCH
-              sta actors+ghost::strategy,x
-              lda actors+actor::move,x
-              and #<~ACT_NEXT_DIR
-              ora #ACT_LEFT|ACT_LEFT<<2
+              beq @base_leaved
+              lda #ACT_MOVE|ACT_UP<<2|ACT_UP
+              bne @move
+@base_leaved: lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
               sta actors+actor::move,x
+              lda #GHOST_STATE_CATCH
+              sta actors+ghost::strategy,x
 @exit:        rts
 
 ; shortest distance to target
@@ -358,6 +368,7 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               and #$01
 ;              bne @exit
 
+ghost_move_target:
               lda actors+actor::move,x
               jsr actor_center
               beq :+
@@ -1167,7 +1178,7 @@ game_init:
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #1 ; start with level 1
+              lda #2 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
@@ -1256,7 +1267,11 @@ actor_init_x: ; sprite pos x of blinky,pinky,inky,clyde,pacman
 actor_init_y:
     .byte 112,128,112,96,112
 actor_init_d:
-    .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_DOWN<<2|ACT_DOWN, ACT_MOVE|ACT_UP<<2|ACT_UP, ACT_MOVE|ACT_LEFT<<2 | ACT_LEFT
+    .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
+    .byte ACT_MOVE|ACT_UP<<2|ACT_UP
+    .byte ACT_MOVE|ACT_DOWN<<2|ACT_DOWN
+    .byte ACT_MOVE|ACT_UP<<2|ACT_UP
+    .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
 
 ghost_init_sct_x: ; ghost scatter targets
     .byte $00,$00,$1f,$1f
@@ -1340,6 +1355,4 @@ points_digits:
   ghosts:           .res 4*.sizeof(ghost)
   pacman:           .res .sizeof(actor)
   dist_target:      .tag distances
-
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100
-  path_maze         = game_maze + $400
