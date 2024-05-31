@@ -429,7 +429,7 @@ ghost_move_target:
               lda #$ff
               sta game_tmp
               ldy #0
-@l:           lda dist_target+distances::right,y
+@l:           lda dist_target,y
               bmi @next
               cmp game_tmp
               bcs @next
@@ -438,11 +438,10 @@ ghost_move_target:
 @next:        iny
               cpy #4
               bne @l
-              asl game_tmp2
-              asl game_tmp2
+              ldy game_tmp2
               lda actors+actor::move,x  ; next direction to current
               and #<~ACT_NEXT_DIR
-              ora game_tmp2    ; next direction
+              ora _directions,y    ; next direction
               sta actors+actor::move,x
 @soft:        jmp actor_move_soft
 @halt:
@@ -1261,7 +1260,6 @@ game_init_actors:
 maze:
   .include "pacman.maze.inc"
 
-
 actor_init_x: ; sprite pos x of blinky,pinky,inky,clyde,pacman
     .byte 100,$7c,$7c,$7c,196
 actor_init_y:
@@ -1288,6 +1286,9 @@ energizer_x:
 energizer_y:
    .byte 1,1,26,26
 
+_directions: ; up,left,down,right
+    .byte ACT_UP<<2,ACT_LEFT<<2,ACT_DOWN<<2,ACT_RIGHT<<2
+
 _vectors_x:  ; X, Y adjust +0 X, -1 Y, screen is rotated 90 degree clockwise ;)
     .byte $00,$00,$ff,$01
 _vectors_y:
@@ -1301,7 +1302,6 @@ _text_pacman:
     .byte 12,15, "PACMAN",0
 _text_demo:
     .byte 18,15, "DEMO!",0
-
 _text_player_one:
     .byte 12,18, "PLAYER ONE",0
 _text_player_two:
@@ -1343,6 +1343,7 @@ points_digits:
   .byte $07,$08,$0d,$0e
   .byte $09,$0a,$0d,$0e
   .byte $0b,$0c,$0d,$0e
+
 
 .export game_maze
 .export actors

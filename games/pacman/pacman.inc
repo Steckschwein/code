@@ -275,11 +275,11 @@ ACT_DIR           = 1<<1|1<<0
     sct_y         .byte   ; scatter target y
 .endstruct
 
-.struct distances
-    right         .byte
-    left          .byte
+.struct distances ; in order same distance ghost chosses up, left, down, right
     up            .byte
+    left          .byte
     down          .byte
+    right         .byte
 .endstruct
 
 SHAPE_IX_DYING      = $34
