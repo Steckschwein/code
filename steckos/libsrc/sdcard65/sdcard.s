@@ -34,8 +34,12 @@
 .include "spi65.inc"
 .include "via.inc"
 .include "debug.inc"
+
+SD_STUFF_BYTE = $ff 
+
+
 .code
-.import spi65_rw_byte, spi65_select_device, spi65_deselect
+.import spi65_tx_byte, spi65_select_device, spi65_deselect
 
 .export sdcard_init, sdcard_detect
 .export sd_select_card, sd_deselect_card
@@ -55,43 +59,43 @@ sdcard_detect:
     lda #0
     rts
 
+
 ;---------------------------------------------------------------------
-; Init SD Card
-; Destructive: A, X, Y
-;
-;  out:  Z=1 on success, Z=0 otherwise and A=<error>
-;---------------------------------------------------------------------
-;@name: "sdcard_init"
-;@out: Z,"1 on success, 0 on error"
-;@out: A, "error code"
+;@name: "_sdcard_spi_mode"
 ;@clobbers: A,X,Y
-;@desc: "initialize sd card in SPI mode"
-sdcard_init:
-      ; lda #spi65_device_sdcard
-      ; jsr spi65_select_device
-      ; beq @init
-      ; rts
-@init:
+;@desc: "initialize sd card in SPI mode by sending 80 clock cycles to the deselcted card with MOSI=1"
+_sdcard_spi_mode:
+;     ; 74 SPI clock cycles - !!!Note: spi clock cycle should be in range 100-400Khz!!!
+;       ldx #74
 
-      php
-      sei
+;       ; set ALL CS lines and DO to HIGH
+;       lda #%11111110
+;       tay
+;       iny
+; init_clk:
+;       sta via1portb
+;       jsr _sys_delay_4us ; 4µs delay => 250Khz
+;       sty via1portb
+;       jsr _sys_delay_4us
+;       dex
+;       bne init_clk
+      jsr     spi65_deselect
+      ldy     #10
+:  
+      phy
+      lda     #SD_STUFF_BYTE
+      jsr     spi65_tx_byte
+      ply
+      dey
+      bne :-
+      rts
 
-      jsr spi65_deselect
-
-      ; lda #%00000111
-      ; sta spi65_div
-
-      ldx #10
-:
-      lda #$ff
-      jsr spi65_rw_byte
-      dex 
-      bpl :-
-
-      jsr sd_select_card
-      bcc @next
-      jmp @exit
-@next:
+;---------------------------------------------------------------------
+;@name: "_sdcard_reset"
+;@clobbers: A,X,Y
+;@desc: "reset SD card by sending CMD0"
+;@out: C,"0 on success, 1 on error"
+_sdcard_reset:
       jsr sd_param_init
 
       ; CMD0 needs CRC7 checksum to be correct
@@ -103,7 +107,8 @@ sdcard_init:
       dey
       bne @l2
       debug "sd_i_cmd0_max_retries"
-      jmp @exit
+      sec
+      rts
 @l2:
       ; send CMD0 - init SD card to SPI mode
       lda #cmd0
@@ -114,6 +119,19 @@ sdcard_init:
       cmp #$01
       bne @lcmd
 
+      clc
+      rts
+
+
+;---------------------------------------------------------------------
+;@name: "_sdcard_check_v2"
+;@clobbers: A,X,Y
+;@desc: "check voltage range of sd card by sending CMD8"
+;@out: C,"0 on success, 1 on error"
+;@out: A,"$AA on success"
+_sdcard_check_v2:
+      jsr sd_param_init
+      
       lda #$01
       sta sd_cmd_param+2
       lda #$aa
@@ -121,88 +139,127 @@ sdcard_init:
       lda #$87
       sta sd_cmd_chksum
 
-
       lda #cmd8
       jsr sd_cmd
       debug32 "CMD8", sd_cmd_param
 
-      jsr sd_param_init
       cmp #$01
-      bne @l5
+      bne @error
       ; Invalid Card (or card we can't handle yet)
       ; card must respond with $000001aa, otherwise we can't use it
       ;
       ; screw this
-      lda #$ff
-      jsr spi65_rw_byte
+      lda     #SD_STUFF_BYTE
+      jsr     spi65_tx_byte
       ; and that
-      lda #$ff
-      jsr spi65_rw_byte
+      lda     #SD_STUFF_BYTE
+      jsr     spi65_tx_byte
 
       ; is this $01? we're done if not
-      lda #$ff
-      jsr spi65_rw_byte
+      lda     #SD_STUFF_BYTE
+      jsr     spi65_tx_byte
       cmp #$01
-      beq @l3
-      jmp @exit
+      bne @error
 @l3:
 ;      bne @exit
       ; is this $aa? we're done if not
-      jsr spi65_rw_byte
-      cmp #$aa
-      bne @exit
+      lda     #SD_STUFF_BYTE
+      jsr     spi65_tx_byte
 
-      ; init card using ACMD41 and parameter $40000000
+      cmp #$aa
+      bne @error
+      clc 
+      rts
+@error:
+      sec 
+      rts 
+
+;---------------------------------------------------------------------
+;@name: "_sdcard_init_acmd41"
+;@clobbers: A,X,Y
+;@desc: "initiate sd card init process using ACMD41"
+;@out: C,"0 on success, 1 on error"
+;@out: A,"$00 on success"
+_sdcard_init_acmd41:
+      jsr sd_param_init
+
+      ; try to init card using ACMD41 and parameter $40000000
+      ; assuming we are dealing with a modern V2 SD card
       lda #$40
       sta sd_cmd_param
-@l5:
+@send_acmd41:
       lda #cmd55
       jsr sd_cmd
 
       cmp #$01
-      bne @exit
+      bne @error
       ; Init failed
 
       lda #acmd41
       jsr sd_cmd
       debug32 "ACMD41", sd_cmd_param
 
+      ; R1 response == $00? we are successful
       cmp #$00
-      beq @l7
-
+      beq @ok
+      
+      ; R1 response == $01? then repeat
       cmp #$01
-      beq @l5
+      beq @send_acmd41
 
-      cmp sd_cmd_param
-      beq @exit    ; acmd41 with $40000000 and $00000000 failed, TODO: try CMD1
-
+      ; something else happened. maybe old V1 sd card?
+      ; retry ACMD41 with $00000000
       jsr sd_param_init
-      bra @l5
+      bra @send_acmd41
 
-@l7:
-      cmp sd_cmd_param
-      beq @cmd16    ; acmd41 with $40000000 and $00000000 failed, TODO: try CMD1
+@error:
+      sec
+      rts
+@ok:
+      lda #0
+      clc 
+      rts
 
-      stz sd_cmd_param
+;---------------------------------------------------------------------
+;@name: "_sdcard_check_sdhc"
+;@clobbers: A,X,Y
+;@desc: "read SD card OCR register and check for bit 30"
+;@out: C,"0 on success, 1 on error"
+;@out: A,"$00 if SDHC, $01 if not sdhc"
+_sdcard_check_sdhc:
+      jsr sd_param_init
 
       lda #cmd58
       jsr sd_cmd
       ;debug "CMD58"
       ; read result. we need to check bit 30 of a 32bit result
-      jsr spi65_rw_byte
-      ;debug "CMD58_r"
-    ;  sta krn_tmp
-      ;pha
-      ; read the other 3 bytes and trash them
-    ;  jsr spi65_rw_byte
-    ;  jsr spi65_rw_byte
-    ;  jsr spi65_rw_byte
-      ; or don't read them at all. the next busy_wait will take care of everything
+      lda #SD_STUFF_BYTE
+      jsr spi65_tx_byte
 
-      ;pla
       and #%01000000
-      bne @exit_ok
-@cmd16:
+      bne @is_sdhc 
+      beq @not_sdhc
+
+      sec 
+      rts
+
+@not_sdhc:
+      lda #1
+      clc 
+      rts
+
+@is_sdhc:
+      lda #0
+      clc 
+      rts 
+
+;---------------------------------------------------------------------
+;@name: "_sdcard_set_blocksize"
+;@clobbers: A,X,Y
+;@desc: "set card to 512byte block size. not needed on SDHC cards and above"
+;@out: C,"0 on success, 1 on error"
+;@out: A,"$00 on success"
+_sdcard_set_blocksize:
       jsr sd_param_init
 
       ; Set block size to 512 bytes
@@ -216,13 +273,55 @@ sdcard_init:
       ;debug "CMD16"
 @exit_ok:
       lda #0      ; SD card init successful
+      clc
+      rts
+
+
+;---------------------------------------------------------------------
+; Init SD Card
+; Destructive: A, X, Y
+;
+;  out:  Z=1 on success, Z=0 otherwise and A=<error>
+;---------------------------------------------------------------------
+;@name: "sdcard_init"
+;@out: Z,"1 on success, 0 on error"
+;@out: A, "error code"
+;@clobbers: A,X,Y
+;@desc: "initialize sd card in SPI mode"
+sdcard_init:
+      
+      php
+      sei
+
+      jsr _sdcard_spi_mode
+
+      jsr sd_select_card
+      bcs @exit
+
+      jsr _sdcard_reset
+      bcs @exit
+
+
+      jsr _sdcard_check_v2
+      bcs @exit 
+
+      jsr _sdcard_init_acmd41
+      bcs @exit 
+
+      jsr _sdcard_check_sdhc
+      ; not an SDHC card? then skip setting sector size
+      beq @exit
+      bcs @exit
+
+      jsr _sdcard_set_blocksize
+      bcs @exit
+
+      lda #0
+
 @exit:
       plp
       jmp sd_deselect_card
 
-_sys_delay_4us:
-      sys_delay_us 4
-      rts
 
 ;---------------------------------------------------------------------
 ; Send SD Card Command
@@ -245,13 +344,13 @@ sd_cmd:
       debug "sd_cmd"
       ;bcs sd_exit ; from sd_busy_wait
       ; transfer command byte
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
 
       ; transfer parameter buffer
       ldx #$00
 @l1:  lda sd_cmd_param,x
       phx
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
       plx
       inx
       cpx #$05
@@ -270,7 +369,7 @@ sd_cmd_response_wait:
 @l:   dey
       beq sd_block_cmd_timeout ; y already 0? then invalid response or timeout
       lda #$ff
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
 ;      debug "sd_cm_wt"
       bmi @l
       debug "sd_cm_wt_e"
@@ -336,7 +435,7 @@ sd_deselect_card:
       jsr spi65_deselect
 
       ldy #clockspeed<<1 ; faster system, longer de-select
-@l1:  jsr spi65_rw_byte
+@l1:  jsr spi65_tx_byte
       dey
       bne @l1
 
@@ -375,9 +474,9 @@ _sd_fullblock:
       ; sta spi65_ctrl
 
       lda #$ff
-      jsr spi65_rw_byte    ; Read 2 CRC bytes
+      jsr spi65_tx_byte    ; Read 2 CRC bytes
       lda #$ff
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
 
  
       lda #0
@@ -387,7 +486,7 @@ _sd_fullblock:
 halfblock:
 @l:   
       lda #$ff
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
       sta (sd_blkptr),y
       iny
       bne @l
@@ -406,7 +505,7 @@ sd_wait:
 @l1:
       phx
       lda #$ff
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
       plx
       cmp #sd_data_token
       beq @l2
@@ -452,7 +551,7 @@ sd_busy_wait:
       beq @err
 
       phx
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
       plx
       cmp #$ff
       bne @l1
