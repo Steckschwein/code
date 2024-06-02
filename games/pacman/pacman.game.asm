@@ -267,9 +267,9 @@ actors_move:
               ldx #ACTOR_BLINKY
               jsr ghost_move
               ldx #ACTOR_INKY
-              jsr ghost_move
+              ;jsr ghost_move
               ldx #ACTOR_PINKY
-              jsr ghost_move
+             ; jsr ghost_move
               ldx #ACTOR_CLYDE
               jsr ghost_move
 
@@ -334,16 +334,15 @@ ghost_leave_base:
               bne @exit
 
               lda actors+actor::sp_y,x
-              cmp #112  ; middle of house
+              cmp #112  ; middle of house ?
               beq @mov_middle
-              bcc :+
+              bcc @mov_left
               lda #ACT_MOVE|ACT_RIGHT<<2|ACT_RIGHT
               bne @move
-:             lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
+@mov_left:    lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
 @move:        sta actors+actor::move,x
               jmp actor_move_soft
-@mov_middle:
-              lda actors+actor::sp_x,x
+@mov_middle:  lda actors+actor::sp_x,x
               cmp #100
               beq @base_leaved
               lda #ACT_MOVE|ACT_UP<<2|ACT_UP
@@ -368,7 +367,6 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               and #$01
 ;              bne @exit
 
-ghost_move_target:
               lda actors+actor::move,x
               jsr actor_center
               beq :+
@@ -378,70 +376,48 @@ ghost_move_target:
               lsr ; next dir to current direction
               lsr
               and #ACT_DIR
-              ora #ACT_MOVE
               sta actors+actor::move,x
-              and #ACT_DIR
               jsr lda_actor_charpos_direction
               cmp #Char_Base ; sanity check wont be C=1
               bcs @halt
 
               sec
               lda p_maze+0
-              sbc #32 ; adjust ram ptr one char line above (tile right)
+              sbc #32 ; adjust maze ptr one char line above (tile right)
               sta p_maze+0
               lda p_maze+1
               sbc #0
               sta p_maze+1
 
               lda actors+actor::move,x
-              and #ACT_DIR
               eor #ACT_MOVE_INVERSE
-              sta game_tmp2 ; exclude inverse of next direction
+              sta game_tmp2 ; exclude inverse of the new direction
 
-;              .byte $db
-              lda (p_maze),y
-              cmp #Char_Base
-              ldy #ACT_RIGHT
+              lda #$ff  ; init distance "far away"
+              sta target_dist
+
+; check new direction in order up,left,down,right
+              ldy #31 ; up, Y+31 from right
+              lda #ACT_UP
               jsr calc_distance
-              sta dist_target+distances::right
 
-              ldy #64 ; Y+64 left
-              lda (p_maze),y
-              cmp #Char_Base
+              ldy #64 ; left, Y+64 from right
               lda #ACT_LEFT
               jsr calc_distance
-              sta dist_target+distances::left
 
-              ldy #33 ; down, Y+33 from down
-              lda (p_maze),y
-              cmp #Char_Base
-              ldy #ACT_DOWN
+              ldy #33 ; down, Y+33 from right
+              lda #ACT_DOWN
               jsr calc_distance
-              sta dist_target+distances::down
 
-              ldy #31 ; up, Y+31 from right
-              lda (p_maze),y
-              cmp #Char_Base
-              ldy #ACT_UP
-              jsr calc_distance
-              sta dist_target+distances::up
-;u,l,d,r
-              lda #$ff
-              sta game_tmp
               ldy #0
-@l:           lda dist_target,y
-              bmi @next
-              cmp game_tmp
-              bcs @next
-              sta game_tmp
-              sty game_tmp2
-@next:        iny
-              cpy #4
-              bne @l
-              ldy game_tmp2
-              lda actors+actor::move,x  ; next direction to current
-              and #<~ACT_NEXT_DIR
-              ora _directions,y    ; next direction
+              lda #ACT_RIGHT
+              jsr calc_distance
+
+              lda target_dir  ; setup next direction from calculation
+              asl
+              asl
+              ora #ACT_MOVE   ; enable move
+              ora actors+actor::move,x
               sta actors+actor::move,x
 @soft:        jmp actor_move_soft
 @halt:
@@ -450,10 +426,14 @@ ghost_move_target:
               nop
               rts
 
-calc_distance:lda #$80  ; bit 7 set to indicate not considered
-              bcs @exit
-              cpy game_tmp2
-              beq @exit ; discard inverse
+calc_distance:pha
+              lda (p_maze),y
+              cmp #Char_Base
+              pla
+              tay
+              bcs @exit ; carry from cmp above
+              cpy game_tmp2 ; discard inverse direction
+              beq @exit
               clc
               lda px
               adc _vectors_x,y
@@ -471,7 +451,12 @@ calc_distance:lda #$80  ; bit 7 set to indicate not considered
               eor #$ff
 :             clc
               adc game_tmp
-@exit:        rts
+              cmp target_dist
+              bcs @exit ; shorter?
+              sta target_dist ; save new shortest distance
+              sty target_dir ; save direction
+@exit:
+              rts
 
 ; .A new direction
 pacman_cornering:
@@ -1286,9 +1271,6 @@ energizer_x:
 energizer_y:
    .byte 1,1,26,26
 
-_directions: ; up,left,down,right
-    .byte ACT_UP<<2,ACT_LEFT<<2,ACT_DOWN<<2,ACT_RIGHT<<2
-
 _vectors_x:  ; X, Y adjust +0 X, -1 Y, screen is rotated 90 degree clockwise ;)
     .byte $00,$00,$ff,$01
 _vectors_y:
@@ -1355,5 +1337,6 @@ points_digits:
   actors:
   ghosts:           .res 4*.sizeof(ghost)
   pacman:           .res .sizeof(actor)
-  dist_target:      .tag distances
+  target_dist:      .res 1
+  target_dir:       .res 1
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100

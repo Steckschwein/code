@@ -42,18 +42,13 @@ out_hex_digits:
               lsr
               jsr out_hex_digit
               pla
-              jsr out_hex_digit
-              rts
 out_hex_digit:
-              and #$0f    ;mask lsb for hex print
+              and #$0f      ;mask lsb for hex print
               ora #'0'      ;add "0"
               cmp #'9'+1    ;is it a decimal digit?
               bcc @out
               adc #6        ;add offset for letter a-f
-@out:         jsr sys_charout
-              inc sys_crs_x
-              inc sys_crs_y
-              rts
+@out:         jmp sys_charout
 
 sys_set_pen:
               stx sys_crs_x
@@ -72,7 +67,6 @@ sys_blank_xy:
               dex
               bne :-
               rts
-
 
 out_digits_xy:
               stx sys_crs_x
