@@ -27,6 +27,8 @@
 .include "kernel.inc"
 .include "nvram.inc"
 
+.include "fat32.inc"
+.include "fcntl.inc"  ; from ca65 api
 
 .code
 
@@ -86,7 +88,8 @@ kern_init:
 
 ;    jsr rtc_irq0
 
-    ; cli
+    cli
+
 
 .ifndef DISABLE_INTRO
     jsr primm
@@ -108,38 +111,44 @@ kern_init:
     jsr sdcard_init
     bne do_upload
 
-    stz lba_addr + 0
-    stz lba_addr + 1
-    stz lba_addr + 2
-    stz lba_addr + 3
+    ; stz lba_addr + 0
+    ; stz lba_addr + 1
+    ; stz lba_addr + 2
+    ; stz lba_addr + 3
 
-    stz sd_blkptr + 0
-    lda #$40
-    sta sd_blkptr + 1
+    ; stz sd_blkptr + 0
+    ; lda #$40
+    ; sta sd_blkptr + 1
 
-    jsr sd_read_block
+    ; jsr sd_read_block
     
 
-    jsr hexout
+    ; jsr hexout
 
 
-    lda $41fe
-    jsr hexout
-    lda $41ff
-    jsr hexout
+    ; lda $41fe
+    ; jsr hexout
+    ; lda $41ff
+    ; jsr hexout
     
-    cli
-    jmp do_upload
 
     jsr fat_mount
     bcs load_error
+
+
  
     ; jsr __automount_init
     ; bcs do_upload
     lda #<filename
     ldx #>filename
-    jsr execv
+    ldy #O_RDONLY
 
+    jsr execv
+    ; bcs do_upload
+
+    jsr hexout
+
+    jmp do_upload
 load_error:
     jsr hexout
     jsr primm

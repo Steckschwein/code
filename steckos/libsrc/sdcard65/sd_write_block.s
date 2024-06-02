@@ -35,7 +35,7 @@
 .include "via.inc"
 .include "debug.inc"
 
-.import spi65_rw_byte, spi65_select_device, spi65_deselect
+.import spi65_tx_byte, spi65_select_device, spi65_deselect
 .import sd_deselect_card, sd_select_card, sd_cmd, sd_cmd_lba
 
 .export sd_write_block
@@ -71,7 +71,7 @@ sd_write_block:
       bne @exit
 
       lda #sd_data_token
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
 
       ldy #0
 
@@ -82,9 +82,9 @@ sd_write_block:
 
       ; Send fake CRC bytes
       lda #$00
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
       lda #$00
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
 
       lda #$00  ; success
 @exit:
@@ -95,7 +95,7 @@ sd_write_block:
 __sd_write_block_halfblock:
 :     lda (sd_blkptr),y
       phy
-      jsr spi65_rw_byte
+      jsr spi65_tx_byte
       ply
       iny
       bne :-

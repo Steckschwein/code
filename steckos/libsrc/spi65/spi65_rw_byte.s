@@ -28,7 +28,7 @@
 
 .importzp spi_sr
 
-.export spi65_rw_byte
+.export spi65_tx_byte
 ;@module: spi
 .code
 ;----------------------------------------------------------------------------------------------
@@ -41,7 +41,7 @@
 ;@out: A, "received byte"
 ;@clobbers: A
 ;@desc: "transmit byte via SPI"
-spi65_rw_byte:
+spi65_tx_byte:
     ; phx
 
 ;     bit spi65_status
