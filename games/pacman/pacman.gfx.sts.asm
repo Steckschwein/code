@@ -335,6 +335,7 @@ gfx_display_maze:
 @color:
         sta text_color
         pla
+        ora #Char_Maze_Mask
         jsr gfx_charout
         inc sys_crs_x
         lda sys_crs_x

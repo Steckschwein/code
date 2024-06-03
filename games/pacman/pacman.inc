@@ -24,15 +24,20 @@ MAX_LIVES=5
 
 IRQ_VEC = $fffe
 
+Char_Not_Up         = $06   ; blank not up
+
+;                   = $c6   ;1100 0110
+Char_Blank          = $c7   ;1100 0111
+
+Char_Dot_Not_Up     = $4c   ; with Char_Maze_Mask
 Char_Dot            = $cc   ;1100 1100
                             ;1100 1101
 Char_Bonus          = $cd
 Char_Energizer      = $ce   ;1100 1110 $ce
-;                   = $c6   ;1100 0110
-Char_Blank          = $c7   ;1100 0111
 Char_Base           = $cf   ;1100 1111
 Char_Quote          = $22
 
+Char_Maze_Mask      = $80   ;
 
 .define Char_Pts $2a,$2b,$2c
 
@@ -275,11 +280,9 @@ ACT_DIR           = 1<<1|1<<0
     sct_y         .byte   ; scatter target y
 .endstruct
 
-.struct distances ; in order same distance ghost chosses up, left, down, right
-    up            .byte
-    left          .byte
-    down          .byte
-    right         .byte
+.struct target ; in order same distance ghost chosses up, left, down, right
+    dist          .word
+    direction     .byte
 .endstruct
 
 SHAPE_IX_DYING      = $34

@@ -12,6 +12,7 @@
 .zeropage
   game_tmp:   .res 1
   game_tmp2:  .res 1
+  rx1:        .res 2
   px:         .res 1  ; maze point x
   py:         .res 1  ; maze point y
 
@@ -266,10 +267,10 @@ actors_move:
 
               ldx #ACTOR_BLINKY
               jsr ghost_move
-              ldx #ACTOR_INKY
-              ;jsr ghost_move
               ldx #ACTOR_PINKY
-             ; jsr ghost_move
+              jsr ghost_move
+              ldx #ACTOR_INKY
+              jsr ghost_move
               ldx #ACTOR_CLYDE
               jsr ghost_move
 
@@ -353,26 +354,19 @@ ghost_leave_base:
               sta actors+ghost::strategy,x
 @exit:        rts
 
-; shortest distance to target
-; same distance => order: up, left, down, right
-; look ahead one tile in move direction
-;
-; |x1-x2| + |y1-y2|
-
 ghost_catch:  cmp #GHOST_STATE_CATCH
               beq :+
 @exit:        rts
 
 :             lda game_state+GameState::frames
-              and #$01
+              and #$03
 ;              bne @exit
 
               lda actors+actor::move,x
-              jsr actor_center
-              beq :+
-              jmp actor_move_soft   ; center reached?
+              jsr actor_center  ; center reached?
+              bne @soft
 
-:             lda actors+actor::move,x
+              lda actors+actor::move,x
               lsr ; next dir to current direction
               lsr
               and #ACT_DIR
@@ -393,8 +387,9 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               eor #ACT_MOVE_INVERSE
               sta game_tmp2 ; exclude inverse of the new direction
 
-              lda #$ff  ; init distance "far away"
-              sta target_dist
+              lda #$ff  ; init 16bit distance "far away"
+              sta target_dist+0
+              sta target_dist+1
 
 ; check new direction in order up,left,down,right
               ldy #31 ; up, Y+31 from right
@@ -426,13 +421,19 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               nop
               rts
 
-calc_distance:pha
+; shortest distance to target via look ahead one tile in move direction
+; same distance => order: up, left, down, right
+; we compare |x1-x2|² + |y1-y2|² with a previously stored sum, cause we dont need the distance. we just decide which direction.
+calc_distance:sta game_tmp
               lda (p_maze),y
               cmp #Char_Base
-              pla
-              tay
               bcs @exit ; carry from cmp above
-              cpy game_tmp2 ; discard inverse direction
+              ldy game_tmp
+              cmp #Char_Not_Up
+              bne :+
+              cpy #ACT_UP
+              beq @exit
+:             cpy game_tmp2 ; discard inverse direction
               beq @exit
               clc
               lda px
@@ -441,7 +442,13 @@ calc_distance:pha
               sbc actors+ghost::tgt_x,x
               bpl :+
               eor #$ff
-:             sta game_tmp
+:             tay
+              lda _squares_l,y
+              sta rx1+0
+              lda _squares_h,y
+              sta rx1+1
+
+              ldy game_tmp
               clc
               lda py
               adc _vectors_y,y
@@ -449,14 +456,26 @@ calc_distance:pha
               sbc actors+ghost::tgt_y,x
               bpl :+
               eor #$ff
-:             clc
-              adc game_tmp
-              cmp target_dist
-              bcs @exit ; shorter?
-              sta target_dist ; save new shortest distance
-              sty target_dir ; save direction
-@exit:
-              rts
+:             tay
+              clc
+              lda _squares_l,y
+              adc rx1+0
+              sta rx1+0
+              lda _squares_h,y
+              adc rx1+1
+              sta rx1+1
+              cmp target_dist+1
+              beq :+    ; == ?
+              bcs @exit ; > ?
+:             lda rx1+0
+              cmp target_dist+0
+              bcs @exit ; >= ?
+              sta target_dist+0 ; save new shortest distance
+              lda rx1+1
+              sta target_dist+1
+              lda game_tmp
+              sta target_dir ; save direction
+@exit:        rts
 
 ; .A new direction
 pacman_cornering:
@@ -1162,7 +1181,7 @@ game_init:
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #2 ; start with level 1
+              lda #3 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
@@ -1190,9 +1209,9 @@ game_init_actors:
               ldy #0
               ldx #ACTOR_BLINKY
               jsr @init_ghost
-              ldx #ACTOR_INKY
-              jsr @init_ghost
               ldx #ACTOR_PINKY
+              jsr @init_ghost
+              ldx #ACTOR_INKY
               jsr @init_ghost
               ldx #ACTOR_CLYDE
               jsr @init_ghost
@@ -1259,12 +1278,17 @@ actor_init_d:
 ghost_init_sct_x: ; ghost scatter targets
     .byte $00,$00,$1f,$1f
 ghost_init_sct_y:
-    .byte $02,$19,$00,$1b
+    .byte $04,$17,$00,$1b
 ghost_init_strategy:
     .byte GHOST_STATE_CATCH  ; blinky
     .byte GHOST_STATE_BASE
     .byte GHOST_STATE_BASE
     .byte GHOST_STATE_BASE
+
+_squares_l:
+    .byte $01,$01,$04,$09,$10,$19,$24,$31,$40,$51,$64,$79,$90,$A9,$C4,$E1,$00,$21,$44,$69,$90,$B9,$E4,$11,$40,$71,$A4,$D9,$10,$49,$84,$C1
+_squares_h:
+    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$02,$02,$02,$02,$02,$03,$03,$03,$03
 
 energizer_x:
    .byte 4,24,4,24
@@ -1337,6 +1361,6 @@ points_digits:
   actors:
   ghosts:           .res 4*.sizeof(ghost)
   pacman:           .res .sizeof(actor)
-  target_dist:      .res 1
+  target_dist:      .res 2  ; word
   target_dir:       .res 1
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100
