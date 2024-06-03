@@ -299,6 +299,7 @@ actors_move:
 
 
 ghost_move:   jsr actor_update_charpos
+              jsr ghost_update_shape
 
 ghost_base:   lda actors+ghost::strategy,x
               cmp #GHOST_STATE_BASE
@@ -328,7 +329,7 @@ ghost_base:   lda actors+ghost::strategy,x
 
 ghost_leave_base:
               cmp #GHOST_STATE_LEAVE
-              bne ghost_catch
+              bne ghost_target
 
               lda game_state+GameState::frames
               and #$01
@@ -350,18 +351,17 @@ ghost_leave_base:
               bne @move
 @base_leaved: lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
               sta actors+actor::move,x
-              lda #GHOST_STATE_CATCH
+              lda #GHOST_STATE_TARGET
               sta actors+ghost::strategy,x
 @exit:        rts
 
-ghost_catch:  cmp #GHOST_STATE_CATCH
-              beq :+
-@exit:        rts
+ghost_target: cmp #GHOST_STATE_TARGET
+              bne ghost_scared
 
-:             lda game_state+GameState::frames
+              lda game_state+GameState::frames
               and #$03
 ;              bne @exit
-
+ghost_move_target:
               lda actors+actor::move,x
               jsr actor_center  ; center reached?
               bne @soft
@@ -421,6 +421,39 @@ ghost_catch:  cmp #GHOST_STATE_CATCH
               nop
               rts
 
+ghost_scared:
+              cmp #GHOST_STATE_SCARED
+              bne ghost_return
+
+              lda game_state+GameState::frames
+              and #$01
+              bne @exit
+
+              lda #Shape_Offset_Scared
+              sta actors+ghost::shape_offs,x
+              lda #Shape_Mask_Scared
+              sta actors+ghost::shape_mask,x
+
+              jmp ghost_move_target
+
+;              lda #GHOST_STATE_RETURN
+ ;             sta actors+ghost::strategy,x
+@exit:        rts
+
+ghost_return:
+              cmp #GHOST_STATE_RETURN
+              bne @exit
+              lda #$0e
+              sta actors+ghost::tgt_x,x
+              lda #$0e
+              sta actors+ghost::tgt_y,x
+
+              jsr ghost_move_target
+              jmp ghost_move_target
+
+@exit:        rts
+
+
 ; shortest distance to target via look ahead one tile in move direction
 ; same distance => order: up, left, down, right
 ; we compare |x1-x2|² + |y1-y2|² with a previously stored sum, cause we dont need the distance. we just decide which direction.
@@ -476,6 +509,23 @@ calc_distance:sta game_tmp
               lda game_tmp
               sta target_dir ; save direction
 @exit:        rts
+
+
+ghost_update_shape:
+              lda game_state+GameState::frames
+              lsr
+              lsr
+              lsr
+              and #$01
+              sta actors+actor::shape,x
+
+              lda actors+actor::move,x
+              and #ACT_NEXT_DIR
+              ora actors+actor::shape,x
+              ora actors+ghost::shape_offs,x
+              and actors+ghost::shape_mask,x
+              sta actors+actor::shape,x
+              rts
 
 ; .A new direction
 pacman_cornering:
@@ -574,34 +624,18 @@ actor_move_sprite:
               sta actors+actor::sp_y,x
 @exit:        rts
 
-actor_shape_move:
-              lda game_state+GameState::frames
-              lsr
-              lsr
-              lsr
-              and #$01
-
-actor_shape_update:
-              ora actors+ghost::mask_shape,x
-              sta actors+actor::shape,x
-
-              lda actors+actor::move,x
-              and #ACT_NEXT_DIR
-;              asl
- ;             asl
-              ora actors+actor::shape,x
-              sta actors+actor::shape,x
-              rts
-
 pacman_collect:
-              lda pacman+pacman::actor+actor::xpos
+              lda pacman+actor::xpos
               sta sys_crs_x
-              ldy pacman+pacman::actor+actor::ypos
+              ldy pacman+actor::ypos
               sty sys_crs_y
               jsr lda_maze_ptr_ay
               cmp #Char_Energizer
               bne :+
               dec game_state+GameState::dots
+              ldx #ACTOR_BLINKY
+              lda #GHOST_STATE_SCARED
+              sta actors+ghost::strategy,x
               lda #Delay_Energizer
               sta pacman+pacman::delay
               lda #Pts_Index_Energizer
@@ -890,7 +924,7 @@ game_playing:
 
               ;jsr game_demo
               jsr actors_move
-              jsr animate_ghosts
+              ;jsr animate_ghosts
 
               jsr animate_screen
               jsr animate_bonus
@@ -1156,16 +1190,6 @@ animate_up:
               rts
 
 
-animate_ghosts:
-              ldx #ACTOR_BLINKY
-              jsr actor_shape_move
-              ldx #ACTOR_INKY
-              jsr actor_shape_move
-              ldx #ACTOR_PINKY
-              jsr actor_shape_move
-              ldx #ACTOR_CLYDE
-              jmp actor_shape_move
-
 game_init:
               lda game_state+GameState::state
               cmp #STATE_INIT
@@ -1230,7 +1254,7 @@ game_init_actors:
               lda #50 ;           dot limit clyde 50
               sta actors+ghost::dot_limit,x
 :
-              jsr animate_ghosts  ; update shape
+              ;jsr animate_ghosts  ; update shape
 
               ldx #ACTOR_PACMAN
               jsr @init_actor
@@ -1241,8 +1265,10 @@ game_init_actors:
               jmp gfx_sprites_on
 
 @init_ghost:
-              lda #$10  ; ghost shape offset
-              sta actors+ghost::mask_shape,x
+              lda #Shape_Offset_Norm  ; ghost shape offset
+              sta actors+ghost::shape_offs,x
+              lda #Shape_Mask_Norm
+              sta actors+ghost::shape_mask,x
               lda ghost_init_strategy,y
               sta actors+ghost::strategy,x
               lda #0
@@ -1284,7 +1310,7 @@ ghost_init_sct_x: ; ghost scatter targets
 ghost_init_sct_y:
     .byte $04,$17,$00,$1b
 ghost_init_strategy:
-    .byte GHOST_STATE_CATCH  ; blinky
+    .byte GHOST_STATE_TARGET  ; blinky
     .byte GHOST_STATE_BASE
     .byte GHOST_STATE_BASE
     .byte GHOST_STATE_BASE

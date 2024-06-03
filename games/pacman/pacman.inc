@@ -75,7 +75,14 @@ STATE_EXIT          = 1<<7
 GHOST_STATE_BASE    = 0
 GHOST_STATE_RETURN  = 1
 GHOST_STATE_LEAVE   = 2
-GHOST_STATE_CATCH   = 3
+GHOST_STATE_TARGET  = 3
+GHOST_STATE_SCARED  = 4
+
+Shape_Mask_Norm       = $3f
+Shape_Mask_Scared     = $33
+Shape_Offset_Norm     = $10
+Shape_Offset_Catched  = $20
+Shape_Offset_Scared   = $30
 
 Delay_Dot           = 1 ; 1 penalty frame
 Delay_Energizer     = 3
@@ -268,7 +275,8 @@ ACT_DIR           = 1<<1|1<<0
 .struct ghost
     actor         .tag actor
     ; ghost related, maybe remove from actor struct
-    mask_shape    .byte   ; shape mask - for normal, frightened or catched ghost
+    shape_mask    .byte   ; shape mask - for normal, frightened or catched ghost
+    shape_offs    .byte   ; offset for normal frightened or catched ghost
 
     strategy      .byte   ; ghost movement strategy - in base, leaving base, return to base, scatter, chase, frightend
     ;mask_visited  .byte   ; 10001111 blinky, 01001111 pinky, 00101111 inky, 00011111 clyde
