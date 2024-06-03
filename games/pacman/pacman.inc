@@ -77,6 +77,9 @@ GHOST_STATE_RETURN  = 1
 GHOST_STATE_LEAVE   = 2
 GHOST_STATE_CATCH   = 3
 
+Delay_Dot           = 1 ; 1 penalty frame
+Delay_Energizer     = 3
+
 Bonus_Dots_Trig1    = 70
 Bonus_Dots_Trig2    = 170
 Bonus_Time          = 150 ; count down every 4 frames gives ~9-10s
@@ -260,11 +263,10 @@ ACT_DIR           = 1<<1|1<<0
     sp_y          .byte   ; sprite y
     shape         .byte   ; shape
     move          .byte   ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
-    turn          .byte   ; bit 7 turn, bit 1-0 turn direction
 .endstruct
 
 .struct ghost
-    actor .tag actor
+    actor         .tag actor
     ; ghost related, maybe remove from actor struct
     mask_shape    .byte   ; shape mask - for normal, frightened or catched ghost
 
@@ -280,17 +282,18 @@ ACT_DIR           = 1<<1|1<<0
     sct_y         .byte   ; scatter target y
 .endstruct
 
-.struct target ; in order same distance ghost chosses up, left, down, right
-    dist          .word
-    direction     .byte
+.struct pacman
+    actor         .tag actor
+    turn          .byte   ; bit 7 turn, bit 1-0 turn direction
+    delay         .byte   ; amount of frames to delay for various actions - 1 frame eating a dot, 10 frames eating an energizer
 .endstruct
 
 SHAPE_IX_DYING      = $34
 SHAPE_IX_INVISIBLE  = $3f
 
 ; table offsets
-ACTOR_BLINKY  = 0*.sizeof(ghost)
-ACTOR_PINKY   = 1*.sizeof(ghost)
-ACTOR_INKY    = 2*.sizeof(ghost)
-ACTOR_CLYDE   = 3*.sizeof(ghost)
-ACTOR_PACMAN  = 4*.sizeof(ghost)
+ACTOR_BLINKY  = 0
+ACTOR_PINKY   = ACTOR_BLINKY  + .sizeof(ghost)
+ACTOR_INKY    = ACTOR_PINKY   + .sizeof(ghost)
+ACTOR_CLYDE   = ACTOR_INKY    + .sizeof(ghost)
+ACTOR_PACMAN  = ACTOR_CLYDE   + .sizeof(ghost)

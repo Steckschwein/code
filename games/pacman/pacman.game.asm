@@ -263,7 +263,7 @@ actors_move:
               ldx #ACTOR_PACMAN
               jsr actor_update_charpos
               jsr pacman_input
-              jsr actor_move
+              jsr pacman_move
 
               ldx #ACTOR_BLINKY
               jsr ghost_move
@@ -508,26 +508,26 @@ actor_center:
               eor #ACT_MOVE_UP_OR_DOWN
               jmp l_test
 
-actor_move:
-              lda actors+actor::turn,x
-              bpl @actor_move_dir      ; turning?
+pacman_move:  lda pacman+pacman::delay
+              beq :+
+              dec pacman+pacman::delay
+              rts
+:             lda actors+pacman::turn,x
+              bpl @move_dir      ; turning?
               jsr actor_center
-              bne @actor_turn_soft      ;
-              lda actors+actor::turn,x  ;
+              bne @turn_soft
+              lda actors+pacman::turn,x
               and #<~ACT_TURN
-              sta actors+actor::turn,x
-@actor_turn_soft:
-              lda actors+actor::turn,x
+              sta actors+pacman::turn,x
+@turn_soft:   lda actors+pacman::turn,x
               jsr actor_move_sprite
-
-@actor_move_dir:
+@move_dir:
               lda actors+actor::move,x
               bpl :+
-              jsr pacman_move
+              jsr @move
 :             jmp pacman_collect
-
-pacman_move:
-              jsr actor_center        ; center reached?
+@move:
+              jsr actor_center   ; center reached?
               bne @move_soft     ; no, move soft
 
               lda actors+actor::move,x
@@ -594,19 +594,22 @@ actor_shape_update:
               rts
 
 pacman_collect:
-              lda actors+actor::xpos,x
+              lda pacman+pacman::actor+actor::xpos
               sta sys_crs_x
-              ldy actors+actor::ypos,x
+              ldy pacman+pacman::actor+actor::ypos
               sty sys_crs_y
               jsr lda_maze_ptr_ay
               cmp #Char_Energizer
               bne :+
               dec game_state+GameState::dots
+              lda #Delay_Energizer
+              sta pacman+pacman::delay
               lda #Pts_Index_Energizer
               bne @score_and_erase
 :             cmp #Char_Dot
               bne :+
               dec game_state+GameState::dots
+              inc pacman+pacman::delay
               lda #Pts_Index_Dot
               beq @score_and_erase  ; dots index is 0
 :             cmp #Char_Bonus
@@ -621,7 +624,7 @@ pacman_collect:
               jsr sys_set_pen
               lda game_state+GameState::bonus
               and #$1f
-              sec
+              sec     ; TODO adjust table
               sbc #1
               asl
               asl
@@ -700,7 +703,6 @@ add_score:
               rts
 
 
-
 ; in:   A - direction
 ; out:  C=0 can move, C=1 can not move to direction
 actor_can_move_to_direction:
@@ -715,7 +717,7 @@ pacman_input:
               jsr actor_can_move_to_direction ; C=0 can move
               bcs @set_input_dir_to_next_dir  ; no - only set next dir
 
-              lda actors+actor::turn,x
+              lda actors+pacman::turn,x
               bmi @exit  ;exit if turn is active
 
               ;current dir == input dir ?
@@ -744,7 +746,7 @@ pacman_input:
               eor actors+actor::move,x  ; current direction
               and #ACT_DIR
               ora #ACT_TURN
-              sta actors+actor::turn,x
+              sta actors+pacman::turn,x
 
 @set_input_dir_to_current_dir:
               lda input_direction
@@ -763,17 +765,17 @@ pacman_input:
 @exit:        rts
 
 actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
-    lda actors+actor::sp_x,x
-    lsr
-    lsr
-    lsr
-    sta actors+actor::xpos,x
-    lda actors+actor::sp_y,x
-    lsr
-    lsr
-    lsr
-    sta actors+actor::ypos,x
-    rts
+              lda actors+actor::sp_x,x
+              lsr
+              lsr
+              lsr
+              sta actors+actor::xpos,x
+              lda actors+actor::sp_y,x
+              lsr
+              lsr
+              lsr
+              sta actors+actor::ypos,x
+              rts
 
 get_input:
     ldy #0
@@ -804,7 +806,7 @@ debug:
     jsr out_hex_digits
     lda actors+actor::move,x
     jsr out_hex_digits
-    lda actors+actor::turn,x
+    lda actors+pacman::turn,x
     jsr out_hex_digits
     lda keyboard_input
     jsr out_hex_digits
@@ -1234,8 +1236,10 @@ game_init_actors:
               jsr @init_actor
               lda #2  ; pacman shape complete ball
               sta actors+actor::shape,x
-
+              lda #0
+              sta actors+pacman::delay,x
               jmp gfx_sprites_on
+
 @init_ghost:
               lda #$10  ; ghost shape offset
               sta actors+ghost::mask_shape,x
@@ -1324,14 +1328,14 @@ points: ; score values in BCD format
 Pts_Index_Dot=(*-points)
   .byte $00,$10 ; dot / pill
 ; bonus at 70 dots, 170 dots - visible between nine and ten seconds. The exact duration (i.e., 9.3333 seconds, 10.0 seconds, 9.75
-  .byte $01,$00 ; cherry        ; 1,5
-  .byte $03,$00 ; strawberry    ; 2,5
-  .byte $05,$00 ; orange        ; 3,5
-  .byte $07,$00 ; apple         ; 4,5
-  .byte $10,$00 ; grapes        ; 6,  d,e
-  .byte $20,$00 ; galaxian      ; 7,8,d,e
-  .byte $30,$00 ; bell          ; 9,a,d,e
-  .byte $50,$00 ; key           ; b,c,d,e
+  .byte $01,$00 ; cherry
+  .byte $03,$00 ; strawberry
+  .byte $05,$00 ; orange
+  .byte $07,$00 ; apple
+  .byte $10,$00 ; grapes
+  .byte $20,$00 ; galaxian
+  .byte $30,$00 ; bell
+  .byte $50,$00 ; key
 Pts_Index_Energizer=(*-points)
   .byte $00,$50 ; energizer
 Pts_Index_Level_Cleared=(*-points)
@@ -1360,7 +1364,7 @@ points_digits:
   keyboard_input:   .res 1
   actors:
   ghosts:           .res 4*.sizeof(ghost)
-  pacman:           .res .sizeof(actor)
+  pacman:           .res 1*.sizeof(pacman)
   target_dist:      .res 2  ; word
   target_dir:       .res 1
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100

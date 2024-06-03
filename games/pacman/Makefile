@@ -10,7 +10,7 @@ LIBS=
 CA65FLAGS=-I $(CC65_HOME)/asminc $(DEBUG)
 
 LDFLAGS=-m pacman.map $(LIBS)
-OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.ai.o pacman.game.o pacman.system.o
+OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.game.o pacman.system.o
 
 CA65FLAGS_STS=-D__STECKSCHWEIN__ -I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel $(DEBUG)
 OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.sts.o pacman.sound.sts.o
