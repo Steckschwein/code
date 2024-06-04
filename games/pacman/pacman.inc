@@ -145,13 +145,13 @@ GHOST_SCATTER     = 1<<6
 GHOST_FRIGHTENED  = 1<<7;
 
 ACT_MOVE          = 1<<7
+ACT_UP            = 3 ;11
+ACT_DOWN          = 1 ;01
+ACT_LEFT          = 2 ;10
 ACT_RIGHT         = 0 ;00
-ACT_LEFT          = 1 ;01
-ACT_UP            = 2 ;10
-ACT_DOWN          = 3 ;11
-ACT_MOVE_UP_OR_DOWN     = %00000010
-ACT_MOVE_INVERSE        = %00000001   ;eor bit 1-0
-ACT_MOVE_INVERSE_NEXT   = %00000100
+ACT_MOVE_UP_OR_DOWN     = %00000001
+ACT_MOVE_INVERSE        = %00000010   ;eor bit 1
+ACT_MOVE_INVERSE_NEXT   = %00001000
 
 ACT_TURN          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2
@@ -248,17 +248,14 @@ ACT_DIR           = 1<<1|1<<0
   dots          .byte   ; remaining dots count down - MAX_DOTS at start
   dot_cnt       .byte   ; in level dot counter - set/reset if a life is lost
   bonus         .byte   ; bonus of current level
-  bonus_cnt     .byte   ; frame counter
+  bonus_cnt     .byte   ; bonus available (frame) counter
   bonus_life    .word   ; trigger for next bonus life (BCD) - TT T digit
 
-  lives_1up     .byte
-  lives_2up     .byte
-  score_1up     .res 3
-  score_2up     .res 3
   highscore     .res 3
 
   ; game related
-  ;ghost_mode  .byte   ; chase, scatter, frightened
+  rng           .word   ; PRNG index
+  mode          .byte   ; chase, scatter, frightened
 .endstruct
 
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32

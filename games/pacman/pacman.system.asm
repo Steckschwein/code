@@ -8,14 +8,16 @@
 .export frame_isr
 .export sys_crs_x
 .export sys_crs_y
+.export system_rng
 .export system_dip_switches_lives
 .export system_dip_switches_bonus_life
 
 .autoimport
 
 .zeropage
-    sys_crs_x: .res 1
-    sys_crs_y: .res 1
+    sys_crs_x:  .res 1
+    sys_crs_y:  .res 1
+    ;sys_tmp:    .res 1
 
 .code
 
@@ -127,6 +129,25 @@ wait:
               and #FRAMES_DELAY
               bne wait
               dec game_state+GameState::frames
+              rts
+
+system_rng:   ;.byte $db
+              ldy game_state+GameState::rng+1
+              lda game_state+GameState::rng+0
+              asl ; *2
+              rol game_state+GameState::rng+1
+              asl ; *4
+              rol game_state+GameState::rng+1
+              clc
+              adc game_state+GameState::rng+0 ; *5
+              adc #1
+              sta game_state+GameState::rng+0 ; +1
+              pha
+              tya
+              adc game_state+GameState::rng+1
+              and #$1f                        ; mod 8192
+              sta game_state+GameState::rng+1
+              pla
               rts
 
 system_dip_switches_lives:

@@ -329,7 +329,7 @@ ghost_base:   lda actors+ghost::strategy,x
 
 ghost_leave_base:
               cmp #GHOST_STATE_LEAVE
-              bne ghost_target
+              bne ghost_return
 
               lda game_state+GameState::frames
               and #$01
@@ -355,9 +355,39 @@ ghost_leave_base:
               sta actors+ghost::strategy,x
 @exit:        rts
 
-ghost_target: cmp #GHOST_STATE_TARGET
-              bne ghost_scared
 
+ghost_return:
+              cmp #GHOST_STATE_RETURN
+              bne ghost_scared
+              lda #$0e
+              sta actors+ghost::tgt_x,x
+              lda #$0e
+              sta actors+ghost::tgt_y,x
+
+              jsr ghost_move_target
+              jmp ghost_move_target
+
+@exit:        rts
+
+ghost_scared:
+              cmp #GHOST_STATE_SCARED
+              bne ghost_target
+
+              lda game_state+GameState::frames
+              and #$01
+              bne @exit
+
+              lda #Shape_Offset_Scared
+              sta actors+ghost::shape_offs,x
+              lda #Shape_Mask_Scared
+              sta actors+ghost::shape_mask,x
+              jmp ghost_move_target
+@exit:        rts
+
+ghost_target: cmp #GHOST_STATE_TARGET
+              beq :+
+              rts
+:
               lda game_state+GameState::frames
               and #$03
 ;              bne @exit
@@ -387,11 +417,32 @@ ghost_move_target:
               eor #ACT_MOVE_INVERSE
               sta game_tmp2 ; exclude inverse of the new direction
 
+              lda actors+ghost::strategy,x
+              cmp #GHOST_STATE_SCARED
+              bne @shortest_distance    ; move to target
+
+;              .byte $db
+              jsr system_rng
+@check_dir:   and #ACT_DIR
+              sta target_dir
+              cmp game_tmp2 ; inverse direction ?
+              beq @next_dir
+              tay
+              lda @p_index,y
+              tay
+              lda (p_maze),y
+              cmp #Char_Base
+              bcc @next_direction
+@next_dir:    inc target_dir
+              lda target_dir
+              jmp @check_dir
+
+@shortest_distance:
+; check new direction in order up,left,down,right
               lda #$ff  ; init 16bit distance "far away"
               sta target_dist+0
               sta target_dist+1
 
-; check new direction in order up,left,down,right
               ldy #31 ; up, Y+31 from right
               lda #ACT_UP
               jsr calc_distance
@@ -404,54 +455,26 @@ ghost_move_target:
               lda #ACT_DOWN
               jsr calc_distance
 
-              ldy #0
+              ldy #0  ; right
               lda #ACT_RIGHT
               jsr calc_distance
 
+@next_direction:
               lda target_dir  ; setup next direction from calculation
               asl
               asl
               ora #ACT_MOVE   ; enable move
               ora actors+actor::move,x
               sta actors+actor::move,x
+
 @soft:        jmp actor_move_soft
 @halt:
               .byte $db
               nop
-              nop
               rts
 
-ghost_scared:
-              cmp #GHOST_STATE_SCARED
-              bne ghost_return
-
-              lda game_state+GameState::frames
-              and #$01
-              bne @exit
-
-              lda #Shape_Offset_Scared
-              sta actors+ghost::shape_offs,x
-              lda #Shape_Mask_Scared
-              sta actors+ghost::shape_mask,x
-
-              jmp ghost_move_target
-
-;              lda #GHOST_STATE_RETURN
- ;             sta actors+ghost::strategy,x
-@exit:        rts
-
-ghost_return:
-              cmp #GHOST_STATE_RETURN
-              bne @exit
-              lda #$0e
-              sta actors+ghost::tgt_x,x
-              lda #$0e
-              sta actors+ghost::tgt_y,x
-
-              jsr ghost_move_target
-              jmp ghost_move_target
-
-@exit:        rts
+@p_index:
+  .byte 0, 33, 64, 31
 
 
 ; shortest distance to target via look ahead one tile in move direction
@@ -462,7 +485,7 @@ calc_distance:sta game_tmp
               cmp #Char_Base
               bcs @exit ; carry from cmp above
               ldy game_tmp
-              cmp #Char_Not_Up
+              cmp #Char_Not_Up  ; TODO except if scared
               bne :+
               cpy #ACT_UP
               beq @exit
@@ -530,13 +553,16 @@ ghost_update_shape:
 ; .A new direction
 pacman_cornering:
               tay
-              lda actors+actor::move,x
-              and #$01  ;bit 0 set, either +x or +y, down or left
-              beq :+
-              lda #$07  ; with 0
-:             eor #$07
+              lda #$07
               sta game_tmp2
-              tya
+              lda actors+actor::move,x
+              and #$03  ; either +x or +y, down or left
+              beq :+   ; 00 ? (ACT_RIGHT)
+              cmp #ACT_UP
+              beq :+
+              lda #0
+              sta game_tmp2
+:             tya
 l_test:
               and #ACT_MOVE_UP_OR_DOWN    ; new direction is a turn
               bne l_up_or_down            ; so we have to test with the current direction (orthogonal)
@@ -561,8 +587,13 @@ actor_center:
 pacman_move:  lda pacman+pacman::delay
               beq :+
               dec pacman+pacman::delay
-              rts
-:             lda actors+pacman::turn,x
+@exit:        rts
+:
+              lda game_state+GameState::frames
+              and #$01
+       ;       bne @exit
+
+              lda actors+pacman::turn,x
               bpl @move_dir      ; turning?
               jsr actor_center
               bne @turn_soft
@@ -633,9 +664,10 @@ pacman_collect:
               cmp #Char_Energizer
               bne :+
               dec game_state+GameState::dots
-              ldx #ACTOR_BLINKY
               lda #GHOST_STATE_SCARED
-              sta actors+ghost::strategy,x
+              sta actors+ghost::strategy
+;              sta game_state+GameState::mode
+
               lda #Delay_Energizer
               sta pacman+pacman::delay
               lda #Pts_Index_Energizer
@@ -1074,6 +1106,8 @@ game_level_init:
               lda #0
               sta game_state+GameState::dot_cnt
               sta game_state+GameState::bonus_cnt
+              sta game_state+GameState::rng+0
+              sta game_state+GameState::rng+1
 
               ldx #ACTOR_INKY
               sta actors+ghost::dot_cnt,x
@@ -1199,21 +1233,21 @@ game_init:
 :             jsr sound_init_game_start
 
               jsr system_dip_switches_lives
-              sty game_state+GameState::lives_1up
-              sty game_state+GameState::lives_2up
+ ;             sty game_state+GameState::lives_1up
+;              sty game_state+GameState::lives_2up
               sty game_state+GameState::lives
 
               jsr system_dip_switches_bonus_life
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #3 ; start with level 1
+              lda #1 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
               lda #0
-:             sta game_state+GameState::score_1up,y
-              sta game_state+GameState::score_2up,y
+:;             sta game_state+GameState::score_1up,y
+;              sta game_state+GameState::score_2up,y
               sta game_state+GameState::score,y
               dey
               bpl :-
@@ -1326,9 +1360,9 @@ energizer_y:
    .byte 1,1,26,26
 
 _vectors_x:  ; X, Y adjust +0 X, -1 Y, screen is rotated 90 degree clockwise ;)
-    .byte $00,$00,$ff,$01
+    .byte $00,$01,$00,$ff
 _vectors_y:
-    .byte $ff,$01,$00,$00
+    .byte $ff,$00,$01,$00
 
 _text_1up:
     .byte 0, 24, "1UP",0
