@@ -220,14 +220,10 @@ game_game_over:
 
 actors_invisible:
               lda #SHAPE_IX_INVISIBLE
-              ldx #ACTOR_BLINKY
-              sta actor_shape,x
-              ldx #ACTOR_INKY
-              sta actor_shape,x
-              ldx #ACTOR_PINKY
-              sta actor_shape,x
               ldx #ACTOR_CLYDE
-              sta actor_shape,x
+:             sta actor_shape,x
+              dex
+              bpl :-
               rts
 
 
@@ -265,28 +261,19 @@ actors_move:
               jsr pacman_input
               jsr pacman_move
 
-              ldx #ACTOR_BLINKY
-              jsr ghost_move
-              ldx #ACTOR_PINKY
-              jsr ghost_move
-              ldx #ACTOR_INKY
-              jsr ghost_move
               ldx #ACTOR_CLYDE
-              jsr ghost_move
-
+:             jsr ghost_move
               ldy #ACTOR_PACMAN
-              ldx #ACTOR_BLINKY
-              jsr @same_pos
+              lda actor_xpos,x
+              cmp actor_xpos,y
+              bne @next
+              lda actor_ypos,x
+              cmp actor_ypos,y
               beq @equal
-              ldx #ACTOR_PINKY
-              jsr @same_pos
-              beq @equal
-              ldx #ACTOR_INKY
-              jsr @same_pos
-              beq @equal
-              ldx #ACTOR_CLYDE
-              jsr @same_pos
-              bne @exit
+@next:        dex
+              bpl :-
+              rts
+
 @equal:       lda ghost_mode,x
               cmp #GHOST_MODE_NORM
               beq @dying
@@ -295,14 +282,9 @@ actors_move:
               lda #GHOST_MODE_CATCHED
               sta ghost_mode,x
               rts
+
 @dying:       lda #STATE_PACMAN_DYING
               jmp game_set_state_frames_delay
-@same_pos:    lda actor_xpos,x
-              cmp actor_xpos,y
-              bne @exit
-              lda actor_ypos,x
-              cmp actor_ypos,y
-@exit:        rts
 
 
 shape_offs:  ; normal, frightened, catched ghost
@@ -509,7 +491,7 @@ ghost_base:   cmp #GHOST_STATE_BASE
 
 ghost_leave_base:
               cmp #GHOST_STATE_LEAVE
-              bne ghost_enter_base
+              bne @ghost_enter_base
 
               lda game_state+GameState::frames
               and #$01
@@ -519,11 +501,12 @@ ghost_leave_base:
               cmp #112  ; middle of house ?
               beq @move_middle
               bcc @move_left ; left or right
-              lda #ACT_MOVE|ACT_RIGHT<<2|ACT_RIGHT
+@move_right:  lda #ACT_MOVE|ACT_RIGHT<<2|ACT_RIGHT
               bne @move
 @move_left:   lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
 @move:        sta actor_move,x
               jmp actor_move_soft
+
 @move_middle: lda actor_sp_x,x
               cmp #100
               beq @base_leaved
@@ -535,22 +518,31 @@ ghost_leave_base:
               sta ghost_strategy,x
 @exit:        rts
 
-ghost_enter_base:
+@ghost_enter_base:
               cmp #GHOST_STATE_ENTER
               bne @exit
 
               lda actor_sp_x,x
               bmi @home
+
               lda #ACT_MOVE|ACT_DOWN<<2|ACT_DOWN
               sta actor_move,x
               jsr actor_move_soft
               jmp actor_move_soft
 @home:
-              lda #GHOST_STATE_BASE
+              lda actor_sp_y,x
+              cmp actor_init_y,x
+              beq :+
+              bcc @move_left
+              bcs @move_right
+
+:             lda actor_init_d,x
+              sta actor_move,x
+              lda #GHOST_STATE_LEAVE
               sta ghost_strategy,x
               lda #GHOST_MODE_NORM
               sta ghost_mode,x
-@exit:        rts
+              rts
 
 
 ghost_update_shape:
@@ -1288,15 +1280,11 @@ game_init:
               jmp game_set_state_frames_delay
 
 game_init_actors:
-              ldy #0
-              ldx #ACTOR_BLINKY
-              jsr @init_ghost
-              ldx #ACTOR_PINKY
-              jsr @init_ghost
-              ldx #ACTOR_INKY
-              jsr @init_ghost
               ldx #ACTOR_CLYDE
-              jsr @init_ghost
+:             jsr @init_ghost
+              dex
+              bpl :-
+              ldx #ACTOR_CLYDE
               lda game_state+GameState::level
               cmp #1
               bne :+
@@ -1310,14 +1298,13 @@ game_init_actors:
               lda #50 ;           dot limit clyde 50
               sta ghost_dot_limit,x
 :
-              ;jsr animate_ghosts  ; update shape
-
               ldx #ACTOR_PACMAN
               jsr @init_actor
               lda #2  ; pacman shape complete ball
               sta actor_shape,x
               lda #0
               sta pacman_delay
+
               jmp gfx_sprites_on
 
 @init_ghost:
@@ -1325,27 +1312,24 @@ game_init_actors:
               sta ghost_shape_offs,x
               lda #Shape_Mask_Norm
               sta ghost_shape_mask,x
-              lda ghost_init_state,y
+              lda ghost_init_state,x
               sta ghost_strategy,x
               lda #0
               sta ghost_dot_limit,x
               sta ghost_mode,x
-              lda ghost_init_sct_x,y
-;              sta ghost_sct_x,x
+              lda ghost_init_sct_x,x
               sta ghost_tgt_x,x
-              lda ghost_init_sct_y,y
- ;             sta ghost_sct_y,x
+              lda ghost_init_sct_y,x
               sta ghost_tgt_y,x
-              lda ghost_init_color,y
+              lda ghost_init_color,x
               sta ghost_color,x
 @init_actor:
-              lda actor_init_x,y
+              lda actor_init_x,x
               sta actor_sp_x,x
-              lda actor_init_y,y
+              lda actor_init_y,x
               sta actor_sp_y,x
-              lda actor_init_d,y
+              lda actor_init_d,x
               sta actor_move,x
-              iny
               rts
 
 .data
@@ -1356,7 +1340,7 @@ maze:
 actor_init_x: ; sprite pos x of blinky,pinky,inky,clyde,pacman
     .byte 100,$7c,$7c,$7c,196
 actor_init_y:
-    .byte 112,128,112,96,112
+    .byte 112,112,128,96,112
 actor_init_d:
     .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
     .byte ACT_MOVE|ACT_UP<<2|ACT_UP

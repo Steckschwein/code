@@ -193,7 +193,7 @@ _gfx_is_multiplex:
               bcs  @exit ; no further check
               ldx #ACTOR_CLYDE
               jsr _gfx_test_sp_y
-@exit:plx
+@exit:        plx
               rts
 
 ; X ghost y test with pacman y

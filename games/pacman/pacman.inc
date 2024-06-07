@@ -303,8 +303,8 @@ SHAPE_IX_DYING      = $34
 SHAPE_IX_INVISIBLE  = $3f
 
 ; table offsets
-ACTOR_PACMAN  = 4 ; ACTOR_CLYDE   + .sizeof(ghost)
-ACTOR_BLINKY  = 3
-ACTOR_PINKY   = 2 ;ACTOR_BLINKY  + .sizeof(ghost)
-ACTOR_INKY    = 1  ;1ACTOR_PINKY   + .sizeof(ghost)
-ACTOR_CLYDE   = 0  ;0ACTOR_INKY    + .sizeof(ghost)
+ACTOR_BLINKY  = 0
+ACTOR_PINKY   = 1
+ACTOR_INKY    = 2
+ACTOR_CLYDE   = 3
+ACTOR_PACMAN  = 4
