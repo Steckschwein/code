@@ -195,7 +195,7 @@ game_pacman_dying:
               bcs @exit
               adc #SHAPE_IX_DYING        ; shape offset
               ldx #ACTOR_PACMAN
-              sta actors+actor::shape,x
+              sta actor_shape,x
 @exit:        rts
 
 
@@ -221,13 +221,13 @@ game_game_over:
 actors_invisible:
               lda #SHAPE_IX_INVISIBLE
               ldx #ACTOR_BLINKY
-              sta actors+actor::shape,x
+              sta actor_shape,x
               ldx #ACTOR_INKY
-              sta actors+actor::shape,x
+              sta actor_shape,x
               ldx #ACTOR_PINKY
-              sta actors+actor::shape,x
+              sta actor_shape,x
               ldx #ACTOR_CLYDE
-              sta actors+actor::shape,x
+              sta actor_shape,x
               rts
 
 
@@ -276,33 +276,32 @@ actors_move:
 
               ldy #ACTOR_PACMAN
               ldx #ACTOR_BLINKY
-              jsr @pacman_hit
-              beq @pacman_dead
+              jsr @same_pos
+              beq @equal
               ldx #ACTOR_PINKY
-              jsr @pacman_hit
-              beq @pacman_dead
+              jsr @same_pos
+              beq @equal
               ldx #ACTOR_INKY
-              jsr @pacman_hit
-              beq @pacman_dead
+              jsr @same_pos
+              beq @equal
               ldx #ACTOR_CLYDE
-              jsr @pacman_hit
+              jsr @same_pos
               bne @exit
-@pacman_dead: lda actors+ghost::mode,x
+@equal:       lda ghost_mode,x
               cmp #GHOST_MODE_NORM
               beq @dying
               lda #GHOST_STATE_RETURN
-              sta actors+ghost::strategy,x
+              sta ghost_strategy,x
               lda #GHOST_MODE_CATCHED
-              sta actors+ghost::mode,x
+              sta ghost_mode,x
               rts
 @dying:       lda #STATE_PACMAN_DYING
               jmp game_set_state_frames_delay
-@pacman_hit:
-              lda actors+actor::xpos,x
-              cmp actors+actor::xpos,y
+@same_pos:    lda actor_xpos,x
+              cmp actor_xpos,y
               bne @exit
-              lda actors+actor::ypos,x
-              cmp actors+actor::ypos,y
+              lda actor_ypos,x
+              cmp actor_ypos,y
 @exit:        rts
 
 
@@ -312,116 +311,60 @@ shape_mask:
   .byte Shape_Mask_Norm,Shape_Mask_Norm,Shape_Mask_Fright
 
 ghost_move:   jsr actor_update_charpos
-              ldy actors+ghost::mode,x
+              ldy ghost_mode,x
               lda shape_offs,y
-              sta actors+ghost::shape_offs,x
+              sta ghost_shape_offs,x
               lda shape_mask,y
-              sta actors+ghost::shape_mask,x
+              sta ghost_shape_mask,x
               jsr ghost_update_shape
 
-              lda actors+ghost::strategy,x
-ghost_base:   cmp #GHOST_STATE_BASE
-              bne ghost_leave_base
-
-              lda game_state+GameState::frames
-              and #$01
-              bne @exit
-
-              lda actors+actor::sp_x,x
-              bmi @inverse  ; $80 ?
-              cmp #$78
-              beq @inverse
-              cmp #$7c
-              bne @move
-@leave:       lda actors+ghost::dot_cnt,x
-              cmp actors+ghost::dot_limit,x
-              bne @move
-              lda #GHOST_STATE_LEAVE
-              sta actors+ghost::strategy,x
-@exit:        rts
-@inverse:     lda actors+actor::move,x
-              eor #ACT_MOVE_INVERSE_NEXT|ACT_MOVE_INVERSE
-              sta actors+actor::move,x
-@move:        jmp actor_move_soft
-
-ghost_leave_base:
-              cmp #GHOST_STATE_LEAVE
-              bne ghost_move_target
-
-              lda game_state+GameState::frames
-              and #$01
-              bne @exit
-
-              lda actors+actor::sp_y,x
-              cmp #112  ; middle of house ?
-              beq @mov_middle
-              bcc @mov_left
-              lda #ACT_MOVE|ACT_RIGHT<<2|ACT_RIGHT
-              bne @move
-@mov_left:    lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
-@move:        sta actors+actor::move,x
-              jmp actor_move_soft
-@mov_middle:  lda actors+actor::sp_x,x
-              cmp #100
-              beq @base_leaved
-              lda #ACT_MOVE|ACT_UP<<2|ACT_UP
-              bne @move
-@base_leaved: lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
-              sta actors+actor::move,x
-              lda #GHOST_STATE_TARGET
-              sta actors+ghost::strategy,x
-@exit:        rts
-
-
+              lda ghost_strategy,x
 ghost_move_target:
-              cmp #GHOST_STATE_RETURN
-              bne :+
-              jsr move_target
-              jmp move_target
-
-:             lda actors+ghost::mode,x
+              cmp #GHOST_STATE_TARGET
+              bne ghost_return
+              lda ghost_mode,x
               beq move_target
               lda game_state+GameState::frames
               and #$01
               beq move_target
+@exit:        rts
+
+ghost_return: cmp #GHOST_STATE_RETURN
+              beq :+
+              jmp ghost_base
+
+:             lda #$0c  ; TODO
+              sta ghost_tgt_x,x
+              lda #$0e
+              sta ghost_tgt_y,x
+
+              jsr :+ ; double speed
+:
+              lda #100
+              cmp actor_sp_x,x
+              bne move_target
+              lda #112
+              cmp actor_sp_y,x
+              bne move_target
+; base reached
+              lda #GHOST_STATE_ENTER
+              sta ghost_strategy,x
               rts
 move_target:
-              lda actors+actor::move,x
+              lda actor_move,x
               jsr actor_center  ; center reached?
-              beq :+
-              jmp actor_move_soft
+              bne move_soft
 
-:             lda actors+ghost::strategy,x
-              cmp #GHOST_STATE_RETURN
-              bne move_dir
-
-              lda #$0c  ; TODO
-              sta actors+ghost::tgt_x,x
-              lda #$0e
-              sta actors+ghost::tgt_y,x
-
-              cmp actors+actor::ypos,x
-              bne move_dir
-              lda actors+ghost::tgt_x,x
-              cmp actors+actor::xpos,x
-              bne move_dir
-; base reached
-              lda #GHOST_STATE_TARGET
-              sta actors+ghost::strategy,x
-              lda #GHOST_MODE_NORM
-              sta actors+ghost::mode,x
-              rts
-
-move_dir:     lda actors+actor::move,x
+move_dir:     lda actor_move,x
               lsr ; next dir to current direction
               lsr
               and #ACT_DIR
-              sta actors+actor::move,x
+              sta actor_move,x
               jsr lda_actor_charpos_direction
               cmp #Char_Base ; sanity check wont be C=1
               bcs halt
 
-              lda actors+actor::move,x
+              lda actor_move,x
               eor #ACT_MOVE_INVERSE
               sta game_tmp2 ; exclude inverse of the new direction
 
@@ -433,7 +376,7 @@ move_dir:     lda actors+actor::move,x
               sbc #0
               sta p_maze+1
 
-              lda actors+ghost::mode,x
+              lda ghost_mode,x
               beq @short_dist   ; normal ?
               cmp #GHOST_MODE_CATCHED
               beq @short_dist   ; catched ?
@@ -478,8 +421,8 @@ move_dir:     lda actors+actor::move,x
               asl
               asl
               ora #ACT_MOVE   ; enable move
-              ora actors+actor::move,x
-              sta actors+actor::move,x
+              ora actor_move,x
+              sta actor_move,x
 
 move_soft:    jmp actor_move_soft
 
@@ -502,7 +445,7 @@ calc_distance:lda (p_maze),y
               lda px
               adc _vectors_x,y
               sec
-              sbc actors+ghost::tgt_x,x
+              sbc ghost_tgt_x,x
               bpl :+
               eor #$ff
 :             tay
@@ -516,7 +459,7 @@ calc_distance:lda (p_maze),y
               lda py
               adc _vectors_y,y
               sec
-              sbc actors+ghost::tgt_y,x
+              sbc ghost_tgt_y,x
               bpl :+
               eor #$ff
 :             tay
@@ -540,6 +483,75 @@ calc_distance:lda (p_maze),y
               sta target_dir ; save direction of shortest distance
 @exit:        rts
 
+ghost_base:   cmp #GHOST_STATE_BASE
+              bne ghost_leave_base
+
+              lda game_state+GameState::frames
+              and #$01
+              bne @exit
+
+              lda actor_sp_x,x
+              bmi @inverse  ; $80 ?
+              cmp #$78
+              beq @inverse
+              cmp #$7c
+              bne @move
+@leave:       lda ghost_dot_cnt,x
+              cmp ghost_dot_limit,x
+              bne @move
+              lda #GHOST_STATE_LEAVE
+              sta ghost_strategy,x
+@exit:        rts
+@inverse:     lda actor_move,x
+              eor #ACT_MOVE_INVERSE_NEXT|ACT_MOVE_INVERSE
+              sta actor_move,x
+@move:        jmp actor_move_soft
+
+ghost_leave_base:
+              cmp #GHOST_STATE_LEAVE
+              bne ghost_enter_base
+
+              lda game_state+GameState::frames
+              and #$01
+              bne @exit
+
+              lda actor_sp_y,x
+              cmp #112  ; middle of house ?
+              beq @move_middle
+              bcc @move_left ; left or right
+              lda #ACT_MOVE|ACT_RIGHT<<2|ACT_RIGHT
+              bne @move
+@move_left:   lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
+@move:        sta actor_move,x
+              jmp actor_move_soft
+@move_middle: lda actor_sp_x,x
+              cmp #100
+              beq @base_leaved
+              lda #ACT_MOVE|ACT_UP<<2|ACT_UP
+              bne @move
+@base_leaved: lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
+              sta actor_move,x
+              lda #GHOST_STATE_TARGET
+              sta ghost_strategy,x
+@exit:        rts
+
+ghost_enter_base:
+              cmp #GHOST_STATE_ENTER
+              bne @exit
+
+              lda actor_sp_x,x
+              bmi @home
+              lda #ACT_MOVE|ACT_DOWN<<2|ACT_DOWN
+              sta actor_move,x
+              jsr actor_move_soft
+              jmp actor_move_soft
+@home:
+              lda #GHOST_STATE_BASE
+              sta ghost_strategy,x
+              lda #GHOST_MODE_NORM
+              sta ghost_mode,x
+@exit:        rts
+
 
 ghost_update_shape:
               lda game_state+GameState::frames
@@ -547,14 +559,14 @@ ghost_update_shape:
               lsr
               lsr
               and #$01
-              sta actors+actor::shape,x
+              sta actor_shape,x
 
-              lda actors+actor::move,x
+              lda actor_move,x
               and #ACT_NEXT_DIR
-              ora actors+actor::shape,x
-              ora actors+ghost::shape_offs,x
-              and actors+ghost::shape_mask,x
-              sta actors+actor::shape,x
+              ora actor_shape,x
+              ora ghost_shape_offs,x
+              and ghost_shape_mask,x
+              sta actor_shape,x
               rts
 
 ; .A new direction
@@ -562,7 +574,7 @@ pacman_cornering:
               tay
               lda #$07
               sta game_tmp2
-              lda actors+actor::move,x
+              lda actor_move,x
               and #$03  ; either +x or +y, down or left
               beq :+   ; 00 ? (ACT_RIGHT)
               cmp #ACT_UP
@@ -574,10 +586,10 @@ l_test:
               and #ACT_MOVE_UP_OR_DOWN    ; new direction is a turn
               bne l_up_or_down            ; so we have to test with the current direction (orthogonal)
 l_left_or_right:
-              lda actors+actor::sp_x,x
+              lda actor_sp_x,x
               jmp l_compare ; always branch
 l_up_or_down:
-              lda actors+actor::sp_y,x
+              lda actor_sp_y,x
 l_compare:
               eor game_tmp2
               and #$07
@@ -591,26 +603,26 @@ actor_center:
               eor #ACT_MOVE_UP_OR_DOWN
               jmp l_test
 
-pacman_move:  lda pacman+pacman::delay
+pacman_move:  lda pacman_delay
               beq :+
-              dec pacman+pacman::delay
+              dec pacman_delay
 @exit:        rts
 :
-              lda game_state+GameState::frames
-              and #$01
+;              lda game_state+GameState::frames
+ ;             and #$01
        ;       bne @exit
 
-              lda actors+pacman::turn,x
+              lda pacman_turn
               bpl @move_dir      ; turning?
               jsr actor_center
               bne @turn_soft
-              lda actors+pacman::turn,x
+              lda pacman_turn
               and #<~ACT_TURN
-              sta actors+pacman::turn,x
-@turn_soft:   lda actors+pacman::turn,x
+              sta pacman_turn
+@turn_soft:   lda pacman_turn
               jsr actor_move_sprite
 @move_dir:
-              lda actors+actor::move,x
+              lda actor_move,x
               bpl :+
               jsr @move
 :             jmp pacman_collect
@@ -618,73 +630,74 @@ pacman_move:  lda pacman+pacman::delay
               jsr actor_center   ; center reached?
               bne @move_soft     ; no, move soft
 
-              lda actors+actor::move,x
+              lda actor_move,x
               and #ACT_DIR
               jsr actor_can_move_to_direction
               bcc @move_soft     ; C=0 - can move to
 
-              lda actors+actor::move,x  ;otherwise stop move
+              lda actor_move,x  ;otherwise stop move
               and #<~ACT_MOVE
-              sta actors+actor::move,x
+              sta actor_move,x
               and #ACT_NEXT_DIR       ; set shape of next direction
-              sta actors+actor::shape,x
+              sta actor_shape,x
               rts
 @move_soft:
               lda game_state+GameState::frames
               lsr
               and #$03
-              sta actors+actor::shape,x
+              sta actor_shape,x
 
-              lda actors+actor::move,x
+              lda actor_move,x
               and #ACT_DIR
               asl
               asl
-              ora actors+actor::shape,x
-              sta actors+actor::shape,x
+              ora actor_shape,x
+              sta actor_shape,x
 
 actor_move_soft:
-              lda actors+actor::move,x
+              lda actor_move,x
 actor_move_sprite:
               bpl @exit
               and #ACT_DIR
               tay
               clc
-              lda actors+actor::sp_x,x
+              lda actor_sp_x,x
               adc _vectors_x,y
-              sta actors+actor::sp_x,x
+              sta actor_sp_x,x
 
               clc
-              lda actors+actor::sp_y,x
+              lda actor_sp_y,x
               ;cmp #$df
               ;beq @exit
  ;             .byte $db
               adc _vectors_y,y
-              sta actors+actor::sp_y,x
+              sta actor_sp_y,x
 @exit:        rts
 
 pacman_collect:
-              lda pacman+actor::xpos
+              lda actor_xpos,x
               sta sys_crs_x
-              ldy pacman+actor::ypos
+              ldy actor_ypos,x
               sty sys_crs_y
               jsr lda_maze_ptr_ay
               cmp #Char_Energizer
               bne :+
               dec game_state+GameState::dots
+
               lda #GHOST_MODE_FRIGHT
-              sta actors+ACTOR_BLINKY+ghost::mode
-              sta actors+ACTOR_PINKY+ghost::mode
-              sta actors+ACTOR_INKY+ghost::mode
-              sta actors+ACTOR_CLYDE+ghost::mode
+              sta ghost_mode+ACTOR_BLINKY
+              sta ghost_mode+ACTOR_PINKY
+              sta ghost_mode+ACTOR_INKY
+              sta ghost_mode+ACTOR_CLYDE
 
               lda #Delay_Energizer
-              sta pacman+pacman::delay
+              sta pacman_delay
               lda #Pts_Index_Energizer
               bne @score_and_erase
 :             cmp #Char_Dot
               bne :+
               dec game_state+GameState::dots
-              inc pacman+pacman::delay
+              inc pacman_delay
               lda #Pts_Index_Dot
               beq @score_and_erase  ; dots index is 0
 :             cmp #Char_Bonus
@@ -792,11 +805,11 @@ pacman_input:
               jsr actor_can_move_to_direction ; C=0 can move
               bcs @set_input_dir_to_next_dir  ; no - only set next dir
 
-              lda actors+pacman::turn,x
+              lda pacman_turn
               bmi @exit  ;exit if turn is active
 
               ;current dir == input dir ?
-              lda actors+actor::move,x
+              lda actor_move,x
               and #ACT_DIR
               cmp input_direction          ;same direction ?
               beq @set_input_dir_to_next_dir  ;yes, do nothing...
@@ -805,7 +818,7 @@ pacman_input:
               cmp input_direction
               beq @set_input_dir_to_current_dir
 
-;              lda actors+actor::ypos,x      ;is tunnel ?
+;              lda actor_ypos,x      ;is tunnel ?
  ;             beq @exit                    ;ypos=0
   ;            cmp #28                  ;... or >=28
    ;           bcs @exit                    ;ignore input
@@ -818,38 +831,38 @@ pacman_input:
 
               lda #ACT_MOVE_INVERSE          ;
 @l_preturn:
-              eor actors+actor::move,x  ; current direction
+              eor actor_move,x  ; current direction
               and #ACT_DIR
               ora #ACT_TURN
-              sta actors+pacman::turn,x
+              sta pacman_turn
 
 @set_input_dir_to_current_dir:
               lda input_direction
               ora #ACT_MOVE
-              sta actors+actor::move,x
+              sta actor_move,x
 
 @set_input_dir_to_next_dir: ; bit 3-2
               lda input_direction
               asl
               asl
               sta game_tmp
-              lda actors+actor::move,x
+              lda actor_move,x
               and #<~ACT_NEXT_DIR
               ora game_tmp
-              sta actors+actor::move,x
+              sta actor_move,x
 @exit:        rts
 
 actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
-              lda actors+actor::sp_x,x
+              lda actor_sp_x,x
               lsr
               lsr
               lsr
-              sta actors+actor::xpos,x
-              lda actors+actor::sp_y,x
+              sta actor_xpos,x
+              lda actor_sp_y,x
               lsr
               lsr
               lsr
-              sta actors+actor::ypos,x
+              sta actor_ypos,x
               rts
 
 get_input:
@@ -869,19 +882,19 @@ debug:
     lda #Color_Text
     sta text_color
     ldx #ACTOR_PACMAN
-    lda actors+actor::xpos,x
+    lda actor_xpos,x
     jsr out_hex_digits
-    lda actors+actor::sp_x,x
+    lda actor_sp_x,x
 ;    jsr out_hex_digits
-    lda actors+actor::ypos,x
+    lda actor_ypos,x
     jsr out_hex_digits
-    lda actors+actor::sp_y,x
+    lda actor_sp_y,x
 ;    jsr out_hex_digits
     lda input_direction
     jsr out_hex_digits
-    lda actors+actor::move,x
+    lda actor_move,x
     jsr out_hex_digits
-    lda actors+pacman::turn,x
+    lda pacman_turn,x
     jsr out_hex_digits
     lda keyboard_input
     jsr out_hex_digits
@@ -894,11 +907,11 @@ debug:
 ; in:  .A - direction
 lda_actor_charpos_direction:
               tay
-              lda actors+actor::xpos,x
+              lda actor_xpos,x
               clc
               adc _vectors_x,y
               sta px
-              lda actors+actor::ypos,x
+              lda actor_ypos,x
               clc
               adc _vectors_y,y
               sta py
@@ -981,7 +994,7 @@ game_playing:
 
               ldx #ACTOR_PACMAN
               lda #2  ; pacman shape complete "ball"
-              sta actors+actor::shape,x
+              sta actor_shape,x
 
               lda #STATE_LEVEL_CLEARED
               jmp game_set_state_frames_delay
@@ -1119,11 +1132,11 @@ game_level_init:
               sta game_state+GameState::rng+1
 
               ldx #ACTOR_INKY
-              sta actors+ghost::dot_cnt,x
+              sta ghost_dot_cnt,x
               ldx #ACTOR_PINKY
-              sta actors+ghost::dot_cnt,x
+              sta ghost_dot_cnt,x
               ldx #ACTOR_CLYDE
-              sta actors+ghost::dot_cnt,x
+              sta ghost_dot_cnt,x
 
               jsr draw_frame
 
@@ -1288,50 +1301,50 @@ game_init_actors:
               cmp #1
               bne :+
               lda #60 ; level 1 - dot limit clyde 60
-              sta actors+ghost::dot_limit,x
+              sta ghost_dot_limit,x
               lda #30 ;           dot limit inky 30
               ldx #ACTOR_INKY
-              sta actors+ghost::dot_limit,x
+              sta ghost_dot_limit,x
 :             cmp #2
               bne :+
               lda #50 ;           dot limit clyde 50
-              sta actors+ghost::dot_limit,x
+              sta ghost_dot_limit,x
 :
               ;jsr animate_ghosts  ; update shape
 
               ldx #ACTOR_PACMAN
               jsr @init_actor
               lda #2  ; pacman shape complete ball
-              sta actors+actor::shape,x
+              sta actor_shape,x
               lda #0
-              sta actors+pacman::delay,x
+              sta pacman_delay
               jmp gfx_sprites_on
 
 @init_ghost:
               lda #Shape_Offset_Norm  ; ghost shape offset
-              sta actors+ghost::shape_offs,x
+              sta ghost_shape_offs,x
               lda #Shape_Mask_Norm
-              sta actors+ghost::shape_mask,x
+              sta ghost_shape_mask,x
               lda ghost_init_state,y
-              sta actors+ghost::strategy,x
+              sta ghost_strategy,x
               lda #0
-              sta actors+ghost::dot_limit,x
-              sta actors+ghost::mode,x
+              sta ghost_dot_limit,x
+              sta ghost_mode,x
               lda ghost_init_sct_x,y
-              sta actors+ghost::sct_x,x
-              sta actors+ghost::tgt_x,x
+;              sta ghost_sct_x,x
+              sta ghost_tgt_x,x
               lda ghost_init_sct_y,y
-              sta actors+ghost::sct_y,x
-              sta actors+ghost::tgt_y,x
+ ;             sta ghost_sct_y,x
+              sta ghost_tgt_y,x
               lda ghost_init_color,y
-              sta actors+ghost::color,x
+              sta ghost_color,x
 @init_actor:
               lda actor_init_x,y
-              sta actors+actor::sp_x,x
+              sta actor_sp_x,x
               lda actor_init_y,y
-              sta actors+actor::sp_y,x
+              sta actor_sp_y,x
               lda actor_init_d,y
-              sta actors+actor::move,x
+              sta actor_move,x
               iny
               rts
 
@@ -1433,15 +1446,32 @@ points_digits:
 
 
 .export game_maze
-.export actors
+.export actor_sp_x,actor_sp_y,actor_shape
+.export ghost_mode,ghost_color
 
 .bss
   save_irq:         .res 2
   input_direction:  .res 1
   keyboard_input:   .res 1
-  actors:
-  ghosts:           .res 4*.sizeof(ghost)
-  pacman:           .res 1*.sizeof(pacman)
+  actor_sp_x:       .res 5  ; sprite x
+  actor_sp_y:       .res 5  ; sprite y
+  actor_xpos:       .res 5  ; tile x pos - 0..31
+  actor_ypos:       .res 5  ; tile y pos - 0..28
+  actor_shape:      .res 5  ; shape
+  actor_move:       .res 5  ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
+  ghost_color:      .res 4  ; main color
+  ghost_shape_mask: .res 4  ; shape mask - for normal, frightened or catched ghost
+  ghost_shape_offs: .res 4  ; offset for normal frightened or catched ghost
+  ghost_strategy:   .res 4  ; ghost movement strategy - in base, leaving base, return to base, move arround (scatter/chase)
+  ghost_mode:       .res 4  ; 0 - normal, 1 - frightened, 2 - catched
+  ghost_dot_cnt:    .res 4  ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
+  ghost_dot_limit:  .res 4  ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
+  ghost_tgt_x:      .res 4  ; current target tile x
+  ghost_tgt_y:      .res 4  ; current target tile y
+
+  pacman_delay:     .res 1
+  pacman_turn:      .res 1
+
   target_dist:      .res 2  ; word
   target_dir:       .res 1
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100

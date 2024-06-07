@@ -72,10 +72,11 @@ STATE_INTRO         = 1<<5
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
 
-GHOST_STATE_BASE     = 0
-GHOST_STATE_RETURN   = 1
-GHOST_STATE_LEAVE    = 2
-GHOST_STATE_TARGET   = 3
+GHOST_STATE_BASE    = 0
+GHOST_STATE_RETURN  = 1
+GHOST_STATE_LEAVE   = 2
+GHOST_STATE_TARGET  = 3
+GHOST_STATE_ENTER   = 4
 
 GHOST_MODE_NORM     = 0
 GHOST_MODE_CATCHED  = 1
@@ -276,7 +277,6 @@ SKIP_DIR_CHECK    = $ff
 
 .struct ghost
     actor         .tag actor
-
     color         .byte   ; main color
     shape_mask    .byte   ; shape mask - for normal, frightened or catched ghost
     shape_offs    .byte   ; offset for normal frightened or catched ghost
@@ -289,8 +289,8 @@ SKIP_DIR_CHECK    = $ff
     tgt_x         .byte   ; target x
     tgt_y         .byte   ; target y
 
-    sct_x         .byte   ; scatter target x
-    sct_y         .byte   ; scatter target y
+;    sct_x         .byte   ; scatter target x
+ ;   sct_y         .byte   ; scatter target y
 .endstruct
 
 .struct pacman
@@ -303,8 +303,8 @@ SHAPE_IX_DYING      = $34
 SHAPE_IX_INVISIBLE  = $3f
 
 ; table offsets
-ACTOR_BLINKY  = 0
-ACTOR_PINKY   = ACTOR_BLINKY  + .sizeof(ghost)
-ACTOR_INKY    = ACTOR_PINKY   + .sizeof(ghost)
-ACTOR_CLYDE   = ACTOR_INKY    + .sizeof(ghost)
-ACTOR_PACMAN  = ACTOR_CLYDE   + .sizeof(ghost)
+ACTOR_PACMAN  = 4 ; ACTOR_CLYDE   + .sizeof(ghost)
+ACTOR_BLINKY  = 3
+ACTOR_PINKY   = 2 ;ACTOR_BLINKY  + .sizeof(ghost)
+ACTOR_INKY    = 1  ;1ACTOR_PINKY   + .sizeof(ghost)
+ACTOR_CLYDE   = 0  ;0ACTOR_INKY    + .sizeof(ghost)

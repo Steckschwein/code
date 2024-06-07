@@ -198,10 +198,10 @@ _gfx_is_multiplex:
 
 ; X ghost y test with pacman y
 _gfx_test_sp_y:  ;
-              lda actors+actor::sp_y,x
+              lda actor_sp_y,x
               ldx #ACTOR_PACMAN
               sec
-              sbc actors+actor::sp_y,x
+              sbc actor_sp_y,x
               bpl :+
               eor #$ff ; absolute |y1 - y2|
 :             cmp #$10 ; 16px ?
@@ -244,9 +244,9 @@ gfx_update:
               jmp vdp_memcpys
 
 @sprite_color:
-              lda actors+ghost::mode,x
+              lda ghost_mode,x
               cmp #GHOST_MODE_FRIGHT
-              lda actors+ghost::color,x
+              lda ghost_color,x
               bcc :+
               lda #Color_Blue
 :             ldx #16    ;16 color lines per sprite
@@ -264,18 +264,18 @@ _gfx_update_sprite_tab_2x:
 _gfx_update_sprite_tab:
               lda #$00
           :   sta r1
-              lda actors+actor::sp_y,x
+              lda actor_sp_y,x
               sec
               sbc #gfx_Sprite_Adjust_Y
               sta sprite_tab_attr,y
               iny
-              lda actors+actor::sp_x,x
+              lda actor_sp_x,x
               sec
               sbc #gfx_Sprite_Adjust_X
               sta sprite_tab_attr,y
               iny
               phy
-              lda actors+actor::shape,x
+              lda actor_shape,x
               ora r1
               tay
               lda shapes,y
