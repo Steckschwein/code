@@ -17,8 +17,7 @@
 .zeropage
     sys_crs_x:  .res 1
     sys_crs_y:  .res 1
-    ;sys_tmp:    .res 1
-
+;    sys_p:      .res 2
 .code
 
 frame_isr:
@@ -142,12 +141,16 @@ system_rng:   ;.byte $db
               adc game_state+GameState::rng+0 ; *5
               adc #1
               sta game_state+GameState::rng+0 ; +1
-              pha
               tya
               adc game_state+GameState::rng+1
               and #$1f                        ; mod 8192
               sta game_state+GameState::rng+1
-              pla
+              lda game_state+GameState::rng+0
+              sta p_text+0
+              lda game_state+GameState::rng+1
+              sta p_text+1
+              ldy #0
+              lda (p_text),y
               rts
 
 system_dip_switches_lives:

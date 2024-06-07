@@ -11,9 +11,9 @@ VDP_Color_Cyan        = $05
 VDP_Color_Light_Blue  = $06
 VDP_Color_Orange      = $07
 VDP_Color_Yellow      = $09
-VDP_Color_Dark_Pink   = $0b
+VDP_Color_Dark_Pink   = $0b ; 1011
 VDP_Color_Dark_Cyan   = $0d
-VDP_Color_Blue        = $0e
+VDP_Color_Blue        = $0e ; 1110
 VDP_Color_Gray        = $0f
 
 VDP_Color_Food        = VDP_Color_Dark_Pink

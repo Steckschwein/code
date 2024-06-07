@@ -151,28 +151,7 @@ gfx_init:
               ldx #8
               jsr vdp_memcpy
 
-              vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
-
-              lda #Color_Blinky
-              jsr _fills
-              lda #(VDP_Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
-              jsr _fills
-
-              lda #Color_Inky
-              jsr _fills
-              lda #(VDP_Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
-              jsr _fills
-
-              lda #Color_Pinky
-              jsr _fills
-              lda #(VDP_Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
-              jsr _fills
-
-              lda #Color_Clyde
-              jsr _fills
-              lda #(VDP_Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
-              jsr _fills
-
+              vdp_vram_w (VRAM_SPRITE_COLOR+16*4*2)  ; load sprite color address pacman
               lda #VDP_Color_Yellow
               jsr _fills
 
@@ -201,47 +180,50 @@ gfx_sprites_off:
               plp
               rts
 
-_fills:
-              ldx #16    ;16 color lines per sprite
-              jmp vdp_fills
-
 _gfx_is_multiplex:
-    phx
-    ldx #ACTOR_BLINKY
-    jsr _gfx_test_sp_y
-    bcs  @exit ; no further check
-    ldx #ACTOR_INKY
-    jsr _gfx_test_sp_y
-    bcs  @exit ; no further check
-    ldx #ACTOR_PINKY
-    jsr _gfx_test_sp_y
-    bcs  @exit ; no further check
-    ldx #ACTOR_CLYDE
-    jsr _gfx_test_sp_y
+              phx
+              ldx #ACTOR_BLINKY
+              jsr _gfx_test_sp_y
+              bcs  @exit ; no further check
+              ldx #ACTOR_INKY
+              jsr _gfx_test_sp_y
+              bcs  @exit ; no further check
+              ldx #ACTOR_PINKY
+              jsr _gfx_test_sp_y
+              bcs  @exit ; no further check
+              ldx #ACTOR_CLYDE
+              jsr _gfx_test_sp_y
 @exit:plx
-    rts
+              rts
 
 ; X ghost y test with pacman y
 _gfx_test_sp_y:  ;
-    lda actors+actor::sp_y,x
-    ldx #ACTOR_PACMAN
-    sec
-    sbc actors+actor::sp_y,x
-    bpl :+
-    eor #$ff ; absolute |y1 - y2|
-:    cmp #$10 ; 16px ?
-    rts
+              lda actors+actor::sp_y,x
+              ldx #ACTOR_PACMAN
+              sec
+              sbc actors+actor::sp_y,x
+              bpl :+
+              eor #$ff ; absolute |y1 - y2|
+:             cmp #$10 ; 16px ?
+              rts
 
 gfx_update:
               ldy #0
+
+              vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
+
               ldx #ACTOR_BLINKY
               jsr _gfx_update_sprite_tab_2x
+              jsr @sprite_color
               ldx #ACTOR_INKY
               jsr _gfx_update_sprite_tab_2x
+              jsr @sprite_color
               ldx #ACTOR_PINKY
               jsr _gfx_update_sprite_tab_2x
+              jsr @sprite_color
               ldx #ACTOR_CLYDE
               jsr _gfx_update_sprite_tab_2x
+              jsr @sprite_color
               ldx #ACTOR_PACMAN
               jsr _gfx_update_sprite_tab
 
@@ -261,34 +243,49 @@ gfx_update:
               ldx #9*4+1
               jmp vdp_memcpys
 
+@sprite_color:
+              lda actors+ghost::mode,x
+              cmp #GHOST_MODE_FRIGHT
+              lda actors+ghost::color,x
+              bcc :+
+              lda #Color_Blue
+:             ldx #16    ;16 color lines per sprite
+              jsr vdp_fills
+              lda #(Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
+              bcc _fills
+              eor #%00000101  ; Color_Food ($0b)  Color_Red
+_fills:       ldx #16
+              jmp vdp_fills
+
+
 _gfx_update_sprite_tab_2x:
-    lda #$02
-    jsr :+
+              lda #$02
+              jsr :+
 _gfx_update_sprite_tab:
-    lda #$00
-:   sta r1
-    lda actors+actor::sp_y,x
-    sec
-    sbc #gfx_Sprite_Adjust_Y
-    sta sprite_tab_attr,y
-    iny
-    lda actors+actor::sp_x,x
-    sec
-    sbc #gfx_Sprite_Adjust_X
-    sta sprite_tab_attr,y
-    iny
-    phy
-    lda actors+actor::shape,x
-    ora r1
-    tay
-    lda shapes,y
-    ply
-    sta sprite_tab_attr,y
-    iny
-    lda #0
-    sta sprite_tab_attr,y  ; byte 4 - reserved/unused
-    iny
-    rts
+              lda #$00
+          :   sta r1
+              lda actors+actor::sp_y,x
+              sec
+              sbc #gfx_Sprite_Adjust_Y
+              sta sprite_tab_attr,y
+              iny
+              lda actors+actor::sp_x,x
+              sec
+              sbc #gfx_Sprite_Adjust_X
+              sta sprite_tab_attr,y
+              iny
+              phy
+              lda actors+actor::shape,x
+              ora r1
+              tay
+              lda shapes,y
+              ply
+              sta sprite_tab_attr,y
+              iny
+              lda #0
+              sta sprite_tab_attr,y  ; byte 4 - reserved/unused
+              iny
+              rts
 
 gfx_display_maze:
         ldx #3
@@ -315,7 +312,7 @@ gfx_display_maze:
 ;        cmp (p_maze),y
  ;       bne :+
   ;      rts
-:       pha
+        pha
         cmp #Char_Dot
         beq @food
         cmp #Char_Energizer
@@ -715,7 +712,7 @@ shapes:
     .byte $09*4,$09*4,$11*4,$11*4 ;l  10
     .byte $0a*4,$0a*4,$12*4,$12*4 ;u  11
 ; ghosts scared $30
-    .byte $0e*4,$0c*4+4,$0e*4,$0c*4 ;u,l,d,r
+    .byte $0e*4,$0e*4,$0c*4,$0c*4+4 ;r,d,l,u
 ; pacman dying
     .byte $28*4,$27*4,$26*4,$25*4
     .byte $24*4,$23*4,$22*4,$21*4

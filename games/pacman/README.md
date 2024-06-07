@@ -1,26 +1,25 @@
-# TODO:
-- food compare and animation, use frames as state
-- 50 vs. 60Hz problem? => 20ms/16,7ms => 3,3ms
-- pacman/ghost speed
-    PAC-MAN SPEED	GHOST SPEED
-  LEVEL	NORM	NORM DOTS	FRIGHT	FRIGHT DOTS	NORM	FRIGHT	TUNNEL
-  1	80%	71%	90%	79%	75%	50%	40%
-  2 - 4	90%	79%	95%	83%	85%	55%	45%
-  5 - 20	100%	87%	100%	87%	95%	60%	50%
-  21+	90%	79%	-	-	95%	-	50%
 
-- scoring - score > highscore compare
-# ghost ai
-- blinky - 24,0
-- pinky - 1,0
-- inky - 24,31
-- clyde - 0,31
+pacman/ghost speed percentage/frames
+  LEVEL   NORM  NORM-DOTS  FRIGHT  FRIGHT-DOTS NORM	   FRIGHT	TUNNEL
+  1        80%/48	  71%/1  90%/54	   79%/1     75%/45  50%/30	 40%/24
+  2 - 4    90%/54	  79%/1	 95%/57	   83%/1     85%/51  55%/33	 45%/27
+  5 - 20	100%/60	  87%/1	 100%/60   87%/1     95%/57  60%/36	 50%/30
+  21+	     90%/54	  79%/1	     -	       -     95%/57   -	     50%/30
 
+100% => 60frames/s
+ 95% => 57frames/s => $03 frames delay => 1/20 frame
+ 90% => 54frames/s => $06 frames delay => 1/10
+ 85% => 51frames/s => $09 frames delay => 1/7
+ 80% => 48frames/s => $0c frames delay => 1/5
+ 75% => 45frames/s => $0f frames delay => 1/4
+ 60% => 36frames/s => $18 frames delay => 2/5
+ 55% => 33frames/s => $1b frames delay => 9/20
+ 50% => 30frames/s => $1e frames delay => 1/2
 
--- red zone
--- tunnel zone
-- pacman sprint - speed to original differs, so add some px if contiguous move to a direction
+red zone
+tunnel zone
 
+----
 
 notes:
   solve: https://www.youtube.com/watch?v=Bin0vu8Hp0g
@@ -39,14 +38,15 @@ notes:
 ---------------------------------------------------
 
 video:
+  - mode 4 (V9938/58) with NTSC (60Hz) and open border hack (overscan)
   - original paxman, namco May 22nd, 1980
     - 224x288 => 28x36 => 28x31 -5 (score)    => 1px 196x252
 
   - steckschwein
-    - 256x212 => vert. display 212x256 => 26x32 :/ -2/-4
+    - 256x212(240) overscan => vert. display 240x256 => 30x32 :/ +2/-4
       - rotate the game entirely 90 degree counter clockwise, screen must be turned 90 degree clockwise ;)
       -4 chars x - rm blank lines -2, rm credit line -1, shrink score line -1
-      -2 chars y - shrink the maze right/left side
+      +2 chars y - lives, bonus on right border
 
       ;1101 0100 11 01 00 111
       ;1010      11

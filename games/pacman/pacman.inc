@@ -72,17 +72,20 @@ STATE_INTRO         = 1<<5
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
 
-GHOST_STATE_BASE    = 0
-GHOST_STATE_RETURN  = 1
-GHOST_STATE_LEAVE   = 2
-GHOST_STATE_TARGET  = 3
-GHOST_STATE_SCARED  = 4
+GHOST_STATE_BASE     = 0
+GHOST_STATE_RETURN   = 1
+GHOST_STATE_LEAVE    = 2
+GHOST_STATE_TARGET   = 3
+
+GHOST_MODE_NORM     = 0
+GHOST_MODE_CATCHED  = 1
+GHOST_MODE_FRIGHT   = 2
 
 Shape_Mask_Norm       = $3f
-Shape_Mask_Scared     = $33
+Shape_Mask_Fright     = $33
 Shape_Offset_Norm     = $10
 Shape_Offset_Catched  = $20
-Shape_Offset_Scared   = $30
+Shape_Offset_Fright   = $30
 
 Delay_Dot           = 1 ; 1 penalty frame
 Delay_Energizer     = 3
@@ -118,8 +121,8 @@ Color_Yellow      = $9  ; "yellow", "pacman"
 Color_Dark_Pink   = $b  ; "food", "super food"
 Color_Green       = $c  ; Melon, strawberry top, orange leaf
 Color_Dark_Cyan   = $d  ; dark cyan - Melon wrinkles and stem
-Color_Blue        = $e  ; blue => ghosts "scared", ghost pupil
-Color_Gray        = $f  ; gray => ghosts "scared", ghost eyes, text
+Color_Blue        = $e  ; blue => ghosts "frightened", ghost pupil
+Color_Gray        = $f  ; gray => ghosts "frightened", ghost eyes, text
 
 Color_Blinky  = Color_Red
 Color_Inky    = Color_Cyan
@@ -145,10 +148,10 @@ GHOST_SCATTER     = 1<<6
 GHOST_FRIGHTENED  = 1<<7;
 
 ACT_MOVE          = 1<<7
-ACT_UP            = 3 ;11
+ACT_RIGHT         = 0 ;00
 ACT_DOWN          = 1 ;01
 ACT_LEFT          = 2 ;10
-ACT_RIGHT         = 0 ;00
+ACT_UP            = 3 ;11
 ACT_MOVE_UP_OR_DOWN     = %00000001
 ACT_MOVE_INVERSE        = %00000010   ;eor bit 1
 ACT_MOVE_INVERSE_NEXT   = %00001000
@@ -156,6 +159,8 @@ ACT_MOVE_INVERSE_NEXT   = %00001000
 ACT_TURN          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_DIR           = 1<<1|1<<0
+
+SKIP_DIR_CHECK    = $ff
 
 .macro setIRQ irq, irq_save
       php
@@ -271,12 +276,13 @@ ACT_DIR           = 1<<1|1<<0
 
 .struct ghost
     actor         .tag actor
-    ; ghost related, maybe remove from actor struct
+
+    color         .byte   ; main color
     shape_mask    .byte   ; shape mask - for normal, frightened or catched ghost
     shape_offs    .byte   ; offset for normal frightened or catched ghost
 
-    strategy      .byte   ; ghost movement strategy - in base, leaving base, return to base, scatter, chase, frightend
-    ;mask_visited  .byte   ; 10001111 blinky, 01001111 pinky, 00101111 inky, 00011111 clyde
+    strategy      .byte   ; ghost movement strategy - in base, leaving base, return to base, move arround (scatter/chase)
+    mode          .byte   ; 0 - normal, 1 - frightened, 2 - catched
     dot_cnt       .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
     dot_limit     .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
 
