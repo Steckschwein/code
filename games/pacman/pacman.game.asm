@@ -523,6 +523,8 @@ ghost_leave_base:
               bne @exit
 
               lda actor_sp_x,x
+;              cmp #$7e
+ ;             beq @home
               bmi @home
 
               lda #ACT_MOVE|ACT_DOWN<<2|ACT_DOWN

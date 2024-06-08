@@ -1,4 +1,4 @@
-DEBUG=-D__DEBUG
+#DEBUG=-D__DEBUG
 DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 DEBUG+=-D__NO_INTRO
@@ -35,6 +35,7 @@ RESOURCES=\
   pacman.ghosts.res \
   pacman.pacman.res \
 	pacman.dying.res \
+	pacman.bonus.res \
 	bonus.res \
   pacman.tiles.rot.inc
 
