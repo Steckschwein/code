@@ -67,8 +67,9 @@ STATE_PLAYING       = $5
 STATE_PACMAN_DYING  = $7
 STATE_LEVEL_CLEARED = $8
 STATE_GAME_OVER     = $9
-STATE_INTRO         = 1<<5
+STATE_GHOST_CATCHED = $a
 
+STATE_INTRO         = 1<<5
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
 
@@ -81,12 +82,18 @@ GHOST_STATE_ENTER   = 4
 GHOST_MODE_NORM     = 0
 GHOST_MODE_CATCHED  = 1
 GHOST_MODE_FRIGHT   = 2
+GHOST_MODE_BONUS    = 3
 
-Shape_Mask_Norm       = $3f
-Shape_Mask_Fright     = $33
+Shape_Mask_Norm       = $7f
+Shape_Mask_Small      = $73 ; only 4 patterns (bit 1,0)
+
 Shape_Offset_Norm     = $10
 Shape_Offset_Catched  = $20
 Shape_Offset_Fright   = $30
+Shape_Offset_Bonus    = $40
+
+Shape_Ix_Dying        = $34
+Shape_Ix_Invisible    = $3f
 
 Delay_Dot           = 1 ; 1 penalty frame
 Delay_Energizer     = 3
@@ -113,7 +120,7 @@ Color_Red         = $1  ; "shadow", "blinky" red
 Color_Brown       = $2  ; orange top, cherry stem
 Color_Pink        = $3  ; "speedy", "pinky" pink
 
-Color_Cyan        = $5  ; "bashful", "inky" cyan
+Color_Cyan        = $5  ; cyan - "bashful" / "inky", color of bonus pts catched ghost
 Color_Light_Blue  = $6  ; "ligth blue"
 Color_Orange      = $7  ; "pokey", "Clyde" "orange"
 
@@ -235,33 +242,37 @@ SKIP_DIR_CHECK    = $ff
 .endmacro
 
 .struct GameState
-  dip_switches  .byte
+  dip_switches    .byte
 
-  fn            .addr
-  state         .byte
-  nextstate     .byte   ; next state from delay
-  frames        .byte
+  fn              .addr
+  state           .byte
+  nextstate       .byte   ; next state from delay
+  frames          .byte
 
-  credit        .byte
+  credit          .byte
 
-  players       .byte   ; active players
-  active_up     .byte   ; current player
+  players         .byte   ; active players
+  active_up       .byte   ; current player
 
-  lives         .byte   ; lives current player
-  score         .res 3  ; score current player
+  lives           .byte   ; lives current player
+  score           .res 3  ; BCD score current player
 
-  level         .byte   ; the current level
-  dots          .byte   ; remaining dots count down - MAX_DOTS at start
-  dot_cnt       .byte   ; in level dot counter - set/reset if a life is lost
-  bonus         .byte   ; bonus of current level
-  bonus_cnt     .byte   ; bonus available (frame) counter
-  bonus_life    .word   ; trigger for next bonus life (BCD) - TT T digit
+  level           .byte   ; the current level
+  dots            .byte   ; remaining dots count down - MAX_DOTS at start
+  dot_cnt         .byte   ; in level dot counter - set/reset if a life is lost
+  bonus           .byte   ; bonus of current level
+  bonus_cnt       .byte   ; bonus available (frame) counter
+  bonus_life      .word   ; trigger for next bonus life (BCD) - TT T digit
 
-  highscore     .res 3
+  highscore       .res 3
 
   ; game related
-  rng           .word   ; PRNG index
-  mode          .byte   ; chase, scatter, frightened
+  rng             .word   ; PRNG index
+  mode            .byte   ; chase, scatter, frightened
+
+  ghosts_tocatch  .byte   ; ghosts to catch during a frightened phase, starts with 3
+  catched_ghost   .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
+
 .endstruct
 
   ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
@@ -288,19 +299,7 @@ SKIP_DIR_CHECK    = $ff
 
     tgt_x         .byte   ; target x
     tgt_y         .byte   ; target y
-
-;    sct_x         .byte   ; scatter target x
- ;   sct_y         .byte   ; scatter target y
 .endstruct
-
-.struct pacman
-    actor         .tag actor
-    turn          .byte   ; bit 7 turn, bit 1-0 turn direction
-    delay         .byte   ; amount of frames to delay for various actions - 1 frame eating a dot, 10 frames eating an energizer
-.endstruct
-
-SHAPE_IX_DYING      = $34
-SHAPE_IX_INVISIBLE  = $3f
 
 ; table offsets
 ACTOR_BLINKY  = 0

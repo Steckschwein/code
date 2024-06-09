@@ -148,7 +148,7 @@ gfx_init:
               vdp_vram_w VRAM_SPRITE_PATTERN
               lda #<sprite_patterns
               ldy #>sprite_patterns
-              ldx #8
+              ldx #6
               jsr vdp_memcpy
 
               vdp_vram_w (VRAM_SPRITE_COLOR+16*4*2)  ; load sprite color address pacman
@@ -210,8 +210,17 @@ _gfx_test_sp_y:  ;
 gfx_update:
               ldy #0
 
-              vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
+              lda game_state+GameState::frames
+              lsr
+              lsr
+              lsr
+              lsr
+              and #$01
+              beq :+
+              lda #6
+:             sta r2
 
+              vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
               ldx #ACTOR_BLINKY
               jsr _gfx_update_sprite_tab_2x
               jsr @sprite_color
@@ -246,24 +255,40 @@ gfx_update:
 @sprite_color:
               lda ghost_mode,x
               cmp #GHOST_MODE_FRIGHT
+              bne :+
+              eor r2
+:             phy
+              tay
               lda ghost_color,x
               bcc :+
-              lda #Color_Blue
+              lda _gfx_colors_1st,y
 :             ldx #16    ;16 color lines per sprite
               jsr vdp_fills
-              lda #(Color_Blue | SPRITE_CC | SPRITE_IC)  ; CC | IC | 2nd color
-              bcc _fills
-              eor #%00000101  ; Color_Food ($0b)  Color_Red
+              lda _gfx_colors_2nd,y
+              ply
 _fills:       ldx #16
               jmp vdp_fills
 
+_gfx_colors_1st:
+    .byte Color_Bg
+    .byte Color_Bg
+    .byte Color_Blue
+    .byte Color_Cyan
+    .byte Color_Gray
+
+_gfx_colors_2nd:
+    .byte Color_Blue | SPRITE_CC | SPRITE_IC
+    .byte Color_Blue | SPRITE_CC | SPRITE_IC
+    .byte Color_Pink
+    .byte Color_Bg
+    .byte Color_Red
 
 _gfx_update_sprite_tab_2x:
               lda #$02
               jsr :+
 _gfx_update_sprite_tab:
               lda #$00
-          :   sta r1
+:             sta r1
               lda actor_sp_y,x
               sec
               sbc #gfx_Sprite_Adjust_Y
@@ -668,35 +693,34 @@ gfx_Sprite_Adjust_Y=8
 gfx_Sprite_Off=SPRITE_OFF+$08 ; +8, 212 line mode
 
 pacman_palette:
-  vdp_pal 0,0,0         ;0
-  vdp_pal $ff,0,0       ;1 "shadow", "blinky" red
-  vdp_pal $de,$97,$51   ;2 orange top, cherry stem "food"
-  vdp_pal $ff,$b8,$ff   ;3 "speedy", "pinky" pink
-  vdp_pal 0,0,0         ;4
-  vdp_pal 0,$ff,$ff     ;5 "bashful", "inky" cyan
-  vdp_pal $47,$b8,$ff   ;6 "light blue"
-  vdp_pal $ff,$b8,$51   ;7 "pokey", "Clyde" "orange"
-  vdp_pal 0,0,0         ;8
-  vdp_pal $ff,$ff,0     ;9 "yellow", "pacman"
-  vdp_pal 0,0,0         ;a
-  vdp_pal $ff,$b8,$ae   ;b dark pink "food"
-  vdp_pal 0,$ff,0       ;c green
-  vdp_pal $47,$b8,$ae   ;d dark cyan
-  vdp_pal $21,$21,$ff   ;e blue => maze walls, ghosts "scared", ghost pupil
-  vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes, text
+    vdp_pal 0,0,0         ;0
+    vdp_pal $ff,0,0       ;1 "shadow", "blinky" red
+    vdp_pal $de,$97,$51   ;2 orange top, cherry stem "food"
+    vdp_pal $ff,$b8,$ff   ;3 "speedy", "pinky" pink
+    vdp_pal 0,0,0         ;4
+    vdp_pal 0,$ff,$ff     ;5 "bashful", "inky" cyan
+    vdp_pal $47,$b8,$ff   ;6 "light blue"
+    vdp_pal $ff,$b8,$51   ;7 "pokey", "Clyde" "orange"
+    vdp_pal 0,0,0         ;8
+    vdp_pal $ff,$ff,0     ;9 "yellow", "pacman"
+    vdp_pal 0,0,0         ;a
+    vdp_pal $ff,$b8,$ae   ;b dark pink "food"
+    vdp_pal 0,$ff,0       ;c green
+    vdp_pal $47,$b8,$ae   ;d dark cyan
+    vdp_pal $21,$21,$ff   ;e blue => maze walls, ghosts "scared", ghost pupil
+    vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes, text
 
 tiles:
     .include "pacman.tiles.rot.inc"
 
 sprite_patterns:
-    .include "pacman.ghosts.res"  ; 16 sprites
-    .include "pacman.pacman.res"  ;  8 sprites
+    .include "pacman.ghosts.res"  ; 20 sprites
+    .include "pacman.pacman.res"  ; 10 sprites
     .include "pacman.dying.res"   ; 11 sprites
-    .include "bonus.res"
-
+    .include "pacman.bonus.res"   ;  4 sprites
 
 shapes:
-; pacman
+; pacman  $00
     .byte $14*4+4,$14*4,$1c*4,$14*4 ;r  00
     .byte $1a*4+4,$1a*4,$1c*4,$1a*4 ;d  01
     .byte $16*4+4,$16*4,$1c*4,$16*4 ;l  10
@@ -711,12 +735,15 @@ shapes:
     .byte $0b*4,$0b*4,$13*4,$13*4 ;d  01
     .byte $09*4,$09*4,$11*4,$11*4 ;l  10
     .byte $0a*4,$0a*4,$12*4,$12*4 ;u  11
-; ghosts scared $30
+; ghosts frighened $30
     .byte $0e*4,$0e*4,$0c*4,$0c*4+4 ;r,d,l,u
 ; pacman dying
     .byte $28*4,$27*4,$26*4,$25*4
     .byte $24*4,$23*4,$22*4,$21*4
     .byte $20*4,$1f*4,$1e*4,$1d*4 ; empty sprite
+; ghosts bonus  $40
+    .byte $2c*4,$2b*4,$2a*4,$29*4
+
 
 table_4bpp_l:
   .byte <bonus_4bpp_cherry
