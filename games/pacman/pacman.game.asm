@@ -80,8 +80,6 @@ game_isr:
     border_color Color_Green
     jsr gfx_update
 
-    border_color Color_Gray
-
     ;jsr @call_state_fn
     jsr game_state_delay
     jsr game_init
@@ -96,7 +94,7 @@ game_isr:
 
     inc game_state+GameState::frames
 .ifdef __DEBUG
-    border_color Color_Cyan
+;    border_color Color_Cyan
     ;jsr debug
 .endif
 @exit:
@@ -285,26 +283,32 @@ actors_move:
 
 @ghost_hit:   stx game_state+GameState::catched_ghost ; ghost number
 
-              ;jsr short_dist_catched ; TODO possibility to inverse direction immediately when return
-
               lda #GHOST_MODE_BONUS
               sta ghost_mode,x
+
               lda game_state+GameState::ghosts_tocatch  ; select shape for bonus
               jsr ghost_set_shape
+
+              ;jsr short_dist_catched ; TODO possibility to inverse direction immediately when return
 
               ldx #ACTOR_PACMAN
               lda #Shape_Ix_Invisible
               sta actor_shape,x
 
-              lda game_state+GameState::ghosts_tocatch  ; select score
+              lda game_state+GameState::ghosts_tocatch  ; 3,2,1,0
               asl
-              adc #Pts_Index_Ghost_Catched    ; score
-              tay
+              adc #Pts_Index_Ghost_Catched    ; select score
               jsr add_score
 
               dec game_state+GameState::ghosts_tocatch
+              bpl :+
 
-              lda #STATE_GHOST_CATCHED
+              dec game_state+GameState::all_ghosts_cnt
+              bpl :+
+              lda #Pts_Index_All_Ghosts
+              jsr add_score
+
+:             lda #STATE_GHOST_CATCHED
               jmp game_set_state_frames_delay
 
 
@@ -373,9 +377,7 @@ move_dir:     lda actor_move,x
               cmp #GHOST_MODE_CATCHED
               beq short_dist   ; catched ?
 
-; random choose next direction
-;              .byte $db
-              jsr system_rng
+              jsr system_rng  ; choose next direction randomly
 @check_dir:   and #ACT_DIR
               sta target_dir
               cmp game_tmp2 ; discard inverse direction ?
@@ -424,7 +426,6 @@ move_soft:    jmp actor_move_soft
 halt:         .byte $db
               nop
               rts
-
 
 ; shortest distance to target via look ahead one tile in move direction
 ; same distance => order: up, left, down, right
@@ -562,11 +563,6 @@ ghost_leave_base:
 
 
 ghost_update_shape:
-;              lda shape_offs,y
- ;             sta ghost_shape_offs,x
-  ;            lda shape_mask,y
-   ;           sta ghost_shape_mask,x
-
               lda game_state+GameState::frames
               lsr
               lsr
@@ -762,8 +758,8 @@ pacman_collect:
               sta (p_maze),y
               jsr gfx_charout
               pla
-              tay
 add_score:
+              tay
               jsr @add_score
               jsr draw_scores
 
@@ -787,8 +783,7 @@ add_score:
               inc game_state+GameState::lives
               jmp gfx_lives
 
-@add_score:
-              sed
+@add_score:   sed
               clc
               lda game_state+GameState::score+0
               adc points+1,y ; readable bcd, top down
@@ -1032,21 +1027,20 @@ game_playing:
 
               ;jsr game_demo
               jsr actors_move
+              jsr update_target
 
               jsr animate_screen
               jsr animate_bonus
-
-              jsr update_target
 
               lda game_state+GameState::dots   ; all dots collected ?
               ;cmp #230
               bne @exit
 
-              ldy #Pts_Index_Level_Cleared
+              lda #Pts_Index_Level_Cleared
               jsr add_score
 
               ldx #ACTOR_PACMAN
-              lda #2  ; pacman shape complete "ball"
+              lda #Shape_Ix_Pacman  ; pacman shape complete "ball"
               sta actor_shape,x
 
               lda #STATE_LEVEL_CLEARED
@@ -1177,6 +1171,9 @@ game_level_init:
 
               lda #MAX_DOTS
               sta game_state+GameState::dots
+
+              lda #3
+              sta game_state+GameState::all_ghosts_cnt
 
               lda #0
               sta game_state+GameState::dot_cnt

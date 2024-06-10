@@ -180,44 +180,13 @@ gfx_sprites_off:
               plp
               rts
 
-_gfx_is_multiplex:
-              phx
-              ldx #ACTOR_BLINKY
-              jsr _gfx_test_sp_y
-              bcs  @exit ; no further check
-              ldx #ACTOR_INKY
-              jsr _gfx_test_sp_y
-              bcs  @exit ; no further check
-              ldx #ACTOR_PINKY
-              jsr _gfx_test_sp_y
-              bcs  @exit ; no further check
-              ldx #ACTOR_CLYDE
-              jsr _gfx_test_sp_y
-@exit:        plx
-              rts
-
-; X ghost y test with pacman y
-_gfx_test_sp_y:  ;
-              lda actor_sp_y,x
-              ldx #ACTOR_PACMAN
-              sec
-              sbc actor_sp_y,x
-              bpl :+
-              eor #$ff ; absolute |y1 - y2|
-:             cmp #$10 ; 16px ?
-              rts
-
 gfx_update:
               ldy #0
 
               lda game_state+GameState::frames
-              lsr
-              lsr
-              lsr
-              lsr
-              and #$01
+              and #$10
               beq :+
-              lda #6
+              lda #0 ; 6
 :             sta r2
 
               vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
@@ -236,7 +205,7 @@ gfx_update:
               ldx #ACTOR_PACMAN
               jsr _gfx_update_sprite_tab
 
-              jsr _gfx_is_multiplex
+              jsr @is_multiplex
               bcs @update_sprites
               ldx #7*4  ;y sprite_tab offset clyde eyes
               lda game_state+GameState::frames
@@ -252,36 +221,49 @@ gfx_update:
               ldx #9*4+1
               jmp vdp_memcpys
 
+@is_multiplex:
+              phx
+              ldx #ACTOR_BLINKY
+              jsr @test_sp_y
+              bcs  @exit ; no further check
+              ldx #ACTOR_INKY
+              jsr @test_sp_y
+              bcs  @exit ; no further check
+              ldx #ACTOR_PINKY
+              jsr @test_sp_y
+              bcs  @exit ; no further check
+              ldx #ACTOR_CLYDE
+              jsr @test_sp_y
+@exit:        plx
+              rts
+
+; X ghost y test with pacman y
+@test_sp_y:  ;
+              lda actor_sp_y,x
+              ldx #ACTOR_PACMAN
+              sec
+              sbc actor_sp_y,x
+              bpl :+
+              eor #$ff ; absolute |y1 - y2|
+:             cmp #$10 ; 16px ?
+              rts
+
 @sprite_color:
               lda ghost_mode,x
               cmp #GHOST_MODE_FRIGHT
               bne :+
-              eor r2
+              eor r2  ; end of frightened phase alternate colors
 :             phy
               tay
               lda ghost_color,x
               bcc :+
-              lda _gfx_colors_1st,y
+              lda sprite_colors_1st,y
 :             ldx #16    ;16 color lines per sprite
               jsr vdp_fills
-              lda _gfx_colors_2nd,y
+              lda sprite_colors_2nd,y
               ply
 _fills:       ldx #16
               jmp vdp_fills
-
-_gfx_colors_1st:
-    .byte Color_Bg
-    .byte Color_Bg
-    .byte Color_Blue
-    .byte Color_Cyan
-    .byte Color_Gray
-
-_gfx_colors_2nd:
-    .byte Color_Blue | SPRITE_CC | SPRITE_IC
-    .byte Color_Blue | SPRITE_CC | SPRITE_IC
-    .byte Color_Pink
-    .byte Color_Bg
-    .byte Color_Red
 
 _gfx_update_sprite_tab_2x:
               lda #$02
@@ -301,8 +283,10 @@ _gfx_update_sprite_tab:
               iny
               phy
               lda actor_shape,x
+              cmp #$40
+              bcs :+  ; bit 6 - shape offset $40
               ora r1
-              tay
+:             tay
               lda shapes,y
               ply
               sta sprite_tab_attr,y
@@ -313,14 +297,14 @@ _gfx_update_sprite_tab:
               rts
 
 gfx_display_maze:
-        ldx #3
-        ldy #0
-        sty sys_crs_x
-        sty sys_crs_y
-        setPtr game_maze, p_gfx
+              ldx #3
+              ldy #0
+              sty sys_crs_x
+              sty sys_crs_y
+              setPtr game_maze, p_gfx
 ;        setPtr maze, p_maze
-@loop:  jsr @put_char
-@next:  iny
+@loop:        jsr @put_char
+@next:        iny
         bne @loop
         inc p_gfx+1
  ;       inc p_maze+1
@@ -597,8 +581,6 @@ gfx_charout:
               phy
               pha
 
-;              assertA_eq Char_Superfood
-
               bgcolor Color_Gray
 
               jsr gfx_vram_crs
@@ -630,16 +612,16 @@ gfx_charout:
               sta r2
 @rows:        lda (p_tiles)
               ldy #3
-@cols:        vdp_wait_l 32
-              asl
+@cols:        asl
               rol
               pha
               rol
               and #$03
               tax
               lda r1
-              and @px_mask,x
+              and pixel_mask,x
               sta a_vram
+;              vdp_wait_l 32
               pla
               dey
               bpl @cols
@@ -664,10 +646,27 @@ gfx_charout:
               plx
               plp
               rts
-@px_mask:
-    .byte $00, $0f, $f0, $ff
 
 .data
+
+pixel_mask:
+    .byte $00, $0f, $f0, $ff
+
+sprite_colors_1st: ; color 1st ghost sprite for various ghost modes. normal, frightened, catched,...
+    .byte Color_Bg
+    .byte Color_Bg
+    .byte Color_Blue
+    .byte Color_Cyan
+    .byte Color_Gray
+
+sprite_colors_2nd:  ; color 2nd ghost sprite
+    .byte Color_Blue | SPRITE_CC | SPRITE_IC
+    .byte Color_Blue | SPRITE_CC | SPRITE_IC
+    .byte Color_Pink
+    .byte Color_Bg
+    .byte Color_Red
+
+
 vdp_init_bytes:  ; vdp init table - MODE G4
     .byte v_reg0_m4|v_reg0_m3|v_reg0_IE1
 vdp_reg1_init:
@@ -742,7 +741,7 @@ shapes:
     .byte $24*4,$23*4,$22*4,$21*4
     .byte $20*4,$1f*4,$1e*4,$1d*4 ; empty sprite
 ; ghosts bonus  $40
-    .byte $2c*4,$2b*4,$2a*4,$29*4
+    .byte $29*4,$2a*4,$2b*4,$2c*4
 
 
 table_4bpp_l:

@@ -92,6 +92,7 @@ Shape_Offset_Catched  = $20
 Shape_Offset_Fright   = $30
 Shape_Offset_Bonus    = $40
 
+Shape_Ix_Pacman       = 2
 Shape_Ix_Dying        = $34
 Shape_Ix_Invisible    = $3f
 
@@ -270,6 +271,7 @@ SKIP_DIR_CHECK    = $ff
   rng             .word   ; PRNG index
   mode            .byte   ; chase, scatter, frightened
 
+  all_ghosts_cnt  .byte   ; counter how often ALL ghosts where catched during a frightened phase
   ghosts_tocatch  .byte   ; ghosts to catch during a frightened phase, starts with 3
   catched_ghost   .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
 
