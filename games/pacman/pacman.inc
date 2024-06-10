@@ -269,7 +269,11 @@ SKIP_DIR_CHECK    = $ff
 
   ; game related
   rng             .word   ; PRNG index
-  mode            .byte   ; chase, scatter, frightened
+
+  mode            .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode
+  mode_ix         .byte   ;
+  mode_frames     .byte
+  mode_secs       .word   ; current mode count down seconds
 
   all_ghosts_cnt  .byte   ; counter how often ALL ghosts where catched during a frightened phase
   ghosts_tocatch  .byte   ; ghosts to catch during a frightened phase, starts with 3

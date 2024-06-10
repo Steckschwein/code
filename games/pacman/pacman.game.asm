@@ -160,6 +160,16 @@ game_ready_wait:
               bne @detect_joystick
               lda #18
               jsr delete_message
+
+              lda #0
+              sta game_state+GameState::mode_frames
+              sta game_state+GameState::mode_secs+0
+              sta game_state+GameState::mode_secs+1
+              lda #7  ; mode timinhs table index
+              sta game_state+GameState::mode_ix
+              lda #%01010101
+              sta game_state+GameState::mode
+
               lda #STATE_PLAYING
               jmp game_set_state
 @detect_joystick:
@@ -255,11 +265,6 @@ actors_invisible:
 
 
 actors_move:
-              ldx #ACTOR_PACMAN
-              jsr actor_update_charpos
-              jsr pacman_input
-              jsr pacman_move
-
               ldx #ACTOR_CLYDE
 @loop:        jsr ghost_move
               ldy #ACTOR_PACMAN
@@ -438,7 +443,8 @@ calc_distance:lda (p_maze),y
               bne :+
               cpy #ACT_UP
               beq @exit
-:             clc
+:
+              clc
               lda px
               adc _vectors_x,y
               sec
@@ -1016,7 +1022,7 @@ game_ghost_catched:
               lda #GHOST_MODE_CATCHED
               sta ghost_mode,x
               lda #STATE_PLAYING
-              jmp game_set_state_frames
+              jmp game_set_state
 @exit:        rts
 
 
@@ -1025,9 +1031,15 @@ game_playing:
               cmp #STATE_PLAYING
               bne @exit
 
+              ldx #ACTOR_PACMAN
+              jsr actor_update_charpos
+              jsr pacman_input
+              jsr pacman_move
+
+              jsr update_mode
+
               ;jsr game_demo
               jsr actors_move
-              jsr update_target
 
               jsr animate_screen
               jsr animate_bonus
@@ -1047,10 +1059,169 @@ game_playing:
               jmp game_set_state_frames_delay
 @exit:        rts
 
-update_target:
-              ; Ghosts are forced to reverse direction by the system anytime the mode changes from: chase-to-scatter, chase-to-frightened, scatter-to-chase, and scatter-to-frightened.
+
+mode_secs_l:
+    .byte 0,0,0
+    .byte 5,0,0
+    .byte 20,$09,$0d
+    .byte 5,5,5
+    .byte 20,20,20
+    .byte 7,7,5
+    .byte 20,20,20
+    .byte 7,7,5
+mode_secs_h:
+    .byte 0,0,0
+    .byte 0,0,0
+    .byte 0,$04,$04
+    .byte 0,0,0
+    .byte 0,0,0
+    .byte 0,0,0
+    .byte 0,0,0
+    .byte 0,0,0
+
+update_mode:
+              ; Ghosts are forced to reverse direction by the system anytime the mode changes from:
+              ; - chase-to-scatter
+              ; - chase-to-frightened
+              ; - scatter-to-chase
+              ; - scatter-to-frightened.
               ; Ghosts do not reverse direction when changing back from frightened to chase or scatter modes.
+              ;
+              ; MODE	  LEVEL 1	LEVELS 2-4	LEVELS 5+
+              ; Scatter	      7	         7	        5
+              ; Chase        20         20         20
+              ; Scatter	      7	         7	        5
+              ; Chase        20         20         20
+              ; Scatter       5          5          5
+              ; Chase        20       1033       1037
+              ; Scatter       5       1/60       1/60
+              ; Chase indefinite indefinite indefinite
+              dec game_state+GameState::mode_frames
+              bpl @select_mode
+              lda #59
+              sta game_state+GameState::mode_frames
+
+              lda game_state+GameState::mode_secs+0
+              bne @secs
+              dec game_state+GameState::mode_secs+1
+              bmi @switch_mode
+@secs:        dec game_state+GameState::mode_secs+0
               rts
+@switch_mode:
+              lda game_state+GameState::mode_ix
+              bmi @exit ; no more mode switches
+
+              asl ; *2
+              adc game_state+GameState::mode_ix ; *3
+              tay
+
+              lda game_state+GameState::level
+              cmp #1
+              beq @lvl_1
+              cmp #5
+              bcc @lvl_2_4
+              iny
+@lvl_2_4:     iny
+@lvl_1:       lda mode_secs_l,y
+              sta game_state+GameState::mode_secs+0
+              lda mode_secs_h,y
+              sta game_state+GameState::mode_secs+1
+
+              dec game_state+GameState::mode_ix
+
+              asl game_state+GameState::mode
+
+@select_mode: lda game_state+GameState::mode
+              ;jmp @chase
+              bpl @chase
+
+@scatter:     ldx #ACTOR_CLYDE
+:             lda ghost_init_sct_x,x
+              sta ghost_tgt_x,x
+              lda ghost_init_sct_y,x
+              sta ghost_tgt_y,x
+              dex
+              bpl :-
+@exit:        rts
+
+@chase:       ldx #ACTOR_PACMAN
+@target_pinky:
+              lda actor_move,x
+              and #ACT_DIR
+              tay
+              lda _vectors_x,y
+              asl
+              asl
+              adc actor_xpos,x
+              sta ghost_tgt_x+ACTOR_PINKY
+              lda _vectors_y,y
+              asl
+              asl
+              adc actor_ypos,x
+              sta ghost_tgt_y+ACTOR_PINKY
+
+@target_inky: lda actor_move,x
+              and #ACT_DIR
+              tay
+              lda _vectors_x,y
+              asl
+              adc actor_xpos,x
+              sec
+              sbc actor_xpos+ACTOR_BLINKY
+              asl
+              clc
+              adc actor_xpos+ACTOR_BLINKY
+              sta ghost_tgt_x+ACTOR_INKY
+              ;sta sys_crs_x
+
+              lda _vectors_y,y
+              asl
+              adc actor_ypos,x
+              sec
+              sbc actor_ypos+ACTOR_BLINKY
+              asl
+              clc
+              adc actor_ypos+ACTOR_BLINKY
+              sta ghost_tgt_y+ACTOR_INKY
+              ;sta sys_crs_y
+              ;lda #'X'
+;              .byte $db
+              ;jsr gfx_charout
+
+@target_clyde:
+              ldy #ACTOR_CLYDE
+              lda actor_xpos,x
+              sec
+              sbc actor_xpos,y
+              bpl :+
+              eor #$ff
+:             cmp #8
+              bcs @clyde_pacman
+              lda actor_ypos,x
+              sec
+              sbc actor_ypos,y
+              bpl :+
+              eor #$ff
+:             cmp #8
+              bcs @clyde_pacman
+@clyde_sct:   lda ghost_init_sct_x,y
+              sta ghost_tgt_x,y
+              lda ghost_init_sct_y,y
+              sta ghost_tgt_y,y
+              bcc @target_blinky
+@clyde_pacman:
+              jsr @tgt_pacman
+;              jsr gfx_charout
+@target_blinky:
+              ldy #ACTOR_BLINKY
+@tgt_pacman:
+              lda actor_xpos,x
+              sta ghost_tgt_x,y
+              lda actor_ypos,x
+              sta ghost_tgt_y,y
+              rts
+
+
 
 ; in: A - level
 ; out: Y - bonus
@@ -1372,16 +1543,12 @@ game_init_actors:
               sta ghost_shape_mask,x
               lda ghost_init_state,x
               sta ghost_strategy,x
+              lda ghost_init_color,x
+              sta ghost_color,x
               lda #0
               sta ghost_dot_limit,x
               lda #GHOST_MODE_NORM
               sta ghost_mode,x
-              lda ghost_init_sct_x,x
-              sta ghost_tgt_x,x
-              lda ghost_init_sct_y,x
-              sta ghost_tgt_y,x
-              lda ghost_init_color,x
-              sta ghost_color,x
 @init_actor:
               lda actor_init_x,x
               sta actor_sp_x,x
