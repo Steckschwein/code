@@ -41,7 +41,7 @@ Char_Maze_Mask      = $80   ;
 
 .define Char_Pts $2a,$2b,$2c
 
-FRAMES_DELAY = 0 ;$0f
+FRAMES_DELAY = $0f
 
 TXT_WAIT  =$01
 TXT_WAIT2 =$02

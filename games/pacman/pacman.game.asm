@@ -314,8 +314,7 @@ actors_move:
               jsr add_score
 
 :             lda #STATE_GHOST_CATCHED
-              jmp game_set_state_frames_delay
-
+              jmp game_set_state_frames
 
 ghost_move:   jsr actor_update_charpos
               jsr ghost_update_shape
@@ -1008,7 +1007,7 @@ game_ghost_catched:
               jsr animate_bonus
 
               lda game_state+GameState::frames
-              cmp #$3f
+              and #$3f
               bne @exit
 
               ldx #ACTOR_PACMAN
@@ -1321,9 +1320,9 @@ draw_frame:   ldx #3                ; init maze
 
 game_set_state_frames_delay:
               sta game_state+GameState::nextstate
-              ;lda #STATE_DELAY ; fast
+              lda #STATE_DELAY
 game_set_state_frames:
-              ldy #0   ; otherwise ready frames are skipped immediately
+              ldy #1   ; otherwise ready frames are skipped immediately
               sty game_state+GameState::frames
 game_set_state:
               sta game_state+GameState::state
