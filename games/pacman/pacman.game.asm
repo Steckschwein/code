@@ -17,19 +17,45 @@
   py:         .res 1  ; maze point y
 
 .code
+
 game:
     setIRQ game_isr, save_irq
 
-@loop:
+@init_state:
     lda #STATE_INIT
 @set_state:
     jsr game_set_state_frames
-@waitkey:
+
+@game_loop:
+
+:   lda game_state+GameState::vblank
+    beq :-
+    dec game_state+GameState::vblank
+
+    border_color Color_Green
+
+    ;jsr @call_state_fn
+    jsr game_playing
+    jsr game_state_delay
+    jsr game_init
+    jsr game_level_init
+    jsr game_ready
+    jsr game_ready_wait
+    jsr game_pacman_dying
+    jsr game_ghost_catched
+    jsr game_level_cleared
+    jsr game_game_over
+
+    jsr gfx_update_wait
+
+    border_color Color_Bg
+
     lda game_state+GameState::state
     cmp #STATE_INTRO
     beq @exit
     jsr io_getkey
-    bcc @waitkey
+    bcc @game_loop
+
     sta keyboard_input
     cmp #'d'
     bne :+
@@ -42,13 +68,23 @@ game:
     lda #STATE_PACMAN_DYING
     bne @set_state
 :   cmp #'r'
-    bne :+
-    lda #STATE_INIT
-    beq @set_state
-:   cmp #'i'
+    beq @init_state
+    cmp #'i'
     bne :+
     lda #STATE_LEVEL_INIT
     bne @set_state
+:   cmp #'c'
+    bne :+
+    lda #STATE_LEVEL_CLEARED
+    bne @set_state
+:   cmp #'p'
+    bne :+
+    lda game_state+GameState::state
+    eor #STATE_PAUSE
+    sta game_state+GameState::state
+    and #STATE_PAUSE
+    jsr gfx_pause
+    lda #0
 :   cmp #'1'
     bcc :+
     cmp #'4'+1
@@ -69,22 +105,11 @@ game:
     lda #'T'
     jsr sys_charout
     cli
-:   cmp #'c'
-    bne :+
-    lda #STATE_LEVEL_CLEARED
-    bne @set_state
-:   cmp #'p'
-    bne @exit_key
-    lda game_state+GameState::state
-    eor #STATE_PAUSE
-    sta game_state+GameState::state
-    and #STATE_PAUSE
-    jsr gfx_pause
-    lda #0
-@exit_key:
-    cmp #KEY_EXIT
-    bne @waitkey
-    lda #STATE_EXIT
+:   cmp #KEY_EXIT
+    beq :+
+    jmp @game_loop
+
+:   lda #STATE_EXIT
 @exit:
     sta game_state+GameState::state
     jsr sound_init
@@ -94,36 +119,22 @@ game:
 
 game_isr:
     push_axy
-    jsr io_isr
-    bpl @exit
+    jsr gfx_isr
+    bpl @io_isr
 
-    border_color Color_Green
-    jsr gfx_update
-
-    ;jsr @call_state_fn
-    jsr game_state_delay
-    jsr game_init
-    jsr game_level_init
-    jsr game_ready
-    jsr game_ready_wait
-    jsr game_playing
-    jsr game_pacman_dying
-    jsr game_ghost_catched
-    jsr game_level_cleared
-    jsr game_game_over
+    jsr gfx_update  ; timing critical
 
     inc game_state+GameState::frames
-.ifdef __DEBUG
-;    border_color Color_Cyan
-    ;jsr debug
-.endif
+    lda #1
+    sta game_state+GameState::vblank
+@io_isr:
+    jsr io_isr
 @exit:
-    border_color Color_Bg
     pop_axy
     rti
+
 @call_state_fn:
     jmp (game_state+GameState::fn)
-
 
 game_state_delay:
               lda game_state+GameState::state
@@ -371,12 +382,23 @@ ghost_return: cmp #GHOST_STATE_RETURN
               sta ghost_strategy,x
               rts
 
+
 move_target:
               lda actor_move,x
               jsr actor_center  ; center reached?
-              bne move_soft
+              beq @move_dir
+              jmp actor_move_soft
 
-move_dir:     lda actor_move,x
+@move_tunnel: lda actor_move,x
+              and #ACT_DIR
+              jmp set_direction
+
+@move_dir:    lda actor_ypos,x
+              beq @move_tunnel
+              cmp #$1b
+              bcs @move_tunnel
+
+              lda actor_move,x
               lsr ; next dir to current direction
               lsr
               and #ACT_DIR
@@ -385,7 +407,7 @@ move_dir:     lda actor_move,x
               cmp #Char_Base ; sanity check wont be C=1
               bcs halt
               cmp #Char_Tunnel
-              beq move_tunnel
+              beq @move_tunnel
 
               sec
               lda p_maze+0
@@ -450,10 +472,6 @@ set_direction:
               sta actor_move,x
 
 move_soft:    jmp actor_move_soft
-
-move_tunnel:  lda actor_move,x
-              and #ACT_DIR
-              jmp set_direction
 
 halt:         .byte $db
               nop
@@ -674,7 +692,6 @@ pacman_move:  lda pacman_delay
  ;             and #$01
        ;       bne @exit
 
-
               lda pacman_turn
               bpl @move_dir      ; turning?
               jsr actor_center
@@ -730,9 +747,6 @@ actor_move_sprite:
 
               clc
               lda actor_sp_y,x
-              ;cmp #$df
-              ;beq @exit
- ;             .byte $db
               adc _vectors_y,y
               sta actor_sp_y,x
 @exit:        rts
@@ -930,43 +944,10 @@ actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
               rts
 
 get_input:
-    ldy #0
-    lda keyboard_input
-    sty keyboard_input        ; "consume" key pressed
-    jmp io_player_direction   ; return C=1 if any valid key or joystick input, A=ACT_xxx
-
-debug:
-    pha
-    txa
-    pha
-    lda #11
-    sta sys_crs_x
-    lda #31
-    sta sys_crs_y
-    lda #Color_Text
-    sta text_color
-    ldx #ACTOR_PACMAN
-    lda actor_xpos,x
-    jsr out_hex_digits
-    lda actor_sp_x,x
-;    jsr out_hex_digits
-    lda actor_ypos,x
-    jsr out_hex_digits
-    lda actor_sp_y,x
-;    jsr out_hex_digits
-    lda input_direction
-    jsr out_hex_digits
-    lda actor_move,x
-    jsr out_hex_digits
-    lda pacman_turn,x
-    jsr out_hex_digits
-    lda keyboard_input
-    jsr out_hex_digits
-    pla
-    tax
-    pla
-    jsr out_hex_digits
-    rts
+              ldy #0
+              lda keyboard_input
+              sty keyboard_input        ; "consume" key pressed
+              jmp io_player_direction   ; return C=1 if any valid key or joystick input, A=ACT_xxx
 
 ; in:  .A - direction
 lda_actor_charpos_direction:
@@ -1168,7 +1149,7 @@ update_mode:
               asl game_state+GameState::mode
 
 @select_mode: lda game_state+GameState::mode
-              jmp @chase
+              ;jmp @chase
               bpl @chase
 
 @scatter:     ldx #ACTOR_CLYDE
@@ -1181,9 +1162,12 @@ update_mode:
 @exit:        rts
 
 @chase:       ldx #ACTOR_PACMAN
-@target_pinky:
               lda actor_move,x
-              and #ACT_DIR
+              and #ACT_NEXT_DIR
+              lsr
+              lsr
+              sta game_tmp
+@target_pinky:
               tay
               lda _vectors_x,y
               asl
@@ -1199,9 +1183,7 @@ update_mode:
               and #$1f
               sta ghost_tgt_y+ACTOR_PINKY
 
-@target_inky: lda actor_move,x
-              and #ACT_DIR
-              tay
+@target_inky: ldy game_tmp
               lda _vectors_x,y
               asl
               adc actor_xpos,x
@@ -1358,7 +1340,7 @@ game_set_state_frames_delay:
               sta game_state+GameState::nextstate
               ;lda #STATE_DELAY
 game_set_state_frames:
-              ldy #0   ; otherwise ready frames are skipped immediately
+              ldy #0 ;  ; otherwise ready frames are skipped immediately
               sty game_state+GameState::frames
 game_set_state:
               sta game_state+GameState::state

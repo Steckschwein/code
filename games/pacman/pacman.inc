@@ -203,17 +203,23 @@ SKIP_DIR_CHECK    = $ff
 
 .macro border_color color
    .ifdef __DEBUG
-     lda #color
-     jsr gfx_bordercolor
+    php
+    pha
+    lda #color
+    jsr gfx_bordercolor
+    pla
+    plp
    .endif
 .endmacro
 
 .macro bgcolor color
   .ifdef __DEBUG
+    php
     pha
     lda #color
     jsr gfx_bgcolor
     pla
+    plp
   .endif
 .endmacro
 
@@ -250,6 +256,7 @@ SKIP_DIR_CHECK    = $ff
   state           .byte
   nextstate       .byte   ; next state from delay
   frames          .byte
+  vblank          .byte   ; v-blank
 
   credit          .byte
 

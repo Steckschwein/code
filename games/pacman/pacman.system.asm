@@ -17,21 +17,24 @@
 .zeropage
     sys_crs_x:  .res 1
     sys_crs_y:  .res 1
-;    sys_p:      .res 2
 .code
 
 frame_isr:
     push_axy
 
-    jsr io_isr    ; v-blank?
+    jsr gfx_isr ; v-blank?
     bpl @exit
 
     bgcolor Color_Yellow
 
-    dec game_state+GameState::frames
+    inc game_state+GameState::frames
+    inc game_state+GameState::vblank
 
 @exit:
+    jsr io_isr
+
     bgcolor Color_Bg
+
     pop_axy
     rti
 

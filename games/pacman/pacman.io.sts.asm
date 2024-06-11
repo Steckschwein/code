@@ -23,11 +23,7 @@ io_init:
     rts
 
 io_isr:
-      jsr gfx_isr
-      pha
-      jsr fetchkey
-      pla
-      rts
+      jmp fetchkey
 
 io_irq_on:  ; nothing todo here on sts hw
       rts
