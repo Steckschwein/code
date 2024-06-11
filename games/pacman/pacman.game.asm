@@ -49,6 +49,26 @@ game:
     bne :+
     lda #STATE_LEVEL_INIT
     bne @set_state
+:   cmp #'1'
+    bcc :+
+    cmp #'4'+1
+    bcs :+
+    and #$0f
+    adc #$ff
+    tax
+    asl
+    clc
+    adc #1
+    sei
+    pha
+    ldy ghost_tgt_y,x
+    lda ghost_tgt_x,x
+    tax
+    pla
+    jsr sys_set_pen
+    lda #'T'
+    jsr sys_charout
+    cli
 :   cmp #'c'
     bne :+
     lda #STATE_LEVEL_CLEARED
@@ -280,7 +300,7 @@ actors_move:
               cmp #GHOST_MODE_NORM  ; othewise ghost catched
               bne @ghost_hit
 @pacman_hit:  lda #STATE_PACMAN_DYING
-              jmp game_set_state_frames_delay
+              ;jmp game_set_state_frames_delay
 
 @next:        dex
               bpl @loop
@@ -350,6 +370,7 @@ ghost_return: cmp #GHOST_STATE_RETURN
               lda #GHOST_STATE_ENTER
               sta ghost_strategy,x
               rts
+
 move_target:
               lda actor_move,x
               jsr actor_center  ; center reached?
@@ -363,6 +384,8 @@ move_dir:     lda actor_move,x
               jsr lda_actor_charpos_direction
               cmp #Char_Base ; sanity check wont be C=1
               bcs halt
+              cmp #Char_Tunnel
+              beq move_tunnel
 
               sec
               lda p_maze+0
@@ -391,14 +414,14 @@ move_dir:     lda actor_move,x
               tay
               lda (p_maze),y
               cmp #Char_Base
-              bcc next_direction
+              bcc tgt_direction
 @next_dir:    inc target_dir
               lda target_dir
               jmp @check_dir
 
 short_dist_catched:
-              lda #$ff
-              sta game_tmp2 ; allow inverse
+;              lda #$ff
+ ;             sta game_tmp2 ; allow inverse
 short_dist:
 ; check new direction in order up,left,down,right
               lda #$ff  ; init 16bit distance "far away"
@@ -417,8 +440,9 @@ short_dist:
 @next:        dec game_tmp
               bpl @check
 
-next_direction:
+tgt_direction:
               lda target_dir  ; setup next direction from calculation
+set_direction:
               asl
               asl
               ora #ACT_MOVE   ; enable move
@@ -426,6 +450,10 @@ next_direction:
               sta actor_move,x
 
 move_soft:    jmp actor_move_soft
+
+move_tunnel:  lda actor_move,x
+              and #ACT_DIR
+              jmp set_direction
 
 halt:         .byte $db
               nop
@@ -451,7 +479,11 @@ calc_distance:lda (p_maze),y
               bpl :+
               eor #$ff
 :             tay
-              lda _squares_l,y
+              cpy #$20
+              bcc :+
+              .byte $db
+              nop
+:             lda _squares_l,y
               sta rx1+0
               lda _squares_h,y
               sta rx1+1
@@ -465,7 +497,12 @@ calc_distance:lda (p_maze),y
               bpl :+
               eor #$ff
 :             tay
-              clc
+              cpy #$20
+              bcc :+
+              .byte $db
+              nop
+              nop
+:             clc
               lda _squares_l,y
               adc rx1+0
               sta rx1+0
@@ -1131,7 +1168,7 @@ update_mode:
               asl game_state+GameState::mode
 
 @select_mode: lda game_state+GameState::mode
-              ;jmp @chase
+              jmp @chase
               bpl @chase
 
 @scatter:     ldx #ACTOR_CLYDE
@@ -1152,11 +1189,14 @@ update_mode:
               asl
               asl
               adc actor_xpos,x
+              and #$1f
               sta ghost_tgt_x+ACTOR_PINKY
+
               lda _vectors_y,y
               asl
               asl
               adc actor_ypos,x
+              and #$1f
               sta ghost_tgt_y+ACTOR_PINKY
 
 @target_inky: lda actor_move,x
@@ -1170,8 +1210,8 @@ update_mode:
               asl
               clc
               adc actor_xpos+ACTOR_BLINKY
+              and #$1f
               sta ghost_tgt_x+ACTOR_INKY
-              ;sta sys_crs_x
 
               lda _vectors_y,y
               asl
@@ -1181,11 +1221,8 @@ update_mode:
               asl
               clc
               adc actor_ypos+ACTOR_BLINKY
+              and #$1f
               sta ghost_tgt_y+ACTOR_INKY
-              ;sta sys_crs_y
-              ;lda #'X'
-;              .byte $db
-              ;jsr gfx_charout
 
 @target_clyde:
               ldy #ACTOR_CLYDE
@@ -1219,7 +1256,6 @@ update_mode:
               lda actor_ypos,x
               sta ghost_tgt_y,y
               rts
-
 
 
 ; in: A - level
@@ -1320,9 +1356,9 @@ draw_frame:   ldx #3                ; init maze
 
 game_set_state_frames_delay:
               sta game_state+GameState::nextstate
-              lda #STATE_DELAY
+              ;lda #STATE_DELAY
 game_set_state_frames:
-              ldy #1   ; otherwise ready frames are skipped immediately
+              ldy #0   ; otherwise ready frames are skipped immediately
               sty game_state+GameState::frames
 game_set_state:
               sta game_state+GameState::state
