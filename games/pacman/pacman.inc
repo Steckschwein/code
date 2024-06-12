@@ -269,6 +269,7 @@ SKIP_DIR_CHECK    = $ff
   level           .byte   ; the current level
   dots            .byte   ; remaining dots count down - MAX_DOTS at start
   dot_cnt         .byte   ; in level dot counter - set/reset if a life is lost
+
   bonus           .byte   ; bonus of current level
   bonus_cnt       .byte   ; bonus available (frame) counter
   bonus_life      .word   ; trigger for next bonus life (BCD) - TT T digit
@@ -278,10 +279,10 @@ SKIP_DIR_CHECK    = $ff
   ; game related
   rng             .word   ; PRNG index
 
-  mode            .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode
-  mode_ix         .byte   ;
-  mode_frames     .byte
-  mode_secs       .word   ; current mode count down seconds
+  frghtd_timer    .word   ; frightened mode timer
+  sctchs_mode     .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode
+  sctchs_ix       .byte   ; scatter/chase timings table index
+  sctchs_timer    .word   ; current mode count down secs * frames - e.g. 1s => 60
 
   all_ghosts_cnt  .byte   ; counter how often ALL ghosts where catched during a frightened phase
   ghosts_tocatch  .byte   ; ghosts to catch during a frightened phase, starts with 3

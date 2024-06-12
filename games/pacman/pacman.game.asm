@@ -193,13 +193,14 @@ game_ready_wait:
               jsr delete_message
 
               lda #0
-              sta game_state+GameState::mode_frames
-              sta game_state+GameState::mode_secs+0
-              sta game_state+GameState::mode_secs+1
-              lda #7  ; mode timinhs table index
-              sta game_state+GameState::mode_ix
+              sta game_state+GameState::sctchs_timer+0
+              sta game_state+GameState::sctchs_timer+1
+              sta game_state+GameState::frghtd_timer+0
+              sta game_state+GameState::frghtd_timer+1
+              lda #7  ; mode timings table index
+              sta game_state+GameState::sctchs_ix
               lda #%01010101
-              sta game_state+GameState::mode
+              sta game_state+GameState::sctchs_mode
 
               lda #STATE_PLAYING
               jmp game_set_state
@@ -258,9 +259,19 @@ game_game_over:
 @exit:        rts
 
 
+actors_mode:
+              ldy #ACTOR_CLYDE
+@next:        ldx ghost_mode,y
+              cpx #GHOST_MODE_CATCHED
+              beq @skip
+              sta ghost_mode,y
+@skip:        dey
+              bpl @next
+              rts
+
 actors_invisible:
+              ldy #ACTOR_CLYDE
               lda #Shape_Ix_Invisible
-              ldx #ACTOR_CLYDE
 :             sta actor_shape,x
               dex
               bpl :-
@@ -346,6 +357,7 @@ actors_move:
 
 :             lda #STATE_GHOST_CATCHED
               jmp game_set_state_frames
+
 
 ghost_move:   jsr actor_update_charpos
               jsr ghost_update_shape
@@ -718,7 +730,7 @@ pacman_move:  lda pacman_delay
               lda actor_move,x  ; otherwise stop move
               and #<~ACT_MOVE
               sta actor_move,x
-              and #ACT_NEXT_DIR ; set shape of next direction
+              and #ACT_NEXT_DIR ; set shape of make pacman visible again, next direction
               sta actor_shape,x
               rts
 @move_soft:
@@ -758,28 +770,22 @@ pacman_collect:
               sty sys_crs_y
               jsr lda_maze_ptr_ay
               cmp #Char_Energizer
-              bne :+
+              bne @is_dot
               dec game_state+GameState::dots
 
-              lda #3
-              sta game_state+GameState::ghosts_tocatch
-              lda #GHOST_MODE_FRIGHT
-              sta ghost_mode+ACTOR_BLINKY
-              sta ghost_mode+ACTOR_PINKY
-              sta ghost_mode+ACTOR_INKY
-              sta ghost_mode+ACTOR_CLYDE
+              jsr mode_frightened
 
               lda #Delay_Energizer
               sta pacman_delay
               lda #Pts_Index_Energizer
               bne @score_and_erase
-:             cmp #Char_Dot
-              bne :+
+@is_dot:      cmp #Char_Dot
+              bne @is_bonus
               dec game_state+GameState::dots
               inc pacman_delay
               lda #Pts_Index_Dot
               beq @score_and_erase  ; dots index is 0
-:             cmp #Char_Bonus
+@is_bonus:    cmp #Char_Bonus
               beq @bonus
               rts
 
@@ -1030,7 +1036,7 @@ game_ghost_catched:
 
               ldx #ACTOR_PACMAN
               lda actor_move,x
-              and #ACT_NEXT_DIR ; set shape
+              and #ACT_NEXT_DIR ; make pacman visible again, set shape
               sta actor_shape,x
 
               ldx game_state+GameState::catched_ghost
@@ -1077,59 +1083,52 @@ game_playing:
 @exit:        rts
 
 
-mode_secs_l:
-    .byte 0,0,0
-    .byte 5,0,0
-    .byte 20,$09,$0d
-    .byte 5,5,5
-    .byte 20,20,20
-    .byte 7,7,5
-    .byte 20,20,20
-    .byte 7,7,5
-mode_secs_h:
-    .byte 0,0,0
-    .byte 0,0,0
-    .byte 0,$04,$04
-    .byte 0,0,0
-    .byte 0,0,0
-    .byte 0,0,0
-    .byte 0,0,0
-    .byte 0,0,0
-
-update_mode:
-              ; Ghosts are forced to reverse direction by the system anytime the mode changes from:
-              ; - chase-to-scatter
-              ; - chase-to-frightened
-              ; - scatter-to-chase
-              ; - scatter-to-frightened.
-              ; Ghosts do not reverse direction when changing back from frightened to chase or scatter modes.
-              ;
-              ; MODE	  LEVEL 1	LEVELS 2-4	LEVELS 5+
-              ; Scatter	      7	         7	        5
-              ; Chase        20         20         20
-              ; Scatter	      7	         7	        5
-              ; Chase        20         20         20
-              ; Scatter       5          5          5
-              ; Chase        20       1033       1037
-              ; Scatter       5       1/60       1/60
-              ; Chase indefinite indefinite indefinite
-              dec game_state+GameState::mode_frames
-              bpl @select_mode
-              lda #59
-              sta game_state+GameState::mode_frames
-
-              lda game_state+GameState::mode_secs+0
-              bne @secs
-              dec game_state+GameState::mode_secs+1
-              bmi @switch_mode
-@secs:        dec game_state+GameState::mode_secs+0
+mode_frightened:
+              lda #GHOST_MODE_FRIGHT
+              jsr actors_mode
+              lda #3
+              sta game_state+GameState::ghosts_tocatch
+              lda #<(59*6)
+              sta game_state+GameState::frghtd_timer+0
+              lda #>(59*6)
+              sta game_state+GameState::frghtd_timer+1
               rts
-@switch_mode:
-              lda game_state+GameState::mode_ix
-              bmi @exit ; no more mode switches
+
+update_mode:  ; Ghosts are forced to reverse direction by the system anytime the mode changes from:
+              ;   - chase-to-scatter
+              ;   - chase-to-frightened
+              ;   - scatter-to-chase
+              ;   - scatter-to-frightened.
+              ; Ghosts do not reverse direction when changing back from frightened to chase or scatter modes.
+              ; ghosts enter frightened mode, the scatter/chase timer is paused...  time runs out, they return to the mode they were in
+              ;
+              lda game_state+GameState::frghtd_timer+0
+              bne :+
+              lda game_state+GameState::frghtd_timer+1
+              beq @switch
+              dec game_state+GameState::frghtd_timer+1
+:             dec game_state+GameState::frghtd_timer+0
+              rts
+
+@switch:
+              lda #GHOST_MODE_NORM
+              jsr actors_mode
+
+              lda game_state+GameState::sctchs_timer+0
+              bne @secs
+              dec game_state+GameState::sctchs_timer+1
+              bmi @switch_mode
+@secs:        dec game_state+GameState::sctchs_timer+0
+              and #$07
+              beq @select_mode
+              rts
+
+@switch_mode: ;.byte $db
+              lda game_state+GameState::sctchs_ix
+              bmi @exit ; underrun, no more mode switches
 
               asl ; *2
-              adc game_state+GameState::mode_ix ; *3
+              adc game_state+GameState::sctchs_ix ; *3
               tay
 
               lda game_state+GameState::level
@@ -1139,20 +1138,20 @@ update_mode:
               bcc @lvl_2_4
               iny
 @lvl_2_4:     iny
-@lvl_1:       lda mode_secs_l,y
-              sta game_state+GameState::mode_secs+0
-              lda mode_secs_h,y
-              sta game_state+GameState::mode_secs+1
+@lvl_1:       lda mode_timer_l,y
+              sta game_state+GameState::sctchs_timer+0
+              lda mode_timer_h,y
+              sta game_state+GameState::sctchs_timer+1
 
-              dec game_state+GameState::mode_ix
+              dec game_state+GameState::sctchs_ix
 
-              asl game_state+GameState::mode
+              asl game_state+GameState::sctchs_mode
 
-@select_mode: lda game_state+GameState::mode
+@select_mode: lda game_state+GameState::sctchs_mode
               ;jmp @chase
               bpl @chase
 
-@scatter:     ldx #ACTOR_CLYDE
+@scatter:     ldx #ACTOR_CLYDE ; set scatter targets to all ghosts
 :             lda ghost_init_sct_x,x
               sta ghost_tgt_x,x
               lda ghost_init_sct_y,x
@@ -1337,9 +1336,9 @@ draw_frame:   ldx #3                ; init maze
 
 game_set_state_frames_delay:
               sta game_state+GameState::nextstate
-              lda #STATE_DELAY ; fast start
+              ;lda #STATE_DELAY ; fast start
 game_set_state_frames:
-              ldy #1  ; otherwise ready frames are skipped immediately
+              ldy #0 ; otherwise ready frames are skipped immediately
               sty game_state+GameState::frames
 game_set_state:
               sta game_state+GameState::state
@@ -1500,7 +1499,7 @@ game_init:
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #3 ; start with level 1
+              lda #18 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
@@ -1602,6 +1601,38 @@ ghost_init_state:
     .byte GHOST_STATE_BASE
     .byte GHOST_STATE_BASE
 
+
+; MODE	  LEVEL 1	LEVELS 2-4	LEVELS 5+
+; Scatter	      7	         7	        5
+; Chase        20         20         20
+; Scatter	      7	         7	        5
+; Chase        20         20         20
+; Scatter       5          5          5
+; Chase        20       1033       1037
+; Scatter       5       1/60       1/60
+; Chase indefinite indefinite indefinite
+;
+; inverse order
+mode_timer_l:
+    .byte       0,        0,0
+    .byte <(59*05),       0,0
+    .byte <(59*20),<(59*09),<(59*$0d)
+    .byte <(59*05),<(59*05),<(59*05)
+    .byte <(59*20),<(59*20),<(59*20)
+    .byte <(59*07),<(59*07),<(59*05)
+    .byte <(59*20),<(59*20),<(59*20)
+    .byte <(59*07),<(59*07),<(59*05)
+mode_timer_h:
+    .byte       0,        0,0
+    .byte >(59*05),       0,0
+    .byte >(59*20),>(59*09),>(59*$0d)
+    .byte >(59*05),>(59*05),>(59*05)
+    .byte >(59*20),>(59*20),>(59*20)
+    .byte >(59*07),>(59*07),>(59*05)
+    .byte >(59*20),>(59*20),>(59*20)
+    .byte >(59*07),>(59*07),>(59*05)
+
+; squares for 0..31
 _squares_l:
     .byte $01,$01,$04,$09,$10,$19,$24,$31,$40,$51,$64,$79,$90,$A9,$C4,$E1,$00,$21,$44,$69,$90,$B9,$E4,$11,$40,$71,$A4,$D9,$10,$49,$84,$C1
 _squares_h:

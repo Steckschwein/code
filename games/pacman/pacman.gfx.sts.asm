@@ -235,14 +235,18 @@ gfx_update:
 ; prepare timing critical gfx update
 gfx_prepare_update:
               bgcolor Color_Blue
-              ldy #0
+
+              lda game_state+GameState::frghtd_timer+0
+              ora game_state+GameState::frghtd_timer+1
+              beq @update
 
               lda game_state+GameState::frames
               and #$10
               beq :+
-              lda #0 ; 6
+              lda #6
 :             sta r2
 
+@update:      ldy #0
               ldx #ACTOR_BLINKY
 :             jsr _gfx_update_sprite_tab_2x
               inx
