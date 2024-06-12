@@ -46,7 +46,7 @@ game:
     jsr game_level_cleared
     jsr game_game_over
 
-    jsr gfx_update_wait
+    jsr gfx_prepare_update
 
     border_color Color_Bg
 
@@ -141,7 +141,7 @@ game_state_delay:
               cmp #STATE_DELAY
               bne @exit
 
-              lda game_state+GameState::nextstate ; code smell
+              lda game_state+GameState::nextstate ; FIXME code smell - delay but during dying pacman we must animate the screen
               cmp #STATE_PACMAN_DYING
               bne :+
               jsr animate_screen
@@ -1229,7 +1229,6 @@ update_mode:
               bcc @target_blinky
 @clyde_pacman:
               jsr @tgt_pacman
-;              jsr gfx_charout
 @target_blinky:
               ldy #ACTOR_BLINKY
 @tgt_pacman:
@@ -1338,9 +1337,9 @@ draw_frame:   ldx #3                ; init maze
 
 game_set_state_frames_delay:
               sta game_state+GameState::nextstate
-              ;lda #STATE_DELAY
+              lda #STATE_DELAY ; fast start
 game_set_state_frames:
-              ldy #0 ;  ; otherwise ready frames are skipped immediately
+              ldy #1  ; otherwise ready frames are skipped immediately
               sty game_state+GameState::frames
 game_set_state:
               sta game_state+GameState::state

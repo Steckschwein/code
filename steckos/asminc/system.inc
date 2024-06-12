@@ -36,7 +36,7 @@ IRQ_IO0       = 1<<0  ; i/o port 0 (card slot 0)
 
 ;...
 
-clockspeed  = 10  ; in Mhz
+clockspeed  = 4  ; in Mhz
 
 ctrl_port   = $0230
 

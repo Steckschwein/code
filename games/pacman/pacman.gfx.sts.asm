@@ -11,7 +11,7 @@
 .export gfx_isr
 .export gfx_charout
 .export gfx_update
-.export gfx_update_wait
+.export gfx_prepare_update
 .export gfx_display_maze
 .export gfx_pause
 
@@ -123,9 +123,9 @@ gfx_isr:
               lda scanline
               ldy #v_reg19
               jsr vdp_set_reg
-              cmp #scln_top
+              cmp #line ; vblank after scanline setup to line (192)
               bne :+
-              ldx #$80  ; signal vblank
+              ldx #$80  ; signal vblank (bit 7)
 :
               txa
               rts
@@ -232,8 +232,8 @@ gfx_update:
 
               rts
 
-; update gfx and wait
-gfx_update_wait:
+; prepare timing critical gfx update
+gfx_prepare_update:
               bgcolor Color_Blue
               ldy #0
 
