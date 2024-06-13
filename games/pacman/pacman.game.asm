@@ -10,25 +10,22 @@
 .importzp sys_crs_x, sys_crs_y
 
 .zeropage
-  game_tmp:   .res 1
-  game_tmp2:  .res 1
-  rx1:        .res 2
-  px:         .res 1  ; maze point x
-  py:         .res 1  ; maze point y
+              game_tmp:   .res 1
+              game_tmp2:  .res 1
+              rx1:        .res 2
+              px:         .res 1  ; maze point x
+              py:         .res 1  ; maze point y
 
 .code
 
 game:
-    setIRQ game_isr, save_irq
+              setIRQ game_isr, save_irq
 
-@init_state:
-    lda #STATE_INIT
-@set_state:
-    jsr game_set_state_frames
+@init_state:  lda #STATE_INIT
+@set_state:   jsr game_set_state_frames
 
 @game_loop:
-
-:   lda game_state+GameState::vblank
+:   lda game_state+GameState::vblank  ; wait vblank
     beq :-
     dec game_state+GameState::vblank
 
@@ -55,7 +52,6 @@ game:
     beq @exit
     jsr io_getkey
     bcc @game_loop
-
     sta keyboard_input
     cmp #'d'
     bne :+
@@ -117,10 +113,13 @@ game:
     restoreIRQ save_irq
     rts
 
+@call_state_fn:
+    jmp (game_state+GameState::fn)
+
 game_isr:
     push_axy
     jsr gfx_isr
-    bpl @io_isr
+    bpl @io_isr ; vblank from gfx?
 
     jsr gfx_update  ; timing critical
 
@@ -132,9 +131,6 @@ game_isr:
 @exit:
     pop_axy
     rti
-
-@call_state_fn:
-    jmp (game_state+GameState::fn)
 
 game_state_delay:
               lda game_state+GameState::state
@@ -354,6 +350,9 @@ actors_move:
               bpl :+
               lda #Pts_Index_All_Ghosts
               jsr add_score
+              lda #Pts_Index_All_Ghosts
+              jsr add_score
+
 
 :             lda #STATE_GHOST_CATCHED
               jmp game_set_state_frames
@@ -700,10 +699,9 @@ pacman_move:  lda pacman_delay
 @exit:        rts
 
 :
-;              lda game_state+GameState::frames
- ;             and #$01
+              lda game_state+GameState::frames
+              and #$01
        ;       bne @exit
-
               lda pacman_turn
               bpl @move_dir      ; turning?
               jsr actor_center
@@ -726,6 +724,7 @@ pacman_move:  lda pacman_delay
               and #ACT_DIR
               jsr actor_can_move_to_direction
               bcc @move_soft    ; C=0 - can move to
+
 
               lda actor_move,x  ; otherwise stop move
               and #<~ACT_MOVE
@@ -820,9 +819,9 @@ pacman_collect:
               sta (p_maze),y
               jsr gfx_charout
               pla
-add_score:
-              tay
-              jsr @add_score
+
+add_score:    jsr @add_score
+
               jsr draw_scores
 
               lda game_state+GameState::score+2
@@ -834,7 +833,7 @@ add_score:
               jsr system_dip_switches_bonus_life
               stx game_tmp
               sed
-              clc
+              clc ; calc next bonus life threshold
               adc game_state+GameState::bonus_life+0
               sta game_state+GameState::bonus_life+0
               lda game_state+GameState::bonus_life+1
@@ -845,13 +844,14 @@ add_score:
               inc game_state+GameState::lives
               jmp gfx_lives
 
-@add_score:   sed
+ @add_score:  tay
+              sed
               clc
               lda game_state+GameState::score+0
-              adc points+1,y ; readable bcd, top down
+              adc scoring_table+1,y ; readable bcd from table
               sta game_state+GameState::score+0
               lda game_state+GameState::score+1
-              adc points+0,y
+              adc scoring_table+0,y
               sta game_state+GameState::score+1
               lda game_state+GameState::score+2
               adc #0
@@ -902,10 +902,10 @@ pacman_input:
               cmp input_direction
               beq @set_input_dir_to_current_dir
 
-;              lda actor_ypos,x      ;is tunnel ?
- ;             beq @exit                    ;ypos=0
-  ;            cmp #28                  ;... or >=28
-   ;           bcs @exit                    ;ignore input
+              lda actor_ypos,x      ; is tunnel ?
+              beq @exit             ; ypos == 0
+              cmp #28               ; ... or >=28
+              bcs @exit             ; ignore input
 
               lda input_direction
               jsr pacman_cornering
@@ -1105,12 +1105,12 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               lda game_state+GameState::frghtd_timer+0
               bne :+
               lda game_state+GameState::frghtd_timer+1
-              beq @switch
+              beq @scatter_chase
               dec game_state+GameState::frghtd_timer+1
 :             dec game_state+GameState::frghtd_timer+0
               rts
 
-@switch:
+@scatter_chase:
               lda #GHOST_MODE_NORM
               jsr actors_mode
 
@@ -1119,7 +1119,7 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               dec game_state+GameState::sctchs_timer+1
               bmi @switch_mode
 @secs:        dec game_state+GameState::sctchs_timer+0
-              and #$07
+              and #$3f
               beq @select_mode
               rts
 
@@ -1143,8 +1143,24 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               lda mode_timer_h,y
               sta game_state+GameState::sctchs_timer+1
 
-              dec game_state+GameState::sctchs_ix
+              lda game_state+GameState::sctchs_ix
+              cmp #7
+              beq @skip_inverse
 
+              ldx #ACTOR_CLYDE
+:             lda actor_move,x  ; change direction
+              and #<~ACT_NEXT_DIR
+              sta actor_move,x
+              eor #ACT_MOVE_INVERSE
+              asl
+              asl
+              and #ACT_NEXT_DIR
+              ora actor_move,x
+              sta actor_move,x
+              dex
+              bpl :-
+@skip_inverse:
+              dec game_state+GameState::sctchs_ix
               asl game_state+GameState::sctchs_mode
 
 @select_mode: lda game_state+GameState::sctchs_mode
@@ -1238,8 +1254,8 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               rts
 
 
-; in: A - level
-; out: Y - bonus
+; in: A - level 1..$ff
+; out: Y - bonus -
 bonus_for_level:
               tay
               cmp #2+1 ; level 1 or 2 bonus 1 or 2
@@ -1450,7 +1466,7 @@ animate_screen:
 animate_energizer:
               ldy #Color_Food
               lda game_state+GameState::frames
-              and #$08
+              and #$08  ; TODO colour every 10 frames.
               bne draw_energizer
               tay
 draw_energizer:
@@ -1499,7 +1515,7 @@ game_init:
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #18 ; start with level 1
+              lda #1 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
@@ -1671,8 +1687,8 @@ _text_game_over:
 
 
 
-points: ; score values in BCD format
-Pts_Index_Dot=(*-points)
+scoring_table: ; score values in BCD format
+Pts_Index_Dot=(*-scoring_table)
   .byte $00,$10 ; dot / pill
 ; bonus at 70 dots, 170 dots - visible between nine and ten seconds. The exact duration (i.e., 9.3333 seconds, 10.0 seconds, 9.75
   .byte $01,$00 ; cherry
@@ -1683,17 +1699,17 @@ Pts_Index_Dot=(*-points)
   .byte $20,$00 ; galaxian
   .byte $30,$00 ; bell
   .byte $50,$00 ; key
-Pts_Index_Energizer=(*-points)
+Pts_Index_Energizer=(*-scoring_table)
   .byte $00,$50 ; energizer
-Pts_Index_Level_Cleared=(*-points)
+Pts_Index_Level_Cleared=(*-scoring_table)
   .byte $26,$00 ; level cleared
-Pts_Index_Ghost_Catched=(*-points)
+Pts_Index_Ghost_Catched=(*-scoring_table)
   .byte $16,$00 ; ghost catched 200,400,800,1600pts (shift left for any further ghost) - blue time reduced from 7 to 2s
   .byte $08,$00 ;
   .byte $04,$00 ;
   .byte $02,$00 ;
-Pts_Index_All_Ghosts=(*-points) ;TODO
-  .byte $01,$20,$00 ; 4 times all ghosts catched, 12.000 pts extra
+Pts_Index_All_Ghosts=(*-scoring_table) ;TODO
+  .byte $60,$00 ; 4 times all ghosts catched, 12.000 pts extra => 2 * 6.000
 
 points_digits:
   .byte Char_Blank,$01,$05,Char_Blank
