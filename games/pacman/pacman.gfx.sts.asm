@@ -236,11 +236,11 @@ gfx_update:
 gfx_prepare_update:
               bgcolor Color_Blue
 
+              lda game_state+GameState::frghtd_timer+1
+              bne @update
               lda game_state+GameState::frghtd_timer+0
-              ora game_state+GameState::frghtd_timer+1
               beq @update
-
-              lda game_state+GameState::frames
+              bmi @update
               and #$10
               beq :+
               lda #6

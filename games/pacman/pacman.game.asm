@@ -1088,11 +1088,19 @@ mode_frightened:
               jsr actors_mode
               lda #3
               sta game_state+GameState::ghosts_tocatch
-              lda #<(59*6)
+
+              ldy game_state+GameState::level
+              cpy #17 ; no frightened in level 17
+              beq @exit
+              cpy #19 ; no frightened in level 19+
+              bcs @exit
+
+              dey ; adjust for lookup
+              lda frghtd_timer_l,y
               sta game_state+GameState::frghtd_timer+0
-              lda #>(59*6)
+              lda frghtd_timer_h,y
               sta game_state+GameState::frghtd_timer+1
-              rts
+@exit:        rts
 
 update_mode:  ; Ghosts are forced to reverse direction by the system anytime the mode changes from:
               ;   - chase-to-scatter
@@ -1631,22 +1639,62 @@ ghost_init_state:
 ; inverse order
 mode_timer_l:
     .byte       0,        0,0
-    .byte <(59*05),       0,0
-    .byte <(59*20),<(59*09),<(59*$0d)
-    .byte <(59*05),<(59*05),<(59*05)
-    .byte <(59*20),<(59*20),<(59*20)
-    .byte <(59*07),<(59*07),<(59*05)
-    .byte <(59*20),<(59*20),<(59*20)
-    .byte <(59*07),<(59*07),<(59*05)
+    .byte <(60*05),       0,0
+    .byte <(60*20),<(60*09),<(60*$0d)
+    .byte <(60*05),<(60*05),<(60*05)
+    .byte <(60*20),<(60*20),<(60*20)
+    .byte <(60*07),<(60*07),<(60*05)
+    .byte <(60*20),<(60*20),<(60*20)
+    .byte <(60*07),<(60*07),<(60*05)
 mode_timer_h:
     .byte       0,        0,0
-    .byte >(59*05),       0,0
-    .byte >(59*20),>(59*09),>(59*$0d)
-    .byte >(59*05),>(59*05),>(59*05)
-    .byte >(59*20),>(59*20),>(59*20)
-    .byte >(59*07),>(59*07),>(59*05)
-    .byte >(59*20),>(59*20),>(59*20)
-    .byte >(59*07),>(59*07),>(59*05)
+    .byte >(60*05),       0,0
+    .byte >(60*20),>(60*09),>(60*$0d)
+    .byte >(60*05),>(60*05),>(60*05)
+    .byte >(60*20),>(60*20),>(60*20)
+    .byte >(60*07),>(60*07),>(60*05)
+    .byte >(60*20),>(60*20),>(60*20)
+    .byte >(60*07),>(60*07),>(60*05)
+
+frghtd_timer_l:
+    .byte <(60*06)  ; level 1
+    .byte <(60*05)  ;
+    .byte <(60*04)
+    .byte <(60*03)
+    .byte <(60*02)  ; level 5
+    .byte <(60*05)
+    .byte <(60*02)
+    .byte <(60*02)
+    .byte <(60*01)
+    .byte <(60*05)  ; level 10
+    .byte <(60*02)
+    .byte <(60*01)
+    .byte <(60*01)
+    .byte <(60*03)
+    .byte <(60*01)
+    .byte <(60*01)
+    .byte 0         ; level 17
+    .byte <(60*01)  ; level 18
+
+frghtd_timer_h:
+    .byte >(60*06)  ; level 1
+    .byte >(60*05)  ;
+    .byte >(60*04)
+    .byte >(60*03)
+    .byte >(60*02)  ; level 5
+    .byte >(60*05)
+    .byte >(60*02)
+    .byte >(60*02)
+    .byte >(60*01)
+    .byte >(60*05)  ; level 10
+    .byte >(60*02)
+    .byte >(60*01)
+    .byte >(60*01)
+    .byte >(60*03)
+    .byte >(60*01)
+    .byte >(60*01)
+    .byte 0         ; level 17
+    .byte >(60*01)  ; level 18
 
 ; squares for 0..31
 _squares_l:

@@ -280,6 +280,7 @@ SKIP_DIR_CHECK    = $ff
   rng             .word   ; PRNG index
 
   frghtd_timer    .word   ; frightened mode timer
+;  frghtd_flash    .byte   ; flashing ghosts at end of frightened phase
   sctchs_mode     .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode
   sctchs_ix       .byte   ; scatter/chase timings table index
   sctchs_timer    .word   ; current mode count down secs * frames - e.g. 1s => 60
