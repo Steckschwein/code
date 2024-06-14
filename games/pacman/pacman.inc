@@ -279,8 +279,10 @@ SKIP_DIR_CHECK    = $ff
   ; game related
   rng             .word   ; PRNG index
 
-  frghtd_timer    .word   ; frightened mode timer
-;  frghtd_flash    .byte   ; flashing ghosts at end of frightened phase
+  speed_cnt_pcmn  .byte
+  speed_cnt_ghst  .byte
+
+  frghtd_timer    .word   ; frightened mode timer in secs * frames
   sctchs_mode     .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode
   sctchs_ix       .byte   ; scatter/chase timings table index
   sctchs_timer    .word   ; current mode count down secs * frames - e.g. 1s => 60
@@ -289,32 +291,6 @@ SKIP_DIR_CHECK    = $ff
   ghosts_tocatch  .byte   ; ghosts to catch during a frightened phase, starts with 3
   catched_ghost   .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
 
-.endstruct
-
-  ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
-  ; dot timer 4s, 3s (level5)
-.struct actor ;
-    xpos          .byte   ; character x pos - 0..31
-    ypos          .byte   ; character y pos - 0..28
-    sp_x          .byte   ; sprite x
-    sp_y          .byte   ; sprite y
-    shape         .byte   ; shape
-    move          .byte   ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
-.endstruct
-
-.struct ghost
-    actor         .tag actor
-    color         .byte   ; main color
-    shape_mask    .byte   ; shape mask - for normal, frightened or catched ghost
-    shape_offs    .byte   ; offset for normal frightened or catched ghost
-
-    strategy      .byte   ; ghost movement strategy - in base, leaving base, return to base, move arround (scatter/chase)
-    mode          .byte   ; 0 - normal, 1 - frightened, 2 - catched
-    dot_cnt       .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
-    dot_limit     .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
-
-    tgt_x         .byte   ; target x
-    tgt_y         .byte   ; target y
 .endstruct
 
 ; table offsets

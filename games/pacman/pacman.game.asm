@@ -1091,16 +1091,31 @@ mode_frightened:
 
               ldy game_state+GameState::level
               cpy #17 ; no frightened in level 17
-              beq @exit
+              beq actors_inverse
               cpy #19 ; no frightened in level 19+
-              bcs @exit
+              bcs actors_inverse
 
               dey ; adjust for lookup
               lda frghtd_timer_l,y
               sta game_state+GameState::frghtd_timer+0
               lda frghtd_timer_h,y
               sta game_state+GameState::frghtd_timer+1
-@exit:        rts
+
+actors_inverse:
+              ldx #ACTOR_CLYDE
+:             lda actor_move,x  ; change direction
+              and #<~ACT_NEXT_DIR
+              sta actor_move,x
+              eor #ACT_MOVE_INVERSE
+              asl
+              asl
+              and #ACT_NEXT_DIR
+              ora actor_move,x
+              sta actor_move,x
+              dex
+              bpl :-
+              rts
+
 
 update_mode:  ; Ghosts are forced to reverse direction by the system anytime the mode changes from:
               ;   - chase-to-scatter
@@ -1140,9 +1155,9 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               tay
 
               lda game_state+GameState::level
-              cmp #1
+              cmp #1      ; level 1 ?
               beq @lvl_1
-              cmp #5
+              cmp #5      ; level 2-4 ?
               bcc @lvl_2_4
               iny
 @lvl_2_4:     iny
@@ -1155,18 +1170,7 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               cmp #7
               beq @skip_inverse
 
-              ldx #ACTOR_CLYDE
-:             lda actor_move,x  ; change direction
-              and #<~ACT_NEXT_DIR
-              sta actor_move,x
-              eor #ACT_MOVE_INVERSE
-              asl
-              asl
-              and #ACT_NEXT_DIR
-              ora actor_move,x
-              sta actor_move,x
-              dex
-              bpl :-
+              jsr actors_inverse
 @skip_inverse:
               dec game_state+GameState::sctchs_ix
               asl game_state+GameState::sctchs_mode
@@ -1391,12 +1395,10 @@ game_level_init:
               sta game_state+GameState::rng+0
               sta game_state+GameState::rng+1
 
-              ldx #ACTOR_INKY
-              sta ghost_dot_cnt,x
-              ldx #ACTOR_PINKY
-              sta ghost_dot_cnt,x
               ldx #ACTOR_CLYDE
-              sta ghost_dot_cnt,x
+:             sta ghost_dot_cnt,x
+              dex
+              bpl :-
 
               jsr draw_frame
 
@@ -1523,7 +1525,7 @@ game_init:
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #1 ; start with level 1
+              lda #4 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2

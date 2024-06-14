@@ -47,9 +47,102 @@ gfx_Sprite_Off=250
 .zeropage
   r1: .res 1
   r2: .res 1
-  r3: .res 1
 
 .code
+
+.export gfx_isr
+gfx_isr:
+    lda VIC_HLINE
+    cmp #HLine_Border
+    beq @io_isr_border
+    cmp #HLine_Border_Before
+    beq @io_isr_before_border
+    cmp #HLine_Last
+    beq @io_isr_lastline
+
+    lda #COLOR_WHITE
+    sta VIC_BORDERCOLOR
+;    jsr gfx_mx ; sprite mx
+    lda #HLine_Border_Before
+    sta VIC_HLINE
+
+    inc VIC_IRR   ; ack
+
+    lda #0
+    rts
+
+@io_isr_lastline:
+    lda VIC_CTRL1   ; restore border
+    ora #$08
+    sta VIC_CTRL1
+
+    lda #COLOR_BLACK
+    sta VIC_BORDERCOLOR
+    sta VIC_BG_COLOR0
+
+    inc VIC_IRR   ; ack
+
+    lda #$80        ; bit 7 to signal vblank irq
+    rts
+
+@io_isr_before_border:
+    lda #HLine_Border-3
+    sta VIC_SPR0_Y
+    sta VIC_SPR1_Y
+    sta VIC_SPR2_Y
+    sta VIC_SPR3_Y
+    sta VIC_SPR4_Y
+    sta VIC_SPR5_Y
+
+    lda #HLine_Border
+    sta VIC_HLINE
+    inc VIC_IRR   ; ack
+
+    lda #$40
+    rts
+
+@io_isr_border:
+            lda VIC_CTRL1
+            and #$f7            ; vic trick to open border - clean 24/25 rows bit
+            sta VIC_CTRL1
+
+            lda #COLOR_BLUE
+;    sta VIC_BORDERCOLOR
+            sta VIC_BG_COLOR0
+;    lda #HLine_Border
+ ;   sta VIC_SPR0_Y
+  ;  sta VIC_SPR1_Y
+   ; sta VIC_SPR2_Y
+    ;sta VIC_SPR3_Y
+    ;sta VIC_SPR4_Y
+    ;sta VIC_SPR5_Y
+            ldx #0
+            ldy #HLine_Border+1
+@char:      lda VRAM_PATTERN+$d3<<3,x
+            eor #$ff
+@hblank:    cpy VIC_HLINE
+            bne @hblank
+            sta BANK_GHOSTBYTE
+            inx
+            iny
+            cpy #<(HLine_Border+1+8)
+            bne @char
+            lda #Color_Bg
+            ldx #$ff                 ; #$ff (black) ghost byte
+:           cpy VIC_HLINE
+            bne :-
+            stx BANK_GHOSTBYTE
+            sta VIC_BG_COLOR0
+
+            lda #HLine_Last     ; next irq last line
+            sta VIC_HLINE
+
+            inc VIC_IRR   ; ack
+
+            lda #$40
+@rts:
+            rts
+
 gfx_mode_off:
 
 gfx_mode_on:
@@ -138,8 +231,8 @@ _gfx_is_sp_collision:
 ; X - ghost index
 @gfx_test_sp_y:  ;
     sec
-    lda actors+actor::sp_y,x
-    sbc actors+actor::sp_y,y
+    lda actor_sp_y,x
+    sbc actor_sp_y,y
     bpl :+
     eor #$ff ; absolute |y1 - y2|
 :   cmp #SPRITE_SIZE_Y ; C=1 if >=21px size distance
@@ -148,8 +241,8 @@ _gfx_is_sp_collision:
 
 .macro _gfx_update_ghost _a, _mx
   .local _n
-  _n = _a / .sizeof(actor); _n => actor number 0..3
-  lda actors+actor::sp_y+_a
+  _n = _a ; _n => actor number 0..3
+  lda actor_sp_y+_a
   clc
   adc #gfx_Sprite_Adjust_Y
   sta VIC_SPR0_Y+_n*4 ; *4 => 2 x 2 sprites vic registers
@@ -159,7 +252,7 @@ _gfx_is_sp_collision:
   sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::yp
 .endif
   ;clc - assume, we never overflow above
-  lda actors+actor::sp_x+_a
+  lda actor_sp_x+_a
   adc #gfx_Sprite_Adjust_X
   sta VIC_SPR0_X+_n*4
 .if _mx = 0
@@ -167,7 +260,7 @@ _gfx_is_sp_collision:
 .else
   sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::xp
 .endif
-  ldy actors+actor::shape+_a
+  ldy actor_shape+_a
   lda shapes+0,y
   sta VRAM_SPRITE_POINTER+0+_n*2
   lda shapes+2,y
@@ -188,25 +281,29 @@ _gfx_is_sp_collision:
     .local _a, _mx
     _mx=0
     _a = ACTOR_PACMAN
-    lda actors+actor::sp_y+_a
+    lda actor_sp_y+_a
     clc
     adc #gfx_Sprite_Adjust_Y
     sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::yp
     ;clc - assume, we never overflow above
-    lda actors+actor::sp_x+_a
+    lda actor_sp_x+_a
     adc #gfx_Sprite_Adjust_X
     sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::xp
-    ldy actors+actor::shape+_a
+    ldy actor_shape+_a
     lda shapes,y
     sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::pp
     lda #VIC_SPR_MCOLOR_DEFAULT
     sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::mc
 .endmacro
 
+.export gfx_prepare_update
+gfx_prepare_update:
+    rts
+
 gfx_update:
     _gfx_update_ghost ACTOR_BLINKY, 0
-    _gfx_update_ghost ACTOR_INKY, 0
     _gfx_update_ghost ACTOR_PINKY, 0
+    _gfx_update_ghost ACTOR_INKY, 0
     _gfx_update_ghost ACTOR_CLYDE, 1 ; 1 - mx sprite, eyes of clyde are multiplexed with pacman
     _gfx_update_pacman
 
@@ -230,8 +327,8 @@ gfx_update:
 
 @set_hline:
     ldx #ACTOR_CLYDE
-    lda actors+actor::sp_y,y
-    cmp actors+actor::sp_y,x
+    lda actor_sp_y,y
+    cmp actor_sp_y,x
     ldy #0*.sizeof(mx_sprite)
     bcc :+
     ldy #1*.sizeof(mx_sprite)

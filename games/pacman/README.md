@@ -6,17 +6,19 @@ pacman/ghost speed percentage/frames
   5 - 20	100%/60	      87%  100%/60      87%     95%/57      60%	    50%
   21+	     90%/54	      79%     -	         -      95%/57       -	    50%
 
-100% => 60frames/s
- 95% => 57frames/s => $03 frames delay => 1/20 frame  3/60
- 90% => 54frames/s => $06 frames delay => 1/10        6/60
- 85% => 51frames/s => $09 frames delay => 3/20        9/60
- 80% => 48frames/s => $0c frames delay => 1/5        12/60
- 75% => 45frames/s => $0f frames delay => 1/4        15/60
- 60% => 36frames/s => $18 frames delay => 2/5        24/60
- 55% => 33frames/s => $1b frames delay => 9/20       27/60
- 50% => 30frames/s => $1e frames delay => 1/2        30/60
- 45% => 27frames/s => $21 frames delay => 11/20      33/60
- 40% => 24frames/s => $24 frames delay => 3/5        36/60
+100% => 75,75757625 px/s +1px/4
+ 95% => 72px/s +1px/5
+ 90% => 68px/s +1px/7
+ 85% => 64px/s +1px/15
+ 80% => 60px/s 0
+ 75% => 57px/s -1px/20
+ 60% => 45px/s -1px/4
+ 55% => 42px/s -1px/3
+ 50% => 38px/s -1px/2
+
+
+ 45% => 34px/s -1px/2
+ 40% => 30px/s -1px/2
 
 
 red zone

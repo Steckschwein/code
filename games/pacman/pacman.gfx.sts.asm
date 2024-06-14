@@ -19,13 +19,6 @@
 
 .importzp sys_crs_x, sys_crs_y
 
-.struct SpriteTab
-  ypos    .byte
-  xpos    .byte
-  shape   .byte
-  color   .byte
-.endstruct
-
 .zeropage
   p_vram:   .res 3  ; 24Bit
   p_gfx:    .res 2
