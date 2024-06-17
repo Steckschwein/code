@@ -1,7 +1,9 @@
 .include "pacman.inc"
 
 .export game_state
-.exportzp p_maze, p_video, p_sound, p_text, p_game
+.exportzp p_maze, p_sound, p_text, p_tmp
+.exportzp p_game
+.exportzp p_video
 
 .autoimport
 
@@ -14,15 +16,11 @@
   p_maze:   .res 2
   p_tmp:    .res 2
 
-  video_tmp:    .res 1
   sound_tmp:    .res 1
   text_color:   .res 1
 
-  _i: .res 1
-  _j: .res 1
-  _k: .res 1
-
 .code
+
 .proc  _main: near
 main:
     jsr init
@@ -42,8 +40,7 @@ main:
     bmi @exit
     jsr game
     bit game_state+GameState::state
-    bmi @exit
-    jmp @intro
+    bpl @intro
 @exit:
     jsr gfx_mode_off
 

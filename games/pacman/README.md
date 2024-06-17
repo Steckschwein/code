@@ -15,8 +15,6 @@ pacman/ghost speed percentage/frames
  60% => 45px/s -1px/4
  55% => 42px/s -1px/3
  50% => 38px/s -1px/2
-
-
  45% => 34px/s -1px/2
  40% => 30px/s -1px/2
 

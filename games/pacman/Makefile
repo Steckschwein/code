@@ -21,8 +21,8 @@ LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map -Ln pacman.lbl --dbgfile
 CA65FLAGS_C64=-t c64 -I $(CC65_HOME)/asminc $(DEBUG)
 OBJS_C64=$(OBJS) pacman.io.c64.o pacman.gfx.c64.o pacman.sound.c64.o
 LIBS_C64=$(CC65_HOME)/lib/c64.lib
-LDFLAGS_C64=-C c64-asm.cfg -m pacman64.map
-#LDFLAGS_C64=-t c64 -m pacman64.map
+#LDFLAGS_C64=-C c64-asm.cfg -m pacman64.map
+LDFLAGS_C64=-t c64 -m pacman64.map
 
 TEST_LIBS := ../../asmunit/asmunit.a
 TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(TEST_LIBS)

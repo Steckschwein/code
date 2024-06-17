@@ -173,18 +173,16 @@ ACT_DIR           = 1<<1|1<<0
 SKIP_DIR_CHECK    = $ff
 
 .macro setIRQ irq, irq_save
-      php
       sei
       copyPtr IRQ_VEC, irq_save
       setPtr irq, IRQ_VEC
-      plp
+      cli
 .endmacro
 
 .macro restoreIRQ irq_save
-      php
       sei
       copyPtr irq_save, IRQ_VEC
-      plp
+      cli
 .endmacro
 
 .macro setPtr addr, ptr
@@ -279,8 +277,11 @@ SKIP_DIR_CHECK    = $ff
   ; game related
   rng             .word   ; PRNG index
 
-  speed_cnt_pcmn  .byte
-  speed_cnt_ghst  .byte
+  speed_pcmn      .byte   ; pacman speed frame counter
+  speed_pcmn_cnt  .byte   ; -1 (delay), +1 (push) or 0 nothing
+  ;speed_
+  speed_ghst      .byte
+  speed_ghst_cnt  .byte   ;
 
   frghtd_timer    .word   ; frightened mode timer in secs * frames
   sctchs_mode     .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode

@@ -206,7 +206,7 @@ gfx_blank_screen:
     ldx #4
     ldy #0
     lda #0
-:     sta (p_video),y
+:   sta (p_video),y
     iny
     bne :-
     inc p_video+1
@@ -370,7 +370,7 @@ gfx_display_maze:
     ldy #0
     sty sys_crs_x
     sty sys_crs_y
-    setPtr game_maze, p_maze
+    setPtr (game_maze), p_maze
 @loop:
     lda (p_maze),y
     sta r1
@@ -494,25 +494,30 @@ gfx_bgcolor:
 gfx_pause:
     rts
 
-
 .data
+
 shapes:
 offs=VRAM_SPRITE_PATTERN / $40
 ; pacman      [    <     O     <
     .byte offs+1,offs+0,offs+8,offs+0 ;r  00
-    .byte offs+3,offs+2,offs+8,offs+2 ;l  01
-    .byte offs+5,offs+4,offs+8,offs+4 ;u  10
-    .byte offs+7,offs+6,offs+8,offs+6 ;d  11
-; ghosts eyes | body
+    .byte offs+7,offs+6,offs+8,offs+6 ;d  01
+    .byte offs+3,offs+2,offs+8,offs+2 ;l  10
+    .byte offs+5,offs+4,offs+8,offs+4 ;u  11
+; ghosts eyes | body - $10
     .byte offs+20,offs+21,offs+28,offs+28 ;r  00
-    .byte offs+22,offs+23,offs+29,offs+29 ;l  01
-    .byte offs+24,offs+25,offs+30,offs+30 ;u  10
-    .byte offs+26,offs+27,offs+31,offs+31 ;d  11
-
+    .byte offs+26,offs+27,offs+31,offs+31 ;d  01
+    .byte offs+22,offs+23,offs+29,offs+29 ;l  10
+    .byte offs+24,offs+25,offs+30,offs+30 ;u  11
+; ghost eyes only (catched) $20
     .byte offs+28,offs+28,offs+20,offs+21 ;r  00
     .byte offs+29,offs+29,offs+22,offs+23 ;l  01
     .byte offs+30,offs+30,offs+24,offs+25 ;u  10
     .byte offs+31,offs+31,offs+26,offs+27 ;d  11
+; ghosts frighened $30
+
+; pacman dying
+
+; ghosts bonus  $40
 ;
 
 sprite_patterns:

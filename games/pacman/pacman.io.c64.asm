@@ -20,30 +20,30 @@ io_init:
         rts
 
 io_irq_on:
-    lda #LORAM | IOEN ;disable kernel rom to setup irq vector
-    sta $01           ;PLA
+        sei
+        lda #LORAM | IOEN ;disable kernel rom to setup irq vector
+        sta $01           ;PLA
 
-    lda #%01111111  ; disable interrupts from CIA1
-    sta CIA1_ICR
+        lda #%01111111  ; disable interrupts from CIA1
+        sta CIA1_ICR
 
-    and VIC_CTRL1  ; clear bit 7 (high byte raster line)
-    sta VIC_CTRL1  ; $d011
+        and VIC_CTRL1  ; clear bit 7 (high byte raster line)
+        sta VIC_CTRL1  ; $d011
 
-    lda #HLine_Border
-    sta VIC_HLINE  ; Raster-IRQ at bottom border ($d012)
+        lda #HLine_Border
+        sta VIC_HLINE  ; Raster-IRQ at bottom border ($d012)
 
-    lda #%00000001
-    sta VIC_IMR      ; enable raster irq
+        lda #%00000001
+        sta VIC_IMR      ; enable raster irq
 
-    lda CIA1_ICR
-    lda CIA2_ICR
-    rts
-
+        lda CIA1_ICR
+        lda CIA2_ICR
 io_exit:
-    rts
+        rts
 
 io_isr:
-    rts
+        inc VIC_BORDERCOLOR
+        rts
 
 .export io_highscore_load
 io_highscore_load:
