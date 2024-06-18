@@ -1,4 +1,10 @@
 
+TODO:
+  - per ghost dot cnt logic
+  - tunnel delay
+  - "cruise elroy" 1 / 2
+  - fix target $1e/$01
+
 pacman/ghost speed percentage/frames
   LEVEL      NORM  NORM-DOTS  FRIGHT  FRIGHT-DOTS   NORM   FRIGHT	 TUNNEL
   1           80%	      71%   90%/54	    79%     75%/45      50%  	  40%

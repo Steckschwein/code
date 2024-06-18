@@ -21,7 +21,6 @@
 game:
               setIRQ game_isr, save_irq
 
-              cli
 @init_state:  lda #STATE_INIT
 @set_state:   jsr game_set_state_frames
 
@@ -286,6 +285,7 @@ game_game_over:
 
 actors_move:
               ldx #ACTOR_CLYDE
+              ;ldx #ACTOR_BLINKY
 @loop:        jsr ghost_move
 @check_hit:   ldy #ACTOR_PACMAN
               lda actor_xpos,x
@@ -393,17 +393,18 @@ move_target:  lda game_state+GameState::speed_ghst_cnt
 move_nodelay:
               lda actor_move,x
               jsr actor_center  ; center reached?
-              beq @move_dir
+              beq move_dir
               jmp actor_move_soft
 
-@move_tunnel: lda actor_move,x
+move_tunnel:
+              lda actor_move,x
               and #ACT_DIR
               jmp set_direction
 
-@move_dir:    lda actor_ypos,x
-              beq @move_tunnel
+move_dir:     lda actor_ypos,x
+              beq move_tunnel
               cmp #$1b
-              bcs @move_tunnel
+              bcs move_tunnel
 
               lda actor_move,x
               lsr ; next dir to current direction
@@ -414,7 +415,7 @@ move_nodelay:
               cmp #Char_Base ; sanity check wont be C=1
               bcs halt
               cmp #Char_Tunnel
-              beq @move_tunnel
+              beq move_tunnel
 
               sec
               lda p_maze+0
@@ -465,6 +466,7 @@ short_dist:
               tay
               lda y_index,y
               tay
+;              .byte $db
               jsr calc_distance
 @next:        dec game_tmp
               bpl @check
@@ -491,6 +493,7 @@ halt:         .byte $db
 calc_distance:lda (p_maze),y
               cmp #Char_Base
               bcs @exit ; carry from cmp above
+
               ldy game_tmp
               cmp #Char_Not_Up
               bne :+
@@ -504,11 +507,11 @@ calc_distance:lda (p_maze),y
               sbc ghost_tgt_x,x
               bpl :+
               eor #$ff
+              adc #1
 :             tay
               cpy #$20
               bcc :+
               .byte $db
-              nop
 :             lda squares_l,y
               sta rx1+0
               lda squares_h,y
@@ -519,16 +522,17 @@ calc_distance:lda (p_maze),y
               lda py
               adc vectors_y,y
               sec
-              sbc ghost_tgt_y,x
+              sbc ghost_tgt_y,x ; TODO can be improved |px-gx| and |py-gy| const. + vector of direction
               bpl :+
               eor #$ff
-:             tay
-              cpy #$20
+              adc #1
+:             cpy #$20
               bcc :+
               .byte $db
               nop
               nop
-:             clc
+:             tay
+              clc
               lda squares_l,y
               adc rx1+0
               sta rx1+0
@@ -536,12 +540,14 @@ calc_distance:lda (p_maze),y
               adc rx1+1
               sta rx1+1
               cmp target_dist+1
-              beq :+    ; == ?
-              bcs @exit ; > ?
-:             lda rx1+0
+              beq @equal  ; == ?
+              lda rx1+0
+              bcs @exit   ; > ?
+              bcc @save
+@equal:       lda rx1+0
               cmp target_dist+0
-              bcs @exit ; >= ?
-              sta target_dist+0 ; save new shortest distance
+              bcs @exit   ; >= ?
+@save:        sta target_dist+0 ; save new shortest distance
               lda rx1+1
               sta target_dist+1
               lda game_tmp
@@ -963,12 +969,12 @@ get_input:
 ; in:  .A - direction
 lda_actor_charpos_direction:
               tay
-              lda actor_xpos,x
               clc
+              lda actor_xpos,x
               adc vectors_x,y
               sta px
-              lda actor_ypos,x
               clc
+              lda actor_ypos,x
               adc vectors_y,y
               sta py
               tay
@@ -1306,6 +1312,7 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               sbc actor_xpos,y
               bpl :+
               eor #$ff
+              adc #1
 :             cmp #8
               bcs @clyde_pcmn
               lda actor_ypos,x
@@ -1313,6 +1320,7 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               sbc actor_ypos,y
               bpl :+
               eor #$ff
+              adc #1
 :             cmp #8
               bcs @clyde_pcmn
 @clyde_sct:   lda ghost_init_sct_x,y
@@ -1582,22 +1590,18 @@ game_init:
 :             jsr sound_init_game_start
 
               jsr system_dip_switches_lives
- ;             sty game_state+GameState::lives_1up
-;              sty game_state+GameState::lives_2up
               sty game_state+GameState::lives
 
               jsr system_dip_switches_bonus_life
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #21 ; start with level 1
+              lda #1 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
               lda #0
-:;             sta game_state+GameState::score_1up,y
-;              sta game_state+GameState::score_2up,y
-              sta game_state+GameState::score,y
+:             sta game_state+GameState::score,y
               dey
               bpl :-
 
@@ -1685,7 +1689,7 @@ ghost_init_color:
 ghost_init_sct_x: ; ghost scatter targets
     .byte $00,$00,$1f,$1f
 ghost_init_sct_y:
-    .byte $04,$17,$00,$1b
+    .byte $03,$18,$00,$1b
 ghost_init_state:
     .byte GHOST_STATE_TARGET  ; blinky
     .byte GHOST_STATE_BASE
@@ -1779,7 +1783,7 @@ energizer_y:
 y_index: ; y pointer offsets to p_maze - up, left, down, right
   .byte 0, 33, 64, 31
 
-vectors_x:  ; X, Y adjust +0 X, -1 Y, screen is rotated 90 degree clockwise ;)
+vectors_x: ; X, Y adjust +0 X, -1 Y in order r,d,l,u - screen is rotated 90 degree clockwise ;)
     .byte $00,$01,$00,$ff
 vectors_y:
     .byte $ff,$00,$01,$00
