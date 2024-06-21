@@ -1,9 +1,8 @@
 
 TODO:
-  - per ghost dot cnt logic
-  - tunnel delay
+  - red zones
   - "cruise elroy" 1 / 2
-  - fix target $1e/$01
+  - per ghost dot cnt logic
 
 pacman/ghost speed percentage/frames
   LEVEL      NORM  NORM-DOTS  FRIGHT  FRIGHT-DOTS   NORM   FRIGHT	 TUNNEL
@@ -24,9 +23,6 @@ pacman/ghost speed percentage/frames
  45% => 34px/s -1px/2
  40% => 30px/s -1px/2
 
-
-red zone
-tunnel zone
 
 ----
 

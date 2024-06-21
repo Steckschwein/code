@@ -30,7 +30,6 @@ Char_Not_Up         = $06   ; blank not up
 ;                   = $c6   ;1100 0110
 Char_Blank          = $c7   ;1100 0111
 
-Char_Dot_Not_Up     = $4c   ; with Char_Maze_Mask
 Char_Dot            = $cc   ;1100 1100
                             ;1100 1101
 Char_Bonus          = $cd
@@ -38,7 +37,7 @@ Char_Energizer      = $ce   ;1100 1110 $ce
 Char_Base           = $cf   ;1100 1111
 Char_Quote          = $22
 
-Char_Maze_Mask      = $80   ;
+Char_Maze_Mask      = $c0   ;
 
 .define Char_Pts $2a,$2b,$2c
 
@@ -140,7 +139,7 @@ Color_Clyde   = Color_Orange
 Color_Pinky   = Color_Pink
 Color_Pacman  = Color_Yellow
 Color_Food    = Color_Dark_Pink
-Color_Border  = Color_Blue
+Color_Maze    = Color_Blue
 Color_Text    = Color_Gray
 
 

@@ -18,8 +18,7 @@
 
 .code
 
-game:
-              setIRQ game_isr, save_irq
+game:         setIRQ game_isr, save_irq
 
 @init_state:  lda #STATE_INIT
 @set_state:   jsr game_set_state_frames
@@ -386,27 +385,39 @@ move_target:  lda game_state+GameState::speed_ghst_cnt
               and #$7f    ; mask cnt
               bne move_nodelay
               lda game_state+GameState::speed_ghst
-              beq move_nodelay       ; 80% speed, 60 frames
-              bpl @move_double
+              beq move_nodelay       ;  0 - 80% speed, 60 frames
+              bpl @move_2x
               rts                    ; -1 skip move for this frame
-@move_double: jsr move_nodelay       ; +1 additional move
+@move_2x:     jsr move_nodelay       ; +1 additional move
 move_nodelay:
-              lda actor_move,x
-              jsr actor_center  ; center reached?
-              beq move_dir
-              jmp actor_move_soft
+              lda actor_xpos,x
+              cmp #$0f
+              bne @move
+              lda actor_ypos,x
+              cmp #$06
+              bcc @tunnel
+              cmp #$16
+              bcc @move
+;              lda actor_xpos,x
+ ;             jsr lda_maze_ptr_ay
+  ;            cmp #Char_Tunnel
+   ;           bne @move
+@tunnel:
+              lda game_state+GameState::frames
+              and #$01
+              bne @exit
 
-move_tunnel:
               lda actor_move,x
               and #ACT_DIR
-              jmp set_direction
+              jmp move_new_dir
 
-move_dir:     lda actor_ypos,x
-              beq move_tunnel
-              cmp #$1b
-              bcs move_tunnel
+@move:        lda actor_move,x
+              jsr actor_center  ; center reached?
+              beq @move_dir
+              jmp actor_move_soft
+@exit:        rts
 
-              lda actor_move,x
+@move_dir:    lda actor_move,x
               lsr ; next dir to current direction
               lsr
               and #ACT_DIR
@@ -414,12 +425,10 @@ move_dir:     lda actor_ypos,x
               jsr lda_actor_charpos_direction
               cmp #Char_Base ; sanity check wont be C=1
               bcs halt
-              cmp #Char_Tunnel
-              beq move_tunnel
 
               sec
               lda p_maze+0
-              sbc #32 ; adjust maze ptr one char line above (tile right)
+              sbc #$20 ; adjust maze ptr one char line above (tile right)
               sta p_maze+0
               lda p_maze+1
               sbc #0
@@ -473,14 +482,13 @@ short_dist:
 
 tgt_direction:
               lda target_dir  ; setup next direction from calculation
-set_direction:
+move_new_dir:
               asl
               asl
               ora #ACT_MOVE   ; enable move
               ora actor_move,x
               sta actor_move,x
-
-move_soft:    jmp actor_move_soft
+              jmp actor_move_soft
 
 halt:         .byte $db
               nop
@@ -495,17 +503,12 @@ calc_distance:lda (p_maze),y
               bcs @exit ; carry from cmp above
 
               ldy game_tmp
-              cmp #Char_Not_Up
-              bne :+
-              cpy #ACT_UP
-              beq @exit
-:
               clc
               lda px
               adc vectors_x,y
               sec
               sbc ghost_tgt_x,x
-              bpl :+
+              bcs :+
               eor #$ff
               adc #1
 :             tay
@@ -523,7 +526,7 @@ calc_distance:lda (p_maze),y
               adc vectors_y,y
               sec
               sbc ghost_tgt_y,x ; TODO can be improved |px-gx| and |py-gy| const. + vector of direction
-              bpl :+
+              bcs :+
               eor #$ff
               adc #1
 :             cpy #$20
@@ -947,7 +950,7 @@ pacman_input:
               sta actor_move,x
 @exit:        rts
 
-actor_update_charpos: ;offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
+actor_update_charpos: ; offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
               lda actor_sp_x,x
               lsr
               lsr
@@ -1207,13 +1210,15 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
 @scatter_chase:
               lda #GHOST_MODE_NORM
               jsr actors_mode
+              lda #0
+              jsr update_speed
 
               lda game_state+GameState::sctchs_timer+0
               bne @secs
               dec game_state+GameState::sctchs_timer+1
               bmi @switch_mode
 @secs:        dec game_state+GameState::sctchs_timer+0
-              and #$3f
+              and #$03 ; update targets every 4 frames
               beq @select_mode
               rts
 
@@ -1235,9 +1240,6 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               sta game_state+GameState::sctchs_timer+0
               lda mode_timer_h,y
               sta game_state+GameState::sctchs_timer+1
-
-              lda #0
-              jsr update_speed
 
               lda game_state+GameState::sctchs_ix
               cmp #7              ; initial mode switch?
@@ -1310,7 +1312,7 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               lda actor_xpos,x
               sec
               sbc actor_xpos,y
-              bpl :+
+              bcs :+
               eor #$ff
               adc #1
 :             cmp #8
@@ -1318,7 +1320,7 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               lda actor_ypos,x
               sec
               sbc actor_ypos,y
-              bpl :+
+              bcs :+
               eor #$ff
               adc #1
 :             cmp #8
@@ -1596,7 +1598,7 @@ game_init:
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #1 ; start with level 1
+              lda #6 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2

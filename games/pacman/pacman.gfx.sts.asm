@@ -352,39 +352,39 @@ gfx_display_maze:
               rts
 
 @put_char:
-        lda (p_gfx),y
-;        cmp (p_maze),y
- ;       bne :+
-  ;      rts
-        pha
-        cmp #Char_Dot
-        beq @food
-        cmp #Char_Energizer
-        bne @text
-@food:  lda #Color_Food
-        bne @color
-@text:  cmp #Char_Base
-        bne @color_border
-        lda #Color_Pink
-        bne @color
+              lda (p_gfx),y
+      ;        cmp (p_maze),y
+      ;       bne :+
+        ;      rts
+              pha
+              cmp #Char_Dot
+              beq @food
+              cmp #Char_Energizer
+              bne @text
+@food:        lda #Color_Food
+              bne @color
+@text:        cmp #Char_Base
+              bne @color_border
+              lda #Color_Pink
+              bne @color
 @color_border:
-        bcs @color_bg
-        lda #Color_Text
-        bne @color
+              bcs @color_bg
+              lda #Color_Text
+              bne @color
 @color_bg:
-        lda #Color_Border
+              lda #Color_Maze
 @color:
-        sta text_color
-        pla
-        ora #Char_Maze_Mask
-        jsr gfx_charout
-        inc sys_crs_x
-        lda sys_crs_x
-        and #$1f
-        bne @exit
-        sta sys_crs_x
-        inc sys_crs_y
-@exit:  rts
+              sta text_color
+              pla
+;        ora #Char_Maze_Mask
+              jsr gfx_charout
+              inc sys_crs_x
+              lda sys_crs_x
+              and #$1f
+              bne @exit
+              sta sys_crs_x
+              inc sys_crs_y
+@exit:        rts
 
 gfx_bordercolor:
 gfx_bgcolor:
