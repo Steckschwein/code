@@ -72,6 +72,12 @@ game:         setIRQ game_isr, save_irq
     bne :+
     lda #STATE_LEVEL_CLEARED
     bne @set_state
+:   cmp #'m'
+    bne :+
+    lda #0
+    sta game_state+GameState::sctchs_timer+0
+    sta game_state+GameState::sctchs_timer+1
+    bne @game_loop
 :   cmp #'p'
     bne :+
     lda game_state+GameState::state
@@ -390,34 +396,44 @@ move_target:  lda game_state+GameState::speed_ghst_cnt
               rts                    ; -1 skip move for this frame
 @move_2x:     jsr move_nodelay       ; +1 additional move
 move_nodelay:
+              ldy actor_ypos,x
               lda actor_xpos,x
-              cmp #$0f
+              cmp #$0c  ; upper "red zone" ?
+              beq @is_red_zone
+              cmp #$18  ; lower "red zone" ?
+              bne @is_tunnel
+
+@is_red_zone: cpy #$0b
+              bcc @move   ; no, move on
+              cpy #$10+1
+              bcc @update_dir
+
+@is_tunnel:   cmp #$0f
               bne @move
-              lda actor_ypos,x
-              cmp #$06
+              cpy #$06
               bcc @tunnel
-              cmp #$16
+              cpy #$16
               bcc @move
-;              lda actor_xpos,x
- ;             jsr lda_maze_ptr_ay
-  ;            cmp #Char_Tunnel
-   ;           bne @move
-@tunnel:
-              lda game_state+GameState::frames
+
+@tunnel:      lda game_state+GameState::frames ; half speed, means every 2nd frame
               and #$01
-              bne @exit
+              beq @update_dir
+              rts
 
+@update_dir:  jsr actor_center    ; center reached?
+              bne @move_soft
               lda actor_move,x
-              and #ACT_DIR
-              jmp move_new_dir
+              and #ACT_NEXT_DIR   ; just take over the new dir, it may have changed due to scatter/chase event
+              sta actor_move,x
+              lsr
+              lsr
+              jmp move_dir
 
-@move:        lda actor_move,x
-              jsr actor_center  ; center reached?
-              beq @move_dir
-              jmp actor_move_soft
-@exit:        rts
+@move:        jsr actor_center  ; center reached?
+              beq :+
+@move_soft:   jmp actor_move_soft
 
-@move_dir:    lda actor_move,x
+:             lda actor_move,x
               lsr ; next dir to current direction
               lsr
               and #ACT_DIR
@@ -446,7 +462,7 @@ move_nodelay:
               jsr system_rng  ; choose next direction randomly
 @check_dir:   and #ACT_DIR
               sta target_dir
-              cmp game_tmp2 ; discard inverse direction ?
+              cmp game_tmp2 ; inverse direction?
               beq @next_dir
               tay
               lda y_index,y
@@ -470,7 +486,7 @@ short_dist:
               lda #ACT_UP
               sta game_tmp
 @check:       lda game_tmp
-              cmp game_tmp2 ; discard inverse direction ?
+              cmp game_tmp2 ; discard inverse direction
               beq @next
               tay
               lda y_index,y
@@ -482,10 +498,9 @@ short_dist:
 
 tgt_direction:
               lda target_dir  ; setup next direction from calculation
-move_new_dir:
               asl
               asl
-              ora #ACT_MOVE   ; enable move
+move_dir:     ora #ACT_MOVE   ; enable move
               ora actor_move,x
               sta actor_move,x
               jmp actor_move_soft
@@ -694,8 +709,8 @@ l_compare:
               rts
 
 ;     A - bit 0-1 the direction
-actor_center:
-              ldy #0
+actor_center: lda actor_move,x
+is_center:    ldy #0
               sty game_tmp2
               eor #ACT_MOVE_UP_OR_DOWN
               jmp l_test
@@ -718,7 +733,7 @@ pacman_move:  lda pacman_delay
 @move_cnt:    dec game_state+GameState::speed_pcmn_cnt
 @move:        lda pacman_turn
               bpl @move_dir      ; turning?
-              jsr actor_center
+              jsr is_center
               bne @turn_soft
               lda pacman_turn
               and #<~ACT_TURN
@@ -726,7 +741,7 @@ pacman_move:  lda pacman_delay
 @turn_soft:   lda pacman_turn
               jsr actor_move_sprite
 @move_dir:
-              lda actor_move,x
+;              lda actor_move,x
 ;              bpl :+
               ;jsr @move
 ;:             ;jmp pacman_collect
@@ -1138,7 +1153,7 @@ mode_frightened:
               lda #2  ; frightened speeds
               jsr update_speed
 
-actors_inverse:
+actors_inverse: ; set next direction to inverse of current direction
               ldy #ACTOR_CLYDE
 :             lda actor_move,y  ; change direction
               and #<~ACT_NEXT_DIR
@@ -1210,14 +1225,14 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
 @scatter_chase:
               lda #GHOST_MODE_NORM
               jsr actors_mode
-              lda #0
+              lda #0 ; speed table index
               jsr update_speed
 
               lda game_state+GameState::sctchs_timer+0
-              bne @secs
+              bne :+
               dec game_state+GameState::sctchs_timer+1
               bmi @switch_mode
-@secs:        dec game_state+GameState::sctchs_timer+0
+:             dec game_state+GameState::sctchs_timer+0
               and #$03 ; update targets every 4 frames
               beq @select_mode
               rts
@@ -1243,10 +1258,9 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
 
               lda game_state+GameState::sctchs_ix
               cmp #7              ; initial mode switch?
-              beq @skip_inverse
-
+              beq :+
               jsr actors_inverse
-@skip_inverse:
+:
               dec game_state+GameState::sctchs_ix
               asl game_state+GameState::sctchs_mode
 

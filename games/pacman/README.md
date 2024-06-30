@@ -1,6 +1,6 @@
 
 TODO:
-  - red zones
+  - fix pacman can turn if stopped on wall
   - "cruise elroy" 1 / 2
   - per ghost dot cnt logic
 
