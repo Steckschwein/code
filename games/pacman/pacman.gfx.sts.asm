@@ -3,6 +3,7 @@
 .export gfx_init
 .export gfx_mode_on
 .export gfx_mode_off
+.export gfx_bonus_stack
 .export gfx_blank_screen
 .export gfx_bgcolor
 .export gfx_bordercolor
@@ -495,7 +496,6 @@ gfx_lives:    sei
               cli
               rts
 
-.export gfx_bonus_stack
 ; in
 ;   A - level
 gfx_bonus_stack:
@@ -751,10 +751,11 @@ tiles:
     .include "pacman.tiles.rot.inc"
 
 sprite_patterns:
-    .include "pacman.ghosts.res"  ; 20 sprites
-    .include "pacman.pacman.res"  ; 10 sprites
-    .include "pacman.dying.res"   ; 11 sprites
-    .include "pacman.bonus.res"   ;  4 sprites
+    .include "pacman.ghosts.res"        ; 20 sprites
+    .include "pacman.pacman.res"        ; 10 sprites
+    .include "pacman.dying.res"         ; 11 sprites
+    .include "pacman.bonus.res"         ;  4 sprites
+    .include "pacman.intermission.res"  ; 12 sprites
 sprite_patterns_end:
 
 shapes:

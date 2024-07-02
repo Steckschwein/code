@@ -40,6 +40,7 @@ game:         setIRQ game_isr, save_irq
               jsr game_pacman_dying
               jsr game_ghost_catched
               jsr game_level_cleared
+              jsr game_intermission
               jsr game_game_over
 
               jsr gfx_prepare_update
@@ -242,7 +243,6 @@ game_pacman_dying:
 
 
 game_game_over:
-              lda game_state+GameState::state
               cmp #STATE_GAME_OVER
               bne @exit
               jsr animate_up
@@ -258,6 +258,38 @@ game_game_over:
               lda #STATE_INTRO
               jmp game_set_state_frames
 @exit:        rts
+
+game_intermission:
+              cmp #STATE_INTERMISSION
+              bne @exit
+;              .byte $db
+              ldy #2
+              lda game_state+GameState::level
+              cmp #2
+              beq @im_1
+              cmp #5
+              beq @im_2
+              cmp #9
+              beq @im
+              cmp #13
+              beq @im
+              cmp #17
+              bne @next
+@im_2:        dey
+@im_1:        dey
+@im:          lda game_state+GameState::frames
+              bne :+
+              jsr gfx_blank_screen
+              lda game_state+GameState::level
+              jmp gfx_bonus_stack
+:             cmp #$ff
+              bne @exit
+@next:        inc game_state+GameState::level ; next level
+              lda #STATE_LEVEL_INIT
+              jmp game_set_state_frames
+
+@exit:        rts
+
 
 
     ; key/joy input ?
@@ -347,10 +379,8 @@ actors_move:
               lda #Pts_Index_All_Ghosts
               jsr add_score
 
-
 :             lda #STATE_GHOST_CATCHED
               jmp game_set_state_frames
-
 
 ghost_move:   jsr actor_update_charpos
               jsr ghost_update_shape
@@ -1168,16 +1198,6 @@ actors_inverse: ; set next direction to inverse of current direction
               bpl :-
               rts
 
-index_for_level:
-              lda game_state+GameState::level
-              cmp #1      ; level 1 ?
-              beq @lvl_1
-              cmp #5      ; level 2-4 ?
-              bcc @lvl_2_4
-              iny
-@lvl_2_4:     iny
-@lvl_1:       rts
-
 update_speed: ;.byte $db
               ldy game_state+GameState::level
               cpy #1      ; level 1 ?
@@ -1506,9 +1526,7 @@ game_level_cleared:
               cmp #$88
               bne @rotate
 
-              inc game_state+GameState::level ; next level
-
-              lda #STATE_LEVEL_INIT
+              lda #STATE_INTERMISSION
               jmp game_set_state_frames
 @rotate:
               lsr
@@ -1612,7 +1630,7 @@ game_init:
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #6 ; start with level 1
+              lda #2 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2

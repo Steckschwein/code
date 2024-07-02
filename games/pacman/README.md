@@ -3,6 +3,9 @@ TODO:
   - fix pacman can turn if stopped on wall
   - "cruise elroy" 1 / 2
   - per ghost dot cnt logic
+  - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
+  - use fn pointer for game loop
+
 
 pacman/ghost speed percentage/frames
   LEVEL      NORM  NORM-DOTS  FRIGHT  FRIGHT-DOTS   NORM   FRIGHT	 TUNNEL
@@ -22,7 +25,6 @@ pacman/ghost speed percentage/frames
  50% => 38px/s -1px/2
  45% => 34px/s -1px/2
  40% => 30px/s -1px/2
-
 
 ----
 

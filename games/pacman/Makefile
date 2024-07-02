@@ -37,11 +37,11 @@ RESOURCES=\
   pacman.pacman.res \
 	pacman.dying.res \
 	pacman.bonus.res \
+	pacman.intermission.res \
 	bonus.res \
   pacman.tiles.rot.inc
 
 RESOURCES_4BPP := $(patsubst %.4bpp.xpm,%.4bpp.res,$(foreach dir,.,$(wildcard ./*.4bpp.xpm)))
-
 
 .PHONY: all clean
 
@@ -59,9 +59,6 @@ clean:
 
 %.res: %.xpm
 	python3 ../utils/xpm_ca65_16bit.py $< > $@
-
-%.2bpp.res: %.2bpp.xpm
-	python3 ../utils/xpm_ca65_2bpp.py $< > $@
 
 %.4bpp.res: %.4bpp.xpm
 	python3 ../utils/xpm_ca65_4bpp.py $< > $@
