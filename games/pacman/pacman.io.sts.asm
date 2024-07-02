@@ -1,21 +1,20 @@
 ;i/o
-    .include "pacman.sts.inc"
+.include "pacman.sts.inc"
 
-    .autoimport
-    .export io_init
-    .export io_detect_joystick
-    .export io_joystick_read
-    .export io_exit
-    .export io_getkey
-    .export io_player_direction
-    .export io_isr
-    .export io_irq_on
+.export io_init
+.export io_detect_joystick
+.export io_joystick_read
+.export io_exit
+.export io_getkey
+.export io_player_direction
+.export io_isr
+.export io_irq_on
 
-    .import joystick_on
-    .import joystick_detect
-    .import joystick_read
+.autoimport
 
-appstart $1000  ;
+appstart $1000
+
+.code
 
 io_init:
     jsr joystick_on
@@ -24,14 +23,10 @@ io_init:
     rts
 
 io_isr:
-      jsr gfx_isr
-      pha
-      jsr fetchkey
-      pla
-      rts
+      jmp fetchkey
 
 io_irq_on:  ; nothing todo here on sts hw
-    rts
+      rts
 
 io_detect_joystick:
       jsr joystick_detect
@@ -81,8 +76,17 @@ io_player_direction:
       clc
       rts
 
+.export io_highscore_load
+io_highscore_load:
+      lda #0
+      sta game_state+GameState::highscore
+      sta game_state+GameState::highscore+1
+      sta game_state+GameState::highscore+2
+      sta game_state+GameState::highscore+3
+      rts
+
 io_exit:
-    jmp (retvec)
+      jmp (retvec)
 
 .data
     joystick_port:  .res 1, JOY_PORT1 ; TODO auto detect

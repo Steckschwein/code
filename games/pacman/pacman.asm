@@ -1,83 +1,69 @@
-    .include "pacman.inc"
+.include "pacman.inc"
 
-    .export game_state
+.export game_state
+.exportzp p_maze, p_sound, p_text, p_tmp
+.exportzp p_game
+.exportzp p_video
 
-    .import gfx_mode_on
-    .import gfx_mode_off
-    .import gfx_init
-    .import gfx_display_maze
-    .import frame_isr
+.autoimport
 
-    .import io_init
-    .import io_exit
-    .import io_irq_on
-    .import sound_init
-    .import sound_play
-    .import boot
-    .import intro
-    .import game
-
-    .exportzp p_maze, p_video, p_sound, p_text, p_game
 
 .zeropage
-p_video: .res 2
-p_sound: .res 2
-p_text:  .res 2
-p_game:  .res 2
-p_maze:  .res 2
-p_tmp:  .res 2
+  p_video:  .res 2
+  p_sound:  .res 2
+  p_text:   .res 2
+  p_game:   .res 2
+  p_maze:   .res 2
+  p_tmp:    .res 2
 
-video_tmp:  .res 1
-sound_tmp:  .res 1
-game_tmp:   .res 1
-game_tmp2:  .res 1
-gfx_tmp:    .res 1
-text_color:  .res 1
-_i: .res 1
-_j: .res 1
-_k: .res 1
+  sound_tmp:    .res 1
+  text_color:   .res 1
 
 .code
+
 .proc  _main: near
 main:
-    sei
+    jsr init
     jsr io_init
     jsr sound_init
     jsr gfx_init
     jsr gfx_mode_on
 
     jsr io_irq_on
-    setIRQ frame_isr, _save_irq
-    cli
-
-    jsr init
+    setIRQ frame_isr, save_irq
 
     jsr boot
+
 @intro:
     jsr intro
     bit game_state+GameState::state
     bmi @exit
     jsr game
     bit game_state+GameState::state
-    bmi @exit
-    jmp @intro
+    bpl @intro
 @exit:
     jsr gfx_mode_off
 
-    restoreIRQ _save_irq
+    restoreIRQ save_irq
 
     jmp io_exit
 
 init:
-    ldx #.sizeof(GameState)-1
+    ldy #.sizeof(GameState)-1
     lda #0
-:    sta game_state,x
-    dex
+:   sta game_state,y
+    dey
     bpl :-
+
+    jsr io_highscore_load
+
+    lda #DIP_COINAGE_1 | DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES
+    sta game_state+GameState::dip_switches
+
     rts
 .endproc
 
 .bss
-  _save_irq:  .res 2, 0
+  save_irq:  .res 2
   game_state:
     .tag GameState

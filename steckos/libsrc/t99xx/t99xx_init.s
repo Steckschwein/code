@@ -40,7 +40,7 @@ vdp_init_reg:
 
       sta vdp_ptr
       sty vdp_ptr+1
-      txa      ; x length of init table
+      txa       ; x length of init table
       tay
       ora #$80  ; bit 7 = 1 => register write
       tax

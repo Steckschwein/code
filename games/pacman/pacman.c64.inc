@@ -5,7 +5,7 @@
 
       VRAM_SCREEN         = $0400
       VRAM_PATTERN        = $3800
-      VRAM_SPRITE_PATTERN = $3000
+      VRAM_SPRITE_PATTERN = $34c0
       VRAM_COLOR          = $d800
       VRAM_SPRITE_POINTER = VRAM_SCREEN+$3f8
 

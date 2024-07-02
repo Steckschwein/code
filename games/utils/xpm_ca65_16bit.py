@@ -35,6 +35,8 @@ def main():
 
   _2ndcol_arr=[]
   for ix, ln in enumerate(xpmLines[offset:]):
+    if len(ln) == 0:
+      break
     if ix % 16 == 0:
       spritelines(_2ndcol_arr)
       _2ndcol_arr=[]

@@ -99,6 +99,11 @@ sound_init:
 		rts
 
 sound_init_game_start:
+.ifdef __NO_SOUND
+    rts
+.endif
+
+
 		;lda #(15<<4 | (1 & $0f))	; AD
 		lda #$22;#97
 		sta SID_AD1
