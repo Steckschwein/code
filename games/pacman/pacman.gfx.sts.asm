@@ -498,6 +498,7 @@ gfx_lives:    sei
 
 ; in
 ;   A - level
+;
 gfx_bonus_stack:
               sta r2    ; save current level
               lda #17*8
@@ -780,9 +781,13 @@ shapes:
     .byte $28*4,$27*4,$26*4,$25*4
     .byte $24*4,$23*4,$22*4,$21*4
     .byte $20*4,$1f*4,$1e*4,$1d*4 ; empty sprite
-; ghosts bonus  $40
+; ghosts bonus pts $40
     .byte $29*4,$2a*4,$2b*4,$2c*4
-
+; pacman intermission $44
+    .byte $2d*4,$2e*4,$2f*4,$30*4
+    .byte $2d*4,$2e*4,$2f*4,$30*4
+    .byte $2d*4,$2e*4,$2f*4,$30*4
+    .byte $2d*4,$2e*4,$2f*4,$30*4
 
 table_4bpp_l:
   .byte <bonus_4bpp_cherry

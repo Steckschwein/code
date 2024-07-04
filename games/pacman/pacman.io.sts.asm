@@ -22,17 +22,16 @@ io_init:
     ;TODO ...
     rts
 
-io_isr:
-      jmp fetchkey
+io_isr:       jmp fetchkey
 
 io_irq_on:  ; nothing todo here on sts hw
-      rts
+              rts
 
 io_detect_joystick:
-      jsr joystick_detect
-      beq @rts
-      sta joystick_port
-@rts: rts
+              jsr joystick_detect
+              beq @exit
+              sta joystick_port
+@exit:        rts
 
 io_joystick_read:
       lda joystick_port

@@ -18,6 +18,9 @@
 
 .code
 
+@call_state_fn:
+              jmp (game_state+GameState::fn)
+
 game:         setIRQ game_isr, save_irq
 
 @init_state:  lda #STATE_INIT
@@ -45,15 +48,26 @@ game:         setIRQ game_isr, save_irq
 
               jsr gfx_prepare_update
 
-    border_color Color_Bg
+              border_color Color_Bg
 
-    lda game_state+GameState::state
-    cmp #STATE_INTRO
-    beq @exit
-    jsr io_getkey
-    bcc @game_loop
-    sta keyboard_input
-    cmp #'d'
+              lda game_state+GameState::state
+              cmp #STATE_INTRO
+              beq @exit
+              jsr io_getkey
+              bcc @game_loop
+              sta keyboard_input
+              cmp #KEY_EXIT
+              bne :+
+              lda #STATE_EXIT
+              sta game_state+GameState::state
+@exit:
+              jsr sound_init
+              restoreIRQ save_irq
+              rts
+; debug keys
+:   cmp #'r'
+    beq @init_state
+:   cmp #'d'
     bne :+
     lda #STATE_PACMAN_DYING
     bne @set_state
@@ -62,23 +76,21 @@ game:         setIRQ game_isr, save_irq
     lda #1  ; 1 left
     sta game_state+GameState::lives
     lda #STATE_PACMAN_DYING
-    bne @set_state
-:   cmp #'r'
-    beq @init_state
+    jmp @set_state
     cmp #'i'
     bne :+
     lda #STATE_LEVEL_INIT
-    bne @set_state
+    jmp @set_state
 :   cmp #'c'
     bne :+
     lda #STATE_LEVEL_CLEARED
-    bne @set_state
+    jmp @set_state
 :   cmp #'m'
     bne :+
     lda #0
     sta game_state+GameState::sctchs_timer+0
     sta game_state+GameState::sctchs_timer+1
-    bne @game_loop
+    jmp @game_loop
 :   cmp #'p'
     bne :+
     lda game_state+GameState::state
@@ -107,20 +119,9 @@ game:         setIRQ game_isr, save_irq
     lda #'T'
     jsr sys_charout
     cli
-:   cmp #KEY_EXIT
-    beq :+
+:
     jmp @game_loop
 
-:   lda #STATE_EXIT
-@exit:
-    sta game_state+GameState::state
-    jsr sound_init
-
-    restoreIRQ save_irq
-    rts
-
-@call_state_fn:
-    jmp (game_state+GameState::fn)
 
 game_isr:
     push_axy
@@ -134,7 +135,6 @@ game_isr:
     sta game_state+GameState::vblank
 @io_isr:
     jsr io_isr
-@exit:
     pop_axy
     rti
 
@@ -243,6 +243,7 @@ game_pacman_dying:
 
 
 game_game_over:
+              lda game_state+GameState::state
               cmp #STATE_GAME_OVER
               bne @exit
               jsr animate_up
@@ -260,6 +261,7 @@ game_game_over:
 @exit:        rts
 
 game_intermission:
+              lda game_state+GameState::state
               cmp #STATE_INTERMISSION
               bne @exit
 ;              .byte $db
@@ -294,14 +296,14 @@ game_intermission:
 
     ; key/joy input ?
     ;  (input direction != current direction)?
-    ;  y - input direction inverse current direction?
-    ;     y - set current direction = inverse input direction
+    ;  y - input direction reverse current direction?
+    ;     y - set current direction = reverse input direction
     ;     n - can move to input direction?
     ;        y - pre-turn? (+4px)
     ;            y - set turn direction = current direction
     ;             - set turn bit on
     ;         - post-turn?  (-3px)
-    ;            y - set turn direction = inverse current direction (eor)
+    ;            y - set turn direction = reverse current direction (eor)
     ;              set turn bit on
     ;         - set current direction = input direction
     ;         - change pacman shape
@@ -334,7 +336,7 @@ actors_move:
               lda ghost_mode,x
               cmp #GHOST_MODE_CATCHED ; already catched?
               beq @next
-              cmp #GHOST_MODE_NORM  ; othewise ghost catched
+              cmp #GHOST_MODE_NORM    ; otherwise ghost catched
               bne @ghost_hit
 @pacman_hit:  lda #STATE_PACMAN_DYING
               ;jmp game_set_state_frames_delay
@@ -342,9 +344,9 @@ actors_move:
               bpl @loop
 
               lda game_state+GameState::speed_ghst_cnt
-              and #$7f
+              and #$7f  ; mask cnt value
               bne @exit
-              lda game_state+GameState::speed_ghst
+              lda game_state+GameState::speed_ghst    ; init again
               sta game_state+GameState::speed_ghst_cnt
               rts
 @exit:        dec game_state+GameState::speed_ghst_cnt
@@ -358,7 +360,7 @@ actors_move:
               lda game_state+GameState::ghosts_tocatch  ; select shape for bonus
               jsr ghost_set_shape
 
-              ;jsr short_dist_catched ; TODO possibility to inverse direction immediately when return
+              ;jsr short_dist_catched ; TODO possibility to reverse direction immediately when return
 
               ldx #ACTOR_PACMAN
               lda #Shape_Ix_Invisible
@@ -386,16 +388,8 @@ ghost_move:   jsr actor_update_charpos
               jsr ghost_update_shape
 
               lda ghost_strategy,x
-ghost_move_target:
               cmp #GHOST_STATE_TARGET
-              bne ghost_return
-              lda ghost_mode,x
               beq move_target
-              lda game_state+GameState::frames
-              and #$01
-              beq move_target
-@exit:        rts
-
 ghost_return: cmp #GHOST_STATE_RETURN
               beq :+
               jmp ghost_base
@@ -481,8 +475,8 @@ move_nodelay:
               sta p_maze+1
 
               lda actor_move,x
-              eor #ACT_MOVE_INVERSE
-              sta game_tmp2 ; exclude inverse of the new direction
+              eor #ACT_MOVE_REVERSE
+              sta game_tmp2 ; exclude reverse of the new direction
 
               lda ghost_mode,x
               beq short_dist   ; normal ?
@@ -492,7 +486,7 @@ move_nodelay:
               jsr system_rng  ; choose next direction randomly
 @check_dir:   and #ACT_DIR
               sta target_dir
-              cmp game_tmp2 ; inverse direction?
+              cmp game_tmp2 ; reverse direction?
               beq @next_dir
               tay
               lda y_index,y
@@ -506,7 +500,7 @@ move_nodelay:
 
 short_dist_catched:
 ;              lda #$ff
- ;             sta game_tmp2 ; allow inverse
+ ;             sta game_tmp2 ; allow reverse
 short_dist:
 ; check new direction in order up,left,down,right
               lda #$ff  ; init 16bit distance "far away"
@@ -516,7 +510,7 @@ short_dist:
               lda #ACT_UP
               sta game_tmp
 @check:       lda game_tmp
-              cmp game_tmp2 ; discard inverse direction
+              cmp game_tmp2 ; discard reverse direction
               beq @next
               tay
               lda y_index,y
@@ -577,8 +571,6 @@ calc_distance:lda (p_maze),y
 :             cpy #$20
               bcc :+
               .byte $db
-              nop
-              nop
 :             tay
               clc
               lda squares_l,y
@@ -610,9 +602,9 @@ ghost_base:   cmp #GHOST_STATE_BASE
               bne @exit
 
               lda actor_sp_x,x
-              bmi @inverse  ; $80 ?
+              bmi @reverse  ; $80 ?
               cmp #$78
-              beq @inverse
+              beq @reverse
               cmp #$7c
               bne @move
 @leave:       lda ghost_dot_cnt,x
@@ -622,8 +614,8 @@ ghost_base:   cmp #GHOST_STATE_BASE
               sta ghost_strategy,x
 @exit:        rts
 
-@inverse:     lda actor_move,x
-              eor #ACT_MOVE_INVERSE_NEXT|ACT_MOVE_INVERSE
+@reverse:     lda actor_move,x
+              eor #ACT_MOVE_REVERSE_NEXT|ACT_MOVE_REVERSE
               sta actor_move,x
 @move:        jmp actor_move_soft
 
@@ -757,7 +749,7 @@ pacman_move:  lda pacman_delay
               beq @move          ; 80% speed, 60 frames
               bmi @exit          ; -1 skip move for this frame
 @move_double: jsr @move          ; +1 additional move
-              cpx #4
+              cpx #4    ; assert X kept TODO debug
               beq @move
               .byte $db
 @move_cnt:    dec game_state+GameState::speed_pcmn_cnt
@@ -942,8 +934,11 @@ actor_can_move_to_direction:
               rts
 
 pacman_input:
-              jsr get_input
-              bcc @exit                       ; key/joy input ?
+              ldy #0
+              lda keyboard_input
+              sty keyboard_input          ; "consume" key pressed
+              jsr io_player_direction     ; return C=1 if any valid key or joystick input, A=ACT_xxx
+              bcc @exit                   ; key/joy input ?
               sta input_direction
               jsr actor_can_move_to_direction ; C=0 can move
               bcs @set_input_dir_to_next_dir  ; no - only set next dir
@@ -956,8 +951,8 @@ pacman_input:
               and #ACT_DIR
               cmp input_direction          ;same direction ?
               beq @set_input_dir_to_next_dir  ;yes, do nothing...
-              ;current dir == inverse input dir ?
-              eor #ACT_MOVE_INVERSE
+              ;current dir == reverse input dir ?
+              eor #ACT_MOVE_REVERSE
               cmp input_direction
               beq @set_input_dir_to_current_dir
 
@@ -972,7 +967,7 @@ pacman_input:
               lda #0
               bcc @l_preturn                 ; C=0 pre-turn, C=1 post-turn
 
-              lda #ACT_MOVE_INVERSE          ;
+              lda #ACT_MOVE_REVERSE          ;
 @l_preturn:
               eor actor_move,x  ; current direction
               and #ACT_DIR
@@ -1008,11 +1003,6 @@ actor_update_charpos: ; offset x=+4,y=+4  => x,y 2,1 => 4+2*8, 4+1*8
               sta actor_ypos,x
               rts
 
-get_input:
-              ldy #0
-              lda keyboard_input
-              sty keyboard_input        ; "consume" key pressed
-              jmp io_player_direction   ; return C=1 if any valid key or joystick input, A=ACT_xxx
 
 ; in:  .A - direction
 lda_actor_charpos_direction:
@@ -1089,6 +1079,8 @@ game_ghost_catched:
               jsr animate_screen
               jsr animate_bonus
 
+              ;jsr sound_ghost TODO
+
               lda game_state+GameState::frames
               and #$3f
               bne @exit
@@ -1103,7 +1095,7 @@ game_ghost_catched:
               sta ghost_strategy,x
               lda #GHOST_MODE_CATCHED
               sta ghost_mode,x
-              lda #STATE_PLAYING
+              lda #STATE_PLAYING    ; continue playing
               jmp game_set_state
 @exit:        rts
 
@@ -1170,9 +1162,9 @@ mode_frightened:
 
               ldy game_state+GameState::level
               cpy #17 ; no frightened in level 17
-              beq actors_inverse
+              beq actors_reverse
               cpy #19 ; no frightened in level 19+
-              bcs actors_inverse
+              bcs actors_reverse
 
               dey ; adjust for lookup
               lda frghtd_timer_l,y
@@ -1180,21 +1172,24 @@ mode_frightened:
               lda frghtd_timer_h,y
               sta game_state+GameState::frghtd_timer+1
 
-              lda #2  ; frightened speeds
+              lda #2  ; index for frightened speeds
               jsr update_speed
 
-actors_inverse: ; set next direction to inverse of current direction
+actors_reverse: ; set next direction to reverse of current direction
               ldy #ACTOR_CLYDE
-:             lda actor_move,y  ; change direction
+:             lda ghost_strategy,y
+              cmp #GHOST_STATE_TARGET
+              bne @next
+              lda actor_move,y  ; change direction
               and #<~ACT_NEXT_DIR
               sta actor_move,y
-              eor #ACT_MOVE_INVERSE
+              eor #ACT_MOVE_REVERSE
               asl
               asl
               and #ACT_NEXT_DIR
               ora actor_move,y
               sta actor_move,y
-              dey
+@next:        dey
               bpl :-
               rts
 
@@ -1213,18 +1208,15 @@ update_speed: ;.byte $db
 @lvl_1:       tay
               lda speed_table+0,y
               sta game_state+GameState::speed_pcmn
-              sta game_state+GameState::speed_pcmn_cnt
               lda speed_table+1,y
               sta game_state+GameState::speed_ghst
-              sta game_state+GameState::speed_ghst_cnt
               rts
 
-speed_table:  ; pacman | ghost | fright pacman | fright ghost - $80 denotes delay
-              .byte 0,  $80 | 19, 7,  $80 | 3   ; level 1
-              .byte 7,        14, 5,  $80 | 3   ; level 2-4
-              .byte 4,         5, 4,  $80 | 4   ; level 5..20
-              .byte 7,         5, 0,        0   ; level 21+
-
+speed_table:  ; pacman | ghost | fright pacman | fright ghost - bit 7 denotes delay
+              .byte 0,  $80 | 20, 7,  $80 | 2  ; level 1
+              .byte 7,        15, 5,  $80 | 3  ; level 2-4
+              .byte 4,         5, 4,  $80 | 4  ; level 5..20
+              .byte 7,         5, 0,        0  ; level 21+
 
 update_mode:  ; Ghosts are forced to reverse direction by the system anytime the mode changes from:
               ;   - chase-to-scatter
@@ -1245,6 +1237,7 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
 @scatter_chase:
               lda #GHOST_MODE_NORM
               jsr actors_mode
+
               lda #0 ; speed table index
               jsr update_speed
 
@@ -1277,10 +1270,14 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               sta game_state+GameState::sctchs_timer+1
 
               lda game_state+GameState::sctchs_ix
-              cmp #7              ; initial mode switch?
+              cmp #7              ; skip reverse at initial mode switch
               beq :+
-              jsr actors_inverse
+              jsr actors_reverse
 :
+              lda #0
+              sta game_state+GameState::speed_pcmn_cnt
+              sta game_state+GameState::speed_ghst_cnt
+
               dec game_state+GameState::sctchs_ix
               asl game_state+GameState::sctchs_mode
 
@@ -1630,7 +1627,7 @@ game_init:
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
 
-              lda #2 ; start with level 1
+              lda #1 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
@@ -1741,7 +1738,7 @@ ghost_init_state:
 ; Scatter       5       1/60       1/60
 ; Chase indefinite indefinite indefinite
 ;
-; inverse order
+; reverse order
 mode_timer_l:
     .byte       0,        0,0
     .byte <(60*05),       0,0

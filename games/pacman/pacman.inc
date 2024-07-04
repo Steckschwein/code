@@ -68,8 +68,8 @@ STATE_PACMAN_DYING  = $7
 STATE_LEVEL_CLEARED = $8
 STATE_GAME_OVER     = $9
 STATE_GHOST_CATCHED = $a
-STATE_INTERMISSION  = $b
 
+STATE_INTERMISSION  = 1<<5
 STATE_INTRO         = 1<<5
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
@@ -163,8 +163,8 @@ ACT_DOWN          = 1 ;01
 ACT_LEFT          = 2 ;10
 ACT_UP            = 3 ;11
 ACT_MOVE_UP_OR_DOWN     = %00000001
-ACT_MOVE_INVERSE        = %00000010   ;eor bit 1
-ACT_MOVE_INVERSE_NEXT   = %00001000
+ACT_MOVE_REVERSE        = %00000010   ;eor bit 1
+ACT_MOVE_REVERSE_NEXT   = %00001000
 
 ACT_TURN          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2
@@ -277,10 +277,10 @@ SKIP_DIR_CHECK    = $ff
   ; game related
   rng             .word   ; PRNG index
 
-  speed_pcmn      .byte   ; pacman speed frame counter
+  ;speed control
+  speed_pcmn      .byte   ; pacman speed frame counter init value
   speed_pcmn_cnt  .byte   ; -1 (delay), +1 (push) or 0 nothing
-  ;speed_
-  speed_ghst      .byte
+  speed_ghst      .byte   ; ghost speed frame counter init value
   speed_ghst_cnt  .byte   ;
 
   frghtd_timer    .word   ; frightened mode timer in secs * frames

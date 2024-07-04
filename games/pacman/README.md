@@ -1,20 +1,25 @@
 
 TODO:
+  - fix speed of ghost when catched and has left house as normal but frightened mode still active - skip delay when "normal"
+  - check speed frightened level 1,2 - only sometimes slows down too much
+  - reverse ghost only if not in house
   - fix pacman can turn if stopped on wall
   - "cruise elroy" 1 / 2
   - per ghost dot cnt logic
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - use fn pointer for game loop
+  - "pass through" ghost in frightened mode is possible (ghost not catched)
 
 
 pacman/ghost speed percentage/frames
   LEVEL      NORM  NORM-DOTS  FRIGHT  FRIGHT-DOTS   NORM   FRIGHT	 TUNNEL
-  1           80%	      71%   90%/54	    79%     75%/45      50%  	  40%
-  2 - 4    90%/54	      79%   95%/57	    83%     85%/51      55%	    45%
-  5 - 20	100%/60	      87%  100%/60      87%     95%/57      60%	    50%
-  21+	     90%/54	      79%     -	         -      95%/57       -	    50%
+  1           80%	      71%   90%/54	    79%       75%       50%  	  40%
+  2 - 4    90%/54	      79%   95%/57	    83%       85%       55%	    45%
+  5 - 20	100%/60	      87%  100%/60      87%       95%       60%	    50%
+  21+	     90%/54	      79%     -	         -        95%        -	    50%
 
-100% => 75,75757625 px/s +1px/4
+(rate 75,75757625px/s)
+100% => 75px/s +1px/4
  95% => 72px/s +1px/5
  90% => 68px/s +1px/7
  85% => 64px/s +1px/15
@@ -23,8 +28,6 @@ pacman/ghost speed percentage/frames
  60% => 45px/s -1px/4
  55% => 42px/s -1px/3
  50% => 38px/s -1px/2
- 45% => 34px/s -1px/2
- 40% => 30px/s -1px/2
 
 ----
 

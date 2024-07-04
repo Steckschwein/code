@@ -1,12 +1,12 @@
 .include "pacman.inc"
 
 .export game_state
+
 .exportzp p_maze, p_sound, p_text, p_tmp
 .exportzp p_game
 .exportzp p_video
 
 .autoimport
-
 
 .zeropage
   p_video:  .res 2
@@ -32,36 +32,30 @@ main:
     jsr io_irq_on
     setIRQ frame_isr, save_irq
 
-    jsr boot
-
-@intro:
-    jsr intro
-    bit game_state+GameState::state
-    bmi @exit
-    jsr game
-    bit game_state+GameState::state
-    bpl @intro
+            jsr boot
+@loop:      jsr intro
+            jsr game
+            bit game_state+GameState::state
+            bpl @loop
 @exit:
-    jsr gfx_mode_off
-
-    restoreIRQ save_irq
-
-    jmp io_exit
+            jsr gfx_mode_off
+            restoreIRQ save_irq
+            jmp io_exit
+.endproc
 
 init:
-    ldy #.sizeof(GameState)-1
-    lda #0
-:   sta game_state,y
-    dey
-    bpl :-
+            ldy #.sizeof(GameState)-1
+            lda #0
+:           sta game_state,y
+            dey
+            bpl :-
 
-    jsr io_highscore_load
+            jsr io_highscore_load
 
-    lda #DIP_COINAGE_1 | DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES
-    sta game_state+GameState::dip_switches
+            lda #DIP_COINAGE_1 | DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES
+            sta game_state+GameState::dip_switches
 
-    rts
-.endproc
+            rts
 
 .bss
   save_irq:  .res 2
