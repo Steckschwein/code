@@ -1,23 +1,41 @@
 ;i/o
-    .include "pacman.c64.inc"
+.include "pacman.c64.inc"
 
-    .export io_init
-    .export io_detect_joystick
-    .export io_joystick_read
-    .export io_player_direction
-    .export io_getkey
-    .export io_isr
-    .export io_irq_on
-    .export io_exit
+.export io_init
+.export io_detect_joystick
+.export io_joystick_read
+.export io_player_direction
+.export io_getkey
+.export io_isr
+.export io_irq_on
+.export io_exit
 
 .code
 
+
+; C=0 if ok, C=1 if error or not NTSC
 io_init:
-        lda #$ff  ; output port a
-        sta CIA1_DDRA
-        lda #0    ; input port b
-        sta CIA1_DDRB
-        rts
+:             lda VIC_HLINE
+:             cmp VIC_HLINE
+              beq :-
+              bmi :--
+              cmp #$20
+              bcc @init
+
+              ldy #0
+:             lda @not_ntsc,y
+              cmp #0
+              beq @exit
+              jsr CHROUT
+              iny
+              bne :-
+@not_ntsc:    .asciiz "ntsc not detected, pacman is designed to work correctly on ntsc only!"
+
+@init:        lda #$ff  ; output port a
+              sta CIA1_DDRA
+              lda #0    ; input port b
+              sta CIA1_DDRB
+@exit:        rts
 
 io_irq_on:
         sei

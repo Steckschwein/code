@@ -23,14 +23,17 @@
 
 .proc  _main: near
 main:
-    jsr init
-    jsr io_init
-    jsr sound_init
-    jsr gfx_init
-    jsr gfx_mode_on
+            jsr init
+            jsr io_init
+            bcc :+
+            rts
 
-    jsr io_irq_on
-    setIRQ frame_isr, save_irq
+:           jsr sound_init
+            jsr gfx_init
+            jsr gfx_mode_on
+
+            jsr io_irq_on
+            setIRQ frame_isr, save_irq
 
             jsr boot
 @loop:      jsr intro

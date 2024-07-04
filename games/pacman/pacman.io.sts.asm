@@ -20,6 +20,7 @@ io_init:
     jsr joystick_on
 
     ;TODO ...
+    clc
     rts
 
 io_isr:       jmp fetchkey

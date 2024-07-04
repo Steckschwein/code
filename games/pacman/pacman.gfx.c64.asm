@@ -393,7 +393,7 @@ gfx_display_maze:
     lda #Color_Text
     bne @color
 @color_bg:
-    lda #Color_Border
+    lda #Color_Maze
 @color:
     sta text_color
     lda r1
