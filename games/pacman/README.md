@@ -1,9 +1,6 @@
 
 TODO:
-  - fix speed of ghost when catched and has left house as normal but frightened mode still active - skip delay when "normal"
-  - check speed frightened level 1,2 - only sometimes slows down too much
-  - reverse ghost only if not in house
-  - fix pacman can turn if stopped on wall
+  - need separate speed counter per ghost, e.g. we have to distinct a ghost when catched and leaves house again as normal while frightened mode is still active. the wrong speed is applied
   - "cruise elroy" 1 / 2
   - per ghost dot cnt logic
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
@@ -19,6 +16,7 @@ pacman/ghost speed percentage/frames
   21+	     90%/54	      79%     -	         -        95%        -	    50%
 
 (rate 75,75757625px/s)
+105% => 80px/s +1px/3
 100% => 75px/s +1px/4
  95% => 72px/s +1px/5
  90% => 68px/s +1px/7

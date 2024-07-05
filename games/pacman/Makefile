@@ -45,7 +45,7 @@ RESOURCES_4BPP := $(patsubst %.4bpp.xpm,%.4bpp.res,$(foreach dir,.,$(wildcard ./
 
 .PHONY: all clean
 
-all: pacman.prg
+all: pacman.prg pacman64.prg
 
 clean:
 	rm -f *.bin *.prg *.dis *.s *.o *.res *.map *.lbl

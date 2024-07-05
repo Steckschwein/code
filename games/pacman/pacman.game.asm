@@ -653,8 +653,6 @@ ghost_leave_base:
               bne @exit
 
               lda actor_sp_x,x
-;              cmp #$7e
- ;             beq @home
               bmi @home
 
               lda #ACT_MOVE|ACT_DOWN<<2|ACT_DOWN
@@ -670,6 +668,7 @@ ghost_leave_base:
 
 :             lda actor_init_d,x
               sta actor_move,x
+              ; TODO strategy dot count
               lda #GHOST_STATE_LEAVE
               sta ghost_strategy,x
               lda #GHOST_MODE_NORM
@@ -753,7 +752,11 @@ pacman_move:  lda pacman_delay
               beq @move
               .byte $db
 @move_cnt:    dec game_state+GameState::speed_pcmn_cnt
-@move:        lda pacman_turn
+
+@move:        lda game_state+GameState::frames
+              and #$1f
+;              bne @exit
+              lda pacman_turn
               bpl @move_dir      ; turning?
               jsr is_center
               bne @turn_soft
@@ -762,13 +765,7 @@ pacman_move:  lda pacman_delay
               sta pacman_turn
 @turn_soft:   lda pacman_turn
               jsr actor_move_sprite
-@move_dir:
-;              lda actor_move,x
-;              bpl :+
-              ;jsr @move
-;:             ;jmp pacman_collect
-;@move:
-              jsr actor_center  ; center reached?
+@move_dir:    jsr actor_center  ; center reached?
               bne @move_soft    ; no, move soft
 
               jsr pacman_collect
@@ -782,7 +779,7 @@ pacman_move:  lda pacman_delay
               lda actor_move,x  ; otherwise stop move
               and #<~ACT_MOVE
               sta actor_move,x
-              and #ACT_NEXT_DIR ; set shape of make pacman visible again, next direction
+              and #ACT_NEXT_DIR ; set shape of next direction
               sta actor_shape,x
 @exit:        rts
 @move_soft:
@@ -808,7 +805,6 @@ actor_move_sprite:
               lda actor_sp_x,x
               adc vectors_x,y
               sta actor_sp_x,x
-
               clc
               lda actor_sp_y,x
               adc vectors_y,y
@@ -949,7 +945,7 @@ pacman_input:
               ;current dir == input dir ?
               lda actor_move,x
               and #ACT_DIR
-              cmp input_direction          ;same direction ?
+              cmp input_direction             ;same direction ?
               beq @set_input_dir_to_next_dir  ;yes, do nothing...
               ;current dir == reverse input dir ?
               eor #ACT_MOVE_REVERSE
@@ -963,9 +959,9 @@ pacman_input:
 
               lda input_direction
               jsr pacman_cornering
-              beq @set_input_dir_to_current_dir  ; Z=1 center position, no pre-/post-turn
+              beq @set_input_dir_to_current_dir   ; Z=1 center position, no pre-/post-turn
               lda #0
-              bcc @l_preturn                 ; C=0 pre-turn, C=1 post-turn
+              bcc @l_preturn                      ; C=0 pre-turn, C=1 post-turn
 
               lda #ACT_MOVE_REVERSE          ;
 @l_preturn:
@@ -980,6 +976,8 @@ pacman_input:
               sta actor_move,x
 
 @set_input_dir_to_next_dir: ; bit 3-2
+              lda actor_move,x
+              bpl @exit           ; stopped already? (bit 7 = 0), dont change next dir
               lda input_direction
               asl
               asl
@@ -1050,7 +1048,7 @@ game_demo:
               bne :+
               draw_text text_pacman
               draw_text text_demo
-@exit:         rts
+@exit:        rts
 :             lda game_state+GameState::frames
               and #$08
               beq @exit
