@@ -68,8 +68,7 @@ STATE_PACMAN_DYING  = $7
 STATE_LEVEL_CLEARED = $8
 STATE_GAME_OVER     = $9
 STATE_GHOST_CATCHED = $a
-
-STATE_INTERMISSION  = 1<<5
+STATE_INTERMISSION  = $b
 STATE_INTRO         = 1<<5
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
@@ -278,19 +277,20 @@ SKIP_DIR_CHECK    = $ff
   rng             .word   ; PRNG index
 
   ;speed control
-  speed_pcmn      .byte   ; pacman speed frame counter init value
-  speed_pcmn_cnt  .byte   ; -1 (delay), +1 (push) or 0 nothing
-  speed_ghst      .byte   ; ghost speed frame counter init value
-  speed_ghst_cnt  .byte   ;
+  speed_cnt_init    .res 4  ; speed counter init values in order pacman normal, ghost normal, pacman frightened, ghost frightened
+  speed_ix          .byte   ; frightened mode (2) or normal (0) - used to select appropriate speed counter init value
 
-  frghtd_timer    .word   ; frightened mode timer in secs * frames
-  sctchs_mode     .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode
-  sctchs_ix       .byte   ; scatter/chase timings table index
-  sctchs_timer    .word   ; current mode count down secs * frames - e.g. 1s => 60
+  speed_pcmn_cnt    .byte   ; -1 (delay), +1 (push) or 0 nothing
+  speed_ghst_cnt    .byte   ;
 
-  all_ghosts_cnt  .byte   ; counter how often ALL ghosts where catched during a frightened phase
-  ghosts_tocatch  .byte   ; ghosts to catch during a frightened phase, starts with 3
-  catched_ghost   .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
+  frghtd_timer      .word   ; frightened mode timer in secs * frames
+  sctchs_mode       .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode
+  sctchs_ix         .byte   ; scatter/chase timings table index
+  sctchs_timer      .word   ; current mode count down secs * frames - e.g. 1s => 60
+
+  ghsts_all_cnt    .byte   ; counter how often ALL ghosts where catched during a frightened phase
+  ghsts_to_catch   .byte   ; ghosts to catch during a frightened phase, starts with 3
+  ghst_catched     .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
 
 .endstruct
 

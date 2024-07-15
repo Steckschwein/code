@@ -264,13 +264,12 @@ game_intermission:
               lda game_state+GameState::state
               cmp #STATE_INTERMISSION
               bne @exit
-;              .byte $db
-              ldy #2
+              ldy #2  ; select intermission for level - lvl 2 (im1), lvl 5 (im2), lvl 9,13,17 (im3)
               lda game_state+GameState::level
               cmp #2
-              beq @im_1
-              cmp #5
               beq @im_2
+              cmp #5
+              beq @im_1
               cmp #9
               beq @im
               cmp #13
@@ -283,13 +282,13 @@ game_intermission:
               bne :+
               jsr gfx_blank_screen
               lda game_state+GameState::level
-              jmp gfx_bonus_stack
+              jsr gfx_bonus_stack
+              rts
 :             cmp #$ff
               bne @exit
 @next:        inc game_state+GameState::level ; next level
               lda #STATE_LEVEL_INIT
               jmp game_set_state_frames
-
 @exit:        rts
 
 
@@ -342,22 +341,14 @@ actors_move:
               ;jmp game_set_state_frames_delay
 @next:        dex
               bpl @loop
-
-              lda game_state+GameState::speed_ghst_cnt
-              and #$7f  ; mask cnt value
-              bne @exit
-              lda game_state+GameState::speed_ghst    ; init again
-              sta game_state+GameState::speed_ghst_cnt
-              rts
-@exit:        dec game_state+GameState::speed_ghst_cnt
               rts
 
-@ghost_hit:   stx game_state+GameState::catched_ghost ; ghost number
+@ghost_hit:   stx game_state+GameState::ghst_catched ; ghost number
 
               lda #GHOST_MODE_BONUS
               sta ghost_mode,x
 
-              lda game_state+GameState::ghosts_tocatch  ; select shape for bonus
+              lda game_state+GameState::ghsts_to_catch  ; select shape for bonus
               jsr ghost_set_shape
 
               ;jsr short_dist_catched ; TODO possibility to reverse direction immediately when return
@@ -366,15 +357,15 @@ actors_move:
               lda #Shape_Ix_Invisible
               sta actor_shape,x
 
-              lda game_state+GameState::ghosts_tocatch  ; 3,2,1,0
+              lda game_state+GameState::ghsts_to_catch  ; 3,2,1,0
               asl
               adc #Pts_Index_Ghost_Catched    ; select score
               jsr add_score
 
-              dec game_state+GameState::ghosts_tocatch
+              dec game_state+GameState::ghsts_to_catch
               bpl :+
 
-              dec game_state+GameState::all_ghosts_cnt
+              dec game_state+GameState::ghsts_all_cnt
               bpl :+
               lda #Pts_Index_All_Ghosts
               jsr add_score
@@ -384,13 +375,14 @@ actors_move:
 :             lda #STATE_GHOST_CATCHED
               jmp game_set_state_frames
 
+
 ghost_move:   jsr actor_update_charpos
               jsr ghost_update_shape
 
               lda ghost_strategy,x
               cmp #GHOST_STATE_TARGET
-              beq move_target
-ghost_return: cmp #GHOST_STATE_RETURN
+              beq @move_target
+              cmp #GHOST_STATE_RETURN
               beq :+
               jmp ghost_base
 
@@ -399,28 +391,35 @@ ghost_return: cmp #GHOST_STATE_RETURN
               lda #$0e
               sta ghost_tgt_y,x
 
-              jsr :+ ; double speed when return to base
+              jsr :+ ; double speed when return to base, call it twice
 :             lda #100
               cmp actor_sp_x,x
-              bne move_nodelay
+              bne @move_nodelay
               lda #112
               cmp actor_sp_y,x
-              bne move_nodelay
+              bne @move_nodelay
 ; base reached
               lda #GHOST_STATE_ENTER
               sta ghost_strategy,x
               rts
 
-move_target:  lda game_state+GameState::speed_ghst_cnt
+@move_target: lda actor_speed_cnt,x
               and #$7f    ; mask cnt
-              bne move_nodelay
-              lda game_state+GameState::speed_ghst
-              beq move_nodelay       ;  0 - 80% speed, 60 frames
-              bpl @move_2x
-              rts                    ; -1 skip move for this frame
-@move_2x:     jsr move_nodelay       ; +1 additional move
-move_nodelay:
-              ldy actor_ypos,x
+              bne @move_cnt
+              dec actor_speed_cnt,x
+              lda game_state+GameState::speed_ix
+              cmp #2
+              bne :+
+;              .byte $db
+:             and ghost_mode,x  ; if ghost is normal (0) we AND with speed_ix, will result in offset 0 which is intended
+              tay
+              lda game_state+GameState::speed_cnt_init+1,y    ; init again
+              sta actor_speed_cnt,x
+              beq @move_nodelay     ;  0 - 80% speed, 60 frames
+              bmi @exit             ; -1 skip move for this frame
+@move_2x:     jsr @move_nodelay     ; +1 additional move
+@move_cnt:    dec actor_speed_cnt,x
+@move_nodelay:ldy actor_ypos,x
               lda actor_xpos,x
               cmp #$0c  ; upper "red zone" ?
               beq @is_red_zone
@@ -442,7 +441,7 @@ move_nodelay:
 @tunnel:      lda game_state+GameState::frames ; half speed, means every 2nd frame
               and #$01
               beq @update_dir
-              rts
+@exit:        rts
 
 @update_dir:  jsr actor_center    ; center reached?
               bne @move_soft
@@ -486,7 +485,7 @@ move_nodelay:
               jsr system_rng  ; choose next direction randomly
 @check_dir:   and #ACT_DIR
               sta target_dir
-              cmp game_tmp2 ; reverse direction?
+              cmp game_tmp2   ; reverse direction?
               beq @next_dir
               tay
               lda y_index,y
@@ -689,11 +688,8 @@ ghost_update_shape:
               ora actor_shape,x
 ghost_set_shape:
               ldy ghost_mode,x
-              ;ora ghost_shape_offs,x
               ora shape_offs,y
-              ;and ghost_shape_mask,x
               and shape_mask,y
-
               sta actor_shape,x
               rts
 
@@ -740,19 +736,19 @@ pacman_move:  lda pacman_delay
               beq :+
               dec pacman_delay
               rts
-:             lda game_state+GameState::speed_pcmn_cnt
+:             lda actor_speed_cnt,x
               and #$7f    ; mask cnt
               bne @move_cnt
-              lda game_state+GameState::speed_pcmn
-              sta game_state+GameState::speed_pcmn_cnt
+              ldy game_state+GameState::speed_ix
+              lda game_state+GameState::speed_cnt_init,y
+              sta actor_speed_cnt,x
               beq @move          ; 80% speed, 60 frames
               bmi @exit          ; -1 skip move for this frame
-@move_double: jsr @move          ; +1 additional move
+@move_2x:     jsr @move          ; +1 additional move
               cpx #4    ; assert X kept TODO debug
               beq @move
               .byte $db
-@move_cnt:    dec game_state+GameState::speed_pcmn_cnt
-
+@move_cnt:    dec actor_speed_cnt,x
 @move:        lda game_state+GameState::frames
               and #$1f
 ;              bne @exit
@@ -1088,7 +1084,7 @@ game_ghost_catched:
               and #ACT_NEXT_DIR ; make pacman visible again, set shape
               sta actor_shape,x
 
-              ldx game_state+GameState::catched_ghost
+              ldx game_state+GameState::ghst_catched
               lda #GHOST_STATE_RETURN
               sta ghost_strategy,x
               lda #GHOST_MODE_CATCHED
@@ -1156,7 +1152,7 @@ mode_frightened:
               lda #GHOST_MODE_FRIGHT
               jsr actors_mode
               lda #3
-              sta game_state+GameState::ghosts_tocatch
+              sta game_state+GameState::ghsts_to_catch
 
               ldy game_state+GameState::level
               cpy #17 ; no frightened in level 17
@@ -1171,7 +1167,7 @@ mode_frightened:
               sta game_state+GameState::frghtd_timer+1
 
               lda #2  ; index for frightened speeds
-              jsr update_speed
+              sta game_state+GameState::speed_ix
 
 actors_reverse: ; set next direction to reverse of current direction
               ldy #ACTOR_CLYDE
@@ -1190,31 +1186,6 @@ actors_reverse: ; set next direction to reverse of current direction
 @next:        dey
               bpl :-
               rts
-
-update_speed: ;.byte $db
-              ldy game_state+GameState::level
-              cpy #1      ; level 1 ?
-              beq @lvl_1
-              cpy #5      ; level 2-4 ?
-              bcc @lvl_2_4
-              cpy #21     ; level 21+ ?
-              bcc @lvl_5_20
-              clc
-              adc #4      ; +12
-@lvl_5_20:    adc #4      ; +8
-@lvl_2_4:     adc #4      ; +4
-@lvl_1:       tay
-              lda speed_table+0,y
-              sta game_state+GameState::speed_pcmn
-              lda speed_table+1,y
-              sta game_state+GameState::speed_ghst
-              rts
-
-speed_table:  ; pacman | ghost | fright pacman | fright ghost - bit 7 denotes delay
-              .byte 0,  $80 | 20, 7,  $80 | 2  ; level 1
-              .byte 7,        15, 5,  $80 | 3  ; level 2-4
-              .byte 4,         5, 4,  $80 | 4  ; level 5..20
-              .byte 7,         5, 0,        0  ; level 21+
 
 update_mode:  ; Ghosts are forced to reverse direction by the system anytime the mode changes from:
               ;   - chase-to-scatter
@@ -1236,8 +1207,8 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               lda #GHOST_MODE_NORM
               jsr actors_mode
 
-              lda #0 ; speed table index
-              jsr update_speed
+              lda #0  ; index for normal speeds
+              sta game_state+GameState::speed_ix
 
               lda game_state+GameState::sctchs_timer+0
               bne :+
@@ -1251,6 +1222,11 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
 @switch_mode: ;.byte $db
               lda game_state+GameState::sctchs_ix
               bmi @exit ; underrun, no more mode switches
+
+              cmp #7    ; skip reverse at initial mode switch
+              beq :+
+              jsr actors_reverse
+:             lda game_state+GameState::sctchs_ix
 
               asl ; *2
               adc game_state+GameState::sctchs_ix ; *3
@@ -1267,11 +1243,6 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               lda mode_timer_h,y
               sta game_state+GameState::sctchs_timer+1
 
-              lda game_state+GameState::sctchs_ix
-              cmp #7              ; skip reverse at initial mode switch
-              beq :+
-              jsr actors_reverse
-:
               lda #0
               sta game_state+GameState::speed_pcmn_cnt
               sta game_state+GameState::speed_ghst_cnt
@@ -1470,7 +1441,7 @@ game_set_state_frames_delay:
               sta game_state+GameState::nextstate
               ;lda #STATE_DELAY ; fast start
 game_set_state_frames:
-              ldy #0 ; otherwise ready frames are skipped immediately
+              ldy #0 ; 1 - otherwise ready frames are skipped immediately
               sty game_state+GameState::frames
 game_set_state:
               sta game_state+GameState::state
@@ -1491,7 +1462,7 @@ game_level_init:
               sta game_state+GameState::dots
 
               lda #3
-              sta game_state+GameState::all_ghosts_cnt
+              sta game_state+GameState::ghsts_all_cnt
 
               lda #0
               sta game_state+GameState::dot_cnt
@@ -1504,10 +1475,38 @@ game_level_init:
               dex
               bpl :-
 
+              ;.byte $db
+              lda #3  ; table index 3 (last column in row)
+              ldy game_state+GameState::level
+              cpy #1      ; level 1 ?
+              beq @lvl_1
+              cpy #5      ; level 2-4 ?
+              bcc @lvl_2_4
+              cpy #21     ; level 21+ ?
+              bcc @lvl_5_20
+              clc
+              adc #4      ; +12
+@lvl_5_20:    adc #4      ; +8
+@lvl_2_4:     adc #4      ; +4
+@lvl_1:       tay
+;              .byte $db
+              ldx #3
+:             lda speed_table,y
+              sta game_state+GameState::speed_cnt_init,x
+              dey
+              dex
+              bpl :-
+
               jsr draw_frame
 
               lda #STATE_READY
               jmp game_set_state_frames
+
+speed_table:  ; pacman | ghost | fright pacman | fright ghost - bit 7 denotes delay
+              .byte 0,  $80 | 20, 7,  $80 | 2  ; level 1
+              .byte 7,        15, 5,  $80 | 3  ; level 2-4
+              .byte 4,         5, 4,  $80 | 4  ; level 5..20
+              .byte 7,         5, 0,        0  ; level 21+
 
 
 game_level_cleared:
@@ -1885,6 +1884,7 @@ points_digits:
   actor_ypos:       .res 5  ; tile y pos - 0..28
   actor_shape:      .res 5  ; shape
   actor_move:       .res 5  ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
+  actor_speed_cnt:  .res 5  ; bit 7 delay, bit 6..0 frame counter
   ghost_color:      .res 4  ; main color
   ghost_shape_mask: .res 4  ; shape mask - for normal, frightened or catched ghost
   ghost_shape_offs: .res 4  ; offset for normal frightened or catched ghost
@@ -1898,7 +1898,6 @@ points_digits:
   pacman_delay:     .res 1  ; amount of frames to delay for various actions - 1 frame eating a dot, 10 frames eating an energizer
   pacman_turn:      .res 1  ; bit 7 turn, bit 1-0 turn direction
 
-
-  target_dist:      .res 2  ; word
+  target_dist:      .res 2  ; 16bit (x1-x2)² + (y1-y2)² to calc shortest distance
   target_dir:       .res 1
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100

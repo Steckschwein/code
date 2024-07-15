@@ -498,7 +498,6 @@ gfx_lives:    sei
 
 ; in
 ;   A - level
-;
 gfx_bonus_stack:
               sta r2    ; save current level
               lda #17*8

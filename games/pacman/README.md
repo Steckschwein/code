@@ -1,11 +1,11 @@
 
 TODO:
-  - need separate speed counter per ghost, e.g. we have to distinct a ghost when catched and leaves house again as normal while frightened mode is still active. the wrong speed is applied
   - "cruise elroy" 1 / 2
   - per ghost dot cnt logic
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - use fn pointer for game loop
   - "pass through" ghost in frightened mode is possible (ghost not catched)
+  - sound
 
 
 pacman/ghost speed percentage/frames
