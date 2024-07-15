@@ -12,7 +12,7 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/steckschwein/buildenv:main
+      image: docker://ghcr.io/steckschwein/buildenv:main
 
     steps:
     - name: checkout
