@@ -12,7 +12,8 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: docker://ghcr.io/steckschwein/buildenv:main
+      # image: ghcr.io/steckschwein/buildenv:main - https://github.com/orgs/community/discussions/37158
+      image: steckschwein/buildenv:2_19-alpine-nouser
 
     steps:
     - name: checkout
