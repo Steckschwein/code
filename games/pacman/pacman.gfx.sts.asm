@@ -108,9 +108,9 @@ gfx_isr:
 @set_scln:    sta scanline
 
 .ifdef __GFX_DEBUG
-              lda Color_Cyan
+              lda #Color_Cyan
               jsr vdp_bgcolor
-              lda Color_Bg
+              lda #Color_Bg
               jsr vdp_bgcolor
 .endif
               ldx #$40

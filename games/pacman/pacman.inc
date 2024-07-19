@@ -24,9 +24,6 @@ MAX_LIVES=5
 
 IRQ_VEC = $fffe
 
-Char_Tunnel         = $05
-Char_Not_Up         = $06   ; blank not up
-
 ;                   = $c6   ;1100 0110
 Char_Blank          = $c7   ;1100 0111
 

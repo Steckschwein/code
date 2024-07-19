@@ -182,6 +182,57 @@ game_ready:   lda game_state+GameState::state
               jmp game_set_state_frames
 @exit:        rts
 
+
+game_init_actors:
+              ldx #ACTOR_CLYDE
+:             jsr @init_ghost
+              dex
+              bpl :-
+              ldx #ACTOR_CLYDE
+              lda game_state+GameState::level
+              cmp #1
+              bne :+
+              lda #60 ; level 1 - dot limit clyde 60
+              sta ghost_dot_limit,x
+              lda #30 ;           dot limit inky 30
+              ldx #ACTOR_INKY
+              sta ghost_dot_limit,x
+:             cmp #2
+              bne :+
+              lda #50 ;           dot limit clyde 50
+              sta ghost_dot_limit,x
+:
+              ldx #ACTOR_PACMAN
+              jsr @init_actor
+              lda #2  ; pacman shape complete ball
+              sta actor_shape,x
+              lda #0
+              sta pacman_delay
+
+              jmp gfx_sprites_on
+
+@init_ghost:
+              lda #Shape_Offset_Norm  ; ghost shape offset
+              sta ghost_shape_offs,x
+              lda #Shape_Mask_Norm
+              sta ghost_shape_mask,x
+              lda ghost_init_state,x
+              sta ghost_strategy,x
+              lda ghost_init_color,x
+              sta ghost_color,x
+              lda #0
+              sta ghost_dot_limit,x
+              lda #GHOST_MODE_NORM
+              sta ghost_mode,x
+@init_actor:
+              lda actor_init_x,x
+              sta actor_sp_x,x
+              lda actor_init_y,x
+              sta actor_sp_y,x
+              lda actor_init_d,x
+              sta actor_move,x
+              rts
+
 game_ready_wait:
               lda game_state+GameState::state
               cmp #STATE_READY_WAIT
@@ -461,10 +512,10 @@ ghost_move:   jsr actor_update_charpos
               lsr
               and #ACT_DIR
               sta actor_move,x
-              jsr lda_actor_charpos_direction
-              cmp #Char_Base ; sanity check wont be C=1
+.ifdef __ASSERTIONS
+              jsr actor_can_move_to_direction ; sanity check should never be C=1
               bcs halt
-
+.endif
               sec
               lda p_maze+0
               sbc #$20 ; adjust maze ptr one char line above (tile right)
@@ -749,10 +800,7 @@ pacman_move:  lda pacman_delay
               beq @move
               .byte $db
 @move_cnt:    dec actor_speed_cnt,x
-@move:        lda game_state+GameState::frames
-              and #$1f
-;              bne @exit
-              lda pacman_turn
+@move:        lda pacman_turn
               bpl @move_dir      ; turning?
               jsr is_center
               bne @turn_soft
@@ -767,8 +815,11 @@ pacman_move:  lda pacman_delay
               jsr pacman_collect
 
               ldx #ACTOR_PACMAN
+
               lda actor_move,x
               and #ACT_DIR
+              ldy actor_ypos,x
+              beq @move_soft    ; we're at right tunnel end, skip dir check
               jsr actor_can_move_to_direction
               bcc @move_soft    ; C=0 - can move to
 
@@ -926,13 +977,15 @@ actor_can_move_to_direction:
               rts
 
 pacman_input:
+              ldx #ACTOR_PACMAN
+              jsr actor_update_charpos
               ldy #0
               lda keyboard_input
               sty keyboard_input          ; "consume" key pressed
               jsr io_player_direction     ; return C=1 if any valid key or joystick input, A=ACT_xxx
               bcc @exit                   ; key/joy input ?
               sta input_direction
-              jsr actor_can_move_to_direction ; C=0 can move
+              jsr actor_can_move_to_direction ; C=0 can move  ; TODO FIXME pacman stops at right tunnel, cause maze ram is not initialized at x=0,y=-1
               bcs @set_input_dir_to_next_dir  ; no - only set next dir
 
               lda pacman_turn
@@ -1099,8 +1152,6 @@ game_playing:
               cmp #STATE_PLAYING
               bne @exit
 
-              ldx #ACTOR_PACMAN
-              jsr actor_update_charpos
               jsr pacman_input
               jsr pacman_move
 
@@ -1172,9 +1223,9 @@ mode_frightened:
 actors_reverse: ; set next direction to reverse of current direction
               ldy #ACTOR_CLYDE
 :             lda ghost_strategy,y
-              cmp #GHOST_STATE_TARGET
+              cmp #GHOST_STATE_TARGET ; skip if in state back to base
               bne @next
-              lda actor_move,y  ; change direction
+              lda actor_move,y        ; change direction
               and #<~ACT_NEXT_DIR
               sta actor_move,y
               eor #ACT_MOVE_REVERSE
@@ -1188,10 +1239,7 @@ actors_reverse: ; set next direction to reverse of current direction
               rts
 
 update_mode:  ; Ghosts are forced to reverse direction by the system anytime the mode changes from:
-              ;   - chase-to-scatter
-              ;   - chase-to-frightened
-              ;   - scatter-to-chase
-              ;   - scatter-to-frightened.
+              ; chase-to-scatter, chase-to-frightened, scatter-to-chase, scatter-to-frightened.
               ; Ghosts do not reverse direction when changing back from frightened to chase or scatter modes.
               ; ghosts enter frightened mode, the scatter/chase timer is paused...  time runs out, they return to the mode they were in
               ;
@@ -1421,7 +1469,10 @@ draw_frame:   ldx #3                ; init maze
               lda #Char_Blank
 :             sta game_maze+$380,y
               dey
-              bne :-
+              bpl :-
+
+              lda #Char_Base
+              sta game_maze+$0f-$20
 
               jsr gfx_sprites_off
 
@@ -1645,56 +1696,6 @@ game_init:
 :
               lda #STATE_LEVEL_INIT
               jmp game_set_state_frames_delay
-
-game_init_actors:
-              ldx #ACTOR_CLYDE
-:             jsr @init_ghost
-              dex
-              bpl :-
-              ldx #ACTOR_CLYDE
-              lda game_state+GameState::level
-              cmp #1
-              bne :+
-              lda #60 ; level 1 - dot limit clyde 60
-              sta ghost_dot_limit,x
-              lda #30 ;           dot limit inky 30
-              ldx #ACTOR_INKY
-              sta ghost_dot_limit,x
-:             cmp #2
-              bne :+
-              lda #50 ;           dot limit clyde 50
-              sta ghost_dot_limit,x
-:
-              ldx #ACTOR_PACMAN
-              jsr @init_actor
-              lda #2  ; pacman shape complete ball
-              sta actor_shape,x
-              lda #0
-              sta pacman_delay
-
-              jmp gfx_sprites_on
-
-@init_ghost:
-              lda #Shape_Offset_Norm  ; ghost shape offset
-              sta ghost_shape_offs,x
-              lda #Shape_Mask_Norm
-              sta ghost_shape_mask,x
-              lda ghost_init_state,x
-              sta ghost_strategy,x
-              lda ghost_init_color,x
-              sta ghost_color,x
-              lda #0
-              sta ghost_dot_limit,x
-              lda #GHOST_MODE_NORM
-              sta ghost_mode,x
-@init_actor:
-              lda actor_init_x,x
-              sta actor_sp_x,x
-              lda actor_init_y,x
-              sta actor_sp_y,x
-              lda actor_init_d,x
-              sta actor_move,x
-              rts
 
 .data
 

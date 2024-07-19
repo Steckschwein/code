@@ -1,11 +1,13 @@
 
 TODO:
+  - fix ghost inverse move if mode changes and ghost in tunnel
   - "cruise elroy" 1 / 2
   - per ghost dot cnt logic
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - use fn pointer for game loop
   - "pass through" ghost in frightened mode is possible (ghost not catched)
   - sound
+  - fix all TODOs
 
 
 pacman/ghost speed percentage/frames
