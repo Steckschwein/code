@@ -45,6 +45,9 @@ intro:
               draw_text _copyright, Color_Pink
               lda Color_Text
               sta text_color
+              jsr game_init_actors
+              jsr gfx_prepare_update
+              jsr gfx_update
 @wait_start:
               jsr io_getkey
               cmp #'1'

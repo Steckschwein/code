@@ -77,9 +77,11 @@ game:         setIRQ game_isr, save_irq
     sta game_state+GameState::lives
     lda #STATE_PACMAN_DYING
     jmp @set_state
-    cmp #'i'
+:   cmp #'i'
     bne :+
-    lda #STATE_LEVEL_INIT
+    lda #2
+    sta game_state+GameState::level
+    lda #STATE_INTERMISSION
     jmp @set_state
 :   cmp #'c'
     bne :+
@@ -183,11 +185,13 @@ game_ready:   lda game_state+GameState::state
 @exit:        rts
 
 
+.export game_init_actors
 game_init_actors:
               ldx #ACTOR_CLYDE
 :             jsr @init_ghost
               dex
               bpl :-
+
               ldx #ACTOR_CLYDE
               lda game_state+GameState::level
               cmp #1
@@ -329,7 +333,8 @@ game_intermission:
               bne @next
 @im_2:        dey
 @im_1:        dey
-@im:          lda game_state+GameState::frames
+@im:
+              lda game_state+GameState::frames
               bne :+
               jsr gfx_blank_screen
               lda game_state+GameState::level
@@ -457,12 +462,8 @@ ghost_move:   jsr actor_update_charpos
 @move_target: lda actor_speed_cnt,x
               and #$7f    ; mask cnt
               bne @move_cnt
-              dec actor_speed_cnt,x
               lda game_state+GameState::speed_ix
-              cmp #2
-              bne :+
-;              .byte $db
-:             and ghost_mode,x  ; if ghost is normal (0) we AND with speed_ix, will result in offset 0 which is intended
+              and ghost_mode,x  ; if ghost is normal (0) we AND with speed_ix, will result in offset 0 which is intended
               tay
               lda game_state+GameState::speed_cnt_init+1,y    ; init again
               sta actor_speed_cnt,x
@@ -489,7 +490,7 @@ ghost_move:   jsr actor_update_charpos
               cpy #$16
               bcc @move
 
-@tunnel:      lda game_state+GameState::frames ; half speed, means every 2nd frame
+@tunnel:      lda game_state+GameState::frames ; half speed is just every 2nd frame
               and #$01
               beq @update_dir
 @exit:        rts
@@ -512,9 +513,9 @@ ghost_move:   jsr actor_update_charpos
               lsr
               and #ACT_DIR
               sta actor_move,x
+              jsr actor_can_move_to_direction
 .ifdef __ASSERTIONS
-              jsr actor_can_move_to_direction ; sanity check should never be C=1
-              bcs halt
+              bcs halt  ; should never be C=1
 .endif
               sec
               lda p_maze+0
@@ -815,7 +816,6 @@ pacman_move:  lda pacman_delay
               jsr pacman_collect
 
               ldx #ACTOR_PACMAN
-
               lda actor_move,x
               and #ACT_DIR
               ldy actor_ypos,x
@@ -1471,9 +1471,10 @@ draw_frame:   ldx #3                ; init maze
               dey
               bpl :-
 
+.ifdef __ASSERTIONS
               lda #Char_Base
-              sta game_maze+$0f-$20
-
+              sta game_maze+($ff*$20+$0f) ; end of right tunnel
+.endif
               jsr gfx_sprites_off
 
               jsr gfx_display_maze
@@ -1492,7 +1493,10 @@ game_set_state_frames_delay:
               sta game_state+GameState::nextstate
               ;lda #STATE_DELAY ; fast start
 game_set_state_frames:
-              ldy #0 ; 1 - otherwise ready frames are skipped immediately
+              ldy #1 ; otherwise ready frames are skipped immediately
+.ifdef __DEVMODE
+              dey
+.endif
               sty game_state+GameState::frames
 game_set_state:
               sta game_state+GameState::state

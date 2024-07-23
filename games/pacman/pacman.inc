@@ -38,7 +38,11 @@ Char_Maze_Mask      = $c0   ;
 
 .define Char_Pts $2a,$2b,$2c
 
-FRAMES_DELAY = 0 ; $0f
+.ifdef __DEVMODE
+  FRAMES_DELAY = $0
+.else
+  FRAMES_DELAY = $0f
+.endif
 
 TXT_WAIT  =$01
 TXT_WAIT2 =$02
