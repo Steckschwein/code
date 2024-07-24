@@ -5,7 +5,7 @@
 .export sys_charout,sys_blank_xy,sys_set_pen
 .export out_text_color
 .export out_text
-.export frame_isr
+.export sys_isr
 .export sys_crs_x
 .export sys_crs_y
 .export system_rng
@@ -20,24 +20,27 @@
 
 .code
 
-frame_isr:
-    push_axy
+sys_isr:
+              push_axy
 
-    jsr gfx_isr ; v-blank?
-    bpl @exit
+              jsr gfx_isr ; v-blank?
+              bpl @io_isr
 
-    bgcolor Color_Yellow
+              bgcolor Color_Yellow
 
-    inc game_state+GameState::frames
-    inc game_state+GameState::vblank
+              jsr gfx_update  ; timing critical
 
-@exit:
-    jsr io_isr
+              inc game_state+GameState::frames
+              lda #1
+              sta game_state+GameState::vblank
 
-    bgcolor Color_Bg
+              bgcolor Color_Bg
 
-    pop_axy
-    rti
+@io_isr:      jsr io_isr
+
+
+              pop_axy
+              rti
 
 out_hex_digits:
               pha

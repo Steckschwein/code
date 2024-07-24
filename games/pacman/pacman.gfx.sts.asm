@@ -190,7 +190,7 @@ gfx_sprites_on:
 gfx_pause:
               beq :+
 gfx_sprites_off:
-              lda #0 ; v_reg8_SPD
+              lda #v_reg8_SPD
 :             ora #v_reg8_VR
               sta vdp_reg8
               php

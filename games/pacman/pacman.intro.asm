@@ -45,9 +45,6 @@ intro:
               draw_text _copyright, Color_Pink
               lda Color_Text
               sta text_color
-              jsr game_init_actors
-              jsr gfx_prepare_update
-              jsr gfx_update
 @wait_start:
               jsr io_getkey
               cmp #'1'
@@ -63,26 +60,38 @@ intro:
               sta game_state+GameState::players
 @start_1up:   rts
 
+
 wait_credit:
+              jsr game_init_actors
+              jsr gfx_prepare_update
+
               lda #Color_Bg
               sta text_color
-@wait_loop:
- :            lda game_state+GameState::frames
+@intro_loop:
+:             lda game_state+GameState::vblank  ; wait vblank
+              beq :-
+              dec game_state+GameState::vblank
+
+              border_color Color_Green
+
+              lda game_state+GameState::frames
               and #$0f
-              bne :-
+              bne :+
               lda text_color
               eor #Color_Food
               sta text_color
-              draw_text _superfood
- :            lda game_state+GameState::frames
-              and #$0f
-              beq :-
+:             draw_text _superfood
+
+              jsr intro_script
+
+              jsr gfx_prepare_update
+              border_color Color_Bg
 
               jsr io_getkey
               cmp #'c'       ; increment credit
-              bne @wait_loop
-
+              bne @intro_loop
 credit_inc:
+              jsr gfx_sprites_off
               lda game_state+GameState::credit
               cmp #$99
               bcs exit
@@ -121,7 +130,12 @@ intro_frame:
 
               draw_text _footer, Color_Text
               rts
-
+intro_script:
+              ldx #ACTOR_PACMAN
+:             inc actor_sp_y,x
+              dex
+              bpl :-
+              rts
 .data
 _header_1:
   .byte 0,24,"1UP   HIGH SCORE    2UP",0

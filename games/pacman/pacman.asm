@@ -33,7 +33,7 @@ main:
             jsr gfx_mode_on
 
             jsr io_irq_on
-            setIRQ frame_isr, save_irq
+            setIRQ sys_isr, save_irq
 
             jsr boot
 @loop:      jsr intro

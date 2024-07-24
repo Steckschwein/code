@@ -21,8 +21,7 @@
 @call_state_fn:
               jmp (game_state+GameState::fn)
 
-game:         setIRQ game_isr, save_irq
-
+game:
 @init_state:  lda #STATE_INIT
 @set_state:   jsr game_set_state_frames
 
@@ -62,7 +61,6 @@ game:         setIRQ game_isr, save_irq
               sta game_state+GameState::state
 @exit:
               jsr sound_init
-              restoreIRQ save_irq
               rts
 ; debug keys
 :   cmp #'r'
@@ -124,22 +122,6 @@ game:         setIRQ game_isr, save_irq
 :
     jmp @game_loop
 
-
-game_isr:
-    push_axy
-    jsr gfx_isr
-    bpl @io_isr ; vblank from gfx?
-
-    jsr gfx_update  ; timing critical
-
-    inc game_state+GameState::frames
-    lda #1
-    sta game_state+GameState::vblank
-@io_isr:
-    jsr io_isr
-    pop_axy
-    rti
-
 game_state_delay:
               lda game_state+GameState::state
               cmp #STATE_DELAY
@@ -189,8 +171,16 @@ game_ready:   lda game_state+GameState::state
 game_init_actors:
               ldx #ACTOR_CLYDE
 :             jsr @init_ghost
+              jsr ghost_update_shape
               dex
               bpl :-
+              ldx #ACTOR_PACMAN
+              jsr @init_actor
+
+              lda #Shape_Ix_Pacman  ; pacman shape complete ball
+              sta actor_shape,x
+              lda #0
+              sta pacman_delay
 
               ldx #ACTOR_CLYDE
               lda game_state+GameState::level
@@ -205,15 +195,7 @@ game_init_actors:
               bne :+
               lda #50 ;           dot limit clyde 50
               sta ghost_dot_limit,x
-:
-              ldx #ACTOR_PACMAN
-              jsr @init_actor
-              lda #2  ; pacman shape complete ball
-              sta actor_shape,x
-              lda #0
-              sta pacman_delay
-
-              jmp gfx_sprites_on
+:             jmp gfx_sprites_on
 
 @init_ghost:
               lda #Shape_Offset_Norm  ; ghost shape offset
@@ -235,6 +217,10 @@ game_init_actors:
               sta actor_sp_y,x
               lda actor_init_d,x
               sta actor_move,x
+              and #ACT_DIR
+              asl
+              asl
+              sta actor_shape,x
               rts
 
 game_ready_wait:
@@ -1180,12 +1166,10 @@ game_playing:
 
 
 actors_mode:
-;              sta game_tmp
               ldy #ACTOR_CLYDE
 @next:        ldx ghost_mode,y  ; TODO clobbers X
               cpx #GHOST_MODE_CATCHED
               beq @skip
-              ;lda game_tmp
               sta ghost_mode,y
 @skip:        dey
               bpl @next
@@ -1712,8 +1696,8 @@ actor_init_y:
     .byte 112,112,128,96,112
 actor_init_d:
     .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
-    .byte ACT_MOVE|ACT_UP<<2|ACT_UP
     .byte ACT_MOVE|ACT_DOWN<<2|ACT_DOWN
+    .byte ACT_MOVE|ACT_UP<<2|ACT_UP
     .byte ACT_MOVE|ACT_UP<<2|ACT_UP
     .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
 
@@ -1880,7 +1864,6 @@ points_digits:
 .export ghost_mode,ghost_color
 
 .bss
-  save_irq:         .res 2
   input_direction:  .res 1
   keyboard_input:   .res 1
   actor_sp_x:       .res 5  ; sprite x
