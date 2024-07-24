@@ -1,8 +1,3 @@
-/**
- * <p/>
- * Copyright: Copyright (c) 2009 Company: Dieter von Holtzbrinck Medien GmbH (DvH Medien)
- * <p/>
- */
 package steckschwein;
 
 import java.io.File;
@@ -10,12 +5,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 /**
- * <p/>
- * Copyright: Copyright (c) 2009 Company: Dieter von Holtzbrinck Medien GmbH (DvH Medien)
- * <p/>
- *
  * @author <a href="mailto:m.lauke@web.de">Marko Lauke</a>
- *
  */
 public class convert {
 

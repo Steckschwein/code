@@ -28,7 +28,7 @@ clean:
 	rm -f *.prg *.s *.o *.map
 	(cd plasma ; make clean)
 	(cd qrcode ; make clean)
-	
+
 
  %.o: %.c
 	cc65 $(CC65FLAGS) -t none -O $<

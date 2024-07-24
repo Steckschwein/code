@@ -105,8 +105,8 @@ _gfx_mode_table:
     .word vdp_mode2_on  ; 1
     .word vdp_mode3_on ; 2
     .word vdp_mc_on ; 3
-    .word gfx_notimplemented ; vdp_mode4_on; 4
-    .word gfx_notimplemented ; 5
+    .word vdp_mode4_on; 4
+    .word gfx_notimplemented; 5
     .word vdp_mode6_on ; 6
     .word vdp_mode7_on ; 7
 gfx_notimplemented:
@@ -137,7 +137,7 @@ plot_table:
     .word GFX_2_Plot ; 2
     .word GFX_2_Plot ; 2
     .word GFX_MC_Plot; 3
-    .word gfx_notimplemented; 4
+    .word GFX_4_Plot; 4
     .word gfx_notimplemented; 5
     .word GFX_6_Plot ; 6
     .word GFX_7_Plot ; 7
@@ -153,6 +153,12 @@ GFX_MC_Plot:
     ply
     pla
     jmp vdp_mc_set_pixel
+
+GFX_4_Plot:
+    plx
+    ply
+    pla
+    jmp vdp_mode4_set_pixel
 
 GFX_6_Plot:
     plx
@@ -229,7 +235,7 @@ gfx_blank_table:
     .word vdp_mode2_blank ; 2
     .word vdp_mode3_blank ; 2
     .word vdp_mc_blank; 3
-    .word gfx_notimplemented; 4
+    .word vdp_mode4_blank; 4
     .word gfx_notimplemented; 5
     .word vdp_mode6_blank; 6
     .word vdp_mode7_blank ; 7
