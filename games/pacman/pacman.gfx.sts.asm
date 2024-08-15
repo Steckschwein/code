@@ -354,9 +354,6 @@ gfx_display_maze:
 
 @put_char:
               lda (p_gfx),y
-      ;        cmp (p_maze),y
-      ;       bne :+
-        ;      rts
               pha
               cmp #Char_Dot
               beq @food
@@ -726,7 +723,7 @@ vdp_reg9_init:
 vdp_init_bytes_end:
 
 gfx_Sprite_Adjust_X=8
-gfx_Sprite_Adjust_Y=8
+gfx_Sprite_Adjust_Y=9
 gfx_Sprite_Off=SPRITE_OFF+$08 ; +8, 212 line mode
 
 pacman_palette:
@@ -760,10 +757,10 @@ sprite_patterns_end:
 
 shapes:
 ; pacman  $00
-    .byte $14*4+4,$14*4,$1c*4,$14*4 ;r  00
+    .byte $14*4,$14*4+4,$1c*4,$14*4 ;r  00
     .byte $1a*4+4,$1a*4,$1c*4,$1a*4 ;d  01
     .byte $16*4+4,$16*4,$1c*4,$16*4 ;l  10
-    .byte $18*4+4,$18*4,$1c*4,$18*4 ;u  11
+    .byte $18*4,$18*4+4,$1c*4,$18*4 ;u  11
 ; ghosts  $10
     .byte $08*4,$08*4,$00*4,$00*4+4 ;r  00
     .byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  01

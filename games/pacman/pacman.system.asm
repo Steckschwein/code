@@ -8,6 +8,7 @@
 .export sys_isr
 .export sys_crs_x
 .export sys_crs_y
+.export system_wait_vblank
 .export system_rng
 .export system_dip_switches_lives
 .export system_dip_switches_bonus_life
@@ -42,6 +43,12 @@ sys_isr:
               pop_axy
               rti
 
+system_wait_vblank:
+:             lda game_state+GameState::vblank  ; wait vblank
+              beq :-
+              dec game_state+GameState::vblank
+              rts
+
 out_hex_digits:
               pha
               lsr
@@ -64,6 +71,8 @@ sys_set_pen:
               sta text_color
               rts
 
+; X/Y - coordinates
+; A   - amount of chars to blank
 sys_blank_xy:
               stx sys_crs_x
               sty sys_crs_y
@@ -75,7 +84,8 @@ sys_blank_xy:
               dex
               bne :-
               rts
-
+; X/Y - coordinates
+; A   - number (BCD)
 out_digits_xy:
               stx sys_crs_x
               sty sys_crs_y
@@ -131,11 +141,12 @@ out_text:     jsr @next_char
 @rts:         rts
 
 wait:
+              jsr system_wait_vblank
               lda game_state+GameState::frames
               and #FRAMES_DELAY
               bne wait
-              dec game_state+GameState::frames
               rts
+
 
 system_rng:   ;.byte $db
               ldy game_state+GameState::rng+1

@@ -26,7 +26,6 @@ IRQ_VEC = $fffe
 
 ;                   = $c6   ;1100 0110
 Char_Blank          = $c7   ;1100 0111
-
 Char_Dot            = $cc   ;1100 1100
                             ;1100 1101
 Char_Bonus          = $cd
@@ -34,7 +33,7 @@ Char_Energizer      = $ce   ;1100 1110 $ce
 Char_Base           = $cf   ;1100 1111
 Char_Quote          = $22
 
-Char_Maze_Mask      = $c0   ;
+Char_Maze_Blank     = $f4
 
 .define Char_Pts $2a,$2b,$2c
 
@@ -43,6 +42,10 @@ Char_Maze_Mask      = $c0   ;
 .else
   FRAMES_DELAY = $0f
 .endif
+
+INTRO_TUNNEL_X=19
+
+BORDER_RIGHT_Y=28
 
 TXT_WAIT  =$01
 TXT_WAIT2 =$02
@@ -59,17 +62,17 @@ DIP_BONUS_LIFE_1    =1<<5
 DIP_DIFFICULTY      =1<<6
 DIP_GHOSTNAMES      =1<<7
 
-STATE_INIT          = $0
-STATE_LEVEL_INIT    = $1
-STATE_READY         = $2
-STATE_DELAY         = $3
-STATE_READY_WAIT    = $4
-STATE_PLAYING       = $5
-STATE_PACMAN_DYING  = $7
-STATE_LEVEL_CLEARED = $8
-STATE_GAME_OVER     = $9
-STATE_GHOST_CATCHED = $a
-STATE_INTERMISSION  = $b
+STATE_INIT          = $00
+STATE_LEVEL_INIT    = $02
+STATE_READY         = $04
+STATE_DELAY         = $06
+STATE_READY_WAIT    = $08
+STATE_PLAYING       = $0a
+STATE_PACMAN_DYING  = $0c
+STATE_LEVEL_CLEARED = $0e
+STATE_GAME_OVER     = $10
+STATE_GHOST_CATCHED = $12
+STATE_INTERMISSION  = $14
 STATE_INTRO         = 1<<5
 STATE_PAUSE         = 1<<6
 STATE_EXIT          = 1<<7
@@ -250,7 +253,8 @@ SKIP_DIR_CHECK    = $ff
 .struct GameState
   dip_switches    .byte
 
-  fn              .addr
+  fn_game_state   .addr
+  fn_energizer    .addr
   state           .byte
   nextstate       .byte   ; next state from delay
   frames          .byte
@@ -280,9 +284,6 @@ SKIP_DIR_CHECK    = $ff
   ;speed control
   speed_cnt_init    .res 4  ; speed counter init values in order pacman normal, ghost normal, pacman frightened, ghost frightened
   speed_ix          .byte   ; frightened mode (2) or normal (0) - used to select appropriate speed counter init value
-
-  speed_pcmn_cnt    .byte   ; -1 (delay), +1 (push) or 0 nothing
-  speed_ghst_cnt    .byte   ;
 
   frghtd_timer      .word   ; frightened mode timer in secs * frames
   sctchs_mode       .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode

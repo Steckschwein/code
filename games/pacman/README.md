@@ -1,10 +1,13 @@
 
 TODO:
+  - intro ghost sequence
+  - compensate pacman direction and 1px offset
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - "cruise elroy" 1 / 2
   - per ghost dot cnt logic
   - use fn pointer for game loop
-  - "pass through" ghost in frightened mode is possible (ghost not catched)
+  - eliminate "pass through" bug ?
+  - do not "stop a catched" ghost traveling to base, if a 2nd, 3rd... ghost is catched
   - sound
   - fix all TODOs
 

@@ -36,7 +36,10 @@ main:
             setIRQ sys_isr, save_irq
 
             jsr boot
-@loop:      jsr intro
+@loop:
+            .ifndef __NO_INTRO
+            jsr intro
+            .endif
             jsr game
             bit game_state+GameState::state
             bpl @loop
