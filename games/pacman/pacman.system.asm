@@ -141,8 +141,7 @@ out_text:     jsr @next_char
               inc p_text+1
 @rts:         rts
 
-wait:
-              jsr system_wait_vblank
+wait:         jsr system_wait_vblank
               lda game_state+GameState::frames
               and #FRAMES_DELAY
               bne wait

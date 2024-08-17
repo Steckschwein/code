@@ -140,18 +140,38 @@ game_state_delay:
 @exit:        rts
 
 
-game_ready:   jsr sound_play
+game_ready:
               jsr game_init_actors
-              lda #Bonus_Clear
+
+              lda #0
+              sta game_state+GameState::sctchs_timer+0
+              sta game_state+GameState::sctchs_timer+1
+              sta game_state+GameState::frghtd_timer+0
+              sta game_state+GameState::frghtd_timer+1
+              lda #7  ; mode timings table index
+              sta game_state+GameState::sctchs_ix
+              lda #%01010101
+              sta game_state+GameState::sctchs_mode
+
+              lda #Bonus_Clear  ; clear bonus
               jsr gfx_bonus
-              draw_text ready, Color_Yellow
+
               ldy #Color_Food
               jsr draw_energizer
+
+              bit game_state+GameState::state
+              bvc :+
+              rts
+
+:             jsr sound_play
+
+              draw_text ready, Color_Yellow
               jsr delete_message_1
 
               ldy game_state+GameState::lives
               dey ; pick 1 live, redraw
               jsr gfx_lives
+
               lda #FN_STATE_READY_WAIT
               jmp game_set_state_fn
 
@@ -221,20 +241,11 @@ game_ready_wait:
 .endif
               jsr delete_message_2
 
-              lda #0
-              sta game_state+GameState::sctchs_timer+0
-              sta game_state+GameState::sctchs_timer+1
-              sta game_state+GameState::frghtd_timer+0
-              sta game_state+GameState::frghtd_timer+1
-              lda #7  ; mode timings table index
-              sta game_state+GameState::sctchs_ix
-              lda #%01010101
-              sta game_state+GameState::sctchs_mode
-
               lda #FN_STATE_PLAYING
               jmp game_set_state_fn
 @detect_joystick:
               jmp io_detect_joystick
+
 
 game_pacman_dying:
               jsr animate_screen
@@ -1063,9 +1074,14 @@ lda_maze_ptr:
               lda (p_maze),y
               rts
 
-game_demo:    jsr game_init
+game_demo:    lda game_state+GameState::state_frames
+              cmp #1
+              bne @exit
+
+              jsr game_init
               jsr game_level_init
               draw_text text_game_over, Color_Red
+              jsr game_ready
 
 @exit:        rts
 
@@ -1445,16 +1461,7 @@ draw_frame:   jsr gfx_sprites_off
 
               jsr gfx_display_maze
 
-              jsr draw_scores
-
-              draw_text ready, Color_Yellow
-
-              ldy game_state+GameState::lives
-              jsr gfx_lives
-
-              lda game_state+GameState::level
-              jmp gfx_bonus_stack
-
+              jmp draw_scores
 
 game_set_state_fn_delay:
               sta game_state+GameState::fn_state_next
@@ -1497,7 +1504,16 @@ game_level_init:
               ldy game_state+GameState::level
               jsr init_speed_cnt
 
+              bit game_state+GameState::state
+              bvc :+
+              rts
+  :
               jsr draw_frame
+
+              draw_text ready, Color_Yellow
+
+              lda game_state+GameState::level
+              jsr gfx_bonus_stack
 
               lda #FN_STATE_READY
               jmp game_set_state_fn
@@ -1640,14 +1656,22 @@ game_init:
 
               jsr draw_frame
 
+              bit game_state+GameState::state
+              bvc :+
+              rts
+:
               ldy game_state+GameState::lives
               jsr gfx_lives
+
+              lda game_state+GameState::level
+              jsr gfx_bonus_stack
 
               draw_text text_player_one, Color_Cyan
               lda game_state+GameState::players
               beq :+
               draw_text text_player_two
-:
+:             draw_text ready, Color_Yellow
+
               lda #FN_STATE_LEVEL_INIT
               jmp game_set_state_fn_delay
 

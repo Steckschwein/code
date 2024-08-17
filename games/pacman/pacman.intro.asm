@@ -61,13 +61,10 @@ intro:
               sta game_state+GameState::players
 @start_1up:   rts
 
-wait_credit:  jsr intro_init_actors
+wait_credit:  jsr intro_init_script
 
               lda #Color_Bg
               sta text_color
-
-              lda #$0e  ; initial delay ghost move
-              sta game_state+GameState::state_frames
 
 @intro_loop:  jsr system_wait_vblank
 
@@ -75,14 +72,6 @@ wait_credit:  jsr intro_init_actors
 
               jsr game_call_state_fn
 
-              lda game_state+GameState::state_frames
-              and #$0f
-              bne :+
-              lda text_color
-              eor #Color_Food
-              sta text_color
-              draw_text _superfood
-:
               jsr gfx_prepare_update
 
               border_color Color_Bg
@@ -131,7 +120,7 @@ intro_frame:
               draw_text _footer, Color_Text
               rts
 
-intro_init_actors:
+intro_init_script:
               lda #18
               ldy #31
               sta sys_crs_x
@@ -164,18 +153,18 @@ intro_init_actors:
 
               jsr game_init_actors
               ldx #ACTOR_PACMAN
-:             lda #INTRO_TUNNEL_X*8+4 ; center +4px
+:             lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
+              sta actor_move,x
+              lda #INTRO_TUNNEL_X*8+4 ; center +4px
               sta actor_sp_x,x
               txa
               asl
               clc
-              adc #30*8+2
+              adc #29*8+4
               sta actor_sp_y,x
-              lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
-              sta actor_move,x
               cpx #ACTOR_PACMAN
               beq @next
-              lda #GHOST_STATE_TARGET
+@ghost:       lda #GHOST_STATE_TARGET
               sta ghost_state,x
 @next:        dex
               bpl :-
@@ -185,11 +174,15 @@ intro_init_actors:
               lda #0
               sta game_state+GameState::speed_ix
 
-              lda #FN_STATE_INTRO_SCRIPT
-.ifdef ___DEVMODE
+.ifdef __DEVMODE
               lda #FN_STATE_GAME_DEMO
-.endif
               jmp game_set_state_fn
+.endif
+              lda #FN_STATE_INTRO_SCRIPT
+              jsr game_set_state_fn
+              lda #$0e  ; initial delay ghost move
+              sta game_state+GameState::state_frames
+              rts
 
 intro_script: ldx #ACTOR_PACMAN
               jsr pacman_move
@@ -212,13 +205,13 @@ intro_script: ldx #ACTOR_PACMAN
 
 @move:        ldx ghost_cnt
               bmi @exit
-              jmp actors_move
-@exit:        rts
+              jsr actors_move
+@exit:        jmp animate_energizer
 
 intro_ghost_catched:
               lda game_state+GameState::state_frames
               and #$1f
-              bne @exit
+              bne animate_energizer
               sec
               lda #3
               sbc game_state+GameState::ghsts_to_catch
@@ -233,6 +226,14 @@ intro_ghost_catched:
               jmp game_set_state_fn
 @demo:        lda #FN_STATE_GAME_DEMO
               jmp game_set_state_fn
+animate_energizer:
+              lda game_state+GameState::frames
+              and #$0f
+              bne @exit
+              lda text_color
+              eor #Color_Food
+              sta text_color
+              draw_text _superfood
 @exit:        rts
 
 

@@ -531,7 +531,7 @@ gfx_4bpp_xy:  sei
               jsr gfx_vram_xy
               pla
 
-              cmp #0
+              cmp #Bonus_Clear  ; clear?
               bne @bonus_4bpp
 
               ldy #$0c  ; height
