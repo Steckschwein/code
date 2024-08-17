@@ -174,7 +174,7 @@ intro_init_script:
               lda #0
               sta game_state+GameState::speed_ix
 
-.ifdef __DEVMODE
+.ifdef __ __DEVMODE
               lda #FN_STATE_GAME_DEMO
               jmp game_set_state_fn
 .endif

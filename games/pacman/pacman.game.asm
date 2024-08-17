@@ -1076,14 +1076,19 @@ lda_maze_ptr:
 
 game_demo:    lda game_state+GameState::state_frames
               cmp #1
-              bne @exit
-
+              bne :+
               jsr game_init
               jsr game_level_init
               draw_text text_game_over, Color_Red
-              jsr game_ready
+              jmp game_ready
+
+:             cmp #$7f
+              bne @exit
+              lda #FN_STATE_PLAYING
+              jmp game_set_state_fn
 
 @exit:        rts
+
 
 delete_message_1:
               ldx #12
