@@ -1,4 +1,6 @@
 .export intro
+.export intro_ghost_catched
+.export intro_script
 
 .include "pacman.inc"
 
@@ -7,19 +9,22 @@
 .importzp sys_crs_x,sys_crs_y
 
 intro:
+              lda #STATE_INTRO
+              sta game_state+GameState::state
+
               lda game_state+GameState::credit
               bne @wait_start_init
 
               jsr intro_frame
               jsr display_credit
               draw_text _table_head
-  ;            draw_text _blinky,  Color_Blinky
-   ;           draw_text _pinky,   Color_Pinky
-    ;          draw_text _inky,    Color_Inky
-     ;         draw_text _clyde,   Color_Clyde
+              draw_text _blinky,  Color_Blinky
+              draw_text _pinky,   Color_Pinky
+              draw_text _inky,    Color_Inky
+              draw_text _clyde,   Color_Clyde
 
-;              draw_text _points, Color_Text
- ;             draw_text _food, Color_Food
+              draw_text _points, Color_Text
+              draw_text _food, Color_Food
 
               draw_text _copyright, Color_Pink
 
@@ -60,14 +65,25 @@ wait_credit:  jsr intro_init_actors
 
               lda #Color_Bg
               sta text_color
-@intro_loop:
-              jsr system_wait_vblank
+
+              lda #$0e  ; initial delay ghost move
+              sta game_state+GameState::state_frames
+
+@intro_loop:  jsr system_wait_vblank
 
               border_color Color_Green
 
-              sei
-              jsr intro_script
-              cli
+              jsr game_call_state_fn
+
+              lda game_state+GameState::state_frames
+              and #$0f
+              bne :+
+              lda text_color
+              eor #Color_Food
+              sta text_color
+              draw_text _superfood
+:
+              jsr gfx_prepare_update
 
               border_color Color_Bg
 
@@ -116,7 +132,6 @@ intro_frame:
               rts
 
 intro_init_actors:
-              sei
               lda #18
               ldy #31
               sta sys_crs_x
@@ -154,7 +169,7 @@ intro_init_actors:
               txa
               asl
               clc
-              adc #30*8+2 ; 30*8+2
+              adc #30*8+2
               sta actor_sp_y,x
               lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
               sta actor_move,x
@@ -166,62 +181,60 @@ intro_init_actors:
               bpl :-
 
               lda #$fe
-              sta ghost_ix
-              lda #0
-              sta game_state+GameState::vblank
-              lda #14
-              sta game_state+GameState::frames
+              sta ghost_cnt
               lda #0
               sta game_state+GameState::speed_ix
 
-              lda #<intro_fn_energizer
-              sta game_state+GameState::fn_energizer
-              lda #>intro_fn_energizer
-              sta game_state+GameState::fn_energizer+1
+              lda #FN_STATE_INTRO_SCRIPT
+.ifdef ___DEVMODE
+              lda #FN_STATE_GAME_DEMO
+.endif
+              jmp game_set_state_fn
 
-              cli
-              rts
-
-intro_script:
-              ldx #ACTOR_PACMAN
+intro_script: ldx #ACTOR_PACMAN
               jsr pacman_move
 
-              lda game_state+GameState::frames
-              and #$0f
-              bne @move
-
-              lda text_color
-              eor #Color_Food
-              sta text_color
-              draw_text _superfood
               lda #INTRO_TUNNEL_X
               sta sys_crs_x
               ldy #23
               sty sys_crs_y
               jsr lda_maze_ptr_ay
-              jsr sys_charout
+              jsr gfx_charout
 
-              ldx ghost_ix
+              lda game_state+GameState::state_frames
+              and #$0f  ; spwan ghost every 16 frames
+              bne @move
+
+              ldx ghost_cnt
               cpx #ACTOR_CLYDE
               beq @move
-              inc ghost_ix
+              inc ghost_cnt
 
-@move:        ldx ghost_ix
+@move:        ldx ghost_cnt
               bmi @exit
-              jsr actors_move_x
-@exit:
-              jmp gfx_prepare_update
+              jmp actors_move
+@exit:        rts
 
-intro_fn_energizer:
-              ldx #ACTOR_PACMAN
-              lda actor_move,x
-              eor #ACT_MOVE_REVERSE
-              sta actor_move,x
+intro_ghost_catched:
+              lda game_state+GameState::state_frames
+              and #$1f
+              bne @exit
+              sec
+              lda #3
+              sbc game_state+GameState::ghsts_to_catch
+              tax
+              lda #30*8
+              sta actor_sp_y,x
+              lda #GHOST_STATE_BASE
+              sta ghost_state,x
+              dec game_state+GameState::ghsts_to_catch
+              bmi @demo
+              lda #FN_STATE_INTRO_SCRIPT  ; go on
+              jmp game_set_state_fn
+@demo:        lda #FN_STATE_GAME_DEMO
+              jmp game_set_state_fn
+@exit:        rts
 
-              lda #Char_Blank
-              ldy #0
-              sta (p_maze),y
-              jmp gfx_charout
 
 .data
 
@@ -282,4 +295,4 @@ _copyright:
   .byte 0
 
 .bss
-  ghost_ix:  .res 1
+  ghost_cnt:  .res 1

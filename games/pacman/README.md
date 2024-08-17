@@ -5,11 +5,11 @@ TODO:
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - "cruise elroy" 1 / 2
   - per ghost dot cnt logic
-  - use fn pointer for game loop
-  - eliminate "pass through" bug ?
-  - do not "stop a catched" ghost traveling to base, if a 2nd, 3rd... ghost is catched
   - sound
   - fix all TODOs
+  - toggle to enable/disable original bugs
+    - pinky/inky target calculation bug - "target 4 tiles left if facing up"
+    - "pass through" bug
 
 
 pacman/ghost speed percentage/frames
@@ -20,7 +20,7 @@ pacman/ghost speed percentage/frames
   21+	     90%/54	      79%     -	         -        95%        -	    50%
 
 (rate 75,75757625px/s)
-105% => 80px/s +1px/3
+105% => 80px/s +1px/3 ; elroy speed 2
 100% => 75px/s +1px/4
  95% => 72px/s +1px/5
  90% => 68px/s +1px/7

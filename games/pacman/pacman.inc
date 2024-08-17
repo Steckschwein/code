@@ -62,19 +62,25 @@ DIP_BONUS_LIFE_1    =1<<5
 DIP_DIFFICULTY      =1<<6
 DIP_GHOSTNAMES      =1<<7
 
-STATE_INIT          = $00
-STATE_LEVEL_INIT    = $02
-STATE_READY         = $04
-STATE_DELAY         = $06
-STATE_READY_WAIT    = $08
-STATE_PLAYING       = $0a
-STATE_PACMAN_DYING  = $0c
-STATE_LEVEL_CLEARED = $0e
-STATE_GAME_OVER     = $10
-STATE_GHOST_CATCHED = $12
-STATE_INTERMISSION  = $14
-STATE_INTRO         = 1<<5
-STATE_PAUSE         = 1<<6
+FN_STATE_NOOP          = $00
+FN_STATE_INIT          = $02
+FN_STATE_LEVEL_INIT    = $04
+FN_STATE_READY         = $06
+FN_STATE_DELAY         = $08
+FN_STATE_READY_WAIT    = $0a
+FN_STATE_PLAYING       = $0c
+FN_STATE_PACMAN_DYING  = $0e
+FN_STATE_LEVEL_CLEARED = $10
+FN_STATE_GAME_OVER     = $12
+FN_STATE_GHOST_CATCHED = $14
+FN_STATE_INTERMISSION  = $16
+FN_STATE_GAME_DEMO     = $18
+FN_STATE_INTRO_SCRIPT  = $1a
+FN_STATE_INTRO_GHOST_CATCHED  = $1c
+
+
+STATE_PAUSE         = 1<<5
+STATE_INTRO         = 1<<6
 STATE_EXIT          = 1<<7
 
 GHOST_STATE_BASE    = 0
@@ -253,11 +259,12 @@ SKIP_DIR_CHECK    = $ff
 .struct GameState
   dip_switches    .byte
 
-  fn_game_state   .addr
-  fn_energizer    .addr
   state           .byte
-  nextstate       .byte   ; next state from delay
-  frames          .byte
+  state_frames    .byte   ; frame counter per state, will be reset after each state change
+  fn_state        .addr   ; state function address
+  fn_state_next   .byte   ; index of next state function from delay
+
+  frames          .byte   ; continuous frame counter
   vblank          .byte   ; v-blank
 
   credit          .byte

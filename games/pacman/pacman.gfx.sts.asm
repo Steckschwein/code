@@ -187,7 +187,7 @@ gfx_blank_screen:
               bra gfx_sprites_off
 gfx_sprites_on:
               lda #0
-gfx_pause:
+gfx_pause:    and #STATE_PAUSE
               beq :+
 gfx_sprites_off:
               lda #v_reg8_SPD

@@ -32,21 +32,22 @@ sys_isr:
               jsr gfx_update  ; timing critical
 
               inc game_state+GameState::frames
-              lda #1
-              sta game_state+GameState::vblank
+              inc game_state+GameState::state_frames
+              inc game_state+GameState::vblank
 
               bgcolor Color_Bg
 
 @io_isr:      jsr io_isr
 
-
               pop_axy
               rti
 
 system_wait_vblank:
+              lda #0
+              sta game_state+GameState::vblank
 :             lda game_state+GameState::vblank  ; wait vblank
               beq :-
-              dec game_state+GameState::vblank
+;              dec game_state+GameState::vblank
               rts
 
 out_hex_digits:
@@ -194,6 +195,7 @@ system_dip_switches_bonus_life:
               ldx bonus_life+0,y
               lda bonus_life+1,y
               rts
+
 .data
   bonus_life: .byte $01,$00
               .byte $01,$50
