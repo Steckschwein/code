@@ -45,8 +45,9 @@ gfx_Sprite_Off=250
 .endstruct
 
 .zeropage
-  r1: .res 1
-  r2: .res 1
+              r1:       .res 1
+              r2:       .res 1
+              p_tmp:    .res 2
 
 .code
 

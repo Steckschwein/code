@@ -1,6 +1,7 @@
 .export intro
+.export intro_select_player
 .export intro_ghost_catched
-.export intro_script
+.export intro_ghosts
 
 .include "pacman.inc"
 
@@ -8,16 +9,50 @@
 
 .importzp sys_crs_x,sys_crs_y
 
+.zeropage
+              tmp:  .res 1
+
+.code
+
 intro:
-              lda #STATE_INTRO
+              lda #STATE_DEMO
               sta game_state+GameState::state
 
-              lda game_state+GameState::credit
-              bne @wait_start_init
-
               jsr intro_frame
-              jsr display_credit
-              draw_text _table_head
+
+              lda game_state+GameState::credit    ; credit available? (maybe from game over, or inserted during game ;)
+              bne :+
+              jsr system_dip_switches_coinage     ; free play dip switched?
+              bne @wait_credit
+
+:             draw_text _start, Color_Orange
+
+              jsr system_dip_switches_bonus_life
+              beq @copyright  ; 0 - none - no bonus life at all
+              sta tmp
+              txa
+              lsr
+              ror tmp
+              lsr
+              ror tmp
+              lsr
+              ror tmp
+              lsr
+              ror tmp
+              lda tmp
+              pha
+              draw_text _bonus, Color_Orange  ; ... otherwise display bonus life at xx000Pts
+              pla
+              ldx #22
+              ldy #8
+              jsr out_digits_xy
+
+@copyright:   draw_text _copyright, Color_Pink
+
+              lda #FN_STATE_INTRO_SELECT_PLAYER
+              jmp system_set_state_fn
+
+@wait_credit: draw_text _table_head
               draw_text _blinky,  Color_Blinky
               draw_text _pinky,   Color_Pinky
               draw_text _inky,    Color_Inky
@@ -28,69 +63,36 @@ intro:
 
               draw_text _copyright, Color_Pink
 
-              jsr wait_credit
-@wait_start_init:
-              jsr intro_frame
-              draw_text _start, Color_Orange
-
-              jsr system_dip_switches_bonus_life
-              beq :+  ; 0 - none - no bonus life at all
-              pha
-              draw_text _bonus, Color_Orange
-              pla
-              ldx #22
-              ldy #8
-              jsr out_digits_xy
-
-:             jsr display_credit
-              draw_text _copyright, Color_Pink
-              lda Color_Text
-              sta text_color
-@wait_start:
-              jsr io_getkey
-              cmp #'1'
-              beq @start_1up
-              cmp #'2'
-              beq @start_2up
-              cmp #'c'       ; increment credit
-              bne @wait_start
-              jsr credit_inc
-              jmp @wait_start
-
-@start_2up:   lda #2
-              sta game_state+GameState::players
-@start_1up:   rts
-
-wait_credit:  jsr intro_init_script
+              jsr intro_init_script
 
               lda #Color_Bg
               sta text_color
 
-@intro_loop:  jsr system_wait_vblank
+.ifdef __DEVMODE
+              lda #FN_STATE_DEMO_INIT
+              jmp system_set_state_fn
+.endif
+              lda #FN_STATE_INTRO_GHOSTS
+              jsr system_set_state_fn
+              lda #$0e  ; initial delay ghost move
+              sta game_state+GameState::state_frames
+@exit:        rts
 
-              border_color Color_Green
+intro_select_player:
+              jsr display_credit
+              rts
 
-              jsr game_call_state_fn
-
-              jsr gfx_prepare_update
-
-              border_color Color_Bg
-
-              jsr io_getkey
-              cmp #'r'
-              beq wait_credit
-              cmp #'c'       ; increment credit
-              bne @intro_loop
-credit_inc:
-              jsr gfx_sprites_off
-              lda game_state+GameState::credit
-              cmp #$99
-              bcs exit
-              sed
-              adc #01
-              sta game_state+GameState::credit
-              cld
 display_credit:
+              jsr system_dip_switches_coinage
+              bne :+
+              draw_text _free_play, Color_Text
+              rts
+
+:             draw_text _credit, Color_Text
+
+              lda Color_Text
+              sta text_color
+
               lda game_state+GameState::credit
               cmp #2
               bcc :+
@@ -106,9 +108,8 @@ display_credit:
               dec sys_crs_y
               jmp out_digit
 :             jmp out_digits
-exit:         rts
 
-intro_frame:
+intro_frame:  jsr gfx_sprites_off
               jsr gfx_blank_screen
 
               draw_text _header_1, Color_Text
@@ -117,8 +118,7 @@ intro_frame:
               ldy #18
               jsr draw_highscore
 
-              draw_text _footer, Color_Text
-              rts
+              jmp display_credit
 
 intro_init_script:
               lda #18
@@ -173,18 +173,9 @@ intro_init_script:
               sta ghost_cnt
               lda #0
               sta game_state+GameState::speed_ix
-
-.ifdef __ __DEVMODE
-              lda #FN_STATE_GAME_DEMO
-              jmp game_set_state_fn
-.endif
-              lda #FN_STATE_INTRO_SCRIPT
-              jsr game_set_state_fn
-              lda #$0e  ; initial delay ghost move
-              sta game_state+GameState::state_frames
               rts
 
-intro_script: ldx #ACTOR_PACMAN
+intro_ghosts: ldx #ACTOR_PACMAN
               jsr pacman_move
 
               lda #INTRO_TUNNEL_X
@@ -197,7 +188,6 @@ intro_script: ldx #ACTOR_PACMAN
               lda game_state+GameState::state_frames
               and #$0f  ; spwan ghost every 16 frames
               bne @move
-
               ldx ghost_cnt
               cpx #ACTOR_CLYDE
               beq @move
@@ -222,10 +212,10 @@ intro_ghost_catched:
               sta ghost_state,x
               dec game_state+GameState::ghsts_to_catch
               bmi @demo
-              lda #FN_STATE_INTRO_SCRIPT  ; go on
-              jmp game_set_state_fn
-@demo:        lda #FN_STATE_GAME_DEMO
-              jmp game_set_state_fn
+              lda #FN_STATE_INTRO_GHOSTS  ; go on
+              jmp system_set_state_fn
+@demo:        lda #FN_STATE_DEMO_INIT
+              jmp system_set_state_fn
 animate_energizer:
               lda game_state+GameState::frames
               and #$0f
@@ -245,10 +235,12 @@ _header_1:
 _header_2:
   .byte 1,22,"00"
   .byte 0
-_footer:
+_credit:
   .byte 31,25,"CREDIT"
   .byte 0
-
+_free_play:
+  .byte 31,25,"FREE PLAY"
+  .byte 0
 _table_head:; delay between text
   .byte 4,20,"CHARACTER / NICKNAME"
   .byte 0

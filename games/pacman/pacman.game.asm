@@ -1,11 +1,19 @@
-.export game
 .export maze
 .export draw_highscore
 .export bonus_for_level
 .export actors_move
-.export game_set_state_fn
-.export game_call_state_fn
 .export lda_maze_ptr_ay
+
+.export game_demo_init, game_demo_playing
+.export game_init, game_level_init
+.export game_ready, game_ready_wait
+.export game_playing
+.export game_ghost_catched
+.export game_pacman_dying
+.export game_level_cleared
+.export game_game_over
+.export game_intermission
+.export game_state_delay
 
 .ifdef __DEVMODE
 .export target_dir
@@ -27,96 +35,6 @@
 
 .code
 
-game:         lda #0  ; reset state from intro
-              sta game_state+GameState::state
-
-@init_state:  lda #FN_STATE_INIT
-@set_state:   jsr game_set_state_fn
-
-@game_loop:   jsr system_wait_vblank
-
-              border_color Color_Green
-
-              lda game_state+GameState::state
-              and #STATE_PAUSE
-              bne :+
-              jsr game_call_state_fn
-:
-              jsr gfx_prepare_update
-
-              border_color Color_Bg
-
-              bit game_state+GameState::state
-              bvs @exit
-              jsr io_getkey
-              bcc @game_loop
-
-              sta keyboard_input
-              cmp #KEY_EXIT
-              bne :+
-              lda #STATE_EXIT
-              sta game_state+GameState::state
-@exit:        jmp sound_init
-
-; debug keys
-:   cmp #'r'
-    beq @init_state
-    cmp #'d'
-    bne :+
-    lda #FN_STATE_PACMAN_DYING
-    bne @set_state
-:   cmp #'g'
-    bne :+
-    lda #1  ; 1 left
-    sta game_state+GameState::lives
-    lda #FN_STATE_PACMAN_DYING
-    jmp @set_state
-:   cmp #'i'
-    bne :+
-    lda #2
-    sta game_state+GameState::level
-    lda #FN_STATE_INTERMISSION
-    jmp @set_state
-:   cmp #'c'
-    bne :+
-    lda #FN_STATE_LEVEL_CLEARED
-    jmp @set_state
-:   cmp #'m'
-    bne :+
-    lda #0
-    sta game_state+GameState::sctchs_timer+0
-    sta game_state+GameState::sctchs_timer+1
-    jmp @game_loop
-:   cmp #'p'
-    bne :+
-    lda game_state+GameState::state
-    eor #STATE_PAUSE
-    sta game_state+GameState::state
-    jsr gfx_pause
-    lda #0
-:   cmp #'1'
-    bcc :+
-    cmp #'4'+1
-    bcs :+
-    and #$0f
-    adc #$ff
-    tax
-    asl
-    clc
-    adc #1
-    sei
-    pha
-    ldy ghost_tgt_y,x
-    lda ghost_tgt_x,x
-    tax
-    pla
-    jsr sys_set_pen
-    lda #'T'
-    jsr sys_charout
-    cli
-:
-              jmp @game_loop
-
 game_state_delay:
               lda game_state+GameState::fn_state_next ; FIXME code smell - delay state but during dying pacman we must animate the screen
               cmp #FN_STATE_PACMAN_DYING
@@ -136,44 +54,9 @@ game_state_delay:
 @state:       tay ; A=0 to Y
               lda game_state+GameState::fn_state_next
               sty game_state+GameState::fn_state_next
-              jmp game_set_state_fn
+              jmp system_set_state_fn
 @exit:        rts
 
-
-game_ready:
-              jsr game_init_actors
-
-              lda #0
-              sta game_state+GameState::sctchs_timer+0
-              sta game_state+GameState::sctchs_timer+1
-              sta game_state+GameState::frghtd_timer+0
-              sta game_state+GameState::frghtd_timer+1
-              lda #7  ; mode timings table index
-              sta game_state+GameState::sctchs_ix
-              lda #%01010101
-              sta game_state+GameState::sctchs_mode
-
-              lda #Bonus_Clear  ; clear bonus
-              jsr gfx_bonus
-
-              ldy #Color_Food
-              jsr draw_energizer
-
-              bit game_state+GameState::state
-              bvc :+
-              rts
-
-:             jsr sound_play
-
-              draw_text ready, Color_Yellow
-              jsr delete_message_1
-
-              ldy game_state+GameState::lives
-              dey ; pick 1 live, redraw
-              jsr gfx_lives
-
-              lda #FN_STATE_READY_WAIT
-              jmp game_set_state_fn
 
 .export game_init_actors
 game_init_actors:
@@ -231,6 +114,42 @@ game_init_actors:
               sta actor_speed_cnt,x
               rts
 
+
+game_ready:
+              jsr game_init_actors
+
+              lda #0
+              sta game_state+GameState::sctchs_timer+0
+              sta game_state+GameState::sctchs_timer+1
+              sta game_state+GameState::frghtd_timer+0
+              sta game_state+GameState::frghtd_timer+1
+              lda #7  ; mode timings table index
+              sta game_state+GameState::sctchs_ix
+              lda #%01010101
+              sta game_state+GameState::sctchs_mode
+
+              lda #Bonus_Clear  ; clear bonus
+              jsr gfx_bonus
+
+              ldy #Color_Food
+              jsr draw_energizer
+
+              bit game_state+GameState::state ; in intro demo?
+              bvc :+
+              rts
+
+:             jsr sound_play
+
+              draw_text ready, Color_Yellow
+              jsr delete_message_1
+
+              ldy game_state+GameState::lives
+              dey ; pick 1 live, redraw
+              jsr gfx_lives
+
+              lda #FN_STATE_READY_WAIT
+              jmp system_set_state_fn
+
 game_ready_wait:
               jsr sound_play
               jsr animate_up
@@ -242,7 +161,7 @@ game_ready_wait:
               jsr delete_message_2
 
               lda #FN_STATE_PLAYING
-              jmp game_set_state_fn
+              jmp system_set_state_fn
 @detect_joystick:
               jmp io_detect_joystick
 
@@ -256,24 +175,27 @@ game_pacman_dying:
               lsr
               lsr
               cmp #$18
-              bcc @pacman_dying
+              bcs @next_state
 
-              dec game_state+GameState::lives ; dec 1 live
+              cmp #$0c
+              bcs @exit
+              adc #Shape_Ix_Dying        ; shape offset
+              ldx #ACTOR_PACMAN
+              sta actor_shape,x
+@exit:        rts
+
+@next_state:  dec game_state+GameState::lives ; dec 1 live
 
               lda #FN_STATE_READY
               ldy game_state+GameState::lives
               bne @set_state
               ldy #Color_Food
               jsr draw_energizer
+              lda #Bonus_Clear
+              jsr gfx_bonus
               draw_text text_game_over, Color_Red
               lda #FN_STATE_GAME_OVER
-@set_state:   jmp game_set_state_fn
-@pacman_dying:cmp #$0c
-              bcs @exit
-              adc #Shape_Ix_Dying        ; shape offset
-              ldx #ACTOR_PACMAN
-              sta actor_shape,x
-@exit:        rts
+@set_state:   jmp system_set_state_fn
 
 
 game_game_over:
@@ -281,14 +203,8 @@ game_game_over:
               lda game_state+GameState::state_frames
               and #$7f
               bne @exit
-              lda game_state+GameState::credit
-              sec
-              sed
-              sbc #1
-              sta game_state+GameState::credit
-              cld
-              lda #STATE_INTRO
-              sta game_state+GameState::state
+@next_state:  lda #FN_STATE_INTRO
+              jmp system_set_state_fn
 @exit:        rts
 
 game_intermission:
@@ -317,7 +233,7 @@ game_intermission:
               bne @exit
 @next:        inc game_state+GameState::level ; next level
               lda #FN_STATE_LEVEL_INIT
-              jmp game_set_state_fn
+              jmp system_set_state_fn
 @exit:        rts
 
 
@@ -336,7 +252,7 @@ actors_move:  jsr ghost_move
               cmp #GHOST_MODE_NORM
               bne @ghost_hit          ; ghost catched
 @pacman_hit:  lda #FN_STATE_PACMAN_DYING
-              ;jmp game_set_state_fn_delay
+              jmp system_set_state_fn_delay
 @next:        dex
               bpl actors_move
               rts
@@ -354,11 +270,10 @@ actors_move:  jsr ghost_move
               sta actor_shape,x
 
               lda #FN_STATE_GHOST_CATCHED
-              bit game_state+GameState::state ; intro ?
+              bit game_state+GameState::state ; in intro/demo?
               bvc :+
               lda #FN_STATE_INTRO_GHOST_CATCHED
-:
-              jmp game_set_state_fn
+:             jmp system_set_state_fn
 
 ghost_move:   jsr actor_update_charpos
               jsr ghost_update_shape
@@ -738,7 +653,7 @@ pacman_collect:
               lda #Delay_Energizer
               sta pacman_delay
 
-              bit game_state+GameState::state ; in intro ?
+              bit game_state+GameState::state ; in intro demo?
               bvc @energizer
 
               ldx #ACTOR_PACMAN
@@ -792,31 +707,12 @@ pacman_collect:
               pha
               jsr @erase
               pla
-add_score:    jsr @add_score
 
-              jsr draw_scores
+add_score:    bit game_state+GameState::state
+              bvc :+
+              rts
 
-              lda game_state+GameState::score+2
-              cmp game_state+GameState::bonus_life+1
-              bcc @exit
-              lda game_state+GameState::score+1
-              cmp game_state+GameState::bonus_life+0
-              bcc @exit
-              jsr system_dip_switches_bonus_life
-              stx game_tmp
-              sed
-              clc ; calc next bonus life threshold
-              adc game_state+GameState::bonus_life+0
-              sta game_state+GameState::bonus_life+0
-              lda game_state+GameState::bonus_life+1
-              adc game_tmp
-              sta game_state+GameState::bonus_life+1
-              cld
-              ldy game_state+GameState::lives
-              inc game_state+GameState::lives
-              jmp gfx_lives
-
- @add_score:  tay
+:             tay
               sed
               clc
               lda game_state+GameState::score+0
@@ -834,17 +730,37 @@ add_score:    jsr @add_score
 @cmp:         lda game_state+GameState::highscore,y
               cmp game_state+GameState::score,y
               bcc @copy ; highscore < score ?
-              bne @exit
+              bne @bonus_life
               dey
               bpl @cmp
-@exit:        rts
 
 @copy:        ldy #2
 :             lda game_state+GameState::score,y
               sta game_state+GameState::highscore,y
               dey
               bpl :-
-              rts
+
+@bonus_life:  lda game_state+GameState::score+2
+              cmp game_state+GameState::bonus_life+1
+              bcc @exit
+              lda game_state+GameState::score+1
+              cmp game_state+GameState::bonus_life+0
+              bcc @exit
+              jsr system_dip_switches_bonus_life
+              stx game_tmp
+              sed
+              clc ; calc next bonus life threshold
+              adc game_state+GameState::bonus_life+0
+              sta game_state+GameState::bonus_life+0
+              lda game_state+GameState::bonus_life+1
+              adc game_tmp
+              sta game_state+GameState::bonus_life+1
+              cld
+              ldy game_state+GameState::lives
+              inc game_state+GameState::lives
+              jsr gfx_lives
+@exit:        jmp draw_scores
+
 
 
 ; in:   A - direction
@@ -882,12 +798,8 @@ actor_can_move_to_direction:
 ;  y - soft move to turn direction
 pacman_input:
               jsr actor_update_charpos
-              ldy #0
-              lda keyboard_input
-              sty keyboard_input          ; "consume" key pressed
-              jsr io_player_direction     ; return C=1 if any valid key or joystick input, A=ACT_xxx
-              bcc @exit                   ; key/joy input ?
-              sta input_direction
+              lda input_direction
+              bmi @exit
               jsr actor_can_move_to_direction ; C=0 can move  ; TODO FIXME pacman stops at right tunnel, cause maze ram is not initialized at x=0,y=-1
               bcs @set_input_dir_to_next_dir  ; no - only set next dir
 
@@ -946,8 +858,8 @@ pacman_move:  jsr pacman_input
               beq :+
               dec pacman_delay
               rts
-:
-              lda actor_speed_cnt,x
+
+:             lda actor_speed_cnt,x
               and #$7f    ; mask cnt
               bne @move_cnt
               ldy game_state+GameState::speed_ix
@@ -1074,20 +986,65 @@ lda_maze_ptr:
               lda (p_maze),y
               rts
 
-game_demo:    lda game_state+GameState::state_frames
-              cmp #1
-              bne :+
+game_demo_init:
+              lda #STATE_DEMO
+              sta game_state+GameState::state
+
               jsr game_init
               jsr game_level_init
               draw_text text_game_over, Color_Red
-              jmp game_ready
+              jsr game_ready
 
-:             cmp #$7f
-              bne @exit
-              lda #FN_STATE_PLAYING
-              jmp game_set_state_fn
+              lda #0
+              sta demo_script_ix
+              sta demo_step_cnt
+              ora #$80
+              sta input_direction
+              lda #1
+              sta game_state+GameState::lives ; "game over" after 1 live
 
+              lda #FN_STATE_DEMO_PLAYING
+              jmp system_set_state_fn_delay
+
+game_demo_playing:
+              lda pacman_delay
+              bne @play
+              ldx #ACTOR_PACMAN
+              jsr actor_center
+              bne @play
+              dec demo_step_cnt
+              bpl @play
+              ldy demo_script_ix
+              lda @demo_input_dirs,y
+              bmi @exit
+              lsr
+              lsr
+              sta demo_step_cnt
+              lda @demo_input_dirs,y
+              and #ACT_DIR
+              sta input_direction
+              inc demo_script_ix
+@play:        jmp game_playing
 @exit:        rts
+
+@demo_input_dirs: ; bit 7 (end), bit 6-2 steps, bit 1-0 direction
+.byte 3<<2|ACT_LEFT
+.byte 2<<2|ACT_DOWN,  2<<2|ACT_RIGHT, 2<<2|ACT_DOWN,  13<<2|ACT_RIGHT
+.byte 2<<2|ACT_UP,    1<<2|ACT_LEFT,  2<<2|ACT_UP,    1<<2|ACT_RIGHT
+.byte 3<<2|ACT_UP,    6<<2|ACT_LEFT,  8<<2|ACT_UP,    8<<2|ACT_LEFT
+.byte 2<<2|ACT_DOWN,  2<<2|ACT_LEFT,  13<<2|ACT_UP,   5<<2|ACT_LEFT
+.byte 3<<2|ACT_DOWN,  9<<2|ACT_RIGHT, 3<<2|ACT_UP,    4<<2|ACT_LEFT
+.byte 5<<2|ACT_DOWN,  3<<2|ACT_LEFT,  2<<2|ACT_UP,    6<<2|ACT_RIGHT
+.byte 2<<2|ACT_DOWN,  2<<2|ACT_RIGHT, 2<<2|ACT_DOWN,  2<<2|ACT_LEFT
+.byte 2<<2|ACT_DOWN,  19<<2|ACT_LEFT, 11<<2|ACT_DOWN, 4<<2|ACT_RIGHT
+.byte 2<<2|ACT_DOWN,  24<<2|ACT_LEFT, 2<<2|ACT_UP,    1<<2|ACT_RIGHT
+.byte 2<<2|ACT_UP,    1<<2|ACT_LEFT,  2<<2|ACT_UP,    11<<2|ACT_RIGHT
+.byte 2<<2|ACT_DOWN,  2<<2|ACT_RIGHT, 2<<2|ACT_UP,    10<<2|ACT_RIGHT
+.byte 2<<2|ACT_DOWN,  1<<2|ACT_LEFT,  2<<2|ACT_DOWN,  2<<2|ACT_RIGHT
+.byte 2<<2|ACT_DOWN,  24<<2|ACT_LEFT, 2<<2|ACT_UP,    1<<2|ACT_RIGHT
+.byte 2<<2|ACT_UP,    1<<2|ACT_LEFT,  4<<2|ACT_UP,    1<<2|ACT_RIGHT
+.byte $ff
+
 
 
 delete_message_1:
@@ -1148,7 +1105,7 @@ game_ghost_catched:
               lda #GHOST_MODE_CATCHED
               sta ghost_mode,x
               lda #FN_STATE_PLAYING    ; continue playing
-              jmp game_set_state_fn
+              jmp system_set_state_fn
 @exit:        rts
 
 
@@ -1160,10 +1117,14 @@ game_playing: jsr update_mode
               ldx #ACTOR_CLYDE
               jsr actors_move
 
-              jsr animate_screen
               jsr animate_bonus
+              jsr animate_screen
 
-              lda game_state+GameState::dots   ; all dots collected ?
+              bit game_state+GameState::state ; in intro demo?
+              bvc :+
+              rts
+
+:             lda game_state+GameState::dots   ; all dots collected ?
               bne @exit
 
               lda #Pts_Index_Level_Cleared
@@ -1174,7 +1135,7 @@ game_playing: jsr update_mode
               sta actor_shape,x
 
               lda #FN_STATE_LEVEL_CLEARED
-              jmp game_set_state_fn_delay
+              jmp system_set_state_fn_delay
 @exit:        rts
 
 
@@ -1208,7 +1169,7 @@ mode_frightened:
               cpy #19 ; no frightened in level 19+
               bcs actors_reverse
 
-              dey ; adjust for lookup
+              dey ; adjust level for lookup
               lda frghtd_timer_l,y
               sta game_state+GameState::frghtd_timer+0
               lda frghtd_timer_h,y
@@ -1414,10 +1375,14 @@ animate_bonus:
               dec game_state+GameState::bonus_cnt
               bne @exit
 
+              lda game_maze+($12+$20*$0d) ; below ghost base
+              cmp #Char_Bonus ; bonus fruit timeout?
+              bne @bonus_pts_clr
               lda #Char_Blank ; reset to blank char in maze
               sta game_maze+($12+$20*$0d) ; below ghost base
               lda #Bonus_Clear
-              jsr gfx_bonus
+              jmp gfx_bonus
+@bonus_pts_clr:
               ldx #$12
               ldy #$0f
               lda #4
@@ -1426,15 +1391,15 @@ animate_bonus:
               lda game_state+GameState::dots
               bit game_state+GameState::bonus
               bmi @exit
-              bvs @bonus2
+              bvs @bonus_2
               cmp #MAX_DOTS-Bonus_Dots_Trig1
-              bne @bonus2
+              bne @bonus_2
               lda #Bonus1_Triggered
-              bne @bonus
-@bonus2:      cmp #MAX_DOTS-Bonus_Dots_Trig2
+              bne @bonus_1
+@bonus_2:     cmp #MAX_DOTS-Bonus_Dots_Trig2
               bne @exit
               lda #Bonus2_Triggered
-@bonus:       ora game_state+GameState::bonus
+@bonus_1:     ora game_state+GameState::bonus
               sta game_state+GameState::bonus
               and #$1f  ; mask bonus number 1-8
               jsr gfx_bonus
@@ -1468,21 +1433,6 @@ draw_frame:   jsr gfx_sprites_off
 
               jmp draw_scores
 
-game_set_state_fn_delay:
-              sta game_state+GameState::fn_state_next
-              lda #FN_STATE_DELAY
-game_set_state_fn:
-              ldy #0
-              sty game_state+GameState::state_frames
-              tay
-              lda game_state_table+0,y
-              sta game_state+GameState::fn_state+0
-              lda game_state_table+1,y
-              sta game_state+GameState::fn_state+1
-game_noop:    rts
-
-game_call_state_fn:
-              jmp (game_state+GameState::fn_state)
 
 game_level_init:
               lda game_state+GameState::level
@@ -1509,10 +1459,10 @@ game_level_init:
               ldy game_state+GameState::level
               jsr init_speed_cnt
 
-              bit game_state+GameState::state
+              bit game_state+GameState::state ; in intro demo?
               bvc :+
               rts
-  :
+:
               jsr draw_frame
 
               draw_text ready, Color_Yellow
@@ -1521,7 +1471,7 @@ game_level_init:
               jsr gfx_bonus_stack
 
               lda #FN_STATE_READY
-              jmp game_set_state_fn
+              jmp system_set_state_fn
 
 .export init_speed_cnt
 init_speed_cnt:
@@ -1553,7 +1503,7 @@ game_level_cleared:
               bne @rotate
 
               lda #FN_STATE_INTERMISSION
-              jmp game_set_state_fn
+              jmp system_set_state_fn
 @rotate:
               lsr
               lsr
@@ -1588,8 +1538,8 @@ _draw_score:
               dec sys_crs_y ; leading 00, skip digits
               dec sys_crs_y
               dey
-              bpl @next
-              rts
+              bne @next
+              beq @digits
 :             and #$f0  ;0? ?
               bne @digits
               dec sys_crs_y ;output the 0-9 only
@@ -1625,7 +1575,9 @@ draw_energizer:
               bpl @l0
               rts
 
-animate_up:
+animate_up:   bit game_state+GameState::state
+              bvs @exit
+
               ldy #Color_Text
               lda game_state+GameState::frames
               and #$10
@@ -1637,18 +1589,17 @@ animate_up:
               draw_text text_1up
               rts
 @2_up:        draw_text text_2up
-              rts
+@exit:        rts
 
 
-game_init:
-              jsr sound_init_game_start
+game_init:    jsr sound_init_game_start
 
               jsr system_dip_switches_lives
               sty game_state+GameState::lives
 
               jsr system_dip_switches_bonus_life
-              stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
               sta game_state+GameState::bonus_life+0
+              stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
 
               lda #1 ; start with level 1
               sta game_state+GameState::level
@@ -1661,7 +1612,7 @@ game_init:
 
               jsr draw_frame
 
-              bit game_state+GameState::state
+              bit game_state+GameState::state ; in intro demo?
               bvc :+
               rts
 :
@@ -1678,29 +1629,12 @@ game_init:
 :             draw_text ready, Color_Yellow
 
               lda #FN_STATE_LEVEL_INIT
-              jmp game_set_state_fn_delay
+              jmp system_set_state_fn_delay
 
 .data
 
 maze:
   .include "pacman.maze.inc"
-
-game_state_table:
-  .word game_noop
-  .word game_init
-  .word game_level_init
-  .word game_ready
-  .word game_state_delay
-  .word game_ready_wait
-  .word game_playing
-  .word game_pacman_dying
-  .word game_level_cleared
-  .word game_game_over
-  .word game_ghost_catched
-  .word game_intermission
-  .word game_demo
-  .word intro_script
-  .word intro_ghost_catched
 
 actor_init_x: ; sprite pos x of blinky,pinky,inky,clyde,pacman
     .byte 100,$7c,$7c,$7c,196
@@ -1881,8 +1815,8 @@ points_digits:
 .export ghost_mode,ghost_color,ghost_state
 
 .bss
-  input_direction:  .res 1
-  keyboard_input:   .res 1
+  demo_script_ix:   .res 1
+  demo_step_cnt:    .res 1  ; step counter current direction
   actor_sp_x:       .res 5  ; sprite x
   actor_sp_y:       .res 5  ; sprite y
   actor_xpos:       .res 5  ; tile x pos - 0..31

@@ -8,10 +8,16 @@
 .export sys_isr
 .export sys_crs_x
 .export sys_crs_y
+.export system_set_state_fn, system_set_state_fn_delay
+.export system_call_state_fn
 .export system_wait_vblank
 .export system_rng
+.export system_credit_inc, system_credit_dec
 .export system_dip_switches_lives
 .export system_dip_switches_bonus_life
+.export system_dip_switches_coinage
+
+.export input_direction
 
 .autoimport
 
@@ -47,7 +53,6 @@ system_wait_vblank:
               sta game_state+GameState::vblank
 :             lda game_state+GameState::vblank  ; wait vblank
               beq :-
-;              dec game_state+GameState::vblank
               rts
 
 out_hex_digits:
@@ -147,9 +152,24 @@ wait:         jsr system_wait_vblank
               bne wait
               rts
 
+system_set_state_fn_delay:
+              sta game_state+GameState::fn_state_next
+              lda #FN_STATE_DELAY
+system_set_state_fn:
+              ldy #0
+              sty game_state+GameState::state_frames
+              tay
+              lda system_state_table+0,y
+              sta game_state+GameState::fn_state+0
+              lda system_state_table+1,y
+              sta game_state+GameState::fn_state+1
+system_noop:  rts
 
-system_rng:   ;.byte $db
-              ldy game_state+GameState::rng+1
+system_call_state_fn:
+              jmp (game_state+GameState::fn_state)
+
+
+system_rng:   ldy game_state+GameState::rng+1
               lda game_state+GameState::rng+0
               asl ; *2
               rol game_state+GameState::rng+1
@@ -171,6 +191,11 @@ system_rng:   ;.byte $db
               lda (p_text),y
               rts
 
+system_dip_switches_coinage:
+              lda game_state+GameState::dip_switches
+              and #DIP_COINAGE_0 | DIP_COINAGE_1 ; see pacman.inc
+              rts
+
 system_dip_switches_lives:
               lda game_state+GameState::dip_switches
               and #DIP_LIVES_1 | DIP_LIVES_0 ; see pacman.inc
@@ -184,6 +209,8 @@ system_dip_switches_lives:
               iny
 :             rts
 
+; out:
+;   Z=1 no bonus life at all
 system_dip_switches_bonus_life:
               lda game_state+GameState::dip_switches
               and #DIP_BONUS_LIFE_1 | DIP_BONUS_LIFE_0 ; see pacman.inc
@@ -191,12 +218,55 @@ system_dip_switches_bonus_life:
               lsr
               lsr
               tay
-              ldx bonus_life+0,y
               lda bonus_life+1,y
+              ldx bonus_life+0,y  ; @see bonus_life table, if the first BCD digit is zero no bonus life at all (Z=1)
               rts
+
+system_credit_dec:
+              lda game_state+GameState::credit
+              beq @exit
+              sed
+              sec
+              sbc #1
+              sta game_state+GameState::credit
+              cld
+@exit:        rts
+
+system_credit_inc:
+              lda game_state+GameState::credit
+              cmp #$99
+              bcs @exit
+              sed
+              adc #01
+              sta game_state+GameState::credit
+              cld
+@exit:        rts
 
 .data
   bonus_life: .byte $01,$00
               .byte $01,$50
               .byte $02,$00
               .byte $00,$00  ; BCD - just the TT T digit
+
+system_state_table:
+              .word system_noop
+              .word game_init
+              .word game_level_init
+              .word game_ready
+              .word game_state_delay
+              .word game_ready_wait
+              .word game_playing
+              .word game_pacman_dying
+              .word game_level_cleared
+              .word game_game_over
+              .word game_ghost_catched
+              .word game_intermission
+              .word game_demo_init
+              .word game_demo_playing
+              .word intro
+              .word intro_ghosts
+              .word intro_ghost_catched
+              .word intro_select_player
+
+.bss
+  input_direction:  .res 1  ; last user input

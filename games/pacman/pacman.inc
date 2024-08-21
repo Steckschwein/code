@@ -53,8 +53,8 @@ TXT_GHOST =$03
 TXT_CRS_XY=$04
 TXT_COLOR =$05
 
-DIP_COINAGE_0       =1<<0
-DIP_COINAGE_1       =1<<1
+DIP_COINAGE_0       =1<<0   ; 00 - free play
+DIP_COINAGE_1       =1<<1   ; 01 - 1 coin, 2 credits | 02 - 1 coin, 1 credit | 11 - 2 coins, 1 credit
 DIP_LIVES_0         =1<<2   ; lives 00 - 1, 01 - 2, 10 - 3, 11 - 5
 DIP_LIVES_1         =1<<3
 DIP_BONUS_LIFE_0    =1<<4   ; bonus life at 00 - 10.000, 01 - 15.000, 10 - 20.000, 11 - None
@@ -74,13 +74,16 @@ FN_STATE_LEVEL_CLEARED = $10
 FN_STATE_GAME_OVER     = $12
 FN_STATE_GHOST_CATCHED = $14
 FN_STATE_INTERMISSION  = $16
-FN_STATE_GAME_DEMO     = $18
-FN_STATE_INTRO_SCRIPT  = $1a
-FN_STATE_INTRO_GHOST_CATCHED  = $1c
+FN_STATE_DEMO_INIT     = $18
+FN_STATE_DEMO_PLAYING  = $1a
+FN_STATE_INTRO         = $1c
+FN_STATE_INTRO_GHOSTS  = $1e
+FN_STATE_INTRO_GHOST_CATCHED  = $20
+FN_STATE_INTRO_SELECT_PLAYER  = $22
 
 
 STATE_PAUSE         = 1<<5
-STATE_INTRO         = 1<<6
+STATE_DEMO          = 1<<6  ; demo flag
 STATE_EXIT          = 1<<7
 
 GHOST_STATE_BASE    = 0
@@ -112,7 +115,7 @@ Delay_Energizer     = 3
 Bonus_Dots_Trig1    = 70
 Bonus_Dots_Trig2    = 170
 Bonus_Time          = 150 ; count down every 4 frames gives ~9-10s
-Bonus_Pts_Time      = 24  ; ~2s
+Bonus_Pts_Time      = 24  ; ~2s display bonus points
 
 Bonus_Clear       = 0 ;
 Bonus_Cherry      = 1 ; level 1       100pts
