@@ -1,6 +1,6 @@
 
 TODO:
-  - intro ghost sequence
+  - fix ghost sequence and catch state in demo
   - compensate pacman direction and 1px offset
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - "cruise elroy" 1 / 2
@@ -38,16 +38,18 @@ notes:
   intermission: https://www.youtube.com/watch?v=v8BT43ZWSTY
 
 
----------------------------------------------------
++--------------------------------------------------+
 | pacman (6510)                                    |
-----------------------------------------------------
++--------------------------------------------------+
 | pacman.game (6510)                               |
-----------------------------------------------------
+| pacman.intro (6510)                              |
++--------------------------------------------------+
 | pacman.gfx.sts (65c02)  | pacman.gfx.c64 (6510)  |
 | pacman.sound.sts        | pacman.sound.c64       |
---------------------------| pacman.hw.c64 (6510)   |
-| steckschwein.lib        |                        |
----------------------------------------------------
+| pacman.io.sts           | pacman.io.c64          |
++-------------------------+------------------------+
+| steckschwein.lib        | cc65 lib               |
++--------------------------------------------------+
 
 video:
   - mode 4 (V9938/58) with NTSC (60Hz) and open border hack (overscan)

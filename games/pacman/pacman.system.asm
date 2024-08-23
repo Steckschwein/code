@@ -37,8 +37,12 @@ sys_isr:
 
               jsr gfx_update  ; timing critical
 
+              lda game_state+GameState::state
+              and #STATE_PAUSE
+              bne :+
               inc game_state+GameState::frames
               inc game_state+GameState::state_frames
+:
               inc game_state+GameState::vblank
 
               bgcolor Color_Bg

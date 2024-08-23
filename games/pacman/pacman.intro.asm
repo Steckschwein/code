@@ -15,7 +15,7 @@
 .code
 
 intro:
-              lda #STATE_DEMO
+              lda #STATE_INTRO
               sta game_state+GameState::state
 
               jsr intro_frame
@@ -68,7 +68,7 @@ intro:
               lda #Color_Bg
               sta text_color
 
-.ifdef __DEVMODE
+.ifdef ___DEVMODE
               lda #FN_STATE_DEMO_INIT
               jmp system_set_state_fn
 .endif
@@ -178,7 +178,7 @@ intro_init_script:
 intro_ghosts: ldx #ACTOR_PACMAN
               jsr pacman_move
 
-              lda #INTRO_TUNNEL_X
+              lda #INTRO_TUNNEL_X ; animate energizer
               sta sys_crs_x
               ldy #23
               sty sys_crs_y
@@ -186,7 +186,7 @@ intro_ghosts: ldx #ACTOR_PACMAN
               jsr gfx_charout
 
               lda game_state+GameState::state_frames
-              and #$0f  ; spwan ghost every 16 frames
+              and #$0f            ; spwan ghost every 16 frames
               bne @move
               ldx ghost_cnt
               cpx #ACTOR_CLYDE
@@ -205,10 +205,10 @@ intro_ghost_catched:
               sec
               lda #3
               sbc game_state+GameState::ghsts_to_catch
-              tax
-              lda #30*8
+              tax                     ;  hide next remaining ghost
+              lda #30*8               ;  behind border
               sta actor_sp_y,x
-              lda #GHOST_STATE_BASE
+              lda #GHOST_STATE_BASE   ; and do base move up/down
               sta ghost_state,x
               dec game_state+GameState::ghsts_to_catch
               bmi @demo

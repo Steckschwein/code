@@ -84,7 +84,7 @@ FN_STATE_INTRO_SELECT_PLAYER  = $22
 
 STATE_PAUSE         = 1<<5
 STATE_DEMO          = 1<<6  ; demo flag
-STATE_EXIT          = 1<<7
+STATE_INTRO         = 1<<7
 
 GHOST_STATE_BASE    = 0
 GHOST_STATE_RETURN  = 1

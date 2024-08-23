@@ -134,8 +134,8 @@ game_ready:
               ldy #Color_Food
               jsr draw_energizer
 
-              bit game_state+GameState::state ; in intro demo?
-              bvc :+
+              bit game_state+GameState::state ; in intro?
+              bpl :+
               rts
 
 :             jsr sound_play
@@ -270,8 +270,9 @@ actors_move:  jsr ghost_move
               sta actor_shape,x
 
               lda #FN_STATE_GHOST_CATCHED
-              bit game_state+GameState::state ; in intro/demo?
-              bvc :+
+              bit game_state+GameState::state ; called from intro demo?
+              bvs :+
+              bpl :+
               lda #FN_STATE_INTRO_GHOST_CATCHED
 :             jmp system_set_state_fn
 
@@ -654,7 +655,7 @@ pacman_collect:
               sta pacman_delay
 
               bit game_state+GameState::state ; in intro demo?
-              bvc @energizer
+              bpl @energizer
 
               ldx #ACTOR_PACMAN
               lda actor_move,x
@@ -709,7 +710,7 @@ pacman_collect:
               pla
 
 add_score:    bit game_state+GameState::state
-              bvc :+
+              bpl :+
               rts
 
 :             tay
@@ -987,7 +988,7 @@ lda_maze_ptr:
               rts
 
 game_demo_init:
-              lda #STATE_DEMO
+              lda #STATE_INTRO|STATE_DEMO
               sta game_state+GameState::state
 
               jsr game_init
@@ -1104,8 +1105,12 @@ game_ghost_catched:
               sta ghost_state,x
               lda #GHOST_MODE_CATCHED
               sta ghost_mode,x
+
               lda #FN_STATE_PLAYING    ; continue playing
-              jmp system_set_state_fn
+              bit game_state+GameState::state
+              bvc :+
+              lda #FN_STATE_DEMO_PLAYING
+:             jmp system_set_state_fn
 @exit:        rts
 
 
@@ -1117,11 +1122,11 @@ game_playing: jsr update_mode
               ldx #ACTOR_CLYDE
               jsr actors_move
 
-              jsr animate_bonus
               jsr animate_screen
+              jsr animate_bonus
 
               bit game_state+GameState::state ; in intro demo?
-              bvc :+
+              bpl :+
               rts
 
 :             lda game_state+GameState::dots   ; all dots collected ?
@@ -1459,8 +1464,8 @@ game_level_init:
               ldy game_state+GameState::level
               jsr init_speed_cnt
 
-              bit game_state+GameState::state ; in intro demo?
-              bvc :+
+              bit game_state+GameState::state ; in intro?
+              bpl :+
               rts
 :
               jsr draw_frame
@@ -1575,7 +1580,7 @@ draw_energizer:
               bpl @l0
               rts
 
-animate_up:   bit game_state+GameState::state
+animate_up:   bit game_state+GameState::state ; demo?
               bvs @exit
 
               ldy #Color_Text
@@ -1612,8 +1617,8 @@ game_init:    jsr sound_init_game_start
 
               jsr draw_frame
 
-              bit game_state+GameState::state ; in intro demo?
-              bvc :+
+              bit game_state+GameState::state ; in intro?
+              bpl :+
               rts
 :
               ldy game_state+GameState::lives

@@ -94,23 +94,22 @@ main:
               sta game_state+GameState::level
               lda #FN_STATE_INTERMISSION
               jmp @set_state
-          :   cmp #'c'
+:             cmp #'c'
               bne :+
               jsr system_credit_inc
-              lda #0
-              bit game_state+GameState::state ; in intro/demo?
-              bvc :+
+              bit game_state+GameState::state ; in intro?
+              bpl @main_loop
               lda #FN_STATE_INTRO
               jmp @set_state
-          :   cmp #'m'
+:             cmp #'m'
               bne :+
               lda #0
               sta game_state+GameState::sctchs_timer+0
               sta game_state+GameState::sctchs_timer+1
               jmp @main_loop
 
-:             bit game_state+GameState::state ; only in intro/demo
-              bvc :+
+:             bit game_state+GameState::state ; in intro?
+              bpl :+
               cmp #'1'
               beq @start_game
               cmp #'2'
@@ -164,7 +163,7 @@ init_state:
 
             jsr io_highscore_load
 
-            lda #DIP_COINAGE_1 | DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES
+            lda #DIP_COINAGE_1 | DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES  ; 1 coin/1 credit, bonus life at 10.000pts
 ;            lda DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES
             sta game_state+GameState::dip_switches
 
