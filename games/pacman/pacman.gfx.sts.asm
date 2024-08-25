@@ -36,11 +36,12 @@
 .code
 
 gfx_mode_off:
+    php
     sei
     vdp_sreg 0, v_reg15
     vdp_wait_s
     lda a_vreg
-    cli
+    plp
     rts
 
 gfx_mode_on:

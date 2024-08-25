@@ -14,8 +14,7 @@
 
 .code
 
-intro:
-              lda #STATE_INTRO
+intro:        lda #STATE_INTRO
               sta game_state+GameState::state
 
               jsr intro_frame
@@ -39,10 +38,8 @@ intro:
               ror tmp
               lsr
               ror tmp
-              lda tmp
-              pha
               draw_text _bonus, Color_Orange  ; ... otherwise display bonus life at xx000Pts
-              pla
+              lda tmp
               ldx #22
               ldy #8
               jsr out_digits_xy
@@ -52,7 +49,8 @@ intro:
               lda #FN_STATE_INTRO_SELECT_PLAYER
               jmp system_set_state_fn
 
-@wait_credit: draw_text _table_head
+@wait_credit: jmp :+
+              draw_text _table_head
               draw_text _blinky,  Color_Blinky
               draw_text _pinky,   Color_Pinky
               draw_text _inky,    Color_Inky
@@ -62,13 +60,12 @@ intro:
               draw_text _food, Color_Food
 
               draw_text _copyright, Color_Pink
-
-              jsr intro_init_script
+:             jsr intro_init_script
 
               lda #Color_Bg
               sta text_color
 
-.ifdef ___DEVMODE
+.ifdef __DEVMODE
               lda #FN_STATE_DEMO_INIT
               jmp system_set_state_fn
 .endif
@@ -79,8 +76,6 @@ intro:
 @exit:        rts
 
 intro_select_player:
-              jsr display_credit
-              rts
 
 display_credit:
               jsr system_dip_switches_coinage
@@ -121,12 +116,12 @@ intro_frame:  jsr gfx_sprites_off
               jmp display_credit
 
 intro_init_script:
-              lda #18
-              ldy #31
-              sta sys_crs_x
+              ldx #INTRO_TUNNEL_X-1         ; draw an invisible tunnel the ghosts must pass through
+              ldy #32
+              stx sys_crs_x
               sty sys_crs_y
 
-:             lda sys_crs_x ; draw an invisible tunnel the ghosts must pass through
+:             txa
               ldy sys_crs_y
               jsr lda_maze_ptr_ay
 
@@ -155,13 +150,13 @@ intro_init_script:
               ldx #ACTOR_PACMAN
 :             lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
               sta actor_move,x
-              lda #INTRO_TUNNEL_X*8+4 ; center +4px
-              sta actor_sp_x,x
               txa
               asl
               clc
               adc #29*8+4
               sta actor_sp_y,x
+              lda #INTRO_TUNNEL_X*8+4 ; center +4px
+              sta actor_sp_x,x
               cpx #ACTOR_PACMAN
               beq @next
 @ghost:       lda #GHOST_STATE_TARGET
@@ -175,8 +170,7 @@ intro_init_script:
               sta game_state+GameState::speed_ix
               rts
 
-intro_ghosts: ldx #ACTOR_PACMAN
-              jsr pacman_move
+intro_ghosts: jsr pacman_move
 
               lda #INTRO_TUNNEL_X ; animate energizer
               sta sys_crs_x
@@ -191,7 +185,10 @@ intro_ghosts: ldx #ACTOR_PACMAN
               ldx ghost_cnt
               cpx #ACTOR_CLYDE
               beq @move
-              inc ghost_cnt
+              inx
+              stx ghost_cnt
+              lda #INTRO_TUNNEL_X*8+4 ; center +4px
+              sta actor_sp_x,x
 
 @move:        ldx ghost_cnt
               bmi @exit
@@ -206,7 +203,7 @@ intro_ghost_catched:
               lda #3
               sbc game_state+GameState::ghsts_to_catch
               tax                     ;  hide next remaining ghost
-              lda #30*8               ;  behind border
+              lda #30*8+4             ;  behind border
               sta actor_sp_y,x
               lda #GHOST_STATE_BASE   ; and do base move up/down
               sta ghost_state,x

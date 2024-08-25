@@ -38,7 +38,6 @@ io_init:
 @exit:        rts
 
 io_irq_on:
-        sei
         lda #LORAM | IOEN ;disable kernel rom to setup irq vector
         sta $01           ;PLA
 

@@ -31,8 +31,10 @@ main:
               jsr gfx_init
               jsr gfx_mode_on
 
+              sei
               jsr io_irq_on
               setIRQ sys_isr, save_irq
+              cli
 
               jsr boot
 
@@ -58,11 +60,14 @@ main:
 
               jsr io_getkey
               bcs :+
-              lda #0                      ; 0 - no key pressed
+              lda #0                          ; 0 - no key pressed
 :             pha
+              bit game_state+GameState::state ; skip update user input in intro
+              bmi @skip_input
+              cmp #0
               jsr io_player_direction     ; return C=1 if any valid key or joystick input, A=ACT_xxx
               bcs :+                      ; key/joy input ?
-              ora #$80                    ; flag no input
+@skip_input:  lda #$80                    ; flag no input
 :             sta input_direction
               pla
               cmp #KEY_EXIT
@@ -146,10 +151,11 @@ main:
 :
               jmp @main_loop
 
-quit:
-              jsr sound_init
+quit:         sei
+              ;jsr sound_init
               jsr gfx_mode_off
               restoreIRQ save_irq
+              cli
               jmp io_exit
 .endproc
 

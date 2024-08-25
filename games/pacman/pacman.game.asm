@@ -134,8 +134,8 @@ game_ready:
               ldy #Color_Food
               jsr draw_energizer
 
-              bit game_state+GameState::state ; in intro?
-              bpl :+
+              bit game_state+GameState::state ; in intro demo?
+              bvc :+
               rts
 
 :             jsr sound_play
@@ -452,7 +452,7 @@ calc_distance:lda (p_maze),y
               adc #1
 :             tay
 .ifdef __ASSERTIONS
-              cpy #$20
+              cpy #squares_h-squares_l
               bcc :+
               .byte $db
 :
@@ -463,8 +463,8 @@ calc_distance:lda (p_maze),y
               sta rx1+1
 
               ldy game_tmp
-              lda py
               clc
+              lda py
               adc vectors_y,y
               sec
               sbc ghost_tgt_y,x ; TODO can be improved |px-gx| and |py-gy| are const., add vector of direction afterwards
@@ -473,11 +473,9 @@ calc_distance:lda (p_maze),y
               adc #1
 :             tay
 .ifdef __ASSERTIONS
-              cpy #$20
+              cpy #squares_h-squares_l
               bcc :+
               .byte $db
-              nop
-              nop
 :
 .endif
               clc
@@ -655,6 +653,7 @@ pacman_collect:
               sta pacman_delay
 
               bit game_state+GameState::state ; in intro demo?
+              bvs @energizer
               bpl @energizer
 
               ldx #ACTOR_PACMAN
@@ -797,9 +796,7 @@ actor_can_move_to_direction:
 ; soft move current direction
 ; turn bit on?
 ;  y - soft move to turn direction
-pacman_input:
-              jsr actor_update_charpos
-              lda input_direction
+pacman_input: lda input_direction
               bmi @exit
               jsr actor_can_move_to_direction ; C=0 can move  ; TODO FIXME pacman stops at right tunnel, cause maze ram is not initialized at x=0,y=-1
               bcs @set_input_dir_to_next_dir  ; no - only set next dir
@@ -854,7 +851,9 @@ pacman_input:
 @exit:        rts
 
 .export pacman_move
-pacman_move:  jsr pacman_input
+pacman_move:  ldx #ACTOR_PACMAN
+              jsr actor_update_charpos
+              jsr pacman_input
               lda pacman_delay
               beq :+
               dec pacman_delay
@@ -870,7 +869,7 @@ pacman_move:  jsr pacman_input
               bmi @exit          ; -1 skip move for this frame
 @move_2x:     jsr @move          ; +1 additional move
 .ifdef __ASSERTIONS
-              cpx #ACTOR_PACMAN  ; assert X kept TODO debug
+              cpx #ACTOR_PACMAN  ; assert X kept
               beq :+
               .byte $db
 :
@@ -905,6 +904,7 @@ pacman_move:  jsr pacman_input
               and #ACT_NEXT_DIR ; set shape of next direction
               sta actor_shape,x
 @exit:        rts
+
 @move_soft:
               lda game_state+GameState::frames
               lsr
@@ -1016,9 +1016,14 @@ game_demo_playing:
               dec demo_step_cnt
               bpl @play
               ldy demo_script_ix
-              lda @demo_input_dirs,y
+:             lda @demo_input_dirs,y
               bmi @exit
-              lsr
+              cmp #$7f
+              bne :+
+              .byte $db
+              iny
+              bne :-
+:             lsr
               lsr
               sta demo_step_cnt
               lda @demo_input_dirs,y
@@ -1030,12 +1035,12 @@ game_demo_playing:
 
 @demo_input_dirs: ; bit 7 (end), bit 6-2 steps, bit 1-0 direction
 .byte 3<<2|ACT_LEFT
-.byte 2<<2|ACT_DOWN,  2<<2|ACT_RIGHT, 2<<2|ACT_DOWN,  13<<2|ACT_RIGHT
-.byte 2<<2|ACT_UP,    1<<2|ACT_LEFT,  2<<2|ACT_UP,    1<<2|ACT_RIGHT
-.byte 3<<2|ACT_UP,    6<<2|ACT_LEFT,  8<<2|ACT_UP,    8<<2|ACT_LEFT
+.byte 3<<2|ACT_DOWN,  3<<2|ACT_RIGHT, 3<<2|ACT_DOWN,  14<<2|ACT_RIGHT
+.byte 2<<2|ACT_UP,    1<<2|ACT_LEFT,  2<<2|ACT_UP,    2<<2|ACT_RIGHT
+.byte 1<<2|ACT_UP,    2<<2|ACT_UP,    6<<2|ACT_LEFT,  7<<2|ACT_UP,    7<<2|ACT_LEFT
 .byte 2<<2|ACT_DOWN,  2<<2|ACT_LEFT,  13<<2|ACT_UP,   5<<2|ACT_LEFT
 .byte 3<<2|ACT_DOWN,  9<<2|ACT_RIGHT, 3<<2|ACT_UP,    4<<2|ACT_LEFT
-.byte 5<<2|ACT_DOWN,  3<<2|ACT_LEFT,  2<<2|ACT_UP,    6<<2|ACT_RIGHT
+.byte 5<<2|ACT_DOWN,  4<<2|ACT_LEFT,  3<<2|ACT_UP,    6<<2|ACT_RIGHT
 .byte 2<<2|ACT_DOWN,  2<<2|ACT_RIGHT, 2<<2|ACT_DOWN,  2<<2|ACT_LEFT
 .byte 2<<2|ACT_DOWN,  19<<2|ACT_LEFT, 11<<2|ACT_DOWN, 4<<2|ACT_RIGHT
 .byte 2<<2|ACT_DOWN,  24<<2|ACT_LEFT, 2<<2|ACT_UP,    1<<2|ACT_RIGHT
@@ -1116,7 +1121,6 @@ game_ghost_catched:
 
 game_playing: jsr update_mode
 
-              ldx #ACTOR_PACMAN
               jsr pacman_move
 
               ldx #ACTOR_CLYDE
@@ -1453,9 +1457,12 @@ game_level_init:
               lda #0
               sta game_state+GameState::dot_cnt
               sta game_state+GameState::bonus_cnt
+              lda #$79
               sta game_state+GameState::rng+0
+              eor #$ff
               sta game_state+GameState::rng+1
 
+              lda #0
               ldx #ACTOR_CLYDE
 :             sta ghost_dot_cnt,x
               dex
@@ -1744,11 +1751,11 @@ frghtd_timer_h:
     .byte >(60*01)  ; level 18
 
 
-; squares for 0..31
+; squares for $00..$24
 squares_l:
-    .byte $00,$01,$04,$09,$10,$19,$24,$31,$40,$51,$64,$79,$90,$A9,$C4,$E1,$00,$21,$44,$69,$90,$B9,$E4,$11,$40,$71,$A4,$D9,$10,$49,$84,$C1,$00,$41,$84,$c9
+    .byte $00,$01,$04,$09,$10,$19,$24,$31,$40,$51,$64,$79,$90,$A9,$C4,$E1,$00,$21,$44,$69,$90,$B9,$E4,$11,$40,$71,$A4,$D9,$10,$49,$84,$C1,$00,$41,$84,$c9,$10
 squares_h:
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$02,$02,$02,$02,$02,$03,$03,$03,$03,$04,$04,$04,$04
+    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$02,$02,$02,$02,$02,$03,$03,$03,$03,$04,$04,$04,$04,$05
 
 energizer_x:
    .byte 4,24,4,24
@@ -1846,4 +1853,4 @@ points_digits:
   target_dist:      .res 2  ; 16bit (x1-x2)² + (y1-y2)² to calc shortest distance
   target_dir:       .res 1
 
-  game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with $100
+  game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with page start
