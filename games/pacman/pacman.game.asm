@@ -72,21 +72,7 @@ game_init_actors:
               sta actor_shape,x
               lda #0
               sta pacman_delay
-
-              ldx #ACTOR_CLYDE
-              lda game_state+GameState::level
-              cmp #1
-              bne :+
-              lda #60 ; level 1 - dot limit clyde 60
-              sta ghost_dot_limit,x
-              ldx #ACTOR_INKY
-              lda #30 ;           dot limit inky 30
-              sta ghost_dot_limit,x
-:             cmp #2
-              bne :+
-              lda #50 ;           dot limit clyde 50
-              sta ghost_dot_limit,x
-:             jmp gfx_sprites_on
+              jmp gfx_sprites_on
 
 @init_ghost:
               lda #Shape_Offset_Norm  ; ghost shape offset
@@ -97,8 +83,6 @@ game_init_actors:
               sta ghost_state,x
               lda ghost_init_color,x
               sta ghost_color,x
-              lda #0
-              sta ghost_dot_limit,x
               lda #GHOST_MODE_NORM
               sta ghost_mode,x
 @init_actor:
@@ -119,7 +103,9 @@ game_ready:
               jsr game_init_actors
 
               lda #0
-              sta game_state+GameState::sctchs_timer+0
+              sta game_state+GameState::dot_cnt           ; reset global dot counter
+
+              sta game_state+GameState::sctchs_timer+0    ; reset mode timer
               sta game_state+GameState::sctchs_timer+1
               sta game_state+GameState::frghtd_timer+0
               sta game_state+GameState::frghtd_timer+1
@@ -133,6 +119,8 @@ game_ready:
 
               ldy #Color_Food
               jsr draw_energizer
+
+              jsr reset_dot_timer
 
               bit game_state+GameState::state ; in intro demo?
               bvc :+
@@ -185,6 +173,9 @@ game_pacman_dying:
 @exit:        rts
 
 @next_state:  dec game_state+GameState::lives ; dec 1 live
+
+              lda #Dot_Cnt_Enabled                      ; enable global dot count
+              sta game_state+GameState::dot_cnt_state
 
               lda #FN_STATE_READY
               ldy game_state+GameState::lives
@@ -252,7 +243,7 @@ actors_move:  jsr ghost_move
               cmp #GHOST_MODE_NORM
               bne @ghost_hit          ; ghost catched
 @pacman_hit:  lda #FN_STATE_PACMAN_DYING
-              jmp system_set_state_fn_delay
+              ;jmp system_set_state_fn_delay
 @next:        dex
               bpl actors_move
               rts
@@ -513,10 +504,13 @@ ghost_base:   cmp #GHOST_STATE_BASE
               beq @reverse
               cmp #$7c
               bne @move
-@leave:       lda ghost_dot_cnt,x
-              cmp ghost_dot_limit,x
+              cpx #ACTOR_BLINKY
+              beq @leave
+              lda game_state+GameState::dot_cnt_state
+              bmi @move
+              lda ghost_dot_cnt,x
               bne @move
-              lda #GHOST_STATE_LEAVE
+@leave:       lda #GHOST_STATE_LEAVE
               sta ghost_state,x
 @exit:        rts
 
@@ -572,13 +566,12 @@ ghost_leave_base:
               bcc @move_left
               bcs @move_right
 
-:             lda actor_init_d,x
+:             lda #ACT_MOVE|ACT_DOWN<<2|ACT_DOWN  ; always done, if in base they will reverse immediately
               sta actor_move,x
-              ; TODO strategy dot count
-              lda #GHOST_STATE_LEAVE
-              sta ghost_state,x
               lda #GHOST_MODE_NORM
               sta ghost_mode,x
+              lda #GHOST_STATE_BASE
+              sta ghost_state,x
               rts
 
 
@@ -649,6 +642,7 @@ pacman_collect:
               bne @is_dot
 
               jsr mode_frightened
+
               lda #Delay_Energizer
               sta pacman_delay
 
@@ -666,13 +660,16 @@ pacman_collect:
               sta (p_maze),y
               jmp gfx_charout
 
-@energizer:   dec game_state+GameState::dots
+@energizer:   jsr game_dot_logic
               lda #Pts_Index_Energizer
               bne @score_and_erase
+
 @is_dot:      cmp #Char_Dot
               bne @is_bonus
-              dec game_state+GameState::dots
+
+              jsr game_dot_logic
               inc pacman_delay
+
               lda #Pts_Index_Dot
               beq @score_and_erase  ; dots index is 0
 @is_bonus:    cmp #Char_Bonus
@@ -762,6 +759,68 @@ add_score:    bit game_state+GameState::state
 @exit:        jmp draw_scores
 
 
+base_next_ghost:
+              ldx #ACTOR_PINKY
+@loop:        lda ghost_state,x
+              cmp #GHOST_STATE_BASE
+              beq :+
+@next:        inx
+              cpx #ACTOR_CLYDE+1
+              bne @loop
+              clc
+:             rts
+
+
+game_dot_logic:
+              dec game_state+GameState::dots    ; remaining dots
+
+              lda game_state+GameState::dot_cnt_state ; global dot count enabled?
+              bpl @ghst_dot_cnt
+
+              inc game_state+GameState::dot_cnt ; global dot counter
+              lda game_state+GameState::dot_cnt
+              ldy #ACTOR_PINKY
+              cmp #7
+              beq @leave
+              iny
+              cmp #17
+              beq @leave
+              iny
+              cmp #32
+              bne reset_dot_timer
+              lda ghost_state,y ; in base (0)
+              bne reset_dot_timer
+              sta game_state+GameState::dot_cnt_state ; A=0, reset global dot counter
+              beq reset_dot_timer
+
+@leave:       lda ghost_state,y
+              bne reset_dot_timer
+              lda #GHOST_STATE_LEAVE
+              sta ghost_state,y
+              jmp reset_dot_timer
+
+@ghst_dot_cnt:
+              txa
+              pha
+              jsr base_next_ghost
+              bcc @done
+              lda ghost_dot_cnt,x
+              beq :+
+              dec ghost_dot_cnt,x
+              jmp @done
+:             lda #GHOST_STATE_LEAVE
+              sta ghost_state,x
+@done:        pla
+              tax
+
+reset_dot_timer:
+              lda #$b4
+              ldy game_state+GameState::level
+              cpy #5
+              bcs :+
+              lda #$f0
+:             sta game_state+GameState::dot_timer ; reset timer
+              rts
 
 ; in:   A - direction
 ; out:  C=0 can move, C=1 can not move to direction
@@ -1123,17 +1182,30 @@ game_playing: jsr update_mode
 
               jsr pacman_move
 
+              ldx #ACTOR_INKY
+              ldx #ACTOR_BLINKY
+              ldx #ACTOR_PINKY
               ldx #ACTOR_CLYDE
               jsr actors_move
 
               jsr animate_screen
               jsr animate_bonus
 
+              lda game_state+GameState::dot_timer
+              bne @dot_timer
+
+              jsr base_next_ghost
+              bcc @timer
+              lda #GHOST_STATE_LEAVE
+              sta ghost_state,x
+@timer:       jsr reset_dot_timer
+@dot_timer:   dec game_state+GameState::dot_timer
+
               bit game_state+GameState::state ; in intro demo?
               bpl :+
               rts
-
-:             lda game_state+GameState::dots   ; all dots collected ?
+:
+              lda game_state+GameState::dots   ; all dots collected ?
               bne @exit
 
               lda #Pts_Index_Level_Cleared
@@ -1352,7 +1424,7 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
 
 
 ; in: A - level 1..$ff
-; out: Y - bonus -
+; out: Y - bonus
 bonus_for_level:
               tay
               cmp #2+1 ; level 1 or 2 bonus 1 or 2
@@ -1372,7 +1444,7 @@ bonus_for_level:
               iny
               cmp #12+1 ; level 11,12 bonus 7
               bcc :+
-              iny ; level 13- bonus 8
+              iny ; level 13+ bonus 8
 :             rts
 
 animate_bonus:
@@ -1455,8 +1527,8 @@ game_level_init:
               sta game_state+GameState::ghsts_all_cnt
 
               lda #0
-              sta game_state+GameState::dot_cnt
               sta game_state+GameState::bonus_cnt
+              sta game_state+GameState::dot_cnt_state ; disable global dot count on level init
               lda #$79
               sta game_state+GameState::rng+0
               eor #$ff
@@ -1469,7 +1541,21 @@ game_level_init:
               bpl :-
 
               ldy game_state+GameState::level
-              jsr init_speed_cnt
+
+              ldx #ACTOR_CLYDE
+              cpy #1
+              bne :+
+              lda #60 ; level 1 - dot limit clyde 60
+              sta ghost_dot_cnt,x
+              ldx #ACTOR_INKY
+              lda #30 ;           dot limit inky 30
+              sta ghost_dot_cnt,x
+:             cpy #2
+              bne :+
+              lda #50 ;           dot limit clyde 50
+              sta ghost_dot_cnt,x
+
+:             jsr init_speed_cnt
 
               bit game_state+GameState::state ; in intro?
               bpl :+
@@ -1842,8 +1928,8 @@ points_digits:
   ghost_shape_offs: .res 4  ; offset for normal frightened or catched ghost
   ghost_state:      .res 4  ; ghosts movement strategy - in base, leaving base, return to base, move arround (scatter/chase)
   ghost_mode:       .res 4  ; 0 - normal, 1 - frightened, 2 - catched
-  ghost_dot_cnt:    .res 4  ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
-  ghost_dot_limit:  .res 4  ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
+  ghost_dot_cnt:    .res 4  ; ghost dot counter, only one active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
+;  ghost_dot_limit:  .res 4  ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
   ghost_tgt_x:      .res 4  ; current target tile x
   ghost_tgt_y:      .res 4  ; current target tile y
 

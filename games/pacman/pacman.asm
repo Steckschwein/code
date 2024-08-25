@@ -81,19 +81,23 @@ main:
               jsr gfx_pause
               lda #0
               ; debug keys
-          :   cmp #'r'
+:             cmp #'r'
               beq @init_state
               cmp #'d'
               bne :+
               lda #FN_STATE_PACMAN_DYING
               bne @set_state
-          :   cmp #'g'
+:             cmp #'g'
               bne :+
               lda #1  ; 1 left
               sta game_state+GameState::lives
               lda #FN_STATE_PACMAN_DYING
               jmp @set_state
-          :   cmp #'i'
+:             cmp #'l'
+              bne :+
+              lda #0
+              sta game_state+GameState::dots
+:             cmp #'i'
               bne :+
               lda #2
               sta game_state+GameState::level

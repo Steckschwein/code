@@ -1,16 +1,14 @@
 
 TODO:
-  - fix ghost sequence and catch state in demo
-  - compensate pacman direction and 1px offset
-  - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - "cruise elroy" 1 / 2
-  - per ghost dot cnt logic
+  - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - sound
   - fix all TODOs
+  - compensate pacman direction and 1px offset
   - toggle to enable/disable original bugs
     - pinky/inky target calculation bug - "target 4 tiles left if facing up"
     - "pass through" bug
-
+    - global dot counter "bug/feature"
 
 pacman/ghost speed percentage/frames
   LEVEL      NORM  NORM-DOTS  FRIGHT  FRIGHT-DOTS   NORM   FRIGHT	 TUNNEL

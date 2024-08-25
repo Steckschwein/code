@@ -4,8 +4,9 @@
 
 KEY_EXIT = 27
 MAX_DOTS=240+4  ; food + superfood
-
 MAX_LIVES=5
+
+Dot_Cnt_Enabled=1<<7
 
 .globalzp p_maze
 .globalzp p_game
@@ -275,8 +276,11 @@ SKIP_DIR_CHECK    = $ff
   score           .res 3  ; BCD score current player
 
   level           .byte   ; the current level
+
   dots            .byte   ; remaining dots count down - MAX_DOTS at start
-  dot_cnt         .byte   ; in level dot counter - set/reset if a life is lost
+  dot_cnt         .byte   ; level dot counter - set/reset if a life is lost
+  dot_cnt_state   .byte   ; bit 7 dot_cnt enabled/disabled
+  dot_timer       .byte   ; nothing eaten timer, 4s or 3s (level 5+) hence either count down to zero from $f0 or $b4 each frame
 
   bonus           .byte   ; bonus of current level
   bonus_cnt       .byte   ; bonus available (frame) counter
