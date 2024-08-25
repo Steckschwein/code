@@ -49,8 +49,7 @@ intro:        lda #STATE_INTRO
               lda #FN_STATE_INTRO_SELECT_PLAYER
               jmp system_set_state_fn
 
-@wait_credit: jmp :+
-              draw_text _table_head
+@wait_credit: draw_text _table_head
               draw_text _blinky,  Color_Blinky
               draw_text _pinky,   Color_Pinky
               draw_text _inky,    Color_Inky
@@ -60,7 +59,7 @@ intro:        lda #STATE_INTRO
               draw_text _food, Color_Food
 
               draw_text _copyright, Color_Pink
-:             jsr intro_init_script
+              jsr intro_init_script
 
               lda #Color_Bg
               sta text_color
