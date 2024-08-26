@@ -243,7 +243,9 @@ actors_move:  jsr ghost_move
               cmp #GHOST_MODE_NORM
               bne @ghost_hit          ; ghost catched
 @pacman_hit:  lda #FN_STATE_PACMAN_DYING
-              ;jmp system_set_state_fn_delay
+.ifndef __DEVMODE
+              jmp system_set_state_fn_delay
+.endif
 @next:        dex
               bpl actors_move
               rts

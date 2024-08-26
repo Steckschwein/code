@@ -119,7 +119,7 @@ gfx_isr:
     ;sta VIC_SPR5_Y
             ldx #0
             ldy #HLine_Border+1
-@char:      lda VRAM_PATTERN+$d3<<3,x
+@char:      lda BANK+VRAM_PATTERN+$d3<<3,x
             eor #$ff
 @hblank:    cpy VIC_HLINE
             bne @hblank
@@ -165,8 +165,13 @@ gfx_rotate_pal:
     rts
 
 gfx_init:
+    lda CIA2
+    and #$fc
+    ora #(BANK>>14 ^ $03)
+    sta CIA2
+
     lda #$61    ; pattern open border
-    sta $3fff  ; last byte bank 0 - we open the border
+    sta BANK_GHOSTBYTE ;$3fff  ; last byte bank 0 - we open the border
     lda #Color_Bg
     sta VIC_BORDERCOLOR
     sta VIC_BG_COLOR0
@@ -194,16 +199,16 @@ gfx_init:
 ;gfx_init_pal:
 gfx_init_chars:
     ldx #8
-    setPtr tiles,  p_tmp
-    setPtr VRAM_PATTERN, p_video
+    setPtr tiles, p_tmp
+    setPtr (BANK+VRAM_PATTERN), p_video
     jsr gfx_memcpy
     setPtr sprite_patterns, p_tmp
-    setPtr VRAM_SPRITE_PATTERN, p_video
-    ldx #9
+    setPtr (BANK+VRAM_SPRITE_PATTERN), p_video
+    ldx #8
     jsr gfx_memcpy
 
 gfx_blank_screen:
-    setPtr VRAM_SCREEN, p_video
+    setPtr (BANK+VRAM_SCREEN), p_video
     ldx #4
     ldy #0
     lda #0
@@ -263,13 +268,13 @@ _gfx_is_sp_collision:
 .endif
   ldy actor_shape+_a
   lda shapes+0,y
-  sta VRAM_SPRITE_POINTER+0+_n*2
+  sta BANK+VRAM_SPRITE_POINTER+0+_n*2
   lda shapes+2,y
   cmp #offs+30            ; eyes up? TODO FIXME performance avoid cmp
   bne :+
 .if _mx = 0
   dec VIC_SPR1_X+_n*4     ; adjust 1px left if eyes up on 2nd sprite
-:  sta VRAM_SPRITE_POINTER+1+_n*2
+:  sta BANK+VRAM_SPRITE_POINTER+1+_n*2
 .else
   dec mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::xp     ; adjust 1px left if eyes up on 2nd sprite
 :  sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::pp
@@ -348,7 +353,7 @@ gfx_mx:
     lda mx_tab+mx_sprite::xp,y
     sta VIC_SPR7_X
     lda mx_tab+mx_sprite::pp,y
-    sta VRAM_SPRITE_POINTER+7
+    sta BANK+VRAM_SPRITE_POINTER+7
     lda mx_tab+mx_sprite::mc,y
     sta VIC_SPR_MCOLOR
 
@@ -463,11 +468,11 @@ l_add:
     adc sys_crs_x
     sta p_video
     sta p_tmp
-    lda #>VRAM_SCREEN
+    lda #>(BANK+VRAM_SCREEN)
     adc p_video+1
     sta p_video+1
     clc
-    adc #>(VRAM_COLOR-VRAM_SCREEN)
+    adc #>(VRAM_COLOR-(BANK+VRAM_SCREEN)) ; ?!?
     sta p_tmp+1
     pla
     ldy #0
@@ -498,7 +503,7 @@ gfx_pause:
 .data
 
 shapes:
-offs=VRAM_SPRITE_PATTERN / $40
+offs=VRAM_SPRITE_PATTERN >> 6
 ; pacman      [    <     O     <
     .byte offs+1,offs+0,offs+8,offs+0 ;r  00
     .byte offs+7,offs+6,offs+8,offs+6 ;d  01
