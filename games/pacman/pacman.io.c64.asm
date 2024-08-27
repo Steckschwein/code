@@ -66,9 +66,11 @@ io_isr:
 io_highscore_load:
             rts
 
+; A=key and C=1 key input given, C=0 no input
 ;  out:
 ;    one of ACT_LEFT, ACT_RIGHT,... with C=1
 io_player_direction:
+;            bcc @joystick
             lda CIA1_PRA
         ;    and #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
         ;    cmp #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)

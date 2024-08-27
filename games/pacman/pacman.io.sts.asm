@@ -40,9 +40,9 @@ io_joystick_read:
 
 io_getkey=getkey
 
-; C=1 key or joystick input given, C=0 no input
+; A=key and C=1 key input given, C=0 no input
 io_player_direction:
-              beq @joystick
+              bcc @joystick
               cmp #KEY_CRSR_RIGHT
               beq @r
               cmp #KEY_CRSR_LEFT

@@ -1600,17 +1600,16 @@ game_level_cleared:
 
               lda game_state+GameState::state_frames
               cmp #$88
-              bne @rotate
-
-              lda #FN_STATE_INTERMISSION
-              jmp system_set_state_fn
-@rotate:
+              beq @next_state
               lsr
               lsr
               lsr
               and #$03
               tay
               jmp gfx_rotate_pal
+@next_state:  lda #FN_STATE_INTERMISSION
+              jmp system_set_state_fn
+
 
 select_player_score:
               ldx game_state+GameState::active_up
@@ -1701,7 +1700,7 @@ game_init:    jsr sound_init_game_start
               sta game_state+GameState::bonus_life+0
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
 
-              lda #1 ; start with level 1
+              lda #2 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
@@ -1761,12 +1760,15 @@ ghost_scatter_y:
     .byte $03,$18,$00,$1b
 
 ; refer to speed table - https://pacman.holenet.info/#LvlSpecs
-speed_table:  ; pacman | ghost | fright pacman | fright ghost - bit 7 denotes delay
+; bit 7 (1) denotes delay
+speed_table:  ; pacman | ghost | fright pacman | fright ghost | elroy 1 | elroy 2
               .byte 0,  $80 | 20, 7,  $80 | 2  ; level 1
               .byte 7,        15, 5,  $80 | 3  ; level 2-4
               .byte 4,         5, 4,  $80 | 4  ; level 5..20
               .byte 7,         5, 7,  $80 | 2  ; level 21+    ; !!!NOTE - no frightened mode in level 21+, but we use speeds of level 21 within intro, therefore frght. pacman/ghost speeds are set
 
+; mode timings in secs
+;
 ; MODE      LEVEL 1    LEVELS 2-4    LEVELS 5+
 ; Scatter       7          7          5
 ; Chase        20         20         20
@@ -1776,26 +1778,24 @@ speed_table:  ; pacman | ghost | fright pacman | fright ghost - bit 7 denotes de
 ; Chase        20       1033       1037
 ; Scatter       5       1/60       1/60
 ; Chase indefinite indefinite indefinite
-;
-; reverse order
 mode_timer_l:
-    .byte       0,        0,0
-    .byte <(60*05),       0,0
-    .byte <(60*20),<(60*09),<(60*$0d)
-    .byte <(60*05),<(60*05),<(60*05)
-    .byte <(60*20),<(60*20),<(60*20)
-    .byte <(60*07),<(60*07),<(60*05)
-    .byte <(60*20),<(60*20),<(60*20)
-    .byte <(60*07),<(60*07),<(60*05)
+    .byte       0,        0   ,0
+    .byte <(60*05),       0   ,0
+    .byte <(60*20),<(60*1033) ,<(60*1037)
+    .byte <(60*05),<(60*05)   ,<(60*05)
+    .byte <(60*20),<(60*20)   ,<(60*20)
+    .byte <(60*07),<(60*07)   ,<(60*05)
+    .byte <(60*20),<(60*20)   ,<(60*20)
+    .byte <(60*07),<(60*07)   ,<(60*05)
 mode_timer_h:
-    .byte       0,        0,0
-    .byte >(60*05),       0,0
-    .byte >(60*20),>(60*09),>(60*$0d)
-    .byte >(60*05),>(60*05),>(60*05)
-    .byte >(60*20),>(60*20),>(60*20)
-    .byte >(60*07),>(60*07),>(60*05)
-    .byte >(60*20),>(60*20),>(60*20)
-    .byte >(60*07),>(60*07),>(60*05)
+    .byte        0,       0,      0
+    .byte >(60*05),       0,      0
+    .byte >(60*20),>(60*1033) ,>(60*1037)
+    .byte >(60*05),>(60*05)   ,>(60*05)
+    .byte >(60*20),>(60*20)   ,>(60*20)
+    .byte >(60*07),>(60*07)   ,>(60*05)
+    .byte >(60*20),>(60*20)   ,>(60*20)
+    .byte >(60*07),>(60*07)   ,>(60*05)
 
 ; frightened timer
 frghtd_timer_l:

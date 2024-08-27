@@ -8,6 +8,7 @@ TODO:
     - pinky/inky target calculation bug - "target 4 tiles left if facing up"
     - "pass through" bug
     - global dot counter "bug/feature"
+  - c64 port
 
 pacman/ghost speed percentage/frames
   LEVEL      NORM  NORM-DOTS  FRIGHT  FRIGHT-DOTS   NORM   FRIGHT	 TUNNEL

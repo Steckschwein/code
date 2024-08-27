@@ -257,39 +257,39 @@ SKIP_DIR_CHECK    = $ff
 .endmacro
 
 .struct GameState
-  dip_switches    .byte
+  dip_switches      .byte
 
-  state           .byte
-  state_frames    .byte   ; frame counter per state, will be reset after each state change
-  fn_state        .addr   ; state function address
-  fn_state_next   .byte   ; index of next state function from delay
+  state             .byte
+  state_frames      .byte   ; frame counter per state, will be reset after each state change
+  fn_state          .addr   ; state function address
+  fn_state_next     .byte   ; index of next state function from delay
 
-  frames          .byte   ; continuous frame counter
-  vblank          .byte   ; v-blank
+  frames            .byte   ; continuous frame counter
+  vblank            .byte   ; v-blank
 
-  credit          .byte
+  credit            .byte
 
-  players         .byte   ; active players
-  active_up       .byte   ; current player
+  players           .byte   ; active players
+  active_up         .byte   ; current player
 
-  lives           .byte   ; lives current player
-  score           .res 3  ; BCD score current player
+  lives             .byte   ; lives current player
+  score             .res 3  ; BCD score current player
 
-  level           .byte   ; the current level
+  level             .byte   ; the current level
 
-  dots            .byte   ; remaining dots count down - MAX_DOTS at start
-  dot_cnt         .byte   ; level dot counter - set/reset if a life is lost
-  dot_cnt_state   .byte   ; bit 7 dot_cnt enabled/disabled
-  dot_timer       .byte   ; nothing eaten timer, 4s or 3s (level 5+) hence either count down to zero from $f0 or $b4 each frame
+  dots              .byte   ; remaining dots count down - MAX_DOTS at start
+  dot_cnt           .byte   ; level dot counter - set/reset if a life is lost
+  dot_cnt_state     .byte   ; bit 7 dot_cnt enabled/disabled
+  dot_timer         .byte   ; nothing eaten timer, 4s or 3s (level 5+) hence either count down to zero from $f0 or $b4 each frame
 
-  bonus           .byte   ; bonus of current level
-  bonus_cnt       .byte   ; bonus available (frame) counter
-  bonus_life      .word   ; trigger for next bonus life (BCD) - TT T digit
+  bonus             .byte   ; bonus of current level
+  bonus_cnt         .byte   ; bonus available (frame) counter
+  bonus_life        .word   ; trigger for next bonus life (BCD) - TT T digit
 
-  highscore       .res 3
+  highscore         .res 3
 
   ; game related
-  rng             .word   ; PRNG index
+  rng               .word   ; PRNG index
 
   ;speed control
   speed_cnt_init    .res 4  ; speed counter init values in order pacman normal, ghost normal, pacman frightened, ghost frightened
@@ -300,9 +300,9 @@ SKIP_DIR_CHECK    = $ff
   sctchs_ix         .byte   ; scatter/chase timings table index
   sctchs_timer      .word   ; current mode count down secs * frames - e.g. 1s => 60
 
-  ghsts_all_cnt    .byte   ; counter how often ALL ghosts where catched during a frightened phase
-  ghsts_to_catch   .byte   ; ghosts to catch during a frightened phase, starts with 3
-  ghst_catched     .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
+  ghsts_all_cnt     .byte   ; counter how often ALL ghosts where catched during a frightened phase
+  ghsts_to_catch    .byte   ; ghosts to catch during a frightened phase, starts with 3
+  ghst_catched      .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
 
 .endstruct
 

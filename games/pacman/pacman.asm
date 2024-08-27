@@ -59,12 +59,9 @@ main:
               border_color Color_Bg
 
               jsr io_getkey
-              bcs :+
-              lda #0                          ; 0 - no key pressed
-:             pha
-              bit game_state+GameState::state ; skip update user input in intro
+              pha
+              bit game_state+GameState::state ; skip user input in intro
               bmi @skip_input
-              cmp #0
               jsr io_player_direction     ; return C=1 if any valid key or joystick input, A=ACT_xxx
               bcs :+                      ; key/joy input ?
 @skip_input:  lda #$80                    ; flag no input
