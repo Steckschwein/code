@@ -113,6 +113,14 @@ main:
               sta game_state+GameState::sctchs_timer+0
               sta game_state+GameState::sctchs_timer+1
               jmp @main_loop
+:             cmp #'e'
+              bne :+
+              ldx #ACTOR_BLINKY
+              lda #4
+              sta ghost_speed_offs,x
+              lda game_state+GameState::frames
+              ;jsr vdp_bgcolor
+              jmp @main_loop
 
 :             bit game_state+GameState::state ; in intro?
               bpl :+

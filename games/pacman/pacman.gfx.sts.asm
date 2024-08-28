@@ -289,14 +289,14 @@ _gfx_update_sprite_tab_2x:
               lda #$02
               jsr _gfx_update_sprite_tab
 
-              lda ghost_mode,x
-              cmp #GHOST_MODE_FRIGHT
+              lda actor_mode,x
+              cmp #ACTOR_MODE_FRIGHT
               bne :+
               eor r2  ; end of frightened phase alternate colors
 :             phy
               tay
               lda ghost_color,x
-              bcc :+  ; < GHOST_MODE_FRIGHT ?
+              bcc :+  ; < ACTOR_MODE_FRIGHT ?
               lda sprite_colors_1st,y
 :             sta sprite_color_1,x
               lda sprite_colors_2nd,y

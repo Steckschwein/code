@@ -165,8 +165,6 @@ intro_init_script:
 
               lda #$fe
               sta ghost_cnt
-              lda #0
-              sta game_state+GameState::speed_ix
               rts
 
 intro_ghosts: jsr pacman_move

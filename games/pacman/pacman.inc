@@ -93,10 +93,10 @@ GHOST_STATE_LEAVE   = 2
 GHOST_STATE_TARGET  = 3
 GHOST_STATE_ENTER   = 4
 
-GHOST_MODE_NORM     = 0
-GHOST_MODE_CATCHED  = 1
-GHOST_MODE_FRIGHT   = 2
-GHOST_MODE_BONUS    = 3
+ACTOR_MODE_NORM     = 0
+ACTOR_MODE_CATCHED  = 1 ; applicable to ghosts only
+ACTOR_MODE_FRIGHT   = 2
+ACTOR_MODE_BONUS    = 3 ; applicable to ghosts only
 
 Shape_Mask_Norm       = $7f
 Shape_Mask_Small      = $73 ; only 4 patterns (bit 1,0)
@@ -110,6 +110,8 @@ Shape_Ix_Pacman       = 2
 Shape_Ix_Dying        = $34
 Shape_Ix_Invisible    = $3f
 
+; Every time Pac-Man eats a regular dot, he stops moving for one frame (1/60th of a second), slowing his progress by roughly ten percent—just enough for a following ghost to overtake him.
+; Eating an energizer dot causes Pac-Man to stop moving for three frames.
 Delay_Dot           = 1 ; 1 penalty frame
 Delay_Energizer     = 3
 
@@ -155,20 +157,6 @@ Color_Pacman  = Color_Yellow
 Color_Food    = Color_Dark_Pink
 Color_Maze    = Color_Blue
 Color_Text    = Color_Gray
-
-
-; A ghost's objective in chase mode is to find and capture Pac-Man by hunting him down through the maze.
-; Each ghost exhibits unique behavior when chasing Pac-Man, giving them their different personalities:
-; Blinky (red) is very aggressive and hard to shake once he gets behind you,
-; Pinky (pink) tends to get in front of you and cut you off,
-; Inky (light blue) is the least predictable of the bunch, and
-; Clyde (orange) seems to do his own thing and stay out of the way.
-GHOST_CHASE       = 0
-; In scatter mode, the ghosts give up the chase for a few seconds and head for their respective home corners. It is a welcome but brief rest-soon enough, they will revert to chase mode and be after Pac-Man again.
-GHOST_SCATTER     = 1<<6
-; Ghosts enter frightened mode whenever Pac-Man eats one of the four energizers located in the far corners of the maze. During the early levels, the ghosts will all turn dark blue (meaning they
-; are vulnerable) and aimlessly wander the maze for a few seconds. They will flash moments before returning to their previous mode of behavior.
-GHOST_FRIGHTENED  = 1<<7;
 
 ACT_MOVE          = 1<<7
 ACT_RIGHT         = 0 ;00
@@ -281,6 +269,7 @@ SKIP_DIR_CHECK    = $ff
   dot_cnt           .byte   ; level dot counter - set/reset if a life is lost
   dot_cnt_state     .byte   ; bit 7 dot_cnt enabled/disabled
   dot_timer         .byte   ; nothing eaten timer, 4s or 3s (level 5+) hence either count down to zero from $f0 or $b4 each frame
+  dot_cnt_elroy     .byte   ; amount of dots remaining in the maze in order to trigger elroy 1/2 mode
 
   bonus             .byte   ; bonus of current level
   bonus_cnt         .byte   ; bonus available (frame) counter
@@ -292,8 +281,7 @@ SKIP_DIR_CHECK    = $ff
   rng               .word   ; PRNG index
 
   ;speed control
-  speed_cnt_init    .res 4  ; speed counter init values in order pacman normal, ghost normal, pacman frightened, ghost frightened
-  speed_ix          .byte   ; frightened mode (2) or normal (0) - used to select appropriate speed counter init value
+  speed_cnt_init    .res 6  ; speed counter init values in order pacman normal, ghost normal, pacman frightened, ghost frightened, elroy 1, elroy 2
 
   frghtd_timer      .word   ; frightened mode timer in secs * frames
   sctchs_mode       .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode

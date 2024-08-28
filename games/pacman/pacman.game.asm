@@ -83,8 +83,8 @@ game_init_actors:
               sta ghost_state,x
               lda ghost_init_color,x
               sta ghost_color,x
-              lda #GHOST_MODE_NORM
-              sta ghost_mode,x
+              lda #0
+              sta ghost_speed_offs,x
 @init_actor:
               lda actor_init_x,x
               sta actor_sp_x,x
@@ -94,7 +94,9 @@ game_init_actors:
               sta actor_move,x
               and #ACT_NEXT_DIR
               sta actor_shape,x
-              lda #0
+              lda #ACTOR_MODE_NORM
+              .assert ACTOR_MODE_NORM = 0, error, "change const. value ACTOR_MODE_NORM!"
+              sta actor_mode,x
               sta actor_speed_cnt,x
               rts
 
@@ -237,10 +239,10 @@ actors_move:  jsr ghost_move
               lda actor_ypos,x
               cmp actor_ypos,y
               bne @next
-              lda ghost_mode,x
-              cmp #GHOST_MODE_CATCHED ; skip if already catched
+              lda actor_mode,x
+              cmp #ACTOR_MODE_CATCHED ; skip if already catched
               beq @next
-              cmp #GHOST_MODE_NORM
+              cmp #ACTOR_MODE_NORM
               bne @ghost_hit          ; ghost catched
 @pacman_hit:  lda #FN_STATE_PACMAN_DYING
 .ifndef __DEVMODE
@@ -252,8 +254,8 @@ actors_move:  jsr ghost_move
 
 @ghost_hit:   stx game_state+GameState::ghst_catched ; save current catched ghost number
 
-              lda #GHOST_MODE_BONUS
-              sta ghost_mode,x
+              lda #ACTOR_MODE_BONUS
+              sta actor_mode,x
 
               lda game_state+GameState::ghsts_to_catch  ; select shape for bonus
               jsr ghost_set_shape
@@ -299,14 +301,17 @@ ghost_move:   jsr actor_update_charpos
 @move_target: lda actor_speed_cnt,x
               and #$7f    ; mask cnt
               bne @move_cnt
-              lda game_state+GameState::speed_ix
-              and ghost_mode,x  ; if ghost is normal (0) we AND with speed_ix, will result in offset 0 which is intended
-              tay
-              lda game_state+GameState::speed_cnt_init+1,y    ; init speed cnt again
+
+              lda actor_mode,x        ; during frightened phase and if the ghost reaches home and thus ghost is switched back to normal(0) the normal speed applies
+              bne :+
+              ora ghost_speed_offs,x  ; no elroy (0), elroy 1 (3), elroy 2 (4)
+:             tay
+              lda game_state+GameState::speed_cnt_init+1,y    ; init speed cnt for ghosts (+1)
               sta actor_speed_cnt,x
               beq @move_nodelay     ;  0 - 80% speed, 60 fps (60px/s)
               bmi @exit             ; -1 skip move for this frame (delay)
 @move_2x:     jsr @move_nodelay     ; +1 additional move (push)
+              jmp @move_nodelay
 @move_cnt:    dec actor_speed_cnt,x
 @move_nodelay:ldy actor_ypos,x
               lda actor_xpos,x
@@ -373,9 +378,9 @@ ghost_move:   jsr actor_update_charpos
               eor #ACT_MOVE_REVERSE
               sta game_tmp2 ; exclude reverse of the new direction
 
-              lda ghost_mode,x
+              lda actor_mode,x
               beq short_dist   ; normal ?
-              cmp #GHOST_MODE_CATCHED
+              cmp #ACTOR_MODE_CATCHED
               beq short_dist   ; catched ?
 
               jsr system_rng  ; choose next direction randomly
@@ -570,8 +575,8 @@ ghost_leave_base:
 
 :             lda #ACT_MOVE|ACT_DOWN<<2|ACT_DOWN  ; always done, if in base they will reverse immediately
               sta actor_move,x
-              lda #GHOST_MODE_NORM
-              sta ghost_mode,x
+              lda #ACTOR_MODE_NORM
+              sta actor_mode,x
               lda #GHOST_STATE_BASE
               sta ghost_state,x
               rts
@@ -589,7 +594,7 @@ ghost_update_shape:
               and #ACT_NEXT_DIR
               ora actor_shape,x
 ghost_set_shape:
-              ldy ghost_mode,x
+              ldy actor_mode,x
               ora shape_offs,y
               and shape_mask,y
               sta actor_shape,x
@@ -774,9 +779,23 @@ base_next_ghost:
 
 
 game_dot_logic:
-              dec game_state+GameState::dots    ; remaining dots
+              dec game_state+GameState::dots    ; decrease remaining dots
 
-              lda game_state+GameState::dot_cnt_state ; global dot count enabled?
+              ; elroy 1/2 dot logic
+              lda game_state+GameState::dots
+              cmp game_state+GameState::dot_cnt_elroy
+              bne :+
+              .byte $db
+              lda ghost_speed_offs+ACTOR_BLINKY
+              cmp #3
+              lda #3
+              adc #0
+              sta ghost_speed_offs+ACTOR_BLINKY
+              cmp #4
+              beq :+
+              lsr game_state+GameState::dot_cnt_elroy ; half dot trigger for 2nd elroy 2
+
+:             lda game_state+GameState::dot_cnt_state ; global dot count enabled?
               bpl @ghst_dot_cnt
 
               inc game_state+GameState::dot_cnt ; global dot counter
@@ -784,16 +803,16 @@ game_dot_logic:
               ldy #ACTOR_PINKY
               cmp #7
               beq @leave
-              iny
+              iny         ; inky
               cmp #17
               beq @leave
-              iny
+              iny         ; clyde
               cmp #32
               bne reset_dot_timer
               lda ghost_state,y ; in base (0)
               bne reset_dot_timer
-              sta game_state+GameState::dot_cnt_state ; A=0, reset global dot counter
-              beq reset_dot_timer
+              sta game_state+GameState::dot_cnt_state ; A=0, reset global dot counter, ghost dot counter enabled
+              beq reset_dot_timer ; branch always
 
 @leave:       lda ghost_state,y
               bne reset_dot_timer
@@ -923,7 +942,7 @@ pacman_move:  ldx #ACTOR_PACMAN
 :             lda actor_speed_cnt,x
               and #$7f    ; mask cnt
               bne @move_cnt
-              ldy game_state+GameState::speed_ix
+              ldy actor_mode,x
               lda game_state+GameState::speed_cnt_init,y
               sta actor_speed_cnt,x
               beq @move          ; 80% speed, 60 frames
@@ -1125,8 +1144,8 @@ delete_message_2:
 
 game_ghost_catched:
               ldx #ACTOR_CLYDE  ; animate ghosts already catched
-:             lda ghost_mode,x
-              cmp #GHOST_MODE_CATCHED
+:             lda actor_mode,x
+              cmp #ACTOR_MODE_CATCHED
               bne @next
               jsr ghost_move
 @next:        dex
@@ -1169,8 +1188,8 @@ game_ghost_catched:
               ldx game_state+GameState::ghst_catched
               lda #GHOST_STATE_RETURN
               sta ghost_state,x
-              lda #GHOST_MODE_CATCHED
-              sta ghost_mode,x
+              lda #ACTOR_MODE_CATCHED
+              sta actor_mode,x
 
               lda #FN_STATE_PLAYING    ; continue playing
               bit game_state+GameState::state
@@ -1222,12 +1241,12 @@ game_playing: jsr update_mode
 @exit:        rts
 
 
-actors_mode:
-              ldy #ACTOR_CLYDE
-@next:        ldx ghost_mode,y  ; TODO clobbers X
-              cpx #GHOST_MODE_CATCHED
+; A - mode/offset to speed table - one of ACTOR_MODE_NORM or ACTOR_MODE_FRIGHT
+actors_mode:  ldy #ACTOR_PACMAN
+@next:        ldx actor_mode,y  ; TODO clobbers X
+              cpx #ACTOR_MODE_CATCHED
               beq @skip
-              sta ghost_mode,y
+              sta actor_mode,y
 @skip:        dey
               bpl @next
               rts
@@ -1241,15 +1260,10 @@ actors_invisible:
               rts
 
 mode_frightened:
-              lda #GHOST_MODE_FRIGHT
-              jsr actors_mode
-              lda #3
-              sta game_state+GameState::ghsts_to_catch
-
               ldy game_state+GameState::level
-              cpy #17 ; no frightened in level 17
+              cpy #17 ; no frightened in level 17, but reverse ghost direction
               beq actors_reverse
-              cpy #19 ; no frightened in level 19+
+              cpy #19 ; no frightened in level 19+, but reverse ghost direction
               bcs actors_reverse
 
               dey ; adjust level for lookup
@@ -1258,8 +1272,11 @@ mode_frightened:
               lda frghtd_timer_h,y
               sta game_state+GameState::frghtd_timer+1
 
-              lda #2  ; index for frightened speeds
-              sta game_state+GameState::speed_ix
+              lda #ACTOR_MODE_FRIGHT
+              jsr actors_mode
+
+              lda #3
+              sta game_state+GameState::ghsts_to_catch
 
 actors_reverse: ; set next direction to reverse of current direction
               ldy #ACTOR_CLYDE
@@ -1279,12 +1296,20 @@ actors_reverse: ; set next direction to reverse of current direction
               bpl :-
               rts
 
-update_mode:  ; Ghosts are forced to reverse direction by the system anytime the mode changes from:
-              ; chase-to-scatter, chase-to-frightened, scatter-to-chase, scatter-to-frightened.
-              ; Ghosts do not reverse direction when changing back from frightened to chase or scatter modes.
-              ; ghosts enter frightened mode, the scatter/chase timer is paused...  time runs out, they return to the mode they were in
-              ;
-              lda game_state+GameState::frghtd_timer+0
+; A ghost's objective in chase mode is to find and capture Pac-Man by hunting him down through the maze.
+; Each ghost exhibits unique behavior when chasing Pac-Man, giving them their different personalities:
+; Blinky (red) is very aggressive and hard to shake once he gets behind you,
+; Pinky (pink) tends to get in front of you and cut you off,
+; Inky (light blue) is the least predictable of the bunch, and
+; Clyde (orange) seems to do his own thing and stay out of the way.
+; In scatter mode, the ghosts give up the chase for a few seconds and head for their respective home corners. It is a welcome but brief rest-soon enough, they will revert to chase mode and be after Pac-Man again.
+; Ghosts enter frightened mode whenever Pac-Man eats one of the four energizers located in the far corners of the maze. During the early levels, the ghosts will all turn dark blue (meaning they
+; are vulnerable) and aimlessly wander the maze for a few seconds. They will flash moments before returning to their previous mode of behavior.
+
+; Ghosts are forced to reverse direction by the system anytime the mode changes from: chase-to-scatter, chase-to-frightened, scatter-to-chase, scatter-to-frightened.
+; Ghosts do not reverse direction when changing back from frightened to chase or scatter modes.
+; Ghosts enter frightened mode, the scatter/chase timer is paused...  time runs out, they return to the mode they were in
+update_mode:  lda game_state+GameState::frghtd_timer+0
               bne :+
               lda game_state+GameState::frghtd_timer+1
               beq @scatter_chase
@@ -1293,11 +1318,8 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               rts
 
 @scatter_chase:
-              lda #GHOST_MODE_NORM
+              lda #ACTOR_MODE_NORM
               jsr actors_mode
-
-              lda #0  ; index for normal speeds
-              sta game_state+GameState::speed_ix
 
               lda game_state+GameState::sctchs_timer+0
               bne :+
@@ -1335,7 +1357,6 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               asl game_state+GameState::sctchs_mode
 
 @select_mode: lda game_state+GameState::sctchs_mode
-              ;jmp @chase
               bpl @chase
 
 @scatter:     ldy #ACTOR_CLYDE ; set scatter targets to all ghosts
@@ -1345,6 +1366,10 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               sta ghost_tgt_y,y
               dey
               bpl :-
+              lda ghost_speed_offs+ACTOR_BLINKY ; elroy mode 1/2  ?
+              beq @exit
+              ldx #ACTOR_PACMAN
+              jmp @tgt_blinky
 @exit:        rts
 
 @chase:       ldx #ACTOR_PACMAN
@@ -1423,6 +1448,35 @@ update_mode:  ; Ghosts are forced to reverse direction by the system anytime the
               lda actor_ypos,x
               sta ghost_tgt_y,y
               rts
+
+; in: A - level 1..$ff
+; out: A - elroy dots
+elroy_dots_for_level:
+              lda #20
+              ldy game_state+GameState::level
+              cpy #1
+              beq @exit
+              cpy #2+1
+              bcc @lvl_2
+              cpy #5+1
+              bcc @lvl_3_5
+              cpy #8+1
+              bcc @lvl_6_8
+              cpy #11+1
+              bcc @lvl_9_11
+              cpy #14+1
+              bcc @lvl_12_14
+              cpy #18+1
+              bcc @lvl_15_18
+              clc
+              adc #20
+@lvl_15_18:   adc #20
+@lvl_12_14:   adc #20
+@lvl_9_11:    adc #10
+@lvl_6_8:     adc #10
+@lvl_3_5:     adc #10
+@lvl_2:       adc #10
+@exit:        rts
 
 
 ; in: A - level 1..$ff
@@ -1522,6 +1576,9 @@ game_level_init:
               jsr bonus_for_level
               sty game_state+GameState::bonus
 
+              jsr elroy_dots_for_level
+              sta game_state+GameState::dot_cnt_elroy
+
               lda #MAX_DOTS
               sta game_state+GameState::dots
 
@@ -1543,7 +1600,7 @@ game_level_init:
               bpl :-
 
               ldy game_state+GameState::level
-
+              ; inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
               ldx #ACTOR_CLYDE
               cpy #1
               bne :+
@@ -1575,7 +1632,7 @@ game_level_init:
 
 .export init_speed_cnt
 init_speed_cnt:
-              lda #3  ; table index 3 (last column in speed table)
+              lda #5  ; table index 5 (last column in speed table)
               cpy #1      ; level 1 ?
               beq @lvl_1
               cpy #5      ; level 2-4 ?
@@ -1583,11 +1640,11 @@ init_speed_cnt:
               cpy #21     ; level 21+ ?
               bcc @lvl_5_20
               clc
-              adc #4      ; +12
-@lvl_5_20:    adc #4      ; +8
-@lvl_2_4:     adc #4      ; +4
+              adc #6      ; +18 - level 21+
+@lvl_5_20:    adc #6      ; +12
+@lvl_2_4:     adc #6      ; +6
 @lvl_1:       tay
-              ldx #3
+              ldx #5
 :             lda speed_table,y
               sta game_state+GameState::speed_cnt_init,x
               dey
@@ -1761,11 +1818,11 @@ ghost_scatter_y:
 
 ; refer to speed table - https://pacman.holenet.info/#LvlSpecs
 ; bit 7 (1) denotes delay
-speed_table:  ; pacman | ghost | fright pacman | fright ghost | elroy 1 | elroy 2
-              .byte 0,  $80 | 20, 7,  $80 | 2  ; level 1
-              .byte 7,        15, 5,  $80 | 3  ; level 2-4
-              .byte 4,         5, 4,  $80 | 4  ; level 5..20
-              .byte 7,         5, 7,  $80 | 2  ; level 21+    ; !!!NOTE - no frightened mode in level 21+, but we use speeds of level 21 within intro, therefore frght. pacman/ghost speeds are set
+speed_table:  ; pacman , ghost , fright pacman , fright ghost , elroy 1 , elroy 2
+              .byte 0,  $80 | 20, 7,  $80 | 2, 0, 15  ; level 1
+              .byte 7,        15, 5,  $80 | 3, 7, 5   ; level 2-4
+              .byte 4,         5, 4,  $80 | 4, 4, 3   ; level 5..20
+              .byte 7,         5, 7,  $80 | 2, 4, 3   ; level 21+    ; !!!NOTE - no frightened mode in level 21+, but we use speeds of level 21 within intro, therefore frght. pacman/ghost speeds are set
 
 ; mode timings in secs
 ;
@@ -1909,10 +1966,9 @@ points_digits:
 
 
 .export game_maze
-.export actor_speed_cnt
 .export actor_sp_x,actor_sp_y,actor_shape,actor_move
 .export ghost_tgt_x,ghost_tgt_y
-.export ghost_mode,ghost_color,ghost_state
+.export actor_mode,ghost_color,ghost_state,ghost_speed_offs
 
 .bss
   demo_script_ix:   .res 1
@@ -1923,15 +1979,15 @@ points_digits:
   actor_ypos:       .res 5  ; tile y pos - 0..28
   actor_shape:      .res 5  ; shape
   actor_move:       .res 5  ; bit 7 move, bit 3-2 next direction (ACT_NEXT_DIR mask), bit 1-0 current direction (ACT_DIR mask)
+  actor_mode:       .res 5  ; 0 - normal, 2 - frightened, 1 - catched - see ACTOR_MODE_xxx
   actor_speed_cnt:  .res 5  ; bit 7 delay, bit 6..0 frame counter
 
   ghost_color:      .res 4  ; main color
   ghost_shape_mask: .res 4  ; shape mask - for normal, frightened or catched ghost
   ghost_shape_offs: .res 4  ; offset for normal frightened or catched ghost
   ghost_state:      .res 4  ; ghosts movement strategy - in base, leaving base, return to base, move arround (scatter/chase)
-  ghost_mode:       .res 4  ; 0 - normal, 1 - frightened, 2 - catched
+  ghost_speed_offs: .res 4  ; either 3 or 4, offset to speed_table
   ghost_dot_cnt:    .res 4  ; ghost dot counter, only one active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
-;  ghost_dot_limit:  .res 4  ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
   ghost_tgt_x:      .res 4  ; current target tile x
   ghost_tgt_y:      .res 4  ; current target tile y
 
