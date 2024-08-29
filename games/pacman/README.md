@@ -1,5 +1,5 @@
 TODO:
-  - "cruise elroy" 1 / 2
+  - system changes modes one or more times when a ghost is inside, that ghost will move to the right instead of the left upon leaving the house.
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - sound
   - fix all TODOs

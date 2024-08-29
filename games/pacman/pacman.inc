@@ -8,6 +8,8 @@ MAX_LIVES=5
 
 Dot_Cnt_Enabled=1<<7
 
+Elroy_Suspended=1<<7
+
 .globalzp p_maze
 .globalzp p_game
 .globalzp p_tmp
@@ -300,3 +302,7 @@ ACTOR_PINKY   = 1
 ACTOR_INKY    = 2
 ACTOR_CLYDE   = 3
 ACTOR_PACMAN  = 4
+
+; fuses
+  .assert ACTOR_MODE_NORM = 0, error, "change const. value ACTOR_MODE_NORM!"
+  .assert GHOST_STATE_BASE = 0, error, "change const. value GHOST_STATE_BASE!"

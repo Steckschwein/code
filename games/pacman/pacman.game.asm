@@ -95,7 +95,6 @@ game_init_actors:
               and #ACT_NEXT_DIR
               sta actor_shape,x
               lda #ACTOR_MODE_NORM
-              .assert ACTOR_MODE_NORM = 0, error, "change const. value ACTOR_MODE_NORM!"
               sta actor_mode,x
               sta actor_speed_cnt,x
               rts
@@ -106,6 +105,7 @@ game_ready:
 
               lda #0
               sta game_state+GameState::dot_cnt           ; reset global dot counter
+              sta ghost_speed_offs+ACTOR_BLINKY           ; reset elroy mode
 
               sta game_state+GameState::sctchs_timer+0    ; reset mode timer
               sta game_state+GameState::sctchs_timer+1
@@ -174,10 +174,13 @@ game_pacman_dying:
               sta actor_shape,x
 @exit:        rts
 
-@next_state:  dec game_state+GameState::lives ; dec 1 live
+@next_state:  dec game_state+GameState::lives           ; dec 1 live
 
               lda #Dot_Cnt_Enabled                      ; enable global dot count
               sta game_state+GameState::dot_cnt_state
+              lda game_state+GameState::dot_cnt_elroy   ; suspend elroy dot cnt
+              ora #Elroy_Suspended
+              sta game_state+GameState::dot_cnt_elroy
 
               lda #FN_STATE_READY
               ldy game_state+GameState::lives
@@ -513,7 +516,7 @@ ghost_base:   cmp #GHOST_STATE_BASE
               bne @move
               cpx #ACTOR_BLINKY
               beq @leave
-              lda game_state+GameState::dot_cnt_state
+              lda game_state+GameState::dot_cnt_state ; if global dot counter enabled, the ghost specific dot counter is suspended
               bmi @move
               lda ghost_dot_cnt,x
               bne @move
@@ -782,10 +785,13 @@ game_dot_logic:
               dec game_state+GameState::dots    ; decrease remaining dots
 
               ; elroy 1/2 dot logic
-              lda game_state+GameState::dots
-              cmp game_state+GameState::dot_cnt_elroy
-              bne :+
-              .byte $db
+              lda game_state+GameState::dot_cnt_elroy
+              bpl @elroy_cnt
+              ldy ghost_state+ACTOR_CLYDE
+              beq :+    ; skip elroy if clyde is still in base
+              and #$7f  ; mask elroy suspend bit
+@elroy_cnt:   cmp game_state+GameState::dots
+              bcc :+  ; TODO clarify whether below trigger or exact dot count, because of clyde in base logic after pacman has been killed
               lda ghost_speed_offs+ACTOR_BLINKY
               cmp #3
               lda #3
@@ -795,7 +801,7 @@ game_dot_logic:
               beq :+
               lsr game_state+GameState::dot_cnt_elroy ; half dot trigger for 2nd elroy 2
 
-:             lda game_state+GameState::dot_cnt_state ; global dot count enabled?
+:             lda game_state+GameState::dot_cnt_state ; global dot counter enabled?
               bpl @ghst_dot_cnt
 
               inc game_state+GameState::dot_cnt ; global dot counter
@@ -812,6 +818,7 @@ game_dot_logic:
               lda ghost_state,y ; in base (0)
               bne reset_dot_timer
               sta game_state+GameState::dot_cnt_state ; A=0, reset global dot counter, ghost dot counter enabled
+              sta game_state+GameState::dot_cnt
               beq reset_dot_timer ; branch always
 
 @leave:       lda ghost_state,y
@@ -1366,7 +1373,7 @@ update_mode:  lda game_state+GameState::frghtd_timer+0
               sta ghost_tgt_y,y
               dey
               bpl :-
-              lda ghost_speed_offs+ACTOR_BLINKY ; elroy mode 1/2  ?
+              lda ghost_speed_offs+ACTOR_BLINKY ; blinky in elroy mode 1/2 target is pacman still
               beq @exit
               ldx #ACTOR_PACMAN
               jmp @tgt_blinky
@@ -1374,9 +1381,11 @@ update_mode:  lda game_state+GameState::frghtd_timer+0
 
 @chase:       ldx #ACTOR_PACMAN
               lda actor_move,x
-              and #ACT_NEXT_DIR
+              bmi :+            ; pacman is moving, use current direction
+              and #ACT_NEXT_DIR ; if stopped, next position
               lsr
               lsr
+:             and #ACT_DIR
               sta game_tmp
 
 @tgt_pinky:   tay
@@ -1587,7 +1596,7 @@ game_level_init:
 
               lda #0
               sta game_state+GameState::bonus_cnt
-              sta game_state+GameState::dot_cnt_state ; disable global dot count on level init
+              sta game_state+GameState::dot_cnt_state ; disable global dot counter on new level init
               lda #$79
               sta game_state+GameState::rng+0
               eor #$ff
@@ -1757,7 +1766,7 @@ game_init:    jsr sound_init_game_start
               sta game_state+GameState::bonus_life+0
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
 
-              lda #2 ; start with level 1
+              lda #8 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
