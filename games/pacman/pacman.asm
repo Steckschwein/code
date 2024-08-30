@@ -15,8 +15,8 @@
   p_game:   .res 2
   p_maze:   .res 2
 
-  sound_tmp:    .res 1
   text_color:   .res 1
+  sound_tmp:    .res 1
 
 .code
 
@@ -60,7 +60,7 @@ main:
 
               jsr io_getkey
               pha
-              bit game_state+GameState::state ; skip user input in intro
+              bit game_state+GameState::state ; skip user input in intro/demo
               bmi @skip_input
               jsr io_player_direction     ; return C=1 if any valid key or joystick input, A=ACT_xxx
               bcs :+                      ; key/joy input ?
@@ -76,30 +76,8 @@ main:
               eor #STATE_PAUSE
               sta game_state+GameState::state
               jsr gfx_pause
-              lda #0
+              jmp @main_loop
               ; debug keys
-:             cmp #'r'
-              beq @init_state
-              cmp #'d'
-              bne :+
-              lda #FN_STATE_PACMAN_DYING
-              bne @set_state
-:             cmp #'g'
-              bne :+
-              lda #1  ; 1 left
-              sta game_state+GameState::lives
-              lda #FN_STATE_PACMAN_DYING
-              jmp @set_state
-:             cmp #'l'
-              bne :+
-              lda #0
-              sta game_state+GameState::dots
-:             cmp #'i'
-              bne :+
-              lda #2
-              sta game_state+GameState::level
-              lda #FN_STATE_INTERMISSION
-              jmp @set_state
 :             cmp #'c'
               bne :+
               jsr system_credit_inc
@@ -107,21 +85,6 @@ main:
               bpl @main_loop
               lda #FN_STATE_INTRO
               jmp @set_state
-:             cmp #'m'
-              bne :+
-              lda #0
-              sta game_state+GameState::sctchs_timer+0
-              sta game_state+GameState::sctchs_timer+1
-              jmp @main_loop
-:             cmp #'e'
-              bne :+
-              ldx #ACTOR_BLINKY
-              lda #4
-              sta ghost_speed_offs,x
-              lda game_state+GameState::frames
-              ;jsr vdp_bgcolor
-              jmp @main_loop
-
 :             bit game_state+GameState::state ; in intro?
               bpl :+
               cmp #'1'
@@ -132,11 +95,47 @@ main:
 @start_game:  sbc #'0'  ; make numeric
               sta game_state+GameState::players
               jsr system_credit_dec
-              lda #0  ; reset state from intro
+              lda #0    ; reset state from intro
               sta game_state+GameState::state
               lda #FN_STATE_INIT
               jmp @set_state
-
+:             cmp #'r'  ; reset
+              beq @init_state
+.ifdef __DEVMODE
+              cmp #'d'  ; dying
+              bne :+
+              lda #FN_STATE_PACMAN_DYING
+              bne @set_state
+:             cmp #'g'  ; game over
+              bne :+
+              lda #1    ; 1 left
+              sta game_state+GameState::lives
+              lda #FN_STATE_PACMAN_DYING
+              jmp @set_state
+:             cmp #'l' ; level skip
+              bne :+
+              lda #0
+              sta game_state+GameState::dots
+:             cmp #'i'  ; intermission
+              bne :+
+              lda #2
+              sta game_state+GameState::level
+              lda #FN_STATE_INTERMISSION
+              jmp @set_state
+:             cmp #'m'
+              bne :+
+              lda #0
+              sta game_state+GameState::sctchs_timer+0
+              sta game_state+GameState::sctchs_timer+1
+              jmp @main_loop
+:             cmp #'e'  ; elroy
+              bne :+
+              ldx #ACTOR_BLINKY
+              lda #4
+              sta ghost_speed_offs,x
+              lda game_state+GameState::frames
+              ;jsr vdp_bgcolor
+              jmp @main_loop
 :             cmp #'1'
               bcc :+
               cmp #'4'+1
@@ -157,8 +156,8 @@ main:
               lda #'T'
               jsr sys_charout
               cli
-:
-              jmp @main_loop
+.endif
+:             jmp @main_loop
 
 quit:         sei
               ;jsr sound_init
@@ -169,8 +168,7 @@ quit:         sei
 .endproc
 
 
-init_state:
-            ldy #.sizeof(GameState)-1
+init_state: ldy #.sizeof(GameState)-1
             lda #0
 :           sta game_state,y
             dey

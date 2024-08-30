@@ -40,17 +40,13 @@ game_state_delay:
               cmp #FN_STATE_PACMAN_DYING
               bne :+
               jsr animate_screen
-:             jsr sound_play
-.ifndef __DEVMODE
+:             ;jsr sound_play
               lda game_state+GameState::state_frames
-              and #$3f
-              beq @state
+.ifdef __DEVMODE
+              and #$00
 .endif
-.ifndef __DEVMODE
-              lda game_state+GameState::state_frames
               and #$7f
               bne @exit
-.endif
 @state:       tay ; A=0 to Y
               lda game_state+GameState::fn_state_next
               sty game_state+GameState::fn_state_next
@@ -72,6 +68,7 @@ game_init_actors:
               sta actor_shape,x
               lda #0
               sta pacman_delay
+              sta pacman_turn
               jmp gfx_sprites_on
 
 @init_ghost:
@@ -128,7 +125,7 @@ game_ready:
               bvc :+
               rts
 
-:             jsr sound_play
+:             ;jsr sound_play
 
               draw_text ready, Color_Yellow
               jsr delete_message_1
@@ -141,7 +138,7 @@ game_ready:
               jmp system_set_state_fn
 
 game_ready_wait:
-              jsr sound_play
+              ;jsr sound_play
               jsr animate_up
 .ifndef __DEVMODE
               lda game_state+GameState::state_frames
@@ -913,8 +910,7 @@ pacman_input: lda input_direction
               bcc @l_preturn                      ; C=0 pre-turn, C=1 post-turn
 
               lda #ACT_MOVE_REVERSE          ;
-@l_preturn:
-              eor actor_move,x  ; current direction
+@l_preturn:   eor actor_move,x  ; current direction
               and #ACT_DIR
               ora #ACT_TURN
               sta pacman_turn
@@ -978,10 +974,10 @@ pacman_move:  ldx #ACTOR_PACMAN
               jsr pacman_collect
 
               ldx #ACTOR_PACMAN
-              lda actor_move,x
-              and #ACT_DIR
               ldy actor_ypos,x
               beq @move_soft    ; we're at right tunnel end, skip dir check
+              lda actor_move,x
+              and #ACT_DIR
               jsr actor_can_move_to_direction
               bcc @move_soft    ; C=0 - can move to
 
@@ -1210,9 +1206,9 @@ game_playing: jsr update_mode
 
               jsr pacman_move
 
-              ldx #ACTOR_INKY
-              ldx #ACTOR_BLINKY
-              ldx #ACTOR_PINKY
+;              ldx #ACTOR_INKY
+ ;             ldx #ACTOR_BLINKY
+  ;            ldx #ACTOR_PINKY
               ldx #ACTOR_CLYDE
               jsr actors_move
 

@@ -16,17 +16,14 @@ appstart $1000
 
 .code
 
-io_init:
-    jsr joystick_on
-
-    ;TODO ...
-    clc
-    rts
+io_init:      jsr joystick_on
+              ;TODO ...
+              clc
+              rts
 
 io_isr:       jmp fetchkey
 
-io_irq_on:  ; nothing todo here on sts hw
-              rts
+io_irq_on:    rts
 
 io_detect_joystick:
               jsr joystick_detect

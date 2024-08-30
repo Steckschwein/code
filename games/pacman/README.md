@@ -1,11 +1,11 @@
 TODO:
-  - system changes modes one or more times when a ghost is inside, that ghost will move to the right instead of the left upon leaving the house.
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
   - sound
   - fix all TODOs
+  - system changes modes one or more times when a ghost is inside the base, that ghost will move to the right instead of the left upon leaving the house.
   - compensate pacman direction and 1px offset
   - toggle to enable/disable original bugs
-    - pinky/inky target calculation bug - "target 4 tiles left if facing up"
+    - pinky/inky target calculation bug - "target is also 4 tiles left if pacman is facing up"
     - "pass through" bug
     - global dot counter "bug/feature"
   - c64 port

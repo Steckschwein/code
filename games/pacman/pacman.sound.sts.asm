@@ -1,15 +1,16 @@
 ;sound
-    .include "pacman.sts.inc"
+.include "pacman.sts.inc"
 
-    .export sound_init
-    .export sound_init_game_start
-    .export sound_play
+.export sound_init
+.export sound_init_game_start
+.export sound_play
 
-    .import opl2_init
-    .import opl2_reg_write
+.import opl2_init
+.import opl2_reg_write
 
-    .import wait
-    .import game_state
+.autoimport
+
+.zeropage
 
 
 NOTE_Cis  =$16B
@@ -25,12 +26,12 @@ NOTE_Ais  =$263
 NOTE_B   =$287
 NOTE_C   =$2AE
 
-L2        =32
-L4        =16
-L8        =8
-L16    =4
-L32    =2
-L64    =1
+L2    =32
+L4    =16
+L8    =8
+L16   =4
+L32   =2
+L64   =1
 
 TREM=7
 VIB=6
@@ -97,11 +98,19 @@ tempo=0
     lda #L64
     sta chn+voice::cnt
     ldx #2
-:      lda initdata,x
+:   lda initdata,x
     sta chn+voice::p_note,x
     dex
     bpl :-
 .endmacro
+
+.struct voice
+   channel  .byte
+   cnt      .byte
+   ix       .byte
+   p_note   .word
+   length   .byte
+.endstruct
 
 .code
 
@@ -112,20 +121,12 @@ snd_wait:
     rts
 
 sound_init:
+    stz sound_play_state
     jmp opl2_init
 
 sound_off:
     opl_reg $b0,  0;
     rts
-
-.struct voice
-   reg_a0   .byte
-   reg_b0   .byte
-   cnt     .byte
-   ix      .byte
-   p_note   .word
-   length   .byte
-.endstruct
 
 sound_play:
     lda sound_play_state
@@ -133,14 +134,15 @@ sound_play:
     ldx #0*.sizeof(voice)
     jsr sound_play_voice
     ldx #1*.sizeof(voice)
-    jsr sound_play_voice
+    jmp sound_play_voice
 @exit:
     rts
 
+; X - channel
 sound_play_voice:
     dec sound_voices+voice::cnt,x
     bne @exit
-    lda sound_voices+voice::ix,x    ; voice data index
+    lda sound_voices+voice::ix,x    ; voice data channel
     cmp sound_voices+voice::length,x
     bne @next_note
 
@@ -159,17 +161,24 @@ sound_play_voice:
     lda sound_voices+voice::p_note+1,x
     sta p_sound+1
 
-    lda sound_voices+voice::reg_a0,x
+    lda sound_voices+voice::channel,x
+.ifdef __ASSERTIONS
+    cmp #8+1
+    bcc :+
+    .byte $db ; halt
+:   nop
+.endif
+    ora #$a0
     tax
     lda (p_sound), y   ; note F-Number lsb
     iny
 .ifndef __NO_SOUND
     jsr opl2_reg_write
 .endif
-
     ldx sound_tmp
-    lda sound_voices+voice::reg_b0,x
-    tax
+    lda sound_voices+voice::channel,x
+    ora #$b0
+    tax                ; register to X
     lda (p_sound), y   ; note Key-On / Octave / F-Number msb
     iny
 .ifndef __NO_SOUND
@@ -237,9 +246,8 @@ sound_game_start_v2:
 sound_voices:
 voice1:
    ;.tag voice
-   .byte $a0
-   .byte $b0
-   .byte L64;           cnt .byte
+   .byte 0
+   .byte L64;        cnt .byte
    .byte 0;          ix  .byte
 
    .word 0;game_sfx_pacman
@@ -250,9 +258,8 @@ voice1:
 
 voice2:
    ;.tag voice
-   .byte $a1
-   .byte $b1
-   .byte L64;          cnt .byte
+   .byte 1
+   .byte L64;        cnt .byte
    .byte 0;          ix      .byte
 
 ;   .word 0;game_start_voice2;   p_delay  .word

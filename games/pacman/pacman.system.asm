@@ -27,8 +27,7 @@
 
 .code
 
-sys_isr:
-              push_axy
+sys_isr:      push_axy
 
               jsr gfx_isr ; v-blank?
               bpl @io_isr
@@ -36,6 +35,8 @@ sys_isr:
               bgcolor Color_Yellow
 
               jsr gfx_update  ; timing critical
+
+              jsr sound_play  ;
 
               lda game_state+GameState::state
               and #STATE_PAUSE

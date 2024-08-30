@@ -64,13 +64,13 @@ intro:        lda #STATE_INTRO
               lda #Color_Bg
               sta text_color
 
-.ifdef __DEVMODE
+.ifdef ___DEVMODE
               lda #FN_STATE_DEMO_INIT
               jmp system_set_state_fn
 .endif
               lda #FN_STATE_INTRO_GHOSTS
               jsr system_set_state_fn
-              lda #$0e  ; initial delay ghost move
+              lda #$02  ; initial delay ghost move
               sta game_state+GameState::state_frames
 @exit:        rts
 
@@ -152,7 +152,7 @@ intro_init_script:
               txa
               asl
               clc
-              adc #29*8+4
+              adc #29*8
               sta actor_sp_y,x
               lda #INTRO_TUNNEL_X*8+4 ; center +4px
               sta actor_sp_x,x
@@ -163,7 +163,7 @@ intro_init_script:
 @next:        dex
               bpl :-
 
-              lda #$fe
+              lda #$ff
               sta ghost_cnt
               rts
 
