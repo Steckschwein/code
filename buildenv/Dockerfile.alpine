@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.18
 USER root
 RUN apk update \
     && apk add gcc make musl-dev git python3 py3-pip bash \
@@ -6,8 +6,6 @@ RUN apk update \
     && git clone https://github.com/cc65/cc65.git \
 	&& cd cc65 \
  	&& git reset --hard V2.19 \
-	&& PREFIX=/usr/local/ make TARGETS=none\
+	&& PREFIX=/usr/local/ make TARGETS="none c64" \
 	&& PREFIX=/usr/local/ make install \
     && apk del gcc musl-dev
-
-
