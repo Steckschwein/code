@@ -668,6 +668,7 @@ pacman_collect:
               jmp gfx_charout
 
 @energizer:   jsr game_dot_logic
+              jsr sound_play_pacman
               lda #Pts_Index_Energizer
               bne @score_and_erase
 
@@ -676,6 +677,7 @@ pacman_collect:
 
               jsr game_dot_logic
               inc pacman_delay
+              jsr sound_play_pacman
 
               lda #Pts_Index_Dot
               beq @score_and_erase  ; dots index is 0
@@ -1753,7 +1755,7 @@ animate_up:   bit game_state+GameState::state ; demo?
 @exit:        rts
 
 
-game_init:    jsr sound_init_game_start
+game_init:    jsr sound_play_game_start
 
               jsr system_dip_switches_lives
               sty game_state+GameState::lives

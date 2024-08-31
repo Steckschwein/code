@@ -34,9 +34,9 @@ sys_isr:      push_axy
 
               bgcolor Color_Yellow
 
-              jsr gfx_update  ; timing critical
+              jsr gfx_update    ; timing critical
 
-              jsr sound_play  ;
+              jsr sound_update  ; update sound
 
               lda game_state+GameState::state
               and #STATE_PAUSE

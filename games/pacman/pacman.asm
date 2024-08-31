@@ -160,7 +160,7 @@ main:
 :             jmp @main_loop
 
 quit:         sei
-              ;jsr sound_init
+              jsr sound_reset
               jsr gfx_mode_off
               restoreIRQ save_irq
               cli

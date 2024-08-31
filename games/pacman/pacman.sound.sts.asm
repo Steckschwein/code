@@ -2,8 +2,11 @@
 .include "pacman.sts.inc"
 
 .export sound_init
-.export sound_init_game_start
-.export sound_play
+.export sound_reset
+.export sound_update
+.export sound_play_pacman
+.export sound_play_game_start
+.export sound_play_ghost_catched
 
 .import opl2_init
 .import opl2_reg_write
@@ -11,6 +14,7 @@
 .autoimport
 
 .zeropage
+              r1:  .res 1
 
 
 NOTE_Cis  =$16B
@@ -26,6 +30,7 @@ NOTE_Ais  =$263
 NOTE_B   =$287
 NOTE_C   =$2AE
 
+; frame count (note length)
 L2    =32
 L4    =16
 L8    =8
@@ -88,176 +93,192 @@ tempo=0
   .byte _s<<4 | (_r & $0f)
 .endmacro
 
-.macro init_channel chn, s, e
-    lda #chn
-    ldx #(chn * .sizeof(channel))
-    ldy #e-s
-    jsr sound_init_chn
-    lda #<s
-    sta sound_channels+channel::notes+0,x
-    lda #>s
-    sta sound_channels+channel::notes+1,x
+.macro init_channel s, e
+    .addr s
+    .byte e-s
 .endmacro
 
-
 .struct channel
-   nr       .byte
-   cnt      .byte ; pause
-   ix       .byte ; index
-   notes    .addr ; data address
-   length   .byte ; snd length
+   nr         .byte
+   cnt        .byte ; pause
+   ix         .byte ; index
+   notes      .addr ; data address
+   length     .byte ; snd length
+   state_bit  .byte
 .endstruct
 
 .code
 
-sound_init_chn:
-    sta sound_channels+channel::nr,x
-    stz sound_channels+channel::ix,x
-    lda #L64
-    sta sound_channels+channel::cnt,x
-    tya
-    sta sound_channels+channel::length,x
-    rts
+SOUND_GAME_START    = 1<<0 | 1<<1 ; channel 0,1
+SOUND_PACMAN        = 1<<2        ; channel 2
+SOUND_GHOST_CATCHED = 1<<3        ; ...
+
+sound_play_pacman:
+              lda #SOUND_PACMAN
+sound_play:   ora sound_play_state
+              sta sound_play_state
+              rts
+sound_play_game_start:
+              lda #SOUND_GAME_START
+              bne sound_play
+sound_play_ghost_catched:
+              lda #SOUND_GHOST_CATCHED
+              bne sound_play
 
 snd_wait:
-    cmp game_state+GameState::frames
-    bne snd_wait
-    stz game_state+GameState::frames
-    rts
+              cmp game_state+GameState::frames
+              bne snd_wait
+              stz game_state+GameState::frames
+              rts
 
-sound_init:
-    stz sound_play_state
-    jmp opl2_init
-
-sound_off:
-    opl_reg $b0,  0;
-    rts
-
-sound_play:
-    lda sound_play_state
-    beq @exit
-    ldx #2*.sizeof(channel)
-    jsr sound_play_chn
-    ldx #0*.sizeof(channel)
-;    jsr sound_play_chn
-    ldx #1*.sizeof(channel)
- ;   jmp sound_play_chn
-@exit:
-    rts
+sound_update: ldx #0  ; start with channel 0
+              lda sound_play_state
+              sta r1
+:             lsr r1
+              bcc :+
+              jsr sound_play_chn        ; pacman
+:             inx
+              cpx #channels
+              bne :--
+@exit:        rts
 
 ; X - channel
 sound_play_chn:
-    dec sound_channels+channel::cnt,x
-    bne @exit
-    lda sound_channels+channel::ix,x    ; voice data channel
-    cmp sound_channels+channel::length,x
-    bne @next_note
-    stz sound_channels+channel::ix,x
-
-    lda #L64
-    sta sound_channels+channel::cnt,x
-    stz sound_play_state
-    jsr sound_init_game_start
-
-    rts
-
-@next_note:
-    stx sound_tmp
-    tay ; index to y
-    lda sound_channels+channel::notes+0,x
-    sta p_sound+0
-    lda sound_channels+channel::notes+1,x
-    sta p_sound+1
-
-    lda sound_channels+channel::nr,x
 .ifdef __ASSERTIONS
-    cmp #8+1
-    bcc :+
-    .byte $db ; halt
-:   nop
+              cpx #8+1
+              bcc :+
+              stp
+          :   nop
 .endif
-    ora #$a0
-    tax
-    lda (p_sound), y   ; note F-Number lsb
-    iny
+              dec chn_cnt,x
+              bne @exit
+              lda chn_ix,x    ; data channel
+              cmp chn_length,x
+              bne @next_note
+              stz chn_ix,x
+              lda #L64
+              sta chn_cnt,x
+              ;stp
+              lda sound_play_state
+              eor chn_bit,x
+              sta sound_play_state
+              rts
+
+@next_note:   stx sound_tmp
+              tay ; index to y
+              lda chn_notes_l,x
+              sta p_sound+0
+              lda chn_notes_h,x
+              sta p_sound+1
+
+              txa
+              ora #$a0
+              tax
+              lda (p_sound), y   ; note F-Number lsb
+              iny
 .ifndef __NO_SOUND
-    jsr opl2_reg_write
+              jsr opl2_reg_write
 .endif
-    ldx sound_tmp
-    lda sound_channels+channel::nr,x
-    ora #$b0
-    tax                ; register to X
-    lda (p_sound), y   ; note Key-On / Octave / F-Number msb
-    iny
+              lda sound_tmp
+              ora #$b0
+              tax                ; register to X
+              lda (p_sound), y   ; note Key-On / Octave / F-Number msb
+              iny
 .ifndef __NO_SOUND
-    jsr opl2_reg_write
+              jsr opl2_reg_write
 .endif
-    lda (p_sound), y   ; delay
-    iny
-    ldx sound_tmp
-    sta sound_channels+channel::cnt,x
-    tya
-    sta sound_channels+channel::ix,x
-@exit:
-    rts
+              lda (p_sound), y   ; delay
+              iny
+              ldx sound_tmp
+              sta chn_cnt,x
+              tya
+              sta chn_ix,x
 
-sound_init_game_start:
-    opl_reg $c0, 0 ; FM mode
-    opl_reg 1,   1<<5 ; WS on
-    ;TODO FIXME instrument table
-    ;channel 1 - rhodes piano
-    ;modulator op1
-    opl_reg $20,  1
-    opl_reg $40,  (SCALE_3 | ($3f-48)) ; key scale / level
-    opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
-    opl_reg $80,  (10<<4 | (0 & $0f))  ; SR
-    opl_reg $e0,  WS_ABS_SIN ;PULSE_SIN
-    ;carrier op2
-    opl_reg $23,  1
-    opl_reg $43,  (SCALE_0 | ($3f-59))
-    opl_reg $63,  (13<<4 | (2 & $0f))  ; attack / decay
-    opl_reg $83,  (8<<4 | (12 & $0f))  ; sustain / release
-    opl_reg $e3,  WS_ABS_SIN ;PULSE_SIN
-
-    ;channel 2 - rhodes piano
-    ; modulator op1
-    opl_reg $21,  0
-    opl_reg $41,  (SCALE_3 | ($3f-48)) ; key scale / level
-    opl_reg $61,  (15<<4 | (1 & $0f))  ; AD
-    opl_reg $81,  (10<<4 | (0 & $0f))  ; SR
-    opl_reg $e1,  WS_PULSE_SIN
-    ;carrier op2
-    opl_reg $24,  0
-    opl_reg $44,  (SCALE_0 | ($3f-59))
-    opl_reg $64,  (13<<4 | (2 & $0f))  ; attack / decay
-    opl_reg $84,  (8<<4 | (12 & $0f))  ; sustain / release
-    opl_reg $e4,  WS_PULSE_SIN
-
-    ;channel 3 - ?!?
-    ;modulator op1
-    opl_reg $22,  1
-    opl_reg $42,  (SCALE_0 | ($3f-48)) ; key scale / level
-    opl_reg $62,  (15<<4 | (1 & $0f))  ; AD
-    opl_reg $82,  (10<<4 | (0 & $0f))  ; SR
-    opl_reg $e2,  WS_PULSE_SIN ; wave select
-    ;carrier op2
-    opl_reg $25,  1
-    opl_reg $45,  (SCALE_0 | ($3f-59))
-    opl_reg $65,  (13<<4 | (2 & $0f))  ; attack / decay
-    opl_reg $85,  (8<<4 | (12 & $0f))  ; sustain / release
-    opl_reg $e5,  WS_HALF_SIN
+@exit:        rts
 
 
-    init_channel 0, game_start_sound1, game_start_sound1_end
-    init_channel 1, game_start_sound2, game_start_sound2_end
+sound_init:   jsr sound_off
 
-    init_channel 2, game_sfx_pacman, game_sfx_pacman_end
+              opl_reg $c0, 0 ; FM mode
+              opl_reg 1,   1<<5 ; WS on
+              ;TODO FIXME instrument table
+              ;channel 1 - rhodes piano
+              ;modulator op1
+              opl_reg $20,  1
+              opl_reg $40,  (SCALE_3 | ($3f-48)) ; key scale / level
+              opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
+              opl_reg $80,  (10<<4 | (0 & $0f))  ; SR
+              opl_reg $e0,  WS_ABS_SIN ;PULSE_SIN
+              ;carrier op2
+              opl_reg $23,  1
+              opl_reg $43,  (SCALE_0 | ($3f-59))
+              opl_reg $63,  (13<<4 | (2 & $0f))  ; attack / decay
+              opl_reg $83,  (8<<4 | (12 & $0f))  ; sustain / release
+              opl_reg $e3,  WS_ABS_SIN ;PULSE_SIN
 
-    lda #1
-    sta sound_play_state
-    rts
+              ;channel 2 - rhodes piano
+              ; modulator op1
+              opl_reg $21,  0
+              opl_reg $41,  (SCALE_3 | ($3f-48)) ; key scale / level
+              opl_reg $61,  (15<<4 | (1 & $0f))  ; AD
+              opl_reg $81,  (10<<4 | (0 & $0f))  ; SR
+              opl_reg $e1,  WS_PULSE_SIN
+              ;carrier op2
+              opl_reg $24,  0
+              opl_reg $44,  (SCALE_0 | ($3f-59))
+              opl_reg $64,  (13<<4 | (2 & $0f))  ; attack / decay
+              opl_reg $84,  (8<<4 | (12 & $0f))  ; sustain / release
+              opl_reg $e4,  WS_PULSE_SIN
+
+              ;channel 3 - ?!?
+              ;modulator op1
+              opl_reg $22,  1
+              opl_reg $42,  (SCALE_0 | ($3f-48)) ; key scale / level
+              opl_reg $62,  (15<<4 | (1 & $0f))  ; AD
+              opl_reg $82,  (10<<4 | (0 & $0f))  ; SR
+              opl_reg $e2,  WS_PULSE_SIN ; wave select
+              ;carrier op2
+              opl_reg $25,  1
+              opl_reg $45,  (SCALE_0 | ($3f-59))
+              opl_reg $65,  (13<<4 | (2 & $0f))  ; attack / decay
+              opl_reg $85,  (8<<4 | (12 & $0f))  ; sustain / release
+              opl_reg $e5,  WS_HALF_SIN
+
+channels=3
+              ldy #channels*3-1
+              ldx #channels-1
+              lda #1<<(channels-1)
+              sta r1
+:             stz chn_ix,x
+              lda #L64
+              sta chn_cnt,x
+              lda channel_init,y
+              sta chn_length,x
+              dey
+              lda channel_init,y
+              sta chn_notes_h,x
+              dey
+              lda channel_init,y
+              sta chn_notes_l,x
+              dey
+              lda r1
+              sta chn_bit,x
+              lsr r1
+              dex
+              bpl :-
+              rts
+
+sound_off:    stz sound_play_state
+sound_reset:  jmp opl2_init
 
 .data
+
+
+channel_init:
+    init_channel game_start_sound1, game_start_sound1_end
+    init_channel game_start_sound2, game_start_sound2_end
+    init_channel game_sfx_pacman, game_sfx_pacman_end
+
 
 ; game sfx eaten pac
 game_sfx_pacman:
@@ -393,12 +414,21 @@ ghost_alarm:
       ;opl_reg $84,  (6<<4 | (8 & $0f))   ; sustain / release
 
 .bss
-sound_play_state:
-    .res 1
+      sound_play_state: .res 1
 
-sound_channels:
-chn0:
-   .tag channel
+
+      chn_cnt:      .res 8
+      chn_ix:       .res 8
+      chn_notes_l:  .res 8
+      chn_notes_h:  .res 8
+      chn_length:   .res 8
+      chn_bit:      .res 8
+
+
+; game start
+; pacman
+; sirene
+; catched
 
 ;   .byte 0
  ;  .byte L64;        cnt .byte
@@ -410,8 +440,6 @@ chn0:
 ;   .word 0;game_start_sound1    ;   p_note   .word
 ;   .byte 0;game_start_sound1_end-game_start_sound1
 
-chn1:
-   .tag channel
 ;   .byte 1
  ;  .byte L64;        cnt .byte
   ; .byte 0;          ix      .byte
