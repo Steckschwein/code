@@ -38,11 +38,6 @@ VIB=6
 EG=5
 KSR=4
 
-WS_SIN=$0
-WS_HALF_SIN=$01
-WS_ABS_SIN=$02
-WS_PULSE_SIN=$03
-
 SCALE_0=0
 SCALE_1_5=1<<7
 SCALE_3=1<<6
@@ -93,26 +88,36 @@ tempo=0
   .byte _s<<4 | (_r & $0f)
 .endmacro
 
-.macro initvoice chn, initdata
-    stz chn+voice::ix,x
-    lda #L64
-    sta chn+voice::cnt
-    ldx #2
-:   lda initdata,x
-    sta chn+voice::p_note,x
-    dex
-    bpl :-
+.macro init_channel chn, s, e
+    lda #chn
+    ldx #(chn * .sizeof(channel))
+    ldy #e-s
+    jsr sound_init_chn
+    lda #<s
+    sta sound_channels+channel::notes+0,x
+    lda #>s
+    sta sound_channels+channel::notes+1,x
 .endmacro
 
-.struct voice
-   channel  .byte
-   cnt      .byte
-   ix       .byte
-   p_note   .word
-   length   .byte
+
+.struct channel
+   nr       .byte
+   cnt      .byte ; pause
+   ix       .byte ; index
+   notes    .addr ; data address
+   length   .byte ; snd length
 .endstruct
 
 .code
+
+sound_init_chn:
+    sta sound_channels+channel::nr,x
+    stz sound_channels+channel::ix,x
+    lda #L64
+    sta sound_channels+channel::cnt,x
+    tya
+    sta sound_channels+channel::length,x
+    rts
 
 snd_wait:
     cmp game_state+GameState::frames
@@ -131,37 +136,40 @@ sound_off:
 sound_play:
     lda sound_play_state
     beq @exit
-    ldx #0*.sizeof(voice)
-    jsr sound_play_voice
-    ldx #1*.sizeof(voice)
-    jmp sound_play_voice
+    ldx #2*.sizeof(channel)
+    jsr sound_play_chn
+    ldx #0*.sizeof(channel)
+;    jsr sound_play_chn
+    ldx #1*.sizeof(channel)
+ ;   jmp sound_play_chn
 @exit:
     rts
 
 ; X - channel
-sound_play_voice:
-    dec sound_voices+voice::cnt,x
+sound_play_chn:
+    dec sound_channels+channel::cnt,x
     bne @exit
-    lda sound_voices+voice::ix,x    ; voice data channel
-    cmp sound_voices+voice::length,x
+    lda sound_channels+channel::ix,x    ; voice data channel
+    cmp sound_channels+channel::length,x
     bne @next_note
-
-    stz sound_voices+voice::ix,x
+    stz sound_channels+channel::ix,x
 
     lda #L64
-    sta sound_voices+voice::cnt,x
+    sta sound_channels+channel::cnt,x
     stz sound_play_state
+    jsr sound_init_game_start
+
     rts
 
 @next_note:
     stx sound_tmp
     tay ; index to y
-    lda sound_voices+voice::p_note+0,x
+    lda sound_channels+channel::notes+0,x
     sta p_sound+0
-    lda sound_voices+voice::p_note+1,x
+    lda sound_channels+channel::notes+1,x
     sta p_sound+1
 
-    lda sound_voices+voice::channel,x
+    lda sound_channels+channel::nr,x
 .ifdef __ASSERTIONS
     cmp #8+1
     bcc :+
@@ -176,7 +184,7 @@ sound_play_voice:
     jsr opl2_reg_write
 .endif
     ldx sound_tmp
-    lda sound_voices+voice::channel,x
+    lda sound_channels+channel::nr,x
     ora #$b0
     tax                ; register to X
     lda (p_sound), y   ; note Key-On / Octave / F-Number msb
@@ -187,9 +195,9 @@ sound_play_voice:
     lda (p_sound), y   ; delay
     iny
     ldx sound_tmp
-    sta sound_voices+voice::cnt,x
+    sta sound_channels+channel::cnt,x
     tya
-    sta sound_voices+voice::ix,x
+    sta sound_channels+channel::ix,x
 @exit:
     rts
 
@@ -203,13 +211,13 @@ sound_init_game_start:
     opl_reg $40,  (SCALE_3 | ($3f-48)) ; key scale / level
     opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
     opl_reg $80,  (10<<4 | (0 & $0f))  ; SR
-    opl_reg $e0,  WS_ABS_SIN;PULSE_SIN
+    opl_reg $e0,  WS_ABS_SIN ;PULSE_SIN
     ;carrier op2
     opl_reg $23,  1
     opl_reg $43,  (SCALE_0 | ($3f-59))
     opl_reg $63,  (13<<4 | (2 & $0f))  ; attack / decay
     opl_reg $83,  (8<<4 | (12 & $0f))  ; sustain / release
-    opl_reg $e3,  WS_ABS_SIN;PULSE_SIN
+    opl_reg $e3,  WS_ABS_SIN ;PULSE_SIN
 
     ;channel 2 - rhodes piano
     ; modulator op1
@@ -225,65 +233,51 @@ sound_init_game_start:
     opl_reg $84,  (8<<4 | (12 & $0f))  ; sustain / release
     opl_reg $e4,  WS_PULSE_SIN
 
-    initvoice voice1, sound_game_start_v1
-    initvoice voice2, sound_game_start_v2
+    ;channel 3 - ?!?
+    ;modulator op1
+    opl_reg $22,  1
+    opl_reg $42,  (SCALE_0 | ($3f-48)) ; key scale / level
+    opl_reg $62,  (15<<4 | (1 & $0f))  ; AD
+    opl_reg $82,  (10<<4 | (0 & $0f))  ; SR
+    opl_reg $e2,  WS_PULSE_SIN ; wave select
+    ;carrier op2
+    opl_reg $25,  1
+    opl_reg $45,  (SCALE_0 | ($3f-59))
+    opl_reg $65,  (13<<4 | (2 & $0f))  ; attack / decay
+    opl_reg $85,  (8<<4 | (12 & $0f))  ; sustain / release
+    opl_reg $e5,  WS_HALF_SIN
+
+
+    init_channel 0, game_start_sound1, game_start_sound1_end
+    init_channel 1, game_start_sound2, game_start_sound2_end
+
+    init_channel 2, game_sfx_pacman, game_sfx_pacman_end
 
     lda #1
     sta sound_play_state
     rts
 
-sound_game_start_v1:
-;    .word game_sfx_pacman
-;    .byte game_sfx_pacman_end-game_sfx_pacman
-    .word game_start_voice1    ;   p_note  .word
-    .byte game_start_voice1_end-game_start_voice1
-sound_game_start_v2:
-    .word game_start_voice2    ;   p_note  .word
-    .byte game_start_voice2_end-game_start_voice2
-
 .data
-
-sound_voices:
-voice1:
-   ;.tag voice
-   .byte 0
-   .byte L64;        cnt .byte
-   .byte 0;          ix  .byte
-
-   .word 0;game_sfx_pacman
-   .byte 0;game_sfx_pacman_end-game_sfx_pacman
-
-;   .word 0;game_start_voice1    ;   p_note   .word
-;   .byte 0;game_start_voice1_end-game_start_voice1
-
-voice2:
-   ;.tag voice
-   .byte 1
-   .byte L64;        cnt .byte
-   .byte 0;          ix      .byte
-
-;   .word 0;game_start_voice2;   p_delay  .word
-;   .byte 0;game_start_voice2_end-game_start_voice2
 
 ; game sfx eaten pac
 game_sfx_pacman:
-  note NOTE_B,   4, L64
-  note NOTE_Gis, 4, L64
-  note NOTE_F,  4, L64
-  note NOTE_Cis, 4, L64
-  note NOTE_Gis, 3, L64
+  note NOTE_B,    4, L64
+  note NOTE_Gis,  4, L64
+  note NOTE_F,    4, L64
+  note NOTE_Cis,  4, L64
+  note NOTE_Gis,  3, L64
   pause L64
   pause L64
   pause L64
-  note NOTE_E,   3, L64
-  note NOTE_Gis, 3, L64
+  note NOTE_E,    3, L64
+  note NOTE_Gis,  3, L64
   note NOTE_Dis,  4, L64
-  note NOTE_Fis, 4, L64
-  note NOTE_A,   4, L64
+  note NOTE_Fis,  4, L64
+  note NOTE_A,    4, L64
 game_sfx_pacman_end:
 
 ; game start sound
-game_start_voice1: ; piano
+game_start_sound1: ; piano
     ;1 takt
     note NOTE_C, 4, L8
     note NOTE_C, 5, L8
@@ -330,9 +324,9 @@ game_start_voice1: ; piano
     note NOTE_C, 5, 3*L16
     pause L16
     soundEnd
-game_start_voice1_end:
+game_start_sound1_end:
 
-game_start_voice2:
+game_start_sound2:
     note NOTE_C, 2, L8
     pause L4
     note NOTE_G, 2, L8
@@ -363,7 +357,7 @@ game_start_voice2:
     note NOTE_C, 3, L8
     pause L8
     soundEnd
-game_start_voice2_end:
+game_start_sound2_end:
 
 ; ghost alarm sound
 ghost_alarm:
@@ -401,3 +395,27 @@ ghost_alarm:
 .bss
 sound_play_state:
     .res 1
+
+sound_channels:
+chn0:
+   .tag channel
+
+;   .byte 0
+ ;  .byte L64;        cnt .byte
+  ; .byte 0;          ix  .byte
+
+   ;.word 0;game_sfx_pacman
+   ;.byte 0;game_sfx_pacman_end-game_sfx_pacman
+
+;   .word 0;game_start_sound1    ;   p_note   .word
+;   .byte 0;game_start_sound1_end-game_start_sound1
+
+chn1:
+   .tag channel
+;   .byte 1
+ ;  .byte L64;        cnt .byte
+  ; .byte 0;          ix      .byte
+
+;   .word 0;game_start_sound2;   p_delay  .word
+;   .byte 0;game_start_sound2_end-game_start_sound2
+

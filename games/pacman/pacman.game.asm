@@ -1762,7 +1762,7 @@ game_init:    jsr sound_init_game_start
               sta game_state+GameState::bonus_life+0
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
 
-              lda #8 ; start with level 1
+              lda #1 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
