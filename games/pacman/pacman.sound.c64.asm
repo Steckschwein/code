@@ -1,13 +1,18 @@
-		.p02
-		.include "pacman.c64.inc"
+.p02
+.include "pacman.c64.inc"
 
-		.export sound_init
-		.export sound_init_game_start
-		.export sound_play
+.export sound_init
+.export sound_init_game_start
+.export sound_play
+.export sound_off
+.export sound_update
+.export sound_play_pacman
+.export sound_play_game_start
+.export sound_play_ghost_catched
 
-		.import game_state
 
-.code
+
+.import game_state
 
 .struct voice
 	 reg		 .byte	; channel reg F low
@@ -16,6 +21,16 @@
 	 p_note	 .word	; pointer
 	 length	 .byte	; snd length
 .endstruct
+
+.code
+
+sound_off:
+sound_update:
+sound_play_pacman:
+sound_play_game_start:
+sound_play_ghost_catched:
+              rts
+
 
 L2		  	=32
 L4		  	=16

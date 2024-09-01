@@ -3,10 +3,14 @@
 
 .export sound_init
 .export sound_reset
+.export sound_off
 .export sound_update
+.export sound_play_game_prelude
 .export sound_play_pacman
-.export sound_play_game_start
+.export sound_play_eat_fruit
 .export sound_play_ghost_catched
+.export sound_play_ghost_alarm
+.export sound_play_ghost_frightened
 
 .import opl2_init
 .import opl2_reg_write
@@ -16,7 +20,7 @@
 .zeropage
               r1:  .res 1
 
-
+; note/frequency assignments
 NOTE_Cis  =$16B
 NOTE_D   =$181
 NOTE_Dis  =$198
@@ -109,20 +113,32 @@ tempo=0
 
 .code
 
-SOUND_GAME_START    = 1<<0 | 1<<1 ; channel 0,1
-SOUND_PACMAN        = 1<<2        ; channel 2
-SOUND_GHOST_CATCHED = 1<<3        ; ...
+SOUND_GAME_PRELUDE      = 1<<0 | 1<<1 ; channel 1,2
+SOUND_PACMAN            = 1<<2        ; channel 3
+SOUND_EAT_FRUIT         = 1<<3        ; ...
+SOUND_GHOST_ALARM       = 1<<4
+SOUND_GHOST_CATCHED     = 1<<5        ; ...
+SOUND_GHOST_FRIGHTENED  = 1<<6        ; channel 7
 
 sound_play_pacman:
               lda #SOUND_PACMAN
 sound_play:   ora sound_play_state
               sta sound_play_state
               rts
-sound_play_game_start:
-              lda #SOUND_GAME_START
+sound_play_game_prelude:
+              lda #SOUND_GAME_PRELUDE
+              bne sound_play
+sound_play_eat_fruit:
+              lda #SOUND_EAT_FRUIT
+              bne sound_play
+sound_play_ghost_alarm:
+              lda #SOUND_GHOST_ALARM
               bne sound_play
 sound_play_ghost_catched:
               lda #SOUND_GHOST_CATCHED
+              bne sound_play
+sound_play_ghost_frightened:
+              lda #SOUND_GHOST_FRIGHTENED
               bne sound_play
 
 snd_wait:
@@ -136,11 +152,11 @@ sound_update: ldx #0  ; start with channel 0
               sta r1
 :             lsr r1
               bcc :+
-              jsr sound_play_chn        ; pacman
+              jsr sound_play_chn
 :             inx
               cpx #channels
               bne :--
-@exit:        rts
+              rts
 
 ; X - channel
 sound_play_chn:
@@ -230,7 +246,7 @@ sound_init:   jsr sound_off
               opl_reg $84,  (8<<4 | (12 & $0f))  ; sustain / release
               opl_reg $e4,  WS_PULSE_SIN
 
-              ;channel 3 - ?!?
+              ;channel 3 - pacman dots
               ;modulator op1
               opl_reg $22,  1
               opl_reg $42,  (SCALE_0 | ($3f-48)) ; key scale / level
@@ -244,7 +260,63 @@ sound_init:   jsr sound_off
               opl_reg $85,  (8<<4 | (12 & $0f))  ; sustain / release
               opl_reg $e5,  WS_HALF_SIN
 
-channels=3
+              ;channel 4 - fruits
+              ;modulator op1
+              opl_reg $28,  1
+              opl_reg $48,  (SCALE_1_5 | ($3f-48)) ; key scale / level
+              opl_reg $68,  ($f<<4 | ($f & $0f))  ; AD
+              opl_reg $88,  (0<<4 | ($0 & $0f))  ; SR
+              opl_reg $e8,  WS_HALF_SIN ; wave select
+              ;carrier op2
+              opl_reg $2b,  1
+              opl_reg $4b,  (SCALE_1_5 | ($3f-59))
+              opl_reg $6b,  ($f<<4 | ($f & $0f))  ; attack / decay
+              opl_reg $8b,  (0<<4 | ($0 & $0f))  ; sustain / release
+              opl_reg $eb,  WS_HALF_SIN
+
+              ;channel 5 - alarm
+              ;modulator op1
+              opl_reg $29,  1
+              opl_reg $49,  (SCALE_0 | ($3f-38)) ; key scale / level
+              opl_reg $69,  (15<<4 | (1 & $0f))  ; AD
+              opl_reg $89,  (10<<4 | (3 & $0f))  ; SR
+              opl_reg $e9,  WS_SIN ; wave select
+              ;carrier op2
+              opl_reg $2c,  1
+              opl_reg $4c,  (SCALE_0 | ($3f-39))
+              opl_reg $6c,  (13<<4 | (2 & $0f))  ; attack / decay
+              opl_reg $8c,  (8<<4 | (13 & $0f))  ; sustain / release
+              opl_reg $ec,  WS_SIN
+
+              ;channel 6 - catched
+              ;modulator op1
+              opl_reg $2a,  1
+              opl_reg $4a,  (SCALE_0 | ($3f-48)) ; key scale / level
+              opl_reg $6a,  (15<<4 | (1 & $0f))  ; AD
+              opl_reg $8a,  (10<<4 | (0 & $0f))  ; SR
+              opl_reg $ea,  WS_SIN ; wave select
+              ;carrier op2
+              opl_reg $2d,  1
+              opl_reg $4d,  (SCALE_0 | ($3f-59))
+              opl_reg $6d,  (13<<4 | (2 & $0f))  ; attack / decay
+              opl_reg $8d,  (8<<4 | (15 & $0f))  ; sustain / release
+              opl_reg $ed,  WS_SIN
+
+              ;channel 7 - frightened
+              ;modulator op1
+              opl_reg $30,  1
+              opl_reg $50,  (SCALE_0 | ($3f-48)) ; key scale / level
+              opl_reg $70,  (15<<4 | (1 & $0f))  ; AD
+              opl_reg $90,  (10<<4 | (0 & $0f))  ; SR
+              opl_reg $f0,  WS_PULSE_SIN  ; wave select
+              ;carrier op2
+              opl_reg $33,  1
+              opl_reg $53,  (SCALE_0 | ($3f-59))
+              opl_reg $73,  (13<<4 | (2 & $0f))  ; attack / decay
+              opl_reg $93,  (8<<4 | (15 & $0f))  ; sustain / release
+              opl_reg $f3,  WS_PULSE_SIN
+
+channels=7
               ldy #channels*3-1
               ldx #channels-1
               lda #1<<(channels-1)
@@ -278,23 +350,68 @@ channel_init:
     init_channel game_start_sound1, game_start_sound1_end
     init_channel game_start_sound2, game_start_sound2_end
     init_channel game_sfx_pacman, game_sfx_pacman_end
+    init_channel game_sfx_eat_fruit,game_sfx_eat_fruit_end
+    init_channel game_sfx_ghost_alarm, game_sfx_ghost_alarm_end
+    init_channel game_sfx_eat_ghost, game_sfx_eat_ghost_end
+    init_channel game_sfx_frightened, game_sfx_frightened_end
 
+game_sfx_frightened:
+              .repeat 8, i
+                note 384, 1+i, L64
+              .endrepeat
+              soundEnd
+game_sfx_frightened_end:
+
+game_sfx_eat_ghost:
+              .repeat 32, i
+                note ((i+1)*$0020), 4, L64
+              .endrepeat
+              soundEnd
+game_sfx_eat_ghost_end:
+
+.export game_sfx_eat_fruit
+game_sfx_eat_fruit:
+              .repeat 4, i
+                note ($b00-(i*$e0)), 2, L64
+              .endrepeat
+              .repeat 10, i
+                note ((i+1)*$e0), 2, L64
+              .endrepeat
+              soundEnd
+game_sfx_eat_fruit_end:
+
+.export game_sfx_ghost_alarm
+game_sfx_ghost_alarm:
+              .repeat 12, i
+                note (400+(i*10)), 5, L64
+              .endrepeat
+              .repeat 12, i
+                note (400+(12*10)-(i*10)), 5, L64
+              .endrepeat
+              soundEnd
+game_sfx_ghost_alarm_end:
 
 ; game sfx eaten pac
 game_sfx_pacman:
-  note NOTE_B,    4, L64
-  note NOTE_Gis,  4, L64
-  note NOTE_F,    4, L64
-  note NOTE_Cis,  4, L64
-  note NOTE_Gis,  3, L64
-  pause L64
-  pause L64
-  pause L64
-  note NOTE_E,    3, L64
-  note NOTE_Gis,  3, L64
-  note NOTE_Dis,  4, L64
-  note NOTE_Fis,  4, L64
-  note NOTE_A,    4, L64
+              note NOTE_B,    4, L64
+              note NOTE_Gis,  4, L64
+              note NOTE_F,    4, L64
+              note NOTE_Cis,  4, L64
+              note NOTE_Gis,  3, L64
+              pause L64
+;              pause L64
+              pause L64
+              note NOTE_Gis,  3, L64
+              note NOTE_Cis,  4, L64
+              note NOTE_F,    4, L64
+              note NOTE_Gis,  4, L64
+              note NOTE_B,    4, L64
+;              note NOTE_E,    3, L64
+ ;             note NOTE_Gis,  3, L64
+  ;            note NOTE_Dis,  4, L64
+   ;           note NOTE_Fis,  4, L64
+    ;          note NOTE_A,    4, L64
+              soundEnd
 game_sfx_pacman_end:
 
 ; game start sound

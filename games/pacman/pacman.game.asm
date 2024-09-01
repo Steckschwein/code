@@ -264,12 +264,14 @@ actors_move:  jsr ghost_move
               lda #Shape_Ix_Invisible
               sta actor_shape,x
 
-              lda #FN_STATE_GHOST_CATCHED
-              bit game_state+GameState::state ; called from intro demo?
-              bvs :+
-              bpl :+
               lda #FN_STATE_INTRO_GHOST_CATCHED
-:             jmp system_set_state_fn
+              bit game_state+GameState::state
+              bmi @state        ; intro ?
+              bvs :+            ; demo? skip sound
+              jsr sound_play_ghost_catched
+:             lda #FN_STATE_GHOST_CATCHED
+@state:       jmp system_set_state_fn
+
 
 ghost_move:   jsr actor_update_charpos
               jsr ghost_update_shape
@@ -704,6 +706,7 @@ pacman_collect:
               iny
               dex
               bne :-
+              jsr sound_play_eat_fruit
               lda #Bonus_Pts_Time
               sta game_state+GameState::bonus_cnt
               lda game_state+GameState::bonus
@@ -1206,6 +1209,14 @@ game_ghost_catched:
 
 game_playing: jsr update_mode
 
+              lda game_state+GameState::frghtd_timer+0
+              ora game_state+GameState::frghtd_timer+1
+              bne :+
+              jsr sound_play_ghost_alarm
+              jmp @move
+:             jsr sound_play_ghost_frightened
+
+@move:
               jsr pacman_move
 
 ;              ldx #ACTOR_INKY
@@ -1755,7 +1766,7 @@ animate_up:   bit game_state+GameState::state ; demo?
 @exit:        rts
 
 
-game_init:    jsr sound_play_game_start
+game_init:    jsr sound_play_game_prelude
 
               jsr system_dip_switches_lives
               sty game_state+GameState::lives

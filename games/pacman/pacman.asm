@@ -112,6 +112,27 @@ main:
               sta game_state+GameState::lives
               lda #FN_STATE_PACMAN_DYING
               jmp @set_state
+:             cmp #'s' ;
+              bne :+
+              jsr sound_play_pacman
+              lda game_sfx_eat_fruit
+              lda #0
+:             cmp #'b' ;
+              bne :+
+              jsr sound_play_eat_fruit
+              lda #0
+:             cmp #'a' ;
+              bne :+
+              jsr sound_play_ghost_alarm
+              lda #0
+:             cmp #'f' ;
+              bne :+
+              jsr sound_play_ghost_frightened
+              lda #0
+:             cmp #'k' ;
+              bne :+
+              jsr sound_play_ghost_catched
+              lda #0
 :             cmp #'l' ; level skip
               bne :+
               lda #0
@@ -160,7 +181,7 @@ main:
 :             jmp @main_loop
 
 quit:         sei
-              jsr sound_reset
+              jsr sound_off
               jsr gfx_mode_off
               restoreIRQ save_irq
               cli
