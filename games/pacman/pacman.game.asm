@@ -158,6 +158,10 @@ game_pacman_dying:
               jsr actors_invisible
 
               lda game_state+GameState::state_frames
+              cmp #1
+              bne :+
+              jsr sound_play_pacman_dying
+:             lda game_state+GameState::state_frames
               lsr
               lsr
               lsr
@@ -264,13 +268,14 @@ actors_move:  jsr ghost_move
               lda #Shape_Ix_Invisible
               sta actor_shape,x
 
-              lda #FN_STATE_INTRO_GHOST_CATCHED
-              bit game_state+GameState::state
-              bmi @state        ; intro ?
-              bvs :+            ; demo? skip sound
               jsr sound_play_ghost_catched
-:             lda #FN_STATE_GHOST_CATCHED
-@state:       jmp system_set_state_fn
+
+              lda #FN_STATE_GHOST_CATCHED
+              bit game_state+GameState::state
+              bvs :+          ; demo?
+              bpl :+          ; intro ?
+              lda #FN_STATE_INTRO_GHOST_CATCHED
+:             jmp system_set_state_fn
 
 
 ghost_move:   jsr actor_update_charpos
@@ -670,7 +675,7 @@ pacman_collect:
               jmp gfx_charout
 
 @energizer:   jsr game_dot_logic
-              jsr sound_play_pacman
+              jsr sound_play_eat_dot
               lda #Pts_Index_Energizer
               bne @score_and_erase
 
@@ -679,7 +684,7 @@ pacman_collect:
 
               jsr game_dot_logic
               inc pacman_delay
-              jsr sound_play_pacman
+              jsr sound_play_eat_dot
 
               lda #Pts_Index_Dot
               beq @score_and_erase  ; dots index is 0

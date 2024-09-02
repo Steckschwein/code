@@ -3,7 +3,7 @@
 #DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 #DEBUG+=-D__NO_INTRO
-#DEBUG+=-D__ASSERTIONS
+DEBUG+=-D__ASSERTIONS
 #DEBUG+=-D__DEVMODE
 
 CLIB=../../steckos/clib/lib/steckschwein-clib.a

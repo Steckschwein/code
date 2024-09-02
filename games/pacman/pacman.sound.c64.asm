@@ -39,9 +39,9 @@ sound_play_ghost_frightened:
 L2		  	=32
 L4		  	=16
 L8		  	=8
-L16		=4
-L32		=2
-L64		=1
+L16		    =4
+L32		    =2
+L64		    =1
 
 BASEFREQ=440
 PAL_PHI = 985248

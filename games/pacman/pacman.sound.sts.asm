@@ -6,11 +6,12 @@
 .export sound_off
 .export sound_update
 .export sound_play_game_prelude
-.export sound_play_pacman
+.export sound_play_eat_dot
 .export sound_play_eat_fruit
 .export sound_play_ghost_catched
 .export sound_play_ghost_alarm
 .export sound_play_ghost_frightened
+.export sound_play_pacman_dying
 
 .import opl2_init
 .import opl2_reg_write
@@ -20,19 +21,19 @@
 .zeropage
               r1:  .res 1
 
-; note/frequency assignments
+; note/frequency assignments - https://shipbrook.net/jeff/sb.html#a0-b8
 NOTE_Cis  =$16B
-NOTE_D   =$181
+NOTE_D    =$181
 NOTE_Dis  =$198
-NOTE_E   =$1B0
-NOTE_F   =$1CA
+NOTE_E    =$1B0
+NOTE_F    =$1CA
 NOTE_Fis  =$1E5
-NOTE_G   =$202
+NOTE_G    =$202
 NOTE_Gis  =$220
-NOTE_A   =$241
+NOTE_A    =$241
 NOTE_Ais  =$263
-NOTE_B   =$287
-NOTE_C   =$2AE
+NOTE_B    =$287
+NOTE_C    =$2AE
 
 ; frame count (note length)
 L2    =32
@@ -119,19 +120,26 @@ SOUND_EAT_FRUIT         = 1<<3        ; ...
 SOUND_GHOST_ALARM       = 1<<4
 SOUND_GHOST_CATCHED     = 1<<5        ; ...
 SOUND_GHOST_FRIGHTENED  = 1<<6        ; channel 7
+SOUND_PACMAN_DYING      = 1<<7
 
-sound_play_pacman:
+sound_play_eat_dot:
               lda #SOUND_PACMAN
 sound_play:   ora sound_play_state
               sta sound_play_state
               rts
 sound_play_game_prelude:
+.ifdef __DEVMODE
+              rts
+.endif
               lda #SOUND_GAME_PRELUDE
               bne sound_play
 sound_play_eat_fruit:
               lda #SOUND_EAT_FRUIT
               bne sound_play
 sound_play_ghost_alarm:
+.ifdef __DEVMODE
+              rts
+.endif
               lda #SOUND_GHOST_ALARM
               bne sound_play
 sound_play_ghost_catched:
@@ -140,6 +148,9 @@ sound_play_ghost_catched:
 sound_play_ghost_frightened:
               lda #SOUND_GHOST_FRIGHTENED
               bne sound_play
+sound_play_pacman_dying:
+              lda #SOUND_PACMAN_DYING
+              bne sound_play
 
 snd_wait:
               cmp game_state+GameState::frames
@@ -147,7 +158,9 @@ snd_wait:
               stz game_state+GameState::frames
               rts
 
-sound_update: ldx #0  ; start with channel 0
+sound_update: bit game_state+GameState::state
+              bmi @exit
+              ldx #0  ; start with channel 0
               lda sound_play_state
               sta r1
 :             lsr r1
@@ -156,12 +169,12 @@ sound_update: ldx #0  ; start with channel 0
 :             inx
               cpx #channels
               bne :--
-              rts
+@exit:        rts
 
 ; X - channel
 sound_play_chn:
 .ifdef __ASSERTIONS
-              cpx #8+1
+              cpx #channels+1
               bcc :+
               stp
           :   nop
@@ -316,7 +329,21 @@ sound_init:   jsr sound_off
               opl_reg $93,  (8<<4 | (15 & $0f))  ; sustain / release
               opl_reg $f3,  WS_PULSE_SIN
 
-channels=7
+              ;channel 8 - pacman dying
+              ;modulator op1
+              opl_reg $31,  1
+              opl_reg $51,  (SCALE_0 | (0)) ; key scale / level
+              opl_reg $71,  (15<<4 | (1 & $0f))  ; AD
+              opl_reg $91,  (10<<4 | (3 & $0f))  ; SR
+              opl_reg $f1,  WS_HALF_SIN ; wave select
+              ;carrier op2
+              opl_reg $34,  1
+              opl_reg $54,  (SCALE_0 | (0))
+              opl_reg $74,  (13<<4 | (2 & $0f))  ; attack / decay
+              opl_reg $94,  (8<<4 | (13 & $0f))  ; sustain / release
+              opl_reg $f4,  WS_HALF_SIN
+
+channels=8
               ldy #channels*3-1
               ldx #channels-1
               lda #1<<(channels-1)
@@ -354,6 +381,12 @@ channel_init:
     init_channel game_sfx_ghost_alarm, game_sfx_ghost_alarm_end
     init_channel game_sfx_eat_ghost, game_sfx_eat_ghost_end
     init_channel game_sfx_frightened, game_sfx_frightened_end
+    init_channel game_snd_pacman_dying, game_snd_pacman_dying_end
+
+game_snd_pacman_dying:
+              .include "pacman.dying.dat"
+              soundEnd
+game_snd_pacman_dying_end:
 
 game_sfx_frightened:
               .repeat 8, i
@@ -496,10 +529,6 @@ game_start_sound2:
     pause L8
     soundEnd
 game_start_sound2_end:
-
-; ghost alarm sound
-ghost_alarm:
-    .byte 16,32,48,64,80,96,112,128,144,160,176,192,208,224,240
 
       ;"Recorder"
       ;opl_reg $20,  (1<<KSR | 1<<EG | 2)

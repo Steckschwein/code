@@ -114,8 +114,7 @@ main:
               jmp @set_state
 :             cmp #'s' ;
               bne :+
-              jsr sound_play_pacman
-              lda game_sfx_eat_fruit
+              jsr sound_play_eat_dot
               lda #0
 :             cmp #'b' ;
               bne :+
@@ -132,6 +131,10 @@ main:
 :             cmp #'k' ;
               bne :+
               jsr sound_play_ghost_catched
+              lda #0
+:             cmp #'o' ;
+              bne :+
+              jsr sound_play_pacman_dying
               lda #0
 :             cmp #'l' ; level skip
               bne :+
