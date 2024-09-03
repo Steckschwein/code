@@ -212,7 +212,6 @@ intro_ghost_catched:
               lda #FN_STATE_INTRO_GHOSTS  ; go on
               jmp system_set_state_fn
 @demo:        lda #FN_STATE_DEMO_INIT
-              lda #FN_STATE_INTRO
               jmp system_set_state_fn
 animate_energizer:
               lda game_state+GameState::frames

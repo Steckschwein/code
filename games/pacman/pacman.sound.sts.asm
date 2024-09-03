@@ -52,19 +52,6 @@ SCALE_0=0
 SCALE_1_5=1<<7
 SCALE_3=1<<6
 
-.macro stefan note, octave, _A, _D, _S, _R
-    opl_reg $63,  (_A<<4 | (_D & $0f))  ; attack / decay
-    opl_reg $83,  (_S<<4 | (_R & $0f))  ; sustain / release
-    opl_reg $a0,  <note ; frequency
-    opl_reg $b0,  (1<<5) | (octave<<2) | (>note & $03)
-.endmacro
-
-.macro stefan2 note, octave, _l
-    stefan note, octave, 15, 0, 7, 0
-    lda #(_l-2)
-    jsr snd_wait
-.endmacro
-
 tempo=0
 .macro note _note, octave, delay
    .if _note = NOTE_C ;adjust octave, ym3812 ends with C ... weird
@@ -89,7 +76,6 @@ tempo=0
    .byte 0
    .byte 1
 .endmacro
-
 
 .macro s_AD _a, _d
   .byte _a<<4 | (_d & $0f)
@@ -151,12 +137,6 @@ sound_play_ghost_frightened:
 sound_play_pacman_dying:
               lda #SOUND_PACMAN_DYING
               bne sound_play
-
-snd_wait:
-              cmp game_state+GameState::frames
-              bne snd_wait
-              stz game_state+GameState::frames
-              rts
 
 sound_update: bit game_state+GameState::state
               bmi @exit
@@ -276,7 +256,7 @@ sound_init:   jsr sound_off
               ;channel 4 - fruits
               ;modulator op1
               opl_reg $28,  1
-              opl_reg $48,  (SCALE_1_5 | ($3f-48)) ; key scale / level
+              opl_reg $48,  (SCALE_1_5 | ($3f-58)) ; key scale / level
               opl_reg $68,  ($f<<4 | ($f & $0f))  ; AD
               opl_reg $88,  (0<<4 | ($0 & $0f))  ; SR
               opl_reg $e8,  WS_HALF_SIN ; wave select
@@ -318,7 +298,7 @@ sound_init:   jsr sound_off
               ;channel 7 - frightened
               ;modulator op1
               opl_reg $30,  1
-              opl_reg $50,  (SCALE_0 | ($3f-48)) ; key scale / level
+              opl_reg $50,  (SCALE_1_5 | ($3f-48)) ; key scale / level
               opl_reg $70,  (15<<4 | (1 & $0f))  ; AD
               opl_reg $90,  (10<<4 | (0 & $0f))  ; SR
               opl_reg $f0,  WS_PULSE_SIN  ; wave select
@@ -332,15 +312,15 @@ sound_init:   jsr sound_off
               ;channel 8 - pacman dying
               ;modulator op1
               opl_reg $31,  1
-              opl_reg $51,  (SCALE_0 | (0)) ; key scale / level
-              opl_reg $71,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $91,  (10<<4 | (3 & $0f))  ; SR
+              opl_reg $51,  (SCALE_3 | (1)) ; key scale / level
+              opl_reg $71,  (10<<4 | (1 & $0f))  ; AD
+              opl_reg $91,  (15<<4 | (15 & $0f))  ; SR
               opl_reg $f1,  WS_HALF_SIN ; wave select
               ;carrier op2
               opl_reg $34,  1
-              opl_reg $54,  (SCALE_0 | (0))
-              opl_reg $74,  (13<<4 | (2 & $0f))  ; attack / decay
-              opl_reg $94,  (8<<4 | (13 & $0f))  ; sustain / release
+              opl_reg $54,  (SCALE_0 | (1))
+              opl_reg $74,  (10<<4 | (1 & $0f))  ; attack / decay
+              opl_reg $94,  (15<<4 | (13 & $0f))  ; sustain / release
               opl_reg $f4,  WS_HALF_SIN
 
 channels=8
@@ -405,10 +385,10 @@ game_sfx_eat_ghost_end:
 .export game_sfx_eat_fruit
 game_sfx_eat_fruit:
               .repeat 4, i
-                note ($b00-(i*$e0)), 2, L64
+                note ($200-(i*$50)), 3, L64
               .endrepeat
               .repeat 10, i
-                note ((i+1)*$e0), 2, L64
+                note ((i+1)*$20), 3, L64
               .endrepeat
               soundEnd
 game_sfx_eat_fruit_end:
