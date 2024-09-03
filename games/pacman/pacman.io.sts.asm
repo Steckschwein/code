@@ -17,7 +17,6 @@ appstart $1000
 .code
 
 io_init:      jsr joystick_on
-              ;TODO ...
               clc
               rts
 

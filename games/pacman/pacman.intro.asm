@@ -160,6 +160,9 @@ intro_init_script:
               beq @next
 @ghost:       lda #GHOST_STATE_TARGET
               sta ghost_state,x
+              lda #0
+              sta ghost_tgt_x,x
+              sta ghost_tgt_y,x
 @next:        dex
               bpl :-
 
@@ -209,6 +212,7 @@ intro_ghost_catched:
               lda #FN_STATE_INTRO_GHOSTS  ; go on
               jmp system_set_state_fn
 @demo:        lda #FN_STATE_DEMO_INIT
+              lda #FN_STATE_INTRO
               jmp system_set_state_fn
 animate_energizer:
               lda game_state+GameState::frames

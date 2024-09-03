@@ -230,7 +230,7 @@ sound_init:   jsr sound_off
 
               opl_reg $c0, 0 ; FM mode
               opl_reg 1,   1<<5 ; WS on
-              ;TODO FIXME instrument table
+              ;IMPROVE - use instrument table
               ;channel 1 - rhodes piano
               ;modulator op1
               opl_reg $20,  1

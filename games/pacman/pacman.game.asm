@@ -505,6 +505,7 @@ calc_distance:lda (p_maze),y
               sta target_dir ; save direction of shortest distance
 @exit:        rts
 
+
 ghost_base:   cmp #GHOST_STATE_BASE
               bne ghost_leave_base
 
@@ -1224,9 +1225,6 @@ game_playing: jsr update_mode
 @move:
               jsr pacman_move
 
-;              ldx #ACTOR_INKY
- ;             ldx #ACTOR_BLINKY
-  ;            ldx #ACTOR_PINKY
               ldx #ACTOR_CLYDE
               jsr actors_move
 

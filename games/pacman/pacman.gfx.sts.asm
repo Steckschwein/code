@@ -80,8 +80,7 @@ gfx_write_pal:
               sta a_vregpal
               rts
 
-gfx_isr:
-              lda a_vreg ; vdp h blank irq ?
+gfx_isr:      lda a_vreg ; vdp h blank irq ?
               ror
               bcc @is_vblank
               ; remove border https://www.msx.org/forum/msx-talk/development/removing-border-bitmap-modes?page=0
@@ -126,13 +125,13 @@ gfx_isr:
               rts
 
 @border_bottom:
-              lda #v_reg8_VR | v_reg8_SPD
+              lda #v_reg8_VR | v_reg8_SPD ; disable sprites
               ldy #v_reg8
               jsr vdp_set_reg
               lda #scln_top
               bra @set_scln
 
-@border_top:  lda vdp_reg8
+@border_top:  lda vdp_reg8  ; enable sprites
               ldy #v_reg8
               jsr vdp_set_reg
               lda #line
@@ -714,7 +713,7 @@ vdp_reg1_init:
     .byte >(VRAM_SPRITE_ATTR<<1) | $07    ; R#5 - sprite attribute table
     .byte >(VRAM_SPRITE_PATTERN>>3)       ; R#6 - sprite pattern table
     .byte Color_Bg
-    .byte v_reg8_VR | v_reg8_SPD ; R#8 - VR - 64k VRAM TODO set per define
+    .byte v_reg8_VR | v_reg8_SPD ; R#8 - VR - 64k VRAM
 vdp_reg9_init:
     .byte 0 ; v_reg9_ln ; R#9 - 212lines
     .byte 0 ; n.a.
