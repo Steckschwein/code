@@ -27,11 +27,11 @@
 .importzp sys_crs_x, sys_crs_y
 
 .zeropage
-              game_tmp:   .res 1
-              game_tmp2:  .res 1
-              rx1:        .res 2  ; a 16 bit register
-              px:         .res 1  ; maze tile x
-              py:         .res 1  ; maze tile y
+              r1:      .res 1
+              r2:      .res 1
+              rx1:     .res 2  ; a 16 bit register
+              px:      .res 1  ; maze tile x
+              py:      .res 1  ; maze tile y
 
 .code
 
@@ -205,7 +205,7 @@ game_game_over:
 @exit:        rts
 
 game_intermission:
-              ldy #2  ; select intermission for level - lvl 2 (im1), lvl 5 (im2), lvl 9,13,17 (im3)
+              ldy #3  ; select intermission for level - lvl 2 (im1), lvl 5 (im2), lvl 9,13,17 (im3)
               lda game_state+GameState::level
               cmp #2
               beq @im_2
@@ -221,10 +221,16 @@ game_intermission:
 @im_1:        dey
 @im:
               lda game_state+GameState::state_frames
+              cmp #1
               bne :+
+              sty r1  ; save im
               jsr gfx_blank_screen
               lda game_state+GameState::level
               jsr gfx_bonus_stack
+              draw_text @intermission, Color_Text
+              lda r1
+              jsr out_digit
+
               rts
 :             cmp #$ff
               bne @exit
@@ -232,8 +238,11 @@ game_intermission:
               lda #FN_STATE_LEVEL_INIT
               jmp system_set_state_fn
 @exit:        rts
-
-
+@intermission:
+              .byte 10,22,"TODO INTERMISSION ", 0
+game_intermission_1:
+game_intermission_2:
+game_intermission_3:
 
 actors_move:  jsr ghost_move
               ldy #ACTOR_PACMAN
@@ -383,7 +392,7 @@ ghost_move:   jsr actor_update_charpos
 
               lda actor_move,x
               eor #ACT_MOVE_REVERSE
-              sta game_tmp2 ; exclude reverse of the new direction
+              sta r2 ; exclude reverse of the new direction
 
               lda actor_mode,x
               beq short_dist   ; normal ?
@@ -393,7 +402,7 @@ ghost_move:   jsr actor_update_charpos
               jsr system_rng  ; choose next direction randomly
 @check_dir:   and #ACT_DIR
               sta target_dir
-              cmp game_tmp2   ; reverse direction?
+              cmp r2   ; reverse direction?
               beq @next_dir
               tay
               lda y_index,y
@@ -407,7 +416,7 @@ ghost_move:   jsr actor_update_charpos
 
 short_dist_reverse:
 ;              lda #$ff
- ;             sta game_tmp2 ; allow reverse
+ ;             sta r2 ; allow reverse
 short_dist:
 ; check new direction in order up,left,down,right
               lda #$ff  ; init 16bit distance "far away"
@@ -415,16 +424,16 @@ short_dist:
               sta target_dist+1
 
               lda #ACT_UP
-              sta game_tmp
+              sta r1
 @check:
-              lda game_tmp
-              cmp game_tmp2 ; discard reverse direction
+              lda r1
+              cmp r2 ; discard reverse direction
               beq @next
               tay
               lda y_index,y
               tay
               jsr calc_distance
-@next:        dec game_tmp
+@next:        dec r1
               bpl @check
 
 tgt_direction:
@@ -446,7 +455,7 @@ calc_distance:lda (p_maze),y
               cmp #Char_Base
               bcs @exit ; carry from cmp above
 
-              ldy game_tmp
+              ldy r1
               clc
               lda px
               adc vectors_x,y
@@ -467,7 +476,7 @@ calc_distance:lda (p_maze),y
               lda squares_h,y
               sta rx1+1
 
-              ldy game_tmp
+              ldy r1
               clc
               lda py
               adc vectors_y,y
@@ -501,7 +510,7 @@ calc_distance:lda (p_maze),y
 @save:        sta target_dist+0 ; save new shortest distance
               lda rx1+1
               sta target_dist+1
-              lda game_tmp
+              lda r1
               sta target_dir ; save direction of shortest distance
 @exit:        rts
 
@@ -617,14 +626,14 @@ shape_mask:
 pacman_cornering:
               tay
               lda #$07
-              sta game_tmp2
+              sta r2
               lda actor_move,x
               and #$03  ; either +x or +y, down or left
               beq :+   ; 00 ? (ACT_RIGHT)
               cmp #ACT_UP
               beq :+
               lda #0
-              sta game_tmp2
+              sta r2
 :             tya
 l_test:
               and #ACT_MOVE_UP_OR_DOWN    ; new direction is a turn
@@ -635,7 +644,7 @@ l_left_or_right:
 l_up_or_down:
               lda actor_sp_y,x
 l_compare:
-              eor game_tmp2
+              eor r2
               and #$07
               cmp #$04   ; 0100 - center pos, <0100 pre-turn, >0100 post-turn
               rts
@@ -643,7 +652,7 @@ l_compare:
 ;     A - bit 0-1 the direction
 actor_center: lda actor_move,x
 is_center:    ldy #0
-              sty game_tmp2
+              sty r2
               eor #ACT_MOVE_UP_OR_DOWN
               jmp l_test
 
@@ -762,13 +771,13 @@ add_score:    bit game_state+GameState::state
               cmp game_state+GameState::bonus_life+0
               bcc @exit
               jsr system_dip_switches_bonus_life
-              stx game_tmp
+              stx r1
               sed
               clc ; calc next bonus life threshold
               adc game_state+GameState::bonus_life+0
               sta game_state+GameState::bonus_life+0
               lda game_state+GameState::bonus_life+1
-              adc game_tmp
+              adc r1
               sta game_state+GameState::bonus_life+1
               cld
               ldy game_state+GameState::lives
@@ -937,10 +946,10 @@ pacman_input: lda input_direction
               lda input_direction
               asl
               asl
-              sta game_tmp
+              sta r1
               lda actor_move,x
               and #<~ACT_NEXT_DIR
-              ora game_tmp
+              ora r1
               sta actor_move,x
 @exit:        rts
 
@@ -1398,7 +1407,7 @@ update_mode:  lda game_state+GameState::frghtd_timer+0
               lsr
               lsr
 :             and #ACT_DIR
-              sta game_tmp
+              sta r1
 
 @tgt_pinky:   tay
               lda vectors_x,y
@@ -1415,7 +1424,7 @@ update_mode:  lda game_state+GameState::frghtd_timer+0
               and #$1f
               sta ghost_tgt_y+ACTOR_PINKY
 
-@tgt_inky:    ldy game_tmp
+@tgt_inky:    ldy r1
               lda vectors_x,y
               asl
               adc actor_xpos,x
@@ -1778,7 +1787,7 @@ game_init:    jsr sound_play_game_prelude
               sta game_state+GameState::bonus_life+0
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
 
-              lda #1 ; start with level 1
+              lda #2 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2
