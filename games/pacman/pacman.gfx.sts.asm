@@ -777,10 +777,10 @@ shapes:
 ; pacman dying
     .byte $28*4,$27*4,$26*4,$25*4
     .byte $24*4,$23*4,$22*4,$21*4
-    .byte $20*4,$1f*4,$1e*4,$1d*4 ; empty sprite
+    .byte $20*4,$1f*4,$1e*4,$1d*4 ; empty sprite ($3f)
 ; ghosts bonus pts $40
     .byte $29*4,$2a*4,$2b*4,$2c*4
-; pacman intermission $44
+; pacman interlude $44
     .byte $2d*4,$2e*4,$2f*4,$30*4
     .byte $2d*4,$2e*4,$2f*4,$30*4
     .byte $2d*4,$2e*4,$2f*4,$30*4

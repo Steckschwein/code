@@ -76,7 +76,7 @@ FN_STATE_PACMAN_DYING  = $0e
 FN_STATE_LEVEL_CLEARED = $10
 FN_STATE_GAME_OVER     = $12
 FN_STATE_GHOST_CATCHED = $14
-FN_STATE_INTERMISSION  = $16
+FN_STATE_INTERLUDE  = $16
 FN_STATE_DEMO_INIT     = $18
 FN_STATE_DEMO_PLAYING  = $1a
 FN_STATE_INTRO         = $1c
@@ -110,7 +110,7 @@ Shape_Offset_Bonus    = $40
 
 Shape_Ix_Pacman       = 2
 Shape_Ix_Dying        = $34
-Shape_Ix_Invisible    = $3f
+Shape_Ix_Invisible    = $3f ; empty sprite
 
 ; Every time Pac-Man eats a regular dot, he stops moving for one frame (1/60th of a second), slowing his progress by roughly ten percent—just enough for a following ghost to overtake him.
 ; Eating an energizer dot causes Pac-Man to stop moving for three frames.

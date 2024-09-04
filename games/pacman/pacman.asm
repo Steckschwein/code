@@ -144,7 +144,7 @@ main:
               bne :+
               lda #2
               sta game_state+GameState::level
-              lda #FN_STATE_INTERMISSION
+              lda #FN_STATE_INTERLUDE
               jmp @set_state
 :             cmp #'m'
               bne :+

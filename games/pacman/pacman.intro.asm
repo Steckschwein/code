@@ -74,8 +74,8 @@ intro:        lda #STATE_INTRO
               sta game_state+GameState::state_frames
 @exit:        rts
 
-intro_select_player:
 
+intro_select_player:
 display_credit:
               jsr system_dip_switches_coinage
               bne :+
@@ -170,9 +170,7 @@ intro_init_script:
               sta ghost_cnt
               rts
 
-intro_ghosts: jsr pacman_move
-
-              lda #INTRO_TUNNEL_X ; animate energizer
+intro_ghosts: lda #INTRO_TUNNEL_X ; animate energizer
               sta sys_crs_x
               ldy #23
               sty sys_crs_y
@@ -190,10 +188,20 @@ intro_ghosts: jsr pacman_move
               lda #INTRO_TUNNEL_X*8+4 ; center +4px
               sta actor_sp_x,x
 
-@move:        ldx ghost_cnt
-              bmi @exit
+@move:        jsr pacman_move
+              ldx ghost_cnt
+              bmi animate_energizer
               jsr actors_move
-@exit:        jmp animate_energizer
+
+animate_energizer:
+              lda game_state+GameState::frames
+              and #$0f
+              bne @exit
+              lda text_color
+              eor #Color_Food
+              sta text_color
+              draw_text _superfood
+@exit:        rts
 
 intro_ghost_catched:
               lda game_state+GameState::state_frames
@@ -213,15 +221,6 @@ intro_ghost_catched:
               jmp system_set_state_fn
 @demo:        lda #FN_STATE_DEMO_INIT
               jmp system_set_state_fn
-animate_energizer:
-              lda game_state+GameState::frames
-              and #$0f
-              bne @exit
-              lda text_color
-              eor #Color_Food
-              sta text_color
-              draw_text _superfood
-@exit:        rts
 
 
 .data

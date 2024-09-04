@@ -32,10 +32,11 @@ NOTE_G    =$202
 NOTE_Gis  =$220
 NOTE_A    =$241
 NOTE_Ais  =$263
-NOTE_B    =$287
+NOTE_B    =$287 ; (H)
 NOTE_C    =$2AE
 
 ; frame count (note length)
+; punctuation, use multiplier
 L2    =32
 L4    =16
 L8    =8
@@ -109,13 +110,18 @@ SOUND_GHOST_FRIGHTENED  = 1<<6        ; channel 7
 SOUND_PACMAN_DYING      = 1<<7
 
 sound_play_eat_dot:
-              lda #SOUND_PACMAN
-sound_play:   ora sound_play_state
-              sta sound_play_state
-              rts
-sound_play_game_prelude:
 .ifdef __DEVMODE
               rts
+.endif
+              lda #SOUND_PACMAN
+sound_play:   bit game_state+GameState::state ; intro?
+              bmi @exit
+ora sound_play_state
+              sta sound_play_state
+@exit:        rts
+sound_play_game_prelude:
+.ifdef __DEVMODE
+;              rts
 .endif
               lda #SOUND_GAME_PRELUDE
               bne sound_play
@@ -138,16 +144,14 @@ sound_play_pacman_dying:
               lda #SOUND_PACMAN_DYING
               bne sound_play
 
-sound_update: bit game_state+GameState::state
-              bmi @exit
-              ldx #0  ; start with channel 0
+sound_update: ldx #0  ; start with channel 1 (bit 0)
               lda sound_play_state
+:             lsr
               sta r1
-:             lsr r1
               bcc :+
               jsr sound_play_chn
 :             inx
-              cpx #channels
+              lda r1
               bne :--
 @exit:        rts
 
@@ -242,18 +246,18 @@ sound_init:   jsr sound_off
               ;channel 3 - pacman dots
               ;modulator op1
               opl_reg $22,  1
-              opl_reg $42,  (SCALE_0 | ($3f-48)) ; key scale / level
+              opl_reg $42,  (SCALE_0 | ($3f-46)) ; key scale / level
               opl_reg $62,  (15<<4 | (1 & $0f))  ; AD
               opl_reg $82,  (10<<4 | (0 & $0f))  ; SR
               opl_reg $e2,  WS_PULSE_SIN ; wave select
               ;carrier op2
               opl_reg $25,  1
-              opl_reg $45,  (SCALE_0 | ($3f-59))
+              opl_reg $45,  (SCALE_0 | ($3f-46))
               opl_reg $65,  (13<<4 | (2 & $0f))  ; attack / decay
               opl_reg $85,  (8<<4 | (12 & $0f))  ; sustain / release
               opl_reg $e5,  WS_HALF_SIN
 
-              ;channel 4 - fruits
+              ;channel 4 - fruits/bonus
               ;modulator op1
               opl_reg $28,  1
               opl_reg $48,  (SCALE_1_5 | ($3f-58)) ; key scale / level
@@ -270,13 +274,13 @@ sound_init:   jsr sound_off
               ;channel 5 - alarm
               ;modulator op1
               opl_reg $29,  1
-              opl_reg $49,  (SCALE_0 | ($3f-38)) ; key scale / level
+              opl_reg $49,  (SCALE_0 | ($3f-42)) ; key scale / level
               opl_reg $69,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $89,  (10<<4 | (3 & $0f))  ; SR
+              opl_reg $89,  (12<<4 | (14 & $0f))  ; SR
               opl_reg $e9,  WS_SIN ; wave select
               ;carrier op2
               opl_reg $2c,  1
-              opl_reg $4c,  (SCALE_0 | ($3f-39))
+              opl_reg $4c,  (SCALE_0 | ($3f-42))
               opl_reg $6c,  (13<<4 | (2 & $0f))  ; attack / decay
               opl_reg $8c,  (8<<4 | (13 & $0f))  ; sustain / release
               opl_reg $ec,  WS_SIN
@@ -306,22 +310,24 @@ sound_init:   jsr sound_off
               opl_reg $33,  1
               opl_reg $53,  (SCALE_0 | ($3f-59))
               opl_reg $73,  (13<<4 | (2 & $0f))  ; attack / decay
-              opl_reg $93,  (8<<4 | (15 & $0f))  ; sustain / release
+              opl_reg $93,  (10<<4 | (14 & $0f))  ; sustain / release
               opl_reg $f3,  WS_PULSE_SIN
 
               ;channel 8 - pacman dying
               ;modulator op1
               opl_reg $31,  1
-              opl_reg $51,  (SCALE_3 | (1)) ; key scale / level
-              opl_reg $71,  (10<<4 | (1 & $0f))  ; AD
-              opl_reg $91,  (15<<4 | (15 & $0f))  ; SR
-              opl_reg $f1,  WS_HALF_SIN ; wave select
+              opl_reg $51,  (SCALE_0 | (0)) ; key scale / level
+              opl_reg $71,  (15<<4 | (15 & $0f))  ; AD
+              opl_reg $91,  (1<<4 | (15 & $0f))  ; SR
+              opl_reg $f1,  WS_SIN ; wave select
               ;carrier op2
-              opl_reg $34,  1
-              opl_reg $54,  (SCALE_0 | (1))
-              opl_reg $74,  (10<<4 | (1 & $0f))  ; attack / decay
-              opl_reg $94,  (15<<4 | (13 & $0f))  ; sustain / release
+              opl_reg $34,  1 | 1<<6  ; vibrato on
+              opl_reg $54,  (SCALE_0 | (0))
+              opl_reg $74,  (15<<4 | (1 & $0f))  ; attack / decay
+              opl_reg $94,  (15<<4  | (15 & $0f))  ; sustain / release
               opl_reg $f4,  WS_HALF_SIN
+              ; vibrato on, 14ct
+              opl_reg $bd, 1<<6
 
 channels=8
               ldy #channels*3-1
@@ -354,8 +360,16 @@ sound_reset:  jmp opl2_init
 
 
 channel_init:
-    init_channel game_start_sound1, game_start_sound1_end
-    init_channel game_start_sound2, game_start_sound2_end
+    init_channel game_interlude_sound, game_interlude_sound_end
+    init_channel game_interlude_sound_bass, game_interlude_sound_bass_end
+    init_channel game_interlude_sound, game_interlude_sound_end
+    init_channel game_interlude_sound, game_interlude_sound_end
+    init_channel game_interlude_sound, game_interlude_sound_end
+    init_channel game_interlude_sound, game_interlude_sound_end
+    init_channel game_interlude_sound, game_interlude_sound_end
+    init_channel game_interlude_sound, game_interlude_sound_end
+    ;init_channel game_start_sound1, game_start_sound1_end
+    ;init_channel game_start_sound2, game_start_sound2_end
     init_channel game_sfx_pacman, game_sfx_pacman_end
     init_channel game_sfx_eat_fruit,game_sfx_eat_fruit_end
     init_channel game_sfx_ghost_alarm, game_sfx_ghost_alarm_end
@@ -427,7 +441,107 @@ game_sfx_pacman:
               soundEnd
 game_sfx_pacman_end:
 
-; game start sound
+; game start sound - https://musescore.com/user/26532651/scores/4753776
+game_interlude_sound:
+    ; 1 takt
+    note NOTE_F, 5, L4
+    note NOTE_F, 5, L4
+    note NOTE_F, 5, L4
+    note NOTE_D, 5, L8
+    note NOTE_C, 5, L8
+    ; 2 takt
+    note NOTE_F, 5, L8
+    note NOTE_F, 5, L4
+    note NOTE_A, 5, L2
+    note NOTE_A, 5, L8
+    ; 3 takt
+    note NOTE_F, 5, L4
+    note NOTE_F, 5, L4
+    note NOTE_F, 5, L4
+    note NOTE_D, 5, L8
+    note NOTE_C, 5, L8
+    ; 4 takt
+    note NOTE_F, 5, L8
+    note NOTE_F, 5, L4
+    note NOTE_D, 5, L2
+    note NOTE_D, 5, L8
+    ; 5 takt
+    note NOTE_F, 5, L4
+    note NOTE_F, 5, L4
+    note NOTE_F, 5, L4
+    note NOTE_D, 5, L8
+    note NOTE_C, 5, L8
+    ; 6 takt
+    note NOTE_F, 5, L8
+    note NOTE_F, 5, L4
+    note NOTE_Gis, 5, L4
+    note NOTE_Ais, 5, L4
+    note NOTE_B, 5, L8
+    ; 7 takt
+    note NOTE_B, 5, L8
+    note NOTE_Ais, 5, L4
+    note NOTE_Gis, 5, L4
+    note NOTE_F, 5, L4
+    note NOTE_Gis, 5, L8
+    ; 8 Takt
+    note NOTE_Gis, 5, (3*L8)
+    note NOTE_Gis, 5, L8
+    note NOTE_F, 5, L2
+    soundEnd
+game_interlude_sound_end:
+
+game_interlude_sound_bass:
+    ; 1 Takt
+    note NOTE_F, 2, 3*L8
+    note NOTE_F, 2, L8
+    note NOTE_F, 2, 3*L8
+    note NOTE_F, 2, L8
+    ; 2 Takt
+    note NOTE_F, 2, 3*L8
+    note NOTE_F, 2, L8
+    note NOTE_A, 2, L8
+    note NOTE_Ais, 2, L8
+    note NOTE_B, 2, L8
+    note NOTE_C, 3, L8
+    ; 3 Takt
+    note NOTE_F, 2, 3*L8
+    note NOTE_F, 2, L8
+    note NOTE_F, 2, 3*L8
+    note NOTE_F, 2, L8
+    ; 4 Takt
+    note NOTE_F, 2, 3*L8
+    note NOTE_F, 2, L8
+    note NOTE_A, 2, L8
+    note NOTE_Ais, 2, L8
+    note NOTE_B, 2, L8
+    note NOTE_C, 3, L8
+    ; 5 Takt
+    note NOTE_F, 2, 3*L8
+    note NOTE_F, 2, L8
+    note NOTE_F, 2, 3*L8
+    note NOTE_F, 2, L8
+    ; 6 Takt
+    note NOTE_F, 2, 3*L8
+    note NOTE_F, 2, L8
+    note NOTE_A, 2, L8
+    note NOTE_Ais, 2, L8
+    note NOTE_B, 2, L8
+    note NOTE_C, 3, L8
+    ; 7 Takt
+    note NOTE_F, 3, L4
+    note NOTE_C, 3, L8
+    note NOTE_Ais, 2, L8
+    note NOTE_Gis, 2, L4
+    note NOTE_F, 2, L4
+    ; 8 Takt
+    note NOTE_Dis, 2, L4
+    note NOTE_E, 2, L4
+    note NOTE_F, 2, L4
+    pause L4
+    soundEnd
+game_interlude_sound_bass_end:
+
+
 game_start_sound1: ; piano
     ;1 takt
     note NOTE_C, 4, L8

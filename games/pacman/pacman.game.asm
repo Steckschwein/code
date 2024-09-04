@@ -12,7 +12,7 @@
 .export game_pacman_dying
 .export game_level_cleared
 .export game_game_over
-.export game_intermission
+.export game_interlude
 .export game_state_delay
 
 .ifdef __DEVMODE
@@ -97,8 +97,7 @@ game_init_actors:
               rts
 
 
-game_ready:
-              jsr game_init_actors
+game_ready:   jsr game_init_actors
 
               lda #0
               sta game_state+GameState::dot_cnt           ; reset global dot counter
@@ -148,6 +147,9 @@ game_ready_wait:
               jsr delete_message_2
 
               lda #FN_STATE_PLAYING
+              .ifdef __INTERLUDE
+              lda #FN_STATE_INTERLUDE
+              .endif
               jmp system_set_state_fn
 @detect_joystick:
               jmp io_detect_joystick
@@ -204,8 +206,8 @@ game_game_over:
               jmp system_set_state_fn
 @exit:        rts
 
-game_intermission:
-              ldy #3  ; select intermission for level - lvl 2 (im1), lvl 5 (im2), lvl 9,13,17 (im3)
+game_interlude:
+              ldy #3  ; select interlude for level - lvl 2 (im1), lvl 5 (im2), lvl 9,13,17 (im3)
               lda game_state+GameState::level
               cmp #2
               beq @im_2
@@ -216,7 +218,11 @@ game_intermission:
               cmp #13
               beq @im
               cmp #17
-              bne @next
+              beq @im
+@next:        inc game_state+GameState::level ; next level
+              lda #FN_STATE_LEVEL_INIT
+              jmp system_set_state_fn
+
 @im_2:        dey
 @im_1:        dey
 @im:
@@ -227,22 +233,20 @@ game_intermission:
               jsr gfx_blank_screen
               lda game_state+GameState::level
               jsr gfx_bonus_stack
-              draw_text @intermission, Color_Text
+              draw_text @interlude, Color_Text
               lda r1
               jsr out_digit
-
               rts
+
 :             cmp #$ff
-              bne @exit
-@next:        inc game_state+GameState::level ; next level
-              lda #FN_STATE_LEVEL_INIT
-              jmp system_set_state_fn
+              beq @next
 @exit:        rts
-@intermission:
-              .byte 10,22,"TODO INTERMISSION ", 0
-game_intermission_1:
-game_intermission_2:
-game_intermission_3:
+
+@interlude:
+              .byte 10,19,"TODO INTERLUDE ", 0
+game_interlude_1:
+game_interlude_2:
+game_interlude_3:
 
 actors_move:  jsr ghost_move
               ldy #ACTOR_PACMAN
@@ -425,8 +429,7 @@ short_dist:
 
               lda #ACT_UP
               sta r1
-@check:
-              lda r1
+@check:       lda r1
               cmp r2 ; discard reverse direction
               beq @next
               tay
@@ -1694,7 +1697,7 @@ game_level_cleared:
               and #$03
               tay
               jmp gfx_rotate_pal
-@next_state:  lda #FN_STATE_INTERMISSION
+@next_state:  lda #FN_STATE_INTERLUDE
               jmp system_set_state_fn
 
 
