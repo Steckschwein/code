@@ -59,12 +59,12 @@ vdp_init_bytes_gfx7_end:
 ;@desc: blank gfx mode 7 with
 ;@in: Y - color to fill in GRB (3+3+2)
 vdp_mode7_blank:
-  lda #<@cmd_hmmv_data
-  ldx #>@cmd_hmmv_data
-  jmp vdp_cmd_hmmv
+              lda #<@cmd_hmmv_data
+              ldx #>@cmd_hmmv_data
+              jmp vdp_cmd_hmmv
 
 @cmd_hmmv_data:
-  .word 0 ;x #36/#37
-  .word (ADDRESS_GFX7_SCREEN>>8) ;y - from page offset
-  .word 256 ; len x #40/#41
-  .word 212 ; len y #42/#43
+              .word 0 ;x #36/#37
+              .word (ADDRESS_GFX7_SCREEN>>8) ;y - from page offset
+              .word 256 ; len x #40/#41
+              .word 212 ; len y #42/#43

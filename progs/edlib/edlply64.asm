@@ -29,7 +29,7 @@ main:
 		jsr jch_fm_init
 		;        jsr krn_primm
 		;       .byte "edlib player v0.2 (somewhat optimized) by mr.mouse/xentax july 2017@",$0a,0
-		; jsr printMetaData        
+		; jsr printMetaData
 		;copypointer IRQVec, safe_isr
 
 		;        lda #01
@@ -55,7 +55,7 @@ main:
 		sta CIA1_ICR
 		sta CIA2_ICR
 
-		;70Hz => 1Mhz 1000000 / 70         
+		;70Hz => 1Mhz 1000000 / 70
 		lda #<(1000000 / 50)
 		sta CIA1_TA
 		lda #>(1000000 / 50)
@@ -99,12 +99,12 @@ player_isr:
 		bit CIA1_ICR
 		;jmp $ea31
 		;jmp $febc
-		pla 
+		pla
 		tay
 		pla
 		tax
 		pla
-		player_isr_rti:        
+		player_isr_rti:
 		rti
 
 
@@ -118,7 +118,7 @@ player_isr:
 		ldx #5
 		lop:    dex
 		nop
-		bne lop                 			;// wait 36 cycles to do the next write        
+		bne lop                 			;// wait 36 cycles to do the next write
 		rts
 
 
@@ -135,7 +135,7 @@ player_isr:
 
 		printString:
 		ldx #$20
-		:       
+		:
 		txa
 		pha
 		tya
@@ -146,9 +146,9 @@ player_isr:
 		tay
 		pla
 		tax
-		iny 
+		iny
 		dex
-		bne :- 
+		bne :-
 		rts
 
 		isD00File:
@@ -156,7 +156,7 @@ player_isr:
 :		lda d00file, y
 		cmp d00header,y
 		bne :+
-		iny 
+		iny
 		cpy #6
 		bne :-
 :		rts

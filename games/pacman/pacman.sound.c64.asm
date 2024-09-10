@@ -1,13 +1,20 @@
-		.p02
-		.include "pacman.c64.inc"
+.p02
+.include "pacman.c64.inc"
 
-		.export sound_init
-		.export sound_init_game_start
-		.export sound_play
+.export sound_init
+.export sound_reset
+.export sound_off
+.export sound_update
+.export sound_play_game_prelude
+.export sound_play_game_interlude
+.export sound_play_eat_dot
+.export sound_play_eat_fruit
+.export sound_play_ghost_catched
+.export sound_play_ghost_alarm
+.export sound_play_ghost_frightened
+.export sound_play_pacman_dying
 
-		.import game_state
-
-.code
+.autoimport
 
 .struct voice
 	 reg		 .byte	; channel reg F low
@@ -17,12 +24,28 @@
 	 length	 .byte	; snd length
 .endstruct
 
+.code
+
+sound_off:
+sound_reset:
+sound_update:
+sound_play_pacman_dying:
+sound_play_eat_dot:
+sound_play_eat_fruit:
+sound_play_game_prelude:
+sound_play_game_interlude:
+sound_play_ghost_catched:
+sound_play_ghost_alarm:
+sound_play_ghost_frightened:
+              rts
+
+
 L2		  	=32
 L4		  	=16
 L8		  	=8
-L16		=4
-L32		=2
-L64		=1
+L16		    =4
+L32		    =2
+L64		    =1
 
 BASEFREQ=440
 PAL_PHI = 985248
@@ -99,6 +122,11 @@ sound_init:
 		rts
 
 sound_init_game_start:
+.ifdef __NO_SOUND
+    rts
+.endif
+
+
 		;lda #(15<<4 | (1 & $0f))	; AD
 		lda #$22;#97
 		sta SID_AD1
