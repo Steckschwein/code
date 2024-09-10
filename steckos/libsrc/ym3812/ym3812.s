@@ -36,51 +36,51 @@
 ;----------------------------------------------------------------------------------------------
 .code
 opl2_init:
-		php
-		sei
+    php
+    sei
 
-		lda #0
-		tax
-@l:		jsr _opl2_reg_write
-		inx
-		bne @l
+    lda #0
+    tax
+@l:    jsr _opl2_reg_write
+    inx
+    bne @l
 
-		ldx #opl2_reg_ctrl
-		lda #$60	; disable timer 1 & 2 IRQ
-		jsr _opl2_reg_write
+    ldx #opl2_reg_ctrl
+    lda #$60  ; disable timer 1 & 2 IRQ
+    jsr _opl2_reg_write
 
-		lda #$80	; reset irq
-		jsr _opl2_reg_write
+    lda #$80  ; reset irq
+    jsr _opl2_reg_write
 
-		ldx #opl2_reg_test
-		lda #(1<<5) 	; enable WS
-		jsr _opl2_reg_write
+    ldx #opl2_reg_test
+    lda #(1<<5)   ; enable WS
+    jsr _opl2_reg_write
 
-		plp
-		rts
+    plp
+    rts
 
 opl2_reg_write:
-		php
-		sei
+    php
+    sei
     jsr _opl2_reg_write
-		plp
-		rts
+    plp
+    rts
 
-;	in:
-;		 .X - opl2 register select
-;		 .A - opl2 data
+;  in:
+;     .X - opl2 register select
+;     .A - opl2 data
 _opl2_reg_write:
-		stx opl_sel
-		jsr opl2_delay_register
-		sta opl_data
+    stx opl_sel
+    jsr opl2_delay_register
+    sta opl_data
 opl2_delay_data:
 .repeat opl2_delay_data_cnt
-		nop
+    nop
 .endrepeat
 opl2_delay_register:
 .if(opl2_delay_register_cnt>0)
-	.repeat opl2_delay_register_cnt
-		nop
-	.endrepeat
+  .repeat opl2_delay_register_cnt
+    nop
+  .endrepeat
 .endif
-		rts
+    rts
