@@ -5,7 +5,7 @@ DEBUG+=-D__NO_BOOT
 #DEBUG+=-D__NO_INTRO
 #DEBUG+=-D__INTERLUDE
 DEBUG+=-D__ASSERTIONS
-DEBUG+=-D__DEVMODE
+#DEBUG+=-D__DEVMODE
 
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
 CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include
@@ -21,7 +21,7 @@ OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.v99x8.o pacman.sound.ym3812.o
 LIBS_STS=$(LIBS) ../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a
 LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map -Ln pacman.lbl --dbgfile pacman.dbg
 
-CA65FLAGS_JC=$(DEBUG)
+CA65FLAGS_JC=$(DEBUG) -D__NO_SOUND
 OBJS_JC=$(OBJS) pacman.io.jc.o pacman.gfx.v99x8.o pacman.nosound.o
 LIBS_JC=$(LIBS) ../../steckos/lib/steckschwein.a
 LDFLAGS_JC=-C jc.ld65.cfg -m pacmanjc.map -Ln pacmanjc.lbl --dbgfile pacmanjc.dbg

@@ -400,30 +400,6 @@
 : plp
 .endmacro
 
-.macro assertA_le value
-  php
-  cmp #value+1
-  bcc :+
-  stp
-: plp
-.endmacro
-
-.macro assertX_le
-  php
-  cpx #value+1
-  bcc :+
-  stp
-: plp
-.endmacro
-
-.macro assertY_le
-  php
-  cpy #value+1
-  bcc :+
-  stp
-: plp
-.endmacro
-
 .macro crlf
   lda #CODE_LF		;\n already does the carriage return
   jsr char_out
