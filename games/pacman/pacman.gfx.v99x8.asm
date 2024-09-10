@@ -1,4 +1,4 @@
-.include "pacman.sts.inc"
+.include "pacman.v99x8.inc"
 
 .export gfx_init
 .export gfx_mode_on
@@ -36,33 +36,33 @@
 .code
 
 gfx_mode_off:
-    php
-    sei
-    vdp_sreg 0, v_reg15
-    vdp_wait_s
-    lda a_vreg
-    plp
-    rts
+              php
+              sei
+              vdp_sreg 0, v_reg15
+              vdp_wait_s
+              lda io_port_vdp_reg
+              plp
+              rts
 
-gfx_mode_on:
-    sei
-    lda #<vdp_init_bytes
-    ldy #>vdp_init_bytes
-    ldx #(vdp_init_bytes_end-vdp_init_bytes-1)
-    jsr vdp_init_reg
-    ;vdp_sreg $0, v_reg18  ;x/y screen adjust
-    vdp_sreg 253, v_reg23  ;y offset
-
-    vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
 scln_top=254
 scln_bottom=221
 line=192
-    lda #line
-    sta scanline
-    ldy #v_reg19
-    jsr vdp_set_reg
-    cli
-    rts
+gfx_mode_on:
+              sei
+              lda #<vdp_init_bytes
+              ldy #>vdp_init_bytes
+              ldx #(vdp_init_bytes_end-vdp_init_bytes-1)
+              jsr vdp_init_reg
+              ;vdp_sreg $0, v_reg18  ;x/y screen adjust
+              vdp_sreg 253, v_reg23  ;y offset
+
+              vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
+              lda #line
+              sta scanline
+              ldy #v_reg19
+              jsr vdp_set_reg
+              cli
+              rts
 
 gfx_pacman_colors_offset:
 .byte VDP_Color_Blue<<1, VDP_Color_Light_Blue<<1, VDP_Color_Gray<<1, VDP_Color_Light_Blue<<1
@@ -74,13 +74,13 @@ gfx_rotate_pal:
 gfx_write_pal:
               vdp_wait_s
               lda pacman_palette+0, x
-              sta a_vregpal
+              sta io_port_vdp_pal
               vdp_wait_s
               lda pacman_palette+1, x
-              sta a_vregpal
+              sta io_port_vdp_pal
               rts
 
-gfx_isr:      lda a_vreg ; vdp h blank irq ?
+gfx_isr:      lda io_port_vdp_reg ; vdp h blank irq ?
               ror
               bcc @is_vblank
               ; remove border https://www.msx.org/forum/msx-talk/development/removing-border-bitmap-modes?page=0
@@ -95,23 +95,37 @@ gfx_isr:      lda a_vreg ; vdp h blank irq ?
               beq @border_bottom
               lda #v_reg9_ln
 :             ora vdp_reg9_init ; reset mode to init value (192 lines)
-              sta a_vreg
+              sta io_port_vdp_reg
               lda scanline
               cmp #212
               bne :+
               lda #scln_bottom
-              bra :++
-:             eor #(212-line)  ; 212/192 $d4/$c0
-:             ldy #v_reg9
-              sty a_vreg
+              bra @set_reg
+:
+.ifdef __GFX_DEBUG
+              bit game_state+GameState::debug
+              bvc :+
+              lda #212
+:
+.endif
+              eor #(212-line)  ; 212/192 $d4/$c0
+@set_reg:     ldy #v_reg9
+              sty io_port_vdp_reg
 
 @set_scln:    sta scanline
 
 .ifdef __GFX_DEBUG
+              bit game_state+GameState::debug
+              bpl :+
               lda #Color_Cyan
               jsr vdp_bgcolor
+              nop
+              nop
+              nop
+              nop
               lda #Color_Bg
               jsr vdp_bgcolor
+:
 .endif
               ldx #$40
               lda scanline
@@ -140,7 +154,7 @@ gfx_isr:      lda a_vreg ; vdp h blank irq ?
 @is_vblank:   ldx #0
               vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
               vdp_wait_s
-              bit a_vreg ; Check VDP interrupt. IRQ is acknowledged by reading.
+              bit io_port_vdp_reg ; Check VDP interrupt. IRQ is acknowledged by reading.
              	bpl @is_vblank_end  ; VDP IRQ flag set?
               bgcolor Color_Yellow
               ldx #$40
@@ -202,8 +216,7 @@ gfx_sprites_off:
               rts
 
 ; timing critical update, change video regs
-gfx_update:
-              bgcolor Color_Cyan
+gfx_update:   bgcolor Color_Cyan
 
               vdp_vram_w VRAM_SPRITE_ATTR
               lda #<sprite_tab_attr
@@ -212,7 +225,7 @@ gfx_update:
               jsr vdp_memcpys
 
               vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
-              ldy #ACTOR_BLINKY
+              ldy #ACTOR_BLINKY             ; color all ghost sprites (4 x 2) - each sprite line
 :             lda sprite_color_1,y
               ldx #16
               jsr vdp_fills
@@ -239,7 +252,7 @@ gfx_prepare_update:
               and #$10
               beq :+
               lda #6
-:             sta r2
+:             sta r2    ; frightened color mask
 
 @update:      ldy #0
               ldx #ACTOR_BLINKY
@@ -335,7 +348,7 @@ _gfx_update_sprite_tab:
 
 gfx_display_maze:
               sei
-              ldx #3
+              ldx #4
               ldy #0
               sty sys_crs_x
               sty sys_crs_y
@@ -346,15 +359,10 @@ gfx_display_maze:
               inc p_gfx+1
               dex
               bne @loop
-:             jsr @put_char
-              iny
-    ;        cpy #$c0
-              bne :-
               cli
               rts
 
-@put_char:
-              lda (p_gfx),y
+@put_char:    lda (p_gfx),y
               pha
               cmp #Char_Dot
               beq @food
@@ -375,7 +383,6 @@ gfx_display_maze:
 @color:
               sta text_color
               pla
-;        ora #Char_Maze_Mask
               jsr gfx_charout
               inc sys_crs_x
               lda sys_crs_x
@@ -432,11 +439,11 @@ gfx_vram_h:   sta p_vram+1
               rol               ; Bit 14
               and #$03
               ora #<.HIWORD(VRAM_SCREEN<<2)
-              sta a_vreg
+              sta io_port_vdp_reg
               sta p_vram+2      ; A16-A14 bank select via reg#14
               lda #v_reg14
               vdp_wait_s 6
-              sta a_vreg
+              sta io_port_vdp_reg
 
               lda p_vram
               vdp_wait_s 4
@@ -450,13 +457,13 @@ gfx_vram_inc_y:
               inc p_vram+1
 
 gfx_vram_addr:
-              sta a_vreg
+              sta io_port_vdp_reg
               lda p_vram+1
               and #$3f
               sta p_vram+1      ; A13-A8 vram address highbyte
               ora #(WRITE_ADDRESS | (>.LOWORD(VRAM_SCREEN) & $3f))
               vdp_wait_s 10
-              sta a_vreg
+              sta io_port_vdp_reg
               rts
 
 
@@ -538,7 +545,7 @@ gfx_4bpp_xy:  sei
               ldy #$0c  ; height
 @erase:       ldx #$07  ; width 7x2px
 @erase_cols:  vdp_wait_l 7
-              stz a_vram
+              stz io_port_vdp_ram
               dex
               bne @erase_cols
               jsr gfx_vram_inc_y
@@ -570,7 +577,7 @@ gfx_4bpp_y:
               beq :+    ; same...
               ora r6
 :             vdp_wait_l 22
-              sta a_vram
+              sta io_port_vdp_ram
               iny
               dex
               bne @cols
@@ -656,7 +663,7 @@ gfx_charout:
               tax
               lda r1
               and mask_4bpp,x
-              sta a_vram
+              sta io_port_vdp_ram
 ;              vdp_wait_l 32
               pla
               dey
@@ -714,6 +721,7 @@ vdp_reg1_init:
     .byte >(VRAM_SPRITE_PATTERN>>3)       ; R#6 - sprite pattern table
     .byte Color_Bg
     .byte v_reg8_VR | v_reg8_SPD ; R#8 - VR - 64k VRAM
+.export vdp_reg9_init
 vdp_reg9_init:
     .byte 0 ; v_reg9_ln ; R#9 - 212lines
     .byte 0 ; n.a.

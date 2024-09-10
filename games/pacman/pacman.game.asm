@@ -236,6 +236,7 @@ game_interlude:
               draw_text @interlude, Color_Text
               lda r1
               jsr out_digit
+              jsr sound_play_game_interlude
               rts
 
 :             cmp #$ff
@@ -1581,7 +1582,6 @@ animate_bonus:
 
 
 draw_frame:   jsr gfx_sprites_off
-              ldx #3                ; init maze
               ldy #0
 :             lda maze+$000,y
               sta game_maze+$000,y
@@ -1589,13 +1589,13 @@ draw_frame:   jsr gfx_sprites_off
               sta game_maze+$100,y
               lda maze+$200,y
               sta game_maze+$200,y
-              lda maze+$280,y
-              sta game_maze+$280,y
+              lda maze+$2a0,y
+              sta game_maze+$2a0,y
               iny
               bne :-
               ldy #4*32-1
               lda #Char_Blank
-:             sta game_maze+$380,y
+:             sta game_maze+$3a0,y
               dey
               bpl :-
 
@@ -1790,7 +1790,7 @@ game_init:    jsr sound_play_game_prelude
               sta game_state+GameState::bonus_life+0
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
 
-              lda #2 ; start with level 1
+              lda #1 ; start with level 1
               sta game_state+GameState::level
 
               ldy #2

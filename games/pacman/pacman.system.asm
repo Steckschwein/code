@@ -22,15 +22,15 @@
 .autoimport
 
 .zeropage
-    sys_crs_x:  .res 1
-    sys_crs_y:  .res 1
+              sys_crs_x:  .res 1
+              sys_crs_y:  .res 1
 
 .code
 
 sys_isr:      push_axy
 
-              jsr gfx_isr ; v-blank?
-              bpl @io_isr
+              jsr gfx_isr
+              bpl @io_isr ; v-blank?
 
               bgcolor Color_Yellow
 

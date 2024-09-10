@@ -4,7 +4,7 @@
 .byte $c7,$da,$cc,$e2,$e6,$e4,$cc,$e2,$e4,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$e2,$e4,$cc,$e3,$e5,$cc,$e2,$e4,$cc,$db
 .byte $c7,$da,$cc,$dc,$c7,$e1,$cc,$dc,$e1,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$dc,$e1,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$db
 .byte $c7,$da,$cc,$dc,$c7,$e1,$cc,$dc,$e1,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$dc,$ee,$e6,$e6,$e4,$cc,$dc,$e1,$cc,$db ; 4
-.byte $c7,$da,$cc,$e3,$e7,$e5,$cc,$e3,$e5,$cc,$e3,$d2,$d2,$d2,$e5,$20,$e3,$d2,$d2,$d2,$e5,$cc,$e3,$e7,$e7,$e7,$e5,$cc,$dc,$e1,$cc,$db
+.byte $c7,$da,$cc,$e3,$e7,$e5,$cc,$e3,$e5,$cc,$e3,$d2,$d2,$d2,$e5,$20,$e3,$d2,$d2,$d2,$e5,$cc,$e3,$e7,$e7,$e7,$e5,$cc,$dc,$e1,$cc,$db ; 5
 .byte $c7,$da,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$db
 .byte $c7,$da,$cc,$e2,$e6,$e4,$cc,$e2,$e6,$e6,$e6,$e6,$e6,$e6,$e4,$20,$e2,$e6,$e6,$e6,$e4,$cc,$e2,$e4,$cc,$e2,$e6,$e6,$f0,$e1,$cc,$db
 .byte $c7,$da,$cc,$dc,$c7,$e1,$cc,$e3,$e7,$e7,$f1,$ef,$e7,$e7,$e5,$20,$e3,$e7,$e7,$e7,$e5,$cc,$dc,$e1,$cc,$e3,$e7,$e7,$f1,$e1,$cc,$db ; 8
@@ -14,7 +14,7 @@
 .byte 'H',$da,$cc,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$20,$20,$20,$ec,$20,$20,$20,$da,$20,$dc,$e1,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$cc,$cc,$cc,$db ; c
 .byte $c7,$f2,$e6,$e6,$e6,$e4,$cc,$dc,$ee,$e6,$e6,$e4,$20,$cf,$20,$20,$20,$da,$20,$dc,$ee,$e6,$e6,$e4,$20,$dc,$ee,$e6,$e6,$e4,$cc,$db ; d
 .byte $c7,$f3,$e7,$e7,$e7,$e5,$cc,$dc,$ef,$e7,$e7,$e5,$20,$cf,$20,$20,$20,$da,$20,$dc,$ef,$e7,$e7,$e5,$20,$dc,$ef,$e7,$e7,$e5,$cc,$db
-.byte $c7,$da,$cc,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$20,$20,$20,$ed,$20,$20,$20,$da,$20,$dc,$e1,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$cc,$cc,$cc,$db
+.byte $c7,$da,$cc,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$20,$20,$20,$ed,$20,$20,$20,$da,$20,$dc,$e1,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$cc,$cc,$cc,$db ; f
 .byte $c7,$da,$cc,$e2,$e6,$e4,$cc,$dc,$e1,$cc,$e2,$e4,$20,$db,$20,$20,$20,$da,$20,$dc,$e1,$cc,$e2,$e4,$cc,$dc,$e1,$cc,$e2,$e4,$cc,$db ; 10
 .byte $c7,$da,$cc,$dc,$c7,$e1,$cc,$e3,$e5,$cc,$dc,$e1,$20,$e9,$d2,$d2,$d2,$eb,$20,$e3,$e5,$cc,$dc,$e1,$cc,$e3,$e5,$cc,$dc,$e1,$cc,$db
 .byte $c7,$da,$cc,$dc,$c7,$e1,$cc,$cc,$cc,$cc,$dc,$e1,$20,$20,$20,$20,$20,$20,$20,$20,$20,$cc,$dc,$e1,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$db ; 12

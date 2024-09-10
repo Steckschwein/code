@@ -1,8 +1,8 @@
 #DEBUG=-D__DEBUG
-#DEBUG=-D__GFX_DEBUG
-#DEBUG+=-D__NO_SOUND
+DEBUG=-D__GFX_DEBUG
+DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
-DEBUG+=-D__NO_INTRO
+#DEBUG+=-D__NO_INTRO
 #DEBUG+=-D__INTERLUDE
 DEBUG+=-D__ASSERTIONS
 DEBUG+=-D__DEVMODE
@@ -16,10 +16,15 @@ CA65FLAGS=-I $(CC65_HOME)/asminc $(DEBUG)
 LDFLAGS=-m pacman.map $(LIBS)
 OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.game.o pacman.system.o
 
-CA65FLAGS_STS=-D__STECKSCHWEIN__ -I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel $(DEBUG)
-OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.sts.o pacman.sound.sts.o
+CA65FLAGS_STS=-I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel $(DEBUG)
+OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.v99x8.o pacman.sound.ym3812.o
 LIBS_STS=$(LIBS) ../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a
 LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map -Ln pacman.lbl --dbgfile pacman.dbg
+
+CA65FLAGS_JC=$(DEBUG)
+OBJS_JC=$(OBJS) pacman.io.jc.o pacman.gfx.v99x8.o pacman.nosound.o
+LIBS_JC=$(LIBS) ../../steckos/lib/steckschwein.a
+LDFLAGS_JC=-C jc.ld65.cfg -m pacmanjc.map -Ln pacmanjc.lbl --dbgfile pacmanjc.dbg
 
 CA65FLAGS_C64=-t c64 -I $(CC65_HOME)/asminc $(DEBUG)
 OBJS_C64=$(OBJS) pacman.io.c64.o pacman.gfx.c64.o pacman.sound.c64.o
@@ -48,7 +53,7 @@ RESOURCES_4BPP := $(patsubst %.4bpp.xpm,%.4bpp.res,$(foreach dir,.,$(wildcard ./
 
 .PHONY: all clean
 
-all: pacman.prg pacman64.prg
+all: pacman.prg pacman64.prg pacmanjc.com
 
 clean:
 	rm -f *.bin *.prg *.dis *.s *.o *.res *.map *.lbl
@@ -67,15 +72,24 @@ clean:
 	python3 ../utils/xpm_ca65_4bpp.py $< > $@
 
 
-pacman.gfx.sts.o: $(RESOURCES) $(RESOURCES_4BPP)
-pacman.gfx.c64.o: $(RESOURCES_C64)
+pacman.gfx.v99x8.o: $(RESOURCES) $(RESOURCES_4BPP)
+pacman.gfx.c64.o: 	$(RESOURCES_C64)
 
-pacman.game.o: pacman.maze.inc
+pacman.game.o: pacman.maze.inc pacman.inc
 
 %.o: %.asm pacman.inc
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
+%.jc.o: %.jc.asm pacman.inc pacman.jc.inc
+	ca65 $(CA65FLAGS_JC) $(@:.o=.asm)
+
 %.sts.o: %.sts.asm ../../steckos/asminc/*.inc pacman.inc pacman.sts.inc
+	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
+
+%.v99x8.o: %.v99x8.asm pacman.inc pacman.v99x8.inc
+	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
+
+%.ym3812.o: %.ym3812.asm pacman.inc
 	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
 
 %.c64.o: %.c64.asm pacman.inc pacman.c64.inc
@@ -98,11 +112,11 @@ test.%: test.%.bin
 pacman.prg: $(OBJS_STS) $(LIBS_STS)
 	ld65 -o $@ $(LDFLAGS_STS) $(OBJS_STS) $(LIBS_STS)
 
-#pacman: pacman.prg
-#	steckschwein-emu -rom ../../steckos/kernel/kernel.bin,0xe800 -upload $<
-
 pacman64.prg: $(OBJS_C64) $(LIBS_C64)
 	ld65 -o $@ $(LDFLAGS_C64) $(OBJS_C64) $(LIBS_C64)
+
+pacmanjc.com: $(OBJS_JC) $(LIBS_JC)
+	ld65 -o $@ $(LDFLAGS_JC) $(OBJS_JC) $(LIBS_JC)
 
 pacman64: pacman64.prg
 	x64 -device8 1 -VICIIdscan -VICIIdsize -autostartprgmode 1 $(ARGS) $<

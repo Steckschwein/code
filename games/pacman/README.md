@@ -1,6 +1,8 @@
 
 TODO:
-  - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3)
+  - fix
+  - fix ghost eyes (dead) tunnel delay
+  - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3) - snd player
   - system changes modes one or more times when a ghost is inside the base, that ghost will move to the right instead of the left upon leaving the house.
   - compensate pacman direction and 1px offset
   - toggle to enable/disable original bugs

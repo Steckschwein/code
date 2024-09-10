@@ -24,7 +24,6 @@ io_init:
 
               ldy #0
 :             lda @not_ntsc,y
-              cmp #0
               beq @exit
               jsr CHROUT
               iny

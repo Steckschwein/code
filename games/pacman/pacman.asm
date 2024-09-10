@@ -77,7 +77,6 @@ main:
               sta game_state+GameState::state
               jsr gfx_pause
               jmp @main_loop
-              ; debug keys
 :             cmp #'c'
               bne :+
               jsr system_credit_inc
@@ -101,8 +100,8 @@ main:
               jmp @set_state
 :             cmp #'r'  ; reset
               beq @init_state
-.ifdef __DEVMODE
-              cmp #'d'  ; dying
+.ifdef __DEVMODE  ; debug keys
+:             cmp #'d'  ; dying
               bne :+
               lda #FN_STATE_PACMAN_DYING
               bne @set_state
@@ -158,7 +157,18 @@ main:
               lda #4
               sta ghost_speed_offs,x
               lda game_state+GameState::frames
-              ;jsr vdp_bgcolor
+              jmp @main_loop
+:             cmp #'n'
+              bne :+
+              lda #1<<6
+;              eor vdp_reg9_init
+ ;             sta vdp_reg9_init
+              bne @debug
+:             cmp #'v'
+              bne :+
+              lda #1<<7
+@debug:       eor game_state+GameState::debug
+              sta game_state+GameState::debug
               jmp @main_loop
 :             cmp #'1'
               bcc :+

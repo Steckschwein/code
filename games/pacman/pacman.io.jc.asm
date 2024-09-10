@@ -20,9 +20,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE
 
-; Steckschwein i/o related stuff
+; JuniorComputer i/o related stuff
 
-.include "pacman.sts.inc"
+.include "pacman.jc.inc"
 
 .export io_init
 .export io_detect_joystick
@@ -33,46 +33,34 @@
 .export io_isr
 .export io_irq_on
 
-.export io_port_vdp_reg
-.export io_port_vdp_ram
-.export io_port_vdp_pal
-
-.export io_port_snd_reg
-.export io_port_snd_dat
-
+.export io_port_vdp_reg:absolute
+.export io_port_vdp_ram:absolute
+.export io_port_vdp_pal:absolute
 
 .autoimport
 
-appstart $1000
-
 .code
 
-io_port_vdp_reg=a_vreg
-io_port_vdp_pal=a_vregpal
-io_port_vdp_ram=a_vram
+io_port_vdp_reg=$0 ; TODO
+io_port_vdp_pal=$0 ; TODO
+io_port_vdp_ram=$0 ; TODO
 
-io_port_snd_reg=opl_stat
-io_port_snd_dat=opl_data
 
-io_init:      jsr joystick_on
-              clc
+io_init:      clc
               rts
 
-io_isr:       jmp fetchkey
+io_isr:       rts   ; TODO fetch/get key from keyboard if necessary, oth
 
 io_irq_on:    rts
 
 io_detect_joystick:
-              jsr joystick_detect
-              beq @exit
-              sta joystick_port
 @exit:        rts
 
 io_joystick_read:
-              lda joystick_port
-              jmp joystick_read
+              rts
 
-io_getkey=getkey
+io_getkey:    lda #0  ; get key from keyboard
+              rts
 
 ; A=key and C=1 key input given, C=0 no input
 io_player_direction:
@@ -93,19 +81,16 @@ io_player_direction:
               rts
 @d:           lda #ACT_DOWN
               rts
-@joystick:    jsr io_joystick_read
-              and #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
-              cmp #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
-              beq @exit ; nothing pressed
-              sec
-              bit #JOY_RIGHT
-              beq @r
-              bit #JOY_LEFT
-              beq @l
-              bit #JOY_DOWN
-              beq @d
-              bit #JOY_UP
-              beq @u
+@joystick:    ;jsr io_joystick_read
+;              sec
+;              bit #JOY_RIGHT
+ ;             beq @r
+  ;            bit #JOY_LEFT
+   ;           beq @l
+    ;          bit #JOY_DOWN
+     ;         beq @d
+      ;        bit #JOY_UP
+       ;       beq @u
 @exit:        clc
               rts
 
@@ -118,7 +103,4 @@ io_highscore_load:
               sta game_state+GameState::highscore+3
               rts
 
-io_exit:      jmp (retvec)
-
-.data
-    joystick_port:  .res 1, JOY_PORT1 ; TODO auto detect
+io_exit:      rts ; quite, return to shell/prompt
