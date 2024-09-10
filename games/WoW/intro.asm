@@ -13,6 +13,7 @@ intro_main:
 
         lda #<INTROGFX
         ldx #>INTROGFX
+        ldy #1
         jsr ppm_load_image
         bcs error
         jsr  gfxui_blend_on

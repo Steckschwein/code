@@ -95,7 +95,7 @@ vdp_text_on:
 
 vdp_text_init_bytes:
   .byte 0 ; R#0
-  .byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_m1  ; #R01
+  .byte v_reg1_16k|v_reg1_display_on|v_reg1_int|v_reg1_spr_size|v_reg1_m1  ; #R01
   .byte >(ADDRESS_TEXT_SCREEN>>2) ; name table - value * $1000 (v9958)    #R02
   .byte >(ADDRESS_TEXT_COLOR<<2) | $07  ; color table - value * $1000 (v9958)
   .byte >(ADDRESS_TEXT_PATTERN>>3) ; pattern table (charset) - value * $800    --> offset in VRAM
