@@ -1,0 +1,8 @@
+.setcpu "65c02"
+.include "pacman.inc"
+
+
+KEY_CRSR_RIGHT=0 ; TODO
+KEY_CRSR_LEFT=0 ; TODO
+KEY_CRSR_DOWN=0 ; TODO
+KEY_CRSR_UP=0 ; TODO

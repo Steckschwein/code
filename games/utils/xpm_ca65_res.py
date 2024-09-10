@@ -16,7 +16,6 @@ def spritelines(lines):
 def main():
   parser = argparse.ArgumentParser(description='xpm to ca65 compatible include file')
   parser.add_argument('filename', help="file to transform")
-  parser.add_argument('--mode', default="msx", help="output mode (default msx)", choices = ['msx','c64'])
   args = parser.parse_args()
   try:
     with open(args.filename, newline='\n') as xpm_file:
@@ -31,13 +30,17 @@ def main():
   if len(xpmLines) < 3:
     sys.exit(1)
 
-  colors=int(xpmLines[2].split(" ")[2])
-  offset = colors+3
-  args.mode
-  bits = 16
-  #args.bits;
-#  print("%s" % bits)
+  cols = xpmLines[2].split(" ")
 
+  w = int(cols[0])
+  h = int(cols[1])
+  colors=int(cols[2]) # determine color count
+
+  offset = 3+colors
+
+  bits = 8
+
+#  print("%s" % bits)
 #  print ("%s %s" % (colors, offset))
 
   _2ndcol_arr=[]

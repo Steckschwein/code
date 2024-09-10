@@ -31,7 +31,7 @@
 ;@name: vdp_mode7_set_pixel
 ;@desc: VRAM ADDRESS = .X + 256*.Y
 ;@in: X - x coordinate [0..ff]
-;@in: Y - y coordinate [0..bf]
+;@in: Y - y coordinate [0..d3]
 ;@in. A - color [0..ff] as GRB 332 (green bit 7-5, red bit 4-2, blue bit 1-0)
 vdp_mode7_set_pixel:
       php
@@ -55,7 +55,7 @@ vdp_mode7_set_pixel:
       vdp_wait_s 2
       sta a_vreg
       pla
-      vdp_wait_l 3
+      vdp_wait_l 4
       sta a_vram            ; set color
       plp
       rts

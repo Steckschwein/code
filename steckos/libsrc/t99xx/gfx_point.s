@@ -25,16 +25,12 @@
 .include "vdp.inc"
 .include "gfx.inc"
 
-.import vdp_wait_cmd
-.import _gfx_prepare_x_y
-
-.importzp __volatile_ptr
-.importzp __volatile_tmp
+.autoimport
 
 .export gfx_point
 
 ;@name: gfx_point
-;@desc: read pixel value
+;@desc: read pixel value at requested position
 ;@in: A/Y - pointer to plot_t struct
 ;@out: Y - color of pixel at given plot_t
 gfx_point:

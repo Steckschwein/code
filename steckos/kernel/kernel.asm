@@ -61,7 +61,7 @@ kern_init:
     jsr read_nvram
     jsr uart_init
 
-    sta __volatile_ptr  
+    sta __volatile_ptr
     sty __volatile_ptr+1
     ldy #nvram::textui_color
     lda (__volatile_ptr),y
