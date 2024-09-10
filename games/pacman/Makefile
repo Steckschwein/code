@@ -56,7 +56,7 @@ RESOURCES_4BPP := $(patsubst %.4bpp.xpm,%.4bpp.res,$(foreach dir,.,$(wildcard ./
 all: pacman.prg pacman64.prg pacmanjc.com
 
 clean:
-	rm -f *.bin *.prg *.dis *.s *.o *.res *.map *.lbl
+	rm -f *.bin *.prg *.com *.dis *.s *.o *.res *.map *.lbl
 
 #%.res: %.spm
 %.res: %.raw
