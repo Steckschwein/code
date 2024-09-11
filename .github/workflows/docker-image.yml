@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     container:
       # image: ghcr.io/steckschwein/buildenv:main - https://github.com/orgs/community/discussions/37158
-      image: steckschwein/buildenv:2_19-alpine-nouser
+      image: steckschwein/buildenv:cc65_2_20-snapshot
 
     steps:
     - name: checkout
       uses: actions/checkout@v3
     - name: build
-      run: export CC65_HOME=/cc65/ && make
+      run:  make
     - name: test
-      run: export CC65_HOME=/cc65/ && make test
+      run:  make test

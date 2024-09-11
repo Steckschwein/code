@@ -3,7 +3,6 @@
 
 .export io_init
 .export io_detect_joystick
-.export io_joystick_read
 .export io_player_direction
 .export io_getkey
 .export io_isr

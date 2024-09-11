@@ -26,38 +26,32 @@
 
 .export io_init
 .export io_detect_joystick
-.export io_joystick_read
 .export io_exit
 .export io_getkey
 .export io_player_direction
 .export io_isr
 .export io_irq_on
 
-.export io_port_vdp_reg:absolute
 .export io_port_vdp_ram:absolute
+.export io_port_vdp_reg:absolute
 .export io_port_vdp_pal:absolute
 
 .autoimport
 
 .code
 
-io_port_vdp_reg=$0 ; TODO
-io_port_vdp_pal=$0 ; TODO
-io_port_vdp_ram=$0 ; TODO
-
+io_port_vdp_ram=VPU_PORT0
+io_port_vdp_reg=VPU_PORT1
+io_port_vdp_pal=VPU_PORT2
 
 io_init:      clc
               rts
 
-io_isr:       rts   ; TODO fetch/get key from keyboard if necessary, oth
-
-io_irq_on:    rts
+io_irq_on:
+io_isr:       rts   ; TODO fetch/get key from keyboard if necessary
 
 io_detect_joystick:
-@exit:        rts
 
-io_joystick_read:
-              rts
 
 io_getkey:    lda #0  ; get key from keyboard
               rts
@@ -81,7 +75,8 @@ io_player_direction:
               rts
 @d:           lda #ACT_DOWN
               rts
-@joystick:    ;jsr io_joystick_read
+@joystick:    jsr READ_JOYSTICK
+              bcc @exit
 ;              sec
 ;              bit #JOY_RIGHT
  ;             beq @r
@@ -91,8 +86,7 @@ io_player_direction:
      ;         beq @d
       ;        bit #JOY_UP
        ;       beq @u
-@exit:        clc
-              rts
+@exit:        rts
 
 .export io_highscore_load
 io_highscore_load:
@@ -103,4 +97,4 @@ io_highscore_load:
               sta game_state+GameState::highscore+3
               rts
 
-io_exit:      rts ; quite, return to shell/prompt
+io_exit:      rts ; quit, return to shell/prompt

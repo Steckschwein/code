@@ -26,7 +26,6 @@
 
 .export io_init
 .export io_detect_joystick
-.export io_joystick_read
 .export io_exit
 .export io_getkey
 .export io_player_direction
@@ -68,10 +67,6 @@ io_detect_joystick:
               sta joystick_port
 @exit:        rts
 
-io_joystick_read:
-              lda joystick_port
-              jmp joystick_read
-
 io_getkey=getkey
 
 ; A=key and C=1 key input given, C=0 no input
@@ -93,7 +88,8 @@ io_player_direction:
               rts
 @d:           lda #ACT_DOWN
               rts
-@joystick:    jsr io_joystick_read
+@joystick:    lda joystick_port
+              jsr joystick_read
               and #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
               cmp #(JOY_RIGHT | JOY_LEFT | JOY_DOWN | JOY_UP)
               beq @exit ; nothing pressed

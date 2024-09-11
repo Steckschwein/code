@@ -1,5 +1,5 @@
-#DEBUG=-D__DEBUG
-DEBUG=-D__GFX_DEBUG
+#DEBUG+=-D__DEBUG
+#DEBUG+=-D__GFX_DEBUG
 DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 #DEBUG+=-D__NO_INTRO
@@ -11,7 +11,7 @@ CLIB=../../steckos/clib/lib/steckschwein-clib.a
 CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include
 
 LIBS=
-CA65FLAGS=-I $(CC65_HOME)/asminc $(DEBUG)
+#CA65FLAGS=-I $(CC65_HOME)/asminc $(DEBUG)
 
 LDFLAGS=-m pacman.map $(LIBS)
 OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.game.o pacman.system.o
@@ -28,9 +28,8 @@ LDFLAGS_JC=-C jc.ld65.cfg -m pacmanjc.map -Ln pacmanjc.lbl --dbgfile pacmanjc.db
 
 CA65FLAGS_C64=-t c64 -I $(CC65_HOME)/asminc $(DEBUG)
 OBJS_C64=$(OBJS) pacman.io.c64.o pacman.gfx.c64.o pacman.sound.c64.o
-LIBS_C64=$(CC65_HOME)/lib/c64.lib
 #LDFLAGS_C64=-C c64-asm.cfg -m pacman64.map
-LDFLAGS_C64=-t c64 -m pacman64.map
+LDFLAGS_C64=-t c64 -m pacman64.map --lib c64.lib
 
 TEST_LIBS := ../../asmunit/asmunit.a
 TEST_LDFLAGS=-C ../../asmunit/asmunit.cfg $(TEST_LIBS)
@@ -97,17 +96,13 @@ pacman.game.o: pacman.maze.inc pacman.inc
 
 pacman.tiles.bin: pacman.tiles.inc
 	ca65 pacman.tiles.inc
-	ld65 pacman.tiles.o -t none -o $@
+	ld65 pacman.tiles.o -o $@
 
 test.%.bin: test.%.o $(TEST_LIBS)
 	ld65 $(TEST_LDFLAGS) $< $(TEST_LIBS) -o $@
 
 test.%: test.%.bin
 	ASMUNIT_VERBOSE=true TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $< 0x1000
-
-#%.o: %.c
-#	cc65 -t none $(CC65FLAGS) -O $<
-#	ca65 $(CA65FLAGS) $(@:.o=.s)
 
 pacman.prg: $(OBJS_STS) $(LIBS_STS)
 	ld65 -o $@ $(LDFLAGS_STS) $(OBJS_STS) $(LIBS_STS)

@@ -31,7 +31,7 @@ clean:
 
 
  %.o: %.c
-	cc65 $(CC65FLAGS) -t none -O $<
+	cc65 $(CC65FLAGS) -O $<
 	ca65 $(CA65FLAGS) $(@:.o=.s)
 
 %.o: %.asm

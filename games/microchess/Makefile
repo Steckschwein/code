@@ -9,7 +9,7 @@ clean:
 	rm -f *.prg *.o
 
 %.o: %.asm
-	ca65 -t none --cpu 65c02 $(INCLUDES) --feature labels_without_colons $(@:.o=.asm)
+	ca65 --cpu 65c02 $(INCLUDES) --feature labels_without_colons $(@:.o=.asm)
 
 %.prg: %.o
 	ld65 $(LDFLAGS) $< $(LIBS) -o $@

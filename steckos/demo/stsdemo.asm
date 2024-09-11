@@ -539,10 +539,21 @@ script:
 .endif
 .ifndef DEBUG
   .byte SCRIPT_TEXT_COLOR, Gray<<4|Transparent
-  .byte SCRIPT_TEXT, "  STECKSCHWEIN  ", SCRIPT_PAUSE, _3s
-  .byte SCRIPT_TEXT, "... OH, NICE    ", SCRIPT_PAUSE, _2s
-  .byte SCRIPT_TEXT, "A 2X2 CHAR FONT ", SCRIPT_PAUSE, _2s
-  .byte SCRIPT_TEXT, "BORING...       ", SCRIPT_PAUSE, _2s
+  .byte SCRIPT_TEXT, "  STECKSCHWEIN  ", SCRIPT_PAUSE, _2s
+  .byte SCRIPT_TEXT, "... OH, NICE    ", SCRIPT_PAUSE, _1s
+.ifdef BIRTHDAY
+  .byte SCRIPT_SCROLL, 2, "             HEY, IT'S       2024      ", SCRIPT_PAUSE, _3s
+  .byte SCRIPT_SCROLL, 2, "TIME TO CELEBRATE, 10 YEARS       STECKSCHWEIN  ", SCRIPT_PAUSE, _2s
+  .byte SCRIPT_RBAR_MOVE, SCRIPT_TEXT_COLOR, Black<<4|Transparent
+  .byte SCRIPT_SCROLL, 2, "HAPPY BIRTHDAY!                   ", SCRIPT_PAUSE, _2s
+  .byte SCRIPT_TEXT_COLOR, Transparent<<4|Black
+  .byte SCRIPT_SCROLL_SINE, 2, "               "
+  .byte "HAPPY BIRTHDAY STECKSCHWEIN      "
+;  .byte "TO YOU VISITOR, JUST TAKE A BREAK AN PICK ONE OF THIS TASTY MUFINS OR A PIECE OF CHOKOLATE CAKE IN FRONT OF ME ;)"
+  .byte "TO YOU VISITORS     ... ENJOY AND HAVE A GOOD TIME!        "
+.else
+  .byte SCRIPT_TEXT, "A 2X2 CHAR FONT ", SCRIPT_PAUSE, _1s
+  .byte SCRIPT_TEXT, "BORING...       ", SCRIPT_PAUSE, _1s
   .byte SCRIPT_SOUND_ON
   .byte SCRIPT_TEXT, "LET'S SCROLL IT!", SCRIPT_PAUSE, _1s, SCRIPT_SCROLL, 1, " "
   .byte "        NICE... BUT YOU MAY RECOGNIZE A LITTLE FLICKER AT THE LEFT BORDER. LOOKS A LITTLE ODD! "
@@ -572,13 +583,19 @@ script:
   .byte "AVAILABLE IN THE V9938 ALREADY.                "
   .byte "        ", SCRIPT_SCROLL_SINE
   .byte "SEEMS TO WORK...", SCRIPT_SCROLL, 1, "        ", SCRIPT_SCROLL, 2, "        "
-.endif
   .byte "SO FAR.                 ", SCRIPT_SCROLL_SINE, SCRIPT_SCROLL, 1, "+!+BYE+!+"
   .byte SCRIPT_SCROLL, 2, "  ", SCRIPT_SCROLL, 4, "                ", SCRIPT_SCROLL, 1, "TO BE CONTINUED...                "
+.endif
+
+.endif
+  .byte SCRIPT_SCROLL_SINE
   .byte SCRIPT_SOUND_FADE_OFF
   .byte $1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f
   .byte SCRIPT_PAUSE, _3s, SCRIPT_RBAR_OFF
-  .byte SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_RESET
+  ;.byte SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s
+  ;.byte SCRIPT_PAUSE, _5s, SCRIPT_PAUSE, _5s
+  .byte SCRIPT_PAUSE, _5s
+  .byte SCRIPT_RESET
 
 vdp_init_bytes:  ; vdp init table - MODE G3
       .byte v_reg0_m4 | v_reg0_IE1

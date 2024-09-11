@@ -42,7 +42,7 @@
 /*                                   Code                                    */
 /*****************************************************************************/
 
-void fat_name(register DIR* d, char* t){
+void fat_name(register DIR* d, unsigned char* t){
 
     unsigned char i, j = 0;
     unsigned char c;
