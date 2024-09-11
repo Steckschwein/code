@@ -36,25 +36,29 @@ io_init:
 @exit:        rts
 
 io_irq_on:
-        lda #LORAM | IOEN ;disable kernel rom to setup irq vector
-        sta $01           ;PLA
+              lda #LORAM | IOEN ;disable kernel rom to setup irq vector
+              sta $01           ;PLA
 
-        lda #%01111111  ; disable interrupts from CIA1
-        sta CIA1_ICR
+              lda #%01111111  ; disable interrupts from CIA1
+              sta CIA1_ICR
 
-        and VIC_CTRL1  ; clear bit 7 (high byte raster line)
-        sta VIC_CTRL1  ; $d011
+              and VIC_CTRL1  ; clear bit 7 (high byte raster line)
+              sta VIC_CTRL1  ; $d011
 
-        lda #HLine_Border
-        sta VIC_HLINE  ; Raster-IRQ at bottom border ($d012)
+              lda #HLine_Border
+              sta VIC_HLINE  ; Raster-IRQ at bottom border ($d012)
 
-        lda #%00000001
-        sta VIC_IMR      ; enable raster irq
+              lda #%00000001
+              sta VIC_IMR      ; enable raster irq
 
-        lda CIA1_ICR
-        lda CIA2_ICR
+              lda CIA1_ICR
+              lda CIA2_ICR
+
+              setIRQ IRQ_VEC
+              rts
 io_exit:
-        rts
+              restoreIRQ IRQ_VEC
+              rts
 
 io_isr:
         inc VIC_BORDERCOLOR
@@ -122,3 +126,6 @@ Joy_Right:  .byte JOY_RIGHT
 Joy_Left:   .byte JOY_LEFT
 Joy_Down:   .byte JOY_DOWN
 Joy_Up:     .byte JOY_UP
+
+.bss
+  save_irq: .res 2

@@ -5,8 +5,8 @@
 .include "pacman.inc"
 
 boot:
-    .ifdef __NO_BOOT
     rts
+    .ifdef __NO_BOOT
     .endif
 
     draw_text text_1, Color_Gray

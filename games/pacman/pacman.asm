@@ -33,7 +33,6 @@ main:
 
               sei
               jsr io_irq_on
-              setIRQ sys_isr, save_irq
               cli
 
               jsr boot
@@ -190,14 +189,13 @@ main:
               lda #'T'
               jsr sys_charout
               cli
+:
 .endif
-:             jmp @main_loop
+              jmp @main_loop
 
 quit:         sei
               jsr sound_off
               jsr gfx_mode_off
-              restoreIRQ save_irq
-              cli
               jmp io_exit
 .endproc
 
@@ -217,6 +215,5 @@ init_state: ldy #.sizeof(GameState)-1
             rts
 
 .bss
-  save_irq:  .res 2
   game_state:
     .tag GameState

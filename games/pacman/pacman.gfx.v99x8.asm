@@ -100,7 +100,7 @@ gfx_isr:      lda io_port_vdp_reg ; vdp h blank irq ?
               cmp #212
               bne :+
               lda #scln_bottom
-              bra @set_reg
+              bne @set_reg
 :
 .ifdef __GFX_DEBUG
               bit game_state+GameState::debug
@@ -143,13 +143,13 @@ gfx_isr:      lda io_port_vdp_reg ; vdp h blank irq ?
               ldy #v_reg8
               jsr vdp_set_reg
               lda #scln_top
-              bra @set_scln
+              bne @set_scln
 
 @border_top:  lda vdp_reg8  ; enable sprites
               ldy #v_reg8
               jsr vdp_set_reg
               lda #line
-              bra @set_scln
+              bne @set_scln
 
 @is_vblank:   ldx #0
               vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
@@ -198,7 +198,7 @@ gfx_blank_screen:
               ldy #Color_Bg
               jsr vdp_mode4_blank
               plp
-              bra gfx_sprites_off
+              jmp gfx_sprites_off
 gfx_sprites_on:
               lda #0
               beq :+
@@ -305,7 +305,7 @@ _gfx_update_sprite_tab_2x:
               cmp #ACTOR_MODE_FRIGHT
               bne :+
               eor r2  ; end of frightened phase alternate colors
-:             phy
+:             sty r3
               tay
               lda ghost_color,x
               bcc :+  ; < ACTOR_MODE_FRIGHT ?
@@ -313,7 +313,7 @@ _gfx_update_sprite_tab_2x:
 :             sta sprite_color_1,x
               lda sprite_colors_2nd,y
               sta sprite_color_2,x
-              ply
+              ldy r3
 
 _gfx_update_sprite_tab_1x:
               lda #$00
@@ -331,14 +331,14 @@ _gfx_update_sprite_tab:
               sbc #gfx_Sprite_Adjust_X
               sta sprite_tab_attr,y
               iny
-              phy
+              sty r3
               lda actor_shape,x
               cmp #$40
               bcs :+  ; bit 6 - shape offset $40
               ora r1
 :             tay
               lda shapes,y
-              ply
+              ldy r3
               sta sprite_tab_attr,y
               iny
               lda #0
@@ -396,9 +396,9 @@ gfx_bordercolor:
 gfx_bgcolor:
               php
               sei
-              phy
+              sty r1
               jsr vdp_bgcolor
-              ply
+              ldy r1
               plp
               rts
 
@@ -415,7 +415,7 @@ gfx_vram_xy:
 
               tya
               lsr
-              bra gfx_vram_h        ; A13-A8 vram address high byte
+              jmp gfx_vram_h        ; A13-A8 vram address high byte
 
 ; set the vdp vram address upon crs x/y
 ;  in:
@@ -447,7 +447,7 @@ gfx_vram_h:   sta p_vram+1
 
               lda p_vram
               vdp_wait_s 4
-              bra gfx_vram_addr
+              jmp gfx_vram_addr
 
 gfx_vram_inc_y:
               lda p_vram ; vram addr Y +1 row (scanline)
@@ -532,9 +532,11 @@ gfx_bonus:    ; bonus below ghost house
               ldx #$11*8+6
               ldy #$0d*8+2
 gfx_4bpp_xy:  sei
-              stz r5  ; color mask
-              stz r6
-
+              pha
+              lda #0    ; TODO FIXME improve
+              sta r5  ; color mask
+              sta r6
+              pla
               pha
               jsr gfx_vram_xy
               pla
@@ -544,8 +546,9 @@ gfx_4bpp_xy:  sei
 
               ldy #$0c  ; height
 @erase:       ldx #$07  ; width 7x2px
-@erase_cols:  vdp_wait_l 7
-              stz io_port_vdp_ram
+@erase_cols:  vdp_wait_l 9
+              lda #0
+              sta io_port_vdp_ram
               dex
               bne @erase_cols
               jsr gfx_vram_inc_y
@@ -554,8 +557,8 @@ gfx_4bpp_xy:  sei
               cli
               rts
 
-@bonus_4bpp:  dea ; adjust for table lookup
-              tay
+@bonus_4bpp:  tay
+              dey ; adjust for table lookup
               lda #$0c  ; 12px height
 ; in:
 ;   A - height
@@ -570,10 +573,10 @@ gfx_4bpp_y:
               ldy #0
 @rows:        ldx #7    ; 7x2 14px width
 @cols:        lda (p_gfx),y
-              bit #$f0
+              and #$f0
               beq :+    ; background?
               ora r5    ; otherwise mask nybble
-:             bit #$0f
+:             and #$0f
               beq :+    ; same...
               ora r6
 :             vdp_wait_l 22
@@ -585,7 +588,7 @@ gfx_4bpp_y:
               dec r1
               beq @exit
               jsr gfx_vram_inc_y
-              bra @rows
+              jmp @rows
 
 @exit:        bgcolor Color_Bg
               cli
@@ -620,16 +623,20 @@ gfx_ghost_icon:
 
 gfx_charout:
               sei
-              phx
-              phy
+              sta r1
+              pha
+              txa
+              pha
+              tya
               pha
 
               bgcolor Color_Gray
 
               jsr gfx_vram_crs
 
-              pla               ; pointer to charset
-              stz p_tiles+1
+              lda #0
+              sta p_tiles+1
+              lda r1               ; pointer to charset
               asl ; char * 8
               rol p_tiles+1
               asl
@@ -653,7 +660,8 @@ gfx_charout:
 
               lda #8
               sta r2
-@rows:        lda (p_tiles)
+@rows:        ldy #0
+              lda (p_tiles),y
               ldy #3
 @cols:        asl
               rol
@@ -681,12 +689,15 @@ gfx_charout:
               bmi :+
               inc p_vram+1
 :             jsr gfx_vram_addr
-              bra @rows
+              jmp @rows
 @exit:
               bgcolor Color_Bg
 
-              ply
-              plx
+              pla
+              tay
+              pla
+              tax
+              pla
               cli
               rts
 

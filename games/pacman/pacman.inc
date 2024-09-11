@@ -199,13 +199,13 @@ ACT_DIR           = 1<<1|1<<0
 
 SKIP_DIR_CHECK    = $ff
 
-.macro setIRQ irq, irq_save
-      copyPtr IRQ_VEC, irq_save
-      setPtr irq, IRQ_VEC
+.macro setIRQ irq_vec
+      copyPtr irq_vec, save_irq
+      setPtr sys_isr, irq_vec
 .endmacro
 
-.macro restoreIRQ irq_save
-      copyPtr irq_save, IRQ_VEC
+.macro restoreIRQ irq_vec
+      copyPtr save_irq, irq_vec
 .endmacro
 
 .macro setPtr addr, ptr

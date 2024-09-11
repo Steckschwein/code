@@ -2,8 +2,14 @@
 .include "pacman.inc"
 
 
+; Der  Vektor in FFFE/F ruft erst mal im original Junior Monitor einen indirekten Sprung zu IRQVECT = 1A7E/F auf.
+; Da liegt der 1/60 Sekunden Interrupt. Von hier aus wird dann erst IRQUSR aufgerufen. Wenn du es schnell brauchst, dann ersetzt du also IRQVECT.
+; Der original Vektor sollte nach Beendigung von Pacman aber wieder hergestellt werden.
+;
+IRQVECT         = $1a7e
 
 VPU_BASE        =     $08            ; VPU access starts from FGBASE + offset $08
+
 
 ; Video Processing Unit Ports
 

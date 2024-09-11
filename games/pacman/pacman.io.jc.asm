@@ -47,7 +47,7 @@ io_port_vdp_pal=VPU_PORT2
 io_init:      clc
               rts
 
-io_irq_on:
+io_irq_on:    setIRQ IRQVECT
 io_isr:       rts   ; TODO fetch/get key from keyboard if necessary
 
 io_detect_joystick:
@@ -97,4 +97,9 @@ io_highscore_load:
               sta game_state+GameState::highscore+3
               rts
 
-io_exit:      rts ; quit, return to shell/prompt
+io_exit:      restoreIRQ save_irq
+              cli
+              rts ; quit, return to shell/prompt
+
+.bss
+  save_irq:  .res 2

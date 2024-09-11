@@ -4,6 +4,8 @@
 
 .include "assertions.inc"
 
+.setcpu "6502"
+
 VDP_Color_Bg          = $00
 VDP_Color_Red         = $01
 VDP_Color_Pink        = $03
