@@ -24,12 +24,14 @@
   p_vram:   .res 3  ; 24Bit
   p_gfx:    .res 2
   p_tiles:  .res 2
-  r1: .res 1
-  r2: .res 1
-  r3: .res 1
-  r4: .res 1
-  r5: .res 1
-  r6: .res 1
+  r1:       .res 1
+  r2:       .res 1
+  r3:       .res 1
+  r4:       .res 1
+  r5:       .res 1
+  r6:       .res 1
+  r7:       .res 1
+
 
   scanline: .res 1
 
@@ -509,9 +511,9 @@ gfx_bonus_stack:
               sta r3
               lda #7    ; max 7 bonus items visible on stack, we build top down
               sta r4
-@next:        ldy #Bonus_Clear
+@next:        ldy #Bonus_Clear  ; start with "no bonus"
               lda r2
-              cmp r4
+              cmp r4    ; draw bonus, or still clear?
               bcc @bonus
               dec r2    ; level - 1
               jsr bonus_for_level
@@ -533,7 +535,7 @@ gfx_bonus:    ; bonus below ghost house
               ldy #$0d*8+2
 gfx_4bpp_xy:  sei
               pha
-              lda #0    ; TODO FIXME improve
+              lda #0  ; TODO FIXME improve
               sta r5  ; color mask
               sta r6
               pla
@@ -547,7 +549,7 @@ gfx_4bpp_xy:  sei
               ldy #$0c  ; height
 @erase:       ldx #$07  ; width 7x2px
 @erase_cols:  vdp_wait_l 9
-              lda #0
+              lda #Color_Bg
               sta io_port_vdp_ram
               dex
               bne @erase_cols
@@ -566,20 +568,23 @@ gfx_4bpp_xy:  sei
 gfx_4bpp_y:
               sta r1
               lda table_4bpp_l,y
-              sta p_gfx
+              sta p_gfx+0
               lda table_4bpp_h,y
               sta p_gfx+1
 
               ldy #0
-@rows:        ldx #7    ; 7x2 14px width
+@rows:        ldx #7      ; 7x2 14px width
 @cols:        lda (p_gfx),y
               and #$f0
               beq :+    ; background?
               ora r5    ; otherwise mask nybble
-:             and #$0f
+:             sta r7
+              lda (p_gfx),y
+              and #$0f
               beq :+    ; same...
               ora r6
-:             vdp_wait_l 22
+:             ora r7
+              vdp_wait_l 22
               sta io_port_vdp_ram
               iny
               dex
@@ -598,7 +603,7 @@ gfx_4bpp_y:
 gfx_ghost_icon:
               sei
               lda sys_crs_x
-              asl               ; X*4 (2px per byte)
+              asl               ; X*4 (4bpp, 2px per byte)
               asl
               clc
               adc #2            ; adjust 2x2px
@@ -847,8 +852,8 @@ ghost_4bpp:
   .include "ghost.4bpp.res"
 
 .bss
-    sprite_tab_attr:      .res 9*4   ; 9 sprites, 4 byte per entry +1 y of sprite 10
-    sprite_tab_attr_end:  .res 1     ; Y sprite 10, set to "off"
+    sprite_tab_attr:      .res 9*4  ; 9 sprites, 4 byte per entry +1 y of sprite 10
+    sprite_tab_attr_end:  .res 1    ; Y sprite 10, set to "off"
     sprite_color_1:       .res 4
     sprite_color_2:       .res 4
-    vdp_reg8:             .res 1  ; mirror vdp reg 8
+    vdp_reg8:             .res 1    ; mirror vdp reg 8

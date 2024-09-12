@@ -160,8 +160,6 @@ main:
 :             cmp #'n'
               bne :+
               lda #1<<6
-;              eor vdp_reg9_init
- ;             sta vdp_reg9_init
               bne @debug
 :             cmp #'v'
               bne :+

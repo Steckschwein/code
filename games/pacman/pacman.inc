@@ -318,7 +318,7 @@ SKIP_DIR_CHECK    = $ff
   ghsts_to_catch    .byte   ; ghosts to catch during a frightened phase, starts with 3
   ghst_catched      .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
 
-.ifdef __GFX_DEBUG
+.ifdef __DEVMODE
   debug             .byte   ; debug flag/toggle bits for demo purpose
 .endif
 
