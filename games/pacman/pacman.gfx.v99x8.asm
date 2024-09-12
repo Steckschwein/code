@@ -104,7 +104,7 @@ gfx_isr:      lda io_port_vdp_reg ; vdp h blank irq ?
               lda #scln_bottom
               bne @set_reg
 :
-.ifdef __GFX_DEBUG
+.ifdef __DEVMODE
               bit game_state+GameState::debug
               bvc :+
               lda #212
@@ -116,7 +116,7 @@ gfx_isr:      lda io_port_vdp_reg ; vdp h blank irq ?
 
 @set_scln:    sta scanline
 
-.ifdef __GFX_DEBUG
+.ifdef __DEVMODE
               bit game_state+GameState::debug
               bpl :+
               lda #Color_Cyan
@@ -533,14 +533,14 @@ gfx_bonus_stack:
 gfx_bonus:    ; bonus below ghost house
               ldx #$11*8+6
               ldy #$0d*8+2
+
 gfx_4bpp_xy:  sei
-              pha
-              lda #0  ; TODO FIXME improve
-              sta r5  ; color mask
-              sta r6
-              pla
+
               pha
               jsr gfx_vram_xy
+              lda #Color_Bg
+              sta r5  ; reset color mask
+              sta r6
               pla
 
               cmp #Bonus_Clear  ; clear?
@@ -626,6 +626,7 @@ gfx_ghost_icon:
               ldy #Index_4bpp_ghost
               jmp gfx_4bpp_y
 
+; A: char to output
 gfx_charout:
               sei
               sta r1
@@ -641,7 +642,7 @@ gfx_charout:
 
               lda #0
               sta p_tiles+1
-              lda r1               ; pointer to charset
+              lda r1            ; pointer to charset
               asl ; char * 8
               rol p_tiles+1
               asl
@@ -656,6 +657,7 @@ gfx_charout:
               sta p_tiles+1
 
               lda text_color
+              and #$0f
               asl
               asl
               asl
