@@ -35,12 +35,11 @@ IRQ_IO1       = 1<<1  ; i/o port 1 (card slot 1)
 IRQ_IO0       = 1<<0  ; i/o port 0 (card slot 0)
 
 ;...
+clockspeed    = 1  ; in Mhz
 
-clockspeed  = 8  ; in Mhz
+stack         = $0100
 
-stack = $0100
-
-ctrl_port   = $0230
+ctrl_port     = $0230
 slot0_ctrl = ctrl_port+0
 slot1_ctrl = ctrl_port+1
 slot2_ctrl = ctrl_port+2

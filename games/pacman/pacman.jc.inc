@@ -8,6 +8,8 @@
 ;
 IRQVECT         = $1a7e
 
+TAPE_OFF        = $ef7c
+
 VPU_BASE        = $0c08            ; VPU access starts from FGBASE + offset $08
 
 

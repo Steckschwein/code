@@ -1,11 +1,11 @@
 #DEBUG+=-D__DEBUG
-#DEBUG+=-D__GFX_DEBUG
-DEBUG+=-D__NO_SOUND
-#DEBUG+=-D__NO_BOOT
-#DEBUG+=-D__NO_INTRO
+DEBUG+=-D__GFX_DEBUG
+#DEBUG+=-D__NO_SOUND
+DEBUG+=-D__NO_BOOT
+DEBUG+=-D__NO_INTRO
 #DEBUG+=-D__INTERLUDE
 DEBUG+=-D__ASSERTIONS
-#DEBUG+=-D__DEVMODE
+DEBUG+=-D__DEVMODE
 
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
 CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include
@@ -130,7 +130,7 @@ pacman64.dis: pacman64.prg
 	../../xmodem.sh $<
 
 %.emu: %.bin
-	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -quality linear -upload $<,0x3000
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -quality linear -upload $<,0x3000
 
 %.emu: %.prg
-	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -quality linear -upload $<
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -quality linear -upload $<

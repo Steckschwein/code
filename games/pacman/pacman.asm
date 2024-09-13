@@ -203,7 +203,10 @@ init_state: ldy #.sizeof(GameState)-1
 :           sta game_state,y
             dey
             bpl :-
-
+.ifdef __DEVMODE
+            lda #$80
+            sta game_state+GameState::debug
+.endif
             jsr io_highscore_load
 
             lda #DIP_COINAGE_1 | DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES  ; 1 coin/1 credit, bonus life at 10.000pts

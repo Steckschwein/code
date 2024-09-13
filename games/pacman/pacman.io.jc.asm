@@ -47,7 +47,8 @@ io_port_vdp_pal=VPU_PORT2
 io_init:      clc
               rts
 
-io_irq_on:    setIRQ IRQVECT
+io_irq_on:    jsr TAPE_OFF
+              setIRQ IRQVECT
 io_isr:       rts   ; TODO fetch/get key from keyboard if necessary
 
 io_detect_joystick:
