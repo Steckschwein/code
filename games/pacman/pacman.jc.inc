@@ -8,7 +8,7 @@
 ;
 IRQVECT         = $1a7e
 
-VPU_BASE        =     $08            ; VPU access starts from FGBASE + offset $08
+VPU_BASE        = $0c08            ; VPU access starts from FGBASE + offset $08
 
 
 ; Video Processing Unit Ports
@@ -28,7 +28,6 @@ VPU_PORT3       =     VPU_BASE+3
 ; ******************************************************************************
 
 READ_JOYSTICK	=	$E1B9
-
 
 KEY_CRSR_RIGHT=0 ; TODO
 KEY_CRSR_LEFT=0 ; TODO

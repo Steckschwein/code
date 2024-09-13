@@ -1,5 +1,5 @@
 #DEBUG+=-D__DEBUG
-DEBUG+=-D__GFX_DEBUG
+#DEBUG+=-D__GFX_DEBUG
 DEBUG+=-D__NO_SOUND
 #DEBUG+=-D__NO_BOOT
 #DEBUG+=-D__NO_INTRO
@@ -116,6 +116,9 @@ pacmanjc.bin: $(OBJS_JC) $(LIBS_JC)
 pacman64: pacman64.prg
 	x64 -device8 1 -VICIIdscan -VICIIdsize -autostartprgmode 1 $(ARGS) $<
 #-fullscreen
+
+pacmanjc.dis: pacmanjc.bin
+	dcc6502 -o 0x3000 -d -n -c $< > $@
 
 pacman.dis: pacman.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
