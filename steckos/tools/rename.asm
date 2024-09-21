@@ -24,7 +24,7 @@
 .include "fat32.inc"
 .include "fcntl.inc"
 
-filename_length = .sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext) 
+filename_length = .sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)
 
 
 .export char_out=krn_chrout
@@ -78,30 +78,30 @@ next:
 
 
 rename:
+    cpy #0  ; no input
+    beq error
+
     lda #<filename
     ldx #>filename
     ldy #O_WRONLY
     jsr krn_open
     bcs error
-    
-    phx 
+
     lda #<dirent
     ldy #>dirent
     jsr krn_read_direntry
-    bcs error
+    bcs wrerror
 
     ldy #filename_length -1
   :
     lda new_filename,y
     sta dirent,y
-    dey 
+    dey
     bpl :-
 
 
   ; after <space> there comes the destination filename
   ; copy and normalize it FAT dir entry style
-
-    plx 
 
     lda #<dirent
     ldy #>dirent
@@ -109,6 +109,7 @@ rename:
 
     bcs wrerror
 
+close:
     jsr krn_close
     jmp (retvec)
 
@@ -117,12 +118,14 @@ error:
     .asciiz "open error"
     jmp (retvec)
 wrerror:
+    phx
     jsr hexout
     jsr primm
-    .asciiz " write error"
-    jmp (retvec)
+    .asciiz " i/o error"
+    plx
+    bra close
 
 .bss
-filename:	    .res filename_length
-new_filename:	.res filename_length
+filename:     .res filename_length
+new_filename: .res filename_length
 dirent:       .res .sizeof(F32DirEntry)

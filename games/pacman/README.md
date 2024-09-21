@@ -1,46 +1,69 @@
-# TODO:
-- food compare and animation, use frames as state
-- 50 vs. 60Hz problem? => 20ms/16,7ms => 3,3ms
-- pacman/ghost speed
-    PAC-MAN SPEED	GHOST SPEED
-  LEVEL	NORM	NORM DOTS	FRIGHT	FRIGHT DOTS	NORM	FRIGHT	TUNNEL
-  1	80%	71%	90%	79%	75%	50%	40%
-  2 - 4	90%	79%	95%	83%	85%	55%	45%
-  5 - 20	100%	87%	100%	87%	95%	60%	50%
-  21+	90%	79%	-	-	95%	-	50%
 
-- scoring - score > highscore compare
-# ghost ai
-- blinky - 24,0
-- pinky - 1,0
-- inky - 24,31
-- clyde - 0,31
+TODO:
+  - fix
+  - fix ghost eyes (dead) tunnel delay
+  - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3) - snd player
+  - system changes modes one or more times when a ghost is inside the base, that ghost will move to the right instead of the left upon leaving the house.
+  - compensate pacman direction and 1px offset
+  - toggle to enable/disable original bugs
+    - pinky/inky target calculation bug - "target is also 4 tiles left if pacman is facing up"
+    - "pass through" bug
+    - global dot counter "bug or feature"
+  - c64 port
+
+IMPROVE:
+  - sound quality
+  - sound code
+
+pacman/ghost speed percentage/frames
+  LEVEL      NORM  NORM-DOTS  FRIGHT  FRIGHT-DOTS   NORM   FRIGHT	 TUNNEL
+  1           80%	      71%   90%/54	    79%       75%       50%  	  40%
+  2 - 4    90%/54	      79%   95%/57	    83%       85%       55%	    45%
+  5 - 20	100%/60	      87%  100%/60      87%       95%       60%	    50%
+  21+	     90%/54	      79%     -	         -        95%        -	    50%
+
+(rate 75,75757625px/s)
+105% => 80px/s +1px/3 ; elroy speed 2
+100% => 75px/s +1px/4
+ 95% => 72px/s +1px/5
+ 90% => 68px/s +1px/7
+ 85% => 64px/s +1px/15
+ 80% => 60px/s 0
+ 75% => 57px/s -1px/20
+ 60% => 45px/s -1px/4
+ 55% => 42px/s -1px/3
+ 50% => 38px/s -1px/2
+
+----
+
+notes:
+  solve: https://www.youtube.com/watch?v=Bin0vu8Hp0g
+  intermission: https://www.youtube.com/watch?v=v8BT43ZWSTY
 
 
--- red zone
--- tunnel zone
-- pacman sprint - speed to original differs, so add some px if contiguous move to a direction
-
----------------------------------------------------
++--------------------------------------------------+
 | pacman (6510)                                    |
-----------------------------------------------------
++--------------------------------------------------+
 | pacman.game (6510)                               |
-----------------------------------------------------
+| pacman.intro (6510)                              |
++--------------------------------------------------+
 | pacman.gfx.sts (65c02)  | pacman.gfx.c64 (6510)  |
 | pacman.sound.sts        | pacman.sound.c64       |
---------------------------| pacman.hw.c64 (6510)   |
-| steckschwein.lib        |                        |
----------------------------------------------------
+| pacman.io.sts           | pacman.io.c64          |
++-------------------------+------------------------+
+| steckschwein.lib        | cc65 lib               |
++--------------------------------------------------+
 
 video:
+  - mode 4 (V9938/58) with NTSC (60Hz) and open border hack (overscan)
   - original paxman, namco May 22nd, 1980
     - 224x288 => 28x36 => 28x31 -5 (score)    => 1px 196x252
 
   - steckschwein
-    - 256x212 => vert. display 212x256 => 26x32 :/ -2/-4
+    - 256x212(240) overscan => vert. display 240x256 => 30x32 :/ +2/-4
       - rotate the game entirely 90 degree counter clockwise, screen must be turned 90 degree clockwise ;)
       -4 chars x - rm blank lines -2, rm credit line -1, shrink score line -1
-      -2 chars y - shrink the maze right/left side
+      +2 chars y - lives, bonus on right border
 
       ;1101 0100 11 01 00 111
       ;1010      11
@@ -141,7 +164,8 @@ video:
    ~ 10.000 x 256 = 2.560.000
 
 
-maze
+original maze 224x288px 28x36
+
  0123456789012345678901234567
 0  1UP   HIGH SCORE
 1    00
@@ -178,16 +202,17 @@ maze
 2#                          #
 3############################
 4
-5
+5 # # # lives     # # # bonus
 
-steckschwein adaption maze
- 01234567890123456789012345   26x32
+steckschwein maze adaption
+
+ 01234567890123456789012345   28x32
 0  1UP   HIGH SCORE
 1##########################
 2#           ##           #
-3# #### #### ## #### #### #
-4# #  # #  # ## #  # #  # #
-5# #### #### ## #### #### #
+3# ### ##### ## ##### ### #
+4# # # #   # ## #   # # # #
+5# ### ##### ## ##### ### #
 6#                        #
 7# ### ## ######## ## ### #
 8# ### ## ######## ## ### #

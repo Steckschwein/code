@@ -57,6 +57,12 @@ opl2_reg_t1	= 2
 opl2_reg_t2	= 3
 opl2_reg_ctrl = 4
 
+; wave forms
+WS_SIN=       $00   ;
+WS_HALF_SIN=  $01   ;
+WS_ABS_SIN=   $02
+WS_PULSE_SIN= $03
+
 ;--------------------------------------------------------------------------------------------------------------
 ; For some of the parameters, there is one register per output channel. For those
 ; parameters, channel number can be used as an offset into the map. For many

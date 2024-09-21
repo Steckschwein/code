@@ -9,4 +9,4 @@
 
 __do_oserror:
 		  tya
-		  jmp	  __mappederrno
+		  jmp	  ___mappederrno

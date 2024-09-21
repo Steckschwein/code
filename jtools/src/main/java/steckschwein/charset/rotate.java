@@ -11,7 +11,7 @@ public class rotate {
 
    public static void main(String[] args) throws IOException {
 
-      File dir = new File("/development/steckschwein-code/games/pacman");
+      File dir = new File("/home/mla/dev/steckschwein-code/games/pacman");
       File file = new File(dir, "pacman.tiles.bin");
       if (!file.exists() && !file.canRead()) {
          System.err.println("file " + file + " cannot be accessed for reading!");
@@ -29,7 +29,7 @@ public class rotate {
          byte[] result = { 0, 0, 0, 0, 0, 0, 0, 0 };
          for (int i = 0; i <= 7; i++) {
             for (int x = 0; x <= 7; x++) {
-               byte b = (byte) ((bytes[x] & (1 << i)) == 0 ? 0 : 1 << (7 - x));
+               byte b = (byte) ((bytes[x] & 1 << i) == 0 ? 0 : 1 << 7 - x);
                result[i] |= b;
             }
          }

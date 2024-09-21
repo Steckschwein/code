@@ -19,6 +19,6 @@ int __fastcall__ clock_settime (clockid_t clock_id, const struct timespec *tp);
 
 #else
 
-#  define CLK_TCK 1
+//#  define CLK_TCK 1
 
 #endif

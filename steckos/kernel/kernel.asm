@@ -23,7 +23,10 @@
   debug_enabled=1
 .endif
 
+
 .include "kernel.inc"
+.include "nvram.inc"
+
 
 .code
 
@@ -53,6 +56,16 @@
 nvram = $1000
 
 kern_init:
+    lda #<nvram
+    ldy #>nvram
+    jsr read_nvram
+    jsr uart_init
+
+    sta __volatile_ptr
+    sty __volatile_ptr+1
+    ldy #nvram::textui_color
+    lda (__volatile_ptr),y
+    sta textui_color
 
     jsr blklayer_init
 
@@ -62,11 +75,6 @@ kern_init:
     jsr init_via1
 
     jsr init_rtc
-
-    lda #<nvram
-    ldy #>nvram
-    jsr read_nvram
-    jsr uart_init
 
     stz key
     stz flags
@@ -142,7 +150,7 @@ do_irq:
 ; handle keyboard input and text screen refresh
     save
 
-    cld ;clear decimal flag, maybe an app has modified it during execution
+    ; cld ;clear decimal flag, maybe an app has modified it during execution
     jsr call_user_isr     ; user isr first, maybe there are timing critical things
 
     jsr system_irr        ; collect irq sources and store bits in system_irr accordingly
@@ -199,11 +207,11 @@ do_irq:
     beq @exit
     jsr textui_status
     bpl @exit
-    lda #Medium_Red<<4|Medium_Red ; indicates busy spi
-    jsr vdp_bgcolor
+    ; lda #Medium_Red<<4|Medium_Red ; indicates busy spi
+    ; jsr vdp_bgcolor
 
-    lda #Medium_Green<<4|Black
-    jsr vdp_bgcolor
+    ; lda #Medium_Green<<4|Black
+    ; jsr vdp_bgcolor
 @exit:
 
     restore
