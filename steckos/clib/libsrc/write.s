@@ -40,12 +40,13 @@
 
 .segment "ONCE"
 .proc  initstdout
-  rts
+              rts
 .endproc
 
 ;--------------------------------------------------------------------------
-.proc   _write
+.code
 
+.proc   _write
     pha
     phx
     ; count
@@ -114,8 +115,8 @@
 
 ; set _oserror and return the number of bytes read
 @error:
-    sta __oserror
-;    jmp __directerrno  ; Sets _errno, clears _oserror, returns -1
+    sta ___oserror
+;    jmp ___directerrno  ; Sets _errno, clears _oserror, returns -1
 @exit:
     clc          ; calc count bytes read
     lda ptr2
@@ -131,6 +132,6 @@
 
 invalidfd:
       lda    #EBADF
-      jmp    __directerrno  ; Sets _errno, clears _oserror, returns -1
+      jmp    ___directerrno  ; Sets _errno, clears _oserror, returns -1
 
 .endproc

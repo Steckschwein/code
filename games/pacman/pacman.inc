@@ -1,18 +1,38 @@
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+.ifndef _PACMAN_INC_
+  _PACMAN_INC_ = 1
+
 .include "zeropage.inc"
 
 .autoimport
 
-Color_Blinky  = Color_Red
-Color_Inky    = Color_Cyan
-Color_Clyde   = Color_Orange
-Color_Pinky   = Color_Pink
-Color_Pacman  = Color_Yellow
-Color_Food    = Color_Dark_Pink
-Color_Border  = Color_Blue
-Color_Text    = Color_Gray
-
 KEY_EXIT = 27
-MAX_DOTS=226+4  ; food + superfood
+MAX_DOTS=240+4  ; food + superfood
+MAX_LIVES=5
+
+Dot_Cnt_Enabled=1<<7
+
+Elroy_Suspended=1<<7
 
 .globalzp p_maze
 .globalzp p_game
@@ -23,9 +43,6 @@ MAX_DOTS=226+4  ; food + superfood
 
 .globalzp video_tmp
 .globalzp sound_tmp
-.globalzp game_tmp
-.globalzp game_tmp2
-.globalzp gfx_tmp
 .globalzp text_color
 
 .globalzp _i
@@ -34,65 +51,153 @@ MAX_DOTS=226+4  ; food + superfood
 
 IRQ_VEC = $fffe
 
-Char_Food           = $cc   ;1100 1100
-                            ;1100 1101
-Char_Superfood      = $ce   ;1100 1110 $cd/$ce
 ;                   = $c6   ;1100 0110
 Char_Blank          = $c7   ;1100 0111
-Char_Bg             = $cf   ;1100 1111
+Char_Dot            = $cc   ;1100 1100
+                            ;1100 1101
+Char_Bonus          = $cd
+Char_Energizer      = $ce   ;1100 1110 $ce
+Char_Base           = $cf   ;1100 1111
+Char_Quote          = $22
 
-; scoring
-Points_Food         = $10 ;BCD values
-Points_Superfood    = $50 ;
+Char_Maze_Blank     = $f4
 
 .define Char_Pts $2a,$2b,$2c
 
-FRAMES_DELAY = $0f
-WAIT=$01
-WAIT2=$02
+.ifdef __DEVMODE
+  FRAMES_DELAY = $0
+.else
+  FRAMES_DELAY = $0f
+.endif
 
-STATE_INIT          = 0
-STATE_READY         = 1
-STATE_READY_WAIT    = 2
-STATE_PLAYING       = 3
-STATE_DIED          = 4
-STATE_LEVEL_CLEARED = 5
-STATE_GAME_OVER     = 6
-STATE_PAUSE         = $08
-STATE_EXIT          = $80
+INTRO_TUNNEL_X=19
 
-SPRITE_NR_PACMAN  = 8*4
-SPRITE_NR_GHOST   = 0*4
-SPRITE_ADJUST     = $08
+BORDER_RIGHT_Y=28
 
-; A ghost's objective in chase mode is to find and capture Pac-Man by hunting him down through the maze.
-; Each ghost exhibits unique behavior when chasing Pac-Man, giving them their different personalities:
-; Blinky (red) is very aggressive and hard to shake once he gets behind you,
-; Pinky (pink) tends to get in front of you and cut you off,
-; Inky (light blue) is the least predictable of the bunch, and
-; Clyde (orange) seems to do his own thing and stay out of the way.
-GHOST_CHASE       = 0
-; In scatter mode, the ghosts give up the chase for a few seconds and head for their respective home corners. It is a welcome but brief rest-soon enough, they will revert to chase mode and be after Pac-Man again.
-GHOST_SCATTER     = 1
-; Ghosts enter frightened mode whenever Pac-Man eats one of the four energizers located in the far corners of the maze. During the early levels, the ghosts will all turn dark blue (meaning they
-; are vulnerable) and aimlessly wander the maze for a few seconds. They will flash moments before returning to their previous mode of behavior.
-GHOST_FRIGHTENED  = 3;
+TXT_WAIT  =$01
+TXT_WAIT2 =$02
+TXT_GHOST =$03
+TXT_CRS_XY=$04
+TXT_COLOR =$05
 
-Sprite_Pattern_Pacman = $18*4     ; pacman shape filled circle (game init)
+DIP_COINAGE_0       =1<<0   ; 00 - free play
+DIP_COINAGE_1       =1<<1   ; 01 - 1 coin, 2 credits | 02 - 1 coin, 1 credit | 11 - 2 coins, 1 credit
+DIP_LIVES_0         =1<<2   ; lives 00 - 1, 01 - 2, 10 - 3, 11 - 5
+DIP_LIVES_1         =1<<3
+DIP_BONUS_LIFE_0    =1<<4   ; bonus life at 00 - 10.000, 01 - 15.000, 10 - 20.000, 11 - None
+DIP_BONUS_LIFE_1    =1<<5
+DIP_DIFFICULTY      =1<<6
+DIP_GHOSTNAMES      =1<<7
+
+FN_STATE_NOOP          = $00
+FN_STATE_INIT          = $02
+FN_STATE_LEVEL_INIT    = $04
+FN_STATE_READY         = $06
+FN_STATE_DELAY         = $08
+FN_STATE_READY_WAIT    = $0a
+FN_STATE_PLAYING       = $0c
+FN_STATE_PACMAN_DYING  = $0e
+FN_STATE_LEVEL_CLEARED = $10
+FN_STATE_GAME_OVER     = $12
+FN_STATE_GHOST_CATCHED = $14
+FN_STATE_INTERLUDE  = $16
+FN_STATE_DEMO_INIT     = $18
+FN_STATE_DEMO_PLAYING  = $1a
+FN_STATE_INTRO         = $1c
+FN_STATE_INTRO_GHOSTS  = $1e
+FN_STATE_INTRO_GHOST_CATCHED  = $20
+FN_STATE_INTRO_SELECT_PLAYER  = $22
+
+
+STATE_PAUSE         = 1<<5
+STATE_DEMO          = 1<<6  ; demo flag
+STATE_INTRO         = 1<<7
+
+GHOST_STATE_BASE    = 0
+GHOST_STATE_RETURN  = 1
+GHOST_STATE_LEAVE   = 2
+GHOST_STATE_TARGET  = 3
+GHOST_STATE_ENTER   = 4
+
+ACTOR_MODE_NORM     = 0
+ACTOR_MODE_CATCHED  = 1 ; applicable to ghosts only
+ACTOR_MODE_FRIGHT   = 2
+ACTOR_MODE_BONUS    = 3 ; applicable to ghosts only
+
+Shape_Mask_Norm       = $7f
+Shape_Mask_Small      = $73 ; only 4 patterns (bit 1,0)
+
+Shape_Offset_Norm     = $10
+Shape_Offset_Catched  = $20
+Shape_Offset_Fright   = $30
+Shape_Offset_Bonus    = $40
+
+Shape_Ix_Pacman       = 2
+Shape_Ix_Dying        = $34
+Shape_Ix_Invisible    = $3f ; empty sprite
+
+; Every time Pac-Man eats a regular dot, he stops moving for one frame (1/60th of a second), slowing his progress by roughly ten percent—just enough for a following ghost to overtake him.
+; Eating an energizer dot causes Pac-Man to stop moving for three frames.
+Delay_Dot           = 1 ; 1 penalty frame
+Delay_Energizer     = 3
+
+Bonus_Dots_Trig1    = 70
+Bonus_Dots_Trig2    = 170
+Bonus_Time          = 150 ; count down every 4 frames gives ~9-10s
+Bonus_Pts_Time      = 24  ; ~2s display bonus points
+
+Bonus_Clear       = 0 ;
+Bonus_Cherry      = 1 ; level 1       100pts
+Bonus_Strawberry  = 2 ; level 2       300pts
+Bonus_Orange      = 3 ; level 3,4     500pts
+Bonus_Apple       = 4 ; level 5,6     700pts
+Bonus_Grapes      = 5 ; level 7,8   1.000pts
+Bonus_Galaxian    = 6 ; level 9,10  2.000pts
+Bonus_Bell        = 7 ; level 11,12 3.000pts
+Bonus_Key         = 8 ; level 13-   5.000pts
+Bonus1_Triggered  = 1<<6  ; mark whether bonus was triggered
+Bonus2_Triggered  = 1<<7
+
+Color_Bg          = $0  ; black
+Color_Red         = $1  ; "shadow", "blinky" red
+Color_Brown       = $2  ; orange top, cherry stem
+Color_Pink        = $3  ; "speedy", "pinky" pink
+
+Color_Cyan        = $5  ; cyan - "bashful" / "inky", color of bonus pts catched ghost
+Color_Light_Blue  = $6  ; "ligth blue"
+Color_Orange      = $7  ; "pokey", "Clyde" "orange"
+
+Color_Yellow      = $9  ; "yellow", "pacman"
+;Color_Indigo      = $b  ; Maze walls, flashing ghosts, ghost pupils
+Color_Dark_Pink   = $b  ; "food", "super food"
+Color_Green       = $c  ; Melon, strawberry top, orange leaf
+Color_Dark_Cyan   = $d  ; dark cyan - Melon wrinkles and stem
+Color_Blue        = $e  ; blue => ghosts "frightened", ghost pupil
+Color_Gray        = $f  ; gray => ghosts "frightened", ghost eyes, text
+
+Color_Blinky  = Color_Red
+Color_Inky    = Color_Cyan
+Color_Clyde   = Color_Orange
+Color_Pinky   = Color_Pink
+Color_Pacman  = Color_Yellow
+Color_Food    = Color_Dark_Pink
+Color_Maze    = Color_Blue
+Color_Text    = Color_Gray
 
 ACT_MOVE          = 1<<7
-ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_RIGHT         = 0 ;00
-ACT_LEFT          = 1 ;01
-ACT_UP            = 2 ;10
-ACT_DOWN          = 3 ;11
-ACT_MOVE_UP_OR_DOWN    = $02 ; 1X
-ACT_MOVE_INVERSE  = $01 ;eor bit 1-0
+ACT_DOWN          = 1 ;01
+ACT_LEFT          = 2 ;10
+ACT_UP            = 3 ;11
+ACT_MOVE_UP_OR_DOWN     = %00000001
+ACT_MOVE_REVERSE        = %00000010   ;eor bit 1
+ACT_MOVE_REVERSE_NEXT   = %00001000
 
 ACT_TURN          = 1<<7
+ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_DIR           = 1<<1|1<<0
 
-;CORNERING
+SKIP_DIR_CHECK    = $ff
 
 .macro setIRQ irq, irq_save
       copyPtr IRQ_VEC, irq_save
@@ -100,9 +205,7 @@ ACT_DIR           = 1<<1|1<<0
 .endmacro
 
 .macro restoreIRQ irq_save
-      sei
       copyPtr irq_save, IRQ_VEC
-      cli
 .endmacro
 
 .macro setPtr addr, ptr
@@ -121,28 +224,34 @@ ACT_DIR           = 1<<1|1<<0
 
 .macro border_color color
    .ifdef __DEBUG
-     .import gfx_bordercolor
-     lda color
-     jsr gfx_bordercolor
+    php
+    pha
+    lda #color
+    jsr gfx_bordercolor
+    pla
+    plp
    .endif
 .endmacro
 
 .macro bgcolor color
   .ifdef __DEBUG
-    .import gfx_bgcolor
-    lda color
+    php
+    pha
+    lda #color
     jsr gfx_bgcolor
+    pla
+    plp
   .endif
 .endmacro
 
 .macro draw_text _p, color
-      .if .paramcount > 1
-         lda color
-         sta text_color
-      .endif
       setPtr _p, p_text
-      .import out_text
+      .if .paramcount > 1
+      lda #color
+      jsr out_text_color
+      .else
       jsr out_text
+      .endif
 .endmacro
 
 .macro push_axy
@@ -162,33 +271,68 @@ ACT_DIR           = 1<<1|1<<0
 .endmacro
 
 .struct GameState
-  state       .byte
-  credit      .byte
-  frames      .byte
-  score       .res 4
-  highscore   .res 4
+  dip_switches      .byte
+
+  state             .byte
+  state_frames      .byte   ; frame counter per state, will be reset after each state change
+  fn_state          .addr   ; state function address
+  fn_state_next     .byte   ; index of next state function from delay
+
+  frames            .byte   ; continuous frame counter
+  vblank            .byte   ; v-blank
+
+  credit            .byte
+
+  players           .byte   ; active players
+  active_up         .byte   ; current player
+
+  lives             .byte   ; lives current player
+  score             .res 3  ; BCD score current player
+
+  level             .byte   ; the current level
+
+  dots              .byte   ; remaining dots count down - MAX_DOTS at start
+  dot_cnt           .byte   ; level dot counter - set/reset if a life is lost
+  dot_cnt_state     .byte   ; bit 7 dot_cnt enabled/disabled
+  dot_timer         .byte   ; nothing eaten timer, 4s or 3s (level 5+) hence either count down to zero from $f0 or $b4 each frame
+  dot_cnt_elroy     .byte   ; amount of dots remaining in the maze in order to trigger elroy 1/2 mode
+
+  bonus             .byte   ; bonus of current level
+  bonus_cnt         .byte   ; bonus available (frame) counter
+  bonus_life        .word   ; trigger for next bonus life (BCD) - TT T digit
+
+  highscore         .res 3
+
+  ; game related
+  rng               .word   ; PRNG index
+
+  ;speed control
+  speed_cnt_init    .res 6  ; speed counter init values in order pacman normal, ghost normal, pacman frightened, ghost frightened, elroy 1, elroy 2
+
+  frghtd_timer      .word   ; frightened mode timer in secs * frames
+  sctchs_mode       .byte   ; scatter or chase mode. alternate 10101010 => shift right, carry denotes mode
+  sctchs_ix         .byte   ; scatter/chase timings table index
+  sctchs_timer      .word   ; current mode count down secs * frames - e.g. 1s => 60
+
+  ghsts_all_cnt     .byte   ; counter how often ALL ghosts where catched during a frightened phase
+  ghsts_to_catch    .byte   ; ghosts to catch during a frightened phase, starts with 3
+  ghst_catched      .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
+
+.ifdef __GFX_DEBUG
+  debug             .byte   ; debug flag/toggle bits for demo purpose
+.endif
+
 .endstruct
-
-  ; dots    0 after pacman dead, pinky 7, inky 17, clyde 32
-  ; dot timer 4s, 3s (level5)
-.struct actor ;
-    xpos       .byte    ; character x pos - 0..31
-    ypos       .byte    ; character y pos - 0..25
-    sp_x       .byte    ; sprite x
-    sp_y       .byte    ; sprite y
-    shape      .byte    ; shape
-    move       .byte    ; bit 7 move, bit 3-2 next direction, bit 1-0 current direction
-    turn       .byte    ; bit 7 turn, bit 1-0 turn direction
-
-    dots      .byte   ; 0 at start, one counter active at once and only if ghost within the house, pinky, inky, clyde   => max. 227 + 4 super food
-;    dot_limit .byte   ; ghost leave house, deactivate counter, pinky limit 0, inky limit 30/0 (level1/2..), clyde limit 60/50/0 (level1/2/3..)
-.endstruct
-
-Maze_Tunnel=$e0
 
 ; table offsets
-ACTOR_BLINKY  = 0*.sizeof(actor)
-ACTOR_INKY    = 1*.sizeof(actor)
-ACTOR_PINKY   = 2*.sizeof(actor)
-ACTOR_CLYDE   = 3*.sizeof(actor)
-ACTOR_PACMAN  = 4*.sizeof(actor)
+ACTOR_BLINKY  = 0
+ACTOR_PINKY   = 1
+ACTOR_INKY    = 2
+ACTOR_CLYDE   = 3
+ACTOR_PACMAN  = 4
+
+; fuses
+  .assert ACTOR_MODE_NORM = 0, error, "change const. value ACTOR_MODE_NORM!"
+  .assert GHOST_STATE_BASE = 0, error, "change const. value GHOST_STATE_BASE!"
+
+.endif ;  _PACMAN_INC_

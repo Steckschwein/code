@@ -4,6 +4,7 @@ all: build
 clean:
 	(cd WoW; make clean)
 	(cd pacman; make clean)
+	(cd shmup; make clean)
 	(cd dinosaur; make clean)
 	(cd pong; make clean)
 	(cd microchess; make clean)
@@ -12,6 +13,7 @@ clean:
 build:
 	(cd WoW; make )
 	(cd pacman; make )
+	(cd shmup; make )
 	(cd dinosaur; make )
 	(cd pong; make )
 	(cd microchess; make )

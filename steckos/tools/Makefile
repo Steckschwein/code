@@ -4,7 +4,6 @@ LIBS=../lib/steckschwein.a
 CLIB=../clib/lib/steckschwein-clib.a
 LDFLAGS=-C ../prg.ld65.cfg -m $<.map $(LIBS)
 
-#TOOLS=ls.prg stat.prg attrib.prg rename.prg help.prg touch.prg cp.prg keycode.prg vramtest.prg wozmon.prg
 TOOLS=stat.prg attrib.prg rename.prg help.prg touch.prg cp.prg keycode.prg vramtest.prg wozmon.prg
 
 # c tools
@@ -29,22 +28,23 @@ TOOLS+=\
 all: $(TOOLS)
 
 clean:
-	rm -f *.prg *.o *.map
+	rm -f *.prg *.o *.map *.s
 
-%.prg: %.c $(LIBS) $(CLIB)
-	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
+#%.prg: %.c $(LIBS) $(CLIB)
+#	cl65 -t steckschwein $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
 
-%.s: %.c $(LIBS) $(CLIB)
-	cc65 -t none $(CC65FLAGS) $< -o $@
+# %.s: %.c
+#	cc65 $(CC65FLAGS) $< -o $@
+
+%.o: %.c
+	cc65 $(CC65FLAGS) $(<:.s=.c)
+	ca65 $(CA65FLAGS) $(@:.o=.s)
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) $(@:.o=.asm)
 
-%.o: %.s
-	ca65 $(CA65FLAGS) $(@:.o=.s)
-
-%.prg: %.o $(LIBS)
-	ld65 $< $(LDFLAGS) -o $@
+%.prg: %.o $(LIBS) $(CLIB)
+	ld65 $< $(CLIB) $(LDFLAGS) -o $@
 
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@

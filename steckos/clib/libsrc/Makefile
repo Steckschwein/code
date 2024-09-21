@@ -1,5 +1,5 @@
 TARGET=steckschwein-clib
-TARGET_SYS=none
+#TARGET_SYS=-t steckschwein
 
 DEFINES+=-DV9958
 
@@ -59,10 +59,10 @@ SRCDIRS +=  $(CC65_HOME)/libsrc/conio       \
       $(CC65_HOME)/libsrc/runtime     \
       $(CC65_HOME)/libsrc/zlib    \
       $(CC65_HOME)/libsrc/common \
-             $(CC65_HOME)/libsrc/zlib
+      $(CC65_HOME)/libsrc/dbg      \
+			$(CC65_HOME)/libsrc/zlib
 #    $(CC65_HOME)/libsrc/serial   \
 #    $(CC65_HOME)/libsrc/tgi      \
-#       $(CC65_HOME)/libsrc/dbg      \
 #       $(CC65_HOME)/libsrc/em       \
 #       $(CC65_HOME)/libsrc/joystick \
 #       $(CC65_HOME)/libsrc/mouse    \
@@ -87,13 +87,13 @@ LD65 := $(if $(wildcard ../bin/ld65*),../bin/ld65,ld65)
 
 define ASSEMBLE_recipe
 $(if $(QUIET),,@echo $(TARGET) - $<)
-@$(CA65) -t $(TARGET_SYS) $(CA65FLAGS) --create-dep $(@:.o=.d) -o $@ $<
+@$(CA65) $(TARGET_SYS) $(CA65FLAGS) --create-dep $(@:.o=.d) -o $@ $<
 endef # ASSEMBLE_recipe
 
 define COMPILE_recipe
 $(if $(QUIET),,@echo $(TARGET) - $<)
-@$(CC65) -t $(TARGET_SYS) $(CC65FLAGS) --create-dep $(@:.o=.d) --dep-target $@ -o $(@:.o=.s) $<
-@$(CA65) -t $(TARGET_SYS) -o $@ $(@:.o=.s)
+@$(CC65) $(TARGET_SYS) $(CC65FLAGS) --create-dep $(@:.o=.d) --dep-target $@ -o $(@:.o=.s) $<
+@$(CA65) $(TARGET_SYS) -o $@ $(@:.o=.s)
 endef # COMPILE_recipe
 
 ../libwrk/$(TARGET)/%.o: %.s | ../libwrk/$(TARGET)
