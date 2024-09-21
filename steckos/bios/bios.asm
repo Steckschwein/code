@@ -112,14 +112,14 @@ _keyboard_cmd_status:
 :     dey
       bmi :+
       phy
-      ldy #5
+      ldy #10
       jsr _delay_10ms
       lda #KBD_HOST_CMD_CMD_STATUS
       jsr spi_rw_byte
       ply
       cmp #KBD_HOST_CMD_STATUS_EOT
       bne :-
-:    rts
+:     rts
 
 ;  requires nvram init beforehand
 keyboard_init:

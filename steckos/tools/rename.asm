@@ -33,81 +33,75 @@ filename_length = .sizeof(F32DirEntry::Name) + .sizeof(F32DirEntry::Ext)
 
 appstart $1000
 
-  ; everything until <space> in the parameter string is the source file name
-    ldy #$00
-@loop:
-    lda (paramptr),y
-    beq rename
-    cmp #' '
-    beq next
-    sta filename,y
-    iny
-    lda #$00
-    sta filename,y
-    bra @loop
-
-
+              ; everything until <space> in the parameter string is the source file name
+              ldy #$00
+@loop:        lda (paramptr),y
+              beq rename
+              cmp #' '
+              beq next
+              sta filename,y
+              iny
+              lda #$00
+              sta filename,y
+              bra @loop
 next:
-    ; first we init the buffer with spaces so we just need to fill in the filename and extension
-    ldx #filename_length -1
-    lda #' '
-@l:
-    sta new_filename,x
-    dex
-    bne @l
+              ; first we init the buffer with spaces so we just need to fill in the filename and extension
+              ldx #filename_length -1
+              lda #' '
+@l:           sta new_filename,x
+              dex
+              bne @l
 
-    iny
-    ldx #$00
+              iny
+              ldx #$00
 @loop:
-    lda (paramptr),y
-    beq rename
-    cmp #'.'
-    bne @skip
+              lda (paramptr),y
+              beq rename
+              cmp #'.'
+              bne @skip
 
-    ; found the dot. advance x to pos. 8, point y to the next byte and go again
-    iny
-    ldx #8
-    bra @loop
+              ; found the dot. advance x to pos. 8, point y to the next byte and go again
+              iny
+              ldx #8
+              bra @loop
 
 @skip:
-    toupper
-    sta new_filename,x
-    inx
-    iny
-    bra @loop
+              toupper
+              sta new_filename,x
+              inx
+              iny
+              bra @loop
 
 
 rename:
-    cpy #0  ; no input
-    beq error
+              cpy #0  ; no input
+              beq error
 
-    lda #<filename
-    ldx #>filename
-    ldy #O_WRONLY
-    jsr krn_open
-    bcs error
+              lda #<filename
+              ldx #>filename
+              ldy #O_WRONLY
+              jsr krn_open
+              bcs error
 
-    lda #<dirent
-    ldy #>dirent
-    jsr krn_read_direntry
-    bcs wrerror
+              lda #<dirent
+              ldy #>dirent
+              jsr krn_read_direntry
+              bcs wrerror
 
-    ldy #filename_length -1
-  :
-    lda new_filename,y
-    sta dirent,y
-    dey
-    bpl :-
-
+              ldy #filename_length -1
+:             lda new_filename,y
+              sta dirent,y
+              dey
+              bpl :-
 
   ; after <space> there comes the destination filename
   ; copy and normalize it FAT dir entry style
 
-    lda #<dirent
-    ldy #>dirent
-    jsr krn_update_direntry
+              lda #<dirent
+              ldy #>dirent
+              jsr krn_update_direntry
 
-    bcs wrerror
+              bcs wrerror
 
 close:
     jsr krn_close
