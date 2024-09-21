@@ -35,8 +35,7 @@ IRQ_IO1       = 1<<1  ; i/o port 1 (card slot 1)
 IRQ_IO0       = 1<<0  ; i/o port 0 (card slot 0)
 
 ;...
-
-clockspeed  = 8  ; in Mhz
+clockspeed  = 10  ; in Mhz
 
 stack = $0100
 
@@ -53,6 +52,7 @@ slot3 = $c000
 
 
 CODE_LF  = $0a ; line feed
+CODE_CR  = $0d ; carriage return
 
 ; address constants of RAM addresses which can be used as buffers or kind of
 ; !!! ATTENTION: if used together with fat read/write be aware that this buffers are used and may override your data

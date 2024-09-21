@@ -121,7 +121,7 @@ kern_init:
     ; sta sd_blkptr + 1
 
     ; jsr sd_read_block
-    
+
 
     ; jsr hexout
 
@@ -130,13 +130,13 @@ kern_init:
     ; jsr hexout
     ; lda $41ff
     ; jsr hexout
-    
+
 
     jsr fat_mount
     bcs load_error
 
 
- 
+
     ; jsr __automount_init
     ; bcs do_upload
     lda #<filename
@@ -188,7 +188,7 @@ do_irq:
 ; handle keyboard input and text screen refresh
     save
 
-    ; cld ;clear decimal flag, maybe an app has modified it during execution
+    cld ;clear decimal flag, maybe an app has modified it during execution
     jsr call_user_isr     ; user isr first, maybe there are timing critical things
 
     jsr system_irr        ; collect irq sources and store bits in system_irr accordingly
@@ -196,14 +196,14 @@ do_irq:
     bit sys_irr ; vdp irq ?
     bpl @check_via
     jsr textui_update_screen  ; update text ui
-;    lda #Dark_Yellow
- ;   jsr vdp_bgcolor
+    lda #Dark_Yellow
+;    jsr vdp_bgcolor
 
 @check_via:
     bit sys_irr    ; Interrupt from VIA?
     bvc @check_opl
-;    lda #Light_Green
- ;   jsr vdp_bgcolor
+    lda #Light_Green
+;    jsr vdp_bgcolor
     ; via irq handling code
     ;
 
@@ -211,14 +211,14 @@ do_irq:
     lda sys_irr  ; IRQ from OPL?
     and #IRQ_SND
     beq @check_spi_rtc
-;    lda #Light_Yellow<<4|Light_Yellow
+    lda #Light_Yellow<<4|Light_Yellow
 ;    jsr vdp_bgcolor
 
 @check_spi_rtc:
-    jsr rtc_irq0_ack
-    bcc @check_spi_keyboard
-;    lda #Cyan<<4|Cyan
-;    jsr vdp_bgcolor
+    ;jsr rtc_irq0_ack
+    ;bcc @check_spi_keyboard
+    ;lda #Cyan<<4|Cyan
+    ;jsr vdp_bgcolor
 
 @check_spi_keyboard:
     jsr fetchkey        ; fetch key
@@ -236,21 +236,20 @@ do_irq:
     and #$0f            ; every 16 frames we try to update rtc, gives 320ms clock resolution
     bne @spi_busy
     jsr rtc_systime_update     ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
-    ; jsr __automount
+    ;jsr __automount
 
 @spi_busy:
     lda via1portb
     and #spi_device_deselect
     cmp #spi_device_deselect
     beq @exit
-    jsr textui_status
-    bpl @exit
-    ; lda #Medium_Red<<4|Medium_Red ; indicates busy spi
-    ; jsr vdp_bgcolor
-
-    ; lda #Medium_Green<<4|Black
-    ; jsr vdp_bgcolor
+;    jsr textui_status
+ ;   bpl @exit
+;    lda #Medium_Red<<4|Medium_Red ; indicates busy spi
+;    jsr vdp_bgcolor
 @exit:
+    lda #Medium_Green<<4|Black
+    jsr vdp_bgcolor
 
     restore
     rti

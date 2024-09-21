@@ -41,18 +41,6 @@ cwdbuf_size = 25
 prompt  = '>'
 
 .autoimport
-; .import kernel_start
-; .import __SHELL_START__
-; .import dpb2ad
-; .import b2ad
-; .import hexout, hexout_s
-; .import primm
-; .import strout
-; .import atoi
-; .import print_filename
-; .import space
-; .import print_filesize,print_attribs, print_cluster_no
-; .import string_fat_mask
 
 .export char_out                = krn_chrout
 .export dirent
@@ -349,8 +337,6 @@ printbuf:
         rts
 
 
-
-
 errmsg:
         cmp #$15
         bcs @l_unknown
@@ -438,7 +424,6 @@ cmd_pwd:
         jsr strout
         jmp mainloop
 
-
 exec:
         lda cmdptr
         ldx cmdptr+1    ; cmdline in a/x
@@ -505,10 +490,8 @@ exec:
 
         lda #<tmpbuf
         ldx #>tmpbuf    ; cmdline in a/x
-        jsr krn_execv   ; return A with errorcode
-        bcs @try_path
-        lda #$fe
-        jmp errmsg
+        jsr krn_execv   ; return C=1 and A with errorcode
+        bra @try_path   ; try another path
 
 cmd_go:
         ldy #0
