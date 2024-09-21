@@ -24,7 +24,7 @@
 
 .include "system.inc"
 
-a_vdp    = $0220
+a_vdp    = $0220 ; $0c08 ;
 a_vram   = a_vdp
 a_vreg   = a_vdp+1
 a_vregpal = a_vdp+2

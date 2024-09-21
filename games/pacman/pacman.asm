@@ -191,8 +191,7 @@ main:
 .endif
               jmp @main_loop
 
-quit:         sei
-              jsr sound_off
+quit:         jsr sound_off
               jsr gfx_mode_off
               jmp io_exit
 .endproc

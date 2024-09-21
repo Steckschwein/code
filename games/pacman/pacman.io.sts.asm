@@ -115,7 +115,8 @@ io_highscore_load:
               sta game_state+GameState::highscore+3
               rts
 
-io_exit:      restoreIRQ IRQ_VEC
+io_exit:      sei
+              restoreIRQ IRQ_VEC
               cli
               jmp (retvec)
 

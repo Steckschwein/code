@@ -1,5 +1,5 @@
 #DEBUG+=-D__DEBUG
-DEBUG+=-D__GFX_DEBUG
+#DEBUG+=-D__GFX_DEBUG
 #DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 DEBUG+=-D__NO_INTRO
@@ -133,4 +133,5 @@ pacman64.dis: pacman64.prg
 	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -quality linear -upload $<,0x3000
 
 %.emu: %.prg
-	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -quality linear -upload $<
+	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -quality linear -upload $<
+#	6502msx-emu

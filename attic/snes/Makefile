@@ -1,14 +1,14 @@
 OBJS=snes.o
 TARGET=snes.prg
-STECKOS=../steckos
+STECKOS=../../steckos
 CA65FLAGS=--include-dir $(STECKOS)/asminc --include-dir $(STECKOS)/kernel
-LDFLAGS=--config $(STECKOS)/prg.ld65.cfg --lib $(STECKOS)/lib/steckschwein.a --mapfile snes.map
-LIBS=$(STECKOS)/lib/steckschwein.a $(STECKOS)/tools/lib/toollib.a
+LIBS=$(STECKOS)/lib/steckschwein.a
+LDFLAGS=--config $(STECKOS)/prg.ld65.cfg $(LIBS) --mapfile snes.map
 
 all: $(TARGET)
 
 %.prg: $(OBJS) $(LIBS)
-	cl65 --target none $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	cl65 -t none $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 %.o: %.asm
 	ca65 $(CA65FLAGS) -o $@ $<
@@ -21,3 +21,6 @@ clean:
 
 transfer: $(TARGET)
 	../xmodem.sh $(TARGET)
+
+%.emu: %.prg
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -joy1 SNES -upload $<

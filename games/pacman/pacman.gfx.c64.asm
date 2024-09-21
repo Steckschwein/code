@@ -144,6 +144,10 @@ gfx_isr:
 @rts:
             rts
 
+.export gfx_boot_logo
+gfx_boot_logo:
+            rts
+
 gfx_mode_off:
 
 gfx_mode_on:

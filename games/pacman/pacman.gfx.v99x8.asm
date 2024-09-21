@@ -529,6 +529,7 @@ gfx_bonus_stack:
               bne @next
               rts
 
+
 .export gfx_bonus
 gfx_bonus:    ; bonus below ghost house
               ldx #$11*8+6
@@ -565,15 +566,14 @@ gfx_4bpp_xy:  sei
 ; in:
 ;   A - height
 ;   Y - index 4bpp table
-gfx_4bpp_y:
-              sta r1
+gfx_4bpp_y:   sta r1
               lda table_4bpp_l,y
               sta p_gfx+0
               lda table_4bpp_h,y
               sta p_gfx+1
 
               ldy #0
-@rows:        ldx #7      ; 7x2 14px width
+@rows:        ldx #$7      ; 7x2 14px width
 @cols:        lda (p_gfx),y
               and #$f0
               beq :+    ; background?
@@ -596,8 +596,54 @@ gfx_4bpp_y:
               jmp @rows
 
 @exit:        bgcolor Color_Bg
+
               cli
               rts
+
+
+.export gfx_boot_logo
+logo_width=$40
+logo_height=$62
+gfx_boot_logo:
+              sei
+              inc sys_crs_x
+              inc sys_crs_x
+              lda #6
+              sta sys_crs_y
+              jsr gfx_vram_crs
+
+              lda Index_Logo_l
+              sta p_gfx+0
+              lda Index_Logo_h
+              sta p_gfx+1
+
+              lda #logo_height
+              sta r1
+@rows:        ldy #0
+              ldx #logo_width>>1      ; 32x2 64px width
+@cols:        lda (p_gfx),y
+              sta io_port_vdp_ram
+              iny
+              dex
+              vdp_wait_l 12
+              bne @cols
+              lda p_gfx+0
+              clc
+              adc #$20
+              sta p_gfx+0
+              lda p_gfx+1
+              adc #0
+              sta p_gfx+1
+
+              dec r1
+              beq @exit
+
+              jsr gfx_vram_inc_y
+              jmp @rows
+
+@exit:        cli
+              rts
+
 
 .export gfx_ghost_icon
 gfx_ghost_icon:
@@ -622,6 +668,7 @@ gfx_ghost_icon:
               asl
               asl
               sta r5
+
               lda #$0e  ; height - see ghost.4bpp.xpm
               ldy #Index_4bpp_ghost
               jmp gfx_4bpp_y
@@ -823,16 +870,20 @@ table_4bpp_l:
   .byte <bonus_4bpp_key
 Index_4bpp_ghost=(*-table_4bpp_l)
   .byte <ghost_4bpp
+Index_Logo_l:
+  .byte <branik_logo
 table_4bpp_h:
   .byte >bonus_4bpp_cherry
   .byte >bonus_4bpp_strawberry
   .byte >bonus_4bpp_orange
   .byte >bonus_4bpp_apple
-  .byte >bonus_4bpp_grapes
+  .byte >bonus_4bpp_grapes      ; 4
   .byte >bonus_4bpp_galaxian
   .byte >bonus_4bpp_bell
   .byte >bonus_4bpp_key
   .byte >ghost_4bpp
+Index_Logo_h:
+  .byte >branik_logo            ; 9
 
 bonus_4bpp_cherry:
   .include "bonus.cherry.4bpp.res"
@@ -852,6 +903,8 @@ bonus_4bpp_orange:
   .include "bonus.orange.4bpp.res"
 ghost_4bpp:
   .include "ghost.4bpp.res"
+branik_logo:
+  ;.include "branik.4bpp.res"
 
 .bss
     sprite_tab_attr:      .res 9*4  ; 9 sprites, 4 byte per entry +1 y of sprite 10

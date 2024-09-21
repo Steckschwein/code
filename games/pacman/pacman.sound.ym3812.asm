@@ -92,15 +92,6 @@ tempo=0
     .byte e-s
 .endmacro
 
-.struct channel
-   nr         .byte
-   cnt        .byte ; pause
-   ix         .byte ; index
-   notes      .addr ; data address
-   length     .byte ; snd length
-   state_bit  .byte
-.endstruct
-
 .code
 
 SOUND_GAME_PRELUDE      = 1<<0 | 1<<1 ; channel 1,2
