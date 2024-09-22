@@ -23,5 +23,9 @@ shell.prg: version.inc shell.o $(LIBS)
 shell: shell.prg
 	../../xmodem.sh shell.prg
 
+%.emu: %.prg
+	steckschwein-emu -upload $<
+
+
 %.dis: %.prg
 	dcc6502 -o 0xd7fe -d -n -c $< > $@

@@ -23,6 +23,7 @@
 .include "vdp.inc"
 .include "ym3812.inc"
 .include "via.inc"
+.include "zeropage.inc"
 
 .export system_irr
 
@@ -43,6 +44,6 @@ system_irr:
    bit via1ifr      ; Interrupt from VIA?
    bpl @exit
    ora #IRQ_VIA
-
 @exit:
+   sta sys_irr
    rts

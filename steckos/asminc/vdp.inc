@@ -18,7 +18,7 @@
 ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-; SOFTWARE.
+; SOFTWARE
 .ifndef _VDP_INC_
   _VDP_INC_ = 1
 
@@ -35,13 +35,13 @@ s_reg0_5S   = 1<<6   ; 5/9th sprite on scan line bit
 s_reg0_C     = 1<<5   ; sprite collision bit
 
 
-v_reg0_extV    = 1<<0
-v_reg0_DG      = 1<<6  ; Digitize mode: sets the color bus to the input or output mode
-v_reg0_IE2    = 1<<5  ; light pen interrupt
-v_reg0_IE1    = 1<<4  ; h-blank interrupt
-v_reg0_m5    = 1<<3
-v_reg0_m4    = 1<<2
-v_reg0_m3    = 1<<1
+v_reg0_extV     = 1<<0
+v_reg0_DG       = 1<<6  ; Digitize mode: sets the color bus to the input or output mode
+v_reg0_IE2      = 1<<5  ; light pen interrupt
+v_reg0_IE1      = 1<<4  ; h-blank interrupt
+v_reg0_m5       = 1<<3
+v_reg0_m4       = 1<<2
+v_reg0_m3       = 1<<1
 
 
 v_reg1_16k      = 1<<7
@@ -56,16 +56,20 @@ v_reg1_spr_mag    = 1<<0 ; 1: scale (magnify) sprite double size
 v_reg8_BW         = 1<<0  ; 0/1 grayscale off/on
 v_reg8_SPD        = 1<<1  ; 0/1 sprites enabled/disabled
 v_reg8_VR         = 1<<3  ; 0/1 16k/64k video ram
+v_reg8_TP         = 1<<5  ; 0/1 transparent (TP) or color code 0 of palette (1)
 
 v_reg9_ln         = 1<<7  ; lines - 0 - 192 lines, 1 - 212 lines
 v_reg9_il         = 1<<3  ; interlace
 v_reg9_nt         = 1<<1  ; ntsc - 0 / pal - 1
+
 v_reg17_aii       = 1<<7  ; auto increment
 
 v_reg25_sp2       = 1<<0  ; 0:Sets the horizontal screen size to 1 page, 1:Sets the horizontal screen size to two pages.
 v_reg25_msk       = 1<<1  ; 1:The left 8 dots are masked and the border color is output.
 v_reg25_wait      = 1<<2
-v_reg25_cmd       = 1<<6
+v_reg25_yjk       = 1<<3  ; YJK (YUV) mode
+v_reg25_yae       = 1<<4  ; yae yjk with attributes
+v_reg25_cmd       = 1<<6  ; enables the command function in all display modes.
 
 v_reg45_mxc = 1<<6
 v_reg45_mxd = 1<<5
@@ -161,7 +165,9 @@ SPRITE_C=3
 SPRITE_INVISIBLE=$bf
 SPRITE_OFF=$d0   ; in 192 line mode +8 ($d8) in 212 line mode
 
-SPRITE_EC=1<<7  ;early clock bit
+SPRITE_EC=1<<7  ; early clock bit
+SPRITE_CC=1<<6  ; priority control, 1 - disable
+SPRITE_IC=1<<5  ; line collision detect, 1 - disable
 
 Transparent     =$00
 Black           =$01  ;0  0  0    "black"
@@ -238,12 +244,17 @@ ADDRESS_GFX3_PATTERN          = ADDRESS_GFX2_PATTERN
 ADDRESS_GFX3_COLOR            = ADDRESS_GFX2_COLOR
 ADDRESS_GFX3_SPRITE_PATTERN   = ADDRESS_GFX2_SPRITE_PATTERN
 ADDRESS_GFX3_SPRITE           = ADDRESS_GFX_SPRITE
-ADDRESS_GFX3_SPRITE_COLOR     = ADDRESS_GFX3_SPRITE-$0200 ; must be -$0200
+ADDRESS_GFX3_SPRITE_COLOR     = ADDRESS_GFX3_SPRITE-$0200  ; sprite color table address (“strictly below the sprite attribute table -$200)
+
+ADDRESS_GFX4_SCREEN           = $10000
+ADDRESS_GFX4_SPRITE_PATTERN   = $7800
+ADDRESS_GFX4_SPRITE           = $7600
+ADDRESS_GFX4_SPRITE_COLOR     = ADDRESS_GFX4_SPRITE-$0200  ; sprite color table address (“strictly below the sprite attribute table -$200)
 
 ADDRESS_GFX6_SCREEN           = $10000 ; screen
 ADDRESS_GFX6_SPRITE_PATTERN   = $f000    ;
 ADDRESS_GFX6_SPRITE           = $fa00    ;
-ADDRESS_GFX6_SPRITE_COLOR     = ADDRESS_GFX6_SPRITE-$0200
+ADDRESS_GFX6_SPRITE_COLOR     = ADDRESS_GFX6_SPRITE-$0200  ; sprite color table address (“strictly below the sprite attribute table -$200)
 
 ADDRESS_GFX7_SCREEN           = $10000  ; 64k RAM, 2nd page
 ADDRESS_GFX7_SPRITE_PATTERN   = $f000   ; sprite pattern table
@@ -291,14 +302,14 @@ vdp_nopslide_end:
       .import vdp_nopslide_end
     .endif
     .if(.paramcount > 0)
-      .if(MAX_NOPS_2M < 0 || (_wasted_cycles >> 1) > MAX_NOPS_2M)
+      .if(MAX_NOPS_2M < 0 || ((_wasted_cycles+1) >> 1) > MAX_NOPS_2M)
         jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
       .else
         .if((_wasted_cycles >> 1) > 0)
           jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
         .else
           .assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>>1), "<=", .sprintf ("%d", MAX_NOPS_2M))
-          jsr vdp_nopslide_2m + (_wasted_cycles >> 1) ; add number of wasted cycles, we calculate the jsr offset to remaining nops
+          jsr vdp_nopslide_2m + ((_wasted_cycles+1) >> 1) ; add number of wasted cycles, we calculate the jsr offset to remaining nops
         .endif
            .endif
     .else
@@ -363,6 +374,7 @@ vdp_nopslide_end:
     lda #(_g & $e0 | (_r & $e0)>>3 | _b>>6)
 .endmacro
 
+; creates VDP GRB byte (mode 7) from 24Bit RGB
 .macro vdp_rgb _r, _g, _b
    .byte _g & $e0 | (_r & $e0)>>3 | _b>>6
 .endmacro

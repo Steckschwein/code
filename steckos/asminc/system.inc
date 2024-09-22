@@ -25,18 +25,21 @@
 
 
 ; @see system.s
-IRQ_VDP      = 1<<7    ; irq from video chip
-IRQ_SND      = 1<<6    ; irq from sound card (ym3812)
-IRQ_VIA      = 1<<5    ; irq from VIA (6522)
-IRQ_IO0      = 1<<4    ; i/o port 0
+IRQ_VDP       = 1<<7  ; irq from video chip
+IRQ_VIA       = 1<<6  ; irq from VIA (6522)
+IRQ_SND       = 1<<5  ; irq from sound card (ym3812)
+IRQ_RTC       = 1<<4  ; irq from RTC
+IRQ_UART      = 1<<3  ; irq from UART
+
+IRQ_IO1       = 1<<1  ; i/o port 1 (card slot 1)
+IRQ_IO0       = 1<<0  ; i/o port 0 (card slot 0)
+
 ;...
-
 clockspeed  = 10  ; in Mhz
-
-ctrl_port   = $0230
 
 stack = $0100
 
+ctrl_port   = $0230
 slot0_ctrl = ctrl_port+0
 slot1_ctrl = ctrl_port+1
 slot2_ctrl = ctrl_port+2
@@ -49,6 +52,7 @@ slot3 = $c000
 
 
 CODE_LF  = $0a ; line feed
+CODE_CR  = $0d ; carriage return
 
 ; address constants of RAM addresses which can be used as buffers or kind of
 ; !!! ATTENTION: if used together with fat read/write be aware that this buffers are used and may override your data

@@ -1,11 +1,12 @@
 STECKOS_DIR=..
-CC65FLAGS=-I $(STECKOS_DIR)/clib/include -I $(STECKOS_DIR)/clib/include/vdp --cpu 65c02 -Osir -Cl
+CC65FLAGS=-I $(STECKOS_DIR)/clib/include -I $(STECKOS_DIR)/clib/include/vdp --cpu 65c02 -O
+
 CA65FLAGS=--include-dir $(STECKOS_DIR)/asminc --include-dir $(STECKOS_DIR)/kernel -D_DEBUG
 LIBS=$(STECKOS_DIR)/clib/lib/steckschwein-clib.a $(STECKOS_DIR)/lib/steckschwein.a
 LDFLAGS=--config $(STECKOS_DIR)/prg.ld65.cfg -m $(basename $@).map $(LIBS)
 ASM_INCLUDE=--include-dir $(STECKOS_DIR)/kernel --include-dir $(STECKOS_DIR)/asminc
 
-.PHONY: all clean plasma
+.PHONY: all clean plasma qrcode
 
 all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		rstbars.prg \
@@ -14,19 +15,23 @@ all: gfx7pset.prg gfx7line.prg gfx7bench.prg gfx7sort.prg gfx6test.prg \
 		mandel2.prg \
 		mndlbrot.prg \
 		vdpdemo.prg \
-		plasma \
 		rps_sim.prg	\
 		hanoi.prg \
-		win95.prg
+		win95.prg \
+		lines.prg \
+		sortdemo.prg
+	(cd plasma ; make )
+	(cd qrcode ; make )
 
-plasma:
-	(cd plasma; make)
+
 clean:
 	rm -f *.prg *.s *.o *.map
 	(cd plasma ; make clean)
+	(cd qrcode ; make clean)
+
 
  %.o: %.c
-	cc65 $(CC65FLAGS) -t none -O $<
+	cc65 $(CC65FLAGS) -O $<
 	ca65 $(CA65FLAGS) $(@:.o=.s)
 
 %.o: %.asm

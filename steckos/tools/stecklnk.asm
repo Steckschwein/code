@@ -103,7 +103,7 @@ write_bytes:
       tay
       ldx fd
 @write:
-      cmp16 fsize, bytes, :+
+      cmp32 fsize, bytes, :+
       rts
 :     lda xmodem_rcvbuffer,y
       jsr krn_write_byte

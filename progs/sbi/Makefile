@@ -12,8 +12,7 @@ clean:
 	rm -f *.prg *.s *.o
 
 %.o: %.c
-	cc65 $(CC65FLAGS) -t none --cpu $(CPU) -O $<
-#	ca65 --cpu $(CPU) $(CA65FLAGS) $(@:.o=.s)
+	cc65 $(CC65FLAGS) --cpu $(CPU) -O $<
 
 %.prg: %.c $(LIBS)
 	cl65 -t none $(CA65FLAGS) $(CC65FLAGS) $< $(LDFLAGS) -o $@

@@ -35,6 +35,54 @@
 ;----------------------------------------------------------------------------
 .code
 
+; void __fastcall__ vdp_reg (unsigned char reg, unsigned char val);
+.export _vdp_reg
+.proc _vdp_reg
+    vdp_wait_s
+    sta a_vreg
+    jsr popa
+    ora #$80
+    sta a_vreg
+    rts
+.endproc
+
+; int __fastcall__ vdp_maxx ();
+.export _vdp_maxx
+.proc _vdp_maxx
+    ldy _vdp_mode ; mode shift 2
+    lda @maxx,y
+    ldx @maxx+1,y
+    rts
+@maxx:
+    .byte $4f,0 ; text
+    .byte $1f,0 ; G2
+    .byte $1f,0 ; G3
+    .byte $3f,0 ; MC
+    .byte $ff,0 ; G4
+    .byte $ff,1 ; G5
+    .byte $ff,1 ; G6
+    .byte $ff,0 ; G7
+.endproc
+
+
+; int __fastcall__ vdp_maxy();
+.export _vdp_maxy
+.proc _vdp_maxy
+    ldy _vdp_mode ; mode shift 2
+    lda @maxy,y
+    ldx @maxy+1,y
+    rts
+@maxy:
+    .byte $1a,0 ; text
+    .byte $1a,0 ; G2
+    .byte $1a,0 ; G3
+    .byte $35,0 ; MC  ; 64x48 / 64x53 (ln)
+    .byte $d4,0 ; G4
+    .byte $d4,0 ; G5
+    .byte $d4,0 ; G6
+    .byte $d4,0 ; G7
+.endproc
+
 ; void __fastcall__ vdp_screen (unsigned char mode);
 .export _vdp_screen
 .proc _vdp_screen
@@ -45,7 +93,6 @@
     jsr krn_textui_disable			;disable textui
     ldx _vdp_mode
     jsr _gfx_set_mode
-    vdp_sreg v_reg9_nt | v_reg9_ln, v_reg9   ; lines - 0 - 192 lines, 1 - 212 lines ; ntsc - 0 / pal - 1
     plp
     rts
 .endproc
@@ -58,7 +105,7 @@ _gfx_mode_table:
     .word vdp_mode2_on  ; 1
     .word vdp_mode3_on ; 2
     .word vdp_mc_on ; 3
-    .word gfx_notimplemented; 4
+    .word vdp_mode4_on; 4
     .word gfx_notimplemented; 5
     .word vdp_mode6_on ; 6
     .word vdp_mode7_on ; 7
@@ -75,22 +122,22 @@ gfx_notimplemented:
 ; void __fastcall__ vdp_plot (unsigned int x, unsigned char y, unsigned char color);
 .export _vdp_plot
 .proc _vdp_plot
-    pha ;_vdp_px_color       ; save color
+    pha       ; save color
     jsr popa
-    pha; _vdp_px_y
+    pha
     jsr popax
-    pha;sta _vdp_px_x
+    pha
     ; TODO 16bit x
     ldx _vdp_mode
-    jmp (gfx_plot_table,x)
+    jmp (plot_table,x)
 .endproc
 
-gfx_plot_table:
+plot_table:
     .word gfx_notimplemented  ; 0
     .word GFX_2_Plot ; 2
     .word GFX_2_Plot ; 2
     .word GFX_MC_Plot; 3
-    .word gfx_notimplemented; 4
+    .word GFX_4_Plot; 4
     .word gfx_notimplemented; 5
     .word GFX_6_Plot ; 6
     .word GFX_7_Plot ; 7
@@ -106,6 +153,12 @@ GFX_MC_Plot:
     ply
     pla
     jmp vdp_mc_set_pixel
+
+GFX_4_Plot:
+    plx
+    ply
+    pla
+    jmp vdp_mode4_set_pixel
 
 GFX_6_Plot:
     plx
@@ -132,14 +185,6 @@ GFX_7_Plot:
         rts
 .endproc
 
-; int __fastcall__ vdp_getcolor();
-.export _vdp_getcolor
-.proc _vdp_getcolor
-        lda _vdp_line_t+line_t::color
-        ldx #0
-        rts
-.endproc
-
 ; void __fastcall__ vdp_line(int x1, char y1, int x2, char y2);
 .export _vdp_line
 .proc _vdp_line
@@ -161,11 +206,20 @@ _vdp_fill_line_t:
         ldy #>_vdp_line_t
         rts
 
+
+; int __fastcall__ vdp_getcolor();
+.export _vdp_getcolor
+.proc _vdp_getcolor
+        lda _vdp_line_t+line_t::color
+        ldx #0
+        rts
+.endproc
+
 ; void __fastcall__ vdp_setcolor (unsigned char color);
 .export _vdp_setcolor
 .proc _vdp_setcolor
-    sta _vdp_line_t+line_t::color ; set to line_t struct, to have the color in place
-    rts
+        sta _vdp_line_t+line_t::color ; set to line_t struct, to have the color in place
+        rts
 .endproc
 
 ; void __fastcall__ vdp_blank (unsigned char color);
@@ -181,7 +235,7 @@ gfx_blank_table:
     .word vdp_mode2_blank ; 2
     .word vdp_mode3_blank ; 2
     .word vdp_mc_blank; 3
-    .word gfx_notimplemented; 4
+    .word vdp_mode4_blank; 4
     .word gfx_notimplemented; 5
     .word vdp_mode6_blank; 6
     .word vdp_mode7_blank ; 7

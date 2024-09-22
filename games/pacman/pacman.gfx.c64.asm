@@ -3,10 +3,10 @@
     .export gfx_mode_on
     .export gfx_mode_off
     .export gfx_blank_screen
+    .export gfx_sprites_on
     .export gfx_sprites_off
     .export gfx_bgcolor
     .export gfx_bordercolor
-    .export gfx_vblank
 
     .export gfx_charout
     .export gfx_rotate_pal
@@ -15,22 +15,11 @@
     .export gfx_hires_off
     .export gfx_pause
     .export gfx_Sprite_Off
+    .export gfx_colors
 
-    .export Color_Bg
-    .export Color_Red
-    .export Color_Pink
-    .export Color_Cyan
-    .export Color_Light_Blue
-    .export Color_Orange
-    .export Color_Yellow
-    .export Color_Dark_Cyan
-    .export Color_Blue
-    .export Color_Gray
-    .export Color_Dark_Pink
+    .autoimport
 
-    .import game_state
-
-    .import sys_crs_x,sys_crs_y
+    .importzp sys_crs_x,sys_crs_y
 
     .include "pacman.c64.inc"
 
@@ -55,7 +44,106 @@ gfx_Sprite_Off=250
   mc  .byte ; multi color  bitmask
 .endstruct
 
+.zeropage
+              r1:       .res 1
+              r2:       .res 1
+              p_tmp:    .res 2
+
 .code
+
+.export gfx_isr
+gfx_isr:
+    lda VIC_HLINE
+    cmp #HLine_Border
+    beq @io_isr_border
+    cmp #HLine_Border_Before
+    beq @io_isr_before_border
+    cmp #HLine_Last
+    beq @io_isr_lastline
+
+    lda #COLOR_WHITE
+    sta VIC_BORDERCOLOR
+;    jsr gfx_mx ; sprite mx
+    lda #HLine_Border_Before
+    sta VIC_HLINE
+
+    inc VIC_IRR   ; ack
+
+    lda #0
+    rts
+
+@io_isr_lastline:
+    lda VIC_CTRL1   ; restore border
+    ora #$08
+    sta VIC_CTRL1
+
+    lda #COLOR_BLACK
+    sta VIC_BORDERCOLOR
+    sta VIC_BG_COLOR0
+
+    inc VIC_IRR   ; ack
+
+    lda #$80        ; bit 7 to signal vblank irq
+    rts
+
+@io_isr_before_border:
+    lda #HLine_Border-3
+    sta VIC_SPR0_Y
+    sta VIC_SPR1_Y
+    sta VIC_SPR2_Y
+    sta VIC_SPR3_Y
+    sta VIC_SPR4_Y
+    sta VIC_SPR5_Y
+
+    lda #HLine_Border
+    sta VIC_HLINE
+    inc VIC_IRR   ; ack
+
+    lda #$40
+    rts
+
+@io_isr_border:
+            lda VIC_CTRL1
+            and #$f7            ; vic trick to open border - clean 24/25 rows bit
+            sta VIC_CTRL1
+
+            lda #COLOR_BLUE
+;    sta VIC_BORDERCOLOR
+            sta VIC_BG_COLOR0
+;    lda #HLine_Border
+ ;   sta VIC_SPR0_Y
+  ;  sta VIC_SPR1_Y
+   ; sta VIC_SPR2_Y
+    ;sta VIC_SPR3_Y
+    ;sta VIC_SPR4_Y
+    ;sta VIC_SPR5_Y
+            ldx #0
+            ldy #HLine_Border+1
+@char:      lda BANK+VRAM_PATTERN+$d3<<3,x
+            eor #$ff
+@hblank:    cpy VIC_HLINE
+            bne @hblank
+            sta BANK_GHOSTBYTE
+            inx
+            iny
+            cpy #<(HLine_Border+1+8)
+            bne @char
+            lda #Color_Bg
+            ldx #$ff                 ; #$ff (black) ghost byte
+:           cpy VIC_HLINE
+            bne :-
+            stx BANK_GHOSTBYTE
+            sta VIC_BG_COLOR0
+
+            lda #HLine_Last     ; next irq last line
+            sta VIC_HLINE
+
+            inc VIC_IRR   ; ack
+
+            lda #$40
+@rts:
+            rts
+
 gfx_mode_off:
 
 gfx_mode_on:
@@ -66,56 +154,65 @@ gfx_mode_on:
     sta VIC_SPR_ENA
     lda #VIC_SPR_MCOLOR_DEFAULT
     sta VIC_SPR_MCOLOR
-    lda Color_Gray
+    ldx #Color_Gray
+    lda gfx_colors,x
     sta VIC_SPR_MCOLOR0
-    lda Color_Blue
+    ldx #Color_Blue
+    lda gfx_colors,x
     sta VIC_SPR_MCOLOR1
 
 gfx_rotate_pal:
     rts
 
-gfx_vblank:
-    rts
-
 gfx_init:
+    lda CIA2
+    and #$fc
+    ora #(BANK>>14 ^ $03)
+    sta CIA2
+
     lda #$61    ; pattern open border
-    sta $3fff  ; last byte bank 0 - we open the border
-    lda Color_Bg
+    sta BANK_GHOSTBYTE ;$3fff  ; last byte bank 0 - we open the border
+    lda #Color_Bg
     sta VIC_BORDERCOLOR
     sta VIC_BG_COLOR0
     ldx #$0f
     lda #0
-:    sta VIC_SPR0_X,x
+:   sta VIC_SPR0_X,x
     dex
     bpl :-
-    lda Color_Blinky
+    ldx #Color_Blinky
+    lda gfx_colors,x
     sta VIC_SPR0_COLOR
-    lda Color_Pinky
+    ldx #Color_Pinky
+    lda gfx_colors,x
     sta VIC_SPR2_COLOR
-    lda Color_Inky
+    ldx #Color_Inky
+    lda gfx_colors,x
     sta VIC_SPR4_COLOR
-    lda Color_Clyde
+    ldx #Color_Clyde
+    lda gfx_colors,x
     sta VIC_SPR6_COLOR
-    lda Color_Pacman
+    ldx #Color_Pacman
+    lda gfx_colors,x
     sta VIC_SPR7_COLOR
 
 ;gfx_init_pal:
 gfx_init_chars:
     ldx #8
-    setPtr tiles,  p_tmp
-    setPtr VRAM_PATTERN, p_video
-    jsr _gfx_memcpy
+    setPtr tiles, p_tmp
+    setPtr (BANK+VRAM_PATTERN), p_video
+    jsr gfx_memcpy
     setPtr sprite_patterns, p_tmp
-    setPtr VRAM_SPRITE_PATTERN, p_video
-    ldx #9
-    jsr _gfx_memcpy
+    setPtr (BANK+VRAM_SPRITE_PATTERN), p_video
+    ldx #8
+    jsr gfx_memcpy
 
 gfx_blank_screen:
-    setPtr VRAM_SCREEN, p_video
+    setPtr (BANK+VRAM_SCREEN), p_video
     ldx #4
     ldy #0
     lda #0
-:     sta (p_video),y
+:   sta (p_video),y
     iny
     bne :-
     inc p_video+1
@@ -140,8 +237,8 @@ _gfx_is_sp_collision:
 ; X - ghost index
 @gfx_test_sp_y:  ;
     sec
-    lda actors+actor::sp_y,x
-    sbc actors+actor::sp_y,y
+    lda actor_sp_y,x
+    sbc actor_sp_y,y
     bpl :+
     eor #$ff ; absolute |y1 - y2|
 :   cmp #SPRITE_SIZE_Y ; C=1 if >=21px size distance
@@ -150,8 +247,8 @@ _gfx_is_sp_collision:
 
 .macro _gfx_update_ghost _a, _mx
   .local _n
-  _n = _a / .sizeof(actor); _n => actor number 0..3
-  lda actors+actor::sp_y+_a
+  _n = _a ; _n => actor number 0..3
+  lda actor_sp_y+_a
   clc
   adc #gfx_Sprite_Adjust_Y
   sta VIC_SPR0_Y+_n*4 ; *4 => 2 x 2 sprites vic registers
@@ -161,7 +258,7 @@ _gfx_is_sp_collision:
   sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::yp
 .endif
   ;clc - assume, we never overflow above
-  lda actors+actor::sp_x+_a
+  lda actor_sp_x+_a
   adc #gfx_Sprite_Adjust_X
   sta VIC_SPR0_X+_n*4
 .if _mx = 0
@@ -169,15 +266,15 @@ _gfx_is_sp_collision:
 .else
   sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::xp
 .endif
-  ldy actors+actor::shape+_a
+  ldy actor_shape+_a
   lda shapes+0,y
-  sta VRAM_SPRITE_POINTER+0+_n*2
+  sta BANK+VRAM_SPRITE_POINTER+0+_n*2
   lda shapes+2,y
   cmp #offs+30            ; eyes up? TODO FIXME performance avoid cmp
   bne :+
 .if _mx = 0
   dec VIC_SPR1_X+_n*4     ; adjust 1px left if eyes up on 2nd sprite
-:  sta VRAM_SPRITE_POINTER+1+_n*2
+:  sta BANK+VRAM_SPRITE_POINTER+1+_n*2
 .else
   dec mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::xp     ; adjust 1px left if eyes up on 2nd sprite
 :  sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::pp
@@ -190,25 +287,29 @@ _gfx_is_sp_collision:
     .local _a, _mx
     _mx=0
     _a = ACTOR_PACMAN
-    lda actors+actor::sp_y+_a
+    lda actor_sp_y+_a
     clc
     adc #gfx_Sprite_Adjust_Y
     sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::yp
     ;clc - assume, we never overflow above
-    lda actors+actor::sp_x+_a
+    lda actor_sp_x+_a
     adc #gfx_Sprite_Adjust_X
     sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::xp
-    ldy actors+actor::shape+_a
+    ldy actor_shape+_a
     lda shapes,y
     sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::pp
     lda #VIC_SPR_MCOLOR_DEFAULT
     sta mx_tab+_mx*.sizeof(mx_sprite)+mx_sprite::mc
 .endmacro
 
+.export gfx_prepare_update
+gfx_prepare_update:
+    rts
+
 gfx_update:
     _gfx_update_ghost ACTOR_BLINKY, 0
-    _gfx_update_ghost ACTOR_INKY, 0
     _gfx_update_ghost ACTOR_PINKY, 0
+    _gfx_update_ghost ACTOR_INKY, 0
     _gfx_update_ghost ACTOR_CLYDE, 1 ; 1 - mx sprite, eyes of clyde are multiplexed with pacman
     _gfx_update_pacman
 
@@ -232,8 +333,8 @@ gfx_update:
 
 @set_hline:
     ldx #ACTOR_CLYDE
-    lda actors+actor::sp_y,y
-    cmp actors+actor::sp_y,x
+    lda actor_sp_y,y
+    cmp actor_sp_y,x
     ldy #0*.sizeof(mx_sprite)
     bcc :+
     ldy #1*.sizeof(mx_sprite)
@@ -252,7 +353,7 @@ gfx_mx:
     lda mx_tab+mx_sprite::xp,y
     sta VIC_SPR7_X
     lda mx_tab+mx_sprite::pp,y
-    sta VRAM_SPRITE_POINTER+7
+    sta BANK+VRAM_SPRITE_POINTER+7
     lda mx_tab+mx_sprite::mc,y
     sta VIC_SPR_MCOLOR
 
@@ -261,53 +362,54 @@ gfx_mx:
     sta mx_tab_ix
     rts
 
+gfx_sprites_on:
+    lda #$ff
+    sta VIC_SPR_ENA
+    rts
 gfx_sprites_off:
     lda #0
     sta VIC_SPR_ENA
-
     rts
 
 gfx_display_maze:
-_gfx_setcolor:
     ldx #4
     ldy #0
     sty sys_crs_x
     sty sys_crs_y
-    setPtr game_maze, p_maze
+    setPtr (game_maze), p_maze
 @loop:
-    lda (p_maze), y
-    sta gfx_tmp
-    cmp #Char_Food
+    lda (p_maze),y
+    sta r1
+    cmp #Char_Dot
     bne @s_food
-    lda Color_Food
+    lda #Color_Food
     bne @color
 @s_food:
-    cmp #Char_Superfood
+    cmp #Char_Energizer
     bne @text
-    lda Color_Food
+    lda #Color_Food
     bne @color
 @text:
-    cmp #Char_Bg
+    cmp #Char_Blank
     bne @color_border
-    lda Color_Pink
+    lda #Color_Pink
     bne @color
 @color_border:
     bcs @color_bg
-    lda Color_Text
+    lda #Color_Text
     bne @color
 @color_bg:
-    lda Color_Border
+    lda #Color_Maze
 @color:
     sta text_color
-    lda gfx_tmp
+    lda r1
     jsr gfx_charout
     inc sys_crs_x
     lda sys_crs_x
-    cmp #32
+    and #$1f
     bne @next
-    inc sys_crs_y
-    lda #0
     sta sys_crs_x
+    inc sys_crs_y
 @next:
     iny
     bne @loop
@@ -316,12 +418,22 @@ _gfx_setcolor:
     bne @loop
     rts
 
-    setPtr game_maze, p_tmp
-    setPtr VRAM_SCREEN, p_video
-    ldx #4
-_gfx_memcpy:
+
+.export gfx_lives
+.export gfx_bonus_stack
+.export gfx_bonus
+gfx_lives:
+gfx_bonus_stack:
+gfx_bonus:
+    rts
+
+.export gfx_ghost_icon
+gfx_ghost_icon:
+    rts
+
+gfx_memcpy:
     ldy #0
-:      lda (p_tmp),y
+:   lda (p_tmp),y
     sta (p_video),y
     iny
     bne :-
@@ -333,7 +445,8 @@ _gfx_memcpy:
 
 gfx_charout:
     pha
-    sty gfx_tmp
+    stx r1
+    sty r2
 
     lda #0
     sta p_video+1
@@ -355,51 +468,62 @@ l_add:
     adc sys_crs_x
     sta p_video
     sta p_tmp
-    lda #>VRAM_SCREEN
+    lda #>(BANK+VRAM_SCREEN)
     adc p_video+1
     sta p_video+1
     clc
-    adc #>(VRAM_COLOR-VRAM_SCREEN)
+    adc #>(VRAM_COLOR-(BANK+VRAM_SCREEN)) ; ?!?
     sta p_tmp+1
     pla
     ldy #0
     sta (p_video),y
-    lda text_color
+    ldx text_color
+    lda gfx_colors,x
     sta (p_tmp),y
-    ldy gfx_tmp
+    ldy r2
+    ldx r1
     rts
 
 gfx_hires_off:  ;?!?
     rts
 gfx_bordercolor:
+    tax
+    lda gfx_colors,x
     sta VIC_BORDERCOLOR
     rts
 gfx_bgcolor:
+    tax
+    lda gfx_colors,x
     sta VIC_BG_COLOR0
     rts
 
 gfx_pause:
     rts
 
-
 .data
+
 shapes:
-offs=VRAM_SPRITE_PATTERN / $40
+offs=VRAM_SPRITE_PATTERN >> 6
 ; pacman      [    <     O     <
     .byte offs+1,offs+0,offs+8,offs+0 ;r  00
-    .byte offs+3,offs+2,offs+8,offs+2 ;l  01
-    .byte offs+5,offs+4,offs+8,offs+4 ;u  10
-    .byte offs+7,offs+6,offs+8,offs+6 ;d  11
-; ghosts eyes | body
+    .byte offs+7,offs+6,offs+8,offs+6 ;d  01
+    .byte offs+3,offs+2,offs+8,offs+2 ;l  10
+    .byte offs+5,offs+4,offs+8,offs+4 ;u  11
+; ghosts eyes | body - $10
     .byte offs+20,offs+21,offs+28,offs+28 ;r  00
-    .byte offs+22,offs+23,offs+29,offs+29 ;l  01
-    .byte offs+24,offs+25,offs+30,offs+30 ;u  10
-    .byte offs+26,offs+27,offs+31,offs+31 ;d  11
-
+    .byte offs+26,offs+27,offs+31,offs+31 ;d  01
+    .byte offs+22,offs+23,offs+29,offs+29 ;l  10
+    .byte offs+24,offs+25,offs+30,offs+30 ;u  11
+; ghost eyes only (catched) $20
     .byte offs+28,offs+28,offs+20,offs+21 ;r  00
     .byte offs+29,offs+29,offs+22,offs+23 ;l  01
     .byte offs+30,offs+30,offs+24,offs+25 ;u  10
     .byte offs+31,offs+31,offs+26,offs+27 ;d  11
+; ghosts frighened $30
+
+; pacman dying
+
+; ghosts bonus  $40
 ;
 
 sprite_patterns:
@@ -407,17 +531,24 @@ sprite_patterns:
 tiles:
     .include "pacman.tiles.rot.inc"
 
-Color_Bg:           .byte COLOR_BLACK
-Color_Red:          .byte COLOR_RED
-Color_Pink:         .byte COLOR_VIOLET
-Color_Cyan:         .byte COLOR_CYAN
-Color_Light_Blue:   .byte COLOR_LIGHTBLUE
-Color_Orange:       .byte COLOR_ORANGE
-Color_Yellow:       .byte COLOR_YELLOW
-Color_Dark_Cyan:    .byte COLOR_CYAN
-Color_Blue:         .byte COLOR_BLUE
-Color_Gray:         .byte COLOR_GRAY3
-Color_Dark_Pink:    .byte COLOR_LIGHTRED
+gfx_colors:  ; mapping between pacman original color number 0..f and c64 color
+.byte COLOR_BLACK
+.byte COLOR_RED       ;1 "shadow", "blinky" red
+.byte COLOR_BROWN     ;2 Orange top, cherry stem
+.byte COLOR_VIOLET    ;3 "speedy", "pinky" pink
+.byte COLOR_BLACK
+.byte COLOR_CYAN      ;5 "bashful", "inky" cyan
+.byte COLOR_LIGHTBLUE
+.byte COLOR_ORANGE    ;7 "pokey", "Clyde" "orange"
+.byte COLOR_BLACK
+.byte COLOR_YELLOW    ;9 "yellow", "pacman"
+.byte COLOR_BLACK
+.byte COLOR_LIGHTRED  ;b dark pink "food"
+.byte COLOR_GREEN
+.byte COLOR_CYAN      ;
+.byte COLOR_BLUE      ; e blue => ghosts "scared", ghost pupil
+.byte COLOR_GRAY3     ; f gray => ghosts "scared", ghost eyes
+
 
 .bss
 mx_tab_ct: .res 1 ; multiplex counter

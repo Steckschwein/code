@@ -1,12 +1,11 @@
 ;
 ; os specific error code mapping
-; int __fastcall__ _osmaperrno (unsigned char oserror);
-;
+; int __fastcall__ __osmaperrno (unsigned char oserror);
 
 		  .include "errno.inc"
-		  .export __osmaperrno
+		  .export ___osmaperrno
 
-.proc	__osmaperrno
+.proc	___osmaperrno
 		  cmp	  #$80				; error or success
 		  bcs	  errcode			; error, jump
 

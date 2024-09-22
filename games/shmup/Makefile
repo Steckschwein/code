@@ -9,6 +9,9 @@ LIBS_C64=$(CC65_HOME)/lib/c64.lib
 #LDFLAGS_C64=-C c64-asm.cfg -m pacman64.map
 LDFLAGS_C64=-t c64 -m $<.map
 
+OBJS=chars_bg.o
+OBJS+=chars_2x2_numbers.o
+
 .PHONY: all clean
 
 all: shmup.prg
@@ -19,8 +22,8 @@ clean:
 %.o: %.s
 	ca65 $(CAFLAGS) $(@:.o=.s)
 
-%.prg: %.o $(LIBS)
-	ld65 $< -m $(basename $<).map $(LDFLAGS) -o $@
+%.prg: %.o $(OBJS) $(LIBS)
+	ld65 $< -m $(basename $<).map $(OBJS) $(LDFLAGS) -o $@
 
 %.c64.o: %.c64.s
 	ca65 $(CA65FLAGS_C64) $(@:.o=.s)

@@ -172,7 +172,7 @@ static void makechar (void)
         }
     }
 	#if !defined(__C64__) && !defined(__C128__)
-	vdp_memcpy((unsigned char*)CHARSET, ADDRESS_TEXT_PATTERN, 0x08);//copy to vram, 8 pages 
+	vdp_memcpy((unsigned char*)CHARSET, ADDRESS_TEXT_PATTERN, 0x08);//copy to vram, 8 pages
 	#endif
 }
 
@@ -183,7 +183,6 @@ int main (void)
     unsigned char border;
     unsigned char background;
     unsigned char text;
-    unsigned char v;
     clock_t       t;
     unsigned long f = 0;
     unsigned long sec;
@@ -251,7 +250,7 @@ int main (void)
     while (!kbhit()) {
         /* Build page 1, then make it visible */
         doplasma ((unsigned char*)SCREEN1);
-        vdp_memcpy((unsigned char*)SCREEN1, ADDRESS_TEXT_SCREEN, 0x08);//update screen ram, 4 pages 
+        vdp_memcpy((unsigned char*)SCREEN1, ADDRESS_TEXT_SCREEN, 0x08);//update screen ram, 4 pages
 #if defined(__PLUS4__)
         outb (&TED.video_addr, PAGE1);
 #else
@@ -260,7 +259,7 @@ int main (void)
 
         /* Build page 2, then make it visible */
         doplasma ((unsigned char*)SCREEN2);
-        vdp_memcpy((unsigned char*)SCREEN2, ADDRESS_TEXT_SCREEN, 0x08);//update screen ram, 4 pages 
+        vdp_memcpy((unsigned char*)SCREEN2, ADDRESS_TEXT_SCREEN, 0x08);//update screen ram, 4 pages
 #if defined(__PLUS4__)
         outb (&TED.video_addr, PAGE2);
 #else
@@ -270,7 +269,7 @@ int main (void)
         /* Count frames */
         f += 2;
     }
-   
+
     t = clock() - t;
 
     /* Switch back the VIC screen */
@@ -298,7 +297,7 @@ int main (void)
     //bordercolor (border);
     //bgcolor (background);
     textcolor (text);
-    
+
     clrscr ();
 
     /* Calculate stats */

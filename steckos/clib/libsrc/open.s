@@ -33,7 +33,7 @@
       .import popax
       .import incsp4
       .import ldaxysp,addysp
-      .import __oserror
+      .import ___oserror
       .importzp tmp3
 
 ;--------------------------------------------------------------------------
@@ -65,11 +65,11 @@ parmok:
 
 ; Error entry. Sets _errno, clears _oserror, returns -1
 seterrno:
-      jmp __directerrno
+      jmp ___directerrno
 
 ; Error entry: Set oserror and errno using error code in A and return -1
 oserror:
-      jmp __mappederrno
+      jmp ___mappederrno
 
 doread:
 dowrite:
@@ -80,12 +80,12 @@ dowrite:
       jsr popax         ; Get name, ptr low/high in a/x
       ldy tmp3
       jsr krn_open      ; with a/x ptr to path
-      bcs oserror       ; Bail out if problem with open
+      bcs seterrno      ; Bail out if problem with open
 
 ; Done. Return the handle in a/x
       txa               ; offset into fd_area from krn_open
       ldx #0
-      stx __oserror     ; Clear _oserror
+      stz ___oserror     ; Clear _oserror
       rts
 .endproc
 

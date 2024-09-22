@@ -29,43 +29,64 @@
 int main(int argc, char* argv){
 
   int x;
-  int y;
+  char y;
+  int maxx,maxy;
 
-  initgraph(NULL, 7, NULL);
+  initgraph(NULL, 3, NULL);
+  setbkcolor(BLACK);
   cleardevice();
-/*
-  for(x=0;x<256;x++){
-    for(y=0;y<212;y++){
-      vdp_plot(x,y,x);
 
-      vdp_setcolor(x);
-      vdp_putpixel(255-x,y);
+  maxx = getmaxx();
+  maxy = getmaxy();
+
+  do{
+    for(x=0;x<=maxx;x++){
+      for(y=0;y<maxy;y++){
+        putpixel(x,y,x);
+        putpixel(maxx-x,y,x);
+      }
     }
-  }
-*/
+  } while (!kbhit());
+
+  return EXIT_SUCCESS;
+
+
   setcolor(WHITE);
+  line(0,0,3,0);
+  putpixel(10,10,MAGENTA);
+
+  line(0,24,63,24);
+  rectangle(10,10,20,20);
+
+
   rectangle(1,2,1,100);
   setcolor(YELLOW);
   rectangle(1,2,100,2);
-  getch();
+//  getch();
 
   for(x=0;x<=15;x++){
     setcolor(x);
-    outtextxy(0x10, (x<<3), "Hallo Steckschwein!");
+    outtextxy(0x10+x<<3, (x<<3), "Hallo Steckschwein!");
   }
-  getch();
+//  getch();
 
   for(x=0;x<=15;x++){
     setfillstyle(0,x);
     bar(10, 10+x*10, 100, 20+x*10);
   }
-  getch();
+//  getch();
 
-  for(x=0;x<255;x++){
+  for(x=0;x<maxx;x++){
     setcolor(x);
     rectangle(x,x+16,x+32,x+32);
   }
-  getch();
+
+  for(x=0;x<16;x++){
+//    getch();
+    setbkcolor(x);
+    cleardevice();
+  }
+
 
   return EXIT_SUCCESS;
 }

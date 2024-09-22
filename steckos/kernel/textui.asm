@@ -27,7 +27,8 @@
 .include "keyboard.inc"
 .include "vdp.inc"
 
-TEXTUI_COLOR=Medium_Green<<4|Black
+; TEXTUI_COLOR=Medium_Green<<4|Black
+TEXTUI_COLOR=White<<4|Black
 ROWS=24
 CURSOR_BLANK=' '
 CURSOR_CHAR=$db ; invert blank char - @see charset_6x8.asm
@@ -48,10 +49,12 @@ STATE_TEXTUI_ENABLED  =1<<7
 .export textui_primm
 .endif
 
-.export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_cursor_onoff, textui_setmode
+.export textui_enable, textui_disable, textui_blank, textui_update_crs_ptr, textui_crsxy, textui_cursor_onoff, textui_setmode, textui_status
 
 .import vdp_fill
 .import vdp_text_on
+
+.import textui_color
 
 textui_scroll_up:
   php
@@ -123,7 +126,7 @@ textui_scroll_up:
   ply
   plx
   plp
-
+  ; fall through
 
 ;@name: textui_update_crs_ptr
 ;@desc: update to new cursor position given in crs_x and crs_y zeropage locations
@@ -172,6 +175,15 @@ textui_update_crs_ptr:
   plp
   rts
 
+
+;@name: textui_status
+;@desc: get internal textui status flags
+;@in: -
+;@out: - N (negative) flag set if textui is enabled, not set otherwise (textui enabled)
+;@out: - V (overflow) flag set if cursor is disabled, not set otherwise (cursor on)
+textui_status:
+  bit screen_status
+  rts
 
 ;@name: textui_update_screen
 ;@desc: update internal state - is called on v-blank
@@ -251,7 +263,7 @@ textui_reset:
     jsr textui_enable
 
 .ifndef DISABLE_VDPINIT
-    lda #TEXTUI_COLOR
+    lda textui_color
     jsr vdp_text_on
 .endif
     rts
@@ -329,31 +341,31 @@ __textui_dispatch_char:
   stz crs_x
   rts
 @lfeed:
-  cmp #KEY_LF  ;line feed
-  beq @l5
-  cmp #KEY_BACKSPACE
-  bne @l4              ; normal char
-  lda crs_x
-  bne @l3
-  lda crs_y            ; cursor y=0, no dec
-  beq @exit
-  dec crs_y
-  lda #40
+    cmp #KEY_LF  ;line feed
+    beq @l5
+    cmp #KEY_BACKSPACE
+    bne @l4              ; normal char
+    lda crs_x
+    bne @l3
+    lda crs_y            ; cursor y=0, no dec
+    beq @exit
+    dec crs_y
+    lda #40
     bit video_mode          ; set x to max-cols
     bvc @l3
     asl ; 80 col
 @l3:
-  dec               ; -1 which is end of the previous line
-  sta crs_x
-  jsr textui_update_crs_ptr
-  lda #CURSOR_BLANK        ; blank the saved char
-  sta saved_char
+    dec               ; -1 which is end of the previous line
+    sta crs_x
+    jsr textui_update_crs_ptr
+    lda #CURSOR_BLANK        ; blank the saved char
+    sta saved_char
 @exit:
-  rts
+    rts
 @l4:
     sta saved_char          ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
     lda crs_x
-    inc
+    ina
     bit video_mode
     bvs :+
     cmp #40
@@ -363,19 +375,18 @@ __textui_dispatch_char:
     sta crs_x
     jmp textui_update_crs_ptr
 @l5:
-  stz crs_x
+    stz crs_x
+    lda crs_y
+    cmp #ROWS-1          ; last line
+    bne @l6
 
-  lda crs_y
-  cmp #ROWS-1          ; last line
-  bne @l6
-
-  jsr _vram_crs_ptr_write_saved  ; restore saved char
-  lda #CURSOR_BLANK
-  sta saved_char         ; reset saved_char to blank, cause we scroll up
-  jmp textui_scroll_up  ; scroll and exit
+    jsr _vram_crs_ptr_write_saved  ; restore saved char
+    lda #CURSOR_BLANK
+    sta saved_char         ; reset saved_char to blank, cause we scroll up
+    jmp textui_scroll_up  ; scroll and exit
 @l6:
-  inc crs_y
-  jmp textui_update_crs_ptr
+    inc crs_y
+    jmp textui_update_crs_ptr
 
 .bss
 scroll_buffer_size = 100 ; 40/80 col mode => 1000/2000 chars to copy

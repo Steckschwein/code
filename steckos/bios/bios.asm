@@ -23,8 +23,6 @@
       init_step:  .res 1
       startaddr:  .res 2
 
-;.exportzp ptr1,  ptr2
-
 .code
 
 ; bios does not support fat write, so we export a dummy function for write which is not used anyway since we call with O_RDONLY
@@ -33,7 +31,6 @@
 .export write_block_buffered=_noop
 .export write_flush=_noop
 _noop:
-      clc
       rts
 
 memcheck:
@@ -115,14 +112,14 @@ _keyboard_cmd_status:
 :     dey
       bmi :+
       phy
-      ldy #5
+      ldy #10
       jsr _delay_10ms
       lda #KBD_HOST_CMD_CMD_STATUS
       jsr spi_rw_byte
       ply
       cmp #KBD_HOST_CMD_STATUS_EOT
       bne :-
-:    rts
+:     rts
 
 ;  requires nvram init beforehand
 keyboard_init:
@@ -215,7 +212,9 @@ check_stack:
 
 zp_broken:
 stack_broken:
-
+      lda #Dark_Red<<4|Dark_Red
+      jsr vdp_bgcolor
+:     bra :-
 zp_stack_ok:
 
       jsr blklayer_init

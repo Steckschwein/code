@@ -23,7 +23,10 @@
   debug_enabled=1
 .endif
 
+
 .include "kernel.inc"
+.include "nvram.inc"
+
 
 .code
 
@@ -53,6 +56,16 @@
 nvram = $1000
 
 kern_init:
+    lda #<nvram
+    ldy #>nvram
+    jsr read_nvram
+    jsr uart_init
+
+    sta __volatile_ptr
+    sty __volatile_ptr+1
+    ldy #nvram::textui_color
+    lda (__volatile_ptr),y
+    sta textui_color
 
     jsr blklayer_init
 
@@ -62,11 +75,6 @@ kern_init:
     jsr init_via1
 
     jsr init_rtc
-
-    lda #<nvram
-    ldy #>nvram
-    jsr read_nvram
-    jsr uart_init
 
     stz key
     stz flags
@@ -143,34 +151,36 @@ do_irq:
     save
 
     cld ;clear decimal flag, maybe an app has modified it during execution
-    jsr call_user_isr      ; user isr first, maybe there are timing critical things
+    jsr call_user_isr     ; user isr first, maybe there are timing critical things
 
-@check_vdp:
-    bit a_vreg ; vdp irq ?
+    jsr system_irr        ; collect irq sources and store bits in system_irr accordingly
+
+    bit sys_irr ; vdp irq ?
     bpl @check_via
     jsr textui_update_screen  ; update text ui
-;    lda #Dark_Yellow
- ;   jsr vdp_bgcolor
+    lda #Dark_Yellow
+;    jsr vdp_bgcolor
 
 @check_via:
-    bit via1ifr    ; Interrupt from VIA?
-    bpl @check_opl
-;    lda #Light_Green
- ;   jsr vdp_bgcolor
+    bit sys_irr    ; Interrupt from VIA?
+    bvc @check_opl
+    lda #Light_Green
+;    jsr vdp_bgcolor
     ; via irq handling code
     ;
 
 @check_opl:
-    bit opl_stat  ; IRQ from OPL?
-    bpl @check_spi_rtc
-;    lda #Light_Yellow<<4|Light_Yellow
+    lda sys_irr  ; IRQ from OPL?
+    and #IRQ_SND
+    beq @check_spi_rtc
+    lda #Light_Yellow<<4|Light_Yellow
 ;    jsr vdp_bgcolor
 
 @check_spi_rtc:
-    jsr rtc_irq0_ack
-    bcc @check_spi_keyboard
-;    lda #Cyan<<4|Cyan
-;    jsr vdp_bgcolor
+    ;jsr rtc_irq0_ack
+    ;bcc @check_spi_keyboard
+    ;lda #Cyan<<4|Cyan
+    ;jsr vdp_bgcolor
 
 @check_spi_keyboard:
     jsr fetchkey        ; fetch key
@@ -188,16 +198,17 @@ do_irq:
     and #$0f            ; every 16 frames we try to update rtc, gives 320ms clock resolution
     bne @spi_busy
     jsr rtc_systime_update     ; update system time, read date time and store to rtc_systime_t (see rtc.inc)
-    jsr __automount
+    ;jsr __automount
 
 @spi_busy:
     lda via1portb
     and #spi_device_deselect
     cmp #spi_device_deselect
     beq @exit
-    lda #Medium_Red<<4|Medium_Red ; indicates busy spi
-    jsr vdp_bgcolor
-
+;    jsr textui_status
+ ;   bpl @exit
+;    lda #Medium_Red<<4|Medium_Red ; indicates busy spi
+;    jsr vdp_bgcolor
 @exit:
     lda #Medium_Green<<4|Black
     jsr vdp_bgcolor

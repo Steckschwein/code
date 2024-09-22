@@ -16,7 +16,7 @@ public class convert {
 
    public static void main(String[] args) throws IOException {
 
-      File dir = new File("/development/steckschwein-code/games/pacman");
+      File dir = new File("/home/mla/dev/steckschwein-code/games/pacman");
       File file = new File(dir, "pacman.tiles.inc");
       BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
       Pattern p = Pattern.compile(".byte ($?[0-9a-f]{1,2},?){8}.*");
