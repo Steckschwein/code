@@ -82,6 +82,7 @@ SRCDIRS +=  nvram
 SRCDIRS +=  uart/16550
 SRCDIRS +=  spi
 SRCDIRS +=  spi65
+#SRCDIRS +=  sdcard
 SRCDIRS +=  sdcard65
 SRCDIRS +=  fat32
 SRCDIRS +=  via

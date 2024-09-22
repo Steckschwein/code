@@ -1,6 +1,32 @@
 .include "bios.inc"
 
-.autoimport
+;.autoimport
+.import xmodem_upload
+.import fat_close
+.import fat_fread_vollgas
+.import fat_fread_byte
+.import fat_fopen
+.import fat_mount
+
+.import sdcard_init
+.import sd_read_block
+.import blklayer_read_block
+.import crc16_table_init
+.import blklayer_init
+.import vdp_charout
+.import vdp_init
+.import vdp_detect
+.import vdp_bgcolor
+.import init_via1
+.import read_nvram
+.import uart_init
+
+.import spi_select_device
+.import spi_r_byte
+.import spi_rw_byte
+.import spi_deselect
+.import hexout,hexout_s
+.import primm
 
 ; expose high level read_/write_block api
 .export read_block=             blklayer_read_block
@@ -20,8 +46,10 @@
 .zeropage
       ptr1:       .res 2
       ptr2:       .res 2
+      wptr: .res 2
       init_step:  .res 1
       startaddr:  .res 2
+      bt_cnt:     .res 2
 
 .code
 
@@ -260,6 +288,9 @@ zp_stack_ok:
       jmp do_upload
 
 boot_from_card:
+      lda #0
+      sta spi65_div
+
       print "Boot from SD card... "
       jsr fat_mount
       bcc @findfile
@@ -268,7 +299,7 @@ boot_from_card:
       pla
       jsr hexout_s
       println ")"
-      bra do_upload
+      jmp do_upload
 @findfile:
       ldy #0
 @loop:
@@ -279,16 +310,19 @@ boot_from_card:
       bne @loop
 :     lda #(<nvram)+nvram::filename
       ldx #>nvram
+      lda #<tst_file
+      ldx #>tst_file
       ldy #O_RDONLY
-      jsr fat_fopen          ; A/X - pointer to filename
+      jsr fat_fopen         ; A/X - pointer to filename
       bcc @loadfile
       println " not found."
-      bra do_upload
+      jmp do_upload
 @loadfile:
       print " found."
-      jsr fat_fread_byte  ; start address low
+      jsr fat_fread_byte    ; start address low
       bcs load_error
       sta startaddr+0
+      sta wptr+0
       jsr hexout
 
       print_dot
@@ -296,13 +330,27 @@ boot_from_card:
       jsr fat_fread_byte ; start address high
       bcs load_error
       sta startaddr+1
+      sta wptr+1
       jsr hexout
 
       print_dot
       lda startaddr
       ldy startaddr+1
+;      jsr fat_fread_vollgas
+ ;     bcs load_error
+  ;    jmp startup
 
-      jsr fat_fread_vollgas
+      print " kernel read ok"
+
+      stz bt_cnt+0
+      stz bt_cnt+1
+
+:     jsr fat_fread_byte
+      bcs @l_is_eof
+      sta (wptr)
+      inc16 bt_cnt
+      inc16 wptr
+      bra :-
 
 @l_is_eof:
       pha
@@ -319,6 +367,10 @@ do_upload:
 load_ok:
       jsr print_ok
 startup:
+      lda bt_cnt+1
+      jsr hexout_s
+      lda bt_cnt+0
+      jsr hexout
       ; re-init stack pointer
       ldx #$ff
       txs
@@ -374,6 +426,9 @@ bios_irq:
 num_patterns = $04
 pattern:
       .byte $ff,$aa,$55,$00
+
+tst_file: .asciiz "EDTST.PRG"
+
 
 .segment "VECTORS"
 vdp_chrout:

@@ -35,7 +35,7 @@
 .include "via.inc"
 .include "debug.inc"
 
-SD_STUFF_BYTE = $ff 
+SD_STUFF_BYTE = $ff
 
 .code
 .import spi_rw_byte, spi_r_byte, spi_select_device, spi_deselect
@@ -80,7 +80,7 @@ _sdcard_spi_mode:
 ;       bne init_clk
       jsr     spi_deselect
       ldy     #10
-:  
+:
       phy
       lda     #SD_STUFF_BYTE
       jsr     spi_rw_byte
@@ -129,7 +129,7 @@ _sdcard_reset:
 ;@out: A,"$AA on success"
 _sdcard_check_v2:
       jsr sd_param_init
-      
+
       lda #$01
       sta sd_cmd_param+2
       lda #$aa
@@ -166,11 +166,11 @@ _sdcard_check_v2:
 
       cmp #$aa
       bne @error
-      clc 
+      clc
       rts
 @error:
-      sec 
-      rts 
+      sec
+      rts
 
 ;---------------------------------------------------------------------
 ;@name: "_sdcard_init_acmd41"
@@ -200,7 +200,7 @@ _sdcard_init_acmd41:
       ; R1 response == $00? we are successful
       cmp #$00
       beq @ok
-      
+
       ; R1 response == $01? then repeat
       cmp #$01
       beq @send_acmd41
@@ -215,7 +215,7 @@ _sdcard_init_acmd41:
       rts
 @ok:
       lda #0
-      clc 
+      clc
       rts
 
 ;---------------------------------------------------------------------
@@ -235,21 +235,21 @@ _sdcard_check_sdhc:
       jsr spi_rw_byte
 
       and #%01000000
-      bne @is_sdhc 
+      bne @is_sdhc
       beq @not_sdhc
 
-      sec 
+      sec
       rts
 
 @not_sdhc:
       lda #1
-      clc 
+      clc
       rts
 
 @is_sdhc:
       lda #0
-      clc 
-      rts 
+      clc
+      rts
 
 ;---------------------------------------------------------------------
 ;@name: "_sdcard_set_blocksize"
@@ -287,7 +287,7 @@ _sdcard_set_blocksize:
 ;@clobbers: A,X,Y
 ;@desc: "initialize sd card in SPI mode"
 sdcard_init:
-      
+
       php
       sei
 
@@ -301,10 +301,10 @@ sdcard_init:
 
 
       jsr _sdcard_check_v2
-      bcs @exit 
+      bcs @exit
 
       jsr _sdcard_init_acmd41
-      bcs @exit 
+      bcs @exit
 
       jsr _sdcard_check_sdhc
       ; not an SDHC card? then skip setting sector size
@@ -434,7 +434,7 @@ sd_deselect_card:
       jsr spi_deselect
 
       ldy #clockspeed<<1 ; faster system, longer de-select
-@l1:  
+@l1:
       phy
       lda #SD_STUFF_BYTE
       jsr spi_rw_byte
@@ -473,7 +473,7 @@ _sd_fullblock:
       rts
 
 halfblock:
-@l:   
+@l:
       jsr spi_r_byte
       sta (sd_blkptr),y
       iny

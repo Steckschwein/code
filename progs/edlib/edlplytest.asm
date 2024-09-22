@@ -33,7 +33,7 @@
 .autoimport
 
 .export d00file
-.export char_out=$8D2E ; _vdp_chrout from bios_call.inc
+.export char_out=vdp_charout ; _vdp_chrout from bios_call.inc
 
 appstart $1000
 

@@ -56,6 +56,6 @@ spi65_tx_byte:
     bpl @wait
 
     lda spi65_data
-    
+
     ; plx
     rts
