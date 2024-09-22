@@ -56,4 +56,3 @@ emu: bios.bin
 
 burn: bios.bin
 	minipro --device AT28C256 --write bios.bin -s
-

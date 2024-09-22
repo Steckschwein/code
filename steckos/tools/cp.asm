@@ -44,18 +44,19 @@ appstart $1000
         stx fd1
 
 @l0:    lda (paramptr)
+        beq @l1
         cmp #' '
         beq @l1
         inc paramptr
         bne @l0
         lda #EINVAL
         bra @errmsg
-
 @l1:
         lda paramptr
         ldx paramptr+1
         ldy #O_WRONLY
         jsr krn_fopen
+        stp
         bcs @err_close_fd1
         stx fd2
 
@@ -80,6 +81,9 @@ appstart $1000
 @exit:
         jmp (retvec)
 
+@err_args_close_fd1:
+        lda #ENOENT
+        bra @err_close_fd1
 @err_close:
         pha
         ldx fd2
@@ -91,7 +95,6 @@ appstart $1000
         jsr krn_close
         pla
 @errmsg:
-        ;TODO FIXME maybe use oserror() from cc65 lib
         pha
         jsr primm
         .asciiz "Error: "

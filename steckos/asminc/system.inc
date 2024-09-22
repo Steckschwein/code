@@ -52,6 +52,7 @@ slot3 = $c000
 
 
 CODE_LF  = $0a ; line feed
+CODE_CR  = $0d ; carriage return
 
 ; address constants of RAM addresses which can be used as buffers or kind of
 ; !!! ATTENTION: if used together with fat read/write be aware that this buffers are used and may override your data
