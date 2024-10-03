@@ -7,6 +7,7 @@
 ; Der original Vektor sollte nach Beendigung von Pacman aber wieder hergestellt werden.
 ;
 IRQVECT         = $1a7e
+;IRQVECT         = $1f32
 
 TAPE_OFF        = $ef7c
 

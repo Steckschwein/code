@@ -27,11 +27,10 @@ main:
               bcc :+
               rts
 
-:             jsr sound_init
+:             sei
+              jsr sound_init
               jsr gfx_init
               jsr gfx_mode_on
-
-              sei
               jsr io_irq_on
               cli
 

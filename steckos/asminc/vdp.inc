@@ -24,15 +24,16 @@
 
 .include "system.inc"
 
-a_vdp    = $0220 ; $0c08 ;
-a_vram   = a_vdp
-a_vreg   = a_vdp+1
+;a_vdp    = $0220 ;
+a_vdp     = $0c08 ; JC
+a_vram    = a_vdp
+a_vreg    = a_vdp+1
 a_vregpal = a_vdp+2
-a_vregi  = a_vdp+3
+a_vregi   = a_vdp+3
 
-s_reg0_F    = 1<<7  ; Frame Flag, interrupt flag
-s_reg0_5S   = 1<<6   ; 5/9th sprite on scan line bit
-s_reg0_C     = 1<<5   ; sprite collision bit
+s_reg0_F      = 1<<7  ; Frame Flag, interrupt flag
+s_reg0_5S     = 1<<6  ; 5/9th sprite on scan line bit
+s_reg0_C      = 1<<5  ; sprite collision bit
 
 
 v_reg0_extV     = 1<<0
@@ -44,8 +45,8 @@ v_reg0_m4       = 1<<2
 v_reg0_m3       = 1<<1
 
 
-v_reg1_16k      = 1<<7
-v_reg1_display_on  = 1<<6
+v_reg1_16k        = 1<<7
+v_reg1_display_on = 1<<6
 v_reg1_int        = 1<<5
 
 v_reg1_m1         = 1<<4

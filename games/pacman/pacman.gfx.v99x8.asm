@@ -49,9 +49,7 @@ gfx_mode_off:
 scln_top=254
 scln_bottom=221
 line=192
-gfx_mode_on:
-              sei
-              lda #<vdp_init_bytes
+gfx_mode_on:  lda #<vdp_init_bytes
               ldy #>vdp_init_bytes
               ldx #(vdp_init_bytes_end-vdp_init_bytes-1)
               jsr vdp_init_reg
@@ -62,9 +60,7 @@ gfx_mode_on:
               lda #line
               sta scanline
               ldy #v_reg19
-              jsr vdp_set_reg
-              cli
-              rts
+              jmp vdp_set_reg
 
 gfx_pacman_colors_offset:
 .byte VDP_Color_Blue<<1, VDP_Color_Light_Blue<<1, VDP_Color_Gray<<1, VDP_Color_Light_Blue<<1
@@ -165,13 +161,7 @@ gfx_isr:      lda io_port_vdp_reg ; vdp h blank irq ?
               txa
               rts
 
-gfx_init:
-              sei
-              jsr @init
-              cli
-              rts
-
-@init:        vdp_sreg 0, v_reg16
+gfx_init:     vdp_sreg 0, v_reg16
               ldx #0
 :             jsr gfx_write_pal
               inx
@@ -349,6 +339,7 @@ _gfx_update_sprite_tab:
               rts
 
 gfx_display_maze:
+              php
               sei
               ldx #4
               ldy #0
@@ -361,7 +352,7 @@ gfx_display_maze:
               inc p_gfx+1
               dex
               bne @loop
-              cli
+              plp
               rts
 
 @put_char:    lda (p_gfx),y
@@ -777,9 +768,11 @@ sprite_colors_2nd:  ; color 2nd ghost sprite
 
 vdp_init_bytes:  ; vdp init table - MODE G4
     .byte v_reg0_m4|v_reg0_m3|v_reg0_IE1
+    ;.byte v_reg0_m5|v_reg0_m3|v_reg0_IE1
 vdp_reg1_init:
     .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
     .byte >(VRAM_SCREEN>>2) | $1f
+    ;.byte >(VRAM_SCREEN>>2) | $3f
     .byte 0 ; n.a.
     .byte 0 ; n.a.
     .byte >(VRAM_SPRITE_ATTR<<1) | $07    ; R#5 - sprite attribute table
