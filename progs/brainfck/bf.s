@@ -49,6 +49,7 @@
 ; One day you'll be able to assemble this directly inside AppleWin
 
 ; Adapted for SteckOS and 65C02ized by Thomas Woinke 2024
+; Original comments preserved for historic purposes
 
 
 .include "steckos.inc"
