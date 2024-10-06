@@ -52,8 +52,12 @@
 
 
 .include "steckos.inc"
+.include "fat32.inc"
+.include "fcntl.inc"
+.include "errno.inc"
+
 .export char_out=krn_chrout
-.import hexout 
+.import hexout,primm
 
 data_buf = $4000
 code_buf = $8000
@@ -62,36 +66,90 @@ appstart $1000
 .zeropage
 data_ptr:       .res 2
 code_ptr:       .res 2
+input_ptr:      .res 2
 
-CUR_DEPTH:      .res 1
-NUM_BRACKET:    .res 1
-; CUR_DEPTH       EQU        $EE   ; // current nested depth
-; NUM_BRACKET     EQU        $EF   ; // depth to find[]
+CUR_DEPTH:      .res 1 ; // current nested depth
+NUM_BRACKET:    .res 1 ; // depth to find[]
 
 
 .code
         lda #<data_buf
         sta data_ptr
+        sta input_ptr
+
         lda #>data_buf
         sta data_ptr+1
+        sta input_ptr+1
 
         lda #<code_buf
         sta code_ptr
+        
         lda #>code_buf
         sta code_ptr+1
-
-
-
-        ; wipe data area
+        
+        
+        ; wipe data area $4000 - $7fff
+@loop:
         lda #0
-        ldy #0
+        ldy #$ff
 :
-        sta (data_ptr),y 
-        iny 
-        beq @out
+        dey
+        sta (input_ptr),y 
+        bne :-
+   
+        lda input_ptr+1
+        inc a 
+        sta input_ptr+1
+
+        cmp #$80
+        bne @loop
+
+
+
+
+        lda #<code_buf
+        sta input_ptr
+        lda #>code_buf
+        sta input_ptr+1
+
+
+        lda (paramptr)
+        beq @input
+
+        lda paramptr
+        ldx paramptr+1
+        ldy #O_RDONLY
+        jsr krn_fopen
+        bcs @ferror
+
+:
+        jsr krn_fread_byte 
+        bcs @close
+        sta (input_ptr)
+        inc16 input_ptr
         bra :-
 
-@out:
+@close:
+        jsr krn_close
+        bra @input_done
+@ferror:
+        jsr primm
+        .byte "file open error",$0a,$0d,0
+        jmp (retvec)
+
+@input:
+        keyin
+        cmp #13
+        beq @input_done
+        jsr char_out
+        sta (input_ptr)
+        inc16 input_ptr
+        bra @input
+@input_done:
+        lda #0
+        sta (input_ptr)
+
+        crlf
 
 ; Used to read start address of $0806 = first Applesoft token
 ; If you use Applesoft as a helper text entry such as
@@ -149,7 +207,7 @@ exec:
         asl
         tax
 
-
+        lda (data_ptr)
         jmp (OPFUNCPTR,x)
 
 BF_NEXT:
@@ -161,12 +219,12 @@ EXIT_2:
         RTS             ; 60       ;
 
 BF_INC:
-        lda (data_ptr)
+        ; lda (data_ptr)
         inc A
         sta (data_ptr)
         rts
 BF_DEC:
-        lda (data_ptr)
+        ; lda (data_ptr)
         dec A
         sta (data_ptr)
         rts
@@ -175,7 +233,7 @@ BF_IN:
         sta (data_ptr)
         rts
 BF_OUT:
-        lda (data_ptr)
+        ; lda (data_ptr)
         jsr char_out
         rts
 
@@ -242,6 +300,6 @@ OPFUNCPTR:               ;          ; by usage: least commonly called to most
         .word BF_DEC   ; 46       ; -
         .word BF_INC   ; 43       ; +
 .data 
-code_buf:
+; code_buf:
         ; Hello World!
-        .asciiz "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." 
+        ; .asciiz "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." 
