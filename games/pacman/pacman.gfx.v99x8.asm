@@ -210,7 +210,7 @@ gfx_blank_screen:
               php
               sei
               ldy #Color_Bg
-              ;jsr vdp_mode4_blank
+              jsr vdp_mode4_blank
               plp
               jmp gfx_sprites_off
 gfx_sprites_on:

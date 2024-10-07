@@ -118,6 +118,17 @@ main:
               bne :+
               jmp @init_state
 .ifdef __DEVMODE  ; debug keys
+:             cmp #'x'
+              bne :+
+              lda #<@lmmm
+              ldx #>@lmmm
+              ldy #0
+              bgcolor Color_Yellow
+              jsr vdp_cmd_lmmm
+              bgcolor Color_Bg
+              jmp @main_loop
+@lmmm:
+  .word 0,512,100,600,48,48
 :             cmp #'d'  ; dying
               bne :+
               lda #FN_STATE_PACMAN_DYING

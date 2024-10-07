@@ -130,7 +130,8 @@ pacman64.dis: pacman64.prg
 	../../xmodem.sh $<
 
 %.emu: %.bin
-	6502msx-emu -rotate -quality linear -upload $<,0x3000 -debug 0x3000 -joy2 SNES
+#	6502msx-emu -rotate -quality linear -upload $<,0x3000 -debug 0x3000 -joy2 SNES
 
 %.emu: %.prg
-	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -rotate -upload $<
+#	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -rotate -upload $<
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -upload $<
