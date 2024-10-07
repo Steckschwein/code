@@ -217,11 +217,9 @@ EXIT_2:
         RTS             ; 60       ;
 
 BF_INC:
-        ; lda (data_ptr)
         clc 
         adc #2
 BF_DEC:
-        ; lda (data_ptr)
         dec A
         sta (data_ptr)
         rts
@@ -230,14 +228,14 @@ BF_IN:
         sta (data_ptr)
         rts
 BF_OUT:
-        ; lda (data_ptr)
         jsr char_out
         rts
 
 BF_IF:                  ;          ; if( *pData == 0 ) pc = ']'
         INC CUR_DEPTH   ; E6 EE    ; *** depth++
 
-        LDA (data_ptr)  ; B1 40    ; optimization: common code
+        ; LDA (data_ptr)  ; B1 40    ; optimization: common code
+        cmp #0
         BNE EXIT_2      ; D0 E3    ; optimization: BEQ .1, therefore BNE RTS
         LDA CUR_DEPTH   ; A5 EE    ; match_depth = depth
         STA NUM_BRACKET ; 85 EF    ;
@@ -298,7 +296,3 @@ OPFUNCPTR:               ;          ; by usage: least commonly called to most
         .word BF_NEXT  ; 37       ; >
         .word BF_DEC   ; 46       ; -
         .word BF_INC   ; 43       ; +
-.data 
-; code_buf:
-        ; Hello World!
-        ; .asciiz "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." 
