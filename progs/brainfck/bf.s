@@ -82,11 +82,6 @@ NUM_BRACKET:    .res 1 ; // depth to find[]
         sta data_ptr+1
         sta input_ptr+1
 
-        lda #<code_buf
-        sta code_ptr
-        
-        lda #>code_buf
-        sta code_ptr+1
         
         
         ; wipe data area $4000 - $7fff
@@ -98,9 +93,8 @@ NUM_BRACKET:    .res 1 ; // depth to find[]
         sta (input_ptr),y 
         bne :-
    
+        inc input_ptr+1
         lda input_ptr+1
-        inc a 
-        sta input_ptr+1
 
         cmp #$80
         bne @loop
@@ -109,8 +103,11 @@ NUM_BRACKET:    .res 1 ; // depth to find[]
 
 
         lda #<code_buf
+        sta code_ptr
         sta input_ptr
+        
         lda #>code_buf
+        sta code_ptr+1
         sta input_ptr+1
 
 
@@ -221,9 +218,8 @@ EXIT_2:
 
 BF_INC:
         ; lda (data_ptr)
-        inc A
-        sta (data_ptr)
-        rts
+        clc 
+        adc #2
 BF_DEC:
         ; lda (data_ptr)
         dec A
@@ -261,8 +257,9 @@ BF_IF:                  ;          ; if( *pData == 0 ) pc = ']'
         CMP NUM_BRACKET ; C5 EF    ;
         BEQ EXIT_2      ; F0 C8    ;
         DEC NUM_BRACKET ; C6 EF    ; *** dec stack
-        CLC             ; 18       ;
-        BCC @L2         ; 90 E4    ;
+        ; CLC             ; 18       ;
+        ; BCC @L2         ; 90 E4    ;
+        BRA @L2
         
 BF_FI:                  ;          ; if( *pData != 0 ) pc = '['
         DEC CUR_DEPTH   ; C6 EE    ; depth--
@@ -285,8 +282,9 @@ BF_FI:                  ;          ; if( *pData != 0 ) pc = '['
         CMP NUM_BRACKET ; C5 EF    ;
         BEQ EXIT_2      ; F0 9D    ;
         INC NUM_BRACKET ; E6 EF    ; dec stack
-        CLC             ; 18       ;
-        BCC @L2         ; 90 DF    ;
+        ; CLC             ; 18       ;
+        ; BCC @L2         ; 90 DF    ;
+        BRA @L2
         
 
 OPCODE:
