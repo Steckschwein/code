@@ -119,16 +119,20 @@ main:
               jmp @init_state
 .ifdef __DEVMODE  ; debug keys
 :             cmp #'x'
-              bne :+
+;              bne :+
+              ldy #ACTOR_PACMAN
+              lda actor_sp_x,y
+              sta @lmmm+0
+              lda actor_sp_y,y
+              sta @lmmm+2
               lda #<@lmmm
               ldx #>@lmmm
-              ldy #0
               bgcolor Color_Yellow
-              jsr vdp_cmd_lmmm
+              jsr vdp_cmd_hmmm
               bgcolor Color_Bg
               jmp @main_loop
 @lmmm:
-  .word 0,512,100,600,48,48
+  .word 0,512,128,600,48,48
 :             cmp #'d'  ; dying
               bne :+
               lda #FN_STATE_PACMAN_DYING

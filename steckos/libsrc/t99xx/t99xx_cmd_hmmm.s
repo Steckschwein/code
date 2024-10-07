@@ -47,7 +47,9 @@ vdp_cmd_lmmm:
 
               sta vdp_ptr
               stx vdp_ptr+1
-              stz vdp_tmp
+
+              lda #v_reg45_dix | v_reg45_diy    ; initial x left, y up
+              sta vdp_tmp
 
               vdp_sreg 2, v_reg15      ; 2 - to select status register S#2
 @wait:        vdp_wait_s
@@ -71,13 +73,12 @@ vdp_cmd_lmmm:
               lda (vdp_ptr),y ; SX
               ldy #5
               cmp (vdp_ptr),y ; DX
-              bcc :+          ; SX<DX => move right
-              bne @x_left
+              bcs :+          ; SX<DX => move right
               lda (vdp_ptr)
               dey
               cmp (vdp_ptr),y
-              bcc :+
-@x_left:      smb2 vdp_tmp    ; set DIX bit
+              bcs :+
+              rmb2 vdp_tmp    ; set DIX bit
 :
               stz a_vregi     ; set R#44 0
 
@@ -85,14 +86,13 @@ vdp_cmd_lmmm:
               lda (vdp_ptr),y ; SY
               ldy #7
               cmp (vdp_ptr),y ; DY
-              bcc :+          ; SY<DY => move down
-              bne @y_up
+              bcs :+          ; SY<DY => move down
               ldy #2
-              lda (vdp_ptr)
+              lda (vdp_ptr),y
               ldy #6
               cmp (vdp_ptr),y
-              bcc :+
-@y_up:        smb3 vdp_tmp    ; set DIY bit
+              bcs :+
+              rmb3 vdp_tmp    ; set DIY bit
 :
               lda vdp_tmp
               sta a_vregi     ; R#45 DIX/DIY and memory destination
