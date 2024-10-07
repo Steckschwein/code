@@ -221,10 +221,11 @@ BF_INC:
         adc #2
 BF_DEC:
         dec A
-        sta (data_ptr)
-        rts
+        bra store
 BF_IN:
         keyin 
+        
+store:
         sta (data_ptr)
         rts
 BF_OUT:
