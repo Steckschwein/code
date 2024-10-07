@@ -1,3 +1,25 @@
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 .export maze
 .export draw_highscore
 .export bonus_for_level
@@ -1235,8 +1257,7 @@ game_playing: jsr update_mode
               jmp @move
 :             jsr sound_play_ghost_frightened
 
-@move:
-              jsr pacman_move
+@move:        jsr pacman_move
 
               ldx #ACTOR_CLYDE
               jsr actors_move
@@ -1710,19 +1731,19 @@ select_player_score:
 
 draw_scores:  ldx #0
               ldy #19
-              setPtr (game_state+GameState::score), p_game
-              jsr _draw_score
+              setPtr (game_state+GameState::score), p_video
+              jsr :+
               ldx #0
               ldy #6
 draw_highscore:
-              setPtr (game_state+GameState::highscore), p_game
-_draw_score:
-              stx sys_crs_x
+              setPtr (game_state+GameState::highscore), p_video
+
+:             stx sys_crs_x
               sty sys_crs_y
               lda #Color_Text
               sta text_color
               ldy #2
-@next:        lda (p_game),y
+@next:        lda (p_video),y
               bne :+
               dec sys_crs_y ; leading 00, skip digits
               dec sys_crs_y
@@ -1732,26 +1753,27 @@ _draw_score:
 :             and #$f0  ;0? ?
               bne @digits
               dec sys_crs_y ;output the 0-9 only
-              lda (p_game),y
+              lda (p_video),y
               jsr out_digit
               jmp @digits_inc
-@digits:      lda (p_game),y
+@digits:      lda (p_video),y
               jsr out_digits
 @digits_inc:  dey
               bpl @digits
               rts
 
 animate_screen:
-              jsr animate_up
+              ;jsr animate_up
 animate_energizer:
               ldy #Color_Food
               lda game_state+GameState::frames
-              and #$08  ; TODO colour every 10 frames.
+              and #$08  ; TODO every 10 frames.
               bne draw_energizer
-              tay
+              tay ; A=0 (Color_Bg)
 draw_energizer:
               sty text_color
-              ldx #3
+
+              ldx #1
 @l0:          lda energizer_x,x
               sta sys_crs_x
               ldy energizer_y,x
@@ -1767,6 +1789,8 @@ draw_energizer:
 animate_up:   bit game_state+GameState::state ; demo?
               bvs @exit
 
+              bgcolor Color_Yellow
+
               ldy #Color_Text
               lda game_state+GameState::frames
               and #$10
@@ -1776,6 +1800,7 @@ animate_up:   bit game_state+GameState::state ; demo?
               lda game_state+GameState::active_up
               bne @2_up
               draw_text text_1up
+              bgcolor Color_Bg
               rts
 @2_up:        draw_text text_2up
 @exit:        rts
@@ -1823,7 +1848,7 @@ game_init:    jsr sound_play_game_prelude
 .data
 
 maze:
-  .include "pacman.maze.inc"
+    .include "pacman.maze.inc"
 
 actor_init_x: ; sprite pos x of blinky,pinky,inky,clyde,pacman
     .byte 100,$7c,$7c,$7c,196

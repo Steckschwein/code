@@ -49,7 +49,7 @@ vdp_cmd_hmmv:
 
   ldy #0
 @loop:
-  vdp_wait_s 5
+  vdp_wait_s 9
   lda (vdp_ptr),y
   sta a_vregi
   iny

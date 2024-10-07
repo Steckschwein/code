@@ -224,23 +224,19 @@ SKIP_DIR_CHECK    = $ff
 
 .macro border_color color
    .ifdef __DEBUG
-    php
     pha
     lda #color
     jsr gfx_bordercolor
     pla
-    plp
    .endif
 .endmacro
 
 .macro bgcolor color
   .ifdef __DEBUG
-    php
     pha
     lda #color
     jsr gfx_bgcolor
     pla
-    plp
   .endif
 .endmacro
 

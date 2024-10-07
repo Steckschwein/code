@@ -23,6 +23,7 @@
 ;@module: vdp
 
 .include "vdp.inc"
+.setcpu "6502"
 
 .export vdp_display_off
 .export vdp_bgcolor
