@@ -1,6 +1,8 @@
 .include "steckos.inc"
 .include "via.inc"
 .include "joystick.inc"
+.include "uart.inc"
+
 .export char_out=krn_chrout
 .import query_controllers
 .import hexout

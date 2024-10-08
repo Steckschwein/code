@@ -22,6 +22,8 @@
 
 ;@module: vdp
 
+.setcpu "6502"
+
 .include "vdp.inc"
 
 .autoimport

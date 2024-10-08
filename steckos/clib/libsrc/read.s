@@ -56,7 +56,7 @@
 ; set _oserror and return the number of bytes read
 @eof:
     sta ___oserror
-;    jmp __directerrno  ; Sets _errno, clears _oserror, returns -1
+;    jmp  ___directerrno  ; Sets _errno, clears _oserror, returns -1
 @exit:
     clc          ; calc count bytes read
     lda ptr2

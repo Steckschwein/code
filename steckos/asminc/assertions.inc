@@ -27,7 +27,7 @@
   php
   cmp #value+1
   bcc :+
-  stp
+  .byte $db
 : plp
 .endmacro
 
@@ -35,7 +35,7 @@
   php
   cpx #value+1
   bcc :+
-  stp
+  .byte $db
 : plp
 .endmacro
 
@@ -43,7 +43,7 @@
   php
   cpy #value+1
   bcc :+
-  stp
+  .byte $db
 : plp
 .endmacro
 .endif

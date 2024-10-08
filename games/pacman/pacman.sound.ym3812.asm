@@ -1,4 +1,25 @@
-;sound
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 .include "pacman.inc"
 .include "ym3812.inc"
 
@@ -92,15 +113,6 @@ tempo=0
     .byte e-s
 .endmacro
 
-.struct channel
-   nr         .byte
-   cnt        .byte ; pause
-   ix         .byte ; index
-   notes      .addr ; data address
-   length     .byte ; snd length
-   state_bit  .byte
-.endstruct
-
 .code
 
 SOUND_GAME_PRELUDE      = 1<<0 | 1<<1 ; channel 1,2
@@ -110,7 +122,7 @@ SOUND_GHOST_ALARM       = 1<<4
 SOUND_GHOST_CATCHED     = 1<<5        ; ...
 SOUND_GHOST_FRIGHTENED  = 1<<6        ; channel 7
 SOUND_PACMAN_DYING      = 1<<7
-SOUND_GAME_INTERLUDE    = 0
+SOUND_GAME_INTERLUDE    = 1<<0 | 1<<1
 
 sound_play_eat_dot:
 .ifdef __DEVMODE
@@ -204,17 +216,17 @@ sound_play_chn:
 .endif
               lda sound_tmp
               ora #$b0
-              tax                ; register to X
+              tax                 ; register to X
 .ifndef __NO_SOUND
-              lda #0             ; key off
+              lda #0              ; key off
  ;             jsr opl2_reg_write
 .endif
-              lda (p_sound), y   ; note Key-On / Octave / F-Number msb
+              lda (p_sound), y    ; note Key-On / Octave / F-Number msb
               iny
 .ifndef __NO_SOUND
               jsr opl2_reg_write
 .endif
-              lda (p_sound), y   ; delay
+              lda (p_sound),y     ; delay
               iny
               ldx sound_tmp
               sta chn_cnt,x
@@ -400,7 +412,6 @@ sound_off:    stz sound_play_state
 sound_reset:  jmp opl2_init
 
 .data
-
 
 channel_init:
 ;    init_channel game_interlude_sound, game_interlude_sound_end
@@ -700,27 +711,3 @@ game_start_sound2_end:
       chn_notes_h:  .res 8
       chn_length:   .res 8
       chn_bit:      .res 8
-
-
-; game start
-; pacman
-; sirene
-; catched
-
-;   .byte 0
- ;  .byte L64;        cnt .byte
-  ; .byte 0;          ix  .byte
-
-   ;.word 0;game_sfx_pacman
-   ;.byte 0;game_sfx_pacman_end-game_sfx_pacman
-
-;   .word 0;game_start_sound1    ;   p_note   .word
-;   .byte 0;game_start_sound1_end-game_start_sound1
-
-;   .byte 1
- ;  .byte L64;        cnt .byte
-  ; .byte 0;          ix      .byte
-
-;   .word 0;game_start_sound2;   p_delay  .word
-;   .byte 0;game_start_sound2_end-game_start_sound2
-

@@ -1,9 +1,30 @@
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 .include "pacman.inc"
 
 .export game_state
 
-.exportzp p_maze, p_sound, p_text
-.exportzp p_game
+.exportzp p_maze, p_sound
 .exportzp p_video
 
 .autoimport
@@ -11,8 +32,6 @@
 .zeropage
   p_video:  .res 2
   p_sound:  .res 2
-  p_text:   .res 2
-  p_game:   .res 2
   p_maze:   .res 2
 
   text_color:   .res 1
@@ -27,13 +46,11 @@ main:
               bcc :+
               rts
 
-:             jsr sound_init
+:             sei
+              jsr sound_init
               jsr gfx_init
               jsr gfx_mode_on
-
-              sei
               jsr io_irq_on
-              setIRQ sys_isr, save_irq
               cli
 
               jsr boot
@@ -42,12 +59,11 @@ main:
               .ifdef __NO_INTRO
               lda #FN_STATE_INIT  ; directly to game init
               .endif
-
 @set_state:   jsr system_set_state_fn
 
 @main_loop:   jsr system_wait_vblank
 
-              border_color Color_Green
+              bgcolor Color_Red
 
               lda game_state+GameState::state
               and #STATE_PAUSE
@@ -56,7 +72,7 @@ main:
 :
               jsr gfx_prepare_update
 
-              border_color Color_Bg
+              bgcolor Color_Bg
 
               jsr io_getkey
               pha
@@ -99,12 +115,28 @@ main:
               lda #FN_STATE_INIT
               jmp @set_state
 :             cmp #'r'  ; reset
-              beq @init_state
+              bne :+
+              jmp @init_state
 .ifdef __DEVMODE  ; debug keys
+:             cmp #'x'
+;              bne :+
+              ldy #ACTOR_PACMAN
+              lda actor_sp_x,y
+              sta @lmmm+0
+              lda actor_sp_y,y
+              sta @lmmm+2
+              lda #<@lmmm
+              ldx #>@lmmm
+              bgcolor Color_Yellow
+              jsr vdp_cmd_hmmm
+              bgcolor Color_Bg
+              jmp @main_loop
+@lmmm:
+  .word 0,512,128,600,48,48
 :             cmp #'d'  ; dying
               bne :+
               lda #FN_STATE_PACMAN_DYING
-              bne @set_state
+              jmp @set_state
 :             cmp #'g'  ; game over
               bne :+
               lda #1    ; 1 left
@@ -161,8 +193,6 @@ main:
 :             cmp #'n'
               bne :+
               lda #1<<6
-;              eor vdp_reg9_init
- ;             sta vdp_reg9_init
               bne @debug
 :             cmp #'v'
               bne :+
@@ -190,14 +220,12 @@ main:
               lda #'T'
               jsr sys_charout
               cli
+:
 .endif
-:             jmp @main_loop
+              jmp @main_loop
 
-quit:         sei
-              jsr sound_off
+quit:         jsr sound_off
               jsr gfx_mode_off
-              restoreIRQ save_irq
-              cli
               jmp io_exit
 .endproc
 
@@ -207,7 +235,10 @@ init_state: ldy #.sizeof(GameState)-1
 :           sta game_state,y
             dey
             bpl :-
-
+.ifdef __DEVMODE
+            lda #$80
+            sta game_state+GameState::debug
+.endif
             jsr io_highscore_load
 
             lda #DIP_COINAGE_1 | DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES  ; 1 coin/1 credit, bonus life at 10.000pts
@@ -217,6 +248,5 @@ init_state: ldy #.sizeof(GameState)-1
             rts
 
 .bss
-  save_irq:  .res 2
   game_state:
     .tag GameState

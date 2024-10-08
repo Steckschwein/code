@@ -1,17 +1,17 @@
-#DEBUG+=-D__DEBUG
+DEBUG+=-D__DEBUG
 #DEBUG+=-D__GFX_DEBUG
 DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
-#DEBUG+=-D__NO_INTRO
+DEBUG+=-D__NO_INTRO
 #DEBUG+=-D__INTERLUDE
 DEBUG+=-D__ASSERTIONS
-#DEBUG+=-D__DEVMODE
+DEBUG+=-D__DEVMODE
 
 CLIB=../../steckos/clib/lib/steckschwein-clib.a
 CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include
 
 LIBS=
-#CA65FLAGS=-I $(CC65_HOME)/asminc $(DEBUG)
+CA65FLAGS=$(DEBUG)
 
 LDFLAGS=-m pacman.map $(LIBS)
 OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.game.o pacman.system.o
@@ -52,7 +52,7 @@ RESOURCES_4BPP := $(patsubst %.4bpp.xpm,%.4bpp.res,$(foreach dir,.,$(wildcard ./
 
 .PHONY: all clean
 
-all: pacman.prg pacman64.prg pacmanjc.com
+all: pacman.prg pacman64.prg pacmanjc.bin
 
 clean:
 	rm -f *.bin *.prg *.com *.dis *.s *.o *.res *.map *.lbl
@@ -110,12 +110,15 @@ pacman.prg: $(OBJS_STS) $(LIBS_STS)
 pacman64.prg: $(OBJS_C64) $(LIBS_C64)
 	ld65 -o $@ $(LDFLAGS_C64) $(OBJS_C64) $(LIBS_C64)
 
-pacmanjc.com: $(OBJS_JC) $(LIBS_JC)
+pacmanjc.bin: $(OBJS_JC) $(LIBS_JC)
 	ld65 -o $@ $(LDFLAGS_JC) $(OBJS_JC) $(LIBS_JC)
 
 pacman64: pacman64.prg
 	x64 -device8 1 -VICIIdscan -VICIIdsize -autostartprgmode 1 $(ARGS) $<
 #-fullscreen
+
+pacmanjc.dis: pacmanjc.bin
+	dcc6502 -o 0x3000 -d -n -c $< > $@
 
 pacman.dis: pacman.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
@@ -126,5 +129,9 @@ pacman64.dis: pacman64.prg
 %: %.prg
 	../../xmodem.sh $<
 
+%.emu: %.bin
+#	6502msx-emu -rotate -quality linear -upload $<,0x3000 -debug 0x3000 -joy2 SNES
+
 %.emu: %.prg
-	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -rotate -quality linear -upload $<
+#	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -rotate -upload $<
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -upload $<
