@@ -17,7 +17,9 @@
 .autoimport
 
 .zeropage
-              r1:  .res 1
+              r1:         .res 1
+              sound_tmp:  .res 1
+              p_sound:    .res 2
 
 .code
 
