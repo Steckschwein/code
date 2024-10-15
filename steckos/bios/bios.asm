@@ -35,7 +35,7 @@ _noop:
 
 memcheck:
       ldx #0    ; start bank 0
-      bit ctrl_port+3 ; bank 4 RAM?
+      bit slot3 ; bank 4 RAM?
       bpl @starthigh
       lda #>$4300 ; start bank 0, but skip zp
       bra @check_page0

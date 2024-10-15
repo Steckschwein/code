@@ -20,30 +20,35 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "vdp.inc"
-.include "ym3812.inc"
-.include "via.inc"
-.include "zeropage.inc"
+.include "common.inc"
+.include "system.inc"
+.include "appstart.inc"
+.include "uart.inc"
+.include "keyboard.inc"
 
-.export system_irr
+.import primm
+.import hexout
+.import hexout_s
 
+.autoimport
+
+.export char_out=$8D2E
+
+appstart $1000
 .code
 
-; collect irq sources
-;  out:  .A - with individual bits set for collected IRQ's. bit masks in system.inc
-system_irr:
-   lda #0           ; irr status
-   bit a_vreg       ; Interrupt from VDP?
-   bpl @is_irq_snd
-   ora #IRQ_VDP
-@is_irq_snd:
-   bit opl_stat     ; Interrupt from OPL?
-   bpl @is_irq_via
-   ora #IRQ_SND
-@is_irq_via:
-   bit via1ifr      ; Interrupt from VIA?
-   bpl @exit
-   ora #IRQ_VIA
+          ldx #255
+
+@label1:
+          phx
+          jsr primm
+          .byte "trudi lauke moin axolotl", KEY_LF,0
+
+          plx
+          dex
+          bne @label1
+
+
+
 @exit:
-   sta sys_irr
-   rts
+     bra @exit
