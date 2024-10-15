@@ -79,29 +79,29 @@ v_reg45_diy = 1<<3
 v_reg45_dix = 1<<2
 v_reg45_maj = 1<<0
 
-v_reg0   = $80
-v_reg1   = $81
-v_reg2   = $82
-v_reg3   = $83
-v_reg4   = $84
-v_reg5   = $80 +   5
-v_reg6   = $80  +  6
-v_reg7  = $80  +  7
+v_reg0    = $80
+v_reg1    = $81
+v_reg2    = $82
+v_reg3    = $83
+v_reg4    = $84
+v_reg5    = $80 +  5
+v_reg6    = $80  + 6
+v_reg7    = $80  + 7
 ; start of V9938/V9958 register set
-v_reg8  = $80  +  8
-v_reg9  = $80  +  9
-v_reg11  = $80 + 11
+v_reg8    = $80  + 8
+v_reg9    = $80  + 9
+v_reg11   = $80 + 11
 
-v_reg12  = $80 + 12   ; blink color
-v_reg13  = $80 + 13   ; on time / off time
+v_reg12   = $80 + 12   ; blink color
+v_reg13   = $80 + 13   ; on time / off time
 
-v_reg14  = $80 + 14
-v_reg15  = $80 + 15
-v_reg16 = $80 + 16  ; color palette index register
-v_reg17  = $80 + 17
-v_reg18  = $80 + 18  ; display adjust
-v_reg19 = $80 + 19   ; h-blank irq scanline
-v_reg23  = $80 + 23  ; screen ram vertical offset
+v_reg14   = $80 + 14
+v_reg15   = $80 + 15
+v_reg16   = $80 + 16  ; color palette index register
+v_reg17   = $80 + 17
+v_reg18   = $80 + 18  ; display adjust
+v_reg19   = $80 + 19  ; h-blank irq scanline
+v_reg23   = $80 + 23  ; screen ram vertical offset
 
 ; V9958 specific
 v_reg25 = $80 + 25  ; bit 0 - 0/1 - 1/2 page per screen, bit 1 - 8px border

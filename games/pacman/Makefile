@@ -1,14 +1,11 @@
 DEBUG+=-D__DEBUG
 #DEBUG+=-D__GFX_DEBUG
-DEBUG+=-D__NO_SOUND
+#DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 DEBUG+=-D__NO_INTRO
 #DEBUG+=-D__INTERLUDE
 DEBUG+=-D__ASSERTIONS
 DEBUG+=-D__DEVMODE
-
-CLIB=../../steckos/clib/lib/steckschwein-clib.a
-CC65FLAGS=-I ../../steckos/clib -I ../../steckos/clib/include
 
 LIBS=
 CA65FLAGS=$(DEBUG)
@@ -17,7 +14,11 @@ LDFLAGS=-m pacman.map $(LIBS)
 OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.game.o pacman.system.o
 
 CA65FLAGS_STS=-I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel $(DEBUG)
-OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.v99x8.o pacman.sound.ym3812.o
+# ym3812
+#OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.v99x8.o pacman.sound.ym3812.o
+# sn76489
+OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.v99x8.o pacman.sound.sn76489.o
+
 LIBS_STS=$(LIBS) ../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a
 LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map -Ln pacman.lbl --dbgfile pacman.dbg
 
@@ -71,7 +72,6 @@ clean:
 	python3 ../utils/xpm_ca65_4bpp.py $< > $@
 
 
-pacman.gfx.v99x8.o: $(RESOURCES) $(RESOURCES_4BPP)
 pacman.gfx.c64.o: 	$(RESOURCES_C64)
 
 pacman.game.o: pacman.maze.inc pacman.inc
@@ -85,10 +85,16 @@ pacman.game.o: pacman.maze.inc pacman.inc
 %.sts.o: %.sts.asm ../../steckos/asminc/*.inc pacman.inc pacman.sts.inc
 	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
 
-%.v99x8.o: %.v99x8.asm pacman.inc pacman.v99x8.inc
+pacman.gfx.v99x8.o: pacman.gfx.v99x8.asm pacman.inc pacman.v99x8.inc $(RESOURCES) $(RESOURCES_4BPP)
 	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
 
 %.ym3812.o: %.ym3812.asm pacman.inc
+	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
+
+%.sn76489.o: %.sn76489.asm pacman.inc
+	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
+
+sndtest.o: sndtest.asm pacman.inc
 	ca65 $(CA65FLAGS_STS) $(@:.o=.asm)
 
 %.c64.o: %.c64.asm pacman.inc pacman.c64.inc
@@ -103,6 +109,9 @@ test.%.bin: test.%.o $(TEST_LIBS)
 
 test.%: test.%.bin
 	ASMUNIT_VERBOSE=true TARGET_DIR=. ../../asmunit/asmunit_wrapper.sh $< 0x1000
+
+sndtest.prg: sndtest.o pacman.sound.sn76489.o $(LIBS_STS)
+	ld65 -o $@ $(LDFLAGS_STS) $^
 
 pacman.prg: $(OBJS_STS) $(LIBS_STS)
 	ld65 -o $@ $(LDFLAGS_STS) $(OBJS_STS) $(LIBS_STS)
@@ -136,6 +145,7 @@ pacman64.dis: pacman64.prg
 %.emu: %.bin
 #	6502msx-emu -rotate -quality linear -upload $<,0x3000 -debug 0x3000 -joy2 SNES
 	6502msx-emu -upload $<,0x3000 -debug 0x3000 -joy2 SNES
+#	6502msx-emu -rotate -quality linear -upload ../../VPU.com,0x3000 -debug 0x3000
 
 %.emu: %.prg
 #	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -rotate -upload $<

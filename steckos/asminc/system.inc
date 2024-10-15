@@ -34,6 +34,9 @@ IRQ_UART      = 1<<3  ; irq from UART
 IRQ_IO1       = 1<<1  ; i/o port 1 (card slot 1)
 IRQ_IO0       = 1<<0  ; i/o port 0 (card slot 0)
 
+card_slot0    = $250
+card_slot1    = $260
+
 ;...
 clockspeed    = 1  ; in Mhz
 

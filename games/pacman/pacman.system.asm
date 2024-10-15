@@ -59,7 +59,10 @@ sys_isr:      push_axy
 
               jsr gfx_update    ; timing critical
 
+              bit game_state+GameState::state ; intro?
+              bmi :+
               jsr sound_update  ; update sound
+:
 
               lda game_state+GameState::state
               and #STATE_PAUSE

@@ -24,18 +24,16 @@
 
 .export game_state
 
-.exportzp p_maze, p_sound
+.exportzp p_maze
 .exportzp p_video
 
 .autoimport
 
 .zeropage
   p_video:  .res 2
-  p_sound:  .res 2
   p_maze:   .res 2
 
   text_color:   .res 1
-  sound_tmp:    .res 1
 
 .code
 
@@ -118,21 +116,6 @@ main:
               bne :+
               jmp @init_state
 .ifdef __DEVMODE  ; debug keys
-:             cmp #'x'
-;              bne :+
-              ldy #ACTOR_PACMAN
-              lda actor_sp_x,y
-              sta @lmmm+0
-              lda actor_sp_y,y
-              sta @lmmm+2
-              lda #<@lmmm
-              ldx #>@lmmm
-              bgcolor Color_Yellow
-;              jsr vdp_cmd_hmmm
-              bgcolor Color_Bg
-              jmp @main_loop
-@lmmm:
-  .word 0,512,128,600,48,48
 :             cmp #'d'  ; dying
               bne :+
               lda #FN_STATE_PACMAN_DYING

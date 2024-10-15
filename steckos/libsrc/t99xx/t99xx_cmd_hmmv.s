@@ -24,11 +24,13 @@
 
 .include "vdp.inc"
 
+.setcpu "6502"
+
 .export vdp_cmd_hmmv
 
 .import vdp_wait_cmd
 
-.importzp vdp_ptr
+.importzp vdp_ptr, vdp_tmp
 
 .code
 
@@ -45,7 +47,7 @@ vdp_cmd_hmmv:
 
   vdp_sreg 36, v_reg17   ; set reg index to #36
 
-  phy            ; safe color
+  sty vdp_tmp            ; safe color
 
   ldy #0
 @loop:
@@ -56,14 +58,16 @@ vdp_cmd_hmmv:
   cpy #08
   bne @loop
 
-  pla           ; color (r#44)
+  lda vdp_tmp           ; color (r#44)
+  vdp_wait_s 9
   sta a_vregi
 
+  lda #0
   vdp_wait_s 2
-  stz a_vregi
+  sta a_vregi
 
-  vdp_wait_s 2
   lda #v_cmd_hmmv
+  vdp_wait_s 2
   sta a_vregi
 
   jsr vdp_wait_cmd

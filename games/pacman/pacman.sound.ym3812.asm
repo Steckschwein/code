@@ -42,7 +42,9 @@
 .autoimport
 
 .zeropage
-              r1:  .res 1
+              p_sound:    .res 2
+              sound_tmp:  .res 1
+              r1:         .res 1
 
 ; note/frequency assignments - https://shipbrook.net/jeff/sb.html#a0-b8
 NOTE_Cis  =$16B
@@ -129,9 +131,7 @@ sound_play_eat_dot:
               rts
 .endif
               lda #SOUND_PACMAN
-sound_play:   bit game_state+GameState::state ; intro?
-              bmi @exit
-ora sound_play_state
+sound_play:   ora sound_play_state
               sta sound_play_state
 @exit:        rts
 sound_play_game_interlude:
@@ -705,9 +705,9 @@ game_start_sound2_end:
       sound_play_state: .res 1
 
 
-      chn_cnt:      .res 8
-      chn_ix:       .res 8
-      chn_notes_l:  .res 8
-      chn_notes_h:  .res 8
-      chn_length:   .res 8
-      chn_bit:      .res 8
+      chn_cnt:      .res channels
+      chn_ix:       .res channels
+      chn_notes_l:  .res channels
+      chn_notes_h:  .res channels
+      chn_length:   .res channels
+      chn_bit:      .res channels

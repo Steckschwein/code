@@ -786,7 +786,7 @@ vdp_reg1_init:
     .byte v_reg8_VR | v_reg8_SPD ; R#8 - VR - 64k VRAM
 .export vdp_reg9_init
 vdp_reg9_init:
-    .byte 0 ; v_reg9_ln ; R#9 - 212lines
+    .byte 0 ; v_reg9_ln ; R#9 - 212lines, NTSC 60Hz !
     .byte 0 ; n.a.
     .byte <.hiword(VRAM_SPRITE_ATTR<<1); R#11 sprite attribute high
     .byte 0;  #R12

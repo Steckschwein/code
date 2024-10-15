@@ -1472,7 +1472,7 @@ update_mode:  lda game_state+GameState::frghtd_timer+0
               and #$1f
               sta ghost_tgt_y+ACTOR_INKY
 
-@tgt_clyde:   ldy #ACTOR_CLYDE
+@tgt_clyde:   ldy #ACTOR_CLYDE  ; TODO use distance
               lda actor_xpos,x
               sec
               sbc actor_xpos,y

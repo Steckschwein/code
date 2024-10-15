@@ -65,17 +65,12 @@ vdp_mode4_on:
 ;@desc: blank gfx mode 4 with given color in A
 ;@in: Y - color to fill [0..f]
 vdp_mode4_blank:
-              vdp_vram_w ADDRESS_GFX4_SCREEN
-              ldx #$80    ; $8000 byte bitmap screen - 256x256px with 4bpp color (overscan mode)
-              tya
-              jmp vdp_fill
-; TODO hw fill
               lda #<@cmd_hmmv_data
               ldx #>@cmd_hmmv_data
               jmp vdp_cmd_hmmv
 @cmd_hmmv_data:
               .word 0 ;x #36/#37
-              .word (ADDRESS_GFX4_SCREEN>>8) ;y - from page offset
+              .word (ADDRESS_GFX4_SCREEN>>7) ;y - from page offset
               .word 256 ; len x #40/#41
-              .word 255 ; len y #42/#43
+              .word 256 ; len y #42/#43
 
