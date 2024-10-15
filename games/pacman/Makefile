@@ -113,6 +113,10 @@ pacman64.prg: $(OBJS_C64) $(LIBS_C64)
 pacmanjc.bin: $(OBJS_JC) $(LIBS_JC)
 	ld65 -o $@ $(LDFLAGS_JC) $(OBJS_JC) $(LIBS_JC)
 
+gfx4test.bin: gfx4test.asm $(LIBS_JC)
+	ca65 -o gfx4test.o  -I ../../steckos/asminc $(CA65FLAGS_JC) $<
+	ld65 -o $@ $(LDFLAGS_JC) gfx4test.o $(LIBS_JC)
+
 pacman64: pacman64.prg
 	x64 -device8 1 -VICIIdscan -VICIIdsize -autostartprgmode 1 $(ARGS) $<
 #-fullscreen
@@ -131,6 +135,7 @@ pacman64.dis: pacman64.prg
 
 %.emu: %.bin
 #	6502msx-emu -rotate -quality linear -upload $<,0x3000 -debug 0x3000 -joy2 SNES
+	6502msx-emu -upload $<,0x3000 -debug 0x3000 -joy2 SNES
 
 %.emu: %.prg
 #	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -rotate -upload $<

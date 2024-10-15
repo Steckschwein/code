@@ -40,6 +40,9 @@ clean:
 %.prg: %.o $(LIBS)
 	ld65 $< $(LDFLAGS) -o $@
 
+%.prg: %.o $(LIBS)
+	ld65 $< $(LDFLAGS) -o $@
+
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 

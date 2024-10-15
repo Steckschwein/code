@@ -128,7 +128,7 @@ main:
               lda #<@lmmm
               ldx #>@lmmm
               bgcolor Color_Yellow
-              jsr vdp_cmd_hmmm
+;              jsr vdp_cmd_hmmm
               bgcolor Color_Bg
               jmp @main_loop
 @lmmm:
