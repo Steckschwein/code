@@ -109,16 +109,16 @@ _ok:
 
 _rom_off:
       ldx #$02
-      stx slot2
+      stx slot2_ctrl
       ldx #$03
-      stx slot3
+      stx slot3_ctrl
       rts
 
 _rom_on:
       ldx #$80
-      stx slot2
+      stx slot2_ctrl
       ldx #$81
-      stx slot3
+      stx slot3_ctrl
       rts
 
 _verify_image:

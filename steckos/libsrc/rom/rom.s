@@ -21,13 +21,33 @@
 ; SOFTWARE.
 
 .include "common.inc"
+.include "system.inc"
 
 .importzp __volatile_ptr, __volatile_tmp
 .autoimport
 
+.export rom_sdp_disable
+.export rom_sdp_enable
+.export rom_write_byte
+
 .code
 
-ROM_BASE = $4000 ; we use just one 16k slot to write to rom
+ROM_BASE = slot1 ; we use just one 16k slot to write to rom
+
+ROM_CMD_ADDRESS_0 = $5555
+ROM_CMD_ADDRESS_1 = $2aaa
+
+rom_get_product_id:
+        lda #$90  ; get id command
+        jsr _sdp_sequence
+        sys_delay_us 10
+
+
+
+        lda #$f0  ; reset command
+        jsr _sdp_sequence
+        sys_delay_us 10
+        rts
 
 rom_write_page:
         rts
@@ -37,30 +57,29 @@ rom_write_page:
 ;   .X/.Y - rom address (low/high)
 ; out:
 ;   C=0 on success, C=1 on error
-rom_write_byte_protected:
 rom_write_byte:
         stx __volatile_ptr  ; rom address low byte
 
-        ldx bank1           ; safe bank reg
+        ldx slot1_ctrl      ; safe bank reg
         phx
 
-        pha;        sta __volatile_tmp
+        pha
 
-        ldx #$80            ; select first 16k ROM
+        ldx #$80            ; select first 16k of ROM
 
         tya
         and #$7f            ; mask 32k ROM address
         bit #$40            ; low/high rom bank ?
         bvc :+
         inx                 ; inc to 2nd 16k ROM
-:       stx bank1           ; 16k ROM to slot 1
+:       stx slot1_ctrl      ; 16k ROM to slot 1
 
-        and #$3f            ; map to bank1 address $4000-7fff
+        and #$3f            ; map to slot1 ($4000-7fff)
         ora #>ROM_BASE      ; offset to bank 1 ($4000)
         sta __volatile_ptr+1
 
-;        jsr rom_sdp_enable
-        pla ; lda __volatile_tmp
+        jsr rom_sdp_enable
+        pla
 
         ldy #0  ; timeout
         sta (__volatile_ptr)  ; write
@@ -80,44 +99,51 @@ rom_write_byte:
 @exit:
         lda (__volatile_ptr)
         plx
-        stx bank1
+        stx slot1_ctrl
         rts
 
 
 ; disable software data protection (sdp)
 ;
-; disable - $aa, $55, $80, $aa, $55, $20
+; disable sequence - $aa, $55, $80, $aa, $55, $20
 rom_sdp_disable:
-        lda #$00
+        lda #$80
         jsr _sdp_sequence
-        lda #$a0
+        lda #$20
         jsr _sdp_sequence
         sys_delay_ms 50 ; write cycle delay
         rts
 
 ; enable software data protection (sdp)
-; enable sequence- $aa, $55, $a0
+; enable sequence - $aa, $55, $a0
 rom_sdp_enable:
-        lda #$20
-        jsr _sdp_sequence
-        sys_delay_ms 50   ; write cycle delay
-        rts
+        lda #$a0
 
 _sdp_sequence:
-        ldx bank1 ; save bank1
+        ldx slot1_ctrl ; save slot1_ctrl
         phx
-        ldx #$81
-        stx bank1
+
+        ldx #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
+        stx slot1_ctrl
         ldx #$aa
-        stx ROM_BASE + ($5555 & $3fff)
-        ldx #$80
-        stx bank1
+        stx ROM_BASE + (ROM_CMD_ADDRESS_0 & $3fff)
+
+        ldx #SLOT_ROM | (ROM_CMD_ADDRESS_1>>14)
+        stx slot1_ctrl
         ldx #$55
-        stx ROM_BASE + $2aaa
-        ldx #$81
-        stx bank1
-        eor #$80
-        sta ROM_BASE + ($5555 & $3fff)
+        stx ROM_BASE + (ROM_CMD_ADDRESS_1 & $3fff)
+
+        ldx #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
+        stx slot1_ctrl
+        sta ROM_BASE + (ROM_CMD_ADDRESS_0 & $3fff)  ; cmd byte
+
         plx
-        stx bank1
+        stx slot1_ctrl
         rts
+.data
+  manufacturer:
+    .byte $bf
+    .asciiz "Greenliant"
+  deviceid:
+    .byte $5d
+    .asciiz "GLS29EE512"
