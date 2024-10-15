@@ -9,6 +9,7 @@ clean:
 	(cd joystick; make clean)
 	(cd ppmview; make clean)
 	(cd unrclock; make clean)
+	(cd brainfck; make clean)
 
 build:
 	(cd clavier; make)
@@ -19,4 +20,5 @@ build:
 	(cd joystick; make)
 	(cd ppmview; make)
 	(cd unrclock; make)
+	(cd brainfck; make)
 
