@@ -223,10 +223,11 @@ BF_INC:
         adc #2
 BF_DEC:
         dec A
-        sta (data_ptr)
-        rts
+        bra store
 BF_IN:
         keyin 
+        
+store:
         sta (data_ptr)
         rts
 BF_OUT:
@@ -263,7 +264,9 @@ BF_IF:                  ;          ; if( *pData == 0 ) pc = ']'
         
 BF_FI:                  ;          ; if( *pData != 0 ) pc = '['
         DEC CUR_DEPTH   ; C6 EE    ; depth--
-        LDA (data_ptr)  ; B1 40    ;
+
+        cmp #0
+        ; LDA (data_ptr)  ; B1 40    ;
         BEQ EXIT_2      ; F0 BD    ; optimization: BNE .1, therefore BEQ RTS
         LDA CUR_DEPTH   ; A5 EE    ; match_depth = depth
         STA NUM_BRACKET ; 85 EF    ;
