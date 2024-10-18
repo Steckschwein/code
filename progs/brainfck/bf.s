@@ -139,6 +139,8 @@ NUM_BRACKET:    .res 1 ; // depth to find[]
         keyin
         cmp #13
         beq @input_done
+        cmp #KEY_CTRL_C
+        beq exit
         jsr char_out
         sta (input_ptr)
         inc16 input_ptr
