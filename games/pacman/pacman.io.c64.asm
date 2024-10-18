@@ -1,4 +1,25 @@
-;i/o
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 .include "pacman.c64.inc"
 
 .export io_init
@@ -36,25 +57,29 @@ io_init:
 @exit:        rts
 
 io_irq_on:
-        lda #LORAM | IOEN ;disable kernel rom to setup irq vector
-        sta $01           ;PLA
+              lda #LORAM | IOEN ;disable kernel rom to setup irq vector
+              sta $01           ;PLA
 
-        lda #%01111111  ; disable interrupts from CIA1
-        sta CIA1_ICR
+              lda #%01111111  ; disable interrupts from CIA1
+              sta CIA1_ICR
 
-        and VIC_CTRL1  ; clear bit 7 (high byte raster line)
-        sta VIC_CTRL1  ; $d011
+              and VIC_CTRL1  ; clear bit 7 (high byte raster line)
+              sta VIC_CTRL1  ; $d011
 
-        lda #HLine_Border
-        sta VIC_HLINE  ; Raster-IRQ at bottom border ($d012)
+              lda #HLine_Border
+              sta VIC_HLINE  ; Raster-IRQ at bottom border ($d012)
 
-        lda #%00000001
-        sta VIC_IMR      ; enable raster irq
+              lda #%00000001
+              sta VIC_IMR      ; enable raster irq
 
-        lda CIA1_ICR
-        lda CIA2_ICR
+              lda CIA1_ICR
+              lda CIA2_ICR
+
+              setIRQ IRQ_VEC
+              rts
 io_exit:
-        rts
+              restoreIRQ IRQ_VEC
+              rts
 
 io_isr:
         inc VIC_BORDERCOLOR
@@ -122,3 +147,6 @@ Joy_Right:  .byte JOY_RIGHT
 Joy_Left:   .byte JOY_LEFT
 Joy_Down:   .byte JOY_DOWN
 Joy_Up:     .byte JOY_UP
+
+.bss
+  save_irq: .res 2
