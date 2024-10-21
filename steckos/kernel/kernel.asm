@@ -294,11 +294,7 @@ do_nmi:
     cpx #8
     bne @next
 
-    lda #CODE_LF
-    jsr char_out
-
-    ldx save_stat + save_status::SP
-    txs
+    crlf
 
     lda save_stat + save_status::PC+1
     pha
