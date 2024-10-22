@@ -295,6 +295,8 @@ do_nmi:
     bne @next
 
     crlf
+    
+    jsr wozmon
 
     lda save_stat + save_status::PC+1
     pha
@@ -305,12 +307,9 @@ do_nmi:
     pha
 
 
-
     lda save_stat + save_status::ACC
     ldx save_stat + save_status::XREG
     ldy save_stat + save_status::YREG
-
-    jsr wozmon
 
     rti
 
