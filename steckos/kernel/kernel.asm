@@ -310,6 +310,8 @@ do_nmi:
     ldx save_stat + save_status::XREG
     ldy save_stat + save_status::YREG
 
+    jsr wozmon
+
     rti
 
 do_reset:
