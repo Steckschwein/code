@@ -62,8 +62,7 @@ game_state_delay:
               cmp #FN_STATE_PACMAN_DYING
               bne :+
               jsr animate_screen
-:             ;jsr sound_play
-              lda game_state+GameState::state_frames
+:             lda game_state+GameState::state_frames
 .ifdef __DEVMODE
               and #$00
 .endif
@@ -159,7 +158,6 @@ game_ready:   jsr game_init_actors
               jmp system_set_state_fn
 
 game_ready_wait:
-              ;jsr sound_play
               jsr animate_up
 .ifndef __DEVMODE
               lda game_state+GameState::state_frames
@@ -1763,7 +1761,7 @@ draw_highscore:
               rts
 
 animate_screen:
-              ;jsr animate_up
+              jsr animate_up
 animate_energizer:
               ldy #Color_Food
               lda game_state+GameState::frames
@@ -1773,7 +1771,7 @@ animate_energizer:
 draw_energizer:
               sty text_color
 
-              ldx #1
+              ldx #3
 @l0:          lda energizer_x,x
               sta sys_crs_x
               ldy energizer_y,x

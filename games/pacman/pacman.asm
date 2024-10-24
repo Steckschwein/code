@@ -115,6 +115,7 @@ main:
 :             cmp #'r'  ; reset
               bne :+
               jmp @init_state
+
 .ifdef __DEVMODE  ; debug keys
 :             cmp #'d'  ; dying
               bne :+
@@ -203,9 +204,8 @@ main:
               lda #'T'
               jsr sys_charout
               cli
-:
 .endif
-              jmp @main_loop
+:             jmp @main_loop
 
 quit:         jsr sound_off
               jsr gfx_mode_off

@@ -1,11 +1,11 @@
-DEBUG+=-D__DEBUG
+#DEBUG+=-D__DEBUG
 #DEBUG+=-D__GFX_DEBUG
-#DEBUG+=-D__NO_SOUND
+DEBUG+=-D__NO_SOUND
 DEBUG+=-D__NO_BOOT
 DEBUG+=-D__NO_INTRO
 #DEBUG+=-D__INTERLUDE
 DEBUG+=-D__ASSERTIONS
-DEBUG+=-D__DEVMODE
+#DEBUG+=-D__DEVMODE
 
 LIBS=
 CA65FLAGS=$(DEBUG)
@@ -15,9 +15,9 @@ OBJS=pacman.o pacman.boot.o pacman.intro.o pacman.game.o pacman.system.o
 
 CA65FLAGS_STS=-I ../../asmunit -I ../../steckos/asminc -I ../../steckos/kernel $(DEBUG)
 # ym3812
-#OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.v99x8.o pacman.sound.ym3812.o
+OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.v99x8.o pacman.sound.ym3812.o
 # sn76489
-OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.v99x8.o pacman.sound.sn76489.o
+# OBJS_STS=$(OBJS) pacman.io.sts.o pacman.gfx.v99x8.o pacman.sound.sn76489.o
 
 LIBS_STS=$(LIBS) ../../asmunit/asmunit.a ../../steckos/lib/steckschwein.a
 LDFLAGS_STS=-C ../../steckos/prg.ld65.cfg -m pacman.map -Ln pacman.lbl --dbgfile pacman.dbg
@@ -148,5 +148,5 @@ pacman64.dis: pacman64.prg
 #	6502msx-emu -rotate -quality linear -upload ../../VPU.com,0x3000 -debug 0x3000
 
 %.emu: %.prg
-#	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -rotate -upload $<
-	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -upload $<
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -rotate -upload $<
+#	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -quality linear -upload $<
