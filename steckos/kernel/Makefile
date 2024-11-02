@@ -1,6 +1,6 @@
 CPU=65c02
 # !!! order counts !!! - kernel.o must be the first module which is linked to output file
-OBJS=kernel.o rtc.o exec.o automount.o jumptable.o
+OBJS=kernel.o rtc.o exec.o automount.o jumptable.o wozmon.o
 OBJS+=textui.o
 OBJS+=ansi.o
 ASM_INCLUDE=../asminc
