@@ -79,11 +79,12 @@ rom_write_byte:
         sta __volatile_ptr+1
 
         jsr rom_sdp_enable
-        pla
+
+        pla                   ; data byte
 
         ldy #0  ; timeout
         sta (__volatile_ptr)  ; write
-@wait:  sys_delay_ms 1
+@wait:  sys_delay_us 1
         dey
         bne @test
         sec                   ; C=1 error
