@@ -23,6 +23,8 @@
 .include "pacman.inc"
 .include "sn76489.inc"
 
+.setcpu "6502"
+
 .export sound_init
 .export sound_reset
 .export sound_off
@@ -133,31 +135,31 @@ sound_play:   ora sound_play_state
 @exit:        rts
 sound_play_game_interlude:
               lda #SOUND_GAME_INTERLUDE
-              bra sound_play
+              bne sound_play
 sound_play_game_prelude:
 .ifdef __DEVMODE
 ;              rts
 .endif
               lda #SOUND_GAME_PRELUDE
-              bra sound_play
+              bne sound_play
 sound_play_eat_fruit:
               lda #SOUND_EAT_FRUIT
-              bra sound_play
+              bne sound_play
 sound_play_ghost_alarm:
 .ifdef __DEVMODE
               rts
 .endif
               lda #SOUND_GHOST_ALARM
-              bra sound_play
+              bne sound_play
 sound_play_ghost_catched:
               lda #SOUND_GHOST_CATCHED
-              bra sound_play
+              bne sound_play
 sound_play_ghost_frightened:
               lda #SOUND_GHOST_FRIGHTENED
-              bra sound_play
+              bne sound_play
 sound_play_pacman_dying:
               lda #SOUND_PACMAN_DYING
-              bra sound_play
+              bne sound_play
 
 sound_update: ldx #0  ; start with channel 1 (bit 0)
               lda sound_play_state
@@ -175,7 +177,6 @@ sound_play_chn:
 .ifdef __ASSERTIONS
               cpx #channels+1
               bcc :+
-              stp
           :   nop
 .endif
               dec chn_cnt,x
@@ -183,7 +184,8 @@ sound_play_chn:
               lda chn_ix,x    ; data channel
               cmp chn_length,x
               bne @next_note
-              stz chn_ix,x
+              lda #0
+              sta chn_ix,x
               lda #L64
               sta chn_cnt,x
               ;stp
@@ -240,7 +242,8 @@ channels=3
               ldx #channels-1
               lda #1<<(channels-1)
               sta r1
-:             stz chn_ix,x
+:             lda #0
+              sta chn_ix,x
               lda #L64
               sta chn_cnt,x
               lda channel_init,y
@@ -259,8 +262,9 @@ channels=3
               bpl :-
               rts
 
-sound_off:    stz sound_play_state
-sound_reset:  jmp opl2_init
+sound_off:    lda #0
+              sta sound_play_state
+sound_reset:  jmp sn76489_muteall
 
 .data
 

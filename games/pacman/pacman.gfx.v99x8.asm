@@ -22,6 +22,8 @@
 
 .include "pacman.v99x8.inc"
 
+.setcpu "6502"
+
 .export gfx_init
 .export gfx_mode_on
 .export gfx_mode_off
