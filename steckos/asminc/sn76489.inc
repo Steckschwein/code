@@ -20,45 +20,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-;@module: vdp
+.ifndef _SN76489_INC_
+_SN76489_INC_=1
 
-.setcpu "6502"
+.include "system.inc"
 
-.include "vdp.inc"
+SN_CLK = 3579545 ;Hz
 
-.export vdp_init_reg
+SN_VOLUME_MAX=$10
+SN_VOLUME_MIN=$f0
 
-.importzp vdp_ptr
 
-.code
 
-;@name: vdp_init_reg
-;@desc: setup video registers upon given table starting from register #R.X down to #R0
-;@in: X - length of init table, corresponds to video register to start R#+X - e.g. X=10 start with R#10
-;@in: A/Y - pointer to vdp init table
-vdp_init_reg:
-      php
-      sei
-
-      sta vdp_ptr
-      sty vdp_ptr+1
-      txa       ; x length of init table
-      tay
-      ora #$80  ; bit 7 = 1 => register write
-      tax
-@l:   vdp_wait_s 7
-      lda (vdp_ptr),y ; 5c
-      sta a_vreg
-      vdp_wait_s
-      stx a_vreg
-      dex        ;2c
-      dey        ;2c
-      bpl @l     ;3c
-
-.ifdef V9958
-      vdp_sreg 0, v_reg23  ; reset vertical scroll
-      vdp_sreg v_reg25_wait | v_reg25_cmd, v_reg25  ; enable V9958 /WAIT pin, enable CMD on lower screen modes
 .endif
-
-      plp
-      rts
