@@ -37,17 +37,70 @@ ROM_BASE = slot1 ; we use just one 16k slot to write to rom
 ROM_CMD_ADDRESS_0 = $5555
 ROM_CMD_ADDRESS_1 = $2aaa
 
-rom_get_product_id:
+; @out: A - manufacturer ID
+;       Y - device ID
+rom_read_device_id:
+        php
+        sei
+        ldx slot1_ctrl ; save slot1_ctrl
+        phx
+
         lda #$90  ; get id command
         jsr _sdp_sequence
-        sys_delay_us 10
 
+        lda #SLOT_ROM | ($0000>>14)
+        sta slot1_ctrl
 
+        lda ROM_BASE+0  ; mfr
+        pha
+        ldy ROM_BASE+1  ; id
 
         lda #$f0  ; reset command
         jsr _sdp_sequence
-        sys_delay_us 10
+
+        pla
+
+        plx
+        stx slot1_ctrl
+        plp
         rts
+
+.export rom_print_device_id
+rom_print_device_id:
+        jsr rom_read_device_id
+        sta __volatile_tmp
+        ldx #0
+@find:  lda rom_ids+1,x
+        beq @print
+        cmp __volatile_tmp
+        bne @next
+        tya
+        cmp rom_ids+0,x
+        beq @print
+@next:  inx
+        inx
+        inx
+        inx
+        bra @find
+
+@print: lda rom_ids+2,x
+        pha
+        lda rom_ids+3,x
+        tax
+        pla
+        jsr strout
+        lda #' '
+        jsr char_out
+        lda #'('
+        jsr char_out
+        lda __volatile_tmp
+        jsr hexout_s
+        lda #'/'
+        jsr char_out
+        tya
+        jsr hexout_s
+        lda #')'
+        jmp char_out
 
 rom_write_page:
         rts
@@ -82,17 +135,19 @@ rom_write_byte:
 
         pla                   ; data byte
 
-        ldy #0  ; timeout
+        ldy #0                ; timeout
         sta (__volatile_ptr)  ; write
-@wait:  sys_delay_us 1
-        dey
-        bne @test
-        sec                   ; C=1 error
-        bra @exit
+
+@wait_toggle:
+        lda (__volatile_ptr)  ; read
+        eor #1<<6             ; toggle bit
+        cmp (__volatile_ptr)  ; same?
+        beq @wait_toggle      ; then bit 6 is toggling still
+
 @test:  cmp (__volatile_ptr)  ; due to bit 6 toggle, we have to compare twice
-        bne @wait             ; to verify that the expected value is really written
+        bne @wait_toggle      ; to verify that the expected value is really written
         cmp (__volatile_ptr)  ;
-        bne @wait
+        bne @wait_toggle
         clc
 ;        and #1<<6 ; toggle bit?
  ;       eor #1<<6
@@ -120,10 +175,8 @@ rom_sdp_disable:
 rom_sdp_enable:
         lda #$a0
 
+; sends $aa, $55, $<A>
 _sdp_sequence:
-        ldx slot1_ctrl ; save slot1_ctrl
-        phx
-
         ldx #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
         stx slot1_ctrl
         ldx #$aa
@@ -137,14 +190,25 @@ _sdp_sequence:
         ldx #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
         stx slot1_ctrl
         sta ROM_BASE + (ROM_CMD_ADDRESS_0 & $3fff)  ; cmd byte
-
-        plx
-        stx slot1_ctrl
         rts
+
 .data
-  manufacturer:
-    .byte $bf
-    .asciiz "Greenliant"
-  deviceid:
-    .byte $5d
-    .asciiz "GLS29EE512"
+  rom_ids:
+    .word $bf5d ; mfr id, device id
+    .word rom_label_0
+    .word $52a4
+    .word rom_label_1
+    .word $3786
+    .word rom_label_2
+    .byte 0,0
+    .word rom_label_unknown
+  rom_label_0:
+    .asciiz "Greenliant - GLS29EE512"
+  rom_label_1:
+    .asciiz "Alliance - AS29F040"
+  rom_label_2:
+    .asciiz "AMIC - A29040B"
+  rom_label_unknown:
+    .asciiz "unknown"
+
+.bss

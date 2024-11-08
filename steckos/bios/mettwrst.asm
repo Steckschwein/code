@@ -47,7 +47,14 @@ p_rom:  .res 2
 
 appstart $1000
 
-      sei
+      jsr primm
+      .asciiz "Detect Rom..."
+
+      jsr rom_print_device_id
+
+      jmp (retvec)
+
+
       jsr primm
       .byte 1,2,3,4,5,6,7,8,9,$b,$c,$1d,$1e,CODE_LF,0
 
