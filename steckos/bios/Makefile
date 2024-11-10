@@ -52,7 +52,8 @@ mettwrst: mettwrst.prg
 	../../xmodem.sh mettwrst.prg
 
 %.emu: %.prg bios.bin
-	6502msx-emu -rom bios.bin -sdcard ../../steckos.img -upload $<
+# 6502msx-emu -rom bios.bin -sdcard ../../steckos.img -upload $<
+	steckschwein-emu -rom bios.bin -sdcard ../../steckos.img -upload $<
 
 emu: bios.bin
 	steckschwein-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg

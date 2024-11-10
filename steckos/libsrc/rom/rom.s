@@ -22,12 +22,12 @@
 
 .include "common.inc"
 .include "system.inc"
+.include "rom.inc"
 
 .importzp __volatile_ptr, __volatile_tmp
 .autoimport
 
 .export rom_sdp_disable
-.export rom_sdp_enable
 .export rom_write_byte
 
 .code
@@ -37,14 +37,56 @@ ROM_BASE = slot1 ; we use just one 16k slot to write to rom
 ROM_CMD_ADDRESS_0 = $5555
 ROM_CMD_ADDRESS_1 = $2aaa
 
+
+
 ; @out: A - manufacturer ID
 ;       Y - device ID
 rom_read_device_id:
+        ldx #0
+        jmp rom_access_with_fn
+
+;@name: rom_write_page - write
+;@in: A/Y, pointer to rom write struct (low/high)
+;@out: C=0 on success, C=1 on error
+.export rom_write
+rom_write:
+        sta __volatile_ptr
+        sty __volatile_ptr+1
+
+        ldy #rom_write_t::target+1
+        lda (__volatile_ptr),y
+
+        ldx #2
+        jsr rom_access_with_fn
+        tya
+        jsr hexout_s
+        clc
+        rts
+
+
+;@in: A/Y pointer to rom access function
+rom_access_with_fn:
         php
         sei
-        ldx slot1_ctrl ; save slot1_ctrl
-        phx
 
+        lda slot1_ctrl ; save slot1_ctrl
+        pha
+
+        jsr rom_access_fn
+
+        plx
+        stx slot1_ctrl
+        plp
+        rts
+
+rom_access_fn:
+        jmp (rom_fn_table,x)
+
+rom_fn_table:
+        .word rom_fn_read_device_id
+        .word rom_fn_write
+
+rom_fn_read_device_id:
         lda #$90  ; get id command
         jsr _sdp_sequence
 
@@ -59,10 +101,26 @@ rom_read_device_id:
         jsr _sdp_sequence
 
         pla
+        rts
 
-        plx
-        stx slot1_ctrl
-        plp
+rom_fn_write:
+        jsr rom_write_begin
+        lda #$9f
+        sta slot1_ctrl
+        ldx #0
+:       txa
+        sta ROM_BASE,x
+        inx
+        bne :-
+        ; fall through, check toggle bit
+
+rom_wait_toggle:
+        ldy #0
+@wait:  iny
+        lda ROM_BASE        ; read
+        eor ROM_BASE        ; eor
+        and #1<<6           ; mask toggle bit
+        bne @wait           ; bit 6 is set, rom is toggling still
         rts
 
 .export rom_print_device_id
@@ -79,13 +137,11 @@ rom_print_device_id:
         beq @print
 @next:  inx
         inx
-        inx
-        inx
         bra @find
 
-@print: lda rom_ids+2,x
+@print: lda rom_labels+0,x
         pha
-        lda rom_ids+3,x
+        lda rom_labels+1,x
         tax
         pla
         jsr strout
@@ -102,14 +158,12 @@ rom_print_device_id:
         lda #')'
         jmp char_out
 
-rom_write_page:
-        rts
 
 ; in:
 ;   .A    - byte to write
 ;   .X/.Y - rom address (low/high)
 ; out:
-;   C=0 on success, C=1 on error
+;   C=1 on success, C=0 on error
 rom_write_byte:
         stx __volatile_ptr  ; rom address low byte
 
@@ -131,29 +185,16 @@ rom_write_byte:
         ora #>ROM_BASE      ; offset to bank 1 ($4000)
         sta __volatile_ptr+1
 
-        jsr rom_sdp_enable
+        jsr rom_write_begin
 
         pla                   ; data byte
-
-        ldy #0                ; timeout
         sta (__volatile_ptr)  ; write
 
-@wait_toggle:
-        lda (__volatile_ptr)  ; read
-        eor #1<<6             ; toggle bit
-        cmp (__volatile_ptr)  ; same?
-        beq @wait_toggle      ; then bit 6 is toggling still
+        jsr rom_wait_toggle
 
-@test:  cmp (__volatile_ptr)  ; due to bit 6 toggle, we have to compare twice
-        bne @wait_toggle      ; to verify that the expected value is really written
-        cmp (__volatile_ptr)  ;
-        bne @wait_toggle
-        clc
-;        and #1<<6 ; toggle bit?
- ;       eor #1<<6
-  ;      bne :-
-@exit:
-        lda (__volatile_ptr)
+@test:  lda (__volatile_ptr)  ; due to bit 6 toggle, we have to compare again
+        cmp (__volatile_ptr)  ; to verify that the expected value is really written, C is set accordingly
+
         plx
         stx slot1_ctrl
         rts
@@ -167,14 +208,11 @@ rom_sdp_disable:
         jsr _sdp_sequence
         lda #$20
         jsr _sdp_sequence
-        sys_delay_ms 50 ; write cycle delay
         rts
 
-; enable software data protection (sdp)
-; enable sequence - $aa, $55, $a0
-rom_sdp_enable:
+; send write command sequence $aa, $55, $a0
+rom_write_begin:
         lda #$a0
-
 ; sends $aa, $55, $<A>
 _sdp_sequence:
         ldx #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
@@ -194,13 +232,15 @@ _sdp_sequence:
 
 .data
   rom_ids:
-    .word $bf5d ; mfr id, device id
-    .word rom_label_0
+    .word $bf5d ; manufacturer id, device id
     .word $52a4
-    .word rom_label_1
     .word $3786
+    .word 0
+
+  rom_labels:
+    .word rom_label_0
+    .word rom_label_1
     .word rom_label_2
-    .byte 0,0
     .word rom_label_unknown
   rom_label_0:
     .asciiz "Greenliant - GLS29EE512"

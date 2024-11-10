@@ -40,7 +40,11 @@
           sta bflag    ; set flag to get address from block 1
           lda #<_block_rx_dflt
           ldx #>_block_rx_dflt
-          jmp xmodem_upload_callback
+          jsr xmodem_upload_callback
+          bcs @exit
+          lda bflag
+          cmp #1  ; OK, but nothing read?
+@exit:    rts
 .endproc
 
 

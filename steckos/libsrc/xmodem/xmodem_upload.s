@@ -121,53 +121,48 @@ X_ESC = $1b  ; ESC to exit
 ; v 1.0 recode for use with SBC2
 ; v 1.1 added block 1 masking (block 257 would be corrupted)
 
-; in
-;   .A/.X pointer to block rcv callback
-; out:
-;  C=0 on success, C=1 on any i/o or protocoll related error
+;@in A/X pointer to block rcv callback
+;@out: C=0 on success, C=1 on any i/o or protocoll related error
 .proc xmodem_upload_callback
-          ldy #1
+          ldy #1                  ; x-modem starts with block number #1
           bra __x_y_modem_upload
 .endproc
 
 .proc ymodem_upload_callback
-          ldy #0
+          ldy #0                  ; y-modem starts with block number #0
 .endproc
 
 __x_y_modem_upload:
           sta block_rx+0
           stx block_rx+1
-
           sty blkno     ; set start block #
 
-          jsr crc16_init
+          tya
+          eor #$01
+          and #$01      ; $01 y-modem, $00 x-modem
 
-          lda #'Y'
-          sec
-          sbc blkno
+          pha
+          clc
+          adc #'X'
           jsr char_out
           jsr primm
           .byte "MODEM upload... ", 0
-
-          lda blkno
-          eor #$01
-          and #$01      ; $01 y-modem, $00 x-modem
+          jsr crc16_init
+          pla
 
 Start0:   sta protocol
 
 StartCrc: lda #'C'      ; "C" start with CRC mode
           jsr Put_Chr   ; send it
-          stz crc
-          stz crch      ; init CRC value
           jsr GetByte   ; wait for input
           bcs GotByte   ; byte received, process it
           bcc StartCrc  ; resend "C"
 
-StartBlk: stz crc      ;
-          stz crch     ; init CRC value
-          jsr GetByte  ; get first byte of block
+StartBlk: jsr GetByte  ; get first byte of block
           bcc StartBlk ; timed out, keep waiting...
-GotByte:
+GotByte:  stz crc
+          stz crch      ; init CRC value
+
           cmp #X_SOH    ; start of block?
           beq BegBlk    ; yes
           cmp #X_EOT    ;
@@ -179,7 +174,7 @@ Done:                   ; EOT - all done!
           lda protocol  ; check protocol
           beq :+
           ora #$40      ; bit 6 EOT received
-          bra Start0    ; if y-modem, go on and reveive that block 0 - SOH 00 FF NUL[128] CRC CRC
+          bra Start0    ; if y-modem, go on and receive block 0 - SOH 00 FF NUL[128] CRC CRC
 :         jmp Flush     ; x-modem, get leftover characters, if any and exit
           ; exit, C=0
 BegBlk:   ldx #$00

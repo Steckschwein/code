@@ -25,13 +25,3 @@ nvram				  = $1000
 	lda #'.'
 	jsr char_out
 .endmacro
-
-.macro	println text
-	jsr primm
-	.byte text, CODE_LF, 0
-.endmacro
-
-.macro	print text
-	jsr primm
-	.asciiz text
-.endmacro

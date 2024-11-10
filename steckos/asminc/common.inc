@@ -360,9 +360,17 @@
 .endmacro
 
 .macro printstring text
+    print text
+.endmacro
+
+.macro print text
     jsr primm
-    .byte text
-    .byte $0a,$0
+    .byte text, $0
+.endmacro
+
+.macro println text
+    jsr primm
+    .byte text, CODE_LF, $0
 .endmacro
 
 .macro Copy src, trgt, len
