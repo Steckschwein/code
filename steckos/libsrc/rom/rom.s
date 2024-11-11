@@ -58,8 +58,6 @@ rom_write:
 
         ldx #2
         jsr rom_access_with_fn
-        tya
-        jsr hexout_s
         clc
         rts
 
@@ -107,21 +105,22 @@ rom_fn_write:
         jsr rom_write_begin
         lda #$9f
         sta slot1_ctrl
-        ldx #0
+        ldx #$a9
 :       txa
         sta ROM_BASE,x
         inx
-        bne :-
+        ;bne :-
         ; fall through, check toggle bit
 
 rom_wait_toggle:
         ldy #0
 @wait:  iny
+        beq @exit
         lda ROM_BASE        ; read
         eor ROM_BASE        ; eor
         and #1<<6           ; mask toggle bit
         bne @wait           ; bit 6 is set, rom is toggling still
-        rts
+@exit:  rts
 
 .export rom_print_device_id
 rom_print_device_id:

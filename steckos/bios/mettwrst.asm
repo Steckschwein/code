@@ -53,6 +53,9 @@ appstart $1000
       println " detected."
 
       jsr rom_write
+      tya
+      jsr hexout_s
+      jsr _ok
 
       jmp (retvec)
 
