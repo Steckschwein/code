@@ -102,14 +102,14 @@ rom_fn_read_device_id:
         rts
 
 rom_fn_write:
-        jsr rom_write_begin
+        jsr rom_cmd_program
         lda #$9f
         sta slot1_ctrl
-        ldx #$a9
+        ldx #0
 :       txa
         sta ROM_BASE,x
         inx
-        ;bne :-
+        bne :-
         ; fall through, check toggle bit
 
 rom_wait_toggle:
@@ -184,7 +184,7 @@ rom_write_byte:
         ora #>ROM_BASE      ; offset to bank 1 ($4000)
         sta __volatile_ptr+1
 
-        jsr rom_write_begin
+        jsr rom_cmd_program
 
         pla                   ; data byte
         sta (__volatile_ptr)  ; write
@@ -210,7 +210,7 @@ rom_sdp_disable:
         rts
 
 ; send write command sequence $aa, $55, $a0
-rom_write_begin:
+rom_cmd_program:
         lda #$a0
 ; sends $aa, $55, $<A>
 _sdp_sequence:

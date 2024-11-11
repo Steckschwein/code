@@ -20,17 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-.include "common.inc"
-.include "system.inc"
-.include "keyboard.inc"
-.include "appstart.inc"
 .include "xmodem.inc"
-.include "vdp.inc"
 .include "zeropage.inc"
+.include "steckos.inc"
 
 .autoimport
 
-.export char_out=vdp_charout
+.export char_out=krn_chrout
 
 .export crc16_hi = BUFFER_0
 .export crc16_lo = BUFFER_1
@@ -47,7 +43,6 @@ p_src:  .res 2
 p_rom:  .res 2
 
 appstart $1000
-
       print "Rom: "
       jsr rom_print_device_id
       println " detected."

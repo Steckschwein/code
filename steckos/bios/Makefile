@@ -12,7 +12,7 @@ DEFINES+=-DCOLS80
 # DEFINES += -DDEBUG_FAT32
 
 .PHONY: all clean
-all: version.inc mettwrst.prg bios.bin loader.prg
+all: version.inc bios.bin loader.prg
 
 clean:
 	rm -f *.o *.bin *.prg *.map *.lbl *.dis version.inc bios_call.inc
@@ -48,12 +48,8 @@ bios.dis: bios.bin
 bios: loader bios.bin
 	../../xmodem.sh bios.bin
 
-mettwrst: mettwrst.prg
-	../../xmodem.sh mettwrst.prg
-
 %.emu: %.prg bios.bin
-# 6502msx-emu -rom bios.bin -sdcard ../../steckos.img -upload $<
-	steckschwein-emu -rom bios.bin -sdcard ../../steckos.img -upload $<
+	6502msx-emu -rom bios.bin -sdcard ../../steckos.img -upload $<
 
 emu: bios.bin
 	steckschwein-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg
