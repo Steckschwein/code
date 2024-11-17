@@ -27,7 +27,6 @@
 .importzp __volatile_ptr, __volatile_tmp
 .autoimport
 
-.export rom_sdp_disable
 .export rom_write_byte
 
 .code
@@ -36,7 +35,6 @@ ROM_BASE = slot1 ; we use just one 16k slot to write to rom
 
 ROM_CMD_ADDRESS_0 = $5555
 ROM_CMD_ADDRESS_1 = $2aaa
-
 
 
 ; @out: A - manufacturer ID
@@ -62,7 +60,7 @@ rom_write:
         rts
 
 
-;@in: A/Y pointer to rom access function
+;@in: X offset to rom access function - @see rom_fn_table
 rom_access_with_fn:
         php
         sei
@@ -83,17 +81,26 @@ rom_access_fn:
 rom_fn_table:
         .word rom_fn_read_device_id
         .word rom_fn_write
+        .word rom_fn_sector_erase
+
+rom_fn_sector_erase:
+        lda #$80
+        jsr _sdp_sequence
+        lda #$30
+        jsr _sdp_sequence
+
+        rts
 
 rom_fn_read_device_id:
-        lda #$90  ; get id command
+        lda #$90  ; send device id command
         jsr _sdp_sequence
 
         lda #SLOT_ROM | ($0000>>14)
         sta slot1_ctrl
 
-        lda ROM_BASE+0  ; mfr
+        lda ROM_BASE+0  ; read manufacturer
         pha
-        ldy ROM_BASE+1  ; id
+        ldy ROM_BASE+1  ; read chip id
 
         lda #$f0  ; reset command
         jsr _sdp_sequence
@@ -102,15 +109,18 @@ rom_fn_read_device_id:
         rts
 
 rom_fn_write:
+        ldx #0
+        ldy #$ff
+:       phx
         jsr rom_cmd_program
+        plx
         lda #$9f
         sta slot1_ctrl
-        ldx #0
-:       txa
+        tya
         sta ROM_BASE,x
+        dey
         inx
         bne :-
-        ; fall through, check toggle bit
 
 rom_wait_toggle:
         ldy #0
@@ -119,7 +129,17 @@ rom_wait_toggle:
         lda ROM_BASE        ; read
         eor ROM_BASE        ; eor
         and #1<<6           ; mask toggle bit
-        bne @wait           ; bit 6 is set, rom is toggling still
+        beq @exit           ; bit 6 is set, rom is toggling still
+
+        lda ROM_BASE
+        and #1<<5           ; I/O5 = 1 ?
+        beq rom_wait_toggle
+
+        lda ROM_BASE
+        cmp ROM_BASE
+        beq @exit
+        ; TODO reset
+
 @exit:  rts
 
 .export rom_print_device_id
@@ -196,17 +216,6 @@ rom_write_byte:
 
         plx
         stx slot1_ctrl
-        rts
-
-
-; disable software data protection (sdp)
-;
-; disable sequence - $aa, $55, $80, $aa, $55, $20
-rom_sdp_disable:
-        lda #$80
-        jsr _sdp_sequence
-        lda #$20
-        jsr _sdp_sequence
         rts
 
 ; send write command sequence $aa, $55, $a0

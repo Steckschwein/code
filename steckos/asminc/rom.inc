@@ -24,9 +24,9 @@
 	_ROM_INC_=1
 
 .struct rom_write_t
-  size    .word   ; 16 bit size of data to write
-  source  .word   ; 16 bit address to source data in host memory
-  target  .dword  ; 32 bit rom address
+  source  .byte 3   ; 24 bit address to source data in host memory
+  target  .byte 3   ; 24 bit rom address
+  size    .byte 3   ; 24 bit size of data to write
 .endstruct
 
 .endif

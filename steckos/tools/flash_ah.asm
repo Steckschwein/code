@@ -35,10 +35,6 @@
 
 .zeropage
 
-;tmp1:   .res 1
-;tmp2:   .res 1
-;ptr1:   .res 2
-;ptr2:   .res 2
 p_src:  .res 2
 p_rom:  .res 2
 
