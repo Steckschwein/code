@@ -39,16 +39,26 @@ p_src:  .res 2
 p_rom:  .res 2
 
 appstart $1000
-      print "Rom: "
-      jsr rom_print_device_id
-      println " detected."
+              print "Rom: "
+              jsr rom_print_device_id
+              println " detected."
 
-      jsr rom_write
-      tya
-      jsr hexout_s
-      jsr _ok
+              lda (paramptr)
+              beq @exit
 
-      jmp (retvec)
+              cmp #'e'
+              bne :+
+              jsr rom_sector_erase
+              bra @result
+:             cmp #'w'
+              bne @exit
+              jsr rom_write
+@result:
+              tya
+              jsr hexout_s
+              jsr _ok
+
+@exit:        jmp (retvec)
 
       jsr _set_pointer
 
