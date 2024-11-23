@@ -97,21 +97,21 @@ rom_fn_sector_erase:
 
 
 rom_fn_read_device_id:
-        lda #$90  ; send device id command
-        jsr _cmd_sequence
+              lda #$90  ; send device id command
+              jsr _cmd_sequence
 
-        lda #SLOT_ROM | ($0000>>14)
-        sta slot1_ctrl
+              lda #SLOT_ROM | ($0000>>14)
+              sta slot1_ctrl
 
-        lda ROM_BASE+0  ; read manufacturer
-        pha
-        ldy ROM_BASE+1  ; read chip id
+              lda ROM_BASE+0  ; read manufacturer
+              pha
+              ldy ROM_BASE+1  ; read chip id
 
-        lda #$f0  ; reset command
-        jsr _cmd_sequence
+              lda #$f0  ; reset command
+              jsr _cmd_sequence
 
-        pla
-        rts
+              pla
+              rts
 
 rom_fn_write:
               ldx #0
@@ -151,8 +151,8 @@ rom_wait_toggle:
 
 .export rom_sector_erase
 rom_sector_erase:
-        ldx #4
-        jmp rom_access_with_fn
+              ldx #4
+              jmp rom_access_with_fn
 
 .export rom_print_device_id
 rom_print_device_id:

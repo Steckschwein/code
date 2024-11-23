@@ -10,7 +10,7 @@ A retro style 8bit computer based on the 65c02 CPU.
 ### Hardware ###
 - 65c02 CPU @ 10MHz
 - 512k SRAM
-- 32k EEPROM
+- 32k EEPROM or 512k Flash-ROM
 - V9958 Video Display Controller
 - Yamaha YM3812 (OPL2) Sound
 - RS232 serial interface using UART 16550
