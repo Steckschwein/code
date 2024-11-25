@@ -42,8 +42,8 @@
 
 ; extern void __fastcall__ xmodem_upload(void* fn_receive);
 .proc _xmodem_upload
-              sta xmodem_recv_cb+1        ; init jsr with callback address
-              stx xmodem_recv_cb+2
+              sta xmodem_recv_cb          ; init jsr with callback address
+              stx xmodem_recv_cb+1
 
               lda #<xmodem_upload_cb
               ldx #>xmodem_upload_cb      ; call xmodem with our callback
@@ -56,13 +56,14 @@ xmodem_upload_cb:
               jsr pusha
               lda #<xmodem_buffer
               ldx #>xmodem_buffer
-xmodem_recv_cb:
-              jsr 0000
+              jsr @call_cb
 
               restore
               rts
+@call_cb:     jmp (xmodem_recv_cb)
 
 .bss
+  xmodem_recv_cb: .res 2
   xmodem_buffer:  .res 132
   xmodem_crc16_l: .res 256
   xmodem_crc16_h: .res 256
