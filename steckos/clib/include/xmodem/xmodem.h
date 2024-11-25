@@ -20,18 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _YM3812_H
-#define _YM3812_H
+#ifndef _XMODEM_H
+#define _XMODEM_H
 
-extern unsigned char __fastcall__ opl2_read(void);
+#define XMODEM_RCV_BUFFER 132
 
-extern void __fastcall__ opl2_write(unsigned char val, unsigned char reg);
+typedef void (xmodem_recv_callback)(unsigned char, unsigned char*);
 
-extern void __fastcall__ opl2_init(void);
-
-/**
-  @return 1 on success, 0 otherwise
- */
-extern unsigned char __fastcall__ opl2_detect(void);
+extern void __fastcall__ xmodem_upload(xmodem_recv_callback);
 
 #endif

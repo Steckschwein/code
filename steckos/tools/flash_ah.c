@@ -26,21 +26,37 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <xmodem/xmodem.h>
+
 #define ARGCH    ':'
 #define BADCH    '?'
 #define ENDARGS  "--"
 
 unsigned char buffer[16384];
 
-static void usage(int r, char *prg){
+static void usage(int r){
   FILE* out = stdout;
   if(r == EXIT_FAILURE){
     out = stderr;
   }
-  fprintf(out, "Usage: %s [-f image file] [-a target address] [-v] [-h]\n", prg);
+  fprintf(out, \
+  "Usage: flash_ah [OPTION]... [FILE]\n\
+  -u - start xmodem upload\n\
+  -a - target address\n\
+  -r - reset after flash\n\
+  -v - verify\n\
+  -h - this help\n");
   exit(r);
 }
 
+void xmodem_receive_block(unsigned char n, unsigned char* block){
+
+  int i;
+  printf("received %03d %p", n, block);
+  for(i=0;i<8;i++)
+    printf("  0x%2x", block[2+i]);
+  printf("\n");
+}
 
 int main (int argc, char **argv)
 {
@@ -49,19 +65,15 @@ int main (int argc, char **argv)
     unsigned long rom_address=0;
     FILE *image;
 
-    int c,i;
+    char upload = 0;
 
-    while ((opt = getopt(argc, argv, "uf:a:vh")) != EOF) {
+    int c;
+    int i;
+
+    while ((opt = getopt(argc, argv, "uvrha:")) != EOF) {
       switch (opt) {
         case 'u':
-            printf("upload...\n");
-            break;
-        case 'f':
-            image = fopen(optarg, "rb");
-            if(image == NULL){
-              fprintf(stderr, "Error (%d): %s - %s\n", errno, optarg, strerror(errno));
-              exit(EXIT_FAILURE);
-            }
+            upload = 1;
             break;
         case 'a':
             if(*optarg == '$'){
@@ -78,19 +90,32 @@ int main (int argc, char **argv)
         case 'r':
             break;
         case 'h':
-            usage(EXIT_SUCCESS, argv[0]);
+            usage(EXIT_SUCCESS);
         case BADCH:
-            fprintf(stderr, "Unknown option: -%c\n", optopt);
-            exit(EXIT_FAILURE);
+//            fprintf(stderr, "Unknown option: -%c\n", optopt);
+            usage(EXIT_FAILURE);
         default:
-            usage(EXIT_FAILURE, argv[0]);
+            usage(EXIT_FAILURE);
         }
     }
-    for (i = optind; i < argc; i++) {
-        printf("Non-option argument: %s\n", argv[i]);
+    if(argc <= 1){
+      usage(EXIT_FAILURE);
+    }
+    if(optind < argc){
+      image = fopen(argv[optind], "rb");
+      if(image == NULL){
+        fprintf(stderr, "Error (%d): %s - %s\n", errno, argv[optind], strerror(errno));
+        exit(EXIT_FAILURE);
+      }
+    }
+    if(image && upload){
+      fprintf(stderr, "-u (upload) option given, cannot be used together with a file\n");
+      usage(EXIT_FAILURE);
     }
 
-    if(image){
+    if(upload){
+      xmodem_upload(xmodem_receive_block);
+    }else if(image){
       i = fread(buffer, 1, sizeof(buffer), image);
       printf("%0d\n", i);
     }

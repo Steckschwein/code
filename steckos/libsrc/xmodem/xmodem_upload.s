@@ -121,7 +121,7 @@ X_ESC = $1b  ; ESC to exit
 ; v 1.0 recode for use with SBC2
 ; v 1.1 added block 1 masking (block 257 would be corrupted)
 
-;@in A/X pointer to block rcv callback
+;@in A/X pointer to block receive callback - the receive callback is called with A - block number, X - offset to data in received block
 ;@out: C=0 on success, C=1 on any i/o or protocoll related error
 .proc xmodem_upload_callback
           ldy #1                  ; x-modem starts with block number #1
@@ -227,7 +227,7 @@ BadCrc:   jsr Flush     ; flush the input port
           bra StartBlk  ; start over, get the block again
 GoodCrc:  ldx #XMODEM_DATA_START  ;
           lda blkno     ; get the block number
-          jsr _block_rx
+          jsr _block_rx ; call receive callback with block number in A and X offset in block buffer with data
 IncBlk:   lda #X_ACK    ; send ACK
           jsr Put_Chr   ;
           lda blkno
