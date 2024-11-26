@@ -20,39 +20,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _STECKSCHWEIN_H
-#define _STECKSCHWEIN_H
+#ifndef _ROM_H
+#define _ROM_H
 
-extern unsigned int __fastcall__ getch(void);
+#include <steckschwein.h>
 
-/**
- * delay millis
- */
-extern void __fastcall__ _delay_ms(unsigned int);
+typedef struct {
+  Slot slot;  // write slot to use
+  unsigned long rom_address;   // target address
+  unsigned char data[1024];    // data to write
+  unsigned int  len;
+} flash_block;
 
-extern void __fastcall__ _randomize(void);
+/*
+  return 2 byte deviceid - manufacturer, chip device id
+*/
+extern unsigned int __fastcall__ flash_get_deviceid();
 
-extern void __fastcall__ sound(unsigned int);
-
-extern void __fastcall__ nosound();
-
-#define randomize(void)
-
-#define random(i) (rand() % i)
-
-// system related
-
-// warm start
-extern void __fastcall__ sys_reset();
-
-typedef enum {
-  Slot0 = 0,
-  Slot1 = 1,
-  Slot2 = 2,
-  Slot3 = 3
-} Slot;
-
-extern void __fastcall__ sys_slot_set(Slot, unsigned char);
-extern unsigned char __fastcall__ sys_slot_get(Slot);
+/*
+  use rom_write_block to write to flash ROM
+*/
+extern unsigned char __fastcall__ flash_write(flash_block *);
 
 #endif

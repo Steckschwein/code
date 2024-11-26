@@ -63,15 +63,14 @@
 ;
 ;
 .segment "ZEROPAGE_LIB": zeropage
-crc:    .res 2  ; CRC lo byte  (two byte variable)
+crc:          .res 2  ; CRC lo byte  (two byte variable)
 crch = crc+1  ; CRC hi byte
 
-blkno:    .res 1 ; block number
-retryl:   .res 1 ; 16 bit retry
-retryh:   .res 1 ;
-protocol: .res 1 ; 2nd counter
-
-block_rx: .res 2 ; callback
+blkno:        .res 1 ; block number
+retryl:       .res 1 ; 16 bit retry
+retryh:       .res 1 ;
+protocol:     .res 1 ; 2nd counter
+block_rx_cb:  .res 2 ; callback
 
 ;
 ;
@@ -133,8 +132,8 @@ X_ESC = $1b  ; ESC to exit
 .endproc
 
 __x_y_modem_upload:
-          sta block_rx+0
-          stx block_rx+1
+          sta block_rx_cb+0
+          stx block_rx_cb+1
           sty blkno     ; set start block #
 
           tya
@@ -143,10 +142,10 @@ __x_y_modem_upload:
 
           pha
           clc
-          adc #'X'
+          adc #'X'      ; mode (0/1) + 'X'
           jsr char_out
           jsr primm
-          .byte "MODEM upload... ", 0
+          .byte "MODEM upload...", 0
           jsr crc16_init
           pla
 
@@ -189,7 +188,7 @@ GetBlk2:  sta Rbuff,x   ; good char, save it in the rcv buffer
           cmp blkno     ; compare to expected block #
           beq GoodBlk1  ; matched!
 err_exit:
-          jsr Flush  ; mismatched - flush buffer and then exit
+          jsr Flush     ; mismatched - flush buffer and then exit
           ; unexpected block # - fatal error - RTS
           ; lda #$FD ; put error code in "A" if desired
           sec
@@ -227,7 +226,7 @@ BadCrc:   jsr Flush     ; flush the input port
           bra StartBlk  ; start over, get the block again
 GoodCrc:  ldx #XMODEM_DATA_START  ;
           lda blkno     ; get the block number
-          jsr _block_rx ; call receive callback with block number in A and X offset in block buffer with data
+          jsr _call_block_rx_cb ; call receive callback with block number in A and X offset in block buffer with data
 IncBlk:   lda #X_ACK    ; send ACK
           jsr Put_Chr   ;
           lda blkno
@@ -247,8 +246,8 @@ IncBlk:   lda #X_ACK    ; send ACK
           jmp Done        ; EOT already received, so this was be the "end of file" block 0
 @next_block:
           jmp StartBlk  ; no, then x-/y-modem - get next block
-_block_rx:
-          jmp (block_rx)
+_call_block_rx_cb:
+          jmp (block_rx_cb)
 
 ;
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

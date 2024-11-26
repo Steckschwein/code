@@ -18,7 +18,7 @@
 
 utsdata:
 		  ; sysname
-		  .asciiz			"SteckOS"
+		  .asciiz			"steckOS"
 
 		  ; nodename
 		  .asciiz			""

@@ -20,32 +20,23 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-;
-; extern void __fastcall__ _delay_ms(unsigned int);
-;
-.export __delay_ms
-
-.importzp tmp1
-
-.include "asminc/system.inc"
 .include "asminc/common.inc"
+.include "kernel/kernel_jumptable.inc"
 
-.proc __delay_ms
+.export _flash_get_deviceid
+.export _flash_write
 
-    sta tmp1
-    cmp #0
-    bne li
-    cpx #0
-    beq exit
-li: inx ;+1
-l0:
-    lda tmp1
-l1:
-    sys_delay_ms 1
-    dec a
-    bne l1
-    dex
-    bne l0
-exit:
-    rts
+.autoimport
+
+;extern unsigned int __fastcall__ flash_get_deviceid();
+.proc _flash_get_deviceid
+              jmp rom_read_device_id
+.endproc
+
+; extern unsigned char __fastcall__ flash_write(flash_block *);
+.proc _flash_write
+              lda #0
+              tax
+
+              rts
 .endproc

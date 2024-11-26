@@ -25,8 +25,18 @@
 
 #define XMODEM_RCV_BUFFER 132
 
-typedef void (xmodem_recv_callback)(unsigned char, unsigned char*);
+typedef struct {
+  unsigned char n;          // block number
+  unsigned char n_eor;      // block number eor 0xff
+  unsigned char data[128];  // xmodem block data
+  int crc16;                // crc16 checksum
+} xmodem_block;
 
-extern void __fastcall__ xmodem_upload(xmodem_recv_callback);
+typedef void (xmodem_recv_callback)(xmodem_block*);
+
+/*
+  start xmodem upload with callback
+*/
+extern unsigned char __fastcall__ xmodem_upload(xmodem_recv_callback);
 
 #endif

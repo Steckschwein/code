@@ -54,6 +54,7 @@ SRCDIRS += ym3812
 SRCDIRS += vdp
 SRCDIRS += opl2
 SRCDIRS += util
+SRCDIRS += rom
 SRCDIRS += sdcard
 SRCDIRS += xmodem
 SRCDIRS +=  $(CC65_HOME)/libsrc/conio       \

@@ -20,6 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,12 +28,17 @@
 #include <errno.h>
 
 #include <xmodem/xmodem.h>
+#include <rom/flashrom.h>
+#include <steckschwein.h>
 
 #define ARGCH    ':'
 #define BADCH    '?'
 #define ENDARGS  "--"
 
-unsigned char buffer[16384];
+static unsigned long bt_image = 0;
+static unsigned long bt_write = 0;
+
+static flash_block flash_wr_block;
 
 static void usage(int r){
   FILE* out = stdout;
@@ -49,26 +55,51 @@ static void usage(int r){
   exit(r);
 }
 
-void xmodem_receive_block(unsigned char n, unsigned char* block){
+static void write_flash_block(){
 
-  int i;
-  printf("received %03d %p", n, block);
-  for(i=0;i<8;i++)
-    printf("  0x%2x", block[2+i]);
-  printf("\n");
+  unsigned r;
+
+  flash_wr_block.len = bt_image - bt_write;
+  r = flash_write(&flash_wr_block);
+  if(r){
+    printf("error %d\n", r);
+  }else{
+    bt_write+=flash_wr_block.len;
+    printf("Bytes written: 0x%05lx", bt_write);
+  }
+}
+
+static void xmodem_receive_block(xmodem_block *xm_block){
+
+  int r;
+  //printf("%lu\n", (bt_image & (sizeof(flash_wr_block.data)-1)));
+  memcpy(flash_wr_block.data + (bt_image & (sizeof(flash_wr_block.data)-1)), xm_block->data, sizeof(xm_block->data));
+  bt_image+=sizeof(xm_block->data);
+  //printf("bn: 0x%02x\n", xm_block->n);
+  printf("\rBytes received: 0x%05lx ", bt_image);
+
+  // write to flash rom if flash write buffer is filled
+  if((bt_image & (sizeof(flash_wr_block.data)-1)) == 0){ // buffer full?
+    //printf("0x%02x %lu\n", xm_block->n, bt_image);
+    write_flash_block();
+  }
 }
 
 int main (int argc, char **argv)
 {
+    FILE *image = NULL;
+
     int opt;
-
-    unsigned long rom_address=0;
-    FILE *image;
-
-    char upload = 0;
+    unsigned char key;
+    unsigned char upload = 0;
+    unsigned char doReset = 0;
+    unsigned char doVerify = 0;
 
     int c;
     int i;
+
+    flash_wr_block.slot = Slot2;
+    flash_wr_block.rom_address = 0x08000;
 
     while ((opt = getopt(argc, argv, "uvrha:")) != EOF) {
       switch (opt) {
@@ -77,23 +108,25 @@ int main (int argc, char **argv)
             break;
         case 'a':
             if(*optarg == '$'){
-              i = sscanf(optarg+1, "%lx", &rom_address);
+              i = sscanf(optarg+1, "%lx", &flash_wr_block.rom_address);
             }
             if(i){
-              printf("address... 0x%06lx\n", rom_address);
+              printf("address... 0x%06lx\n", flash_wr_block.rom_address);
             }else{
               fprintf(stderr, "invalid address format, expected 0x?????? but was %s\n", optarg);
             }
             break;
         case 'v':
+            doVerify = 1;
             break;
         case 'r':
+            doReset = 1;
+            printf("reset ...\n");
             break;
         case 'h':
             usage(EXIT_SUCCESS);
         case BADCH:
 //            fprintf(stderr, "Unknown option: -%c\n", optopt);
-            usage(EXIT_FAILURE);
         default:
             usage(EXIT_FAILURE);
         }
@@ -108,18 +141,54 @@ int main (int argc, char **argv)
         exit(EXIT_FAILURE);
       }
     }
-    if(image && upload){
-      fprintf(stderr, "-u (upload) option given, cannot be used together with a file\n");
+    if(image != NULL && upload){
+      fprintf(stderr, "-u (upload) option given, cannot be used together with a file!\n");
+      usage(EXIT_FAILURE);
+    }
+    if(image == NULL && !upload){
+      fprintf(stderr, "Either -u (upload) or file must be given!\n");
       usage(EXIT_FAILURE);
     }
 
-    if(upload){
-      xmodem_upload(xmodem_receive_block);
-    }else if(image){
-      i = fread(buffer, 1, sizeof(buffer), image);
-      printf("%0d\n", i);
+    printf("ROM Type 0x%04x\n", flash_get_deviceid());
+    printf("ROM Address: 0x%05lx\n", flash_wr_block.rom_address);
+    printf("Image from: %s\n", image == NULL ? "<upload>" : argv[optind]);
+    printf("\nProcceed Y/n");
+    key = getch();
+    if(key == 0x0d || key == 'y'){
+//      printf("\nBurn...\n");
+      if(upload){
+        printf("\nROM Image ");
+        if(!xmodem_upload(xmodem_receive_block)){
+          write_flash_block();
+          if(bt_image < bt_write){ // write remaining bytes TODO FIXME multiple of xmodem data block size (128 byte)
+//            flash_write(&flash_wr_block);
+          }
+        }
+      }else if(image){
+        while((i = fread(flash_wr_block.data, 1, sizeof(flash_wr_block.data), image)) != 0){
+          bt_image+=i;
+          printf(".");
+        }
+        printf(" %lu image bytes read.\n", bt_image);
+        fclose(image);
+      }
+      if(doVerify){
+
+      }
+
+      printf("\nDone\n");
     }
-    fclose(image);
+
+/*
+    sys_slot_set(Slot2, 0x98);
+    for(i=Slot0;i<=Slot3;i++){
+      printf("Slot %d 0x%02x\n", i, sys_slot_get(i));
+    }
+*/
+    if(doReset != 0){
+      sys_reset();
+    }
 
     return EXIT_SUCCESS;
 }

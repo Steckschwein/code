@@ -36,24 +36,24 @@
 .import xmodem_upload_callback
 .import crc16_table_init
 
-.autoimport
-
-.importzp ptr1
-
-; extern void __fastcall__ xmodem_upload(void* fn_receive);
+; extern unsigned char __fastcall__ xmodem_upload(void* fn_receive);
 .proc _xmodem_upload
               sta xmodem_recv_cb          ; init jsr with callback address
               stx xmodem_recv_cb+1
 
               lda #<xmodem_upload_cb
               ldx #>xmodem_upload_cb      ; call xmodem with our callback
-              jmp xmodem_upload_callback
+              jsr xmodem_upload_callback
+              lda #0
+              bcc :+
+              lda #$ff
+:             tax
+              rts
 .endproc
 
 xmodem_upload_cb:
               save
 
-              jsr pusha
               lda #<xmodem_buffer
               ldx #>xmodem_buffer
               jsr @call_cb

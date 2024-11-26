@@ -20,32 +20,35 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-;
-; extern void __fastcall__ _delay_ms(unsigned int);
-;
-.export __delay_ms
-
-.importzp tmp1
-
 .include "asminc/system.inc"
-.include "asminc/common.inc"
 
-.proc __delay_ms
+.export _sys_reset
+.export _sys_slot_get
+.export _sys_slot_set
 
-    sta tmp1
-    cmp #0
-    bne li
-    cpx #0
-    beq exit
-li: inx ;+1
-l0:
-    lda tmp1
-l1:
-    sys_delay_ms 1
-    dec a
-    bne l1
-    dex
-    bne l0
-exit:
-    rts
+.import popa
+
+; extern void __fastcall__ sys_reset();
+.proc _sys_reset
+              jmp (SYS_VECTOR_RESET)
+.endproc
+
+; extern void __fastcall__ sys_slot_set(Slot, unsigned char);
+.proc _sys_slot_set
+              and #$9f
+              tax
+              jsr popa
+              tay
+              txa
+              sta ctrl_port,y
+              rts
+.endproc
+
+; extern unsigned char __fastcall__ sys_slot_get(Slot);
+.proc _sys_slot_get
+              and #$03
+              tax
+              lda ctrl_port,x
+              ldx #0
+              rts
 .endproc

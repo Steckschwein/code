@@ -24,10 +24,13 @@
 .include "system.inc"
 .include "rom.inc"
 
-.importzp __volatile_ptr, __volatile_tmp
+.export rom_read_device_id
+.export rom_write_byte
+
 .autoimport
 
-.export rom_write_byte
+.importzp __volatile_ptr, __volatile_tmp
+
 
 .code
 
@@ -38,7 +41,7 @@ ROM_CMD_ADDRESS_1 = $2aaa
 
 
 ; @out: A - manufacturer ID
-;       Y - device ID
+;       X - device ID
 rom_read_device_id:
         ldx #0
         jmp rom_access_with_fn
@@ -70,8 +73,8 @@ rom_access_with_fn:
 
         jsr rom_access_fn
 
-        plx
-        stx slot1_ctrl
+        ply
+        sty slot1_ctrl
         plp
         rts
 
@@ -105,7 +108,7 @@ rom_fn_read_device_id:
 
               lda ROM_BASE+0  ; read manufacturer
               pha
-              ldy ROM_BASE+1  ; read chip id
+              ldx ROM_BASE+1  ; read chip id
 
               lda #$f0  ; reset command
               jsr _cmd_sequence
@@ -155,105 +158,107 @@ rom_sector_erase:
               jmp rom_access_with_fn
 
 .export rom_print_device_id
+; @in A/Y - pointer to string buffer
+; @out: C=1 on success, C=0 on error
 rom_print_device_id:
-        jsr rom_read_device_id
-        sta __volatile_tmp
-        ldx #0
-@find:  lda rom_ids+1,x
-        beq @print
-        cmp __volatile_tmp
-        bne @next
-        tya
-        cmp rom_ids+0,x
-        beq @print
-@next:  inx
-        inx
-        bra @find
+              jsr rom_read_device_id
+              sta __volatile_tmp
+              ldx #0
+@find:        lda rom_ids+1,x
+              beq @print
+              cmp __volatile_tmp
+              bne @next
+              tya
+              cmp rom_ids+0,x
+              beq @print
+@next:        inx
+              inx
+              bra @find
 
-@print: lda rom_labels+0,x
-        pha
-        lda rom_labels+1,x
-        tax
-        pla
-        jsr strout
-        lda #' '
-        jsr char_out
-        lda #'('
-        jsr char_out
-        lda __volatile_tmp
-        jsr hexout_s
-        lda #'/'
-        jsr char_out
-        tya
-        jsr hexout_s
-        lda #')'
-        jmp char_out
+@print:       lda rom_labels+0,x
+              pha
+              lda rom_labels+1,x
+              tax
+              pla
+              jsr strout
+              lda #' '
+              jsr char_out
+              lda #'('
+              jsr char_out
+              lda __volatile_tmp
+              jsr hexout_s
+              lda #'/'
+              jsr char_out
+              tya
+              jsr hexout_s
+              lda #')'
+              jmp char_out
 
 
 ; in:
-;   .A    - byte to write
-;   .X/.Y - rom address (low/high)
+;   A   - byte to write
+;   X/Y - rom address (low/high)
 ; out:
 ;   C=1 on success, C=0 on error
 rom_write_byte:
-        stx __volatile_ptr  ; rom address low byte
+              stx __volatile_ptr  ; rom address low byte
 
-        ldx slot1_ctrl      ; safe bank reg
-        phx
+              ldx slot1_ctrl      ; safe bank reg
+              phx
 
-        pha
+              pha
 
-        ldx #$80            ; select first 16k of ROM
+              ldx #$80            ; select first 16k of ROM
 
-        tya
-        and #$7f            ; mask 32k ROM address
-        bit #$40            ; low/high rom bank ?
-        bvc :+
-        inx                 ; inc to 2nd 16k ROM
-:       stx slot1_ctrl      ; 16k ROM to slot 1
+              tya
+              and #$7f            ; mask 32k ROM address
+              bit #$40            ; low/high rom bank ?
+              bvc :+
+              inx                 ; inc to 2nd 16k ROM
+      :       stx slot1_ctrl      ; 16k ROM to slot 1
 
-        and #$3f            ; map to slot1 ($4000-7fff)
-        ora #>ROM_BASE      ; offset to bank 1 ($4000)
-        sta __volatile_ptr+1
+              and #$3f            ; map to slot1 ($4000-7fff)
+              ora #>ROM_BASE      ; offset to bank 1 ($4000)
+              sta __volatile_ptr+1
 
-        jsr _rom_cmd_program
+              jsr _rom_cmd_program
 
-        pla                   ; data byte
-        sta (__volatile_ptr)  ; write
+              pla                   ; data byte
+              sta (__volatile_ptr)  ; write
 
-        jsr rom_wait_toggle
+              jsr rom_wait_toggle
 
-@test:  lda (__volatile_ptr)  ; due to bit 6 toggle, we have to compare again
-        cmp (__volatile_ptr)  ; to verify that the expected value is really written, C is set accordingly
+@test:        lda (__volatile_ptr)  ; due to bit 6 toggle, we have to compare again
+              cmp (__volatile_ptr)  ; to verify that the expected value is really written, C is set accordingly
 
-        plx
-        stx slot1_ctrl
-        rts
+              ply
+              sty slot1_ctrl
+              rts
 
 ; send write command sequence $aa, $55, $a0
 _rom_cmd_program:
         lda #$a0
 ; sends $aa, $55, $<A>
 _cmd_sequence:
-        pha
-        jsr _cmd_sequence_aa_55
-        lda #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
-        sta slot1_ctrl
-        pla
-        sta ROM_BASE + (ROM_CMD_ADDRESS_0 & $3fff)  ; cmd byte
-        rts
+              pha
+              jsr _cmd_sequence_aa_55
+              lda #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
+              sta slot1_ctrl
+              pla
+              sta ROM_BASE + (ROM_CMD_ADDRESS_0 & $3fff)  ; cmd byte
+              rts
 
 _cmd_sequence_aa_55:
-        lda #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
-        sta slot1_ctrl
-        lda #$aa
-        sta ROM_BASE + (ROM_CMD_ADDRESS_0 & $3fff)
+              lda #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
+              sta slot1_ctrl
+              lda #$aa
+              sta ROM_BASE + (ROM_CMD_ADDRESS_0 & $3fff)
 
-        lda #SLOT_ROM | (ROM_CMD_ADDRESS_1>>14)
-        sta slot1_ctrl
-        lda #$55
-        sta ROM_BASE + (ROM_CMD_ADDRESS_1 & $3fff)
-        rts
+              lda #SLOT_ROM | (ROM_CMD_ADDRESS_1>>14)
+              sta slot1_ctrl
+              lda #$55
+              sta ROM_BASE + (ROM_CMD_ADDRESS_1 & $3fff)
+              rts
 
 .data
   rom_ids:
