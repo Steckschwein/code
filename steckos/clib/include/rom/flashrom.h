@@ -26,7 +26,7 @@
 #include <steckschwein.h>
 
 typedef struct {
-  Slot slot;                // write slot to use
+  Slot slot;                // write slot to use - TODO not supported yet
   unsigned long address;    // target address
   unsigned char data[1024]; // data to write
   unsigned int  len;        // length of data to write
@@ -43,9 +43,9 @@ extern unsigned int __fastcall__ flash_get_device_id();
 extern unsigned char* __fastcall__ flash_get_device_name();
 
 /*
-  erase sector upon the address in given flash_block
+  erase sector upon the given address
 */
-extern unsigned char __fastcall__ flash_sector_erase(flash_block*);
+extern unsigned char __fastcall__ flash_sector_erase(long address);
 
 /*
   use rom_write_block to write to flash ROM

@@ -32,46 +32,51 @@
 .importzp __volatile_ptr, __volatile_tmp
 
 .segment "ZEROPAGE_LIB": zeropage
-  slot_ctrl:  .res 2
 
 .code
 
-ROM_BASE = slot2 ; we use just one 16k slot to write to rom
+ROM_BASE = slot3 ; 16k slot to access the ROM
 
 ROM_CMD_ADDRESS_0 = $5555
 ROM_CMD_ADDRESS_1 = $2aaa
+
+slot_ctrl=ctrl_port | (ROM_BASE>>14)
 
 
 ; @out: A - manufacturer ID
 ; @out: X - device ID
 rom_read_device_id:
-        ldx #0
-        jmp rom_access_with_fn
+              ldx #0
+              jmp rom_access_with_fn
 
 ;@name: rom_write - write data
-;@in: A/Y, pointer to rom write struct (low/high)
+;@in: A/Y pointer to rom write struct (low/high)
 ;@out: C=1 on success, C=0 on error
 .export rom_write
 rom_write:
-        sta __volatile_ptr
-        sty __volatile_ptr+1
+              sta __volatile_ptr
+              sty __volatile_ptr+1
 
-        ldy #rom_write_t::target+1
-        lda (__volatile_ptr),y
-
-        ldx #2
-        jsr rom_access_with_fn
-        clc
-        rts
+              ldx #2
+              jmp rom_access_with_fn
 
 
+; @in: A - sector [0..7]
+.export rom_sector_erase
+rom_sector_erase:
+              and #$07
+              ldx #4
+              jmp rom_access_with_fn
+
+
+;@in: A/Y pointer to rom write struct (low/high)
 ;@in: X offset to rom access function - @see rom_fn_table
 rom_access_with_fn:
               php
               sei
 
-              lda slot_ctrl ; save slot_ctrl
-              pha
+              ldy slot_ctrl ; save slot_ctrl
+              phy
 
               jsr @rom_access_fn
 
@@ -153,11 +158,6 @@ rom_wait_toggle:
 
 @exit:        rts
 
-
-.export rom_sector_erase
-rom_sector_erase:
-              ldx #4
-              jmp rom_access_with_fn
 
 .export rom_get_device_name
 ; @out: C=1 on success, C=0 on error

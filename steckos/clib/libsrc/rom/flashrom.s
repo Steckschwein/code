@@ -21,6 +21,7 @@
 ; SOFTWARE.
 
 .include "asminc/common.inc"
+.include "asminc/zeropage.inc"
 .include "kernel/kernel_jumptable.inc"
 
 .export _flash_get_device_id
@@ -42,8 +43,10 @@
               jmp rom_get_device_name
 .endproc
 
-; extern unsigned char __fastcall__ flash_sector_erase(flash_block*);
+; extern unsigned char __fastcall__ flash_sector_erase(long address);
 .proc _flash_sector_erase
+              lda sreg  ; low byte of highword denotes sector
+              stp
               jsr rom_sector_erase
               lda #0
               tax
@@ -52,8 +55,8 @@
 
 ; extern unsigned char __fastcall__ flash_write(flash_block *);
 .proc _flash_write
-              sta ptr1
-              stx ptr1+1
+              sta __volatile_ptr
+              stx __volatile_ptr+1
               jsr rom_write
               lda #0
               tax

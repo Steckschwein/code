@@ -157,7 +157,7 @@ int main (int argc, char **argv)
     key = getch();
     if(key == 0x0d || key == 'y'){
       printf("\nSector Erase for 0x%06lx", flash_wr_block.address);
-      flash_sector_erase(&flash_wr_block);
+      flash_sector_erase(flash_wr_block.address);
       if(upload){
         printf("\nROM Image ");
         if(!xmodem_upload(&xmodem_receive_block)){
