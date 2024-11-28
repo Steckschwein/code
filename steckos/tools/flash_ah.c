@@ -66,12 +66,12 @@ static void write_flash_block(){
   }else{
     bt_write+=flash_wr_block.len;
     printf("Bytes written: 0x%05lx", bt_write);
+    flash_wr_block.address+=flash_wr_block.len;
   }
 }
 
 static void xmodem_receive_block(xmodem_block *xm_block){
 
-  int r;
   //printf("%lu\n", (bt_image & (sizeof(flash_wr_block.data)-1)));
   memcpy(flash_wr_block.data + (bt_image & (sizeof(flash_wr_block.data)-1)), xm_block->data, sizeof(xm_block->data));
   bt_image+=sizeof(xm_block->data);
@@ -99,7 +99,7 @@ int main (int argc, char **argv)
     int i;
 
     flash_wr_block.slot = Slot2;
-    flash_wr_block.rom_address = 0x08000;
+    flash_wr_block.address = 0x08000;
 
     while ((opt = getopt(argc, argv, "uvrha:")) != EOF) {
       switch (opt) {
@@ -108,10 +108,10 @@ int main (int argc, char **argv)
             break;
         case 'a':
             if(*optarg == '$'){
-              i = sscanf(optarg+1, "%lx", &flash_wr_block.rom_address);
+              i = sscanf(optarg+1, "%lx", &flash_wr_block.address);
             }
             if(i){
-              printf("address... 0x%06lx\n", flash_wr_block.rom_address);
+              printf("address... 0x%06lx\n", flash_wr_block.address);
             }else{
               fprintf(stderr, "invalid address format, expected 0x?????? but was %s\n", optarg);
             }
@@ -150,27 +150,25 @@ int main (int argc, char **argv)
       usage(EXIT_FAILURE);
     }
 
-    printf("ROM Type 0x%04x\n", flash_get_deviceid());
-    printf("ROM Address: 0x%05lx\n", flash_wr_block.rom_address);
+    printf("ROM Type: %s (0x%04x)\n", flash_get_device_name(), flash_get_device_id());
+    printf("ROM Address: 0x%05lx\n", flash_wr_block.address);
     printf("Image from: %s\n", image == NULL ? "<upload>" : argv[optind]);
     printf("\nProcceed Y/n");
     key = getch();
     if(key == 0x0d || key == 'y'){
-//      printf("\nBurn...\n");
+      printf("\nSector Erase for 0x%06lx", flash_wr_block.address);
+      flash_sector_erase(&flash_wr_block);
       if(upload){
         printf("\nROM Image ");
-        if(!xmodem_upload(xmodem_receive_block)){
-          write_flash_block();
-          if(bt_image < bt_write){ // write remaining bytes TODO FIXME multiple of xmodem data block size (128 byte)
-//            flash_write(&flash_wr_block);
-          }
+        if(!xmodem_upload(&xmodem_receive_block)){
+          write_flash_block(); // write remaining bytes TODO FIXME multiple of xmodem data block size (128 byte)
         }
       }else if(image){
         while((i = fread(flash_wr_block.data, 1, sizeof(flash_wr_block.data), image)) != 0){
           bt_image+=i;
-          printf(".");
+          printf("\rBytes read: 0x%05lx ", bt_image);
+          write_flash_block();
         }
-        printf(" %lu image bytes read.\n", bt_image);
         fclose(image);
       }
       if(doVerify){

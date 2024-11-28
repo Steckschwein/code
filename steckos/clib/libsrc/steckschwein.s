@@ -47,8 +47,8 @@
 ; extern unsigned char __fastcall__ sys_slot_get(Slot);
 .proc _sys_slot_get
               and #$03
-              tax
-              lda ctrl_port,x
+              tay
+              lda ctrl_port,y
               ldx #0
               rts
 .endproc

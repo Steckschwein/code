@@ -45,7 +45,6 @@ ROWS=23
 
 _vdp_scroll_up:
       phx
-
       SetVector  (ADDRESS_TEXT_SCREEN+COLS), v_rd            ; +COLS - offset second row
       SetVector  (ADDRESS_TEXT_SCREEN+(WRITE_ADDRESS<<8)), v_wr  ; offset first row as "write adress"
       php
@@ -87,6 +86,7 @@ _vdp_scroll_up:
       dex
       bne  @l5
       plp
+      plx
       rts
 
 vdp_charout:

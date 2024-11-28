@@ -23,20 +23,39 @@
 .include "asminc/common.inc"
 .include "kernel/kernel_jumptable.inc"
 
-.export _flash_get_deviceid
+.export _flash_get_device_id
+.export _flash_get_device_name
+.export _flash_sector_erase
 .export _flash_write
 
 .autoimport
 
-;extern unsigned int __fastcall__ flash_get_deviceid();
-.proc _flash_get_deviceid
+.importzp ptr1
+
+;extern unsigned int __fastcall__ flash_get_device_id();
+.proc _flash_get_device_id
               jmp rom_read_device_id
+.endproc
+
+;extern unsigned char* __fastcall__ flash_get_device_name();
+.proc _flash_get_device_name
+              jmp rom_get_device_name
+.endproc
+
+; extern unsigned char __fastcall__ flash_sector_erase(flash_block*);
+.proc _flash_sector_erase
+              jsr rom_sector_erase
+              lda #0
+              tax
+              rts
 .endproc
 
 ; extern unsigned char __fastcall__ flash_write(flash_block *);
 .proc _flash_write
+              sta ptr1
+              stx ptr1+1
+              jsr rom_write
               lda #0
               tax
-
               rts
 .endproc

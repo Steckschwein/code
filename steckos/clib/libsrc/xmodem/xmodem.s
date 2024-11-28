@@ -38,7 +38,7 @@
 
 ; extern unsigned char __fastcall__ xmodem_upload(void* fn_receive);
 .proc _xmodem_upload
-              sta xmodem_recv_cb          ; init jsr with callback address
+              sta xmodem_recv_cb          ; init jmp() below with callback address - see @call_cb
               stx xmodem_recv_cb+1
 
               lda #<xmodem_upload_cb

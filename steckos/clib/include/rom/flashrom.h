@@ -26,20 +26,30 @@
 #include <steckschwein.h>
 
 typedef struct {
-  Slot slot;  // write slot to use
-  unsigned long rom_address;   // target address
-  unsigned char data[1024];    // data to write
-  unsigned int  len;
+  Slot slot;                // write slot to use
+  unsigned long address;    // target address
+  unsigned char data[1024]; // data to write
+  unsigned int  len;        // length of data to write
 } flash_block;
 
 /*
   return 2 byte deviceid - manufacturer, chip device id
 */
-extern unsigned int __fastcall__ flash_get_deviceid();
+extern unsigned int __fastcall__ flash_get_device_id();
+
+/*
+  get device name
+*/
+extern unsigned char* __fastcall__ flash_get_device_name();
+
+/*
+  erase sector upon the address in given flash_block
+*/
+extern unsigned char __fastcall__ flash_sector_erase(flash_block*);
 
 /*
   use rom_write_block to write to flash ROM
 */
-extern unsigned char __fastcall__ flash_write(flash_block *);
+extern unsigned char __fastcall__ flash_write(flash_block*);
 
 #endif

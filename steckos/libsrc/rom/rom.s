@@ -31,24 +31,26 @@
 
 .importzp __volatile_ptr, __volatile_tmp
 
+.segment "ZEROPAGE_LIB": zeropage
+  slot_ctrl:  .res 2
 
 .code
 
-ROM_BASE = slot1 ; we use just one 16k slot to write to rom
+ROM_BASE = slot2 ; we use just one 16k slot to write to rom
 
 ROM_CMD_ADDRESS_0 = $5555
 ROM_CMD_ADDRESS_1 = $2aaa
 
 
 ; @out: A - manufacturer ID
-;       X - device ID
+; @out: X - device ID
 rom_read_device_id:
         ldx #0
         jmp rom_access_with_fn
 
-;@name: rom_write_page - write
+;@name: rom_write - write data
 ;@in: A/Y, pointer to rom write struct (low/high)
-;@out: C=0 on success, C=1 on error
+;@out: C=1 on success, C=0 on error
 .export rom_write
 rom_write:
         sta __volatile_ptr
@@ -65,38 +67,37 @@ rom_write:
 
 ;@in: X offset to rom access function - @see rom_fn_table
 rom_access_with_fn:
-        php
-        sei
+              php
+              sei
 
-        lda slot1_ctrl ; save slot1_ctrl
-        pha
+              lda slot_ctrl ; save slot_ctrl
+              pha
 
-        jsr rom_access_fn
+              jsr @rom_access_fn
 
-        ply
-        sty slot1_ctrl
-        plp
-        rts
-
-rom_access_fn:
-        jmp (rom_fn_table,x)
+              ply
+              sty slot_ctrl
+              plp
+              rts
+@rom_access_fn:
+              jmp (rom_fn_table,x)
 
 rom_fn_table:
-        .word rom_fn_read_device_id
-        .word rom_fn_write
-        .word rom_fn_sector_erase
+              .word rom_fn_read_device_id
+              .word rom_fn_write
+              .word rom_fn_sector_erase
 
 rom_fn_sector_erase:
-        lda #$80
-        jsr _cmd_sequence ; send $aa, $55, $80
+              lda #$80
+              jsr _cmd_sequence ; send $aa, $55, $80
 
-        jsr _cmd_sequence_aa_55 ; send $aa, $55
-        lda #SLOT_ROM | ($60000>>14)
-        sta slot1_ctrl
-        lda #$30  ; sector erase
-        sta ROM_BASE + ($60000 & $3fff)
+              jsr _cmd_sequence_aa_55 ; send $aa, $55
+              lda #SLOT_ROM | ($60000>>14)
+              sta slot_ctrl
+              lda #$30  ; sector erase
+              sta ROM_BASE + ($60000 & $3fff)
 
-        jmp rom_wait_toggle
+              jmp rom_wait_toggle
 
 
 rom_fn_read_device_id:
@@ -104,7 +105,7 @@ rom_fn_read_device_id:
               jsr _cmd_sequence
 
               lda #SLOT_ROM | ($0000>>14)
-              sta slot1_ctrl
+              sta slot_ctrl
 
               lda ROM_BASE+0  ; read manufacturer
               pha
@@ -119,9 +120,9 @@ rom_fn_read_device_id:
 rom_fn_write:
               ldx #0
               ldy #$ff
-:             jsr _rom_cmd_program
+:             jsr _cmd_sequence_program
               lda #$98
-              sta slot1_ctrl
+              sta slot_ctrl
               txa
               sta ROM_BASE,x
               jsr rom_wait_toggle
@@ -152,48 +153,35 @@ rom_wait_toggle:
 
 @exit:        rts
 
+
 .export rom_sector_erase
 rom_sector_erase:
               ldx #4
               jmp rom_access_with_fn
 
-.export rom_print_device_id
-; @in A/Y - pointer to string buffer
+.export rom_get_device_name
 ; @out: C=1 on success, C=0 on error
-rom_print_device_id:
+; @out: A/X - pointer to null terminated string denoting the device label
+rom_get_device_name:
               jsr rom_read_device_id
               sta __volatile_tmp
-              ldx #0
-@find:        lda rom_ids+1,x
-              beq @print
+              ldy #0
+@find:        lda rom_ids+1,y
+              beq @exit
               cmp __volatile_tmp
               bne @next
-              tya
-              cmp rom_ids+0,x
-              beq @print
-@next:        inx
-              inx
+              txa
+              cmp rom_ids+0,y
+              beq @exit
+@next:        iny
+              iny
               bra @find
 
-@print:       lda rom_labels+0,x
+@exit:        lda rom_labels+1,y
               pha
-              lda rom_labels+1,x
-              tax
-              pla
-              jsr strout
-              lda #' '
-              jsr char_out
-              lda #'('
-              jsr char_out
-              lda __volatile_tmp
-              jsr hexout_s
-              lda #'/'
-              jsr char_out
-              tya
-              jsr hexout_s
-              lda #')'
-              jmp char_out
-
+              lda rom_labels+0,y
+              plx
+              rts
 
 ; in:
 ;   A   - byte to write
@@ -203,7 +191,7 @@ rom_print_device_id:
 rom_write_byte:
               stx __volatile_ptr  ; rom address low byte
 
-              ldx slot1_ctrl      ; safe bank reg
+              ldx slot_ctrl      ; safe bank reg
               phx
 
               pha
@@ -215,13 +203,13 @@ rom_write_byte:
               bit #$40            ; low/high rom bank ?
               bvc :+
               inx                 ; inc to 2nd 16k ROM
-      :       stx slot1_ctrl      ; 16k ROM to slot 1
+:             stx slot_ctrl      ; 16k ROM to slot 1
 
               and #$3f            ; map to slot1 ($4000-7fff)
               ora #>ROM_BASE      ; offset to bank 1 ($4000)
               sta __volatile_ptr+1
 
-              jsr _rom_cmd_program
+              jsr _cmd_sequence_program
 
               pla                   ; data byte
               sta (__volatile_ptr)  ; write
@@ -232,53 +220,53 @@ rom_write_byte:
               cmp (__volatile_ptr)  ; to verify that the expected value is really written, C is set accordingly
 
               ply
-              sty slot1_ctrl
+              sty slot_ctrl
               rts
 
 ; send write command sequence $aa, $55, $a0
-_rom_cmd_program:
-        lda #$a0
+_cmd_sequence_program:
+              lda #$a0
 ; sends $aa, $55, $<A>
 _cmd_sequence:
               pha
               jsr _cmd_sequence_aa_55
               lda #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
-              sta slot1_ctrl
+              sta slot_ctrl
               pla
               sta ROM_BASE + (ROM_CMD_ADDRESS_0 & $3fff)  ; cmd byte
               rts
 
 _cmd_sequence_aa_55:
               lda #SLOT_ROM | (ROM_CMD_ADDRESS_0>>14)
-              sta slot1_ctrl
+              sta slot_ctrl
               lda #$aa
               sta ROM_BASE + (ROM_CMD_ADDRESS_0 & $3fff)
 
               lda #SLOT_ROM | (ROM_CMD_ADDRESS_1>>14)
-              sta slot1_ctrl
+              sta slot_ctrl
               lda #$55
               sta ROM_BASE + (ROM_CMD_ADDRESS_1 & $3fff)
               rts
 
 .data
   rom_ids:
-    .word $bf5d ; manufacturer id, device id
-    .word $52a4
-    .word $3786
-    .word 0
+            .word $bf5d ; manufacturer id, device id
+            .word $52a4
+            .word $3786
+            .word 0
 
   rom_labels:
-    .word rom_label_0
-    .word rom_label_1
-    .word rom_label_2
-    .word rom_label_unknown
+            .word rom_label_0
+            .word rom_label_1
+            .word rom_label_2
+            .word rom_label_unknown
   rom_label_0:
-    .asciiz "Greenliant - GLS29EE512"
+            .asciiz "Greenliant - GLS29EE512"
   rom_label_1:
-    .asciiz "Alliance - AS29F040"
+            .asciiz "Alliance - AS29F040"
   rom_label_2:
-    .asciiz "AMIC - A29040B"
+            .asciiz "AMIC - A29040B"
   rom_label_unknown:
-    .asciiz "unknown"
+            .asciiz "unknown"
 
 .bss
