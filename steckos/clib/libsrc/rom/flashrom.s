@@ -45,11 +45,14 @@
 
 ; extern unsigned char __fastcall__ flash_sector_erase(long address);
 .proc _flash_sector_erase
-              lda sreg  ; low byte of highword denotes sector
-              stp
-              jsr rom_sector_erase
+              lda sreg  ; low byte of highword denotes sector - 64k sectors
+              cmp #$08
+              bcc @erase
+              lda #$ff
+              bra :+
+@erase:       jsr rom_sector_erase
               lda #0
-              tax
+:             tax
               rts
 .endproc
 
@@ -57,7 +60,7 @@
 .proc _flash_write
               sta __volatile_ptr
               stx __volatile_ptr+1
-              jsr rom_write
+              ;jsr rom_write
               lda #0
               tax
               rts

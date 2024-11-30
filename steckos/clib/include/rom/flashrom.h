@@ -28,7 +28,7 @@
 typedef struct {
   Slot slot;                // write slot to use - TODO not supported yet
   unsigned long address;    // target address
-  unsigned char data[1024]; // data to write
+  unsigned char data[256];  // data to write
   unsigned int  len;        // length of data to write
 } flash_block;
 

@@ -60,18 +60,23 @@ static void write_flash_block(){
   unsigned r;
 
   flash_wr_block.len = bt_image - bt_write;
-  r = flash_write(&flash_wr_block);
-  if(r){
-    printf("error %d\n", r);
-  }else{
-    bt_write+=flash_wr_block.len;
-    printf("Bytes written: 0x%05lx", bt_write);
-    flash_wr_block.address+=flash_wr_block.len;
+  if(flash_wr_block.len){
+    r = flash_write(&flash_wr_block);
+    if(r){
+      printf("\nWrite rom error %d\n", r);
+    }else{
+      bt_write+=flash_wr_block.len;
+      printf("Bytes written: 0x%05lx", bt_write);
+      flash_wr_block.address+=flash_wr_block.len;
+    }
   }
 }
 
 static void xmodem_receive_block(xmodem_block *xm_block){
 
+  if(bt_image == 0){
+    printf("\n");
+  }
   //printf("%lu\n", (bt_image & (sizeof(flash_wr_block.data)-1)));
   memcpy(flash_wr_block.data + (bt_image & (sizeof(flash_wr_block.data)-1)), xm_block->data, sizeof(xm_block->data));
   bt_image+=sizeof(xm_block->data);
@@ -95,11 +100,10 @@ int main (int argc, char **argv)
     unsigned char doReset = 0;
     unsigned char doVerify = 0;
 
-    int c;
     int i;
 
     flash_wr_block.slot = Slot2;
-    flash_wr_block.address = 0x08000;
+    flash_wr_block.address = 0x010000; //default to sector 1 (0 almost used by current bios)
 
     while ((opt = getopt(argc, argv, "uvrha:")) != EOF) {
       switch (opt) {
@@ -153,19 +157,26 @@ int main (int argc, char **argv)
     printf("ROM Type: %s (0x%04x)\n", flash_get_device_name(), flash_get_device_id());
     printf("ROM Address: 0x%05lx\n", flash_wr_block.address);
     printf("Image from: %s\n", image == NULL ? "<upload>" : argv[optind]);
+    printf("Sector Erase: 0x%05lx-0x%05lx\n", flash_wr_block.address & 0x70000, (flash_wr_block.address & 0x70000) + 0xffff);
     printf("\nProcceed Y/n");
     key = getch();
     if(key == 0x0d || key == 'y'){
-      printf("\nSector Erase for 0x%06lx", flash_wr_block.address);
-      flash_sector_erase(flash_wr_block.address);
+      i = flash_sector_erase(flash_wr_block.address);
+      if(i){
+        printf("FAIL\n");
+        exit(EXIT_FAILURE);
+      }else{
+        printf("OK\n");
+      }
       if(upload){
         printf("\nROM Image ");
         if(!xmodem_upload(&xmodem_receive_block)){
-          write_flash_block(); // write remaining bytes TODO FIXME multiple of xmodem data block size (128 byte)
+          write_flash_block();
         }
       }else if(image){
         while((i = fread(flash_wr_block.data, 1, sizeof(flash_wr_block.data), image)) != 0){
           bt_image+=i;
+          //TODO check for sector erase
           printf("\rBytes read: 0x%05lx ", bt_image);
           write_flash_block();
         }

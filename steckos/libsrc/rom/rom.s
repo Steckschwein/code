@@ -62,6 +62,7 @@ rom_write:
 
 
 ; @in: A - sector [0..7]
+; @out: C=1 on success, C=0 on error
 .export rom_sector_erase
 rom_sector_erase:
               and #$07
@@ -93,17 +94,22 @@ rom_fn_table:
               .word rom_fn_sector_erase
 
 rom_fn_sector_erase:
+              pha
+
               lda #$80
               jsr _cmd_sequence ; send $aa, $55, $80
 
               jsr _cmd_sequence_aa_55 ; send $aa, $55
-              lda #SLOT_ROM | ($60000>>14)
-              sta slot_ctrl
-              lda #$30  ; sector erase
-              sta ROM_BASE + ($60000 & $3fff)
+
+              pla ; get sector (0..7)
+              asl ; x4 (16k slots)
+              asl
+              ora #SLOT_ROM
+              sta slot_ctrl   ; select rom page
+              lda #$30        ; sector erase command
+              sta ROM_BASE
 
               jmp rom_wait_toggle
-
 
 rom_fn_read_device_id:
               lda #$90  ; send device id command
