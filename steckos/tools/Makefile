@@ -30,12 +30,6 @@ all: $(TOOLS)
 clean:
 	rm -f *.prg *.o *.map *.s
 
-#%.prg: %.c $(LIBS) $(CLIB)
-#	cl65 -t steckschwein $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
-
-# %.s: %.c
-#	cc65 $(CC65FLAGS) $< -o $@
-
 %.o: %.c
 	cc65 $(CC65FLAGS) $(<:.s=.c)
 	ca65 $(CA65FLAGS) $(@:.o=.s)

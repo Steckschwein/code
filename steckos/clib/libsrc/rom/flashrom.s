@@ -22,6 +22,7 @@
 
 .include "asminc/common.inc"
 .include "asminc/zeropage.inc"
+.include "asminc/rom.inc"
 .include "kernel/kernel_jumptable.inc"
 
 .export _flash_get_device_id
@@ -31,7 +32,7 @@
 
 .autoimport
 
-.importzp ptr1
+.importzp ptr1, sreg
 
 ;extern unsigned int __fastcall__ flash_get_device_id();
 .proc _flash_get_device_id
@@ -49,19 +50,48 @@
               cmp #$08
               bcc @erase
               lda #$ff
-              bra :+
+              bra @exit
 @erase:       jsr rom_sector_erase
+              bcc @exit ; wirh A=<error code>
               lda #0
-:             tax
+@exit:        ldx #0
               rts
+
 .endproc
 
 ; extern unsigned char __fastcall__ flash_write(flash_block *);
 .proc _flash_write
-              sta __volatile_ptr
-              stx __volatile_ptr+1
-              ;jsr rom_write
+              php
+              ;sei
+              sta ptr1
+              stx ptr1+1
+              ldy #0
+:             lda (ptr1)
+              sta rom_write_data+rom_write_t::address,y
+              jsr inc_ptr
+              iny
+              cpy #5  ; 32 bit address and len
+              bne :-
+              lda ptr1
+              sta rom_write_data+rom_write_t::p_data
+              lda ptr1+1
+              sta rom_write_data+rom_write_t::p_data+1
+
+              lda #<rom_write_data
+              ldy #>rom_write_data
+              jsr rom_write
+              bcc :+
               lda #0
-              tax
+:             ldx #0
+              plp
               rts
+
+inc_ptr:      inc ptr1
+              bne :+
+              inc ptr1+1
+:             rts
 .endproc
+
+.bss
+  rom_write_data:
+    .tag rom_write_t

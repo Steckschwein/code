@@ -33,6 +33,10 @@
 
 .segment "ZEROPAGE_LIB": zeropage
 
+  p_data: .res 2  ; pointer to data
+  p_rom:  .res 2  ; rom address in 16k slot
+  bank:   .res 1
+
 .code
 
 ROM_BASE = slot3 ; 16k slot to access the ROM
@@ -56,7 +60,6 @@ rom_read_device_id:
 rom_write:
               sta __volatile_ptr
               sty __volatile_ptr+1
-
               ldx #2
               jmp rom_access_with_fn
 
@@ -68,101 +71,6 @@ rom_sector_erase:
               and #$07
               ldx #4
               jmp rom_access_with_fn
-
-
-;@in: A/Y pointer to rom write struct (low/high)
-;@in: X offset to rom access function - @see rom_fn_table
-rom_access_with_fn:
-              php
-              sei
-
-              ldy slot_ctrl ; save slot_ctrl
-              phy
-
-              jsr @rom_access_fn
-
-              ply
-              sty slot_ctrl
-              plp
-              rts
-@rom_access_fn:
-              jmp (rom_fn_table,x)
-
-rom_fn_table:
-              .word rom_fn_read_device_id
-              .word rom_fn_write
-              .word rom_fn_sector_erase
-
-rom_fn_sector_erase:
-              pha
-
-              lda #$80
-              jsr _cmd_sequence ; send $aa, $55, $80
-
-              jsr _cmd_sequence_aa_55 ; send $aa, $55
-
-              pla ; get sector (0..7)
-              asl ; x4 (16k slots)
-              asl
-              ora #SLOT_ROM
-              sta slot_ctrl   ; select rom page
-              lda #$30        ; sector erase command
-              sta ROM_BASE
-
-              jmp rom_wait_toggle
-
-rom_fn_read_device_id:
-              lda #$90  ; send device id command
-              jsr _cmd_sequence
-
-              lda #SLOT_ROM | ($0000>>14)
-              sta slot_ctrl
-
-              lda ROM_BASE+0  ; read manufacturer
-              pha
-              ldx ROM_BASE+1  ; read chip id
-
-              lda #$f0  ; reset command
-              jsr _cmd_sequence
-
-              pla
-              rts
-
-rom_fn_write:
-              ldx #0
-              ldy #$ff
-:             jsr _cmd_sequence_program
-              lda #$98
-              sta slot_ctrl
-              txa
-              sta ROM_BASE,x
-              jsr rom_wait_toggle
-              dey
-              inx
-              bne :-
-              rts
-
-rom_wait_toggle:
-              ldy #0
-@wait:        iny
-              beq @reset
-              lda ROM_BASE        ; read
-              eor ROM_BASE        ; eor
-              and #1<<6           ; mask toggle bit
-              beq @exit           ; toggle bit stable, exit
-
-              lda ROM_BASE
-              and #1<<5           ; I/O5 = 1 (timeout) ?
-              beq @wait
-
-              lda ROM_BASE
-              cmp ROM_BASE        ; still toggling
-              beq @exit
-
-@reset:       lda #$f0            ; reset command
-              jmp _cmd_sequence
-
-@exit:        rts
 
 
 .export rom_get_device_name
@@ -188,6 +96,151 @@ rom_get_device_name:
               lda rom_labels+0,y
               plx
               rts
+
+
+;@in: X offset to rom access function - @see rom_fn_table
+rom_access_with_fn:
+              php
+              sei
+
+              ldy slot_ctrl ; save slot_ctrl
+              phy
+
+              jsr @call_rom_fn
+
+              ply
+              sty slot_ctrl
+              plp
+              cmp #0  ; set flags accordingly
+              beq @exit
+              clc
+@exit:        rts
+@call_rom_fn: jmp (rom_fn_table,x)
+
+rom_fn_table:
+              .word rom_fn_read_device_id
+              .word rom_fn_write
+              .word rom_fn_sector_erase
+
+rom_fn_sector_erase:
+              pha
+
+              lda #$80
+              jsr _cmd_sequence ; send $aa, $55, $80
+
+              jsr _cmd_sequence_aa_55 ; send $aa, $55
+
+              pla ; get sector (0..7)
+              asl ; x4 (16k slots)
+              asl
+              ora #SLOT_ROM
+              sta slot_ctrl   ; select rom page
+              lda #$30        ; sector erase command
+              sta ROM_BASE
+
+              jsr rom_wait_toggle
+              bcc @exit
+              ldy #0
+@wait_data:   lda ROM_BASE,y
+              cmp #$ff        ; data erased?
+              bne @wait_data
+              iny
+              bne @wait_data
+              tya
+@exit:        rts
+
+
+rom_fn_read_device_id:
+              lda #$90  ; send device id command
+              jsr _cmd_sequence
+
+              lda #SLOT_ROM | ($0000>>14)
+              sta slot_ctrl
+
+              lda ROM_BASE+0  ; read manufacturer
+              pha
+              ldx ROM_BASE+1  ; read chip id
+
+              lda #$f0  ; reset command
+              jsr _cmd_sequence
+
+              pla
+              rts
+
+rom_fn_write:
+              ldy #rom_write_t::len
+              lda (__volatile_ptr),y
+              beq @exit ; 0 bytes to write?
+              tax
+
+              iny                         ; init data pointer (y=rom_write_t::p_data)
+              lda (__volatile_ptr),y
+              sta p_data
+              iny
+              lda (__volatile_ptr),y
+              sta p_data+1
+
+              ldy #0
+@write:       phy
+              ldy #rom_write_t::address   ; set rom pointer upon address
+              lda (__volatile_ptr),y      ; bit 7-0 of address
+              sta p_rom+0
+              iny                         ; bit 15-8 of address
+              lda (__volatile_ptr),y
+              sta __volatile_tmp
+              and #$3f                    ; bit 13-8 only to fit 16k slot
+              clc
+              adc #>ROM_BASE              ; add to rom base
+              sta p_rom+1
+              iny                         ; bit 23-16 of rom address
+              lda (__volatile_ptr),y      ; we ignore high byte of high word (bit 31-24) of address entirely
+              and #$07                    ; and also mask bit 18-16 (512k)
+              asl __volatile_tmp          ; x2 - calculate the rom bank to enable in 16k slot
+              rol
+              asl __volatile_tmp          ; x4
+              rol
+              ora #SLOT_ROM               ; rom slot
+              tay
+
+              jsr _cmd_sequence_program   ; send byte program sequence
+
+              sty slot_ctrl               ; enable bank
+
+              ply                         ; restore y
+              lda (p_data),y              ; read data
+              sta (p_rom),y               ; write to rom address
+
+              jsr rom_wait_toggle
+              bcc @exit                  ; C=0, toggle error
+              iny
+              dex
+              bne @write
+              txa ; X=0 => A, ok
+@exit:        rts
+
+rom_wait_toggle:
+              lda ROM_BASE        ; read
+              eor ROM_BASE        ; eor
+              and #1<<6           ; mask toggle bit
+              sec                 ; assume ok
+              beq @exit           ; toggle bit stable, exit
+
+              lda ROM_BASE
+              ;bmi @wait          ; I/O7 erase in progress
+              and #1<<5           ; I/O5 = 1 (timeout) ?
+              beq rom_wait_toggle
+
+              lda ROM_BASE
+              eor ROM_BASE        ; still toggling ?
+              and #1<<6
+              sec
+              beq @exit
+
+@reset:       lda #$f0            ; reset command
+              jsr _cmd_sequence
+              lda #ROM_ERROR_TOGGLE_TIMEOUT ; C=0, A=<error>
+              clc
+@exit:        rts
 
 ; in:
 ;   A   - byte to write

@@ -26,10 +26,10 @@
 #include <steckschwein.h>
 
 typedef struct {
-  Slot slot;                // write slot to use - TODO not supported yet
+//  Slot slot;              // write slot to use - TODO not supported yet
   unsigned long address;    // target address
-  unsigned char data[256];  // data to write
-  unsigned int  len;        // length of data to write
+  unsigned char len;        // length of data to write
+  unsigned char data[128];  // data to write
 } flash_block;
 
 /*
