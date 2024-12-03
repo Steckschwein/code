@@ -90,7 +90,7 @@ static void xmodem_receive_block(xmodem_block *xm_block){
 
 int main (int argc, char **argv)
 {
-    FILE *image = NULL;
+    FILE *imageFile = NULL;
 
     unsigned char upload = 0;
     unsigned char doReset = 0;
@@ -114,6 +114,7 @@ int main (int argc, char **argv)
               printf("address... 0x%06lx\n", flash_wr_block.address);
             }else{
               fprintf(stderr, "invalid address format, expected $????? but was %s\n", optarg);
+              usage();
             }
             break;
         case 'v':
@@ -134,17 +135,17 @@ int main (int argc, char **argv)
       usage();
     }
     if(optind < argc){
-      image = fopen(argv[optind], "rb");
-      if(image == NULL){
+      imageFile = fopen(argv[optind], "rb");
+      if(imageFile == NULL){
         fprintf(stderr, "Error (%d): %s - %s\n", errno, argv[optind], strerror(errno));
         exit(EXIT_FAILURE);
       }
     }
-    if(image != NULL && upload){
+    if(imageFile != NULL && upload){
       fprintf(stderr, "-u (upload) option given, cannot be used together with a file!\n");
       usage();
     }
-    if(image == NULL && !upload){
+    if(imageFile == NULL && !upload){
       fprintf(stderr, "Either -u (upload) or file must be given!\n");
       usage();
     }
@@ -153,12 +154,13 @@ int main (int argc, char **argv)
 
     printf("ROM Type: %s (0x%04x)\n", flash_get_device_name(), flash_get_device_id());
     printf("ROM Address: 0x%05lx\n", flash_wr_block.address);
-    printf("Image from: %s\n", image == NULL ? "<upload>" : argv[optind]);
+    printf("Image from: %s\n", imageFile == NULL ? "<upload>" : argv[optind]);
     printf("Sector Erase: 0x%05lx-0x%05lx\n", flash_wr_block.address & 0x70000, (flash_wr_block.address & 0x70000) + 0xffff);
-    printf("Verify: %s\n", doVerify && image ? "y" : image ? "n" : "n.a.");
+    printf("Verify: %s\n", doVerify && imageFile ? "y" : imageFile ? "n" : "n.a.");
     printf("Reset: %s (Slot 0x8000/0xc000 with Bank: 0x%02x/0x%02x)\n", doReset ? "y" : "n", resetBank, resetBank+1);
     printf("\nProcceed Y/n");
 
+    while(!kbhit());
     if(getch() == 'n'){
       return EXIT_SUCCESS;
     }
@@ -175,14 +177,14 @@ int main (int argc, char **argv)
       if(!xmodem_upload(&xmodem_receive_block)){
         write_flash_block();
       }
-    }else if(image){
-      while((i = fread(flash_wr_block.data, 1, sizeof(flash_wr_block.data), image)) != 0){
+    }else if(imageFile){
+      while((i = fread(flash_wr_block.data, 1, sizeof(flash_wr_block.data), imageFile)) != 0){
         bt_image+=i;
         //TODO check overflow and required sector erase
         printf("\rBytes read: 0x%05lx ", bt_image);
         write_flash_block();
       }
-      fclose(image);
+      fclose(imageFile);
     }
     printf("\nDone\n");
     if(doVerify){

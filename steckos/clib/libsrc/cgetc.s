@@ -3,10 +3,8 @@
 ; char cgetc (void);
 ;
 		  .export _cgetc
-		  .import cursor
-		  
+		  .import _getch
+
 		  .include "kernel/kernel_jumptable.inc"
 
-_cgetc: 
-	jsr krn_getkey
-	bcc _cgetc
+_cgetc=_getch

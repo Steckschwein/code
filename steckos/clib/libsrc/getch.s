@@ -25,7 +25,7 @@
 
 .export			_getch
 
-; unsigned int getch (void);
+; extern unsigned int __fastcall__ getch(void);
 ;
 .proc	_getch
 :       jsr krn_getkey

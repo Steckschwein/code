@@ -23,6 +23,9 @@
 #ifndef _STECKSCHWEIN_H
 #define _STECKSCHWEIN_H
 
+/*
+**  get keyboard character
+*/
 extern unsigned int __fastcall__ getch(void);
 
 /**
