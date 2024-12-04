@@ -295,7 +295,7 @@ do_nmi:
     bne @next
 
     crlf
-    
+
     jsr wozmon
 
     lda save_stat + save_status::PC+1

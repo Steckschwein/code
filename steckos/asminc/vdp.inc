@@ -222,7 +222,7 @@ ADDRESS_TEXT_SCREEN           = $0000      ; name table (pattern layout)
 ADDRESS_TEXT_PATTERN          = $1000      ; pattern table
 ADDRESS_TEXT_COLOR            = $2000      ; color table, v9938/58 "blink" color code vram
 
-ADDRESS_GFX1_SCREEN           = $1800   ; name table
+ADDRESS_GFX1_SCREEN           = $1800      ; name table
 ADDRESS_GFX1_PATTERN          = $0000
 ADDRESS_GFX1_COLOR            = $2000
 ADDRESS_GFX1_SPRITE           = ADDRESS_GFX_SPRITE

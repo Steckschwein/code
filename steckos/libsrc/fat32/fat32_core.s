@@ -107,7 +107,7 @@ __fat_open_path:
               jsr __fat_clone_fd        ; Y is given as param
 
               ldy #0                    ; trim whitespace at the beginning
-@trim:  lda (filenameptr), y
+@trim:        lda (filenameptr), y
               cmp #' '+1
               bcs @l_parse_path
               iny

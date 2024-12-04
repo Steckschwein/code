@@ -30,12 +30,6 @@ all: $(TOOLS)
 clean:
 	rm -f *.prg *.o *.map *.s
 
-#%.prg: %.c $(LIBS) $(CLIB)
-#	cl65 -t steckschwein $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
-
-# %.s: %.c
-#	cc65 $(CC65FLAGS) $< -o $@
-
 %.o: %.c
 	cc65 $(CC65FLAGS) $(<:.s=.c)
 	ca65 $(CA65FLAGS) $(@:.o=.s)
@@ -53,4 +47,4 @@ clean:
 	../../xmodem.sh $<
 
 %.emu: %.prg
-	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -upload $<
+	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -log_writes rom -upload $<

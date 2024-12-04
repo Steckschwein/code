@@ -48,9 +48,6 @@ bios.dis: bios.bin
 bios: loader bios.bin
 	../../xmodem.sh bios.bin
 
-mettwurst: mettwurst.prg
-	../../xmodem.sh mettwurst.prg
-
 emu: bios.bin
 	steckschwein-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg
 

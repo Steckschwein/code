@@ -19,22 +19,36 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
-.ifdef DEBUG_SPI; enable debug for this module
-	debug_enabled=1
-.endif
 
-.include "via.inc"
-.include "spi.inc"
-.include "errno.inc"
+.include "asminc/system.inc"
 
-.code
-.export spi_deselect
-;@module: spi
-;@name: "spi_deselect"
-;@desc: "deselect all SPI devices"
-spi_deselect:
-		pha
-		lda #spi_device_deselect
-		sta via1portb
-		pla
-		rts
+.export _sys_reset
+.export _sys_slot_get
+.export _sys_slot_set
+
+.import popa
+
+; extern void __fastcall__ sys_reset();
+.proc _sys_reset
+              jmp (SYS_VECTOR_RESET)
+.endproc
+
+; extern void __fastcall__ sys_slot_set(Slot, unsigned char);
+.proc _sys_slot_set
+              and #$9f
+              tax
+              jsr popa
+              tay
+              txa
+              sta ctrl_port,y
+              rts
+.endproc
+
+; extern unsigned char __fastcall__ sys_slot_get(Slot);
+.proc _sys_slot_get
+              and #$03
+              tay
+              lda ctrl_port,y
+              ldx #0
+              rts
+.endproc

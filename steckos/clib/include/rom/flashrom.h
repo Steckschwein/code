@@ -20,41 +20,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <conio.h>
+#ifndef _ROM_H
+#define _ROM_H
 
-static unsigned char CHARS = 16;
+#include <steckschwein.h>
 
-int main (int argc, const char* argv[])
-{
-	unsigned char buffer[200];
-	char c;
-	unsigned int i;
-	unsigned char p;
-	unsigned char *format = "%c ";
-	for(i=1;i<argc;i++){
-		if(strncmp(argv[i], "-x", 2) == 0){
-			format = "%02x ";
-			break;
-		}else if(strncmp(argv[i], "-c", 2) == 0){
-			format = "%c ";
-			break;
-		}
-	}
-	i=0;
-	p=0;
-	while((c = cgetc()) != 0x1b){
-		cprintf("%c", c);
-		buffer[p++] = c;
-		if(p % CHARS == 0){
-			i+=CHARS;
-			cprintf("\n%08x ", i);
-			for(;p>0;p--)
-				cprintf(format, buffer[CHARS-p]);
-			cprintf("\n");
-		}
-	}
-    return EXIT_SUCCESS;
-}
+typedef struct {
+//  Slot slot;              // write slot to use - TODO not supported yet
+  unsigned long address;    // target address
+  unsigned char len;        // length of data to write
+  unsigned char data[128];  // data to write
+} flash_block;
+
+/*
+  return 2 byte deviceid - manufacturer, chip device id
+*/
+extern unsigned int __fastcall__ flash_get_device_id();
+
+/*
+  get device name
+*/
+extern unsigned char* __fastcall__ flash_get_device_name();
+
+/*
+  erase sector upon the given address
+*/
+extern unsigned char __fastcall__ flash_sector_erase(long address);
+
+/*
+  use rom_write_block to write to flash ROM
+*/
+extern unsigned char __fastcall__ flash_write(flash_block*);
+
+#endif
