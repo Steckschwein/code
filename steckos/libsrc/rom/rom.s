@@ -25,7 +25,9 @@
 .include "rom.inc"
 
 .export rom_read_device_id
-.export rom_write_byte
+.export rom_get_device_name
+.export rom_write
+.export rom_sector_erase
 
 .autoimport
 
@@ -35,7 +37,6 @@
 
   p_data: .res 2  ; pointer to data
   p_rom:  .res 2  ; rom address in 16k slot
-  bank:   .res 1
 
 .code
 
@@ -56,7 +57,6 @@ rom_read_device_id:
 ;@name: rom_write - write data
 ;@in: A/Y pointer to rom write struct (low/high)
 ;@out: C=1 on success, C=0 on error
-.export rom_write
 rom_write:
               sta __volatile_ptr
               sty __volatile_ptr+1
@@ -66,14 +66,11 @@ rom_write:
 
 ; @in: A - sector [0..7]
 ; @out: C=1 on success, C=0 on error
-.export rom_sector_erase
 rom_sector_erase:
               and #$07
               ldx #4
               jmp rom_access_with_fn
 
-
-.export rom_get_device_name
 ; @out: C=1 on success, C=0 on error
 ; @out: A/X - pointer to null terminated string denoting the device label
 rom_get_device_name:
@@ -241,46 +238,6 @@ rom_wait_toggle:
               lda #ROM_ERROR_TOGGLE_TIMEOUT ; C=0, A=<error>
               clc
 @exit:        rts
-
-; in:
-;   A   - byte to write
-;   X/Y - rom address (low/high)
-; out:
-;   C=1 on success, C=0 on error
-rom_write_byte:
-              stx __volatile_ptr  ; rom address low byte
-
-              ldx slot_ctrl      ; safe bank reg
-              phx
-
-              pha
-
-              ldx #$80            ; select first 16k of ROM
-
-              tya
-              and #$7f            ; mask 32k ROM address
-              bit #$40            ; low/high rom bank ?
-              bvc :+
-              inx                 ; inc to 2nd 16k ROM
-:             stx slot_ctrl      ; 16k ROM to slot 1
-
-              and #$3f            ; map to slot1 ($4000-7fff)
-              ora #>ROM_BASE      ; offset to bank 1 ($4000)
-              sta __volatile_ptr+1
-
-              jsr _cmd_sequence_program
-
-              pla                   ; data byte
-              sta (__volatile_ptr)  ; write
-
-              jsr rom_wait_toggle
-
-@test:        lda (__volatile_ptr)  ; due to bit 6 toggle, we have to compare again
-              cmp (__volatile_ptr)  ; to verify that the expected value is really written, C is set accordingly
-
-              ply
-              sty slot_ctrl
-              rts
 
 ; send write command sequence $aa, $55, $a0
 _cmd_sequence_program:

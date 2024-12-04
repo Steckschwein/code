@@ -48,9 +48,6 @@ bios.dis: bios.bin
 bios: loader bios.bin
 	../../xmodem.sh bios.bin
 
-%.emu: %.prg bios.bin
-	6502msx-emu -rom bios.bin -sdcard ../../steckos.img -upload $<
-
 emu: bios.bin
 	steckschwein-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg
 
