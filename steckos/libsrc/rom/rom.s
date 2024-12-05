@@ -45,6 +45,15 @@ ROM_BASE = slot3 ; 16k slot to access the ROM
 ROM_CMD_ADDRESS_0 = $5555
 ROM_CMD_ADDRESS_1 = $2aaa
 
+ROM_CMD_CHIP_ERASE    = $10
+ROM_CMD_SECTOR_ERASE  = $30
+ROM_CMD_PREPARE       = $80
+ROM_CMD_PROGRAM       = $a0
+ROM_CMD_DEVICEID      = $90
+ROM_CMD_RESET         = $f0
+
+
+
 slot_ctrl=ctrl_port | (ROM_BASE>>14)
 
 
@@ -122,7 +131,7 @@ rom_fn_table:
 rom_fn_sector_erase:
               pha
 
-              lda #$80
+              lda #ROM_CMD_PREPARE
               jsr _cmd_sequence ; send $aa, $55, $80
 
               jsr _cmd_sequence_aa_55 ; send $aa, $55
@@ -132,7 +141,7 @@ rom_fn_sector_erase:
               asl
               ora #SLOT_ROM
               sta slot_ctrl   ; select rom page
-              lda #$30        ; sector erase command
+              lda #ROM_CMD_SECTOR_ERASE        ; sector erase command
               sta ROM_BASE
 
               jsr rom_wait_toggle
@@ -148,7 +157,7 @@ rom_fn_sector_erase:
 
 
 rom_fn_read_device_id:
-              lda #$90  ; send device id command
+              lda #ROM_CMD_DEVICEID  ; send device id command
               jsr _cmd_sequence
 
               lda #SLOT_ROM | ($0000>>14)
@@ -158,7 +167,7 @@ rom_fn_read_device_id:
               pha
               ldx ROM_BASE+1  ; read chip id
 
-              lda #$f0  ; reset command
+              lda #ROM_CMD_RESET  ; reset command
               jsr _cmd_sequence
 
               pla
@@ -241,7 +250,7 @@ rom_wait_toggle:
 
 ; send write command sequence $aa, $55, $a0
 _cmd_sequence_program:
-              lda #$a0
+              lda #ROM_CMD_PROGRAM
 ; sends $aa, $55, $<A>
 _cmd_sequence:
               pha

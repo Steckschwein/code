@@ -21,7 +21,8 @@ TOOLS+=\
   uname.prg \
   fsinfo.prg \
 	dirtest.prg \
-	stecklnk.prg
+	stecklnk.prg \
+	flash_ah.prg
 
 .PHONY: all clean
 
@@ -48,3 +49,4 @@ clean:
 
 %.emu: %.prg
 	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -log_writes rom -upload $<
+
