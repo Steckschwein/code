@@ -27,6 +27,7 @@
 
 .export _flash_get_device_id
 .export _flash_get_device_name
+.export _flash_chip_erase
 .export _flash_sector_erase
 .export _flash_write
 
@@ -44,20 +45,24 @@
               jmp rom_get_device_name
 .endproc
 
+; extern int __fastcall__ flash_chip_erase();
+_flash_chip_erase:
+              jsr rom_chip_erase
+              bra doExit
+
 ; extern unsigned char __fastcall__ flash_sector_erase(long address);
-.proc _flash_sector_erase
+_flash_sector_erase:
               lda sreg  ; low byte of highword denotes sector - 64k sectors
               cmp #$08
               bcc @erase
               lda #$ff
-              bra @exit
+              bra exit
 @erase:       jsr rom_sector_erase
-              bcc @exit ; wirh A=<error code>
-              lda #0
-@exit:        ldx #0
-              rts
 
-.endproc
+doExit:       bcc exit ; wirh A=<error code>
+              lda #0
+exit:         ldx #0
+              rts
 
 ; extern unsigned char __fastcall__ flash_write(flash_block *);
 .proc _flash_write

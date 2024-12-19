@@ -28,6 +28,7 @@
 .export rom_get_device_name
 .export rom_write
 .export rom_sector_erase
+.export rom_chip_erase
 
 .autoimport
 
@@ -81,6 +82,11 @@ rom_sector_erase:
               jmp rom_access_with_fn
 
 ; @out: C=1 on success, C=0 on error
+rom_chip_erase:
+              ldx #6
+              jmp rom_access_with_fn
+
+; @out: C=1 on success, C=0 on error
 ; @out: A/X - pointer to null terminated string denoting the device label
 rom_get_device_name:
               jsr rom_read_device_id
@@ -127,6 +133,15 @@ rom_fn_table:
               .word rom_fn_read_device_id
               .word rom_fn_write
               .word rom_fn_sector_erase
+              .word rom_fn_chip_erase
+
+rom_fn_chip_erase:
+              lda #ROM_CMD_PREPARE
+              jsr _cmd_sequence       ; send $aa, $55, $80
+
+              lda #ROM_CMD_CHIP_ERASE ; sector erase command
+              jsr _cmd_sequence       ; send $aa, $55, $10
+              jmp rom_wait_toggle
 
 rom_fn_sector_erase:
               pha

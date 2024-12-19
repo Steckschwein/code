@@ -43,13 +43,18 @@ extern unsigned int __fastcall__ flash_get_device_id();
 extern unsigned char* __fastcall__ flash_get_device_name();
 
 /*
+  chip erase
+*/
+extern int __fastcall__ flash_chip_erase();
+
+/*
   erase sector upon the given address
 */
-extern unsigned char __fastcall__ flash_sector_erase(long address);
+extern int __fastcall__ flash_sector_erase(long address);
 
 /*
   use rom_write_block to write to flash ROM
 */
-extern unsigned char __fastcall__ flash_write(flash_block*);
+extern int __fastcall__ flash_write(flash_block*);
 
 #endif
