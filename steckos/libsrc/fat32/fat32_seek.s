@@ -47,6 +47,7 @@
 ;@in: X - offset into fd_area
 ;@in: A/Y - pointer to seek_struct - @see fat32.inc
 ;@out: C=0 on success (A=0), C=1 and A=<error code> or C=1 and A=0 (EOK) if EOF reached
+;@out:
 fat_fseek:
 
     _is_file_open   ; otherwise rts C=1 and A=#EINVAL
@@ -84,6 +85,6 @@ fat_fseek:
     debug "f seek <"
     rts
 @l_exit_err:
-    lda #EINVAL
+    lda #ENOSYS
     sec
     rts

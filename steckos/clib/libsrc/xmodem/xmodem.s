@@ -25,12 +25,11 @@
 
 .export _xmodem_upload
 
-.export xmodem_rcvbuffer= xmodem_buffer
-.export crc16_init      = crc16_table_init
-.export crc16_lo        = xmodem_crc16_l
-.export crc16_hi        = xmodem_crc16_h
-
-.export char_out=putchar ; TODO FIXME xmodem requires this. get rid of. introduce stdin
+.export xmodem_rcvbuffer  = xmodem_buffer
+.export crc16_init        = crc16_table_init
+.export crc16_lo          = xmodem_crc16_l
+.export crc16_hi          = xmodem_crc16_h
+.export char_out          = putchar ; TODO FIXME xmodem requires this. get rid of. introduce stdin
 
 .import putchar
 .import xmodem_upload_callback
@@ -60,6 +59,7 @@ xmodem_upload_cb:
 
               restore
               rts
+
 @call_cb:     jmp (xmodem_recv_cb)
 
 .bss

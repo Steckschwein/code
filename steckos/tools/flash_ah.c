@@ -31,29 +31,48 @@
 #include <rom/flashrom.h>
 #include <steckschwein.h>
 
+#define OPT_CHIP_ERASE 1<<0
+#define OPT_UPLOAD     1<<1
+#define OPT_VERIFY     1<<2
+#define OPT_RESET      1<<3
+
 #define ARGCH    ':'
 #define BADCH    '?'
 #define ENDARGS  "--"
 
+static FILE *imageFile = NULL;
+
 static unsigned long bt_image = 0;
 static unsigned long bt_write = 0;
 
-static flash_block flash_wr_block;
+flash_block flash_wr_block;
+
+static void doExit(int code){
+  if(imageFile){
+    fclose(imageFile);
+  }
+  exit(code);
+}
 
 static void usage(){
   fprintf(stderr, \
   "Usage: flash_ah [OPTION]... [FILE]\n\
-  -u - start xmodem upload\n\
-  -a - target address, format $?????\n\
+  -a - target address format $????? (default $10000)\n\
+  -c - chip erase (defaults to sector erase upon given target address)\n\
   -r - reset after flash\n\
+  -u - start xmodem upload\n\
   -v - verify\n\
   -h - this help\n");
-  exit(EXIT_FAILURE);
+  doExit(EXIT_FAILURE);
 }
 
-static void write_flash_block(){
+static void printDone(){
+  printf(" Done\n");
+}
 
-  unsigned r;
+static int write_flash_block(){
+
+  int r;
 
   flash_wr_block.len = bt_image - bt_write;
   if(flash_wr_block.len > 0){
@@ -61,13 +80,15 @@ static void write_flash_block(){
     //flash_sector_erase(flash_wr_block.address;
     r = flash_write(&flash_wr_block);
     if(r){
-      printf("\nWrite rom error %d\n", r);
+      printf("\nWrite Error: %d\n", r);
+      return r;
     }else{
       bt_write+=flash_wr_block.len;
       printf("Bytes written: 0x%05lx", bt_write);
       flash_wr_block.address+=flash_wr_block.len;
     }
   }
+  return 0;
 }
 
 static void xmodem_receive_block(xmodem_block *xm_block){
@@ -88,47 +109,64 @@ static void xmodem_receive_block(xmodem_block *xm_block){
   }
 }
 
+static void erase(unsigned chip_erase){
+
+  int i;
+
+  if(chip_erase){
+    printf("\nChip erase...");
+    i = flash_chip_erase();
+  }else{
+    printf("\nSector erase...");
+    i = flash_sector_erase(flash_wr_block.address);
+  }
+  if(i){
+    printf("FAIL (0x%04x)\n", i);
+    doExit(EXIT_FAILURE);
+  }
+//  printDone();
+  printf(" Done\n");
+}
+
 int main (int argc, char **argv)
 {
-    FILE *imageFile = NULL;
-
-    unsigned char upload = 0;
-    unsigned char doReset = 0;
-    unsigned char doVerify = 0;
+    unsigned char opts      = 0;
     unsigned char resetBank = 0;
+
     int i;
 
     //flash_wr_block.slot = Slot2;
     flash_wr_block.address = 0x010000; //default to sector 1 (0 almost used by current bios)
 
-    while ((i = getopt(argc, argv, "uvrha:")) != EOF) {
+    while ((i = getopt(argc, argv, "uvrhca:")) != EOF) {
       switch (i) {
+        case 'c':
+          opts |= OPT_CHIP_ERASE;
+          break;
         case 'u':
-            upload = 1;
-            break;
-        case 'a':
-            if(*optarg == '$'){
-              i = sscanf(optarg+1, "%lx", &flash_wr_block.address);
-            }
-            if(i){
-              printf("address... 0x%06lx\n", flash_wr_block.address);
-            }else{
-              fprintf(stderr, "invalid address format, expected $????? but was %s\n", optarg);
-              usage();
-            }
-            break;
+          opts |= OPT_UPLOAD;
+          break;
         case 'v':
-            doVerify = 1;
-            break;
+          opts |= OPT_VERIFY;
+          break;
         case 'r':
-            doReset = 1;
-            break;
+          opts |= OPT_RESET;
+          break;
+        case 'a':
+          if(*optarg == '$'){
+            i = sscanf(optarg+1, "%lx", &flash_wr_block.address);
+          }
+          if(i){
+            printf("address... 0x%06lx\n", flash_wr_block.address);
+          }else{
+            fprintf(stderr, "invalid address format, expected $????? but was %s\n", optarg);
+            usage();
+          }
+          break;
         case 'h':
-            usage();
         case BADCH:
-//            fprintf(stderr, "Unknown option: -%c\n", optopt);
         default:
-            usage();
+          usage();
         }
     }
     if(argc <= 1){
@@ -138,14 +176,14 @@ int main (int argc, char **argv)
       imageFile = fopen(argv[optind], "rb");
       if(imageFile == NULL){
         fprintf(stderr, "Error (%d): %s - %s\n", errno, argv[optind], strerror(errno));
-        exit(EXIT_FAILURE);
+        doExit(EXIT_FAILURE);
       }
     }
-    if(imageFile != NULL && upload){
+    if(imageFile != NULL && (opts & OPT_UPLOAD)){
       fprintf(stderr, "-u (upload) option given, cannot be used together with a file!\n");
       usage();
     }
-    if(imageFile == NULL && !upload){
+    if(imageFile == NULL && !(opts & OPT_UPLOAD)){
       fprintf(stderr, "Either -u (upload) or file must be given!\n");
       usage();
     }
@@ -155,27 +193,26 @@ int main (int argc, char **argv)
     printf("ROM Type: %s (0x%04x)\n", flash_get_device_name(), flash_get_device_id());
     printf("ROM Address: 0x%05lx\n", flash_wr_block.address);
     printf("Image from: %s\n", imageFile == NULL ? "<upload>" : argv[optind]);
-    printf("Sector Erase: 0x%05lx-0x%05lx\n", flash_wr_block.address & 0x70000, (flash_wr_block.address & 0x70000) + 0xffff);
-    printf("Verify: %s\n", doVerify && imageFile ? "y" : imageFile ? "n" : "n.a.");
-    printf("Reset: %s (Slot 0x8000/0xc000 with Bank: 0x%02x/0x%02x)\n", doReset ? "y" : "n", resetBank, resetBank+1);
+    if(opts & OPT_CHIP_ERASE){
+      printf("Chip Erase: y\n");
+    }else{
+      printf("Sector Erase: 0x%05lx-0x%05lx\n", flash_wr_block.address & 0x70000, (flash_wr_block.address & 0x70000) + 0xffff);
+    }
+    printf("Verify: %s\n", (opts & OPT_VERIFY) && imageFile ? "y" : imageFile ? "n" : "n.a.");
+    printf("Reset: %s (Slot 0x8000/0xc000 with Bank: 0x%02x/0x%02x)\n", (opts & OPT_RESET) ? "y" : "n", resetBank, resetBank+1);
     printf("\nProcceed Y/n");
 
     while(!kbhit());
     if(getch() == 'n'){
-      return EXIT_SUCCESS;
+      doExit(EXIT_SUCCESS);
     }
-    printf("\nSector erase... ");
-    i = flash_sector_erase(flash_wr_block.address);
-    if(i){
-      printf("FAIL (0x%04x)\n", i);
-      exit(EXIT_FAILURE);
-    }else{
-      printf("OK\n");
-    }
-    if(upload){
+
+    erase(opts & OPT_CHIP_ERASE);
+
+    if(opts & OPT_UPLOAD){
       printf("\nROM Image ");
       if(!xmodem_upload(&xmodem_receive_block)){
-        write_flash_block();
+        write_flash_block(); // write remaining bytes
       }
     }else if(imageFile){
       while((i = fread(flash_wr_block.data, 1, sizeof(flash_wr_block.data), imageFile)) != 0){
@@ -184,19 +221,32 @@ int main (int argc, char **argv)
         printf("\rBytes read: 0x%05lx ", bt_image);
         write_flash_block();
       }
-      fclose(imageFile);
     }
-    printf("\nDone\n");
-    if(doVerify){
-      printf("Verify...\n");
+    printDone();
+//    printf(" Done\n");
+//    printDone();
+    if(opts & OPT_VERIFY){
+      if(imageFile && !fseek(imageFile, 0, SEEK_SET)){
+        bt_image = 0;
+        while((i = fread(flash_wr_block.data, 1, sizeof(flash_wr_block.data), imageFile)) != 0){
+          bt_image+=i;
+          printf("\rVerify: 0x%05lx ", bt_image);
+  //            read_flash_block();
+        }
+      }
+      //printf(" Done\n");
+      printDone();
+      //printDone();
     }
-    if(doReset){
+    if(opts & OPT_RESET){
       printf("Reset...\n");
       __asm__("sei");  // critical, disable irq
       sys_slot_set(Slot2, resetBank);
       sys_slot_set(Slot3, resetBank+1);
       sys_reset();
     }
-
+    if(imageFile){
+      fclose(imageFile);
+    }
     return EXIT_SUCCESS;
 }

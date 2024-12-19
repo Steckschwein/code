@@ -16,8 +16,33 @@ debug_enabled=1
 .code
 
 ; -------------------
+		setup "fat_fseek Whence SEEK_CUR"
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, (512*3+5)
+    set8 test_seek+Seek::Whence, 0
+
+		ldx #(2*FD_Entry_Size)
+    lda #<test_seek
+    ldy #>test_seek
+		jsr fat_fseek
+		assertCarry 1
+    assertA ENOSYS
+
+; -------------------
+		setup "fat_fseek Whence SEEK_END"
+		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, (512*3+5)
+    set8 test_seek+Seek::Whence, 1
+
+		ldx #(2*FD_Entry_Size)
+    lda #<test_seek
+    ldy #>test_seek
+		jsr fat_fseek
+		assertCarry 1
+    assertA ENOSYS
+
+; -------------------
 		setup "fat_fseek empty file"
 		set32 fd_area+(2*FD_Entry_Size)+F32_fd::FileSize, 0 ; empty file
+    set8 test_seek+Seek::Whence, 2
     set32 test_seek+Seek::Offset, 2
 
 		ldx #(2*FD_Entry_Size) ; 0 byte file
