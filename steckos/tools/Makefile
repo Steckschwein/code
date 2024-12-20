@@ -48,5 +48,6 @@ clean:
 	../../xmodem.sh $<
 
 %.emu: %.prg
-	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -log_writes rom -upload $<
+#	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -log_writes rom -upload $<
+	6502msx-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -log_writes rom -upload $<
 
