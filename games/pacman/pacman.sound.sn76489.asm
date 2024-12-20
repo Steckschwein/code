@@ -21,7 +21,9 @@
 ; SOFTWARE.
 
 .include "pacman.inc"
-.include "ym3812.inc"
+.include "sn76489.inc"
+
+.setcpu "6502"
 
 .export sound_init
 .export sound_reset
@@ -35,9 +37,6 @@
 .export sound_play_ghost_alarm
 .export sound_play_ghost_frightened
 .export sound_play_pacman_dying
-
-.import opl2_init
-.import opl2_reg_write
 
 .autoimport
 
@@ -136,31 +135,31 @@ sound_play:   ora sound_play_state
 @exit:        rts
 sound_play_game_interlude:
               lda #SOUND_GAME_INTERLUDE
-              bra sound_play
+              bne sound_play
 sound_play_game_prelude:
 .ifdef __DEVMODE
 ;              rts
 .endif
               lda #SOUND_GAME_PRELUDE
-              bra sound_play
+              bne sound_play
 sound_play_eat_fruit:
               lda #SOUND_EAT_FRUIT
-              bra sound_play
+              bne sound_play
 sound_play_ghost_alarm:
 .ifdef __DEVMODE
               rts
 .endif
               lda #SOUND_GHOST_ALARM
-              bra sound_play
+              bne sound_play
 sound_play_ghost_catched:
               lda #SOUND_GHOST_CATCHED
-              bra sound_play
+              bne sound_play
 sound_play_ghost_frightened:
               lda #SOUND_GHOST_FRIGHTENED
-              bra sound_play
+              bne sound_play
 sound_play_pacman_dying:
               lda #SOUND_PACMAN_DYING
-              bra sound_play
+              bne sound_play
 
 sound_update: ldx #0  ; start with channel 1 (bit 0)
               lda sound_play_state
@@ -178,7 +177,6 @@ sound_play_chn:
 .ifdef __ASSERTIONS
               cpx #channels+1
               bcc :+
-              stp
           :   nop
 .endif
               dec chn_cnt,x
@@ -186,7 +184,8 @@ sound_play_chn:
               lda chn_ix,x    ; data channel
               cmp chn_length,x
               bne @next_note
-              stz chn_ix,x
+              lda #0
+              sta chn_ix,x
               lda #L64
               sta chn_cnt,x
               ;stp
@@ -212,7 +211,7 @@ sound_play_chn:
               lda (p_sound), y   ; note F-Number lsb
               iny
 .ifndef __NO_SOUND
-              jsr opl2_reg_write
+              jsr sn76489_setfreq
 .endif
               lda sound_tmp
               ora #$b0
@@ -224,7 +223,7 @@ sound_play_chn:
               lda (p_sound), y    ; note Key-On / Octave / F-Number msb
               iny
 .ifndef __NO_SOUND
-              jsr opl2_reg_write
+              jsr sn76489_setfreq
 .endif
               lda (p_sound),y     ; delay
               iny
@@ -238,158 +237,13 @@ sound_play_chn:
 
 sound_init:   jsr sound_off
 
-              opl_reg $c0, 0 ; FM mode
-              opl_reg $01,   1<<5 ; WS on
-              ;IMPROVE - use instrument table
-              ;channel 1 - rhodes piano
-              ;modulator op1
-              opl_reg $20,  1
-              opl_reg $40,  (SCALE_3 | ($3f-48)) ; key scale / level
-              opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $80,  (10<<4 | (0 & $0f))  ; SR
-              opl_reg $e0,  WS_ABS_SIN ;PULSE_SIN
-              ;carrier op2
-              opl_reg $23,  1
-              opl_reg $43,  (SCALE_0 | ($3f-59))
-              opl_reg $63,  (13<<4 | (2 & $0f))  ; attack / decay
-              opl_reg $83,  (8<<4 | (12 & $0f))  ; sustain / release
-              opl_reg $e3,  WS_ABS_SIN ;PULSE_SIN
-
-              ;channel 2 - rhodes piano
-              ; modulator op1
-              opl_reg $21,  0
-              opl_reg $41,  (SCALE_3 | ($3f-48)) ; key scale / level
-              opl_reg $61,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $81,  (10<<4 | (0 & $0f))  ; SR
-              opl_reg $e1,  WS_PULSE_SIN
-              ;carrier op2
-              opl_reg $24,  0
-              opl_reg $44,  (SCALE_0 | ($3f-59))
-              opl_reg $64,  (13<<4 | (2 & $0f))  ; attack / decay
-              opl_reg $84,  (8<<4 | (12 & $0f))  ; sustain / release
-              opl_reg $e4,  WS_PULSE_SIN
-
-
-              ;modulator op1  - interlude
-              opl_reg $20,  1
-              opl_reg $40,  (SCALE_3 | ($3f-48)) ; key scale / level
-              opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $80,  (10<<4 | (15 & $0f))  ; SR
-              opl_reg $e0,  WS_ABS_SIN ;PULSE_SIN
-              ;carrier op2
-              opl_reg $23,  1
-              opl_reg $43,  (SCALE_0 | ($3f-59))
-              opl_reg $63,  (13<<4 | (4 & $0f))  ; attack / decay
-              opl_reg $83,  (11<<4 | (13 & $0f))  ; sustain / release
-              opl_reg $e3,  WS_ABS_SIN ;PULSE_SIN
-
-              ;channel 2
-              ; modulator op1
-              opl_reg $21,  1
-              opl_reg $41,  (SCALE_3 | ($3f-48)) ; key scale / level
-              opl_reg $61,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $81,  (10<<4 | (15 & $0f))  ; SR
-              opl_reg $e1,  WS_PULSE_SIN
-              ;carrier op2
-              opl_reg $24,  1
-              opl_reg $44,  (SCALE_0 | ($3f-59))
-              opl_reg $64,  (13<<4 | (4 & $0f))   ; attack / decay
-              opl_reg $84,  (11<<4 | (13 & $0f))  ; sustain / release
-              opl_reg $e4,  WS_PULSE_SIN
-
-
-              ;channel 3 - pacman dots
-              ;modulator op1
-              opl_reg $22,  1
-              opl_reg $42,  (SCALE_0 | ($3f-46)) ; key scale / level
-              opl_reg $62,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $82,  (10<<4 | (0 & $0f))  ; SR
-              opl_reg $e2,  WS_PULSE_SIN ; wave select
-              ;carrier op2
-              opl_reg $25,  1
-              opl_reg $45,  (SCALE_0 | ($3f-46))
-              opl_reg $65,  (13<<4 | (2 & $0f))  ; attack / decay
-              opl_reg $85,  (8<<4 | (12 & $0f))  ; sustain / release
-              opl_reg $e5,  WS_HALF_SIN
-
-              ;channel 4 - fruits/bonus
-              ;modulator op1
-              opl_reg $28,  1
-              opl_reg $48,  (SCALE_1_5 | ($3f-58)) ; key scale / level
-              opl_reg $68,  ($f<<4 | ($f & $0f))  ; AD
-              opl_reg $88,  (0<<4 | ($0 & $0f))  ; SR
-              opl_reg $e8,  WS_HALF_SIN ; wave select
-              ;carrier op2
-              opl_reg $2b,  1
-              opl_reg $4b,  (SCALE_1_5 | ($3f-59))
-              opl_reg $6b,  ($f<<4 | ($f & $0f))  ; attack / decay
-              opl_reg $8b,  (0<<4 | ($0 & $0f))  ; sustain / release
-              opl_reg $eb,  WS_HALF_SIN
-
-              ;channel 5 - alarm
-              ;modulator op1
-              opl_reg $29,  1
-              opl_reg $49,  (SCALE_0 | ($3f-42)) ; key scale / level
-              opl_reg $69,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $89,  (12<<4 | (14 & $0f))  ; SR
-              opl_reg $e9,  WS_SIN ; wave select
-              ;carrier op2
-              opl_reg $2c,  1
-              opl_reg $4c,  (SCALE_0 | ($3f-42))
-              opl_reg $6c,  (13<<4 | (2 & $0f))  ; attack / decay
-              opl_reg $8c,  (8<<4 | (13 & $0f))  ; sustain / release
-              opl_reg $ec,  WS_SIN
-
-              ;channel 6 - catched
-              ;modulator op1
-              opl_reg $2a,  1
-              opl_reg $4a,  (SCALE_0 | ($3f-48)) ; key scale / level
-              opl_reg $6a,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $8a,  (10<<4 | (0 & $0f))  ; SR
-              opl_reg $ea,  WS_SIN ; wave select
-              ;carrier op2
-              opl_reg $2d,  1
-              opl_reg $4d,  (SCALE_0 | ($3f-59))
-              opl_reg $6d,  (13<<4 | (2 & $0f))  ; attack / decay
-              opl_reg $8d,  (8<<4 | (15 & $0f))  ; sustain / release
-              opl_reg $ed,  WS_SIN
-
-              ;channel 7 - frightened
-              ;modulator op1
-              opl_reg $30,  1
-              opl_reg $50,  (SCALE_1_5 | ($3f-48)) ; key scale / level
-              opl_reg $70,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $90,  (10<<4 | (0 & $0f))  ; SR
-              opl_reg $f0,  WS_PULSE_SIN  ; wave select
-              ;carrier op2
-              opl_reg $33,  1
-              opl_reg $53,  (SCALE_0 | ($3f-59))
-              opl_reg $73,  (13<<4 | (2 & $0f))  ; attack / decay
-              opl_reg $93,  (10<<4 | (14 & $0f))  ; sustain / release
-              opl_reg $f3,  WS_PULSE_SIN
-
-              ;channel 8 - pacman dying
-              ;modulator op1
-              opl_reg $31,  1
-              opl_reg $51,  (SCALE_0 | (0)) ; key scale / level
-              opl_reg $71,  (15<<4 | (15 & $0f))  ; AD
-              opl_reg $91,  (1<<4 | (15 & $0f))  ; SR
-              opl_reg $f1,  WS_SIN ; wave select
-              ;carrier op2
-              opl_reg $34,  1 | 1<<6  ; vibrato on
-              opl_reg $54,  (SCALE_0 | (0))
-              opl_reg $74,  (15<<4 | (1 & $0f))  ; attack / decay
-              opl_reg $94,  (15<<4  | (15 & $0f))  ; sustain / release
-              opl_reg $f4,  WS_HALF_SIN
-              ; vibrato on, 14ct
-              opl_reg $bd, 1<<6
-
-channels=8
+channels=3
               ldy #channels*3-1
               ldx #channels-1
               lda #1<<(channels-1)
               sta r1
-:             stz chn_ix,x
+:             lda #0
+              sta chn_ix,x
               lda #L64
               sta chn_cnt,x
               lda channel_init,y
@@ -408,8 +262,9 @@ channels=8
               bpl :-
               rts
 
-sound_off:    stz sound_play_state
-sound_reset:  jmp opl2_init
+sound_off:    lda #0
+              sta sound_play_state
+sound_reset:  jmp sn76489_muteall
 
 .data
 
@@ -672,38 +527,8 @@ game_start_sound2:
     soundEnd
 game_start_sound2_end:
 
-      ;"Recorder"
-      ;opl_reg $20,  (1<<KSR | 1<<EG | 2)
-      ;opl_reg $40,  (SCALE_1_5 | ($3f-47)) ; key scale / level
-      ;opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
-      ;opl_reg $80,  (15<<4 | (4 & $0f))  ; SR
-      ;carrier op2
-      ;  ADSR 6, 0, 12, 9
-      ;  sinus
-      ;  EG sustaining voice
-      ;  level 62
-      ;  freq scale 1
-      ;  key scale 2
-      ;opl_reg $23,  (1<<EG | 1)
-      ;opl_reg $43,  (SCALE_1_5 | ($3f-62))
-      ;opl_reg $63,  (15<<4 | (0 & $0f))  ; attack / decay
-      ;opl_reg $83,  (15<<4 | (4 & $0f))  ; sustain / release
-
-      ; slap bass 1
-      ; modulator
-      ;opl_reg $21,  (1<<EG | 1<<KSR |1)
-      ;opl_reg $41,  (SCALE_0 | ($3f-52))
-      ;opl_reg $61,  (7<<4 | (2 & $0f))  ; attack / decay
-      ;opl_reg $81,  (4<<4 | (5 & $0f))  ; sustain / release
-
-      ;opl_reg $24,  (1<<EG | 1)
-      ;opl_reg $44,  (SCALE_0 | ($3f-63))
-      ;opl_reg $64,  (13<<4 | (5 & $0f))  ; attack / decay
-      ;opl_reg $84,  (6<<4 | (8 & $0f))   ; sustain / release
-
 .bss
       sound_play_state: .res 1
-
 
       chn_cnt:      .res channels
       chn_ix:       .res channels
