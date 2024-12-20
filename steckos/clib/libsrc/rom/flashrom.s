@@ -29,6 +29,7 @@
 .export _flash_get_device_name
 .export _flash_chip_erase
 .export _flash_sector_erase
+.export _flash_read
 .export _flash_write
 
 .autoimport
@@ -64,39 +65,44 @@ doExit:       bcc exit ; wirh A=<error code>
 exit:         ldx #0
               rts
 
-; extern unsigned char __fastcall__ flash_write(flash_block *);
-.proc _flash_write
-              php
-              ;sei
-              sta ptr1
-              stx ptr1+1
-              ldy #0
-:             lda (ptr1)
-              sta rom_write_data+rom_write_t::address,y
-              jsr inc_ptr
-              iny
-              cpy #5  ; 32 bit address and len
-              bne :-
-              lda ptr1
-              sta rom_write_data+rom_write_t::p_data
-              lda ptr1+1
-              sta rom_write_data+rom_write_t::p_data+1
-
-              lda #<rom_write_data
-              ldy #>rom_write_data
-              jsr rom_write
-              bcc :+
-              lda #0
-:             ldx #0
-              plp
-              rts
-
-inc_ptr:      inc ptr1
-              bne :+
-              inc ptr1+1
-:             rts
+; extern unsigned char __fastcall__ flash_read(flash_block *);
+.proc _flash_read
+              jsr flash_prepare
+              jsr rom_read
+              bra doExit
 .endproc
 
+; extern unsigned char __fastcall__ flash_write(flash_block *);
+.proc _flash_write
+              jsr flash_prepare
+              jsr rom_write
+              bra doExit
+.endproc
+
+flash_prepare:
+              sta ptr1
+              stx ptr1+1
+
+              ldy #0
+@load:        lda (ptr1)
+              sta rom_io_data+rom_access_t::address,y
+
+              inc ptr1
+              bne @next
+              inc ptr1+1
+@next:        iny
+              cpy #5  ; 32 bit address and len
+              bne @load
+
+              lda ptr1  ; ptr1 now points to begin of data
+              sta rom_io_data+rom_access_t::p_data
+              lda ptr1+1
+              sta rom_io_data+rom_access_t::p_data+1
+
+              lda #<rom_io_data
+              ldy #>rom_io_data
+              rts
+
 .bss
-  rom_write_data:
-    .tag rom_write_t
+  rom_io_data:
+    .tag rom_access_t

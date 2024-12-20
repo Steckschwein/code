@@ -55,7 +55,6 @@ parmerr:      jsr     incsp6
               stx seek+Seek::Offset+3
 
               jsr popax
-              stp
               tax
               lda #<seek
               ldy #>seek

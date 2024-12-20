@@ -53,7 +53,12 @@ extern int __fastcall__ flash_chip_erase();
 extern int __fastcall__ flash_sector_erase(long address);
 
 /*
-  use rom_write_block to write to flash ROM
+  use flash_block to read data from flash ROM
+*/
+extern int __fastcall__ flash_read(flash_block *);
+
+/*
+  use flash_block to write to flash ROM
 */
 extern int __fastcall__ flash_write(flash_block*);
 

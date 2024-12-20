@@ -42,10 +42,11 @@
 
 static FILE *imageFile = NULL;
 
-static unsigned long bt_image = 0;
-static unsigned long bt_write = 0;
+static unsigned long byte_cnt_read = 0;
+static unsigned long byte_cnt_flashio = 0;
 
-flash_block flash_wr_block;
+flash_block flash_block_io;
+unsigned char verify_block[sizeof(((flash_block *)0)->data)];
 
 static void doExit(int code){
   if(imageFile){
@@ -70,22 +71,46 @@ static void printDone(){
   printf(" Done\n");
 }
 
+static int verify_flash_block(){
+
+  int r=0;
+
+  flash_block_io.len = byte_cnt_read - byte_cnt_flashio;
+  if(flash_block_io.len > 0){
+    r = flash_read(&flash_block_io);
+    if(r){
+      printf("\nRead Error: %d\n", r);
+      return r;
+    }else{
+      byte_cnt_flashio+=flash_block_io.len;
+      r = memcmp(flash_block_io.data, verify_block, flash_block_io.len);
+      printf("Bytes verified: 0x%05lx", byte_cnt_flashio);
+      if(r){
+        printf("\nFailed (%d) at 0x%05lx, exp: 0x%02x, was: 0x%02x\n", r, flash_block_io.address, verify_block[r], flash_block_io.data[r]);
+        return r;
+      }
+      flash_block_io.address+=flash_block_io.len;
+    }
+  }
+  return r;
+}
+
 static int write_flash_block(){
 
-  int r;
+  int r=0;
 
-  flash_wr_block.len = bt_image - bt_write;
-  if(flash_wr_block.len > 0){
+  flash_block_io.len = byte_cnt_read - byte_cnt_flashio;
+  if(flash_block_io.len > 0){
     //TODO check whether we already did a sector erase beforehand
-    //flash_sector_erase(flash_wr_block.address;
-    r = flash_write(&flash_wr_block);
+    //flash_sector_erase(flash_block_io.address;
+    r = flash_write(&flash_block_io);
     if(r){
       printf("\nWrite Error: %d\n", r);
       return r;
     }else{
-      bt_write+=flash_wr_block.len;
-      printf("Bytes written: 0x%05lx", bt_write);
-      flash_wr_block.address+=flash_wr_block.len;
+      byte_cnt_flashio+=flash_block_io.len;
+      printf("Bytes written: 0x%05lx", byte_cnt_flashio);
+      flash_block_io.address+=flash_block_io.len;
     }
   }
   return 0;
@@ -93,18 +118,18 @@ static int write_flash_block(){
 
 static void xmodem_receive_block(xmodem_block *xm_block){
 
-  if(bt_image == 0){
+  if(byte_cnt_read == 0){
     printf("\n");
   }
-  //printf("%lu\n", (bt_image & (sizeof(flash_wr_block.data)-1)));
-  memcpy(flash_wr_block.data + (bt_image & (sizeof(flash_wr_block.data)-1)), xm_block->data, sizeof(xm_block->data));
-  bt_image+=sizeof(xm_block->data);
+  //printf("%lu\n", (byte_cnt_read & (sizeof(flash_block_io.data)-1)));
+  memcpy(flash_block_io.data + (byte_cnt_read & (sizeof(flash_block_io.data)-1)), xm_block->data, sizeof(xm_block->data));
+  byte_cnt_read+=sizeof(xm_block->data);
   //printf("bn: 0x%02x\n", xm_block->n);
-  printf("\rBytes received: 0x%05lx ", bt_image);
+  printf("\rBytes received: 0x%05lx ", byte_cnt_read);
 
   // write to flash rom if flash write buffer is filled
-  if((bt_image & (sizeof(flash_wr_block.data)-1)) == 0){ // buffer full?
-    //printf("0x%02x %lu\n", xm_block->n, bt_image);
+  if((byte_cnt_read & (sizeof(flash_block_io.data)-1)) == 0){ // buffer full?
+    //printf("0x%02x %lu\n", xm_block->n, byte_cnt_read);
     write_flash_block();
   }
 }
@@ -118,7 +143,7 @@ static void erase(unsigned chip_erase){
     i = flash_chip_erase();
   }else{
     printf("\nSector erase...");
-    i = flash_sector_erase(flash_wr_block.address);
+    i = flash_sector_erase(flash_block_io.address);
   }
   if(i){
     printf("FAIL (0x%04x)\n", i);
@@ -135,8 +160,8 @@ int main (int argc, char **argv)
 
     int i;
 
-    //flash_wr_block.slot = Slot2;
-    flash_wr_block.address = 0x010000; //default to sector 1 (0 almost used by current bios)
+    //flash_block_io.slot = Slot2;
+    unsigned long romAddress = 0x010000; //default to sector 1 (sector 0 almost used by current bios)
 
     while ((i = getopt(argc, argv, "uvrhca:")) != EOF) {
       switch (i) {
@@ -154,11 +179,9 @@ int main (int argc, char **argv)
           break;
         case 'a':
           if(*optarg == '$'){
-            i = sscanf(optarg+1, "%lx", &flash_wr_block.address);
+            i = sscanf(optarg+1, "%lx", &romAddress);
           }
-          if(i){
-            printf("address... 0x%06lx\n", flash_wr_block.address);
-          }else{
+          if(!i){
             fprintf(stderr, "invalid address format, expected $????? but was %s\n", optarg);
             usage();
           }
@@ -188,15 +211,16 @@ int main (int argc, char **argv)
       usage();
     }
 
-    resetBank = 0x80 | flash_wr_block.address >> 14; // save start address for reset
+    flash_block_io.address = romAddress;  // init with romAddress
+    resetBank = 0x80 | romAddress >> 14;  // calculate bank for reset from romAddress
 
     printf("ROM Type: %s (0x%04x)\n", flash_get_device_name(), flash_get_device_id());
-    printf("ROM Address: 0x%05lx\n", flash_wr_block.address);
+    printf("ROM Address: 0x%05lx\n", flash_block_io.address);
     printf("Image from: %s\n", imageFile == NULL ? "<upload>" : argv[optind]);
     if(opts & OPT_CHIP_ERASE){
       printf("Chip Erase: y\n");
     }else{
-      printf("Sector Erase: 0x%05lx-0x%05lx\n", flash_wr_block.address & 0x70000, (flash_wr_block.address & 0x70000) + 0xffff);
+      printf("Sector Erase: 0x%05lx-0x%05lx\n", flash_block_io.address & 0x70000, (flash_block_io.address & 0x70000) + 0xffff);
     }
     printf("Verify: %s\n", (opts & OPT_VERIFY) && imageFile ? "y" : imageFile ? "n" : "n.a.");
     printf("Reset: %s (Slot 0x8000/0xc000 with Bank: 0x%02x/0x%02x)\n", (opts & OPT_RESET) ? "y" : "n", resetBank, resetBank+1);
@@ -215,10 +239,10 @@ int main (int argc, char **argv)
         write_flash_block(); // write remaining bytes
       }
     }else if(imageFile){
-      while((i = fread(flash_wr_block.data, 1, sizeof(flash_wr_block.data), imageFile)) != 0){
-        bt_image+=i;
+      while((i = fread(flash_block_io.data, 1, sizeof(flash_block_io.data), imageFile)) != 0){
+        byte_cnt_read+=i;
         //TODO check overflow and required sector erase
-        printf("\rBytes read: 0x%05lx ", bt_image);
+        printf("\rBytes read: 0x%05lx ", byte_cnt_read);
         write_flash_block();
       }
     }
@@ -227,11 +251,15 @@ int main (int argc, char **argv)
 //    printDone();
     if(opts & OPT_VERIFY){
       if(imageFile && !fseek(imageFile, 0, SEEK_SET)){
-        bt_image = 0;
-        while((i = fread(flash_wr_block.data, 1, sizeof(flash_wr_block.data), imageFile)) != 0){
-          bt_image+=i;
-          printf("\rVerify: 0x%05lx ", bt_image);
-  //            read_flash_block();
+        byte_cnt_read = 0;
+        byte_cnt_flashio = 0;
+        flash_block_io.address = romAddress;  // init with romAddress
+        while((i = fread(verify_block, 1, sizeof(verify_block), imageFile)) != 0){
+          byte_cnt_read+=i;
+          printf("\rVerify: 0x%05lx ", byte_cnt_read);
+          if(verify_flash_block()){
+            doExit(EXIT_FAILURE);
+          }
         }
       }
       //printf(" Done\n");
