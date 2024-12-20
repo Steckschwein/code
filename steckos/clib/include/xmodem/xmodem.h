@@ -20,41 +20,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <conio.h>
+#ifndef _XMODEM_H
+#define _XMODEM_H
 
-static unsigned char CHARS = 16;
+#define XMODEM_RCV_BUFFER 132
 
-int main (int argc, const char* argv[])
-{
-	unsigned char buffer[200];
-	char c;
-	unsigned int i;
-	unsigned char p;
-	unsigned char *format = "%c ";
-	for(i=1;i<argc;i++){
-		if(strncmp(argv[i], "-x", 2) == 0){
-			format = "%02x ";
-			break;
-		}else if(strncmp(argv[i], "-c", 2) == 0){
-			format = "%c ";
-			break;
-		}
-	}
-	i=0;
-	p=0;
-	while((c = cgetc()) != 0x1b){
-		cprintf("%c", c);
-		buffer[p++] = c;
-		if(p % CHARS == 0){
-			i+=CHARS;
-			cprintf("\n%08x ", i);
-			for(;p>0;p--)
-				cprintf(format, buffer[CHARS-p]);
-			cprintf("\n");
-		}
-	}
-    return EXIT_SUCCESS;
-}
+typedef struct {
+  unsigned char n;          // block number
+  unsigned char n_eor;      // block number eor 0xff
+  unsigned char data[128];  // xmodem block data
+  int crc16;                // crc16 checksum
+} xmodem_block;
+
+typedef void (xmodem_recv_callback)(xmodem_block*);
+
+/*
+  start xmodem upload with callback
+*/
+extern unsigned char __fastcall__ xmodem_upload(xmodem_recv_callback);
+
+#endif

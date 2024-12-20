@@ -34,8 +34,8 @@
 .export lba_addr    = $0280   ; 4 bytes
 .export blocks      = $0284   ; 1 byte - blocks to read with max sec/cl (volumeID+VolumeID::BPB_SecPerClus)
 .export sys_irr     = $0285   ; 1 byte - interrupt status register - maintained by kernel and holds bits of IRQ sources - IRQ_VDP, IRQ_VIA, IRQ_SND etc.
-; $0286 free
-.export key         = $0287   ; 1 byte - keyboard char
+.export key         = $0286   ; 1 byte - keyboard char
+; $0287 free
 
 ; video mode register
 .export video_mode   = $0288

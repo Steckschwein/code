@@ -21,7 +21,8 @@ TOOLS+=\
   uname.prg \
   fsinfo.prg \
 	dirtest.prg \
-	stecklnk.prg
+	stecklnk.prg \
+	flash_ah.prg
 
 .PHONY: all clean
 
@@ -29,12 +30,6 @@ all: $(TOOLS)
 
 clean:
 	rm -f *.prg *.o *.map *.s
-
-#%.prg: %.c $(LIBS) $(CLIB)
-#	cl65 -t steckschwein $(CA65FLAGS) $(CC65FLAGS) $< $(CLIB) $(LDFLAGS) -o $@
-
-# %.s: %.c
-#	cc65 $(CC65FLAGS) $< -o $@
 
 %.o: %.c
 	cc65 $(CC65FLAGS) $(<:.s=.c)
@@ -53,4 +48,5 @@ clean:
 	../../xmodem.sh $<
 
 %.emu: %.prg
-	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -upload $<
+	steckschwein-emu -rom ../bios/bios.bin -sdcard ../../steckos.img -log_writes rom -upload $<
+

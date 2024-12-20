@@ -53,6 +53,7 @@ slot1 = $4000
 slot2 = $8000
 slot3 = $c000
 
+SLOT_ROM = 1<<7 ; bit 7 denotes whether ROM (1) or RAM (0) chip is selected
 
 CODE_LF  = $0a ; line feed
 CODE_CR  = $0d ; carriage return

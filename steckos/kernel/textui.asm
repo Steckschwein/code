@@ -299,7 +299,7 @@ textui_put:
 
 textui_chrout:
   cmp #0
-  beq @l1               ; \0 char
+  beq @l1            ; \0 char
   php
   sei
   pha                ; save char
@@ -331,62 +331,59 @@ textui_blank:
   ldy #0
   ; set crs x and y position absolutely - 0..32/0..23 or 0..39/0..23 40 char mode
 textui_crsxy:
-  stx crs_x
-  sty crs_y
-  jmp textui_update_crs_ptr
+              stx crs_x
+              sty crs_y
+              jmp textui_update_crs_ptr
 
 __textui_dispatch_char:
-  cmp #KEY_CR  ;carriage return?
-  bne @lfeed
-  stz crs_x
-  rts
+              cmp #KEY_CR  ;carriage return?
+              bne @lfeed
+              stz crs_x
+              jmp textui_update_crs_ptr
 @lfeed:
-    cmp #KEY_LF  ;line feed
-    beq @l5
-    cmp #KEY_BACKSPACE
-    bne @l4              ; normal char
-    lda crs_x
-    bne @l3
-    lda crs_y            ; cursor y=0, no dec
-    beq @exit
-    dec crs_y
-    lda #40
-    bit video_mode          ; set x to max-cols
-    bvc @l3
-    asl ; 80 col
+              cmp #KEY_LF  ;line feed
+              beq @l5
+              cmp #KEY_BACKSPACE
+              bne @l4              ; normal char
+              lda crs_x
+              bne @l3
+              lda crs_y            ; cursor y=0, no dec
+              beq @exit
+              dec crs_y
+              lda #40
+              bit video_mode          ; set x to max-cols
+              bvc @l3
+              asl ; 80 col
 @l3:
-    dec               ; -1 which is end of the previous line
-    sta crs_x
-    jsr textui_update_crs_ptr
-    lda #CURSOR_BLANK        ; blank the saved char
-    sta saved_char
-@exit:
-    rts
-@l4:
-    sta saved_char          ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
-    lda crs_x
-    ina
-    bit video_mode
-    bvs :+
-    cmp #40
-    beq @l5
-:   cmp #80
-    beq @l5
-    sta crs_x
-    jmp textui_update_crs_ptr
-@l5:
-    stz crs_x
-    lda crs_y
-    cmp #ROWS-1          ; last line
-    bne @l6
+              dec               ; -1 which is end of the previous line
+              sta crs_x
+              jsr textui_update_crs_ptr
+              lda #CURSOR_BLANK        ; blank the saved char
+              sta saved_char
+@exit:        rts
+@l4:          sta saved_char          ; the trick, simple set saved value to plot as saved char, will be print by textui_update_crs_ptr
+              lda crs_x
+              ina
+              bit video_mode
+              bvs :+
+              cmp #40
+              beq @l5
+:             cmp #80
+              beq @l5
+              sta crs_x
+              jmp textui_update_crs_ptr
+@l5:          stz crs_x
+              lda crs_y
+              cmp #ROWS-1          ; last line
+              bne @l6
 
-    jsr _vram_crs_ptr_write_saved  ; restore saved char
-    lda #CURSOR_BLANK
-    sta saved_char         ; reset saved_char to blank, cause we scroll up
-    jmp textui_scroll_up  ; scroll and exit
-@l6:
-    inc crs_y
-    jmp textui_update_crs_ptr
+              jsr _vram_crs_ptr_write_saved  ; restore saved char
+              lda #CURSOR_BLANK
+              sta saved_char         ; reset saved_char to blank, cause we scroll up
+              jmp textui_scroll_up  ; scroll and exit
+
+@l6:          inc crs_y
+              jmp textui_update_crs_ptr
 
 .bss
 scroll_buffer_size = 100 ; 40/80 col mode => 1000/2000 chars to copy

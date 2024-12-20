@@ -53,7 +53,6 @@ parmok:
 
 ; Check the flags. We cannot have both, read and write flags set, and we cannot
 ; open a file for writing without creating it.
-
       and #(O_RDWR | O_CREAT)
       cmp #O_RDONLY     ; Open for reading?
       beq doread        ; Yes: Branch

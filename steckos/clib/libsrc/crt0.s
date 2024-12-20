@@ -39,7 +39,7 @@
 .import    moveinit
 .import    callmain
 .import    __MAIN_START__, __MAIN_SIZE__  ; Linker generated
-.import    __STACKSIZE__             ; from configure file
+.import    __STACKSIZE__                  ; from configure file
 .importzp  ST
 
 appstart  ; app start address to $1000, see appstart.inc
