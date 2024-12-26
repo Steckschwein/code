@@ -55,7 +55,21 @@ typedef enum {
   Slot3 = 3
 } Slot;
 
+
+// set slot control for given slot
 extern void __fastcall__ sys_slot_set(Slot, unsigned char);
+
+// get slot control for given slot
 extern unsigned char __fastcall__ sys_slot_get(Slot);
+
+// set slot ctrl values and reset
+#define sys_slot_ctrl_reset(slot2ctrl, slot3ctrl) sys_slot_ctrl_reset(slot2ctrl, slot3ctrl)
+
+void sys_slot_ctrl_reset(unsigned char slot2ctrl, unsigned char slot3ctrl) {
+  __asm__("sei");
+  sys_slot_set(Slot2, slot2ctrl);
+  sys_slot_set(Slot3, slot3ctrl);
+  sys_reset();
+}
 
 #endif
