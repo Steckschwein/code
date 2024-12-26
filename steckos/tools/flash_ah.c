@@ -83,10 +83,10 @@ static int verify_flash_block(){
       return r;
     }else{
       byte_cnt_flashio+=flash_block_io.len;
-      r = memcmp(flash_block_io.data, verify_block, flash_block_io.len);
+      r = memcmp(&flash_block_io.data, &verify_block, flash_block_io.len);
       printf("Bytes verified: 0x%05lx", byte_cnt_flashio);
       if(r){
-        printf("\nFailed (%d) at 0x%05lx, exp: 0x%02x, was: 0x%02x\n", r, flash_block_io.address, verify_block[r], flash_block_io.data[r]);
+        printf("\nFailed (%d) at 0x%05lx, exp: 0x%02x, was: 0x%02x\n", r, flash_block_io.address+r, verify_block[r], flash_block_io.data[r]);
         return r;
       }
       flash_block_io.address+=flash_block_io.len;
@@ -268,10 +268,13 @@ int main (int argc, char **argv)
     }
     if(opts & OPT_RESET){
       printf("Reset...\n");
+      sys_slot_ctrl_reset(resetBank, resetBank+1);
+      /*
       __asm__("sei");  // critical, disable irq
       sys_slot_set(Slot2, resetBank);
       sys_slot_set(Slot3, resetBank+1);
       sys_reset();
+      */
     }
     if(imageFile){
       fclose(imageFile);

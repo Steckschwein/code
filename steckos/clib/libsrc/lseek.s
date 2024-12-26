@@ -23,9 +23,11 @@
 
 ; off_t __fastcall__ lseek(int fd, off_t offset, int whence);
 
-.export         _lseek
+.export _lseek
 
 .autoimport
+
+.importzp sreg
 
 .include "errno.inc"
 .include "asminc/fat32.inc"
