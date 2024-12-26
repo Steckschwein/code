@@ -44,9 +44,10 @@ static FILE *imageFile = NULL;
 
 static unsigned long byte_cnt_read = 0;
 static unsigned long byte_cnt_flashio = 0;
+static flash_block flash_block_io;
+static unsigned char verify_block[sizeof(((flash_block *)0)->data)];
 
-flash_block flash_block_io;
-unsigned char verify_block[sizeof(((flash_block *)0)->data)];
+static unsigned char xmodem_state = 0; // 0 - write, 1 - verify
 
 static void doExit(int code){
   if(imageFile){
@@ -121,16 +122,25 @@ static void xmodem_receive_block(xmodem_block *xm_block){
   if(byte_cnt_read == 0){
     printf("\n");
   }
-  //printf("%lu\n", (byte_cnt_read & (sizeof(flash_block_io.data)-1)));
-  memcpy(flash_block_io.data + (byte_cnt_read & (sizeof(flash_block_io.data)-1)), xm_block->data, sizeof(xm_block->data));
+  if(xmodem_state){//verify
+    // printf("verify %lu\n", (byte_cnt_read & (sizeof(flash_block_io.data)-1)));
+    memcpy(verify_block, xm_block->data, sizeof(xm_block->data));
+  }else{//write
+    //printf("%lu\n", (byte_cnt_read & (sizeof(flash_block_io.data)-1)));
+    memcpy(flash_block_io.data + (byte_cnt_read & (sizeof(flash_block_io.data)-1)), xm_block->data, sizeof(xm_block->data));
+  }
   byte_cnt_read+=sizeof(xm_block->data);
   //printf("bn: 0x%02x\n", xm_block->n);
   printf("\rBytes received: 0x%05lx ", byte_cnt_read);
 
   // write to flash rom if flash write buffer is filled
   if((byte_cnt_read & (sizeof(flash_block_io.data)-1)) == 0){ // buffer full?
-    //printf("0x%02x %lu\n", xm_block->n, byte_cnt_read);
-    write_flash_block();
+    if(xmodem_state){//verify
+      verify_flash_block();
+    }else{
+      //printf("0x%02x %lu\n", xm_block->n, byte_cnt_read);
+      write_flash_block();
+    }
   }
 }
 
@@ -149,8 +159,7 @@ static void erase(unsigned chip_erase){
     printf("FAIL (0x%04x)\n", i);
     doExit(EXIT_FAILURE);
   }
-//  printDone();
-  printf(" Done\n");
+  printDone();
 }
 
 int main (int argc, char **argv)
@@ -216,14 +225,14 @@ int main (int argc, char **argv)
 
     printf("ROM Type: %s (0x%04x)\n", flash_get_device_name(), flash_get_device_id());
     printf("ROM Address: 0x%05lx\n", flash_block_io.address);
-    printf("Image from: %s\n", imageFile == NULL ? "<upload>" : argv[optind]);
+    printf("Image from: %s\n", imageFile == NULL ? "<xmodem upload>" : argv[optind]);
     if(opts & OPT_CHIP_ERASE){
       printf("Chip Erase: y\n");
     }else{
       printf("Sector Erase: 0x%05lx-0x%05lx\n", flash_block_io.address & 0x70000, (flash_block_io.address & 0x70000) + 0xffff);
     }
-    printf("Verify: %s\n", (opts & OPT_VERIFY) && imageFile ? "y" : imageFile ? "n" : "n.a.");
-    printf("Reset: %s (Slot 0x8000/0xc000 with Bank: 0x%02x/0x%02x)\n", (opts & OPT_RESET) ? "y" : "n", resetBank, resetBank+1);
+    printf("Verify: %c\n", (opts & OPT_VERIFY) ? 'y' : 'n');
+    printf("Reset: %c (Slot 0x8000/0xc000 with Bank: 0x%02x/0x%02x)\n", (opts & OPT_RESET) ? 'y' : 'n', resetBank, resetBank+1);
     printf("\nProcceed Y/n");
 
     while(!kbhit());
@@ -243,38 +252,40 @@ int main (int argc, char **argv)
         byte_cnt_read+=i;
         //TODO check overflow and required sector erase
         printf("\rBytes read: 0x%05lx ", byte_cnt_read);
-        write_flash_block();
+        if(write_flash_block()){
+          doExit(EXIT_FAILURE);
+        }
       }
     }
     printDone();
-//    printf(" Done\n");
-//    printDone();
+
     if(opts & OPT_VERIFY){
-      if(imageFile && !fseek(imageFile, 0, SEEK_SET)){
-        byte_cnt_read = 0;
-        byte_cnt_flashio = 0;
-        flash_block_io.address = romAddress;  // init with romAddress
+      byte_cnt_read = 0;
+      byte_cnt_flashio = 0;
+      flash_block_io.address = romAddress;  // init with initial romAddress
+      if(opts & OPT_UPLOAD){
+        printf("ROM Image Verify ");
+        xmodem_state = 1; //write
+        if(!xmodem_upload(&xmodem_receive_block)){
+          if(verify_flash_block()){ // verify remaining bytes
+            doExit(EXIT_FAILURE);
+          }
+        }
+      }else if(imageFile && !fseek(imageFile, 0, SEEK_SET)){
         while((i = fread(verify_block, 1, sizeof(verify_block), imageFile)) != 0){
           byte_cnt_read+=i;
-          printf("\rVerify: 0x%05lx ", byte_cnt_read);
+          printf("\rBytes read: 0x%05lx ", byte_cnt_read);
           if(verify_flash_block()){
             doExit(EXIT_FAILURE);
           }
         }
       }
-      //printf(" Done\n");
       printDone();
-      //printDone();
     }
+
     if(opts & OPT_RESET){
       printf("Reset...\n");
       sys_slot_ctrl_reset(resetBank, resetBank+1);
-      /*
-      __asm__("sei");  // critical, disable irq
-      sys_slot_set(Slot2, resetBank);
-      sys_slot_set(Slot3, resetBank+1);
-      sys_reset();
-      */
     }
     if(imageFile){
       fclose(imageFile);
