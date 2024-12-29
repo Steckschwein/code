@@ -21,7 +21,7 @@
 cwdbuf_size = 25
 .export dirent
 
-__APPSTART__ = $8000
+__APPSTART__ = $7d00
 appstart __APPSTART__
 
 ;
