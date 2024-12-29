@@ -46,6 +46,9 @@ MOUNT_RETRIES=8
 ; out:
 ;   C=0 on success, C=1 otherwise
 __automount_init:
+    lda #1
+    sta sdcard_retry
+    
     jsr sdcard_detect
     bne sdcard_err_detect
 __automount:
@@ -93,4 +96,5 @@ sdcard_err_init:
     .byte "init failed! (",0
     pla
     bra err_code_exit
-sdcard_retry: .res 1,1; initial with 1, during boot only one try
+.bss
+sdcard_retry: .res 1; initial with 1, during boot only one try
