@@ -56,6 +56,9 @@
 nvram = $1000
 
 kern_init:
+    lda #2  ; enable RAM below kernel
+    sta slot2_ctrl
+    
     lda #<nvram
     ldy #>nvram
     jsr read_nvram
@@ -79,8 +82,6 @@ kern_init:
     stz key
     stz flags
 
-    lda #2  ; enable RAM below kernel
-    sta slot2_ctrl
 
     stz ansi_state
 
