@@ -43,7 +43,7 @@ bios.dis: bios.bin
 	../../xmodem.sh $<
 
 # bios update needs two uploads.
-# 1. the loader is uploaded (xmodem)
+# 1. the loader is uploaded via xmodem (dependency to loader)
 # 2. the loader itself starts xmodem and expects the bios.bin image which is directly loaded to target bios address
 bios: loader bios.bin
 	../../xmodem.sh bios.bin

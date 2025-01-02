@@ -38,7 +38,7 @@
 ; void __fastcall__ vdp_reg (unsigned char reg, unsigned char val);
 .export _vdp_reg
 .proc _vdp_reg
-    vdp_wait_s
+    ;vdp_wait_s
     sta a_vreg
     jsr popa
     ora #$80
