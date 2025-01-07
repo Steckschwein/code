@@ -1760,7 +1760,7 @@ draw_highscore:
               bpl @digits
               rts
 
-animate_screen:
+animate_screen:rts
               jsr animate_up
 animate_energizer:
               ldy #Color_Food

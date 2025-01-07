@@ -39,37 +39,37 @@
 ;@in: A/X - ptr to rectangle coordinates (4 word with x1,y1, len x, len y)
 ;@in: Y - color to fill in (reg #44)
 vdp_cmd_hmmv:
-  php
-  sei
+              php
+              sei
 
-  sta vdp_ptr
-  stx vdp_ptr+1
+              sta vdp_ptr
+              stx vdp_ptr+1
 
-  vdp_sreg 36, v_reg17   ; set reg index to #36
+              jsr vdp_wait_cmd
 
-  sty vdp_tmp            ; safe color
+              vdp_sreg 36, v_reg17   ; set reg index to #36
 
-  ldy #0
-@loop:
-  vdp_wait_s 9
-  lda (vdp_ptr),y
-  sta a_vregi
-  iny
-  cpy #08
-  bne @loop
+              sty vdp_tmp            ; safe color
 
-  lda vdp_tmp           ; color (r#44)
-  vdp_wait_s 9
-  sta a_vregi
+              ldy #0
+@loop:        vdp_wait_s 9
+              lda (vdp_ptr),y
+              sta a_vregi
+              iny
+              cpy #08
+              bne @loop
 
-  lda #0
-  vdp_wait_s 2
-  sta a_vregi
+              lda vdp_tmp           ; color (r#44)
+              vdp_wait_s 9
+              sta a_vregi
 
-  lda #v_cmd_hmmv
-  vdp_wait_s 2
-  sta a_vregi
+              lda #0
+              vdp_wait_s 2
+              sta a_vregi
 
-  jsr vdp_wait_cmd
-  plp
-  rts
+              lda #v_cmd_hmmv
+              vdp_wait_s 2
+              sta a_vregi
+
+              plp
+              rts

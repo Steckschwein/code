@@ -51,11 +51,7 @@ vdp_cmd_lmmm:
               lda #v_reg45_dix | v_reg45_diy    ; initial x left, y up
               sta vdp_tmp
 
-              vdp_sreg 2, v_reg15      ; 2 - to select status register S#2
-@wait:        vdp_wait_s
-              lda a_vreg
-              ror
-              bcs @wait
+              jsr vdp_wait_cmd
 
               vdp_sreg 32, v_reg17   ; set reg index to #32
 

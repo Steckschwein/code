@@ -9,9 +9,10 @@
 IRQVECT         = $1a7e
 ;IRQVECT         = $1f32
 
-TAPE_OFF        = $ef7c
+TAPE_OFF        = $EFCC
 
-VPU_BASE        = $0c08            ; VPU access starts from FGBASE + offset $08
+FGC_BASE        = $1000
+VPU_BASE        = FGC_BASE + $08            ; VPU access starts from FGBASE + offset $08
 
 
 ; Video Processing Unit Ports

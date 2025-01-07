@@ -88,18 +88,18 @@ gfx_mode_on:  lda #<vdp_init_bytes
               jmp vdp_set_reg
 
 gfx_pacman_colors_offset:
-.byte VDP_Color_Blue<<1, VDP_Color_Light_Blue<<1, VDP_Color_Gray<<1, VDP_Color_Light_Blue<<1
+.byte VDP_Color_Blue<<1, VDP_Color_Light_Blue<<1, VDP_Color_Gray<<1, VDP_Color_Light_Blue<<1  ; x2 - offset in vdp color palette (2 bytes each)
 
 .export gfx_rotate_pal
 gfx_rotate_pal:
-              vdp_sreg VDP_Color_Blue, v_reg16 ; rotate blue
+              vdp_sreg VDP_Color_Blue, v_reg16 ; select palette color blue ($0e)
               ldx gfx_pacman_colors_offset,y
 gfx_write_pal:
               vdp_wait_s
-              lda pacman_palette+0, x
+              lda pacman_palette+0,x
               sta io_port_vdp_pal
               vdp_wait_s
-              lda pacman_palette+1, x
+              lda pacman_palette+1,x
               sta io_port_vdp_pal
               rts
 
@@ -466,10 +466,9 @@ gfx_vram_inc_y:
               inc p_vram+1
 gfx_vram_addr:
               sta io_port_vdp_reg
-              lda p_vram+1
+              lda p_vram+1        ; A13-A8 vram address highbyte
               and #$3f
-;              sta p_vram+1      ; A13-A8 vram address highbyte
-              ora #WRITE_ADDRESS ; | (>.LOWORD(VRAM_SCREEN) & $3f))
+              ora #WRITE_ADDRESS
               vdp_wait_s 7
               sta io_port_vdp_reg
               rts
@@ -490,7 +489,7 @@ gfx_lives:    sty r3
               txa
               asl   ; crs x pos live *2 FTW
               sta sys_crs_x
-              lda #$b0
+              lda #$b0        ; pacman icon chars
               jsr gfx_charout
               dec sys_crs_y
               lda #$b1
@@ -677,8 +676,6 @@ gfx_ghost_icon:
               ldy #Index_4bpp_ghost
               jmp gfx_4bpp_y
 
-draw_energizer:
-
 ; A: char to output
 gfx_charout:
               stx r3
@@ -688,7 +685,7 @@ gfx_charout:
 
               ldx #0  ; calc pointer to charset
               stx p_tiles+1
-              asl ; char * 8
+              asl     ; char * 8
               rol p_tiles+1
               asl
               rol p_tiles+1
@@ -726,7 +723,7 @@ gfx_charout:
               tax
               lda r1
               and mask_4bpp,x
-              vdp_wait_l 28
+@skip:        vdp_wait_l 28
               sta io_port_vdp_ram
               pla
               dey
@@ -737,7 +734,7 @@ gfx_charout:
 
               inc p_tiles
 
-              jsr gfx_vram_inc_y
+              jsr gfx_vram_inc_y  ; next scan line
               jmp @rows
 
 @exit:        bgcolor Color_Bg
@@ -755,7 +752,7 @@ tiles:
     .assert (<tiles & $07) = 0, error, "tiles must be 8 byte aligned, otherwise char out wont work"
     .include "pacman.tiles.rot.inc"
 
-mask_4bpp:
+mask_4bpp: ; 4bpp - 2 pixels per byte gives 4 combinations
     .byte $00, $0f, $f0, $ff
 
 sprite_colors_1st: ; color 1st ghost sprite for various ghost modes. normal, frightened, catched,...
