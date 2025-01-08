@@ -26,8 +26,10 @@
 
 .export rom_read_device_id
 .export rom_get_device_name
+.export rom_read
 .export rom_write
 .export rom_sector_erase
+.export rom_chip_erase
 
 .autoimport
 
@@ -63,13 +65,22 @@ rom_read_device_id:
               ldx #0
               jmp rom_access_with_fn
 
+;@name: rom_read - read data block
+;@in: A/Y pointer (low/high) to rom write struct rom_access_t
+;@out: C=1 on success, C=0 on error
+rom_read:
+              sta __volatile_ptr
+              sty __volatile_ptr+1
+              ldx #2
+              jmp rom_access_with_fn
+
 ;@name: rom_write - write data
-;@in: A/Y pointer to rom write struct (low/high)
+;@in: A/Y pointer (low/high) to rom write struct rom_access_t
 ;@out: C=1 on success, C=0 on error
 rom_write:
               sta __volatile_ptr
               sty __volatile_ptr+1
-              ldx #2
+              ldx #4
               jmp rom_access_with_fn
 
 
@@ -77,7 +88,12 @@ rom_write:
 ; @out: C=1 on success, C=0 on error
 rom_sector_erase:
               and #$07
-              ldx #4
+              ldx #6
+              jmp rom_access_with_fn
+
+; @out: C=1 on success, C=0 on error
+rom_chip_erase:
+              ldx #8
               jmp rom_access_with_fn
 
 ; @out: C=1 on success, C=0 on error
@@ -125,8 +141,18 @@ rom_access_with_fn:
 
 rom_fn_table:
               .word rom_fn_read_device_id
+              .word rom_fn_read
               .word rom_fn_write
               .word rom_fn_sector_erase
+              .word rom_fn_chip_erase
+
+rom_fn_chip_erase:
+              lda #ROM_CMD_PREPARE
+              jsr _cmd_sequence       ; send $aa, $55, $80
+
+              lda #ROM_CMD_CHIP_ERASE ; sector erase command
+              jsr _cmd_sequence       ; send $aa, $55, $10
+              jmp rom_wait_toggle
 
 rom_fn_sector_erase:
               pha
@@ -173,22 +199,22 @@ rom_fn_read_device_id:
               pla
               rts
 
-rom_fn_write:
-              ldy #rom_write_t::len
-              lda (__volatile_ptr),y
-              beq @exit ; 0 bytes to write?
-              tax
-
-              iny                         ; init data pointer (y=rom_write_t::p_data)
+rom_prepare_access:
+              ldy #rom_access_t::p_data   ; init data pointer (y=rom_access_t::p_data)
               lda (__volatile_ptr),y
               sta p_data
               iny
               lda (__volatile_ptr),y
               sta p_data+1
 
+              ldy #rom_access_t::len
+              lda (__volatile_ptr),y
               ldy #0
-@write:       phy
-              ldy #rom_write_t::address   ; set rom pointer upon address
+              tax                         ; len to x
+              rts
+
+rom_prepare_address:
+              ldy #rom_access_t::address  ; set rom pointer upon address
               lda (__volatile_ptr),y      ; bit 7-0 of address
               sta p_rom+0
               iny                         ; bit 15-8 of address
@@ -207,12 +233,36 @@ rom_fn_write:
               rol
               ora #SLOT_ROM               ; rom slot
               tay
+              rts
+
+rom_fn_read:
+              jsr rom_prepare_access
+              beq @exit                   ; 0 bytes to read?
+@read:        phy
+              jsr rom_prepare_address
+              sty slot_ctrl               ; enable bank
+              ply                         ; restore y
+
+              lda (p_rom),y               ; read rom address
+              sta (p_data),y              ; write data
+
+              iny
+              dex
+              bne @read
+              txa ; X=0 => A, ok
+@exit:        rts
+
+rom_fn_write:
+              jsr rom_prepare_access
+              beq @exit                   ; 0 bytes to write?
+@write:       phy
+              jsr rom_prepare_address
 
               jsr _cmd_sequence_program   ; send byte program sequence
 
               sty slot_ctrl               ; enable bank
-
               ply                         ; restore y
+
               lda (p_data),y              ; read data
               sta (p_rom),y               ; write to rom address
 

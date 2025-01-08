@@ -28,7 +28,6 @@
 .include "asminc/zeropage.inc"
 .include "asminc/common.inc"
 
-;.import __rwsetup,__do_oserror,__inviocb,__oserror, popax, popptr1
 .import popax, popptr1, __oserror
 .importzp tmp1
 .importzp ptr1,ptr2,ptr3
