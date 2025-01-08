@@ -35,6 +35,7 @@
 
 ; extern void __fastcall__ sys_slot_set(Slot, unsigned char);
 .proc _sys_slot_set
+              stp
               and #$9f
               tax
               jsr popa
