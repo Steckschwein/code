@@ -70,11 +70,11 @@ appstart $1000
               bne :-
 
               ; erase VRAM to make sure ROM image will init VRAM correctly
-              ;vdp_vram_w 0
+              vdp_vram_w 0
               lda #0
               ldx #0 ; $200 pages to clear (128k)
-              ;jsr vdp_fill
-              ;jsr vdp_fill
+              jsr vdp_fill
+              jsr vdp_fill
 
               lda #(SLOT_ROM | rom_address>>14)
               sta slot2_ctrl
@@ -83,7 +83,6 @@ appstart $1000
 
               jmp (SYS_VECTOR_RESET)  ; reset
 
-;  subs
 halt:
               pha
               jsr primm
@@ -120,7 +119,7 @@ handle_block: ldy crs_x ; save crs x
               ldy #>rom_io_data
               jsr rom_write
               bcs @ok
- ;             bra halt
+              bra halt
 @ok:
               clc
               lda rom_io_data+rom_access_t::address+0
