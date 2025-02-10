@@ -48,6 +48,12 @@ bios.dis: bios.bin
 bios: loader bios.bin
 	../../xmodem.sh bios.bin
 
+rom.bin:
+	(cd ../../../steckschwein-sw/steckos/kernel; make)
+
+flash: flashrom rom.bin
+	../../xmodem.sh ../../../steckschwein-sw/steckos/kernel/$(word 2, $^)
+
 emu: bios.bin
 	steckschwein-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg
 
