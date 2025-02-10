@@ -77,9 +77,9 @@ appstart $1000
               jsr vdp_fill
 
               lda #(SLOT_ROM | rom_address>>14)
-              sta slot2_ctrl
-              inc a
               sta slot3_ctrl
+              inc a ; sector was erased, so next bank will have all $ff
+              sta slot2_ctrl
 
               jmp (SYS_VECTOR_RESET)  ; reset
 
