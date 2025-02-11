@@ -28,4 +28,12 @@ XMODEM_DATA_END = $82
 
 XMODEM_RECV_BUFFER_SIZE = 2+$80+2
 
+.struct xmodem_block_t
+  n       .byte
+  n_eor   .byte
+  data    .res 128
+  crc16   .word
+  address .dword   ; 32 bit rom address
+.endstruct
+
 .endif

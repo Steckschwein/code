@@ -282,13 +282,12 @@ int main (int argc, char **argv)
       }
       printDone();
     }
-
+    if(imageFile){
+      fclose(imageFile);
+    }
     if(opts & OPT_RESET){
       printf("Reset...\n");
       sys_slot_ctrl_reset(resetBank, resetBank+1);
-    }
-    if(imageFile){
-      fclose(imageFile);
     }
     return EXIT_SUCCESS;
 }
