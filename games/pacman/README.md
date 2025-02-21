@@ -1,8 +1,11 @@
 
 TODO:
-  - fix
+  - 1Mhz improvements
+  -- v99x8 use sprites 10-17 for frightened ghosts to reduce "color fill"
+  -- cmd engine - flyweight pattern for characters
+  - elroy mode, blinky keeps pacman target regardless which mode (scatter/chase)
   - fix ghost eyes (dead) tunnel delay
-  - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3) - snd player
+  - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3) - snd player key on/off behaviour
   - system changes modes one or more times when a ghost is inside the base, that ghost will move to the right instead of the left upon leaving the house.
   - compensate pacman direction and 1px offset
   - toggle to enable/disable original bugs

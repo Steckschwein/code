@@ -59,7 +59,8 @@ io_init:      jsr joystick_on
 
 io_isr:       jmp fetchkey
 
-io_irq_on:    rts
+io_irq_on:    setIRQ IRQ_VEC
+              rts
 
 io_detect_joystick:
               jsr joystick_detect
@@ -114,7 +115,11 @@ io_highscore_load:
               sta game_state+GameState::highscore+3
               rts
 
-io_exit:      jmp (retvec)
+io_exit:      sei
+              restoreIRQ IRQ_VEC
+              cli
+              jmp (retvec)
 
 .data
     joystick_port:  .res 1, JOY_PORT1 ; TODO auto detect
+    save_irq:  .res 2

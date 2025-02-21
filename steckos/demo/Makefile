@@ -40,6 +40,9 @@ clean:
 %.prg: %.o $(LIBS)
 	ld65 $< $(LDFLAGS) -o $@
 
+%.prg: %.o $(LIBS)
+	ld65 $< $(LDFLAGS) -o $@
+
 %.dis: %.prg
 	dcc6502 -o 0x0ffe -d -n -c $< > $@
 
@@ -47,4 +50,4 @@ clean:
 	../../xmodem.sh $<
 
 %.emu: %.prg
-	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $<
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $<

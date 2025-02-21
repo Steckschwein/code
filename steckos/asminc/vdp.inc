@@ -24,15 +24,15 @@
 
 .include "system.inc"
 
-a_vdp    = $0220
-a_vram   = a_vdp
-a_vreg   = a_vdp+1
+a_vdp    = $0220 ;
+a_vram    = a_vdp
+a_vreg    = a_vdp+1
 a_vregpal = a_vdp+2
-a_vregi  = a_vdp+3
+a_vregi   = a_vdp+3
 
-s_reg0_F    = 1<<7  ; Frame Flag, interrupt flag
-s_reg0_5S   = 1<<6   ; 5/9th sprite on scan line bit
-s_reg0_C     = 1<<5   ; sprite collision bit
+s_reg0_F      = 1<<7  ; Frame Flag, interrupt flag
+s_reg0_5S     = 1<<6  ; 5/9th sprite on scan line bit
+s_reg0_C      = 1<<5  ; sprite collision bit
 
 
 v_reg0_extV     = 1<<0
@@ -44,8 +44,8 @@ v_reg0_m4       = 1<<2
 v_reg0_m3       = 1<<1
 
 
-v_reg1_16k      = 1<<7
-v_reg1_display_on  = 1<<6
+v_reg1_16k        = 1<<7
+v_reg1_display_on = 1<<6
 v_reg1_int        = 1<<5
 
 v_reg1_m1         = 1<<4
@@ -78,29 +78,29 @@ v_reg45_diy = 1<<3
 v_reg45_dix = 1<<2
 v_reg45_maj = 1<<0
 
-v_reg0   = $80
-v_reg1   = $81
-v_reg2   = $82
-v_reg3   = $83
-v_reg4   = $84
-v_reg5   = $80 +   5
-v_reg6   = $80  +  6
-v_reg7  = $80  +  7
+v_reg0    = $80
+v_reg1    = $81
+v_reg2    = $82
+v_reg3    = $83
+v_reg4    = $84
+v_reg5    = $80 +  5
+v_reg6    = $80  + 6
+v_reg7    = $80  + 7
 ; start of V9938/V9958 register set
-v_reg8  = $80  +  8
-v_reg9  = $80  +  9
-v_reg11  = $80 + 11
+v_reg8    = $80  + 8
+v_reg9    = $80  + 9
+v_reg11   = $80 + 11
 
-v_reg12  = $80 + 12   ; blink color
-v_reg13  = $80 + 13   ; on time / off time
+v_reg12   = $80 + 12   ; blink color
+v_reg13   = $80 + 13   ; on time / off time
 
-v_reg14  = $80 + 14
-v_reg15  = $80 + 15
-v_reg16 = $80 + 16  ; color palette index register
-v_reg17  = $80 + 17
-v_reg18  = $80 + 18  ; display adjust
-v_reg19 = $80 + 19   ; h-blank irq scanline
-v_reg23  = $80 + 23  ; screen ram vertical offset
+v_reg14   = $80 + 14
+v_reg15   = $80 + 15
+v_reg16   = $80 + 16  ; color palette index register
+v_reg17   = $80 + 17
+v_reg18   = $80 + 18  ; display adjust
+v_reg19   = $80 + 19  ; h-blank irq scanline
+v_reg23   = $80 + 23  ; screen ram vertical offset
 
 ; V9958 specific
 v_reg25 = $80 + 25  ; bit 0 - 0/1 - 1/2 page per screen, bit 1 - 8px border
@@ -262,31 +262,23 @@ ADDRESS_GFX7_SPRITE           = $fa00   ; sprite attribute table address
 ADDRESS_GFX7_SPRITE_COLOR     = ADDRESS_GFX7_SPRITE-$0200  ; sprite color table address (“strictly below the sprite attribute table -$200)
 
 ; long delay with 6+2 = 8µs wait
-MAX_NOPS_8M = 6 * clockspeed / 2 ; eg. 8Mhz, means 125ns per cycle. so wait 6µs = 6000ns => 6000ns / 125ns = 48cl / 2 => 24 NOP
+Cycles_8_Micros = 8 * clockspeed ; eg. 8Mhz, means 125ns per cycle. so wait 8µs = 8000ns => 8000ns / 125ns = 64cl / 2 => 32 NOP
 ; short delay with 2µs wait
-MAX_NOPS_2M = (2 * clockspeed - 12) / 2; -12 => jsr/rts = 2*6cl = 12cl to substract
-
-;.define MAX_NOPS_2M 2 * clockspeed
-
-;.macro MAX_NOPS_2M
-;  (2 * clockspeed - 12) / 2; - 12 => jsr/rts = 2*6cl = 12cl must be subtract
-;.endmacro
+Cycles_2_Micros = 2 * clockspeed;
 
 .macro m_vdp_nopslide
 ; NOTE!!!
 ; - TMS9929 and V9938/V9958 wait 2µs between 2 byte writes and 8µs for the 3rd and n'th byte read/write
 vdp_nopslide_8m:
-    .repeat MAX_NOPS_8M      ; long delay with 8µs wait (6µs+2µs below)
+    .repeat ((Cycles_8_Micros-Cycles_2_Micros) >>1 ) ; long delay with 8µs wait (8µs=6µs+2µs below)
     nop
     .endrepeat
 vdp_nopslide_2m:
-  .if(MAX_NOPS_2M > 0)     ; if clockspeed is low we get negative nop counts
-    .repeat MAX_NOPS_2M    ; short delay with 2µs
+    .repeat (Cycles_2_Micros >> 1)
     nop
     .endrepeat
-  .endif
 vdp_nopslide_end:
-  rts
+    rts
 .endmacro
 
 .macro vnops
@@ -295,6 +287,32 @@ vdp_nopslide_end:
 .endmacro
 
 
+.macro vdp_delay _wasted_cycles, _wait_cycles
+  .local _wasted_cycles
+  .if ((_wasted_cycles+1) >= _wait_cycles) ; +1 (opcode fetch)
+    ; nothing, already enough delay
+  .else
+    ; -12 => jsr/rts = 2*6cl = 12cl to substract
+    .assert _wasted_cycles >= 0 && (_wasted_cycles+1) < _wait_cycles, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles), "<=", .sprintf ("%d", _wait_cycles))
+    .if ((_wait_cycles - (_wasted_cycles+1)) = 12) ; jsr/rts => 12cl
+      jsr vdp_nopslide_end ; direct to rts if we have <=12cl to wait
+    .else
+      .if ((_wait_cycles - (_wasted_cycles+1)) < 12) ; less then jsr/rts => 12cl
+          .repeat ((_wait_cycles-_wasted_cycles) >> 1) ; 2cl / NOP
+          nop
+          .endrepeat
+      .else
+        .if (_wait_cycles = Cycles_2_Micros)
+          jsr vdp_nopslide_2m + ((_wasted_cycles+12+1) >> 1) ; +12 jsr/rts + 1cl opcode fetch
+        .else
+          jsr vdp_nopslide_8m + ((_wasted_cycles+12+1) >> 1)
+        .endif
+      .endif
+    .endif
+  .endif
+.endmacro
+
+; short wait between register setup
 .macro vdp_wait_s _wasted_cycles
     .local _wasted_cycles
     .ifndef vdp_nopslide_2m
@@ -302,21 +320,13 @@ vdp_nopslide_end:
       .import vdp_nopslide_end
     .endif
     .if(.paramcount > 0)
-      .if(MAX_NOPS_2M < 0 || ((_wasted_cycles+1) >> 1) > MAX_NOPS_2M)
-        jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
-      .else
-        .if((_wasted_cycles >> 1) > 0)
-          jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
-        .else
-          .assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_2M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>>1), "<=", .sprintf ("%d", MAX_NOPS_2M))
-          jsr vdp_nopslide_2m + ((_wasted_cycles+1) >> 1) ; add number of wasted cycles, we calculate the jsr offset to remaining nops
-        .endif
-           .endif
+      vdp_delay _wasted_cycles, Cycles_2_Micros
     .else
-      jsr vdp_nopslide_2m
+      vdp_delay 0, Cycles_2_Micros
     .endif
 .endmacro
 
+; long wait between VRAM access
 .macro vdp_wait_l _wasted_cycles  ; amount of cycles already wasted in range [0..n]
     .local _wasted_cycles
     .ifndef vdp_nopslide_8m
@@ -324,14 +334,9 @@ vdp_nopslide_end:
       .import vdp_nopslide_end
     .endif
     .if(.paramcount > 0)
-      .if (MAX_NOPS_8M < 0 || (_wasted_cycles >> 1) > MAX_NOPS_8M)
-        jsr vdp_nopslide_end ; direct to rts, we already waste enough cycles beforehand
-            .else
-        .assert _wasted_cycles >= 0 && (_wasted_cycles >> 1) <= MAX_NOPS_8M, error, .concat("parameter <wasted cycles> must be 0<=", .string(_wasted_cycles>>1), "<=", .sprintf ("%d", MAX_NOPS_8M))
-        jsr vdp_nopslide_8m + (_wasted_cycles >> 1) ; add number of wasted cycles, we calculate the jsr offset to remaining nops
-      .endif
+      vdp_delay _wasted_cycles, Cycles_8_Micros
     .else
-      jsr vdp_nopslide_8m
+      vdp_delay 0, Cycles_8_Micros
     .endif
 .endmacro
 
@@ -342,21 +347,21 @@ vdp_nopslide_end:
       vdp_wait_s
       sty a_vreg
     .else              ; otherwise use the new api call, with fewer nops for register writes
-      vdp_wait_s
       lda #_1st
+      vdp_wait_s 2
       sta a_vreg
-      vdp_wait_s
       lda #_2nd
+      vdp_wait_s 2
       sta a_vreg
     .endif
 .endmacro
 
 .macro vdp_reg reg, val
-      vdp_wait_s 2
       lda #val
-      sta a_vreg
       vdp_wait_s 2
+      sta a_vreg
       lda #$80 + reg
+      vdp_wait_s 2
       sta a_vreg
 .endmacro
 

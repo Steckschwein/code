@@ -1,4 +1,4 @@
-.include "asmunit.inc" 	; test api
+.include "asmunit.inc"   ; test api
 .include "debug.inc"
 
 .include "vdp.inc"
@@ -87,13 +87,21 @@ debug_enabled=1
          .word 255
          .byte 128; x longest (0), draw y bottom up (1)
 
+      createtest "line 7", testline_7, v_reg45_dix | v_reg45_diy
+        .word 300
+        .byte 200
+        .byte $ff
+        .byte 0  ;operator
+        .word 280
+        .byte 90
+
       brk
 
 mock_wait_cmd:
    rts ; dummy wait cmd
 
 .data
-testline_0:
+testline_0: ; x1>x2
    .word 80
    .byte 4
    .byte $ff ; color
@@ -107,7 +115,7 @@ testline_1:
    .byte 0;operator
    .word 96       ;x2/y2
    .byte 160
-testline_2:
+testline_2: ; x1>x2
    .word 320
    .byte 4
    .byte $ff
@@ -129,16 +137,23 @@ testline_4:
    .word 500         ;x2/y2
    .byte 160
 testline_5:
-	.word 0
+   .word 0
    .byte 0
    .byte $ff
    .byte 0;operator
    .word 255         ;x2/y2
    .byte 191
-testline_6:
-	.word 256
+testline_6: ; x1<x2
+   .word 256
    .byte 129
    .byte $ff
    .byte 0;operator
    .word 511
    .byte 1
+testline_7: ; x1>x2, y1>y2
+   .word 300
+   .byte 200
+   .byte $ff
+   .byte 0  ;operator
+   .word 20
+   .byte 110

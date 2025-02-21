@@ -23,6 +23,7 @@
 ;@module: vdp
 
 .include "vdp.inc"
+.setcpu "6502"
 
 .export vdp_fills, vdp_fill
 
@@ -47,8 +48,8 @@ vdp_fill:
 ;@in: A - value to write
 ;@in: X - amount of bytes
 vdp_fills:
-@0: vdp_wait_l 6  ;3 + 2 + 1 opcode fetch
-    dex        ;2
-    sta a_vram    ;4
-    bne  @0      ;3
+@0: vdp_wait_l 6 ; 3 + 2 + 1 (opcode fetch)
+    dex
+    sta a_vram
+    bne  @0
     rts

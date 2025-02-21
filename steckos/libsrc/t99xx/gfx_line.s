@@ -50,57 +50,55 @@ gfx_line:
       sta vdp_tmp
 
       ; dx
-      lda (vdp_ptr)    ; line_t::x1+0
-      sta a_vregi             ; vdp #r36
+      lda (vdp_ptr)       ; line_t::x1+0
+      sta a_vregi         ; vdp #r36
       ldy #line_t::x2+0
       sec
       sbc (vdp_ptr),y
       sta (vdp_ptr),y
       ldy #line_t::x1+1
       lda (vdp_ptr),y
-      sta a_vregi             ; vdp #r37
+      sta a_vregi         ; vdp #r37
       ldy #line_t::x2+1
       sbc (vdp_ptr),y
-      bcs :+                  ; x1>x2 ?
-
+      bcs :+              ; x1>=x2 ?
+      rmb2 vdp_tmp        ; x1<x2, x transfer to right, clear bit DIX (v_reg45_dix)
       eor #$ff
       sta (vdp_ptr),y
-      rmb2 vdp_tmp     ; x1<x2, x transfer to right, clear bit DIX (v_reg45_dix)
       dey ; ldy #line_t::x2+0
       lda (vdp_ptr),y
-      eor #$ff ;two's complement
+      eor #$ff            ; 2's complement
       ina
 :     sta (vdp_ptr),y
 
       ; dy
       ldy #line_t::y1+0
       lda (vdp_ptr),y
-      sta a_vregi             ; vdp #r38
+      sta a_vregi         ; vdp #r38
       ldy #line_t::y2+0
       sec
       sbc (vdp_ptr),y
-      sta (vdp_ptr),y
-      bcs :+                  ; y1>y2 ?
+      bcs :+              ; y1>y2 ?
+      rmb3 vdp_tmp        ; y1<y2, y transfer down, clear bit DIY (v_reg45_diy)
       eor #$ff
       ina
-      sta (vdp_ptr),y
-      rmb3 vdp_tmp     ; y1<y2, y transfer down, clear bit DIY (v_reg45_diy)
+:     sta (vdp_ptr),y
 
       ; TODO FIXME - hard wired to mode 7 - adjust y offset according to current gfx mode
-:     lda #ADDRESS_GFX7_SCREEN>>16
+      lda #ADDRESS_GFX7_SCREEN>>16
       sta a_vregi             ; vdp #r39
 
       ; compare |dx| |dy|
       ldy #line_t::x2+0
       lda (vdp_ptr),y
       ldy #line_t::y2+0
-      cmp (vdp_ptr),y  ; sets carry for sbc
+      cmp (vdp_ptr),y         ; sets carry for sbc
       ldy #line_t::x2+1
       lda (vdp_ptr),y
-      sbc #0  ; y high always 0
-      bcc @_y ; C=0 |dx| < |dy|
+      sbc #0                  ; y high always 0
+      bcc @_y                 ; C=0 |dx| < |dy|
 
-      rmb0 vdp_tmp     ; clear bit 0 (v_reg45_maj)
+      rmb0 vdp_tmp            ; clear bit 0 (v_reg45_maj)
 @_x:  ldy #line_t::x2+0       ; |dx| is longest
       lda (vdp_ptr),y
       sta a_vregi             ; vdp #r40/42

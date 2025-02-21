@@ -199,13 +199,13 @@ ACT_DIR           = 1<<1|1<<0
 
 SKIP_DIR_CHECK    = $ff
 
-.macro setIRQ irq, irq_save
-      copyPtr IRQ_VEC, irq_save
-      setPtr irq, IRQ_VEC
+.macro setIRQ irq_vec
+      copyPtr irq_vec, save_irq
+      setPtr sys_isr, irq_vec
 .endmacro
 
-.macro restoreIRQ irq_save
-      copyPtr irq_save, IRQ_VEC
+.macro restoreIRQ irq_vec
+      copyPtr save_irq, irq_vec
 .endmacro
 
 .macro setPtr addr, ptr
@@ -224,23 +224,19 @@ SKIP_DIR_CHECK    = $ff
 
 .macro border_color color
    .ifdef __DEBUG
-    php
     pha
     lda #color
     jsr gfx_bordercolor
     pla
-    plp
    .endif
 .endmacro
 
 .macro bgcolor color
   .ifdef __DEBUG
-    php
     pha
     lda #color
     jsr gfx_bgcolor
     pla
-    plp
   .endif
 .endmacro
 
@@ -318,7 +314,7 @@ SKIP_DIR_CHECK    = $ff
   ghsts_to_catch    .byte   ; ghosts to catch during a frightened phase, starts with 3
   ghst_catched      .byte   ; ghost index/offset - e.g. ACTOR_BLINKY, ACTOR_PINKY ...
 
-.ifdef __GFX_DEBUG
+.ifdef __DEVMODE
   debug             .byte   ; debug flag/toggle bits for demo purpose
 .endif
 

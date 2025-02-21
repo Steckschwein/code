@@ -24,48 +24,71 @@
 
 .include "vdp.inc"
 
+.setcpu "6502"
+
 .export vdp_cmd_hmmv
+.export vdp_cmd_hmmv_wait
 
 .import vdp_wait_cmd
 
-.importzp vdp_ptr
+.importzp vdp_ptr, vdp_tmp
 
 .code
+
+;@name: vdp_cmd_hmmv_wait - hmmv with wait until cmd has been finished
+;@desc: execute highspeed memory move (vdp/vram) or "fill"
+;@in: A/X - ptr to rectangle coordinates (4 word with x1,y1, len x, len y)
+;@in: Y - color to fill in (reg #44)
+vdp_cmd_hmmv_wait:
+              php
+              sei
+
+              jsr _vdp_cmd_hmmv
+              jsr vdp_wait_cmd
+
+              plp
+              rts
 
 ;@name: vdp_cmd_hmmv
 ;@desc: execute highspeed memory move (vdp/vram) or "fill"
 ;@in: A/X - ptr to rectangle coordinates (4 word with x1,y1, len x, len y)
 ;@in: Y - color to fill in (reg #44)
 vdp_cmd_hmmv:
-  php
-  sei
+              php
+              sei
 
-  sta vdp_ptr
-  stx vdp_ptr+1
+              jsr _vdp_cmd_hmmv
 
-  vdp_sreg 36, v_reg17   ; set reg index to #36
+              plp
+              rts
 
-  phy            ; safe color
+_vdp_cmd_hmmv:
+              sta vdp_ptr
+              stx vdp_ptr+1
 
-  ldy #0
-@loop:
-  vdp_wait_s 5
-  lda (vdp_ptr),y
-  sta a_vregi
-  iny
-  cpy #08
-  bne @loop
+              jsr vdp_wait_cmd        ; previous cmd in execution?
 
-  pla           ; color (r#44)
-  sta a_vregi
+              vdp_sreg 36, v_reg17    ; set reg index to #36
 
-  vdp_wait_s 2
-  stz a_vregi
+              sty vdp_tmp             ; safe color
 
-  vdp_wait_s 2
-  lda #v_cmd_hmmv
-  sta a_vregi
+              ldy #0
+@loop:        vdp_wait_s 9
+              lda (vdp_ptr),y
+              sta a_vregi
+              iny
+              cpy #08
+              bne @loop
 
-  jsr vdp_wait_cmd
-  plp
-  rts
+              lda vdp_tmp             ; color (r#44)
+              vdp_wait_s 9
+              sta a_vregi
+
+              lda #0
+              vdp_wait_s 2
+              sta a_vregi
+
+              lda #v_cmd_hmmv
+              vdp_wait_s 2
+              sta a_vregi
+              rts

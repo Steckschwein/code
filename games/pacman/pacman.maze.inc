@@ -1,3 +1,25 @@
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 ;       0       2       4       6       8       a       c       e      10      12      14      16      18      1a              1e  1f
 .byte $c7,$d0,$d2,$d2,$d2,$d2,$d2,$d2,$d2,$d2,$d4,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$d0,$d2,$d2,$d2,$d2,$d6,$d8,$d2,$d2,$d2,$d2,$d4 ; 0
 .byte $c7,$da,$cc,$cc,$ce,$cc,$cc,$cc,$cc,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$cc,$cc,$ce,$dc,$e1,$cc,$cc,$cc,$cc,$db
@@ -21,9 +43,9 @@
 .byte $c7,$da,$cc,$dc,$c7,$e1,$cc,$e2,$e6,$e6,$f0,$ee,$e6,$e6,$e4,$20,$e2,$e6,$e6,$e6,$e4,$cc,$dc,$e1,$cc,$e2,$e6,$e6,$f0,$e1,$cc,$db
 .byte $c7,$da,$cc,$e3,$e7,$e5,$cc,$e3,$e7,$e7,$e7,$e7,$e7,$e7,$e5,$20,$e3,$e7,$e7,$e7,$e5,$cc,$e3,$e5,$cc,$e3,$e7,$e7,$f1,$e1,$cc,$db ; 14
 .byte $c7,$da,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$db
-.byte 'P',$da,$cc,$e2,$e6,$e4,$cc,$e2,$e4,$cc,$e2,$d3,$d3,$d3,$e4,$20,$e2,$d3,$d3,$d3,$e4,$cc,$e2,$e6,$e6,$e6,$e4,$cc,$dc,$e1,$cc,$db
-.byte 'U',$da,$cc,$dc,$c7,$e1,$cc,$dc,$e1,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$dc,$ef,$e7,$e7,$e5,$cc,$dc,$e1,$cc,$db
-.byte '1',$da,$cc,$dc,$c7,$e1,$cc,$dc,$e1,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$dc,$e1,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$db ; 18
+.byte $c7,$da,$cc,$e2,$e6,$e4,$cc,$e2,$e4,$cc,$e2,$d3,$d3,$d3,$e4,$20,$e2,$d3,$d3,$d3,$e4,$cc,$e2,$e6,$e6,$e6,$e4,$cc,$dc,$e1,$cc,$db
+.byte $c7,$da,$cc,$dc,$c7,$e1,$cc,$dc,$e1,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$dc,$ef,$e7,$e7,$e5,$cc,$dc,$e1,$cc,$db
+.byte $c7,$da,$cc,$dc,$c7,$e1,$cc,$dc,$e1,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$dc,$e1,$cc,$cc,$cc,$cc,$dc,$e1,$cc,$db ; 18
 .byte $c7,$da,$cc,$e3,$e7,$e5,$cc,$e3,$e5,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$e3,$e5,$cc,$e2,$e4,$cc,$e3,$e5,$cc,$db
 .byte $c7,$da,$cc,$cc,$ce,$cc,$cc,$cc,$cc,$cc,$db,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$da,$cc,$cc,$cc,$ce,$dc,$e1,$cc,$cc,$cc,$cc,$db ; 1a
 .byte $c7,$d1,$d3,$d3,$d3,$d3,$d3,$d3,$d3,$d3,$d5,$c7,$c7,$c7,$da,$20,$db,$c7,$c7,$c7,$d1,$d3,$d3,$d3,$d3,$d7,$d9,$d3,$d3,$d3,$d3,$d5 ; 1b

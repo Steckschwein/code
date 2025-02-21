@@ -1,4 +1,28 @@
+; MIT License
+;
+; Copyright (c) 2018 Thomas Woinke, Marko Lauke, www.steckschwein.de
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+;
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 .include "pacman.v99x8.inc"
+
+.setcpu "6502"
 
 .export gfx_init
 .export gfx_mode_on
@@ -24,12 +48,14 @@
   p_vram:   .res 3  ; 24Bit
   p_gfx:    .res 2
   p_tiles:  .res 2
-  r1: .res 1
-  r2: .res 1
-  r3: .res 1
-  r4: .res 1
-  r5: .res 1
-  r6: .res 1
+  r1:       .res 1
+  r2:       .res 1
+  r3:       .res 1
+  r4:       .res 1
+  r5:       .res 1
+  r6:       .res 1
+  r7:       .res 1
+
 
   scanline: .res 1
 
@@ -46,83 +72,77 @@ gfx_mode_off:
 
 scln_top=254
 scln_bottom=221
-line=192
-gfx_mode_on:
-              sei
-              lda #<vdp_init_bytes
+nline=192
+eline=212
+gfx_mode_on:  lda #<vdp_init_bytes
               ldy #>vdp_init_bytes
               ldx #(vdp_init_bytes_end-vdp_init_bytes-1)
               jsr vdp_init_reg
-              ;vdp_sreg $0, v_reg18  ;x/y screen adjust
               vdp_sreg 253, v_reg23  ;y offset
 
-              vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
-              lda #line
+              lda #nline
               sta scanline
               ldy #v_reg19
-              jsr vdp_set_reg
-              cli
-              rts
+              jmp vdp_set_reg
 
 gfx_pacman_colors_offset:
-.byte VDP_Color_Blue<<1, VDP_Color_Light_Blue<<1, VDP_Color_Gray<<1, VDP_Color_Light_Blue<<1
+.byte VDP_Color_Blue<<1, VDP_Color_Light_Blue<<1, VDP_Color_Gray<<1, VDP_Color_Light_Blue<<1  ; x2 - offset in vdp color palette (2 bytes each)
 
 .export gfx_rotate_pal
 gfx_rotate_pal:
-              vdp_sreg VDP_Color_Blue, v_reg16 ; rotate blue
+              vdp_sreg VDP_Color_Blue, v_reg16 ; select palette color blue ($0e)
               ldx gfx_pacman_colors_offset,y
 gfx_write_pal:
               vdp_wait_s
-              lda pacman_palette+0, x
+              lda pacman_palette+0,x
               sta io_port_vdp_pal
               vdp_wait_s
-              lda pacman_palette+1, x
+              lda pacman_palette+1,x
               sta io_port_vdp_pal
               rts
 
-gfx_isr:      lda io_port_vdp_reg ; vdp h blank irq ?
+
+gfx_isr:      vdp_sreg 1, v_reg15
+              vdp_wait_s
+              lda io_port_vdp_reg ; vdp h blank irq ?
               ror
               bcc @is_vblank
               ; remove border https://www.msx.org/forum/msx-talk/development/removing-border-bitmap-modes?page=0
               ; https://www.msx.org/forum/development/msx-development/here-you-can-see-all-msx2-vram-your-screen
               lda scanline
-              and #(212-line) ; line 212 ?
+              and #(eline-nline) ; line 212 ?
               beq :+
               lda scanline
-              cmp #scln_top
-              beq @border_top
               cmp #scln_bottom
               beq @border_bottom
+              cmp #scln_top
+              beq @border_top
               lda #v_reg9_ln
 :             ora vdp_reg9_init ; reset mode to init value (192 lines)
               sta io_port_vdp_reg
               lda scanline
-              cmp #212
+              cmp #eline
               bne :+
               lda #scln_bottom
-              bra @set_reg
+              bne @set_reg
 :
-.ifdef __GFX_DEBUG
+.ifdef __DEVMODE
               bit game_state+GameState::debug
               bvc :+
-              lda #212
+              lda #eline
 :
 .endif
-              eor #(212-line)  ; 212/192 $d4/$c0
+              eor #(eline-nline)  ; 212/192 $d4/$c0
 @set_reg:     ldy #v_reg9
               sty io_port_vdp_reg
 
 @set_scln:    sta scanline
 
-.ifdef __GFX_DEBUG
+.ifdef __DEVMODE
               bit game_state+GameState::debug
               bpl :+
               lda #Color_Cyan
               jsr vdp_bgcolor
-              nop
-              nop
-              nop
-              nop
               lda #Color_Bg
               jsr vdp_bgcolor
 :
@@ -131,7 +151,7 @@ gfx_isr:      lda io_port_vdp_reg ; vdp h blank irq ?
               lda scanline
               ldy #v_reg19
               jsr vdp_set_reg
-              cmp #line ; vblank after scanline setup to line (192)
+              cmp #nline ; vblank after scanline setup to line (192)
               bne :+
               ldx #$80  ; signal vblank (bit 7)
 :
@@ -143,33 +163,27 @@ gfx_isr:      lda io_port_vdp_reg ; vdp h blank irq ?
               ldy #v_reg8
               jsr vdp_set_reg
               lda #scln_top
-              bra @set_scln
+              bne @set_scln
 
-@border_top:  lda vdp_reg8  ; enable sprites
+@border_top:  lda vdp_reg8  ; restore old value (enable sprites)
               ldy #v_reg8
               jsr vdp_set_reg
-              lda #line
-              bra @set_scln
+              lda #nline
+              bne @set_scln
 
-@is_vblank:   ldx #0
-              vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
-              vdp_wait_s
+@is_vblank:   vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
+              ldx #$40
+              vdp_wait_s 2
               bit io_port_vdp_reg ; Check VDP interrupt. IRQ is acknowledged by reading.
              	bpl @is_vblank_end  ; VDP IRQ flag set?
               bgcolor Color_Yellow
-              ldx #$40
+              ldx #$80
 @is_vblank_end:
-            	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
+;            	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
               txa
               rts
 
-gfx_init:
-              sei
-              jsr @init
-              cli
-              rts
-
-@init:        vdp_sreg 0, v_reg16
+gfx_init:     vdp_sreg 0, v_reg16
               ldx #0
 :             jsr gfx_write_pal
               inx
@@ -177,14 +191,13 @@ gfx_init:
               cpx #2*16
               bne :-
 
-@gfx_init_sprites:
               vdp_vram_w VRAM_SPRITE_PATTERN
               lda #<sprite_patterns
               ldy #>sprite_patterns
               ldx #1+((sprite_patterns_end-sprite_patterns)>>8)
               jsr vdp_memcpy
 
-              vdp_vram_w (VRAM_SPRITE_COLOR+16*4*2)  ; load sprite color address pacman
+              vdp_vram_w (VRAM_SPRITE_COLOR+ACTOR_PACMAN*16*2)  ; load sprite color address pacman
               lda #Color_Pacman
               ldx #16
               jsr vdp_fills
@@ -193,12 +206,9 @@ gfx_init:
               sta sprite_tab_attr_end
 
 gfx_blank_screen:
-              php
-              sei
               ldy #Color_Bg
               jsr vdp_mode4_blank
-              plp
-              bra gfx_sprites_off
+              jmp gfx_sprites_off
 gfx_sprites_on:
               lda #0
               beq :+
@@ -221,7 +231,7 @@ gfx_update:   bgcolor Color_Cyan
               vdp_vram_w VRAM_SPRITE_ATTR
               lda #<sprite_tab_attr
               ldy #>sprite_tab_attr
-              ldx #1+(sprite_tab_attr_end-sprite_tab_attr)
+              ldx #sprite_tab_attr_end+1-sprite_tab_attr
               jsr vdp_memcpys
 
               vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
@@ -237,7 +247,6 @@ gfx_update:   bgcolor Color_Cyan
               bne :-
 
               bgcolor Color_Bg
-
               rts
 
 ; prepare timing critical gfx update
@@ -269,8 +278,8 @@ gfx_prepare_update:
               and #$01
               beq :+
               ldx #5*4  ;y sprite_tab offset inky eyes
-:             lda #gfx_Sprite_Off-1      ; c=0 - must multiplex, sprites scanline conflict +/-16px
-              sta sprite_tab_attr,x
+:             lda #gfx_Sprite_Off+1   ; C=0 - must multiplex, sprites scanline conflict +/-16px
+              sta sprite_tab_attr,x   ; we set y position outside of screen
 
 @exit:        bgcolor Color_Bg
               rts
@@ -305,7 +314,7 @@ _gfx_update_sprite_tab_2x:
               cmp #ACTOR_MODE_FRIGHT
               bne :+
               eor r2  ; end of frightened phase alternate colors
-:             phy
+:             sty r3
               tay
               lda ghost_color,x
               bcc :+  ; < ACTOR_MODE_FRIGHT ?
@@ -313,7 +322,7 @@ _gfx_update_sprite_tab_2x:
 :             sta sprite_color_1,x
               lda sprite_colors_2nd,y
               sta sprite_color_2,x
-              ply
+              ldy r3
 
 _gfx_update_sprite_tab_1x:
               lda #$00
@@ -331,74 +340,67 @@ _gfx_update_sprite_tab:
               sbc #gfx_Sprite_Adjust_X
               sta sprite_tab_attr,y
               iny
-              phy
+              sty r3
               lda actor_shape,x
               cmp #$40
               bcs :+  ; bit 6 - shape offset $40
               ora r1
 :             tay
               lda shapes,y
-              ply
+              ldy r3
               sta sprite_tab_attr,y
               iny
-              lda #0
-              sta sprite_tab_attr,y  ; byte 4 - reserved/unused
+              ; byte 4 - reserved/unused, we skip it
               iny
               rts
 
 gfx_display_maze:
-              sei
               ldx #4
               ldy #0
               sty sys_crs_x
               sty sys_crs_y
               setPtr game_maze, p_gfx
-@loop:        jsr @put_char
-@next:        iny
-              bne @loop
-              inc p_gfx+1
-              dex
-              bne @loop
-              cli
-              rts
-
+@loop:
 @put_char:    lda (p_gfx),y
               pha
+              cmp #Char_Base
+              beq @color_base
+              bcs @color_maze
               cmp #Char_Dot
-              beq @food
-              cmp #Char_Energizer
-              bne @text
-@food:        lda #Color_Food
-              bne @color
-@text:        cmp #Char_Base
-              bne @color_border
-              lda #Color_Pink
-              bne @color
-@color_border:
-              bcs @color_bg
+              lda #Color_Food
+              bcs @color
               lda #Color_Text
               bne @color
-@color_bg:
-              lda #Color_Maze
-@color:
-              sta text_color
+@color_base:  lda #Color_Pink
+              bne @color
+@color_maze:  lda #Color_Maze
+@color:       sta text_color
               pla
               jsr gfx_charout
               inc sys_crs_x
               lda sys_crs_x
               and #$1f
-              bne @exit
+              bne @next
               sta sys_crs_x
               inc sys_crs_y
-@exit:        rts
+@next:        iny
+              bne @loop
+              inc p_gfx+1
+              dex
+              bne @loop
+              rts
 
 gfx_bordercolor:
 gfx_bgcolor:
               php
               sei
-              phy
-              jsr vdp_bgcolor
-              ply
+              pha
+              vdp_wait_s 12
+              sta a_vreg
+              lda #v_reg7
+              vdp_wait_s 3
+              sta a_vreg
+              pla
               plp
               rts
 
@@ -415,7 +417,7 @@ gfx_vram_xy:
 
               tya
               lsr
-              bra gfx_vram_h        ; A13-A8 vram address high byte
+              jmp gfx_vram_h        ; A13-A8 vram address high byte
 
 ; set the vdp vram address upon crs x/y
 ;  in:
@@ -446,8 +448,8 @@ gfx_vram_h:   sta p_vram+1
               sta io_port_vdp_reg
 
               lda p_vram
-              vdp_wait_s 4
-              bra gfx_vram_addr
+              vdp_wait_s 6
+              jmp gfx_vram_addr
 
 gfx_vram_inc_y:
               lda p_vram ; vram addr Y +1 row (scanline)
@@ -455,22 +457,20 @@ gfx_vram_inc_y:
               sta p_vram
               bmi gfx_vram_addr
               inc p_vram+1
-
 gfx_vram_addr:
               sta io_port_vdp_reg
-              lda p_vram+1
+              lda p_vram+1        ; A13-A8 vram address highbyte
               and #$3f
-              sta p_vram+1      ; A13-A8 vram address highbyte
-              ora #(WRITE_ADDRESS | (>.LOWORD(VRAM_SCREEN) & $3f))
-              vdp_wait_s 10
+              sta p_vram+1
+              ora #WRITE_ADDRESS
+              vdp_wait_s 7
               sta io_port_vdp_reg
               rts
 
 
 .export gfx_lives
 ; in: Y - lives
-gfx_lives:    sei
-              sty r3
+gfx_lives:    sty r3
               lda #31
               sta sys_crs_y
               ldx #MAX_LIVES
@@ -483,7 +483,7 @@ gfx_lives:    sei
               txa
               asl   ; crs x pos live *2 FTW
               sta sys_crs_x
-              lda #$b0
+              lda #$b0        ; pacman icon chars
               jsr gfx_charout
               dec sys_crs_y
               lda #$b1
@@ -498,7 +498,6 @@ gfx_lives:    sei
 
               dex
               bne @l0
-              cli
               rts
 
 ; in
@@ -509,9 +508,9 @@ gfx_bonus_stack:
               sta r3
               lda #7    ; max 7 bonus items visible on stack, we build top down
               sta r4
-@next:        ldy #Bonus_Clear
+@next:        ldy #Bonus_Clear  ; start with "no bonus"
               lda r2
-              cmp r4
+              cmp r4    ; draw bonus, or still clear?
               bcc @bonus
               dec r2    ; level - 1
               jsr bonus_for_level
@@ -527,16 +526,19 @@ gfx_bonus_stack:
               bne @next
               rts
 
+
 .export gfx_bonus
 gfx_bonus:    ; bonus below ghost house
               ldx #$11*8+6
               ldy #$0d*8+2
+
 gfx_4bpp_xy:  sei
-              stz r5  ; color mask
-              stz r6
 
               pha
               jsr gfx_vram_xy
+              lda #Color_Bg
+              sta r5  ; reset color mask
+              sta r6
               pla
 
               cmp #Bonus_Clear  ; clear?
@@ -544,8 +546,9 @@ gfx_4bpp_xy:  sei
 
               ldy #$0c  ; height
 @erase:       ldx #$07  ; width 7x2px
-@erase_cols:  vdp_wait_l 7
-              stz io_port_vdp_ram
+@erase_cols:  vdp_wait_l 9
+              lda #Color_Bg
+              sta io_port_vdp_ram
               dex
               bne @erase_cols
               jsr gfx_vram_inc_y
@@ -554,29 +557,31 @@ gfx_4bpp_xy:  sei
               cli
               rts
 
-@bonus_4bpp:  dea ; adjust for table lookup
-              tay
+@bonus_4bpp:  tay
+              dey ; adjust for table lookup
               lda #$0c  ; 12px height
 ; in:
 ;   A - height
 ;   Y - index 4bpp table
-gfx_4bpp_y:
-              sta r1
+gfx_4bpp_y:   sta r1
               lda table_4bpp_l,y
-              sta p_gfx
+              sta p_gfx+0
               lda table_4bpp_h,y
               sta p_gfx+1
 
               ldy #0
-@rows:        ldx #7    ; 7x2 14px width
+@rows:        ldx #$7      ; 7x2 14px width
 @cols:        lda (p_gfx),y
-              bit #$f0
+              and #$f0
               beq :+    ; background?
               ora r5    ; otherwise mask nybble
-:             bit #$0f
+:             sta r7
+              lda (p_gfx),y
+              and #$0f
               beq :+    ; same...
               ora r6
-:             vdp_wait_l 22
+:             ora r7
+              vdp_wait_l 22
               sta io_port_vdp_ram
               iny
               dex
@@ -585,17 +590,63 @@ gfx_4bpp_y:
               dec r1
               beq @exit
               jsr gfx_vram_inc_y
-              bra @rows
+              jmp @rows
 
 @exit:        bgcolor Color_Bg
+
               cli
               rts
+
+
+.export gfx_boot_logo
+logo_width=$40
+logo_height=$62
+gfx_boot_logo:
+              sei
+              inc sys_crs_x
+              inc sys_crs_x
+              lda #6
+              sta sys_crs_y
+              jsr gfx_vram_crs
+
+              lda Index_Logo_l
+              sta p_gfx+0
+              lda Index_Logo_h
+              sta p_gfx+1
+
+              lda #logo_height
+              sta r1
+@rows:        ldy #0
+              ldx #logo_width>>1      ; 32x2 64px width
+@cols:        lda (p_gfx),y
+              sta io_port_vdp_ram
+              iny
+              dex
+              vdp_wait_l 12
+              bne @cols
+              lda p_gfx+0
+              clc
+              adc #$20
+              sta p_gfx+0
+              lda p_gfx+1
+              adc #0
+              sta p_gfx+1
+
+              dec r1
+              beq @exit
+
+              jsr gfx_vram_inc_y
+              jmp @rows
+
+@exit:        cli
+              rts
+
 
 .export gfx_ghost_icon
 gfx_ghost_icon:
               sei
               lda sys_crs_x
-              asl               ; X*4 (2px per byte)
+              asl               ; X*4 (4bpp, 2px per byte)
               asl
               clc
               adc #2            ; adjust 2x2px
@@ -614,29 +665,26 @@ gfx_ghost_icon:
               asl
               asl
               sta r5
+
               lda #$0e  ; height - see ghost.4bpp.xpm
               ldy #Index_4bpp_ghost
               jmp gfx_4bpp_y
 
+; A: char to output
 gfx_charout:
-              sei
-              phx
-              phy
-              pha
+              stx r3
+              sty r4
 
               bgcolor Color_Gray
 
-              jsr gfx_vram_crs
-
-              pla               ; pointer to charset
-              stz p_tiles+1
-              asl ; char * 8
+              ldx #0  ; calc pointer to charset
+              stx p_tiles+1
+              asl     ; char * 8
               rol p_tiles+1
               asl
               rol p_tiles+1
               asl
               rol p_tiles+1
-              ;clc
               adc #<tiles
               sta p_tiles
               lda #>tiles
@@ -651,9 +699,14 @@ gfx_charout:
               ora text_color
               sta r1            ; prepare "pen"
 
+              php
+              sei
+              jsr gfx_vram_crs
+
               lda #8
               sta r2
-@rows:        lda (p_tiles)
+@rows:        ldy #0
+              lda (p_tiles),y
               ldy #3
 @cols:        asl
               rol
@@ -663,8 +716,8 @@ gfx_charout:
               tax
               lda r1
               and mask_4bpp,x
+@skip:        vdp_wait_l 28
               sta io_port_vdp_ram
-;              vdp_wait_l 32
               pla
               dey
               bpl @cols
@@ -673,36 +726,36 @@ gfx_charout:
               beq @exit
 
               inc p_tiles
-              bne :+
-              inc p_tiles+1
-:             lda p_vram ; vram addr Y +1 row (scanline)
-              eor #$80
-              sta p_vram
-              bmi :+
-              inc p_vram+1
-:             jsr gfx_vram_addr
-              bra @rows
-@exit:
-              bgcolor Color_Bg
 
-              ply
-              plx
-              cli
+              jsr gfx_vram_inc_y  ; next scan line
+              jmp @rows
+
+@exit:        bgcolor Color_Bg
+              plp
+
+              ldy r4
+              ldx r3
               rts
 
 .data
 
-mask_4bpp:
+.export tiles
+tiles:
+    .align 8
+    .assert (<tiles & $07) = 0, error, "tiles must be 8 byte aligned, otherwise char out wont work"
+    .include "pacman.tiles.rot.inc"
+
+mask_4bpp: ; 4bpp - 2 pixels per byte gives 4 combinations
     .byte $00, $0f, $f0, $ff
 
 sprite_colors_1st: ; color 1st ghost sprite for various ghost modes. normal, frightened, catched,...
     .byte Color_Bg
-    .byte Color_Bg
+    .byte Color_Bg    ; 2 - frightened
     .byte Color_Blue
-    .byte Color_Cyan
-    .byte Color_Gray
+    .byte Color_Cyan  ; bonus
+    .byte Color_Gray  ; eor 2 - frightened Gray/Red
 
-sprite_colors_2nd:  ; color 2nd ghost sprite
+sprite_colors_2nd:    ; color 2nd ghost sprite
     .byte Color_Blue | SPRITE_CC | SPRITE_IC
     .byte Color_Blue | SPRITE_CC | SPRITE_IC
     .byte Color_Pink
@@ -712,9 +765,11 @@ sprite_colors_2nd:  ; color 2nd ghost sprite
 
 vdp_init_bytes:  ; vdp init table - MODE G4
     .byte v_reg0_m4|v_reg0_m3|v_reg0_IE1
+    ;.byte v_reg0_m5|v_reg0_m3|v_reg0_IE1
 vdp_reg1_init:
     .byte v_reg1_16k|v_reg1_display_on|v_reg1_spr_size|v_reg1_int
     .byte >(VRAM_SCREEN>>2) | $1f
+    ;.byte >(VRAM_SCREEN>>2) | $3f
     .byte 0 ; n.a.
     .byte 0 ; n.a.
     .byte >(VRAM_SPRITE_ATTR<<1) | $07    ; R#5 - sprite attribute table
@@ -723,7 +778,7 @@ vdp_reg1_init:
     .byte v_reg8_VR | v_reg8_SPD ; R#8 - VR - 64k VRAM
 .export vdp_reg9_init
 vdp_reg9_init:
-    .byte 0 ; v_reg9_ln ; R#9 - 212lines
+    .byte 0 ; v_reg9_ln ; R#9 - 212lines, NTSC 60Hz !
     .byte 0 ; n.a.
     .byte <.hiword(VRAM_SPRITE_ATTR<<1); R#11 sprite attribute high
     .byte 0;  #R12
@@ -752,9 +807,6 @@ pacman_palette:
     vdp_pal $47,$b8,$ae   ;d dark cyan
     vdp_pal $21,$21,$ff   ;e blue => maze walls, ghosts "scared", ghost pupil
     vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes, text
-
-tiles:
-    .include "pacman.tiles.rot.inc"
 
 sprite_patterns:
     .include "pacman.ghosts.res"        ; 20 sprites
@@ -805,16 +857,20 @@ table_4bpp_l:
   .byte <bonus_4bpp_key
 Index_4bpp_ghost=(*-table_4bpp_l)
   .byte <ghost_4bpp
+Index_Logo_l:
+  .byte <branik_logo
 table_4bpp_h:
   .byte >bonus_4bpp_cherry
   .byte >bonus_4bpp_strawberry
   .byte >bonus_4bpp_orange
   .byte >bonus_4bpp_apple
-  .byte >bonus_4bpp_grapes
+  .byte >bonus_4bpp_grapes      ; 4
   .byte >bonus_4bpp_galaxian
   .byte >bonus_4bpp_bell
   .byte >bonus_4bpp_key
   .byte >ghost_4bpp
+Index_Logo_h:
+  .byte >branik_logo            ; 9
 
 bonus_4bpp_cherry:
   .include "bonus.cherry.4bpp.res"
@@ -834,10 +890,12 @@ bonus_4bpp_orange:
   .include "bonus.orange.4bpp.res"
 ghost_4bpp:
   .include "ghost.4bpp.res"
+branik_logo:
+  .include "branik.4bpp.res"
 
 .bss
-    sprite_tab_attr:      .res 9*4   ; 9 sprites, 4 byte per entry +1 y of sprite 10
-    sprite_tab_attr_end:  .res 1     ; Y sprite 10, set to "off"
+    sprite_tab_attr:      .res 9*4  ; 9 sprites, 4 byte per entry +1 y of sprite 10
+    sprite_tab_attr_end:  .res 1    ; Y sprite 10, set to "off"
     sprite_color_1:       .res 4
     sprite_color_2:       .res 4
-    vdp_reg8:             .res 1  ; mirror vdp reg 8
+    vdp_reg8:             .res 1    ; mirror vdp reg 8
