@@ -117,10 +117,6 @@ main:
               jmp @init_state
 
 .ifdef __DEVMODE  ; debug keys
-:             cmp #'z'  ; blank
-              bne :+
-              ldy #Color_Bg
-              jsr vdp_mode4_blank
 :             cmp #'d'  ; dying
               bne :+
               lda #FN_STATE_PACMAN_DYING
