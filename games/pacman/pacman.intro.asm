@@ -125,8 +125,7 @@ display_credit:
               jmp out_digit
 :             jmp out_digits
 
-intro_frame:  jsr gfx_sprites_off
-              jsr gfx_blank_screen
+intro_frame:  jsr gfx_blank_screen
 
               draw_text _header_1, Color_Text
               draw_text _header_2

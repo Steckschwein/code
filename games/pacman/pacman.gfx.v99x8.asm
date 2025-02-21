@@ -78,10 +78,8 @@ gfx_mode_on:  lda #<vdp_init_bytes
               ldy #>vdp_init_bytes
               ldx #(vdp_init_bytes_end-vdp_init_bytes-1)
               jsr vdp_init_reg
-              ;vdp_sreg $0, v_reg18  ;x/y screen adjust
               vdp_sreg 253, v_reg23  ;y offset
 
-              ;vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
               lda #nline
               sta scanline
               ldy #v_reg19
@@ -193,14 +191,13 @@ gfx_init:     vdp_sreg 0, v_reg16
               cpx #2*16
               bne :-
 
-@gfx_init_sprites:
               vdp_vram_w VRAM_SPRITE_PATTERN
               lda #<sprite_patterns
               ldy #>sprite_patterns
               ldx #1+((sprite_patterns_end-sprite_patterns)>>8)
               jsr vdp_memcpy
 
-              vdp_vram_w (VRAM_SPRITE_COLOR+16*4*2)  ; load sprite color address pacman
+              vdp_vram_w (VRAM_SPRITE_COLOR+ACTOR_PACMAN*16*2)  ; load sprite color address pacman
               lda #Color_Pacman
               ldx #16
               jsr vdp_fills
@@ -209,11 +206,8 @@ gfx_init:     vdp_sreg 0, v_reg16
               sta sprite_tab_attr_end
 
 gfx_blank_screen:
-              php
-              sei
               ldy #Color_Bg
               jsr vdp_mode4_blank
-              plp
               jmp gfx_sprites_off
 gfx_sprites_on:
               lda #0
@@ -237,7 +231,7 @@ gfx_update:   bgcolor Color_Cyan
               vdp_vram_w VRAM_SPRITE_ATTR
               lda #<sprite_tab_attr
               ldy #>sprite_tab_attr
-              ldx #sprite_tab_attr_end-sprite_tab_attr
+              ldx #sprite_tab_attr_end+1-sprite_tab_attr
               jsr vdp_memcpys
 
               vdp_vram_w VRAM_SPRITE_COLOR  ; load sprite color address
@@ -356,8 +350,7 @@ _gfx_update_sprite_tab:
               ldy r3
               sta sprite_tab_attr,y
               iny
- ;             lda #0
-;              sta sprite_tab_attr,y  ; byte 4 - reserved/unused
+              ; byte 4 - reserved/unused, we skip it
               iny
               rts
 
@@ -468,6 +461,7 @@ gfx_vram_addr:
               sta io_port_vdp_reg
               lda p_vram+1        ; A13-A8 vram address highbyte
               and #$3f
+              sta p_vram+1
               ora #WRITE_ADDRESS
               vdp_wait_s 7
               sta io_port_vdp_reg
@@ -691,7 +685,6 @@ gfx_charout:
               rol p_tiles+1
               asl
               rol p_tiles+1
-              ;clc
               adc #<tiles
               sta p_tiles
               lda #>tiles
@@ -898,7 +891,7 @@ bonus_4bpp_orange:
 ghost_4bpp:
   .include "ghost.4bpp.res"
 branik_logo:
-  ;.include "branik.4bpp.res"
+  .include "branik.4bpp.res"
 
 .bss
     sprite_tab_attr:      .res 9*4  ; 9 sprites, 4 byte per entry +1 y of sprite 10

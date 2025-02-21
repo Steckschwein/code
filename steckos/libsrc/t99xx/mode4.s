@@ -67,10 +67,9 @@ vdp_mode4_on:
 vdp_mode4_blank:
               lda #<@cmd_hmmv_data
               ldx #>@cmd_hmmv_data
-              jmp vdp_cmd_hmmv
+              jmp vdp_cmd_hmmv_wait
 @cmd_hmmv_data:
               .word 0 ;x #36/#37
               .word (ADDRESS_GFX4_SCREEN>>7) ;y - from page offset
-              .word 256 ; len x #40/#41
-              .word 256 ; len y #42/#43
-
+              .word $100 ; len x #40/#41
+              .word $100 ; len y #42/#43

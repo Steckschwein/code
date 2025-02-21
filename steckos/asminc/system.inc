@@ -38,7 +38,7 @@ card_slot0    = $250
 card_slot1    = $260
 
 ;...
-clockspeed    = 1  ; in Mhz
+clockspeed    = 10  ; in Mhz
 
 stack         = $0100
 

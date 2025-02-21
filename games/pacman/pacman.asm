@@ -46,8 +46,8 @@ main:
 
 :             sei
               jsr sound_init
-              jsr gfx_init
               jsr gfx_mode_on
+              jsr gfx_init
               jsr io_irq_on
               cli
 
@@ -117,6 +117,10 @@ main:
               jmp @init_state
 
 .ifdef __DEVMODE  ; debug keys
+:             cmp #'z'  ; blank
+              bne :+
+              ldy #Color_Bg
+              jsr vdp_mode4_blank
 :             cmp #'d'  ; dying
               bne :+
               lda #FN_STATE_PACMAN_DYING

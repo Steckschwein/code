@@ -24,8 +24,7 @@
 
 .include "system.inc"
 
-;a_vdp    = $0220 ;
-a_vdp     = $1000 + $08 ; JC
+a_vdp    = $0220 ;
 a_vram    = a_vdp
 a_vreg    = a_vdp+1
 a_vregpal = a_vdp+2

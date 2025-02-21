@@ -27,12 +27,27 @@
 .setcpu "6502"
 
 .export vdp_cmd_hmmv
+.export vdp_cmd_hmmv_wait
 
 .import vdp_wait_cmd
 
 .importzp vdp_ptr, vdp_tmp
 
 .code
+
+;@name: vdp_cmd_hmmv_wait - hmmv with wait until cmd has been finished
+;@desc: execute highspeed memory move (vdp/vram) or "fill"
+;@in: A/X - ptr to rectangle coordinates (4 word with x1,y1, len x, len y)
+;@in: Y - color to fill in (reg #44)
+vdp_cmd_hmmv_wait:
+              php
+              sei
+
+              jsr _vdp_cmd_hmmv
+              jsr vdp_wait_cmd
+
+              plp
+              rts
 
 ;@name: vdp_cmd_hmmv
 ;@desc: execute highspeed memory move (vdp/vram) or "fill"
@@ -42,14 +57,20 @@ vdp_cmd_hmmv:
               php
               sei
 
+              jsr _vdp_cmd_hmmv
+
+              plp
+              rts
+
+_vdp_cmd_hmmv:
               sta vdp_ptr
               stx vdp_ptr+1
 
-              jsr vdp_wait_cmd
+              jsr vdp_wait_cmd        ; previous cmd in execution?
 
-              vdp_sreg 36, v_reg17   ; set reg index to #36
+              vdp_sreg 36, v_reg17    ; set reg index to #36
 
-              sty vdp_tmp            ; safe color
+              sty vdp_tmp             ; safe color
 
               ldy #0
 @loop:        vdp_wait_s 9
@@ -59,7 +80,7 @@ vdp_cmd_hmmv:
               cpy #08
               bne @loop
 
-              lda vdp_tmp           ; color (r#44)
+              lda vdp_tmp             ; color (r#44)
               vdp_wait_s 9
               sta a_vregi
 
@@ -70,6 +91,4 @@ vdp_cmd_hmmv:
               lda #v_cmd_hmmv
               vdp_wait_s 2
               sta a_vregi
-
-              plp
               rts

@@ -147,7 +147,6 @@ out_text:     jsr @next_char
               jsr @next_char
               sta sys_crs_y
 @next:        jsr @next_char
-              beq @rts
               cmp #0
               beq @rts
               cmp #TXT_CRS_XY
