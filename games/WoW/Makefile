@@ -29,6 +29,6 @@ wow: wow.prg
 	../../xmodem.sh wow.prg
 
 emu: wow.prg
-	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $<
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $<
 
 #https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ7EQaLTgGaPL_VGRyXpupFka8nJUtsy9sKNgAOUoo7H8Iw7SLzQQ

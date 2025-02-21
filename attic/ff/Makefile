@@ -20,4 +20,4 @@ clean:
 transfer: $(TARGET)
 	../xmodem.sh $(TARGET)
 emu: $(TARGET)
-	steckschwein-emu -rom ../steckos/bios/bios.bin -scale 2 -sdcard ../steckos.img -upload $(TARGET)
+	6502msx-emu -rom ../steckos/bios/bios.bin -scale 2 -sdcard ../steckos.img -upload $(TARGET)

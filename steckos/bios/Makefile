@@ -55,7 +55,7 @@ flash: kernel.bin flashrom
 	../../xmodem.sh ../../../steckschwein-sw/steckos/kernel/$<
 
 emu: bios.bin
-	steckschwein-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg
+	6502msx-emu -rom $< -upload ../../steckos/kernel/loader.prg # ../../progs/edlib/edlplytest.prg
 
 burn: bios.bin
 	minipro --device AT28C256 --write bios.bin -s

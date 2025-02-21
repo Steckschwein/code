@@ -31,4 +31,4 @@ asteroids: asteroids.prg
 	../../xmodem.sh $@
 
 emu: asteroids.prg
-	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $^
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload $^

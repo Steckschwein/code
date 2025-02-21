@@ -52,4 +52,4 @@ dinosaur: all
 	../../xmodem.sh dinosaur.prg
 
 emu: dinosaur.prg
-	steckschwein-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload dinosaur.prg
+	6502msx-emu -rom ../../steckos/bios/bios.bin -sdcard ../../steckos.img -upload dinosaur.prg

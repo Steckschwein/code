@@ -24,7 +24,7 @@ shell: shell.prg
 	../../xmodem.sh shell.prg
 
 %.emu: %.prg
-	steckschwein-emu -upload $<
+	6502msx-emu -upload $<
 
 
 %.dis: %.prg

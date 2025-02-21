@@ -45,7 +45,7 @@ loader: loader.prg
 	../../xmodem.sh loader.prg
 
 emu: bios.bin
-	steckschwein-emu -rom $< -debug 0xc8ae
+	6502msx-emu -rom $< -debug 0xc8ae
 
 burn: bios.bin
 	minipro --device AT28C256 --write bios.bin -s
