@@ -3,15 +3,13 @@
 .autoimport
 
 .export dev_read_block=         mock_read_block
-.export read_block=             blklayer_read_block
+.export read_block=             mock_read_block
 .export dev_write_block=        mock_not_implemented
 .export write_block=            mock_not_implemented
 .export write_block_buffered=   mock_not_implemented
-.export write_flush=            blklayer_flush
+.export write_flush=            mock_not_implemented
 
 .export __rtc_systime_update=   mock_not_implemented
-
-debug_enabled=1
 
 .code
 

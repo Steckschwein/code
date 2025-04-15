@@ -30,6 +30,8 @@
 
 .code
 
+debug_enabled=0
+
 .macro setup testname
     test testname
     jsr setUp

@@ -36,7 +36,9 @@
 .export blklayer_write_block_buffered;
 .export blklayer_flush;
 
-.autoimport
+.import dev_read_block
+.import dev_write_block
+.import lba_addr
 
 .importzp sd_blkptr
 
@@ -60,7 +62,8 @@ blklayer_read_block:
  ;         debug32 "bl r lba last", _blkl_store+_blkl_state::blk_lba
 ;          debug16 "bl r lba blkptr", _blkl_store+_blkl_state::blk_ptr
             ldx #0
-            _block_loaded @l_read
+            blklayer_cmp32_x _blkl_store+_blkl_state::blk_lba, lba_addr, @l_read
+            blklayer_cmp16_x _blkl_store+_blkl_state::blk_ptr, sd_blkptr, @l_read
             clc
 @l_exit:    rts
 

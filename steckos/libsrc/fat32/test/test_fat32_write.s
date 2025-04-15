@@ -3,16 +3,15 @@
 .autoimport
 
 ; mock defines
-.export dev_read_block=         mock_read_block
-.export read_block=             blklayer_read_block
-.export dev_write_block=        mock_write_block
-.export write_block=            blklayer_write_block
-.export write_block_buffered=   blklayer_write_block_buffered
-.export write_flush=            blklayer_flush
+.export dev_read_block=         mock_not_implemented
+.export dev_write_block=        mock_not_implemented
+
+.export read_block=             mock_read_block
+.export write_block=            mock_write_block
+.export write_block_buffered=   mock_write_block
+.export write_flush=            mock_not_implemented
 
 .export rtc_systime_update=mock_rtc
-
-debug_enabled=1
 
 ; cluster search will find following clustes
 TEST_FILE_CL10=$10
@@ -744,6 +743,8 @@ setUp:
   init_block block_fsinfo_init, block_fsinfo
   rts
 
+mock_not_implemented:
+    fail "unexpected mock call!"
 
 .data
   test_file_name_1:     .asciiz "test01.tst"

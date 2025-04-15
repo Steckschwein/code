@@ -24,7 +24,7 @@
 
 ; Z=1 if equal, Z=0 otherwise and branch to given label
 ;
-.macro _blkl_cmp32_x op1, op2, _label
+.macro blklayer_cmp32_x op1, op2, _label
    lda op1+0, x
    cmp op2+0
    bne _label
@@ -39,18 +39,13 @@
    bne _label
 .endmacro
 
-.macro _blkl_cmp16_x op1, op2, _label
+.macro blklayer_cmp16_x op1, op2, _label
   lda op1+0, x
   cmp op2+0
   bne _label
   lda op1+1, x
   cmp op2+1
   bne _label
-.endmacro
-
-.macro _block_loaded _label
-  _blkl_cmp32_x _blkl_store+_blkl_state::blk_lba, lba_addr, _label
-  _blkl_cmp16_x _blkl_store+_blkl_state::blk_ptr, sd_blkptr, _label
 .endmacro
 
 .endif  ; _BLKLAYER_INC_
