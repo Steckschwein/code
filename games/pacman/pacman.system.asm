@@ -290,6 +290,7 @@ system_state_table:
               .word game_level_cleared
               .word game_game_over
               .word game_ghost_catched
+              .word game_interlude_init
               .word game_interlude
               .word game_demo_init
               .word game_demo_playing

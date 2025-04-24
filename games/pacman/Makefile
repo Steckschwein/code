@@ -1,10 +1,10 @@
 #DEBUG+=-D__DEBUG
-#DEBUG+=-D__NO_SOUND
-#DEBUG+=-D__NO_BOOT
-#DEBUG+=-D__NO_INTRO
+DEBUG+=-D__NO_SOUND
+DEBUG+=-D__NO_BOOT
+DEBUG+=-D__NO_INTRO
 #DEBUG+=-D__INTERLUDE
 DEBUG+=-D__ASSERTIONS
-#DEBUG+=-D__DEVMODE
+DEBUG+=-D__DEVMODE
 
 LIBS=
 CA65FLAGS=$(DEBUG)
@@ -44,7 +44,8 @@ RESOURCES=\
   pacman.pacman.res \
 	pacman.dying.res \
 	pacman.bonus.res \
-	pacman.intermission.res \
+	pacman.interlude.res \
+	ghost.interlude.sprites.res \
 	bonus.res \
   pacman.tiles.rot.inc
 
@@ -71,7 +72,7 @@ clean:
 	python3 ../utils/xpm_ca65_4bpp.py $< > $@
 
 
-pacman.gfx.c64.o: 	$(RESOURCES_C64)
+pacman.gfx.c64.o: $(RESOURCES_C64)
 
 pacman.game.o: pacman.maze.inc pacman.inc
 

@@ -1,13 +1,14 @@
 
 TODO:
   - 1Mhz improvements
-  -- v99x8 use sprites 10-17 for frightened ghosts to reduce "color fill"
+  -- v99x8 use sprites 10-17 for frightened ghosts to reduce "color fill" on each frame - or only color fill if necessarry
   -- cmd engine - flyweight pattern for characters
   - elroy mode, blinky keeps pacman target regardless which mode (scatter/chase)
   - fix ghost eyes (dead) tunnel delay
   - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3) - snd player key on/off behaviour
   - system changes modes one or more times when a ghost is inside the base, that ghost will move to the right instead of the left upon leaving the house.
   - compensate pacman direction and 1px offset
+  - level 256
   - toggle to enable/disable original bugs
     - pinky/inky target calculation bug - "target is also 4 tiles left if pacman is facing up"
     - "pass through" bug
@@ -59,7 +60,7 @@ notes:
 
 video:
   - mode 4 (V9938/58) with NTSC (60Hz) and open border hack (overscan)
-  - original paxman, namco May 22nd, 1980
+  - original pacman, namco May 22nd, 1980
     - 224x288 => 28x36 => 28x31 -5 (score)    => 1px 196x252
 
   - steckschwein

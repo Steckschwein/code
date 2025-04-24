@@ -89,24 +89,25 @@ DIP_BONUS_LIFE_1    =1<<5
 DIP_DIFFICULTY      =1<<6
 DIP_GHOSTNAMES      =1<<7
 
-FN_STATE_NOOP          = $00
-FN_STATE_INIT          = $02
-FN_STATE_LEVEL_INIT    = $04
-FN_STATE_READY         = $06
-FN_STATE_DELAY         = $08
-FN_STATE_READY_WAIT    = $0a
-FN_STATE_PLAYING       = $0c
-FN_STATE_PACMAN_DYING  = $0e
-FN_STATE_LEVEL_CLEARED = $10
-FN_STATE_GAME_OVER     = $12
-FN_STATE_GHOST_CATCHED = $14
-FN_STATE_INTERLUDE  = $16
-FN_STATE_DEMO_INIT     = $18
-FN_STATE_DEMO_PLAYING  = $1a
-FN_STATE_INTRO         = $1c
-FN_STATE_INTRO_GHOSTS  = $1e
-FN_STATE_INTRO_GHOST_CATCHED  = $20
-FN_STATE_INTRO_SELECT_PLAYER  = $22
+FN_STATE_NOOP           = $00
+FN_STATE_INIT           = $02
+FN_STATE_LEVEL_INIT     = $04
+FN_STATE_READY          = $06
+FN_STATE_DELAY          = $08
+FN_STATE_READY_WAIT     = $0a
+FN_STATE_PLAYING        = $0c
+FN_STATE_PACMAN_DYING   = $0e
+FN_STATE_LEVEL_CLEARED  = $10
+FN_STATE_GAME_OVER      = $12
+FN_STATE_GHOST_CATCHED  = $14
+FN_STATE_INTERLUDE_INIT = $16
+FN_STATE_INTERLUDE      = $18
+FN_STATE_DEMO_INIT      = $1a
+FN_STATE_DEMO_PLAYING   = $1c
+FN_STATE_INTRO          = $1e
+FN_STATE_INTRO_GHOSTS   = $20
+FN_STATE_INTRO_GHOST_CATCHED  = $22
+FN_STATE_INTRO_SELECT_PLAYER  = $24
 
 
 STATE_PAUSE         = 1<<5
@@ -118,11 +119,13 @@ GHOST_STATE_RETURN  = 1
 GHOST_STATE_LEAVE   = 2
 GHOST_STATE_TARGET  = 3
 GHOST_STATE_ENTER   = 4
+GHOST_STATE_STOP    = 5
 
 ACTOR_MODE_NORM     = 0
-ACTOR_MODE_CATCHED  = 1 ; applicable to ghosts only
+ACTOR_MODE_CATCHED  = 1 ; ghosts only
 ACTOR_MODE_FRIGHT   = 2
-ACTOR_MODE_BONUS    = 3 ; applicable to ghosts only
+ACTOR_MODE_BONUS    = 3 ; ghosts only
+ACTOR_MODE_BIGMAN   = 4 ; ghosts only
 
 Shape_Mask_Norm       = $7f
 Shape_Mask_Small      = $73 ; only 4 patterns (bit 1,0)
@@ -131,8 +134,9 @@ Shape_Offset_Norm     = $10
 Shape_Offset_Catched  = $20
 Shape_Offset_Fright   = $30
 Shape_Offset_Bonus    = $40
+Shape_Offset_Bigman   = $44
 
-Shape_Ix_Pacman       = 2
+Shape_Ix_Pacman       = 2   ; "filled circle"
 Shape_Ix_Dying        = $34
 Shape_Ix_Invisible    = $3f ; empty sprite
 
@@ -159,21 +163,21 @@ Bonus1_Triggered  = 1<<6  ; mark whether bonus was triggered
 Bonus2_Triggered  = 1<<7
 
 Color_Bg          = $0  ; black
-Color_Red         = $1  ; "shadow", "blinky" red
+Color_Red         = $1  ; "shadow" / "Blinky"
 Color_Brown       = $2  ; orange top, cherry stem
-Color_Pink        = $3  ; "speedy", "pinky" pink
+Color_Pink        = $3  ; "speedy" / Pinky
 
-Color_Cyan        = $5  ; cyan - "bashful" / "inky", color of bonus pts catched ghost
-Color_Light_Blue  = $6  ; "ligth blue"
-Color_Orange      = $7  ; "pokey", "Clyde" "orange"
+Color_Cyan        = $5  ; "bashful" / Inky, color of bonus pts catched ghost
+Color_Light_Blue  = $6  ;
+Color_Orange      = $7  ; "pokey" / Clyde
 
-Color_Yellow      = $9  ; "yellow", "pacman"
-;Color_Indigo      = $b  ; Maze walls, flashing ghosts, ghost pupils
-Color_Dark_Pink   = $b  ; "food", "super food"
-Color_Green       = $c  ; Melon, strawberry top, orange leaf
+Color_Yellow      = $9  ; "pacman"
+
+Color_Dark_Pink   = $b  ; "food", "super food" (1011)
+Color_Green       = $c  ; Melon, strawberry top, orange leaf (1100)
 Color_Dark_Cyan   = $d  ; dark cyan - Melon wrinkles and stem
-Color_Blue        = $e  ; blue => ghosts "frightened", ghost pupil
-Color_Gray        = $f  ; gray => ghosts "frightened", ghost eyes, text
+Color_Blue        = $e  ; blue => ghosts "frightened", ghost pupil, maze wall (1110)
+Color_Gray        = $f  ; gray => ghosts "frightened", ghost eyes, text (1111)
 
 Color_Blinky  = Color_Red
 Color_Inky    = Color_Cyan
@@ -196,8 +200,6 @@ ACT_MOVE_REVERSE_NEXT   = %00001000
 ACT_TURN          = 1<<7
 ACT_NEXT_DIR      = 1<<3|1<<2
 ACT_DIR           = 1<<1|1<<0
-
-SKIP_DIR_CHECK    = $ff
 
 .macro setIRQ irq_vec
       copyPtr irq_vec, save_irq

@@ -246,6 +246,13 @@ gfx_blank_screen:
     bne :-
     rts
 
+.export gfx_interlude_start
+.export gfx_interlude_end
+gfx_interlude_start:
+gfx_interlude_end:
+    rts
+
+
 _gfx_is_sp_collision:
     ldy #ACTOR_PACMAN
     ldx #ACTOR_BLINKY

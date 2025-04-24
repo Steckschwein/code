@@ -183,7 +183,42 @@ gfx_isr:      vdp_sreg 1, v_reg15
               txa
               rts
 
-gfx_init:     vdp_sreg 0, v_reg16
+
+.export gfx_interlude_start
+gfx_interlude_start:
+              lda #<sprite_pattern_interlude
+              ldy #>sprite_pattern_interlude
+              jmp gfx_load_sprites
+
+.export gfx_interlude_end
+gfx_interlude_end:
+              lda #<sprite_pattern_pacman
+              ldy #>sprite_pattern_pacman
+gfx_load_sprites:  ; swap sprite shapes, load data of 12 sprites
+              php
+              sei
+
+              sta p_gfx
+              sty p_gfx+1
+
+              vdp_vram_w (VRAM_SPRITE_PATTERN+8*4*20)
+
+              ldy #0
+:             lda (p_gfx),y
+              sta a_vram
+              vdp_wait_l 10
+              iny
+              bne :-
+              inc p_gfx+1
+:             lda (p_gfx),y
+              sta a_vram
+              vdp_wait_l 10
+              iny
+              bpl :-
+              plp
+              rts
+
+gfx_init:     vdp_sreg 0, v_reg16 ; init vdp color palette
               ldx #0
 :             jsr gfx_write_pal
               inx
@@ -260,10 +295,10 @@ gfx_prepare_update:
               bmi @update
               and #$10
               beq :+
-              lda #6
+              lda #7
 :             sta r2    ; frightened color mask
 
-@update:      ldy #0
+@update:      ldy #0    ; sprite_tab offset
               ldx #ACTOR_BLINKY
 :             jsr _gfx_update_sprite_tab_2x
               inx
@@ -332,7 +367,7 @@ _gfx_update_sprite_tab:
               sec
               sbc #gfx_Sprite_Adjust_Y
               cmp #gfx_Sprite_Off
-              adc #0 ;skip if >= gfx_Sprite_Off
+              adc #0 ;skip if y pos == gfx_Sprite_Off to avoid "sprite off" flicker
               sta sprite_tab_attr,y
               iny
               lda actor_sp_x,x
@@ -748,20 +783,21 @@ tiles:
 mask_4bpp: ; 4bpp - 2 pixels per byte gives 4 combinations
     .byte $00, $0f, $f0, $ff
 
-sprite_colors_1st: ; color 1st ghost sprite for various ghost modes. normal, frightened, catched,...
+sprite_colors_1st: ; color 1st ghost sprite for various ghost modes. normal, frightened, catched, bonus...
+    .byte Color_Bg    ; norm - ghost color applies
     .byte Color_Bg
-    .byte Color_Bg    ; 2 - frightened
-    .byte Color_Blue
+    .byte Color_Blue  ; frightened (ACTOR_MODE_FRIGHT = 2)
     .byte Color_Cyan  ; bonus
+    .byte Color_Yellow ; bigman (big pacman, interlude 1)
     .byte Color_Gray  ; eor 2 - frightened Gray/Red
 
 sprite_colors_2nd:    ; color 2nd ghost sprite
     .byte Color_Blue | SPRITE_CC | SPRITE_IC
     .byte Color_Blue | SPRITE_CC | SPRITE_IC
-    .byte Color_Pink
+    .byte Color_Pink  ; frightened
+    .byte Color_Bg
     .byte Color_Bg
     .byte Color_Red
-
 
 vdp_init_bytes:  ; vdp init table - MODE G4
     .byte v_reg0_m4|v_reg0_m3|v_reg0_IE1
@@ -795,7 +831,7 @@ pacman_palette:
     vdp_pal $ff,0,0       ;1 "shadow", "blinky" red
     vdp_pal $de,$97,$51   ;2 orange top, cherry stem "food"
     vdp_pal $ff,$b8,$ff   ;3 "speedy", "pinky" pink
-    vdp_pal 0,0,0         ;4
+    vdp_pal $ff,0,0       ;4
     vdp_pal 0,$ff,$ff     ;5 "bashful", "inky" cyan
     vdp_pal $47,$b8,$ff   ;6 "light blue"
     vdp_pal $ff,$b8,$51   ;7 "pokey", "Clyde" "orange"
@@ -809,19 +845,22 @@ pacman_palette:
     vdp_pal $de,$de,$ff   ;f gray => ghosts "scared", ghost eyes, text
 
 sprite_patterns:
-    .include "pacman.ghosts.res"        ; 20 sprites
-    .include "pacman.pacman.res"        ; 10 sprites
-    .include "pacman.dying.res"         ; 11 sprites
-    .include "pacman.bonus.res"         ;  4 sprites
-    .include "pacman.intermission.res"  ; 12 sprites
+    .include "pacman.ghosts.res"            ; 20 sprites
+sprite_pattern_pacman:
+    .include "pacman.pacman.res"            ; 10 sprites
+    .include "pacman.dying.res"             ; 11 sprites
+    .include "pacman.bonus.res"             ;  4 sprites
+    .include "ghost.interlude.sprites.res"  ; 14 sprites
 sprite_patterns_end:
+sprite_pattern_interlude:
+    .include "pacman.interlude.res"         ; 12 sprites
 
 shapes:
 ; pacman  $00
-    .byte $14*4,$14*4+4,$1c*4,$14*4 ;r  00
-    .byte $1a*4+4,$1a*4,$1c*4,$1a*4 ;d  01
-    .byte $16*4+4,$16*4,$1c*4,$16*4 ;l  10
-    .byte $18*4,$18*4+4,$1c*4,$18*4 ;u  11
+    .byte $14*4,$15*4,$1c*4,$14*4 ;r  00
+    .byte $1b*4,$1a*4,$1c*4,$1a*4 ;d  01
+    .byte $17*4,$16*4,$1c*4,$16*4 ;l  10
+    .byte $18*4,$19*4,$1c*4,$18*4 ;u  11
 ; ghosts  $10
     .byte $08*4,$08*4,$00*4,$00*4+4 ;r  00
     .byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  01
@@ -838,13 +877,13 @@ shapes:
     .byte $28*4,$27*4,$26*4,$25*4
     .byte $24*4,$23*4,$22*4,$21*4
     .byte $20*4,$1f*4,$1e*4,$1d*4 ; empty sprite ($3f)
-; ghosts bonus pts $40
-    .byte $29*4,$2a*4,$2b*4,$2c*4
-; pacman interlude $44
-    .byte $2d*4,$2e*4,$2f*4,$30*4
-    .byte $2d*4,$2e*4,$2f*4,$30*4
-    .byte $2d*4,$2e*4,$2f*4,$30*4
-    .byte $2d*4,$2e*4,$2f*4,$30*4
+; ghosts as bonus pts $40
+    .byte $29*4,$2a*4,$2b*4,$2c*4 ; 200, 400, 800, 1600 sprites
+; ghosts as big pacman $44
+    .byte $17*4,$16*4,$14*4,$15*4
+    .byte $1b*4,$1a*4,$18*4,$19*4
+    .byte $1f*4,$1e*4,$1c*4,$1d*4
+    .byte $17*4,$16*4,$14*4,$15*4
 
 table_4bpp_l:
   .byte <bonus_4bpp_cherry

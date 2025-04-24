@@ -92,7 +92,7 @@ intro:        lda #STATE_INTRO
 .endif
               lda #FN_STATE_INTRO_GHOSTS
               jsr system_set_state_fn
-              lda #$02  ; initial delay ghost move
+              lda #$01    ; initial delay to align ghost move
               sta game_state+GameState::state_frames
 @exit:        rts
 
@@ -114,7 +114,7 @@ display_credit:
               bcc :+
               draw_text _2up, Color_Cyan
 
-:             ldx #31
+:             ldx #31 ; x/y pos
               ldy #16
               lda #Color_Text
               jsr sys_set_pen
@@ -136,69 +136,19 @@ intro_frame:  jsr gfx_blank_screen
               jmp display_credit
 
 intro_init_script:
-              ldx #INTRO_TUNNEL_X-1         ; draw an invisible tunnel the ghosts must pass through
-              ldy #32
-              stx sys_crs_x
-              sty sys_crs_y
+              jsr prepare_animation
 
-:             txa
-              ldy sys_crs_y
-              jsr lda_maze_ptr_ay
-
-              ldy #0
-              lda #Char_Maze_Blank
-              sta (p_maze),y
-              iny
-              lda #Char_Blank
-              sta (p_maze),y
-              iny
-              lda #Char_Maze_Blank
-              sta (p_maze),y
-              dec sys_crs_y
-              bpl :-
+              lda #$ff
+              sta ghost_cnt
 
               lda #INTRO_TUNNEL_X
               ldy #23
               jsr lda_maze_ptr_ay
               lda #Char_Energizer
               sta (p_maze),y
-
-              ldy #21  ; speed of level 21 - pacman 90%/ghost 95% speed
-              jsr init_speed_cnt
-
-              jsr game_init_actors
-              ldx #ACTOR_PACMAN
-:             lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
-              sta actor_move,x
-              txa
-              asl
-              clc
-              adc #29*8
-              sta actor_sp_y,x
-              lda #INTRO_TUNNEL_X*8+4 ; center +4px
-              sta actor_sp_x,x
-              cpx #ACTOR_PACMAN
-              beq @next
-@ghost:       lda #GHOST_STATE_TARGET
-              sta ghost_state,x
-              lda #0
-              sta ghost_tgt_x,x
-              sta ghost_tgt_y,x
-@next:        dex
-              bpl :-
-
-              lda #$ff
-              sta ghost_cnt
               rts
 
-intro_ghosts: lda #INTRO_TUNNEL_X ; animate energizer
-              sta sys_crs_x
-              ldy #23
-              sty sys_crs_y
-              jsr lda_maze_ptr_ay
-              jsr gfx_charout
-
-              lda game_state+GameState::state_frames
+intro_ghosts: lda game_state+GameState::state_frames
               and #$0f            ; spwan ghost every 16 frames
               bne @move
               ldx ghost_cnt
@@ -220,8 +170,13 @@ animate_energizer:
               bne @exit
               lda text_color
               eor #Color_Food
-              sta text_color
-              draw_text _superfood
+              sta text_color        ; animate energizer
+              lda #INTRO_TUNNEL_X
+              sta sys_crs_x
+              ldy #23
+              sty sys_crs_y
+              jsr lda_maze_ptr_ay
+              jsr gfx_charout
 @exit:        rts
 
 intro_ghost_catched:
@@ -231,10 +186,10 @@ intro_ghost_catched:
               sec
               lda #3
               sbc game_state+GameState::ghsts_to_catch
-              tax                     ;  hide next remaining ghost
-              lda #30*8+4             ;  behind border
+              tax                     ; hide next remaining ghost
+              lda #30*8+4             ; behind border
               sta actor_sp_y,x
-              lda #GHOST_STATE_BASE   ; and do base move up/down
+              lda #GHOST_STATE_STOP   ; catched, do nothing
               sta ghost_state,x
               dec game_state+GameState::ghsts_to_catch
               bmi @demo

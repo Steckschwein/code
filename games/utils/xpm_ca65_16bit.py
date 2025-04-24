@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 
 import argparse
+import re
+import sys
 
 _bit_1 = "1"
 _bit_0 = "0"
 
 def spriteline(line):
-  print (".byte %%%s" % (line.replace("!", _bit_1).replace(" ", _bit_0)))
+  print (".byte %%%s" % (re.sub("[^ ]", _bit_1, line).replace(" ", _bit_0)))
 
 def spritelines(lines):
   for line in lines:
