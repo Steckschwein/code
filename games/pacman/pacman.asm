@@ -117,6 +117,12 @@ main:
               jmp @init_state
 
 .ifdef __DEVMODE  ; debug keys
+:             cmp #'0'
+              bne :+
+              jsr sound_play_game_prelude
+:             cmp #'9'
+              bne :+
+              jsr sound_play_game_interlude
 :             cmp #'d'  ; dying
               bne :+
               lda #FN_STATE_PACMAN_DYING
@@ -159,7 +165,7 @@ main:
               bne :+
               lda #2
               sta game_state+GameState::level
-              lda #FN_STATE_INTERLUDE
+              lda #FN_STATE_INTERLUDE_INIT
               jmp @set_state
 :             cmp #'m'
               bne :+

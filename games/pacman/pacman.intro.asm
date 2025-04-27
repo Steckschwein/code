@@ -176,7 +176,7 @@ animate_energizer:
               ldy #23
               sty sys_crs_y
               jsr lda_maze_ptr_ay
-              jsr gfx_charout
+              jmp gfx_charout
 @exit:        rts
 
 intro_ghost_catched:

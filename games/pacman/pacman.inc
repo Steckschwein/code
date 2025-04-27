@@ -125,20 +125,34 @@ ACTOR_MODE_NORM     = 0
 ACTOR_MODE_CATCHED  = 1 ; ghosts only
 ACTOR_MODE_FRIGHT   = 2
 ACTOR_MODE_BONUS    = 3 ; ghosts only
-ACTOR_MODE_BIGMAN   = 4 ; ghosts only
+ACTOR_MODE_INTRLD3  = 4 ; ghosts only
 
 Shape_Mask_Norm       = $7f
 Shape_Mask_Small      = $73 ; only 4 patterns (bit 1,0)
 
+Colors_Blinky         = 0
+
+Colors_Pacman         = 4
+Colors_Frghtd         = 5
+Colors_Frghtd_2       = 6
+Colors_Bonus          = 7
+Colors_Obstacle       = 8
+Colors_Intrld2        = 9
+Colors_Intrld3        = 10
+
 Shape_Offset_Norm     = $10
 Shape_Offset_Catched  = $20
 Shape_Offset_Fright   = $30
-Shape_Offset_Bonus    = $40
-Shape_Offset_Bigman   = $44
+Shape_Offset_Intrld2  = $40
+Shape_Offset_Intrld3  = $50
+Shape_Offset_Bigman   = $60
+Shape_Offset_Bonus    = $70
 
 Shape_Ix_Pacman       = 2   ; "filled circle"
 Shape_Ix_Dying        = $34
 Shape_Ix_Invisible    = $3f ; empty sprite
+Shape_Ix_Obstacle     = $74
+Shape_Ix_Intrld2      = $44
 
 ; Every time Pac-Man eats a regular dot, he stops moving for one frame (1/60th of a second), slowing his progress by roughly ten percent—just enough for a following ghost to overtake him.
 ; Eating an energizer dot causes Pac-Man to stop moving for three frames.
@@ -166,7 +180,7 @@ Color_Bg          = $0  ; black
 Color_Red         = $1  ; "shadow" / "Blinky"
 Color_Brown       = $2  ; orange top, cherry stem
 Color_Pink        = $3  ; "speedy" / Pinky
-
+Color_Cape        = $4  ; "red" same as Blinky ($01)
 Color_Cyan        = $5  ; "bashful" / Inky, color of bonus pts catched ghost
 Color_Light_Blue  = $6  ;
 Color_Orange      = $7  ; "pokey" / Clyde
