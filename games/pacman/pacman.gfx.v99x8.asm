@@ -70,7 +70,7 @@ gfx_mode_off:
               plp
               rts
 
-scln_top=254
+scln_top=253
 scln_bottom=221
 nline=192
 eline=212
@@ -506,12 +506,12 @@ gfx_vram_addr:
 
 .export gfx_lives
 ; in: Y - lives
-gfx_lives:    sty r3
+gfx_lives:    sty r5
               lda #31
               sta sys_crs_y
-              ldx #MAX_LIVES
+              ldx #MAX_LIVES_DISPLAY
 @l0:          ldy #Color_Pacman
-              cpx r3
+              cpx r5
               bcc :+
               beq :+
               ldy #Color_Bg

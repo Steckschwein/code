@@ -62,10 +62,10 @@ NOTE_C    =$2AE
 
 ; frame count (note length)
 ; punctuation, use multiplier
-L2    =28 ;32
-L4    =14 ;16
-L8    =7 ;8
-L16   =4 ;4
+L2    =32; 28 ;32
+L4    =16; 14 ;16
+L8    =8; 7 ;8
+L16   =4
 L32   =2
 L64   =1
 
@@ -141,7 +141,7 @@ sound_play_eat_dot:
               lda #SOUND_PACMAN
 sound_play:   ora sound_play_state
               sta sound_play_state
-@exit:        rts
+              rts
 sound_play_game_interlude:
               ldx #<channel_init_interlude
               ldy #>channel_init_interlude
@@ -150,7 +150,12 @@ sound_play_game_prelude:
               ldx #<channel_init_prelude
               ldy #>channel_init_prelude
 sound_play_melody:
-              lda #1<<1 ; channel 1/0
+              lda sound_play_state
+              and #SOUND_GAME_MELODY
+              cmp #SOUND_GAME_MELODY
+              bne :+    ; if plays already, skip init
+              rts
+:             lda #1<<1 ; channel 1/0
               jsr sound_init_channel
               lda #SOUND_GAME_MELODY
               bra sound_play
@@ -189,17 +194,16 @@ sound_play_chn:
 .ifdef __ASSERTIONS
               cpx #channels+1
               bcc :+
-          :   nop
+:
 .endif
-              dec chn_cnt,x
+              dec chn_hold_cnt,x
               bne @exit
               lda chn_ix,x    ; data channel
               cmp chn_length,x
               bne @next_note
               stz chn_ix,x
               lda #L64
-              sta chn_cnt,x
-              ;stp
+              sta chn_hold_cnt,x
               lda sound_play_state
               eor chn_bit,x
               sta sound_play_state
@@ -245,14 +249,14 @@ sound_play_chn:
               lda (p_sound),y     ; delay
               iny
               ldx sound_tmp
-              sta chn_cnt,x
+              sta chn_hold_cnt,x
               tya
               sta chn_ix,x
 
 @exit:        rts
 
 
-sound_init:   jsr sound_off
+sound_init:   jsr sound_reset
 
               opl_reg $c0, 0 ; FM mode
               opl_reg $01, 1<<5 ; WS on
@@ -419,7 +423,7 @@ sound_init_channel:
               dex                   ; x-1 loop count
 :             stz chn_ix,x          ; note index
               lda #L64
-              sta chn_cnt,x
+              sta chn_hold_cnt,x
               lda (p_sound),y
               sta chn_meta,x
               dey
@@ -439,9 +443,9 @@ sound_init_channel:
               bpl :-
               rts
 
-
+sound_reset:  jsr opl2_init
 sound_off:    stz sound_play_state
-sound_reset:  jmp opl2_init
+              rts
 
 .data
 
@@ -478,7 +482,6 @@ game_sfx_eat_ghost:
               soundEnd
 game_sfx_eat_ghost_end:
 
-.export game_sfx_eat_fruit
 game_sfx_eat_fruit:
               .repeat 4, i
                 note ($200-(i*$50)), 3, L64
@@ -489,7 +492,6 @@ game_sfx_eat_fruit:
               soundEnd
 game_sfx_eat_fruit_end:
 
-.export game_sfx_ghost_alarm
 game_sfx_ghost_alarm:
               .repeat 12, i
                 note (400+(i*10)), 5, L64
@@ -839,7 +841,7 @@ game_sound_prelude_2_end:
       sound_play_state: .res 1
 
       chn_bit:      .res channels
-      chn_cnt:      .res channels
+      chn_hold_cnt: .res channels
       chn_ix:       .res channels
       chn_notes_l:  .res channels
       chn_notes_h:  .res channels

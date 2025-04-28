@@ -222,25 +222,29 @@ game_game_over:
 @exit:        rts
 
 game_interlude_init:
-              ldy #2  ; select interlude for level - lvl 2 (im1), lvl 5 (im2), lvl 9,13,17 (im3)
+              ldy #4  ; select interlude for level - lvl 2 (im1), lvl 5 (im2), lvl 9,13,17 (im3)
               lda game_state+GameState::level
               cmp #2
-              beq @interlude_1
+              beq interlude_1
               cmp #5
-              beq @interlude_2
+              beq interlude_2
               cmp #9
-              beq @interlude_3
+              beq interlude_3
               cmp #13
-              beq @interlude_3
+              beq interlude_3
               cmp #17
-              beq @interlude_3
-              jmp state_next_level
-@interlude_1: dey
-@interlude_2: dey
-@interlude_3: tya
-              asl
-              tay
-              lda interlude_scripts+0,y
+              beq interlude_3
+state_next_level:
+              jsr sound_off
+              inc game_state+GameState::level ; next level
+              lda #FN_STATE_LEVEL_INIT
+              jmp system_set_state_fn
+
+interlude_1:  dey
+              dey
+interlude_2:  dey
+              dey
+interlude_3:  lda interlude_scripts+0,y
               sta p_script
               lda interlude_scripts+1,y
               sta p_script+1
@@ -255,17 +259,12 @@ game_interlude_init:
               ldy #0
               jsr game_intrld_next_step
 
-              jsr sound_play_game_interlude
-
               lda #FN_STATE_INTERLUDE
-              jmp system_set_state_fn
-state_next_level:
-              inc game_state+GameState::level ; next level
-              lda #FN_STATE_LEVEL_INIT
               jmp system_set_state_fn
 
 game_interlude:
-;              .byte $db
+              jsr sound_play_game_interlude
+
               dec intrld_frm_cnt
               bne game_intrld_step
               ldy intrld_scrpt_ix
@@ -294,9 +293,7 @@ interlude_move_both:
               jsr ghost_move
               jmp pacman_move
 
-interlude_move_bigman:
-              bgcolor Color_Pink
-
+interlude_1_bigman:
               jsr interlude_move_both
 
               lda actor_sp_x+ACTOR_PACMAN
@@ -326,8 +323,6 @@ interlude_move_bigman:
               iny
               sty actor_shape+ACTOR_INKY
 
-              bgcolor Color_Bg
-
               rts
 
 interlude_1_reverse:
@@ -336,7 +331,6 @@ interlude_1_reverse:
               sta actor_move,x
               jsr gfx_interlude_start
               jsr mode_frightened
-
               ldx #ACTOR_CLYDE
 :             lda #Colors_Pacman
               sta ghost_color,x
@@ -443,7 +437,7 @@ interlude_1_script:
               .byte 168
               .word interlude_move_blinky
               .byte 228
-              .word interlude_move_bigman
+              .word interlude_1_bigman
               .byte $50
               .word noop
               .byte 1
@@ -562,7 +556,7 @@ ghost_move:   jsr actor_update_charpos
               and #$7f    ; mask cnt
               bne @move_cnt
 
-              lda actor_mode,x        ; during frightened phase and if the ghost reaches home and thus ghost is switched back to normal(0) the normal speed applies
+              lda actor_mode,x        ; if the ghost reaches home during frightened phase and thus the ghost is switched back to normal(0) the normal speed applies
               bne :+
               ora ghost_speed_offs,x  ; no elroy (0), elroy 1 (3), elroy 2 (4)
 :             tay
@@ -585,7 +579,7 @@ ghost_move:   jsr actor_update_charpos
               cpy #$10+1
               bcc @update_dir
 
-@is_tunnel:   cmp #$0f    ; x pos of tunnel?
+@is_tunnel:   cmp #$0f    ; x pos of maze tunnel?
               bne @is_border
               cpy #$06
               bcc @tunnel
@@ -610,8 +604,10 @@ ghost_move:   jsr actor_update_charpos
               bne @move
               cpy #BORDER_RIGHT_Y ; y in right border? (used in intro only)
               bcs @update_dir     ; otherwise move on
+              cpy #0              ; y right border
+              bne @update_dir
 
-@move:        jsr actor_center  ; center reached?
+@move:        jsr actor_center    ; center reached?
               beq :+
 @move_soft:   jmp actor_move_soft
 
@@ -636,31 +632,31 @@ ghost_move:   jsr actor_update_charpos
 
               lda actor_move,x
               eor #ACT_MOVE_REVERSE
-              sta r2 ; exclude reverse of the new direction
+              sta r2            ; exclude reverse of the new direction
 
               lda actor_mode,x
-              beq short_dist   ; normal ?
+              beq short_dist    ; normal (0) ?
               cmp #ACTOR_MODE_CATCHED
-              beq short_dist   ; catched ?
+              beq short_dist    ; catched ?
 
-              jsr system_rng  ; choose next direction randomly
+              jsr system_rng    ; then frightened, so choose next direction randomly
 @check_dir:   and #ACT_DIR
               sta target_dir
-              cmp r2   ; reverse direction?
+              cmp r2            ; reverse direction?
               beq @next_dir
               tay
               lda y_index,y
               tay
               lda (p_maze),y
-              cmp #Char_Base
+              cmp #Char_Base    ; passably tile char?
               bcc tgt_direction
 @next_dir:    inc target_dir
               lda target_dir
               jmp @check_dir
 
 short_dist_reverse:
-;              lda #$ff
- ;             sta r2 ; allow reverse
+              lda #$ff
+              sta r2 ; allow reverse
 short_dist:
 ; check new direction in order up,left,down,right
               lda #$ff  ; init 16bit distance "far away"
@@ -855,7 +851,6 @@ ghost_update_shape:
               ora actor_shape,x
 ghost_set_shape:
               ldy actor_mode,x
-              ;.byte $db
               ora shape_offs,y
               and shape_mask,y
               sta actor_shape,x
@@ -1673,13 +1668,13 @@ update_mode:  lda game_state+GameState::frghtd_timer+0
 @chase:       ldx #ACTOR_PACMAN
               lda actor_move,x
               bmi :+            ; pacman is moving, use current direction
-              and #ACT_NEXT_DIR ; if stopped, next position
+              and #ACT_NEXT_DIR ; if stopped, pacman next direction
               lsr
               lsr
 :             and #ACT_DIR
               sta r1
 
-@tgt_pinky:   tay
+@tgt_pinky:   tay   ; 4 tiles in front of pacman
               lda vectors_x,y
               asl
               asl
@@ -1847,7 +1842,7 @@ animate_bonus:
 @exit:        rts
 
 
-draw_frame:   jsr gfx_sprites_off
+init_maze:    jsr gfx_sprites_off
               ldy #0
 :             lda maze+$000,y
               sta game_maze+$000,y
@@ -1919,7 +1914,7 @@ game_level_init:
               bpl :+
               rts
 :
-              jsr draw_frame
+              jsr init_maze
 
               draw_text ready, Color_Yellow
 
@@ -2069,7 +2064,7 @@ game_init:    jsr sound_play_game_prelude
               dey
               bpl :-
 
-              jsr draw_frame
+              jsr init_maze
 
               bit game_state+GameState::state ; in intro?
               bpl :+
@@ -2094,8 +2089,7 @@ game_init:    jsr sound_play_game_prelude
 prepare_animation:
               ldx #INTRO_TUNNEL_X-1         ; draw an invisible tunnel the ghosts must pass through
               stx sys_crs_x
-              ldy #$ff
-
+              ldy #0
 @draw_tunnel: txa
               sty sys_crs_y
               jsr lda_maze_ptr_ay ; setup p_maze
@@ -2125,7 +2119,7 @@ prepare_animation:
               sta ghost_state,x
               lda #INTRO_TUNNEL_X
               sta ghost_tgt_x,x
-              lda #0
+              lda #32
               sta ghost_tgt_y,x
 
 @init_actor:  lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
@@ -2140,7 +2134,6 @@ prepare_animation:
               sta actor_sp_x,x
               dex
               bpl @init_actors
-
               rts
 
 .data

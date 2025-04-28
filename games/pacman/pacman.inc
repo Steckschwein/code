@@ -28,7 +28,7 @@
 
 KEY_EXIT = 27
 MAX_DOTS=240+4  ; food + superfood
-MAX_LIVES=5
+MAX_LIVES_DISPLAY=5
 
 Dot_Cnt_Enabled=1<<7
 

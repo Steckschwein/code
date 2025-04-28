@@ -22,30 +22,44 @@
 .ifndef _ASSERTIONS_INC_
   _ASSERTIONS_INC_ = 1
 
-.ifdef __ASSERTIONS
 .macro assertA_le value
+.ifdef __ASSERTIONS
   php
   cmp #value+1
   bcc :+
   .byte $db
 : plp
+.endif
 .endmacro
 
 .macro assertX_le
+.ifdef __ASSERTIONS
   php
   cpx #value+1
   bcc :+
   .byte $db
 : plp
+.endif
+.endmacro
+
+.macro assertX_eq
+.ifdef __ASSERTIONS
+  php
+  cpx #value+1
+  beq :+
+  .byte $db
+: plp
+.endif
 .endmacro
 
 .macro assertY_le
+.ifdef __ASSERTIONS
   php
   cpy #value+1
   bcc :+
   .byte $db
 : plp
-.endmacro
 .endif
+.endmacro
 
 .endif  ; _ASSERTIONS_INC__
