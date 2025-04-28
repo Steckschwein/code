@@ -438,7 +438,7 @@ interlude_1_script:
               .word interlude_move_blinky
               .byte 228
               .word interlude_1_bigman
-              .byte $50
+              .byte $60
               .word noop
               .byte 1
               .word gfx_interlude_end
@@ -547,8 +547,7 @@ ghost_move:   jsr actor_update_charpos
               lda #112
               cmp actor_sp_y,x
               bne @move_nodelay
-; base reached
-              lda #GHOST_STATE_ENTER
+              lda #GHOST_STATE_ENTER  ; base reached, enter home
               sta ghost_state,x
               rts
 
@@ -586,7 +585,10 @@ ghost_move:   jsr actor_update_charpos
               cpy #$16
               bcc @move
 
-@tunnel:      lda game_state+GameState::frames ; half speed is just every 2nd frame
+@tunnel:      lda ghost_state,x
+              cmp #GHOST_STATE_RETURN
+              beq @update_dir
+              lda game_state+GameState::frames ; half speed is just every 2nd frame
               and #$01
               beq @update_dir
 @exit:        rts
@@ -2308,7 +2310,7 @@ Pts_Index_Ghost_Catched=(*-scoring_table)
   .byte $08,$00 ;
   .byte $04,$00 ;
   .byte $02,$00 ;
-Pts_Index_6000=(*-scoring_table) ;TODO
+Pts_Index_6000=(*-scoring_table)
   .byte $60,$00 ; 4 times all ghosts catched, 12.000 pts extra => 2 * 6.000
 
 points_digits:

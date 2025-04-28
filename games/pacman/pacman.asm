@@ -98,7 +98,9 @@ main:
               bpl @main_loop
               lda #FN_STATE_INTRO
               jmp @set_state
-:             bit game_state+GameState::state ; in intro?
+:             ldx game_state+GameState::credit
+              beq :+
+              bit game_state+GameState::state ; in intro?
               bpl :+
               cmp #'1'
               beq @start_game
@@ -190,7 +192,9 @@ main:
 @debug:       eor game_state+GameState::debug
               sta game_state+GameState::debug
               jmp @main_loop
-:             cmp #'1'
+:             bit game_state+GameState::state ; in game?
+              bmi :+
+              cmp #'1'
               bcc :+
               cmp #'4'+1
               bcs :+

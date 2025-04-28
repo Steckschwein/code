@@ -69,6 +69,13 @@ L16   =4
 L32   =2
 L64   =1
 
+L2_p  =24 ;32
+L4_p  =12 ;16
+L8_p  =6 ;8
+L16_p =3
+L32_p =2
+L64_p =1
+
 TREM=7
 VIB=6
 EG=5
@@ -290,32 +297,31 @@ sound_init:   jsr sound_reset
               opl_reg $e4,  WS_PULSE_SIN
 
               ;modulator op1  - interlude
-              opl_reg $20,  1
-              opl_reg $40,  (SCALE_3 | ($3f-48)) ; key scale / level
-              opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $80,  (10<<4 | (15 & $0f)) ; SR
-              opl_reg $e0,  WS_ABS_SIN ;PULSE_SIN
+;              opl_reg $20,  1
+ ;             opl_reg $40,  (SCALE_3 | ($3f-48)) ; key scale / level
+  ;            opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
+   ;           opl_reg $80,  (10<<4 | (15 & $0f)) ; SR
+    ;          opl_reg $e0,  WS_ABS_SIN ;PULSE_SIN
               ;carrier op2
-              opl_reg $23,  1
-              opl_reg $43,  (SCALE_0 | ($3f-59))
-              opl_reg $63,  (13<<4 | (4 & $0f))  ; attack / decay
-              opl_reg $83,  (11<<4 | (13 & $0f))  ; sustain / release
-              opl_reg $e3,  WS_ABS_SIN ;PULSE_SIN
+     ;         opl_reg $23,  1
+      ;        opl_reg $43,  (SCALE_0 | ($3f-59))
+       ;       opl_reg $63,  (13<<4 | (4 & $0f))  ; attack / decay
+        ;      opl_reg $83,  (11<<4 | (13 & $0f))  ; sustain / release
+         ;     opl_reg $e3,  WS_ABS_SIN ;PULSE_SIN
 
               ;channel 2
               ; modulator op1
-              opl_reg $21,  1
-              opl_reg $41,  (SCALE_3 | ($3f-48)) ; key scale / level
-              opl_reg $61,  (15<<4 | (1 & $0f))  ; AD
-              opl_reg $81,  (10<<4 | (15 & $0f))  ; SR
-              opl_reg $e1,  WS_PULSE_SIN
+          ;    opl_reg $21,  1
+           ;   opl_reg $41,  (SCALE_3 | ($3f-48)) ; key scale / level
+            ;  opl_reg $61,  (15<<4 | (1 & $0f))  ; AD
+             ; opl_reg $81,  (10<<4 | (15 & $0f))  ; SR
+              ;opl_reg $e1,  WS_PULSE_SIN
               ; carrier op2
-              opl_reg $24,  1
-              opl_reg $44,  (SCALE_0 | ($3f-59))
-              opl_reg $64,  (13<<4 | (4 & $0f))   ; attack / decay
-              opl_reg $84,  (11<<4 | (13 & $0f))  ; sustain / release
-              opl_reg $e4,  WS_PULSE_SIN
-
+;              opl_reg $24,  1
+ ;             opl_reg $44,  (SCALE_0 | ($3f-59))
+  ;            opl_reg $64,  (13<<4 | (4 & $0f))   ; attack / decay
+   ;           opl_reg $84,  (11<<4 | (13 & $0f))  ; sustain / release
+    ;          opl_reg $e4,  WS_PULSE_SIN
 
               ;channel 3 - pacman dots
               ;modulator op1
@@ -445,6 +451,18 @@ sound_init_channel:
 
 sound_reset:  jsr opl2_init
 sound_off:    stz sound_play_state
+              lda #0             ; key off
+              ldx #$a0
+:             jsr opl2_reg_write
+              inx
+              cpx #$a9
+              bne :-
+              ldx #$b0
+:             jsr opl2_reg_write
+              inx
+              cpx #$b9
+              bne :-
+
               rts
 
 .data
@@ -529,202 +547,103 @@ game_sfx_pacman_end:
 ; game start sound - https://musescore.com/user/26532651/scores/4753776
 game_interlude_sound:
     ; 1 takt
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_D, 5, L8
-    note NOTE_C, 5, L8
+    note NOTE_F, 4, L4_p
+    note NOTE_F, 4, L4_p
+    note NOTE_F, 4, L4_p
+    note NOTE_D, 4, L8_p
+    note NOTE_C, 4, L8_p
     ; 2 takt
-    note NOTE_F, 5, L8
-    note NOTE_F, 5, L4
-    note NOTE_A, 5, L2
-    note NOTE_A, 5, L8
+    note NOTE_F, 4, L8_p
+    note NOTE_F, 4, L4_p
+    note NOTE_A, 4, L2_p
+    note NOTE_A, 4, L8_p
     ; 3 takt
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_D, 5, L8
-    note NOTE_C, 5, L8
+    note NOTE_F, 4, L4_p
+    note NOTE_F, 4, L4_p
+    note NOTE_F, 4, L4_p
+    note NOTE_D, 4, L8_p
+    note NOTE_C, 4, L8_p
     ; 4 takt
-    note NOTE_F, 5, L8
-    note NOTE_F, 5, L4
-    note NOTE_D, 5, L2
-    note NOTE_D, 5, L8
+    note NOTE_F, 4, L8_p
+    note NOTE_F, 4, L4_p
+    note NOTE_D, 4, L2_p
+    note NOTE_D, 4, L8_p
     ; 5 takt
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_D, 5, L8
-    note NOTE_C, 5, L8
+    note NOTE_F, 4, L4_p
+    note NOTE_F, 4, L4_p
+    note NOTE_F, 4, L4_p
+    note NOTE_D, 4, L8_p
+    note NOTE_C, 4, L8_p
     ; 6 takt
-    note NOTE_F, 5, L8
-    note NOTE_F, 5, L4
-    note NOTE_Gis, 5, L4
-    note NOTE_Ais, 5, L4
-    note NOTE_B, 5, L8
+    note NOTE_F, 4, L8_p
+    note NOTE_F, 4, L4_p
+    note NOTE_Gis, 4, L4_p
+    note NOTE_Ais, 4, L4_p
+    note NOTE_B, 4, L8_p
     ; 7 takt
-    note NOTE_B, 5, L8
-    note NOTE_Ais, 5, L4
-    note NOTE_Gis, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_Gis, 5, L8
+    note NOTE_B, 4, L8_p
+    note NOTE_Ais, 4, L4_p
+    note NOTE_Gis, 4, L4_p
+    note NOTE_F, 4, L4_p
+    note NOTE_Gis, 4, L8_p
     ; 8 Takt
-    note NOTE_Gis, 5, (3*L8)
-    note NOTE_Gis, 5, L8
-    note NOTE_F, 5, L2
+    note NOTE_Gis, 4, (3*L8_p)
+    note NOTE_Gis, 4, L8_p
+    note NOTE_F, 4, L2_p
     soundEnd
 game_interlude_sound_end:
 
 game_interlude_sound_bass:
     ; 1 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
+    note NOTE_F, 2, 3*L8_p
+    note NOTE_F, 2, L8_p
+    note NOTE_F, 2, 3*L8_p
+    note NOTE_F, 2, L8_p
     ; 2 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_A, 2, L8
-    note NOTE_Ais, 2, L8
-    note NOTE_B, 2, L8
-    note NOTE_C, 3, L8
+    note NOTE_F, 2, 3*L8_p
+    note NOTE_F, 2, L8_p
+    note NOTE_A, 2, L8_p
+    note NOTE_Ais, 2, L8_p
+    note NOTE_B, 2, L8_p
+    note NOTE_C, 3, L8_p
     ; 3 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
+    note NOTE_F, 2, 3*L8_p
+    note NOTE_F, 2, L8_p
+    note NOTE_F, 2, 3*L8_p
+    note NOTE_F, 2, L8_p
     ; 4 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_A, 2, L8
-    note NOTE_Ais, 2, L8
-    note NOTE_B, 2, L8
-    note NOTE_C, 3, L8
+    note NOTE_F, 2, 3*L8_p
+    note NOTE_F, 2, L8_p
+    note NOTE_A, 2, L8_p
+    note NOTE_Ais, 2, L8_p
+    note NOTE_B, 2, L8_p
+    note NOTE_C, 3, L8_p
     ; 5 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
+    note NOTE_F, 2, 3*L8_p
+    note NOTE_F, 2, L8_p
+    note NOTE_F, 2, 3*L8_p
+    note NOTE_F, 2, L8_p
     ; 6 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_A, 2, L8
-    note NOTE_Ais, 2, L8
-    note NOTE_B, 2, L8
-    note NOTE_C, 3, L8
+    note NOTE_F, 2, 3*L8_p
+    note NOTE_F, 2, L8_p
+    note NOTE_A, 2, L8_p
+    note NOTE_Ais, 2, L8_p
+    note NOTE_B, 2, L8_p
+    note NOTE_C, 3, L8_p
     ; 7 Takt
-    note NOTE_F, 3, L4
-    note NOTE_C, 3, L8
-    note NOTE_Ais, 2, L8
-    note NOTE_Gis, 2, L4
-    note NOTE_F, 2, L4
+    note NOTE_F, 3, L4_p
+    note NOTE_C, 3, L8_p
+    note NOTE_Ais, 2, L8_p
+    note NOTE_Gis, 2, L4_p
+    note NOTE_F, 2, L4_p
     ; 8 Takt
-    note NOTE_Dis, 2, L4
-    note NOTE_E, 2, L4
-    note NOTE_F, 2, L4
-    pause L4
+    note NOTE_Dis, 2, L4_p
+    note NOTE_E, 2, L4_p
+    note NOTE_F, 2, L4_p
+    pause L4_p
     soundEnd
 game_interlude_sound_bass_end:
 
-; game start sound - https://musescore.com/user/26532651/scores/4753776
-;game_interlude_sound:
-    ; 1 takt
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_D, 5, L8
-    note NOTE_C, 5, L8
-    ; 2 takt
-    note NOTE_F, 5, L8
-    note NOTE_F, 5, L4
-    note NOTE_A, 5, L2
-    note NOTE_A, 5, L8
-    ; 3 takt
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_D, 5, L8
-    note NOTE_C, 5, L8
-    ; 4 takt
-    note NOTE_F, 5, L8
-    note NOTE_F, 5, L4
-    note NOTE_D, 5, L2
-    note NOTE_D, 5, L8
-    ; 5 takt
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_D, 5, L8
-    note NOTE_C, 5, L8
-    ; 6 takt
-    note NOTE_F, 5, L8
-    note NOTE_F, 5, L4
-    note NOTE_Gis, 5, L4
-    note NOTE_Ais, 5, L4
-    note NOTE_B, 5, L8
-    ; 7 takt
-    note NOTE_B, 5, L8
-    note NOTE_Ais, 5, L4
-    note NOTE_Gis, 5, L4
-    note NOTE_F, 5, L4
-    note NOTE_Gis, 5, L8
-    ; 8 Takt
-    note NOTE_Gis, 5, (3*L8)
-    note NOTE_Gis, 5, L8
-    note NOTE_F, 5, L2
-    soundEnd
-;game_interlude_sound_end:
-
-;game_interlude_sound_bass:
-    ; 1 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    ; 2 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_A, 2, L8
-    note NOTE_Ais, 2, L8
-    note NOTE_B, 2, L8
-    note NOTE_C, 3, L8
-    ; 3 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    ; 4 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_A, 2, L8
-    note NOTE_Ais, 2, L8
-    note NOTE_B, 2, L8
-    note NOTE_C, 3, L8
-    ; 5 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    ; 6 Takt
-    note NOTE_F, 2, 3*L8
-    note NOTE_F, 2, L8
-    note NOTE_A, 2, L8
-    note NOTE_Ais, 2, L8
-    note NOTE_B, 2, L8
-    note NOTE_C, 3, L8
-    ; 7 Takt
-    note NOTE_F, 3, L4
-    note NOTE_C, 3, L8
-    note NOTE_Ais, 2, L8
-    note NOTE_Gis, 2, L4
-    note NOTE_F, 2, L4
-    ; 8 Takt
-    note NOTE_Dis, 2, L4
-    note NOTE_E, 2, L4
-    note NOTE_F, 2, L4
-    pause L4
-    soundEnd
-;game_interlude_sound_bass_end:
 
 game_sound_prelude_1: ; piano
     ;1 takt

@@ -158,19 +158,6 @@ gfx_isr:      vdp_sreg 1, v_reg15
               txa
               rts
 
-@border_bottom:
-              lda #v_reg8_VR | v_reg8_SPD ; disable sprites
-              ldy #v_reg8
-              jsr vdp_set_reg
-              lda #scln_top
-              bne @set_scln
-
-@border_top:  lda vdp_reg8  ; restore old value (enable sprites)
-              ldy #v_reg8
-              jsr vdp_set_reg
-              lda #nline
-              bne @set_scln
-
 @is_vblank:   vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
               ldx #$40
               vdp_wait_s 2
@@ -182,6 +169,28 @@ gfx_isr:      vdp_sreg 1, v_reg15
 ;            	vdp_sreg 1, v_reg15 ; update raster bar color during h blank is timing critical (flicker), so we setup status S#1 beforehand
               txa
               rts
+
+@border_bottom:
+              lda #v_reg8_VR | v_reg8_SPD ; disable sprites
+              ldy #v_reg8
+              vdp_sreg
+              lda #scln_top
+              bne @set_scln
+
+@border_top:  lda vdp_reg1_init
+              and #<~v_reg1_display_on
+              ldy #v_reg1
+              jsr vdp_set_reg
+              lda vdp_reg8  ; restore old value (enable sprites)
+              ldy #v_reg8
+              jsr vdp_set_reg
+              vdp_wait_l
+              vdp_wait_l
+              lda vdp_reg1_init
+              ldy #v_reg1
+              jsr vdp_set_reg
+              lda #nline
+              bne @set_scln
 
 
 .export gfx_interlude_start
@@ -961,4 +970,5 @@ branik_logo:
     sprite_tab_attr_end:  .res 1    ; Y sprite 10, set to "off"
     sprite_color_1:       .res 4
     sprite_color_2:       .res 4
-    vdp_reg8:             .res 1    ; mirror vdp reg 8
+    vdp_reg1:             .res 1    ; mirror vdp reg R#0
+    vdp_reg8:             .res 1    ; mirror vdp reg R#8

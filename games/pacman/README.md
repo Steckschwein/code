@@ -1,7 +1,5 @@
 
 BUGS:
-  - fix ghost eyes (dead) tunnel delay
-  - fix top (right) border sprite flicker
 
 FEAT:
   - catched ghost (eyes) can also reverse immediately (short distance)
