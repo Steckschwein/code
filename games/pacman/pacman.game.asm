@@ -156,19 +156,17 @@ game_ready_wait:
               jsr animate_up
 .ifndef __DEVMODE
               lda game_state+GameState::state_frames
-              cmp #$7f
-              bne @detect_joystick
+              bpl @detect_joystick
 .endif
               jsr delete_message_2
 
               lda #FN_STATE_PLAYING
-              .ifdef __INTERLUDE
+.ifdef __INTERLUDE
               lda #FN_STATE_INTERLUDE_INIT
-              .endif
+.endif
               jmp system_set_state_fn
 @detect_joystick:
               jmp io_detect_joystick
-
 
 game_pacman_dying:
               jsr animate_screen

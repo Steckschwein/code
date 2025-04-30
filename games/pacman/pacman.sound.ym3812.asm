@@ -81,9 +81,9 @@ VIB=6
 EG=5
 KSR=4
 
-SCALE_0=0
-SCALE_1_5=1<<7
-SCALE_3=1<<6
+KEY_SCALE_0_75=0
+KEY_SCALE_1_5=1<<7
+KEY_SCALE_3=1<<6
 
 tempo=0
 .macro note _note, octave, delay
@@ -102,12 +102,6 @@ tempo=0
    .byte 0
    .byte 0
    .byte delay>>tempo
-.endmacro
-
-.macro soundEnd
-   .byte 0
-   .byte 0
-   .byte 1
 .endmacro
 
 .macro s_AD _a, _d
@@ -209,8 +203,10 @@ sound_play_chn:
               cmp chn_length,x
               bne @next_note
               stz chn_ix,x
-              lda #L64
+              lda #1  ; restart next call
               sta chn_hold_cnt,x
+              jsr key_off
+              ldx sound_tmp
               lda sound_play_state
               eor chn_bit,x
               sta sound_play_state
@@ -225,18 +221,7 @@ sound_play_chn:
 
               bit chn_meta,x
               bpl :+
-.ifndef __NO_SOUND
-              lda sound_tmp
-              ora #$a0
-              tax
-              lda #0             ; key off
-              jsr opl2_reg_write
-              lda sound_tmp
-              ora #$b0
-              tax
-              lda #0             ; key off
-              jsr opl2_reg_write
-.endif
+              jsr key_off
 :             lda sound_tmp      ; channel 0..8
               ora #$a0
               tax                ; register to X
@@ -262,6 +247,21 @@ sound_play_chn:
 
 @exit:        rts
 
+key_off:
+              stx sound_tmp
+              ora #$a0
+              tax
+              lda #0             ; key off
+.ifndef __NO_SOUND
+              jsr opl2_reg_write
+.endif
+              lda sound_tmp
+              ora #$b0
+              tax
+              lda #0             ; key off
+.ifndef __NO_SOUND
+              jmp opl2_reg_write
+.endif
 
 sound_init:   jsr sound_reset
 
@@ -271,13 +271,13 @@ sound_init:   jsr sound_reset
               ;channel 1 - rhodes piano
               ;modulator op1
               opl_reg $20,  1
-              opl_reg $40,  (SCALE_3 | ($3f-48)) ; key scale / level
+              opl_reg $40,  (KEY_SCALE_3 | ($3f-48)) ; key scale / level
               opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
               opl_reg $80,  (10<<4 | (0 & $0f))  ; SR
               opl_reg $e0,  WS_ABS_SIN ;PULSE_SIN
               ;carrier op2
               opl_reg $23,  1
-              opl_reg $43,  (SCALE_0 | ($3f-59))
+              opl_reg $43,  (KEY_SCALE_0_75 | ($3f-59))
               opl_reg $63,  (13<<4 | (2 & $0f))  ; attack / decay
               opl_reg $83,  (8<<4 | (12 & $0f))  ; sustain / release
               opl_reg $e3,  WS_ABS_SIN ;PULSE_SIN
@@ -285,40 +285,40 @@ sound_init:   jsr sound_reset
               ;channel 2 - rhodes piano
               ; modulator op1
               opl_reg $21,  0
-              opl_reg $41,  (SCALE_3 | ($3f-48)) ; key scale / level
+              opl_reg $41,  (KEY_SCALE_3 | ($3f-48)) ; key scale / level
               opl_reg $61,  (15<<4 | (1 & $0f))  ; AD
               opl_reg $81,  (10<<4 | (0 & $0f))  ; SR
               opl_reg $e1,  WS_PULSE_SIN
               ;carrier op2
               opl_reg $24,  0
-              opl_reg $44,  (SCALE_0 | ($3f-59))
+              opl_reg $44,  (KEY_SCALE_0_75 | ($3f-59))
               opl_reg $64,  (13<<4 | (2 & $0f))  ; attack / decay
               opl_reg $84,  (8<<4 | (12 & $0f))  ; sustain / release
               opl_reg $e4,  WS_PULSE_SIN
 
               ;modulator op1  - interlude
-;              opl_reg $20,  1
- ;             opl_reg $40,  (SCALE_3 | ($3f-48)) ; key scale / level
-  ;            opl_reg $60,  (15<<4 | (1 & $0f))  ; AD
-   ;           opl_reg $80,  (10<<4 | (15 & $0f)) ; SR
-    ;          opl_reg $e0,  WS_ABS_SIN ;PULSE_SIN
+;              opl_reg $20,  YM_AMP|YM_VIB|YM_EG|YM_KSR|3
+ ;             opl_reg $40,  (KEY_SCALE_3 | ($3f-40)) ; key scale / level
+  ;            opl_reg $60,  (15<<4 | (8 & $0f))  ; AD
+   ;           opl_reg $80,  (2<<4 | (3 & $0f)) ; SR
+    ;          opl_reg $e0,  WS_SIN ; WS_PULSE_SIN
               ;carrier op2
-     ;         opl_reg $23,  1
-      ;        opl_reg $43,  (SCALE_0 | ($3f-59))
-       ;       opl_reg $63,  (13<<4 | (4 & $0f))  ; attack / decay
-        ;      opl_reg $83,  (11<<4 | (13 & $0f))  ; sustain / release
-         ;     opl_reg $e3,  WS_ABS_SIN ;PULSE_SIN
+;              opl_reg $23,  YM_AMP|YM_VIB|YM_EG|YM_KSR|2
+ ;             opl_reg $43,  (KEY_SCALE_3 | ($3f-59))
+  ;            opl_reg $63,  (12<<4 | (6 & $0f))  ; attack / decay
+   ;           opl_reg $83,  (2<<4 | (3 & $0f))  ; sustain / release
+    ;          opl_reg $e3,  WS_SIN ;PULSE_SIN
 
               ;channel 2
               ; modulator op1
           ;    opl_reg $21,  1
-           ;   opl_reg $41,  (SCALE_3 | ($3f-48)) ; key scale / level
+           ;   opl_reg $41,  (KEY_SCALE_3 | ($3f-48)) ; key scale / level
             ;  opl_reg $61,  (15<<4 | (1 & $0f))  ; AD
              ; opl_reg $81,  (10<<4 | (15 & $0f))  ; SR
               ;opl_reg $e1,  WS_PULSE_SIN
               ; carrier op2
 ;              opl_reg $24,  1
- ;             opl_reg $44,  (SCALE_0 | ($3f-59))
+ ;             opl_reg $44,  (KEY_SCALE_0_75 | ($3f-59))
   ;            opl_reg $64,  (13<<4 | (4 & $0f))   ; attack / decay
    ;           opl_reg $84,  (11<<4 | (13 & $0f))  ; sustain / release
     ;          opl_reg $e4,  WS_PULSE_SIN
@@ -326,13 +326,13 @@ sound_init:   jsr sound_reset
               ;channel 3 - pacman dots
               ;modulator op1
               opl_reg $22,  1
-              opl_reg $42,  (SCALE_0 | ($3f-46)) ; key scale / level
+              opl_reg $42,  (KEY_SCALE_0_75 | ($3f-46)) ; key scale / level
               opl_reg $62,  (15<<4 | (1 & $0f))  ; AD
               opl_reg $82,  (10<<4 | (0 & $0f))  ; SR
               opl_reg $e2,  WS_PULSE_SIN ; wave select
               ;carrier op2
               opl_reg $25,  1
-              opl_reg $45,  (SCALE_0 | ($3f-46))
+              opl_reg $45,  (KEY_SCALE_0_75 | ($3f-46))
               opl_reg $65,  (13<<4 | (2 & $0f))  ; attack / decay
               opl_reg $85,  (8<<4 | (12 & $0f))  ; sustain / release
               opl_reg $e5,  WS_HALF_SIN
@@ -340,13 +340,13 @@ sound_init:   jsr sound_reset
               ;channel 4 - fruits/bonus
               ;modulator op1
               opl_reg $28,  1
-              opl_reg $48,  (SCALE_1_5 | ($3f-58)) ; key scale / level
+              opl_reg $48,  (KEY_SCALE_1_5 | ($3f-58)) ; key scale / level
               opl_reg $68,  ($f<<4 | ($f & $0f))  ; AD
               opl_reg $88,  (0<<4 | ($0 & $0f))  ; SR
               opl_reg $e8,  WS_HALF_SIN ; wave select
               ;carrier op2
               opl_reg $2b,  1
-              opl_reg $4b,  (SCALE_1_5 | ($3f-59))
+              opl_reg $4b,  (KEY_SCALE_1_5 | ($3f-59))
               opl_reg $6b,  ($f<<4 | ($f & $0f))  ; attack / decay
               opl_reg $8b,  (0<<4 | ($0 & $0f))  ; sustain / release
               opl_reg $eb,  WS_HALF_SIN
@@ -354,13 +354,13 @@ sound_init:   jsr sound_reset
               ;channel 5 - alarm
               ;modulator op1
               opl_reg $29,  1
-              opl_reg $49,  (SCALE_0 | ($3f-42)) ; key scale / level
+              opl_reg $49,  (KEY_SCALE_0_75 | ($3f-42)) ; key scale / level
               opl_reg $69,  (15<<4 | (1 & $0f))  ; AD
               opl_reg $89,  (12<<4 | (14 & $0f))  ; SR
               opl_reg $e9,  WS_SIN ; wave select
               ;carrier op2
               opl_reg $2c,  1
-              opl_reg $4c,  (SCALE_0 | ($3f-42))
+              opl_reg $4c,  (KEY_SCALE_0_75 | ($3f-42))
               opl_reg $6c,  (13<<4 | (2 & $0f))  ; attack / decay
               opl_reg $8c,  (8<<4 | (13 & $0f))  ; sustain / release
               opl_reg $ec,  WS_SIN
@@ -368,13 +368,13 @@ sound_init:   jsr sound_reset
               ;channel 6 - catched
               ;modulator op1
               opl_reg $2a,  1
-              opl_reg $4a,  (SCALE_0 | ($3f-48)) ; key scale / level
+              opl_reg $4a,  (KEY_SCALE_0_75 | ($3f-48)) ; key scale / level
               opl_reg $6a,  (15<<4 | (1 & $0f))  ; AD
               opl_reg $8a,  (10<<4 | (0 & $0f))  ; SR
               opl_reg $ea,  WS_SIN ; wave select
               ;carrier op2
               opl_reg $2d,  1
-              opl_reg $4d,  (SCALE_0 | ($3f-59))
+              opl_reg $4d,  (KEY_SCALE_0_75 | ($3f-59))
               opl_reg $6d,  (13<<4 | (2 & $0f))  ; attack / decay
               opl_reg $8d,  (8<<4 | (15 & $0f))  ; sustain / release
               opl_reg $ed,  WS_SIN
@@ -382,13 +382,13 @@ sound_init:   jsr sound_reset
               ;channel 7 - frightened
               ;modulator op1
               opl_reg $30,  1
-              opl_reg $50,  (SCALE_1_5 | ($3f-48)) ; key scale / level
+              opl_reg $50,  (KEY_SCALE_1_5 | ($3f-48)) ; key scale / level
               opl_reg $70,  (15<<4 | (1 & $0f))  ; AD
               opl_reg $90,  (10<<4 | (0 & $0f))  ; SR
               opl_reg $f0,  WS_PULSE_SIN  ; wave select
               ;carrier op2
               opl_reg $33,  1
-              opl_reg $53,  (SCALE_0 | ($3f-59))
+              opl_reg $53,  (KEY_SCALE_0_75 | ($3f-59))
               opl_reg $73,  (13<<4 | (2 & $0f))   ; attack / decay
               opl_reg $93,  (10<<4 | (14 & $0f))  ; sustain / release
               opl_reg $f3,  WS_PULSE_SIN
@@ -396,13 +396,13 @@ sound_init:   jsr sound_reset
               ;channel 8 - pacman dying
               ;modulator op1
               opl_reg $31,  1
-              opl_reg $51,  (SCALE_0 | (0)) ; key scale / level
+              opl_reg $51,  (KEY_SCALE_0_75 | (0)) ; key scale / level
               opl_reg $71,  (15<<4 | (15 & $0f))  ; AD
               opl_reg $91,  (1<<4 | (15 & $0f))  ; SR
               opl_reg $f1,  WS_SIN ; wave select
               ;carrier op2
               opl_reg $34,  1 | 1<<6  ; vibrato on
-              opl_reg $54,  (SCALE_0 | (0))
+              opl_reg $54,  (KEY_SCALE_0_75 | (0))
               opl_reg $74,  (15<<4 | (1 & $0f))  ; attack / decay
               opl_reg $94,  (15<<4  | (15 & $0f))  ; sustain / release
               opl_reg $f4,  WS_HALF_SIN
@@ -483,21 +483,21 @@ channel_init_interlude:
 
 game_sfx_pacman_dying:
               .include "pacman.dying.dat"
-              soundEnd
+
 game_sfx_pacman_dying_end:
 
 game_sfx_frightened:
               .repeat 8, i
                 note 384, 1+i, L64
               .endrepeat
-              soundEnd
+
 game_sfx_frightened_end:
 
 game_sfx_eat_ghost:
               .repeat 32, i
                 note ((i+1)*$0020), 4, L64
               .endrepeat
-              soundEnd
+
 game_sfx_eat_ghost_end:
 
 game_sfx_eat_fruit:
@@ -507,7 +507,7 @@ game_sfx_eat_fruit:
               .repeat 10, i
                 note ((i+1)*$20), 3, L64
               .endrepeat
-              soundEnd
+
 game_sfx_eat_fruit_end:
 
 game_sfx_ghost_alarm:
@@ -517,7 +517,7 @@ game_sfx_ghost_alarm:
               .repeat 12, i
                 note (400+(12*10)-(i*10)), 5, L64
               .endrepeat
-              soundEnd
+
 game_sfx_ghost_alarm_end:
 
 ; game sfx eaten pac
@@ -540,11 +540,10 @@ game_sfx_pacman:
   ;            note NOTE_Dis,  4, L64
    ;           note NOTE_Fis,  4, L64
     ;          note NOTE_A,    4, L64
-              soundEnd
 game_sfx_pacman_end:
 
 
-; game start sound - https://musescore.com/user/26532651/scores/4753776
+; game interlude sound - https://musescore.com/user/26532651/scores/4753776
 game_interlude_sound:
     ; 1 takt
     note NOTE_F, 4, L4_p
@@ -590,7 +589,6 @@ game_interlude_sound:
     note NOTE_Gis, 4, (3*L8_p)
     note NOTE_Gis, 4, L8_p
     note NOTE_F, 4, L2_p
-    soundEnd
 game_interlude_sound_end:
 
 game_interlude_sound_bass:
@@ -641,7 +639,6 @@ game_interlude_sound_bass:
     note NOTE_E, 2, L4_p
     note NOTE_F, 2, L4_p
     pause L4_p
-    soundEnd
 game_interlude_sound_bass_end:
 
 
@@ -691,7 +688,6 @@ game_sound_prelude_1: ; piano
     pause L16
     note NOTE_C, 5, 3*L16
     pause L16
-    soundEnd
 game_sound_prelude_1_end:
 
 game_sound_prelude_2:
@@ -724,7 +720,6 @@ game_sound_prelude_2:
     pause L8
     note NOTE_C, 3, L8
     pause L8
-    soundEnd
 game_sound_prelude_2_end:
 
       ;"Recorder"
@@ -747,12 +742,12 @@ game_sound_prelude_2_end:
       ; slap bass 1
       ; modulator
       ;opl_reg $21,  (1<<EG | 1<<KSR |1)
-      ;opl_reg $41,  (SCALE_0 | ($3f-52))
+      ;opl_reg $41,  (KEY_SCALE_0_75 | ($3f-52))
       ;opl_reg $61,  (7<<4 | (2 & $0f))  ; attack / decay
       ;opl_reg $81,  (4<<4 | (5 & $0f))  ; sustain / release
 
       ;opl_reg $24,  (1<<EG | 1)
-      ;opl_reg $44,  (SCALE_0 | ($3f-63))
+      ;opl_reg $44,  (KEY_SCALE_0_75 | ($3f-63))
       ;opl_reg $64,  (13<<4 | (5 & $0f))  ; attack / decay
       ;opl_reg $84,  (6<<4 | (8 & $0f))   ; sustain / release
 

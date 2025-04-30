@@ -297,16 +297,6 @@ gfx_update:   bgcolor Color_Cyan
 gfx_prepare_update:
               bgcolor Color_Blue
 
-;              lda game_state+GameState::frghtd_timer+1
- ;             bne @update
-  ;            lda game_state+GameState::frghtd_timer+0
-   ;           beq @update
-    ;          bmi @update
-     ;         and #$10
-      ;        beq :+
-       ;       lda #$04
-;:             sta r2    ; frightened color mask toggle blue/gray
-
 @update:      ldy #0    ; sprite_tab offset
               ldx #ACTOR_BLINKY
 :             jsr _gfx_update_sprite_tab_2x
@@ -353,18 +343,10 @@ gfx_prepare_update:
 _gfx_update_sprite_tab_2x:
               lda #$02
               jsr _gfx_update_sprite_tab
-
-;              lda actor_mode,x
- ;             cmp #ACTOR_MODE_FRIGHT
-  ;            bne :+
-   ;           eor r2  ; end of frightened phase alternate colors
-:             sty r3
-              ;tay
+              sty r3
               ldy ghost_color,x
-;              lda color_palette,y
- ;             bcc :+  ; < ACTOR_MODE_FRIGHT ?
               lda sprite_colors_1st,y
-:             sta sprite_color_1,x
+              sta sprite_color_1,x
               lda sprite_colors_2nd,y
               sta sprite_color_2,x
               ldy r3
@@ -784,7 +766,6 @@ gfx_charout:
 
 .data
 
-.export tiles
 tiles:
     .align 8
     .assert (<tiles & $07) = 0, error, "tiles must be 8 byte aligned, otherwise char out wont work"
@@ -916,7 +897,6 @@ shapes:
     .byte $29*4,$2a*4,$2b*4,$2c*4 ; 1600, 800, 400, 200 pts sprite
 ; ghosts interlude 2 obstacle $74 ; single color starts here
     .byte $3c*4,$3b*4,$3a*4,$39*4
-;    .byte 0,0,0,0
 
 table_4bpp_l:
   .byte <bonus_4bpp_cherry
@@ -963,12 +943,11 @@ bonus_4bpp_orange:
 ghost_4bpp:
   .include "ghost.4bpp.res"
 branik_logo:
-  .include "branik.4bpp.res"
+  ;.include "branik.4bpp.res"
 
 .bss
     sprite_tab_attr:      .res 9*4  ; 9 sprites, 4 byte per entry +1 y of sprite 10
     sprite_tab_attr_end:  .res 1    ; Y sprite 10, set to "off"
     sprite_color_1:       .res 4
     sprite_color_2:       .res 4
-    vdp_reg1:             .res 1    ; mirror vdp reg R#0
     vdp_reg8:             .res 1    ; mirror vdp reg R#8

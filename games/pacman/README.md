@@ -1,5 +1,5 @@
-
 BUGS:
+  - bonus (fruit) appears and pacman losts a life, the bonus is not reset (in maze memory) so catching an invisible bonus/fruit is possible with next pacman life
 
 FEAT:
   - catched ghost (eyes) can also reverse immediately (short distance)
