@@ -70,7 +70,7 @@ gfx_mode_off:
               plp
               rts
 
-scln_top=254
+scln_top=253
 scln_bottom=221
 nline=192
 eline=212
@@ -158,19 +158,6 @@ gfx_isr:      vdp_sreg 1, v_reg15
               txa
               rts
 
-@border_bottom:
-              lda #v_reg8_VR | v_reg8_SPD ; disable sprites
-              ldy #v_reg8
-              jsr vdp_set_reg
-              lda #scln_top
-              bne @set_scln
-
-@border_top:  lda vdp_reg8  ; restore old value (enable sprites)
-              ldy #v_reg8
-              jsr vdp_set_reg
-              lda #nline
-              bne @set_scln
-
 @is_vblank:   vdp_sreg 0, v_reg15			; 0 - set status register selection to S#0
               ldx #$40
               vdp_wait_s 2
@@ -183,6 +170,28 @@ gfx_isr:      vdp_sreg 1, v_reg15
               txa
               rts
 
+@border_bottom:
+              lda #v_reg8_VR | v_reg8_SPD ; disable sprites
+              ldy #v_reg8
+              vdp_sreg
+              lda #scln_top
+              bne @set_scln
+
+@border_top:  lda vdp_reg1_init
+              and #<~v_reg1_display_on
+              ldy #v_reg1
+              jsr vdp_set_reg
+              lda vdp_reg8  ; restore old value (enable sprites)
+              ldy #v_reg8
+              jsr vdp_set_reg
+              vdp_wait_l
+              vdp_wait_l
+              lda vdp_reg1_init
+              ldy #v_reg1
+              jsr vdp_set_reg
+              lda #nline
+              bne @set_scln
+
 
 .export gfx_interlude_start
 gfx_interlude_start:
@@ -194,7 +203,7 @@ gfx_interlude_start:
 gfx_interlude_end:
               lda #<sprite_pattern_pacman
               ldy #>sprite_pattern_pacman
-gfx_load_sprites:  ; swap sprite shapes, load data of 12 sprites
+gfx_load_sprites:  ; swap sprite shapes, load data of 12 sprites at +$20 (pacman offset)
               php
               sei
 
@@ -288,16 +297,6 @@ gfx_update:   bgcolor Color_Cyan
 gfx_prepare_update:
               bgcolor Color_Blue
 
-              lda game_state+GameState::frghtd_timer+1
-              bne @update
-              lda game_state+GameState::frghtd_timer+0
-              beq @update
-              bmi @update
-              and #$10
-              beq :+
-              lda #7
-:             sta r2    ; frightened color mask
-
 @update:      ldy #0    ; sprite_tab offset
               ldx #ACTOR_BLINKY
 :             jsr _gfx_update_sprite_tab_2x
@@ -309,12 +308,12 @@ gfx_prepare_update:
               jsr @is_multiplex
               bcs @exit
               ldx #7*4  ;y sprite_tab offset clyde eyes
-              lda game_state+GameState::frames
+              lda game_state+GameState::frames  ; alternate every frame
               and #$01
               beq :+
-              ldx #5*4  ;y sprite_tab offset inky eyes
-:             lda #gfx_Sprite_Off+1   ; C=0 - must multiplex, sprites scanline conflict +/-16px
-              sta sprite_tab_attr,x   ; we set y position outside of screen
+              ldx #5*4  ; y sprite_tab offset inky eyes
+              lda #0    ; C=0 - must multiplex, sprites scanline conflict +/-16px
+:             sta sprite_tab_attr,x   ; we set y position outside of screen
 
 @exit:        bgcolor Color_Bg
               rts
@@ -344,17 +343,10 @@ gfx_prepare_update:
 _gfx_update_sprite_tab_2x:
               lda #$02
               jsr _gfx_update_sprite_tab
-
-              lda actor_mode,x
-              cmp #ACTOR_MODE_FRIGHT
-              bne :+
-              eor r2  ; end of frightened phase alternate colors
-:             sty r3
-              tay
-              lda ghost_color,x
-              bcc :+  ; < ACTOR_MODE_FRIGHT ?
+              sty r3
+              ldy ghost_color,x
               lda sprite_colors_1st,y
-:             sta sprite_color_1,x
+              sta sprite_color_1,x
               lda sprite_colors_2nd,y
               sta sprite_color_2,x
               ldy r3
@@ -367,8 +359,9 @@ _gfx_update_sprite_tab:
               sec
               sbc #gfx_Sprite_Adjust_Y
               cmp #gfx_Sprite_Off
+              bne :+
               adc #0 ;skip if y pos == gfx_Sprite_Off to avoid "sprite off" flicker
-              sta sprite_tab_attr,y
+:             sta sprite_tab_attr,y
               iny
               lda actor_sp_x,x
               sec
@@ -377,24 +370,23 @@ _gfx_update_sprite_tab:
               iny
               sty r3
               lda actor_shape,x
-              cmp #$40
-              bcs :+  ; bit 6 - shape offset $40
+              cmp #$60
+              bcs :+  ; shape offset >=$68 (interlude 2, bonus)
               ora r1
 :             tay
               lda shapes,y
               ldy r3
               sta sprite_tab_attr,y
               iny
-              ; byte 4 - reserved/unused, we skip it
-              iny
+              iny ; byte 4 - reserved/unused, we skip it
               rts
 
 gfx_display_maze:
-              ldx #4
               ldy #0
               sty sys_crs_x
               sty sys_crs_y
               setPtr game_maze, p_gfx
+              ldx #4  ; 32*8 * 4 chars
 @loop:
 @put_char:    lda (p_gfx),y
               pha
@@ -505,12 +497,12 @@ gfx_vram_addr:
 
 .export gfx_lives
 ; in: Y - lives
-gfx_lives:    sty r3
+gfx_lives:    sty r5
               lda #31
               sta sys_crs_y
-              ldx #MAX_LIVES
+              ldx #MAX_LIVES_DISPLAY
 @l0:          ldy #Color_Pacman
-              cpx r3
+              cpx r5
               bcc :+
               beq :+
               ldy #Color_Bg
@@ -539,10 +531,17 @@ gfx_lives:    sty r3
 ;   A - level
 gfx_bonus_stack:
               sta r2    ; save current level
-              lda #17*8
+              lda #17*8 ; x pos
               sta r3
-              lda #7    ; max 7 bonus items visible on stack, we build top down
-              sta r4
+              ldx #7    ; max 7 bonus items visible on stack, we build top down
+.ifdef __DEVMODE
+              lda game_state+GameState::debug
+              and #1<<5
+              beq :+
+              txa
+:             tax
+.endif
+              stx r4
 @next:        ldy #Bonus_Clear  ; start with "no bonus"
               lda r2
               cmp r4    ; draw bonus, or still clear?
@@ -706,6 +705,7 @@ gfx_ghost_icon:
               jmp gfx_4bpp_y
 
 ; A: char to output
+; ouput at current sys_crs_x / sys_crs_y
 gfx_charout:
               stx r3
               sty r4
@@ -774,7 +774,6 @@ gfx_charout:
 
 .data
 
-.export tiles
 tiles:
     .align 8
     .assert (<tiles & $07) = 0, error, "tiles must be 8 byte aligned, otherwise char out wont work"
@@ -783,21 +782,31 @@ tiles:
 mask_4bpp: ; 4bpp - 2 pixels per byte gives 4 combinations
     .byte $00, $0f, $f0, $ff
 
-sprite_colors_1st: ; color 1st ghost sprite for various ghost modes. normal, frightened, catched, bonus...
-    .byte Color_Bg    ; norm - ghost color applies
-    .byte Color_Bg
-    .byte Color_Blue  ; frightened (ACTOR_MODE_FRIGHT = 2)
-    .byte Color_Cyan  ; bonus
-    .byte Color_Yellow ; bigman (big pacman, interlude 1)
-    .byte Color_Gray  ; eor 2 - frightened Gray/Red
+sprite_colors_1st:      ; color 1st ghost sprite for various ghost modes. normal, catched, frightened, bonus...
+    .byte Color_Blinky
+    .byte Color_Pinky
+    .byte Color_Inky
+    .byte Color_Clyde
+    .byte Color_Pacman
+    .byte Color_Gray    ; $05 - frightened end - alternate Blue/Pink and Gray/Red
+    .byte Color_Blue    ; $06 - frightened (ACTOR_MODE_FRIGHT = 2)
+    .byte Color_Cyan    ; $07 - bonus
+    .byte Color_Blinky  ; $08 - interlude 2 obstacle
+    .byte Color_Cape    ; $09 - interlude 2
+    .byte Color_Food    ; $0a - interlude 3
 
-sprite_colors_2nd:    ; color 2nd ghost sprite
+sprite_colors_2nd:
     .byte Color_Blue | SPRITE_CC | SPRITE_IC
     .byte Color_Blue | SPRITE_CC | SPRITE_IC
-    .byte Color_Pink  ; frightened
+    .byte Color_Blue | SPRITE_CC | SPRITE_IC
+    .byte Color_Blue | SPRITE_CC | SPRITE_IC
     .byte Color_Bg
-    .byte Color_Bg
-    .byte Color_Red
+    .byte Color_Red     ; frightened
+    .byte Color_Pink    ; frightened
+    .byte Color_Bg      ; bonus
+    .byte Color_Bg      ; interlude 2 obstacle
+    .byte Color_Food | SPRITE_CC | SPRITE_IC  ; interlude 2
+    .byte Color_Blue | SPRITE_CC | SPRITE_IC  ; interlude 3
 
 vdp_init_bytes:  ; vdp init table - MODE G4
     .byte v_reg0_m4|v_reg0_m3|v_reg0_IE1
@@ -814,7 +823,7 @@ vdp_reg1_init:
     .byte v_reg8_VR | v_reg8_SPD ; R#8 - VR - 64k VRAM
 .export vdp_reg9_init
 vdp_reg9_init:
-    .byte 0 ; v_reg9_ln ; R#9 - 212lines, NTSC 60Hz !
+    .byte 0 ; R#9 - 212lines, NTSC 60Hz !
     .byte 0 ; n.a.
     .byte <.hiword(VRAM_SPRITE_ATTR<<1); R#11 sprite attribute high
     .byte 0;  #R12
@@ -847,13 +856,13 @@ pacman_palette:
 sprite_patterns:
     .include "pacman.ghosts.res"            ; 20 sprites
 sprite_pattern_pacman:
-    .include "pacman.pacman.res"            ; 10 sprites
+    .include "pacman.pacman.res"            ; 10 sprites (offset +20)
     .include "pacman.dying.res"             ; 11 sprites
     .include "pacman.bonus.res"             ;  4 sprites
-    .include "ghost.interlude.sprites.res"  ; 14 sprites
+    .include "ghost.interlude.sprites.res"  ; 17 sprites (offset $2e)
 sprite_patterns_end:
 sprite_pattern_interlude:
-    .include "pacman.interlude.res"         ; 12 sprites
+    .include "pacman.interlude.res"         ; 12 sprites (big pacman)
 
 shapes:
 ; pacman  $00
@@ -862,28 +871,40 @@ shapes:
     .byte $17*4,$16*4,$1c*4,$16*4 ;l  10
     .byte $18*4,$19*4,$1c*4,$18*4 ;u  11
 ; ghosts  $10
-    .byte $08*4,$08*4,$00*4,$00*4+4 ;r  00
-    .byte $0b*4,$0b*4,$06*4,$06*4+4 ;d  01
-    .byte $09*4,$09*4,$02*4,$02*4+4 ;l  10
-    .byte $0a*4,$0a*4,$04*4,$04*4+4 ;u  11
+    .byte $08*4,$08*4,$00*4,$01*4 ;r  00
+    .byte $0b*4,$0b*4,$06*4,$07*4 ;d  01
+    .byte $09*4,$09*4,$02*4,$03*4 ;l  10
+    .byte $0a*4,$0a*4,$04*4,$05*4 ;u  11
 ; ghost eyes only (catched) $20
     .byte $08*4,$08*4,$10*4,$10*4 ;r  00
     .byte $0b*4,$0b*4,$13*4,$13*4 ;d  01
     .byte $09*4,$09*4,$11*4,$11*4 ;l  10
     .byte $0a*4,$0a*4,$12*4,$12*4 ;u  11
 ; ghosts frighened $30
-    .byte $0e*4,$0e*4,$0c*4,$0c*4+4 ;r,d,l,u
+    .byte $0e*4,$0e*4,$0c*4,$0d*4 ;r,d,l,u
 ; pacman dying
     .byte $28*4,$27*4,$26*4,$25*4
     .byte $24*4,$23*4,$22*4,$21*4
-    .byte $20*4,$1f*4,$1e*4,$1d*4 ; empty sprite ($3f)
-; ghosts as bonus pts $40
-    .byte $29*4,$2a*4,$2b*4,$2c*4 ; 200, 400, 800, 1600 sprites
-; ghosts as big pacman $44
+    .byte $20*4,$1f*4,$1e*4,$1d*4 ; shape empty sprite ($3f)
+; ghosts interlude 2 $40
+    .byte $34*4,$1d*4,$36*4,$1d*4
+    .byte $35*4,$1d*4,$37*4,$1d*4
+    .byte $3d*4,$1d*4,$38*4,$1d*4
+    .byte 0,0,0,0
+; ghosts interlude 3 $50
+    .byte $31*4,$31*4,$2e*4,$2d*4 ; r - naked
+    .byte $1d*4,$1d*4,$30*4,$2f*4 ; cape
+    .byte $33*4,$32*4,$02*4,$03*4 ; l - damaged
+    .byte 0,0,0,0                 ;
+; ghosts as big pacman (interlude 1) $60
     .byte $17*4,$16*4,$14*4,$15*4
     .byte $1b*4,$1a*4,$18*4,$19*4
     .byte $1f*4,$1e*4,$1c*4,$1d*4
     .byte $17*4,$16*4,$14*4,$15*4
+; ghosts as bonus pts $70
+    .byte $29*4,$2a*4,$2b*4,$2c*4 ; 1600, 800, 400, 200 pts sprite
+; ghosts interlude 2 obstacle $74 ; single color starts here
+    .byte $3c*4,$3b*4,$3a*4,$39*4
 
 table_4bpp_l:
   .byte <bonus_4bpp_cherry
@@ -937,4 +958,4 @@ branik_logo:
     sprite_tab_attr_end:  .res 1    ; Y sprite 10, set to "off"
     sprite_color_1:       .res 4
     sprite_color_2:       .res 4
-    vdp_reg8:             .res 1    ; mirror vdp reg 8
+    vdp_reg8:             .res 1    ; mirror vdp reg R#8

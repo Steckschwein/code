@@ -15,7 +15,6 @@ boot:
               jsr gfx_boot_logo
               draw_text text_end
               .endif
-;              .byte $db
               rts
 .data
 ; STECKSOFT 2019 (c)

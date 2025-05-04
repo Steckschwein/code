@@ -28,7 +28,7 @@
 
 KEY_EXIT = 27
 MAX_DOTS=240+4  ; food + superfood
-MAX_LIVES=5
+MAX_LIVES_DISPLAY=5
 
 Dot_Cnt_Enabled=1<<7
 
@@ -60,7 +60,7 @@ Char_Energizer      = $ce   ;1100 1110 $ce
 Char_Base           = $cf   ;1100 1111
 Char_Quote          = $22
 
-Char_Maze_Blank     = $f4
+Char_Maze_Blank     = $e4 ; f4
 
 .define Char_Pts $2a,$2b,$2c
 
@@ -81,34 +81,35 @@ TXT_CRS_XY=$04
 TXT_COLOR =$05
 
 DIP_COINAGE_0       =1<<0   ; 00 - free play
-DIP_COINAGE_1       =1<<1   ; 01 - 1 coin, 2 credits | 02 - 1 coin, 1 credit | 11 - 2 coins, 1 credit
-DIP_LIVES_0         =1<<2   ; lives 00 - 1, 01 - 2, 10 - 3, 11 - 5
+DIP_COINAGE_1       =1<<1   ; 01 - 1 coin, 1 credit | 10 - 1 coin, 2 credits | 11 - 2 coins, 1 credit
+DIP_LIVES_0         =1<<2   ; initial lives, 00 - 1, 01 - 2 lives, 10 - 3, 11 - 5
 DIP_LIVES_1         =1<<3
 DIP_BONUS_LIFE_0    =1<<4   ; bonus life at 00 - 10.000, 01 - 15.000, 10 - 20.000, 11 - None
 DIP_BONUS_LIFE_1    =1<<5
 DIP_DIFFICULTY      =1<<6
 DIP_GHOSTNAMES      =1<<7
 
-FN_STATE_NOOP           = $00
-FN_STATE_INIT           = $02
-FN_STATE_LEVEL_INIT     = $04
-FN_STATE_READY          = $06
-FN_STATE_DELAY          = $08
-FN_STATE_READY_WAIT     = $0a
-FN_STATE_PLAYING        = $0c
-FN_STATE_PACMAN_DYING   = $0e
-FN_STATE_LEVEL_CLEARED  = $10
-FN_STATE_GAME_OVER      = $12
-FN_STATE_GHOST_CATCHED  = $14
-FN_STATE_INTERLUDE_INIT = $16
-FN_STATE_INTERLUDE      = $18
-FN_STATE_DEMO_INIT      = $1a
-FN_STATE_DEMO_PLAYING   = $1c
-FN_STATE_INTRO          = $1e
-FN_STATE_INTRO_GHOSTS   = $20
+FN_STATE_NOOP                 = $00
+FN_STATE_INIT                 = $02
+FN_STATE_LEVEL_INIT           = $04
+FN_STATE_READY                = $06
+FN_STATE_DELAY                = $08
+FN_STATE_READY_WAIT           = $0a
+FN_STATE_PLAYING              = $0c
+FN_STATE_PACMAN_DYING         = $0e
+FN_STATE_LEVEL_CLEARED        = $10
+FN_STATE_GAME_OVER            = $12
+FN_STATE_GHOST_CATCHED        = $14
+FN_STATE_INTERLUDE_INIT       = $16
+FN_STATE_INTERLUDE            = $18
+FN_STATE_DEMO_INIT            = $1a
+FN_STATE_DEMO_PLAYING         = $1c
+FN_STATE_INTRO                = $1e
+FN_STATE_INTRO_GHOSTS         = $20
 FN_STATE_INTRO_GHOST_CATCHED  = $22
 FN_STATE_INTRO_SELECT_PLAYER  = $24
 
+NO_INPUT            = 1<<7
 
 STATE_PAUSE         = 1<<5
 STATE_DEMO          = 1<<6  ; demo flag
@@ -119,26 +120,40 @@ GHOST_STATE_RETURN  = 1
 GHOST_STATE_LEAVE   = 2
 GHOST_STATE_TARGET  = 3
 GHOST_STATE_ENTER   = 4
-GHOST_STATE_STOP    = 5
+GHOST_STATE_NOOP    = 5
 
 ACTOR_MODE_NORM     = 0
 ACTOR_MODE_CATCHED  = 1 ; ghosts only
 ACTOR_MODE_FRIGHT   = 2
 ACTOR_MODE_BONUS    = 3 ; ghosts only
-ACTOR_MODE_BIGMAN   = 4 ; ghosts only
+ACTOR_MODE_INTRLD3  = 4 ; ghosts only
 
 Shape_Mask_Norm       = $7f
 Shape_Mask_Small      = $73 ; only 4 patterns (bit 1,0)
 
+Colors_Blinky         = 0
+
+Colors_Pacman         = 4
+Colors_Frghtd         = 5
+Colors_Frghtd_2       = 6
+Colors_Bonus          = 7
+Colors_Obstacle       = 8
+Colors_Intrld2        = 9
+Colors_Intrld3        = 10
+
 Shape_Offset_Norm     = $10
 Shape_Offset_Catched  = $20
 Shape_Offset_Fright   = $30
-Shape_Offset_Bonus    = $40
-Shape_Offset_Bigman   = $44
+Shape_Offset_Intrld2  = $40
+Shape_Offset_Intrld3  = $50
+Shape_Offset_Bigman   = $60
+Shape_Offset_Bonus    = $70
 
 Shape_Ix_Pacman       = 2   ; "filled circle"
 Shape_Ix_Dying        = $34
 Shape_Ix_Invisible    = $3f ; empty sprite
+Shape_Ix_Obstacle     = $74
+Shape_Ix_Intrld2      = $44
 
 ; Every time Pac-Man eats a regular dot, he stops moving for one frame (1/60th of a second), slowing his progress by roughly ten percent—just enough for a following ghost to overtake him.
 ; Eating an energizer dot causes Pac-Man to stop moving for three frames.
@@ -166,7 +181,7 @@ Color_Bg          = $0  ; black
 Color_Red         = $1  ; "shadow" / "Blinky"
 Color_Brown       = $2  ; orange top, cherry stem
 Color_Pink        = $3  ; "speedy" / Pinky
-
+Color_Cape        = $4  ; "red" same as Blinky ($01)
 Color_Cyan        = $5  ; "bashful" / Inky, color of bonus pts catched ghost
 Color_Light_Blue  = $6  ;
 Color_Orange      = $7  ; "pokey" / Clyde

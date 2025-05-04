@@ -94,14 +94,9 @@ game_init_actors:
               sta pacman_turn
               jmp gfx_sprites_on
 
-@init_ghost:
-              lda #Shape_Offset_Norm  ; ghost shape offset
-              sta ghost_shape_offs,x
-              lda #Shape_Mask_Norm
-              sta ghost_shape_mask,x
-              lda ghost_init_state,x
+@init_ghost:  lda ghost_init_state,x
               sta ghost_state,x
-              lda ghost_init_color,x
+              txa
               sta ghost_color,x
               lda #0
               sta ghost_speed_offs,x
@@ -135,8 +130,7 @@ game_ready:   jsr game_init_actors
               lda #%01010101
               sta game_state+GameState::sctchs_mode
 
-              lda #Bonus_Clear  ; clear bonus
-              jsr gfx_bonus
+              jsr game_clear_bonus            ; clear bonus
 
               ldy #Color_Food
               jsr draw_energizer
@@ -161,19 +155,17 @@ game_ready_wait:
               jsr animate_up
 .ifndef __DEVMODE
               lda game_state+GameState::state_frames
-              cmp #$7f
-              bne @detect_joystick
+              bpl @detect_joystick
 .endif
               jsr delete_message_2
 
               lda #FN_STATE_PLAYING
-              .ifdef __INTERLUDE
+.ifdef __INTERLUDE
               lda #FN_STATE_INTERLUDE_INIT
-              .endif
+.endif
               jmp system_set_state_fn
 @detect_joystick:
               jmp io_detect_joystick
-
 
 game_pacman_dying:
               jsr animate_screen
@@ -192,12 +184,12 @@ game_pacman_dying:
 
               cmp #$0c
               bcs @exit
-              adc #Shape_Ix_Dying        ; shape offset
+              adc #Shape_Ix_Dying                       ; shape offset, increment per frame
               ldx #ACTOR_PACMAN
               sta actor_shape,x
 @exit:        rts
 
-@next_state:  dec game_state+GameState::lives           ; dec 1 live
+@next_state:  dec game_state+GameState::lives           ; dec lives
 
               lda #Dot_Cnt_Enabled                      ; enable global dot count
               sta game_state+GameState::dot_cnt_state
@@ -208,10 +200,9 @@ game_pacman_dying:
               lda #FN_STATE_READY
               ldy game_state+GameState::lives
               bne @set_state
+              jsr game_clear_bonus
               ldy #Color_Food
               jsr draw_energizer
-              lda #Bonus_Clear
-              jsr gfx_bonus
               draw_text text_game_over, Color_Red
               lda #FN_STATE_GAME_OVER
 @set_state:   jmp system_set_state_fn
@@ -227,48 +218,49 @@ game_game_over:
 @exit:        rts
 
 game_interlude_init:
-              ldy #3  ; select interlude for level - lvl 2 (im1), lvl 5 (im2), lvl 9,13,17 (im3)
+              ldy #4  ; select interlude for level - lvl 2 (im1), lvl 5 (im2), lvl 9,13,17 (im3)
               lda game_state+GameState::level
               cmp #2
-              beq @interlude_1
+              beq interlude_1
               cmp #5
-              beq @interlude_2
+              beq interlude_2
               cmp #9
-              beq @interlude_3
+              beq interlude_3
               cmp #13
-              beq @interlude_3
+              beq interlude_3
               cmp #17
-              beq @interlude_3
-              jmp state_next_level
-@interlude_1: dey
-@interlude_2: dey
-@interlude_3: tya
-              asl
-              lda interlude_scripts
-              sta p_script
-              lda interlude_scripts+1
-              sta p_script+1
-              ldy #0
-              jsr game_intrld_next_step
-
-              jsr gfx_blank_screen
-              lda game_state+GameState::level
-              jsr gfx_bonus_stack
-
-              jsr prepare_animation
-
-              jsr sound_play_game_interlude
-
-              lda #FN_STATE_INTERLUDE
-              jmp system_set_state_fn
-
-
+              beq interlude_3
 state_next_level:
+              jsr sound_off
               inc game_state+GameState::level ; next level
               lda #FN_STATE_LEVEL_INIT
               jmp system_set_state_fn
 
+interlude_1:  dey
+              dey
+interlude_2:  dey
+              dey
+interlude_3:  lda interlude_scripts+0,y
+              sta p_script
+              lda interlude_scripts+1,y
+              sta p_script+1
+
+              jsr gfx_blank_screen
+
+              lda game_state+GameState::level
+              jsr gfx_bonus_stack
+
+              jsr prepare_animation   ; init tunnel and actors
+
+              ldy #0
+              jsr game_intrld_next_step
+
+              lda #FN_STATE_INTERLUDE
+              jmp system_set_state_fn
+
 game_interlude:
+              jsr sound_play_game_interlude
+
               dec intrld_frm_cnt
               bne game_intrld_step
               ldy intrld_scrpt_ix
@@ -297,9 +289,7 @@ interlude_move_both:
               jsr ghost_move
               jmp pacman_move
 
-interlude_move_bigman:
-              bgcolor Color_Pink
-
+interlude_1_bigman:
               jsr interlude_move_both
 
               lda actor_sp_x+ACTOR_PACMAN
@@ -329,56 +319,162 @@ interlude_move_bigman:
               iny
               sty actor_shape+ACTOR_INKY
 
-              bgcolor Color_Bg
-
               rts
 
-interlude_frghtd:
+interlude_1_reverse:
               ldx #ACTOR_PACMAN
-              lda actor_move,x
-              eor #ACT_MOVE_REVERSE
+              lda #ACT_MOVE|ACT_RIGHT
               sta actor_move,x
               jsr gfx_interlude_start
               jsr mode_frightened
-
               ldx #ACTOR_CLYDE
-:             lda #Color_Pacman
+:             lda #Colors_Pacman
               sta ghost_color,x
-              lda #ACTOR_MODE_BIGMAN
-              sta actor_mode,x
               dex
-              bne :-              ; blinky ?
-
-
+              bne :-                  ; all but blinky
 noop:         rts
 
+interlude_2_init:
+              ldx #ACTOR_PINKY        ; use pinky as obstacle
+              lda #Color_Blinky
+              sta ghost_color,x
+              lda #INTRO_TUNNEL_X*8+3
+              sta actor_sp_x,x
+              lda #12*8
+              sta actor_sp_y,x
+              lda #Shape_Ix_Obstacle
+              sta actor_shape,x
+              rts
+
+interlude_2_obstacle:
+              ldx #ACTOR_PINKY
+              lda #Colors_Obstacle
+              sta ghost_color,x
+              lda intrld_frm_cnt
+              and #$03
+              bne :+
+              ldx #ACTOR_BLINKY
+              jsr actor_move_soft
+              lda intrld_frm_cnt
+              and #$0f
+              bne :+
+              ldx #ACTOR_PINKY
+              inc actor_shape,x
+:             ldx #ACTOR_BLINKY
+              jsr ghost_update_shape  ; friction
+              jmp pacman_move
+
+interlude_2_lookback:
+              ldx #ACTOR_BLINKY
+              lda #12*8+10
+              sta actor_sp_y,x
+              lda #Shape_Ix_Intrld2
+              sta actor_shape,x
+              lda #Colors_Intrld2
+              sta ghost_color,x
+              inx
+              sta ghost_color,x
+              lda #$48
+              sta actor_shape,x
+              rts
+
+interlude_2_end:
+              ldx #ACTOR_BLINKY
+              lda #Shape_Ix_Intrld2-4
+              sta actor_shape,x
+              rts
+
+interlude_3_init:
+              ldx #ACTOR_PINKY    ; sprite prio
+              lda #Colors_Blinky
+              sta ghost_color,x
+              lda #ACTOR_MODE_INTRLD3
+              sta actor_mode,x
+              dex ; blinky
+              sta actor_mode,x
+              lda #4
+              jmp init_speed_cnt
+
+interlude_3_reverse:
+              ldx #ACTOR_PINKY
+              lda #ACT_MOVE|ACT_RIGHT<<2|ACT_RIGHT
+              sta actor_move,x
+              lda #Colors_Intrld3
+              sta ghost_color,x
+              rts
+
+interlude_3_move:
+              ldx #ACTOR_PINKY
+              jsr ghost_move
+              ldy #ACTOR_BLINKY
+              lda actor_sp_y,x
+              clc
+              adc #7
+              sta actor_sp_y,y
+              lda actor_shape,x
+              adc #4
+              sta actor_shape,y
+              rts
 
 interlude_scripts:
-.word interlude_1_script, interlude_2_script, interlude_3_script
+              .word interlude_1_script
+              .word interlude_2_script
+              .word interlude_3_script
 
 interlude_1_script:
-  .byte 14
-  .word pacman_move
-  .byte 220
-  .word interlude_move_both
-  .byte 1
-  .word interlude_frghtd
-  .byte 40
-  .word noop
-  .byte 170
-  .word interlude_move_blinky
-  .byte 228
-  .word interlude_move_bigman
-  .byte 60
-  .word noop
-  .byte 1
-  .word gfx_interlude_end
-  .byte 0
+              .byte 13
+              .word pacman_move
+              .byte 221
+              .word interlude_move_both
+              .byte 1
+              .word interlude_1_reverse
+              .byte 40
+              .word noop
+              .byte 168
+              .word interlude_move_blinky
+              .byte 228
+              .word interlude_1_bigman
+              .byte $60
+              .word noop
+              .byte 1
+              .word gfx_interlude_end
+              .byte 0
 
 interlude_2_script:
-  .byte 0
+              .byte 1
+              .word interlude_2_init
+              .byte 80
+              .word pacman_move
+              .byte 100
+              .word interlude_move_both
+              .byte $33
+              .word interlude_2_obstacle
+              .byte $50
+              .word noop
+              .byte $50
+              .word interlude_2_lookback
+              .byte $60
+              .word interlude_2_end
+              .byte 0
+
 interlude_3_script:
-  .byte 0
+              .byte 1
+              .word interlude_3_init
+              .byte 40
+              .word pacman_move
+              .byte 180
+              .word interlude_move_both
+              .byte 40
+              .word interlude_move_blinky
+              .byte 1
+              .word interlude_3_reverse
+              .byte 10
+              .word noop
+              .byte 220
+              .word interlude_3_move
+              .byte $60
+              .word noop
+              .byte 0
 
 actors_move:  jsr ghost_move
               ldy #ACTOR_PACMAN
@@ -405,6 +501,8 @@ actors_move:  jsr ghost_move
 
               lda #ACTOR_MODE_BONUS
               sta actor_mode,x
+              lda #Colors_Bonus
+              sta ghost_color,x
 
               lda game_state+GameState::ghsts_to_catch  ; select shape for bonus
               jsr ghost_set_shape
@@ -445,8 +543,7 @@ ghost_move:   jsr actor_update_charpos
               lda #112
               cmp actor_sp_y,x
               bne @move_nodelay
-; base reached
-              lda #GHOST_STATE_ENTER
+              lda #GHOST_STATE_ENTER  ; base reached, enter home
               sta ghost_state,x
               rts
 
@@ -454,7 +551,7 @@ ghost_move:   jsr actor_update_charpos
               and #$7f    ; mask cnt
               bne @move_cnt
 
-              lda actor_mode,x        ; during frightened phase and if the ghost reaches home and thus ghost is switched back to normal(0) the normal speed applies
+              lda actor_mode,x        ; if the ghost reaches home during frightened phase and thus the ghost is switched back to normal(0) the normal speed applies
               bne :+
               ora ghost_speed_offs,x  ; no elroy (0), elroy 1 (3), elroy 2 (4)
 :             tay
@@ -477,14 +574,17 @@ ghost_move:   jsr actor_update_charpos
               cpy #$10+1
               bcc @update_dir
 
-@is_tunnel:   cmp #$0f    ; x pos of tunnel?
+@is_tunnel:   cmp #$0f    ; x pos of maze tunnel?
               bne @is_border
               cpy #$06
               bcc @tunnel
               cpy #$16
               bcc @move
 
-@tunnel:      lda game_state+GameState::frames ; half speed is just every 2nd frame
+@tunnel:      lda ghost_state,x
+              cmp #GHOST_STATE_RETURN
+              beq @update_dir
+              lda game_state+GameState::frames ; half speed is just every 2nd frame
               and #$01
               beq @update_dir
 @exit:        rts
@@ -502,8 +602,10 @@ ghost_move:   jsr actor_update_charpos
               bne @move
               cpy #BORDER_RIGHT_Y ; y in right border? (used in intro only)
               bcs @update_dir     ; otherwise move on
+              cpy #0              ; y right border
+              beq @move_soft ;update_dir
 
-@move:        jsr actor_center  ; center reached?
+@move:        jsr actor_center    ; center reached?
               beq :+
 @move_soft:   jmp actor_move_soft
 
@@ -528,31 +630,31 @@ ghost_move:   jsr actor_update_charpos
 
               lda actor_move,x
               eor #ACT_MOVE_REVERSE
-              sta r2 ; exclude reverse of the new direction
+              sta r2            ; exclude reverse of the new direction
 
               lda actor_mode,x
-              beq short_dist   ; normal ?
+              beq short_dist    ; normal (0) ?
               cmp #ACTOR_MODE_CATCHED
-              beq short_dist   ; catched ?
+              beq short_dist    ; catched ?
 
-              jsr system_rng  ; choose next direction randomly
+              jsr system_rng    ; then frightened, so choose next direction randomly
 @check_dir:   and #ACT_DIR
               sta target_dir
-              cmp r2   ; reverse direction?
+              cmp r2            ; reverse direction?
               beq @next_dir
               tay
               lda y_index,y
               tay
               lda (p_maze),y
-              cmp #Char_Base
+              cmp #Char_Base    ; passably tile char?
               bcc tgt_direction
 @next_dir:    inc target_dir
               lda target_dir
               jmp @check_dir
 
 short_dist_reverse:
-;              lda #$ff
- ;             sta r2 ; allow reverse
+              lda #$ff
+              sta r2 ; allow reverse
 short_dist:
 ; check new direction in order up,left,down,right
               lda #$ff  ; init 16bit distance "far away"
@@ -1329,8 +1431,6 @@ game_ghost_catched:
 @wait:        and #$3f  ; TODO as long as necessary until catched ghost sound has finished
               bne @exit
 
-              ;jsr sound_ghost_catched ; TODO
-
               ldx #ACTOR_PACMAN
               lda actor_move,x
               and #ACT_NEXT_DIR ; make pacman visible again, set shape
@@ -1341,6 +1441,8 @@ game_ghost_catched:
               sta ghost_state,x
               lda #ACTOR_MODE_CATCHED
               sta actor_mode,x
+              txa
+              sta ghost_color,x
 
               lda #FN_STATE_PLAYING    ; continue playing
               bit game_state+GameState::state
@@ -1398,7 +1500,7 @@ game_playing: jsr update_mode
 
 ; A - mode/offset to speed table - one of ACTOR_MODE_NORM or ACTOR_MODE_FRIGHT
 actors_mode:  ldy #ACTOR_PACMAN
-@next:        ldx actor_mode,y  ; TODO clobbers X
+@next:        ldx actor_mode,y
               cpx #ACTOR_MODE_CATCHED
               beq @skip
               sta actor_mode,y
@@ -1447,6 +1549,11 @@ actors_reverse: ; set next direction to reverse of current direction
               and #ACT_NEXT_DIR
               ora actor_move,y
               sta actor_move,y
+              lda actor_mode,y
+              cmp #ACTOR_MODE_FRIGHT
+              bne @next
+              lda #Colors_Frghtd_2
+              sta ghost_color,y
 @next:        dey
               bpl :-
               rts
@@ -1470,11 +1577,40 @@ update_mode:  lda game_state+GameState::frghtd_timer+0
               beq @scatter_chase
               dec game_state+GameState::frghtd_timer+1
 :             dec game_state+GameState::frghtd_timer+0
+
+              lda game_state+GameState::frghtd_timer+1
+              bne @frghtd_color
+              lda game_state+GameState::frghtd_timer+0
+              beq @frghtd_color
+              bmi @frghtd_color  ; >= $80
+              and #$10
+              beq @toggle_color
+@frghtd_color:
+              lda #$01  ; frightened color mask toggle blue/gray
+@toggle_color:
+              clc
+              adc #Colors_Frghtd
+              ldy #ACTOR_CLYDE
+@colors:      ldx actor_mode,y
+              cpx #ACTOR_MODE_FRIGHT
+              bne @skip
+              sta ghost_color,y
+@skip:        dey
+              bpl @colors
               rts
 
 @scatter_chase:
               lda #ACTOR_MODE_NORM
               jsr actors_mode
+
+              ldy #ACTOR_CLYDE
+:             ldx actor_mode,y
+              cpx #ACTOR_MODE_FRIGHT
+              beq @next
+              tya
+              sta ghost_color,y
+@next:        dey
+              bpl :-
 
               lda game_state+GameState::sctchs_timer+0
               bne :+
@@ -1530,13 +1666,13 @@ update_mode:  lda game_state+GameState::frghtd_timer+0
 @chase:       ldx #ACTOR_PACMAN
               lda actor_move,x
               bmi :+            ; pacman is moving, use current direction
-              and #ACT_NEXT_DIR ; if stopped, next position
+              and #ACT_NEXT_DIR ; if stopped, pacman next direction
               lsr
               lsr
 :             and #ACT_DIR
               sta r1
 
-@tgt_pinky:   tay
+@tgt_pinky:   tay   ; 4 tiles in front of pacman
               lda vectors_x,y
               asl
               asl
@@ -1670,14 +1806,9 @@ animate_bonus:
               bne @exit
 
               lda game_maze+($12+$20*$0d) ; below ghost base
-              cmp #Char_Bonus ; bonus fruit timeout?
-              bne @bonus_pts_clr
-              lda #Char_Blank ; reset to blank char in maze
-              sta game_maze+($12+$20*$0d) ; below ghost base
-              lda #Bonus_Clear
-              jmp gfx_bonus
-@bonus_pts_clr:
-              ldx #$12
+              cmp #Char_Bonus ; bonus or points?
+              beq game_clear_bonus
+              ldx #$12        ; clear points
               ldy #$0f
               lda #4
               jmp sys_blank_xy
@@ -1703,8 +1834,13 @@ animate_bonus:
               sta game_maze+($12+$20*$0d) ; below ghost base
 @exit:        rts
 
+game_clear_bonus:
+              lda #Char_Blank ; reset to blank char in maze
+              sta game_maze+($12+$20*$0d) ; below ghost base
+              lda #Bonus_Clear
+              jmp gfx_bonus
 
-draw_frame:   jsr gfx_sprites_off
+init_maze:    jsr gfx_sprites_off
               ldy #0
 :             lda maze+$000,y
               sta game_maze+$000,y
@@ -1776,7 +1912,7 @@ game_level_init:
               bpl :+
               rts
 :
-              jsr draw_frame
+              jsr init_maze
 
               draw_text ready, Color_Yellow
 
@@ -1917,6 +2053,13 @@ game_init:    jsr sound_play_game_prelude
               sta game_state+GameState::bonus_life+0
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
 
+ .ifdef __DEVMODE
+              lda game_state+GameState::debug
+              and #1<<5
+              beq :+ +2
+              lda #1
+:
+.endif
               lda #1 ; start with level 1
               sta game_state+GameState::level
 
@@ -1926,7 +2069,7 @@ game_init:    jsr sound_play_game_prelude
               dey
               bpl :-
 
-              jsr draw_frame
+              jsr init_maze
 
               bit game_state+GameState::state ; in intro?
               bpl :+
@@ -1950,13 +2093,11 @@ game_init:    jsr sound_play_game_prelude
 .export prepare_animation
 prepare_animation:
               ldx #INTRO_TUNNEL_X-1         ; draw an invisible tunnel the ghosts must pass through
-              ldy #32
               stx sys_crs_x
-              sty sys_crs_y
-
+              ldy #0
 @draw_tunnel: txa
-              ldy sys_crs_y
-              jsr lda_maze_ptr_ay
+              sty sys_crs_y
+              jsr lda_maze_ptr_ay ; setup p_maze
 
               ldy #0
               lda #Char_Maze_Blank
@@ -1967,16 +2108,44 @@ prepare_animation:
               iny
               lda #Char_Maze_Blank
               sta (p_maze),y
-              dec sys_crs_y
-
-              bpl @draw_tunnel
-
+              ldy sys_crs_y
+              iny
+              cpy #32
+              bne @draw_tunnel
+.ifdef __DEVMODE  ; demo vcf
+              lda game_state+GameState::debug
+              and #1<<4 ; toggle tunnel char
+              beq :+
+              lda #Color_Blue
+:             sta text_color
+              ldy #31
+:             ldx #INTRO_TUNNEL_X-1         ; draw an invisible tunnel the ghosts must pass through
+              stx sys_crs_x
+              sty sys_crs_y
+              lda #$e1
+              jsr gfx_charout
+              inc sys_crs_x
+              inc sys_crs_x
+              lda #$e1
+              jsr gfx_charout
+              dey
+              bpl :-
+.endif
               ldy #21  ; speed of level 21 - pacman 90%/ghost 95% speed
               jsr init_speed_cnt
 
               jsr game_init_actors
               ldx #ACTOR_PACMAN
-@init_actors: lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
+              bne @init_actor
+@init_actors:
+              lda #GHOST_STATE_TARGET
+              sta ghost_state,x
+              lda #INTRO_TUNNEL_X
+              sta ghost_tgt_x,x
+              lda #32
+              sta ghost_tgt_y,x
+
+@init_actor:  lda #ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
               sta actor_move,x
               txa
               asl
@@ -1986,17 +2155,8 @@ prepare_animation:
               sta actor_sp_y,x
               lda #INTRO_TUNNEL_X*8+4 ; center +4px
               sta actor_sp_x,x
-              cpx #ACTOR_PACMAN
-              beq @next
-              lda #GHOST_STATE_TARGET
-              sta ghost_state,x
-              lda #INTRO_TUNNEL_X
-              sta ghost_tgt_x,x
-              lda #0
-              sta ghost_tgt_y,x
-@next:        dex
+              dex
               bpl @init_actors
-
               rts
 
 .data
@@ -2014,8 +2174,7 @@ actor_init_d:
     .byte ACT_MOVE|ACT_UP<<2|ACT_UP
     .byte ACT_MOVE|ACT_UP<<2|ACT_UP
     .byte ACT_MOVE|ACT_LEFT<<2|ACT_LEFT
-ghost_init_color:
-    .byte Color_Blinky,Color_Pinky,Color_Inky,Color_Clyde
+
 ghost_init_state:
     .byte GHOST_STATE_TARGET  ; blinky
     .byte GHOST_STATE_BASE
@@ -2029,9 +2188,13 @@ ghost_scatter_y:
     .byte $03,$18,$00,$1b
 
 shape_offs:  ; normal, catched, frightened, "bonus" ghost (points)
-  .byte Shape_Offset_Norm,Shape_Offset_Catched,Shape_Offset_Fright,Shape_Offset_Bonus
+  .byte Shape_Offset_Norm
+  .byte Shape_Offset_Catched
+  .byte Shape_Offset_Fright
+  .byte Shape_Offset_Bonus
+  .byte Shape_Offset_Intrld3
 shape_mask:
-  .byte Shape_Mask_Norm,Shape_Mask_Norm,Shape_Mask_Small,Shape_Mask_Small
+  .byte Shape_Mask_Norm,Shape_Mask_Norm,Shape_Mask_Small,Shape_Mask_Small,Shape_Mask_Norm,Shape_Mask_Norm
 
 ; refer to speed table - https://pacman.holenet.info/#LvlSpecs
 ; bit 7 (1) denotes delay
@@ -2168,7 +2331,7 @@ Pts_Index_Ghost_Catched=(*-scoring_table)
   .byte $08,$00 ;
   .byte $04,$00 ;
   .byte $02,$00 ;
-Pts_Index_6000=(*-scoring_table) ;TODO
+Pts_Index_6000=(*-scoring_table)
   .byte $60,$00 ; 4 times all ghosts catched, 12.000 pts extra => 2 * 6.000
 
 points_digits:
@@ -2204,8 +2367,6 @@ points_digits:
   actor_speed_cnt:  .res 5  ; bit 7 delay, bit 6..0 frame counter
 
   ghost_color:      .res 4  ; main color
-  ghost_shape_mask: .res 4  ; shape mask - for normal, frightened or catched ghost
-  ghost_shape_offs: .res 4  ; offset for normal frightened or catched ghost
   ghost_state:      .res 4  ; ghosts movement strategy - in base, leaving base, return to base, move arround (scatter/chase)
   ghost_speed_offs: .res 4  ; either 3 or 4, offset to speed_table
   ghost_dot_cnt:    .res 4  ; ghost dot counter, only one active at once and only if ghost within the house, pinky, inky, clyde => max. 240 + 4 super food
@@ -2216,6 +2377,6 @@ points_digits:
   pacman_turn:      .res 1  ; bit 7 turn, bit 1-0 turn direction
 
   target_dist:      .res 2  ; 16bit (x1-x2)² + (y1-y2)² to calc shortest distance
-  target_dir:       .res 1
+  target_dir:       .res 1  ; shortest distance target direction
 
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with page start

@@ -63,6 +63,11 @@ WS_HALF_SIN=  $01   ;
 WS_ABS_SIN=   $02
 WS_PULSE_SIN= $03
 
+YM_AMP = 1<<7
+YM_VIB = 1<<6
+YM_EG = 1<<5
+YM_KSR = 1<<4
+
 ;--------------------------------------------------------------------------------------------------------------
 ; For some of the parameters, there is one register per output channel. For those
 ; parameters, channel number can be used as an offset into the map. For many

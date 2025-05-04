@@ -54,6 +54,8 @@ io_port_snd_reg=opl_stat
 io_port_snd_dat=opl_data
 
 io_init:      jsr joystick_on
+              lda #JOY_PORT1
+              sta joystick_port
               clc
               rts
 
@@ -64,7 +66,7 @@ io_irq_on:    setIRQ IRQ_VEC
 
 io_detect_joystick:
               jsr joystick_detect
-              beq @exit
+              bcs @exit
               sta joystick_port
 @exit:        rts
 
@@ -116,10 +118,11 @@ io_highscore_load:
               rts
 
 io_exit:      sei
+              jsr joystick_off
               restoreIRQ IRQ_VEC
               cli
               jmp (retvec)
 
-.data
-    joystick_port:  .res 1, JOY_PORT1 ; TODO auto detect
-    save_irq:  .res 2
+.bss
+              joystick_port:  .res 1
+              save_irq:       .res 2

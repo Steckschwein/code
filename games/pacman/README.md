@@ -1,23 +1,22 @@
+BUGS:
+  - sometimes a dot or ghost hit is not detected due to pacman delay or ghost speed (additional move per frame)
 
-TODO:
+FEAT:
+  - catched ghost (eyes) can also reverse immediately (short distance)
+  - system changes modes one or more times when a ghost is inside the base, that ghost will move to the right instead of the left upon leaving the house.
+  - compensate pacman direction and 1px offset
+  - level 256 ?
+
+IMPR:
   - 1Mhz improvements
   -- v99x8 use sprites 10-17 for frightened ghosts to reduce "color fill" on each frame - or only color fill if necessarry
   -- cmd engine - flyweight pattern for characters
-  - elroy mode, blinky keeps pacman target regardless which mode (scatter/chase)
-  - fix ghost eyes (dead) tunnel delay
-  - intermission after level 2 (im1), 5 (im2), 9,13,17 (im3) - snd player key on/off behaviour
-  - system changes modes one or more times when a ghost is inside the base, that ghost will move to the right instead of the left upon leaving the house.
-  - compensate pacman direction and 1px offset
-  - level 256
   - toggle to enable/disable original bugs
     - pinky/inky target calculation bug - "target is also 4 tiles left if pacman is facing up"
     - "pass through" bug
     - global dot counter "bug or feature"
   - c64 port
-
-IMPROVE:
-  - sound quality
-  - sound code
+  - sound quality and code (ym3812)
 
 pacman/ghost speed percentage/frames
   LEVEL      NORM  NORM-DOTS  FRIGHT  FRIGHT-DOTS   NORM   FRIGHT	 TUNNEL
@@ -46,13 +45,13 @@ notes:
 
 
 +--------------------------------------------------+
-| pacman (6510)                                    |
+| pacman (6502)                                    |
 +--------------------------------------------------+
-| pacman.game (6510)                               |
-| pacman.intro (6510)                              |
+| pacman.game (6502)                               |
+| pacman.intro (6502)                              |
 +--------------------------------------------------+
-| pacman.gfx.sts (65c02)  | pacman.gfx.c64 (6510)  |
-| pacman.sound.sts        | pacman.sound.c64       |
+| pacman.gfx.v9958 (6502) | pacman.gfx.c64 (6510)  |
+| pacman.sound.ym3812     | pacman.sound.c64       |
 | pacman.io.sts           | pacman.io.c64          |
 +-------------------------+------------------------+
 | steckschwein.lib        | cc65 lib               |

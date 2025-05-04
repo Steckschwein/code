@@ -176,7 +176,7 @@ animate_energizer:
               ldy #23
               sty sys_crs_y
               jsr lda_maze_ptr_ay
-              jsr gfx_charout
+              jmp gfx_charout
 @exit:        rts
 
 intro_ghost_catched:
@@ -189,7 +189,7 @@ intro_ghost_catched:
               tax                     ; hide next remaining ghost
               lda #30*8+4             ; behind border
               sta actor_sp_y,x
-              lda #GHOST_STATE_STOP   ; catched, do nothing
+              lda #GHOST_STATE_NOOP   ; catched, do nothing
               sta ghost_state,x
               dec game_state+GameState::ghsts_to_catch
               bmi @demo
