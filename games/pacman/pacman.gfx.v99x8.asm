@@ -382,11 +382,11 @@ _gfx_update_sprite_tab:
               rts
 
 gfx_display_maze:
-              ldx #4
               ldy #0
               sty sys_crs_x
               sty sys_crs_y
               setPtr game_maze, p_gfx
+              ldx #4  ; 32*8 * 4 chars
 @loop:
 @put_char:    lda (p_gfx),y
               pha
@@ -531,10 +531,17 @@ gfx_lives:    sty r5
 ;   A - level
 gfx_bonus_stack:
               sta r2    ; save current level
-              lda #17*8
+              lda #17*8 ; x pos
               sta r3
-              lda #7    ; max 7 bonus items visible on stack, we build top down
-              sta r4
+              ldx #7    ; max 7 bonus items visible on stack, we build top down
+.ifdef __DEVMODE
+              lda game_state+GameState::debug
+              and #1<<5
+              beq :+
+              txa
+:             tax
+.endif
+              stx r4
 @next:        ldy #Bonus_Clear  ; start with "no bonus"
               lda r2
               cmp r4    ; draw bonus, or still clear?
@@ -698,6 +705,7 @@ gfx_ghost_icon:
               jmp gfx_4bpp_y
 
 ; A: char to output
+; ouput at current sys_crs_x / sys_crs_y
 gfx_charout:
               stx r3
               sty r4
@@ -815,7 +823,7 @@ vdp_reg1_init:
     .byte v_reg8_VR | v_reg8_SPD ; R#8 - VR - 64k VRAM
 .export vdp_reg9_init
 vdp_reg9_init:
-    .byte 0 ; v_reg9_ln ; R#9 - 212lines, NTSC 60Hz !
+    .byte 0 ; R#9 - 212lines, NTSC 60Hz !
     .byte 0 ; n.a.
     .byte <.hiword(VRAM_SPRITE_ATTR<<1); R#11 sprite attribute high
     .byte 0;  #R12
@@ -943,7 +951,7 @@ bonus_4bpp_orange:
 ghost_4bpp:
   .include "ghost.4bpp.res"
 branik_logo:
-  ;.include "branik.4bpp.res"
+  .include "branik.4bpp.res"
 
 .bss
     sprite_tab_attr:      .res 9*4  ; 9 sprites, 4 byte per entry +1 y of sprite 10

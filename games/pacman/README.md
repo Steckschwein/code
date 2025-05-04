@@ -1,11 +1,11 @@
 BUGS:
-  - bonus (fruit) appears and pacman losts a life, the bonus is not reset (in maze memory) so catching an invisible bonus/fruit is possible with next pacman life
+  - sometimes a dot or ghost hit is not detected due to pacman delay or ghost speed (additional move per frame)
 
 FEAT:
   - catched ghost (eyes) can also reverse immediately (short distance)
-  - level 256
   - system changes modes one or more times when a ghost is inside the base, that ghost will move to the right instead of the left upon leaving the house.
   - compensate pacman direction and 1px offset
+  - level 256 ?
 
 IMPR:
   - 1Mhz improvements
@@ -45,13 +45,13 @@ notes:
 
 
 +--------------------------------------------------+
-| pacman (6510)                                    |
+| pacman (6502)                                    |
 +--------------------------------------------------+
-| pacman.game (6510)                               |
-| pacman.intro (6510)                              |
+| pacman.game (6502)                               |
+| pacman.intro (6502)                              |
 +--------------------------------------------------+
-| pacman.gfx.sts (65c02)  | pacman.gfx.c64 (6510)  |
-| pacman.sound.sts        | pacman.sound.c64       |
+| pacman.gfx.v9958 (6502) | pacman.gfx.c64 (6510)  |
+| pacman.sound.ym3812     | pacman.sound.c64       |
 | pacman.io.sts           | pacman.io.c64          |
 +-------------------------+------------------------+
 | steckschwein.lib        | cc65 lib               |

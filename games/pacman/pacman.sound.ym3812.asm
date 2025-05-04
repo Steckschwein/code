@@ -165,7 +165,7 @@ sound_play_eat_fruit:
               bra sound_play
 sound_play_ghost_alarm:
 .ifdef __DEVMODE
-              rts
+;              rts
 .endif
               lda #SOUND_GHOST_ALARM
               bra sound_play
@@ -340,13 +340,13 @@ sound_init:   jsr sound_reset
               ;channel 4 - fruits/bonus
               ;modulator op1
               opl_reg $28,  1
-              opl_reg $48,  (KEY_SCALE_1_5 | ($3f-58)) ; key scale / level
+              opl_reg $48,  (KEY_SCALE_1_5 | ($3f-60)) ; key scale / level
               opl_reg $68,  ($f<<4 | ($f & $0f))  ; AD
               opl_reg $88,  (0<<4 | ($0 & $0f))  ; SR
               opl_reg $e8,  WS_HALF_SIN ; wave select
               ;carrier op2
               opl_reg $2b,  1
-              opl_reg $4b,  (KEY_SCALE_1_5 | ($3f-59))
+              opl_reg $4b,  (KEY_SCALE_1_5 | ($3f-60))
               opl_reg $6b,  ($f<<4 | ($f & $0f))  ; attack / decay
               opl_reg $8b,  (0<<4 | ($0 & $0f))  ; sustain / release
               opl_reg $eb,  WS_HALF_SIN
@@ -354,13 +354,13 @@ sound_init:   jsr sound_reset
               ;channel 5 - alarm
               ;modulator op1
               opl_reg $29,  1
-              opl_reg $49,  (KEY_SCALE_0_75 | ($3f-42)) ; key scale / level
+              opl_reg $49,  (KEY_SCALE_0_75 | ($3f-$20)) ; key scale / level
               opl_reg $69,  (15<<4 | (1 & $0f))  ; AD
               opl_reg $89,  (12<<4 | (14 & $0f))  ; SR
               opl_reg $e9,  WS_SIN ; wave select
               ;carrier op2
               opl_reg $2c,  1
-              opl_reg $4c,  (KEY_SCALE_0_75 | ($3f-42))
+              opl_reg $4c,  (KEY_SCALE_0_75 | ($3f-$20))
               opl_reg $6c,  (13<<4 | (2 & $0f))  ; attack / decay
               opl_reg $8c,  (8<<4 | (13 & $0f))  ; sustain / release
               opl_reg $ec,  WS_SIN
@@ -490,14 +490,12 @@ game_sfx_frightened:
               .repeat 8, i
                 note 384, 1+i, L64
               .endrepeat
-
 game_sfx_frightened_end:
 
 game_sfx_eat_ghost:
               .repeat 32, i
                 note ((i+1)*$0020), 4, L64
               .endrepeat
-
 game_sfx_eat_ghost_end:
 
 game_sfx_eat_fruit:
@@ -507,7 +505,6 @@ game_sfx_eat_fruit:
               .repeat 10, i
                 note ((i+1)*$20), 3, L64
               .endrepeat
-
 game_sfx_eat_fruit_end:
 
 game_sfx_ghost_alarm:
@@ -517,7 +514,6 @@ game_sfx_ghost_alarm:
               .repeat 12, i
                 note (400+(12*10)-(i*10)), 5, L64
               .endrepeat
-
 game_sfx_ghost_alarm_end:
 
 ; game sfx eaten pac
@@ -528,18 +524,12 @@ game_sfx_pacman:
               note NOTE_Cis,  4, L64
               note NOTE_Gis,  3, L64
               pause L64
-;              pause L64
               pause L64
               note NOTE_Gis,  3, L64
               note NOTE_Cis,  4, L64
               note NOTE_F,    4, L64
               note NOTE_Gis,  4, L64
               note NOTE_B,    4, L64
-;              note NOTE_E,    3, L64
- ;             note NOTE_Gis,  3, L64
-  ;            note NOTE_Dis,  4, L64
-   ;           note NOTE_Fis,  4, L64
-    ;          note NOTE_A,    4, L64
 game_sfx_pacman_end:
 
 

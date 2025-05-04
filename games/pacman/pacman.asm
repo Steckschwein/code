@@ -67,8 +67,8 @@ main:
               and #STATE_PAUSE
               bne :+
               jsr system_call_state_fn
-:
-              jsr gfx_prepare_update
+
+:             jsr gfx_prepare_update
 
               bgcolor Color_Bg
 
@@ -78,7 +78,7 @@ main:
               bmi @skip_input
               jsr io_player_direction     ; return C=1 if any valid key or joystick input, A=ACT_xxx
               bcs :+                      ; key/joy input ?
-@skip_input:  lda #$80                    ; flag no input
+@skip_input:  lda #NO_INPUT               ; flag no input
 :             sta input_direction
               pla
               cmp #KEY_EXIT
@@ -119,10 +119,10 @@ main:
               jmp @init_state
 
 .ifdef __DEVMODE  ; debug keys
-:             cmp #'0'
+:             cmp #'9'
               bne :+
               jsr sound_play_game_prelude
-:             cmp #'9'
+:             cmp #'8'
               bne :+
               jsr sound_play_game_interlude
 :             cmp #'d'  ; dying
@@ -182,6 +182,14 @@ main:
               sta ghost_speed_offs,x
               lda game_state+GameState::frames
               jmp @main_loop
+:             cmp #'t'
+              bne :+
+              lda #1<<4
+              bne @debug
+:             cmp #'0'
+              bne :+
+              lda #1<<5
+              bne @debug
 :             cmp #'n'
               bne :+
               lda #1<<6
@@ -229,12 +237,12 @@ init_state: ldy #.sizeof(GameState)-1
             dey
             bpl :-
 .ifdef __DEVMODE
-            lda #$80
+            lda #1<<7|1<<5
             sta game_state+GameState::debug
 .endif
             jsr io_highscore_load
 
-            lda #DIP_COINAGE_1 | DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES  ; 1 coin/1 credit, bonus life at 10.000pts
+            lda #DIP_COINAGE_0 | DIP_LIVES_1   ; 1 coin/1 credit, bonus life at 10.000pts
 ;            lda DIP_LIVES_1 | DIP_DIFFICULTY | DIP_GHOSTNAMES
             sta game_state+GameState::dip_switches
 

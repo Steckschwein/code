@@ -60,7 +60,7 @@ Char_Energizer      = $ce   ;1100 1110 $ce
 Char_Base           = $cf   ;1100 1111
 Char_Quote          = $22
 
-Char_Maze_Blank     = $f4
+Char_Maze_Blank     = $e4 ; f4
 
 .define Char_Pts $2a,$2b,$2c
 
@@ -81,34 +81,35 @@ TXT_CRS_XY=$04
 TXT_COLOR =$05
 
 DIP_COINAGE_0       =1<<0   ; 00 - free play
-DIP_COINAGE_1       =1<<1   ; 01 - 1 coin, 2 credits | 02 - 1 coin, 1 credit | 11 - 2 coins, 1 credit
-DIP_LIVES_0         =1<<2   ; lives 00 - 1, 01 - 2, 10 - 3, 11 - 5
+DIP_COINAGE_1       =1<<1   ; 01 - 1 coin, 1 credit | 10 - 1 coin, 2 credits | 11 - 2 coins, 1 credit
+DIP_LIVES_0         =1<<2   ; initial lives, 00 - 1, 01 - 2 lives, 10 - 3, 11 - 5
 DIP_LIVES_1         =1<<3
 DIP_BONUS_LIFE_0    =1<<4   ; bonus life at 00 - 10.000, 01 - 15.000, 10 - 20.000, 11 - None
 DIP_BONUS_LIFE_1    =1<<5
 DIP_DIFFICULTY      =1<<6
 DIP_GHOSTNAMES      =1<<7
 
-FN_STATE_NOOP           = $00
-FN_STATE_INIT           = $02
-FN_STATE_LEVEL_INIT     = $04
-FN_STATE_READY          = $06
-FN_STATE_DELAY          = $08
-FN_STATE_READY_WAIT     = $0a
-FN_STATE_PLAYING        = $0c
-FN_STATE_PACMAN_DYING   = $0e
-FN_STATE_LEVEL_CLEARED  = $10
-FN_STATE_GAME_OVER      = $12
-FN_STATE_GHOST_CATCHED  = $14
-FN_STATE_INTERLUDE_INIT = $16
-FN_STATE_INTERLUDE      = $18
-FN_STATE_DEMO_INIT      = $1a
-FN_STATE_DEMO_PLAYING   = $1c
-FN_STATE_INTRO          = $1e
-FN_STATE_INTRO_GHOSTS   = $20
+FN_STATE_NOOP                 = $00
+FN_STATE_INIT                 = $02
+FN_STATE_LEVEL_INIT           = $04
+FN_STATE_READY                = $06
+FN_STATE_DELAY                = $08
+FN_STATE_READY_WAIT           = $0a
+FN_STATE_PLAYING              = $0c
+FN_STATE_PACMAN_DYING         = $0e
+FN_STATE_LEVEL_CLEARED        = $10
+FN_STATE_GAME_OVER            = $12
+FN_STATE_GHOST_CATCHED        = $14
+FN_STATE_INTERLUDE_INIT       = $16
+FN_STATE_INTERLUDE            = $18
+FN_STATE_DEMO_INIT            = $1a
+FN_STATE_DEMO_PLAYING         = $1c
+FN_STATE_INTRO                = $1e
+FN_STATE_INTRO_GHOSTS         = $20
 FN_STATE_INTRO_GHOST_CATCHED  = $22
 FN_STATE_INTRO_SELECT_PLAYER  = $24
 
+NO_INPUT            = 1<<7
 
 STATE_PAUSE         = 1<<5
 STATE_DEMO          = 1<<6  ; demo flag
@@ -119,7 +120,7 @@ GHOST_STATE_RETURN  = 1
 GHOST_STATE_LEAVE   = 2
 GHOST_STATE_TARGET  = 3
 GHOST_STATE_ENTER   = 4
-GHOST_STATE_STOP    = 5
+GHOST_STATE_NOOP    = 5
 
 ACTOR_MODE_NORM     = 0
 ACTOR_MODE_CATCHED  = 1 ; ghosts only

@@ -130,8 +130,7 @@ game_ready:   jsr game_init_actors
               lda #%01010101
               sta game_state+GameState::sctchs_mode
 
-              lda #Bonus_Clear  ; clear bonus
-              jsr gfx_bonus
+              jsr game_clear_bonus            ; clear bonus
 
               ldy #Color_Food
               jsr draw_energizer
@@ -185,12 +184,12 @@ game_pacman_dying:
 
               cmp #$0c
               bcs @exit
-              adc #Shape_Ix_Dying        ; shape offset
+              adc #Shape_Ix_Dying                       ; shape offset, increment per frame
               ldx #ACTOR_PACMAN
               sta actor_shape,x
 @exit:        rts
 
-@next_state:  dec game_state+GameState::lives           ; dec 1 live
+@next_state:  dec game_state+GameState::lives           ; dec lives
 
               lda #Dot_Cnt_Enabled                      ; enable global dot count
               sta game_state+GameState::dot_cnt_state
@@ -201,10 +200,9 @@ game_pacman_dying:
               lda #FN_STATE_READY
               ldy game_state+GameState::lives
               bne @set_state
+              jsr game_clear_bonus
               ldy #Color_Food
               jsr draw_energizer
-              lda #Bonus_Clear
-              jsr gfx_bonus
               draw_text text_game_over, Color_Red
               lda #FN_STATE_GAME_OVER
 @set_state:   jmp system_set_state_fn
@@ -455,7 +453,7 @@ interlude_2_script:
               .word noop
               .byte $50
               .word interlude_2_lookback
-              .byte $50
+              .byte $60
               .word interlude_2_end
               .byte 0
 
@@ -474,7 +472,7 @@ interlude_3_script:
               .word noop
               .byte 220
               .word interlude_3_move
-              .byte $50
+              .byte $60
               .word noop
               .byte 0
 
@@ -605,7 +603,7 @@ ghost_move:   jsr actor_update_charpos
               cpy #BORDER_RIGHT_Y ; y in right border? (used in intro only)
               bcs @update_dir     ; otherwise move on
               cpy #0              ; y right border
-              bne @update_dir
+              beq @move_soft ;update_dir
 
 @move:        jsr actor_center    ; center reached?
               beq :+
@@ -1808,14 +1806,9 @@ animate_bonus:
               bne @exit
 
               lda game_maze+($12+$20*$0d) ; below ghost base
-              cmp #Char_Bonus ; bonus fruit timeout?
-              bne @bonus_pts_clr
-              lda #Char_Blank ; reset to blank char in maze
-              sta game_maze+($12+$20*$0d) ; below ghost base
-              lda #Bonus_Clear
-              jmp gfx_bonus
-@bonus_pts_clr:
-              ldx #$12
+              cmp #Char_Bonus ; bonus or points?
+              beq game_clear_bonus
+              ldx #$12        ; clear points
               ldy #$0f
               lda #4
               jmp sys_blank_xy
@@ -1841,6 +1834,11 @@ animate_bonus:
               sta game_maze+($12+$20*$0d) ; below ghost base
 @exit:        rts
 
+game_clear_bonus:
+              lda #Char_Blank ; reset to blank char in maze
+              sta game_maze+($12+$20*$0d) ; below ghost base
+              lda #Bonus_Clear
+              jmp gfx_bonus
 
 init_maze:    jsr gfx_sprites_off
               ldy #0
@@ -2055,6 +2053,13 @@ game_init:    jsr sound_play_game_prelude
               sta game_state+GameState::bonus_life+0
               stx game_state+GameState::bonus_life+1  ; save trigger points for bonus pacman
 
+ .ifdef __DEVMODE
+              lda game_state+GameState::debug
+              and #1<<5
+              beq :+ +2
+              lda #1
+:
+.endif
               lda #1 ; start with level 1
               sta game_state+GameState::level
 
@@ -2107,7 +2112,25 @@ prepare_animation:
               iny
               cpy #32
               bne @draw_tunnel
-
+.ifdef __DEVMODE  ; demo vcf
+              lda game_state+GameState::debug
+              and #1<<4 ; toggle tunnel char
+              beq :+
+              lda #Color_Blue
+:             sta text_color
+              ldy #31
+:             ldx #INTRO_TUNNEL_X-1         ; draw an invisible tunnel the ghosts must pass through
+              stx sys_crs_x
+              sty sys_crs_y
+              lda #$e1
+              jsr gfx_charout
+              inc sys_crs_x
+              inc sys_crs_x
+              lda #$e1
+              jsr gfx_charout
+              dey
+              bpl :-
+.endif
               ldy #21  ; speed of level 21 - pacman 90%/ghost 95% speed
               jsr init_speed_cnt
 
@@ -2354,6 +2377,6 @@ points_digits:
   pacman_turn:      .res 1  ; bit 7 turn, bit 1-0 turn direction
 
   target_dist:      .res 2  ; 16bit (x1-x2)² + (y1-y2)² to calc shortest distance
-  target_dir:       .res 1
+  target_dir:       .res 1  ; shortest distance target direction
 
   game_maze         = ((__BSS_RUN__+__BSS_SIZE__) & $ff00)+$100  ; put at the end of BSS which is BSS_RUN + BSS_SIZE and align with page start
